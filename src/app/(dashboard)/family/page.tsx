@@ -59,11 +59,6 @@ export default function FamilyPage() {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role === "parent") {
-      router.replace("/family/overview");
-      return;
-    }
-
     setUserRole(profile?.role || "");
 
     if (!profile?.family_id) {
