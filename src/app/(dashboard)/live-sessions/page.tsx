@@ -18,7 +18,6 @@ import {
   ChevronDown,
   ExternalLink,
   BookOpen,
-  Star,
   Filter,
 } from "lucide-react";
 import Link from "next/link";
@@ -604,36 +603,6 @@ export default function LiveSessionsPage() {
         </div>
       )}
 
-      {/* 5-Day Challenge CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="mt-8 rounded-lg border border-gold-400/20 bg-gold-400/5 p-5"
-      >
-        <div className="flex items-start gap-4">
-          <Star className="w-5 h-5 text-gold-400 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-display text-base font-semibold text-midnight-100 mb-1">5-Day Trading Challenge</h3>
-            <p className="text-xs text-midnight-400 font-body mb-3">
-              Each track includes a free 5-day fundamentals mini-course with live coaching sessions.
-              Complete the challenge to unlock your certificate and special badge.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {(["stocks-options", "forex", "futures", "crypto"] as Track[]).map((t) => {
-                const cfg = TRACK_CONFIG[t];
-                const owned = USER_TRACKS.includes(t);
-                return (
-                  <div key={t} className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-mono ${owned ? `${cfg.bgColor} ${cfg.color}` : "bg-midnight-800/50 text-midnight-500"}`}>
-                    {owned ? <Star className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
-                    {cfg.label}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 }
