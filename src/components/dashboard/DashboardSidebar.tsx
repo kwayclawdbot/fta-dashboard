@@ -79,13 +79,13 @@ export default function DashboardSidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-gold-400/10">
+      <div className="flex items-center justify-between px-4 py-5 border-b border-midnight-700/50">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="font-display text-xl font-bold text-gradient-gold">
+          <span className="font-display text-lg font-bold text-gold-400">
             {collapsed ? "F" : "FTA"}
           </span>
           {!collapsed && (
-            <span className="text-xs text-midnight-400 font-body hidden lg:block">
+            <span className="text-[11px] text-midnight-400 font-body hidden lg:block">
               Family Trading Academy
             </span>
           )}
@@ -100,7 +100,7 @@ export default function DashboardSidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -111,27 +111,22 @@ export default function DashboardSidebar({
               href={item.href}
               onClick={onMobileClose}
               className={`
-                group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
                 ${isActive
-                  ? "bg-gold-400/10 text-gold-400"
-                  : "text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800"
+                  ? "text-gold-400 bg-gold-400/5"
+                  : "text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800/50"
                 }
               `}
             >
               {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-lg bg-gold-400/10 border border-gold-400/20"
-                  style={{ boxShadow: "0 0 12px rgba(251,191,36,0.1)" }}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                />
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-400" />
               )}
-              <Icon className="relative z-10 w-5 h-5 shrink-0" />
+              <Icon className="w-[18px] h-[18px] shrink-0" />
               {!collapsed && (
-                <span className="relative z-10 truncate">{item.label}</span>
+                <span className="truncate font-medium">{item.label}</span>
               )}
               {!collapsed && item.requiresAcademy && (
-                <Lock className="relative z-10 w-3.5 h-3.5 text-midnight-500 ml-auto shrink-0" />
+                <Lock className="w-3 h-3 text-midnight-600 ml-auto shrink-0" />
               )}
             </Link>
           );
@@ -139,10 +134,10 @@ export default function DashboardSidebar({
       </nav>
 
       {/* Collapse toggle (desktop only) */}
-      <div className="hidden lg:block px-3 py-2 border-t border-gold-400/10">
+      <div className="hidden lg:block px-3 py-2 border-t border-midnight-800/50">
         <button
           onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center py-2 rounded-lg text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800 transition-colors"
+          className="w-full flex items-center justify-center py-2 rounded-md text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800/50 transition-colors"
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -153,9 +148,9 @@ export default function DashboardSidebar({
       </div>
 
       {/* User / Logout */}
-      <div className="px-3 py-4 border-t border-gold-400/10">
+      <div className="px-3 py-4 border-t border-midnight-800/50">
         <div className="flex items-center gap-3 px-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-400 text-xs font-bold font-display shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 text-[11px] font-bold font-display shrink-0">
             {initials}
           </div>
           {!collapsed && (
@@ -163,7 +158,7 @@ export default function DashboardSidebar({
               <p className="text-sm font-medium text-midnight-100 truncate">
                 {user.display_name || "Trader"}
               </p>
-              <p className="text-xs text-midnight-500 truncate">
+              <p className="text-[11px] text-midnight-500 truncate">
                 {user.email}
               </p>
             </div>
@@ -173,7 +168,7 @@ export default function DashboardSidebar({
           onClick={handleLogout}
           disabled={loggingOut}
           className={`
-            flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-red-500 hover:bg-red-500/10 transition-colors
+            flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-midnight-400 hover:text-red-500 hover:bg-red-500/5 transition-colors
             ${collapsed ? "justify-center" : ""}
           `}
         >
@@ -189,8 +184,8 @@ export default function DashboardSidebar({
       {/* Desktop sidebar */}
       <aside
         className={`
-          hidden lg:flex flex-col fixed top-0 left-0 h-screen bg-midnight-900 border-r border-gold-400/10 z-30 transition-all duration-300
-          ${collapsed ? "w-[72px]" : "w-64"}
+          hidden lg:flex flex-col fixed top-0 left-0 h-screen bg-midnight-900 border-r border-midnight-700/50 z-30 transition-all duration-300
+          ${collapsed ? "w-[72px]" : "w-60"}
         `}
       >
         {sidebarContent}
@@ -208,11 +203,11 @@ export default function DashboardSidebar({
               className="fixed inset-0 bg-black/60 z-40 lg:hidden"
             />
             <motion.aside
-              initial={{ x: -280 }}
+              initial={{ x: -260 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-              className="fixed top-0 left-0 h-screen w-64 bg-midnight-900 border-r border-gold-400/10 z-50 lg:hidden"
+              exit={{ x: -260 }}
+              transition={{ type: "tween", duration: 0.2 }}
+              className="fixed top-0 left-0 h-screen w-60 bg-midnight-900 border-r border-midnight-700/50 z-50 lg:hidden"
             >
               {sidebarContent}
             </motion.aside>

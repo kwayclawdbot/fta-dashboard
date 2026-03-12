@@ -36,7 +36,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect dashboard routes — redirect to login if no session
-  const protectedPaths = ["/dashboard", "/courses", "/settings", "/live", "/coach", "/community", "/progress", "/family"];
+  const protectedPaths = ["/dashboard", "/courses", "/settings", "/live", "/coach", "/community", "/progress", "/family", "/upgrade"];
   const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

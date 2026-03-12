@@ -9,21 +9,21 @@ export default function AuthLayout({
     <div className="min-h-screen bg-midnight-950 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <div className="mb-8 text-center">
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          <span className="text-gradient-gold">Family Trading Academy</span>
+        <h1 className="font-display text-2xl font-bold tracking-tight text-gold-400">
+          Family Trading Academy
         </h1>
-        <p className="mt-2 text-midnight-300 text-sm font-body">
+        <p className="mt-1.5 text-midnight-400 text-sm font-body">
           Build Generational Wealth Together
         </p>
       </div>
 
-      {/* Auth Card */}
-      <div className="w-full max-w-md glow-border rounded-2xl bg-midnight-900/80 backdrop-blur-sm p-8">
+      {/* Auth container -- subtle border, no glow */}
+      <div className="w-full max-w-md rounded-xl border border-midnight-700/50 bg-midnight-900/60 p-8">
         {children}
       </div>
 
       {/* Footer */}
-      <p className="mt-8 text-midnight-400 text-xs font-body">
+      <p className="mt-8 text-midnight-500 text-xs font-body">
         &copy; {new Date().getFullYear()} Family Trading Academy. All rights reserved.
       </p>
     </div>

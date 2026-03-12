@@ -53,19 +53,19 @@ export default function LoginPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
     >
-      <h2 className="font-display text-2xl font-bold text-gold-400 mb-1">
+      <h2 className="font-display text-xl font-bold text-midnight-100 mb-1">
         Welcome Back
       </h2>
-      <p className="text-midnight-300 text-sm mb-6 font-body">
+      <p className="text-midnight-400 text-sm mb-6 font-body">
         Sign in to continue your journey
       </p>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-500 text-sm">
+        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-red-500 text-sm">
           {error}
         </div>
       )}
@@ -84,7 +84,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
             />
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Enter your password"
-              className="w-full pl-10 pr-11 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
+              className="w-full pl-10 pr-11 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
             />
             <button
               type="button"
@@ -118,7 +118,7 @@ export default function LoginPage() {
         <div className="text-right">
           <Link
             href="/forgot-password"
-            className="text-xs text-gold-400/70 hover:text-gold-400 transition-colors"
+            className="text-xs text-midnight-400 hover:text-midnight-200 transition-colors"
           >
             Forgot password?
           </Link>
@@ -128,7 +128,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="cta-button w-full py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="cta-button w-full py-2.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
@@ -136,15 +136,15 @@ export default function LoginPage() {
 
       {/* Divider */}
       <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-midnight-700" />
+        <div className="flex-1 h-px bg-midnight-800" />
         <span className="text-xs text-midnight-500">or</span>
-        <div className="flex-1 h-px bg-midnight-700" />
+        <div className="flex-1 h-px bg-midnight-800" />
       </div>
 
       {/* Google OAuth */}
       <button
         onClick={handleGoogleLogin}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-midnight-600 bg-midnight-800 hover:bg-midnight-700 text-midnight-200 text-sm font-medium transition-colors"
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-midnight-700 bg-midnight-800 hover:bg-midnight-700 text-midnight-200 text-sm font-medium transition-colors"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24">
           <path

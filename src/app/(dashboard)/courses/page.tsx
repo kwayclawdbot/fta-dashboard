@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Lock, BookOpen } from "lucide-react";
+import Link from "next/link";
 
 interface Course {
   id: string;
@@ -51,66 +52,17 @@ const courses: Course[] = [
   },
 ];
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.4 },
-  }),
-};
-
-function ProgressRing({ progress }: { progress: number }) {
-  const radius = 20;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
-
-  return (
-    <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-      <circle
-        cx="24"
-        cy="24"
-        r={radius}
-        fill="none"
-        stroke="rgba(251,191,36,0.1)"
-        strokeWidth="3"
-      />
-      <circle
-        cx="24"
-        cy="24"
-        r={radius}
-        fill="none"
-        stroke="#FBBF24"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-      />
-      <text
-        x="24"
-        y="24"
-        textAnchor="middle"
-        dominantBaseline="central"
-        className="fill-midnight-200 text-[9px] font-display font-bold"
-        transform="rotate(90 24 24)"
-      >
-        {progress}%
-      </text>
-    </svg>
-  );
-}
-
 export default function CoursesPage() {
   // Placeholder: challenge tier user (would come from user data)
   const userTier = "challenge";
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="mb-8"
       >
         <h2 className="font-display text-2xl font-bold text-midnight-100">
           Course Library
@@ -120,66 +72,132 @@ export default function CoursesPage() {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {courses.map((course, i) => {
+      {/* Featured course -- full width */}
+      {(() => {
+        const featured = courses[0];
+        const isLocked = featured.tier === "academy" && userTier === "challenge";
+
+        return (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.05, duration: 0.3 }}
+            className="mb-6"
+          >
+            <Link
+              href={`/courses/${featured.id}`}
+              className={`block relative rounded-xl border border-midnight-700/60 bg-midnight-900/40 p-6 transition-colors hover:border-midnight-600 ${
+                isLocked ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
+              {isLocked && (
+                <div className="absolute inset-0 rounded-xl bg-midnight-950/60 z-10 flex items-center justify-center">
+                  <div className="text-center">
+                    <Lock className="w-6 h-6 text-gold-400 mx-auto mb-2" />
+                    <p className="text-sm font-display font-semibold text-gold-400">
+                      Academy Members Only
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                        featured.tier === "challenge"
+                          ? "bg-green-500/10 text-green-400"
+                          : "bg-gold-400/10 text-gold-400"
+                      }`}
+                    >
+                      {featured.tier}
+                    </span>
+                    <span className="text-xs text-midnight-500">{featured.lessons} lessons</span>
+                  </div>
+                  <h3 className="font-display text-xl font-semibold text-midnight-100 mb-2">
+                    {featured.title}
+                  </h3>
+                  <p className="text-sm text-midnight-400 font-body mb-3">
+                    {featured.description}
+                  </p>
+                  {/* Thin progress bar */}
+                  <div className="w-full max-w-xs h-1 rounded-full bg-midnight-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gold-400"
+                      style={{ width: `${featured.progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-midnight-500 mt-1.5">{featured.progress}% complete</p>
+                </div>
+                <div className="shrink-0 w-10 h-10 rounded-lg bg-gold-400/10 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-gold-400" />
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+        );
+      })()}
+
+      {/* Remaining courses -- grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {courses.slice(1).map((course, i) => {
           const isLocked = course.tier === "academy" && userTier === "challenge";
 
           return (
             <motion.div
               key={course.id}
-              custom={i}
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover={{ y: -4 }}
-              className={`relative glow-border rounded-xl bg-midnight-900/60 p-6 transition-all ${
-                isLocked ? "opacity-75" : "cursor-pointer"
-              }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
             >
-              {/* Locked overlay */}
-              {isLocked && (
-                <div className="absolute inset-0 rounded-xl bg-midnight-950/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-gold-400/10 flex items-center justify-center mb-3">
-                    <Lock className="w-6 h-6 text-gold-400" />
+              <Link
+                href={`/courses/${course.id}`}
+                className={`block relative rounded-lg border border-midnight-700/40 bg-midnight-900/30 p-5 transition-colors hover:border-midnight-600 h-full ${
+                  isLocked ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {isLocked && (
+                  <div className="absolute inset-0 rounded-lg bg-midnight-950/60 z-10 flex flex-col items-center justify-center">
+                    <Lock className="w-5 h-5 text-gold-400 mb-1.5" />
+                    <p className="text-xs font-display font-semibold text-gold-400">
+                      Academy Only
+                    </p>
                   </div>
-                  <p className="text-sm font-display font-semibold text-gold-400">
-                    Academy Members Only
-                  </p>
-                  <p className="text-xs text-midnight-400 mt-1">
-                    Upgrade to unlock this course
-                  </p>
-                </div>
-              )}
+                )}
 
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-lg bg-gold-400/10 flex items-center justify-center">
-                    <BookOpen className="w-4.5 h-4.5 text-gold-400" />
-                  </div>
+                <div className="flex items-center gap-2 mb-3">
                   <span
-                    className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                       course.tier === "challenge"
-                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                        : "bg-gold-400/10 text-gold-400 border border-gold-400/20"
+                        ? "bg-green-500/10 text-green-400"
+                        : "bg-gold-400/10 text-gold-400"
                     }`}
                   >
                     {course.tier}
                   </span>
                 </div>
-                <ProgressRing progress={course.progress} />
-              </div>
 
-              <h3 className="font-display text-lg font-semibold text-midnight-100 mb-2">
-                {course.title}
-              </h3>
-              <p className="text-sm text-midnight-400 font-body mb-4 line-clamp-2">
-                {course.description}
-              </p>
+                <h3 className="font-display text-base font-semibold text-midnight-100 mb-1.5">
+                  {course.title}
+                </h3>
+                <p className="text-xs text-midnight-400 font-body mb-4 line-clamp-2">
+                  {course.description}
+                </p>
 
-              <div className="flex items-center justify-between text-xs text-midnight-500">
-                <span>{course.lessons} lessons</span>
-                <span>{course.progress}% complete</span>
-              </div>
+                <div className="mt-auto">
+                  <div className="w-full h-1 rounded-full bg-midnight-800 overflow-hidden mb-1.5">
+                    <div
+                      className="h-full rounded-full bg-gold-400"
+                      style={{ width: `${course.progress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-midnight-500">
+                    <span>{course.lessons} lessons</span>
+                    <span>{course.progress}%</span>
+                  </div>
+                </div>
+              </Link>
             </motion.div>
           );
         })}

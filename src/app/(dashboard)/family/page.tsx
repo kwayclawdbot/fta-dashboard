@@ -32,15 +32,6 @@ interface FamilyData {
   plan_tier: string;
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.08, duration: 0.4 },
-  }),
-};
-
 export default function FamilyPage() {
   const supabase = createClient();
 
@@ -130,58 +121,50 @@ export default function FamilyPage() {
 
   const tierBadge = (tier: string) => {
     const colors: Record<string, string> = {
-      challenge: "bg-green-500/10 text-green-400 border-green-500/20",
-      academy: "bg-gold-400/10 text-gold-400 border-gold-400/20",
-      free: "bg-midnight-600/30 text-midnight-300 border-midnight-600",
+      challenge: "bg-green-500/10 text-green-400",
+      academy: "bg-gold-400/10 text-gold-400",
+      free: "bg-midnight-800 text-midnight-300",
     };
     return colors[tier] || colors.free;
   };
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      <div className="max-w-5xl mx-auto flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!family) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glow-border rounded-xl bg-midnight-900/60 p-12 text-center"
+      <div className="max-w-5xl mx-auto py-16 text-center">
+        <Users className="w-8 h-8 text-midnight-500 mx-auto mb-3" />
+        <h3 className="font-display text-xl font-bold text-midnight-100 mb-2">
+          No Family Yet
+        </h3>
+        <p className="text-midnight-400 text-sm font-body mb-6 max-w-md mx-auto">
+          Complete your onboarding to create a family and start inviting
+          members to learn together.
+        </p>
+        <a
+          href="/onboarding"
+          className="cta-button inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm"
         >
-          <div className="w-16 h-16 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center mb-4">
-            <Users className="w-8 h-8 text-gold-400" />
-          </div>
-          <h3 className="font-display text-xl font-bold text-midnight-100 mb-2">
-            No Family Yet
-          </h3>
-          <p className="text-midnight-400 text-sm font-body mb-6 max-w-md mx-auto">
-            Complete your onboarding to create a family and start inviting
-            members to learn together.
-          </p>
-          <a
-            href="/onboarding"
-            className="cta-button inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm"
-          >
-            Complete Setup
-          </a>
-        </motion.div>
+          Complete Setup
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="max-w-5xl mx-auto">
+      {/* Header -- plain text */}
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8"
       >
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -189,7 +172,7 @@ export default function FamilyPage() {
               {family.name}
             </h2>
             <span
-              className={`text-[10px] font-display font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${tierBadge(
+              className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
                 family.plan_tier || "free"
               )}`}
             >
@@ -202,38 +185,29 @@ export default function FamilyPage() {
           </p>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={() => {
             setShowInviteModal(true);
             if (!inviteLink) generateInviteLink();
           }}
-          className="cta-button flex items-center gap-2 px-5 py-3 rounded-lg text-sm self-start sm:self-auto"
+          className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm self-start sm:self-auto"
         >
           <UserPlus className="w-4 h-4" />
-          Invite Family Member
-        </motion.button>
+          Invite Member
+        </button>
       </motion.div>
 
       {/* Members Grid */}
       {members.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glow-border rounded-xl bg-midnight-900/60 p-12 text-center"
-        >
-          <div className="w-16 h-16 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center mb-4">
-            <Users className="w-8 h-8 text-gold-400" />
-          </div>
-          <h3 className="font-display text-lg font-semibold text-midnight-100 mb-2">
+        <div className="py-12 text-center">
+          <Users className="w-6 h-6 text-midnight-500 mx-auto mb-2" />
+          <p className="font-display text-base font-semibold text-midnight-200 mb-1">
             No Members Yet
-          </h3>
-          <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">
-            Invite your family members to start learning together. Share the
-            invite link to get started.
           </p>
-        </motion.div>
+          <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">
+            Invite your family members to start learning together.
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {members.map((member, i) => {
@@ -247,32 +221,30 @@ export default function FamilyPage() {
             return (
               <motion.div
                 key={member.id}
-                custom={i}
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                whileHover={{ y: -4 }}
-                className="glow-border rounded-xl bg-midnight-900/60 p-5 transition-all"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className="rounded-lg border border-midnight-700/40 bg-midnight-900/30 p-5 transition-colors hover:border-midnight-600/60"
               >
                 <div className="flex items-start gap-3 mb-4">
                   {member.avatar_url ? (
                     <img
                       src={member.avatar_url}
                       alt={member.display_name}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-gold-400/20"
+                      className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-400 font-display font-bold text-sm shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
                       {initials}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-display font-semibold text-midnight-100 truncate">
+                      <p className="font-display font-semibold text-sm text-midnight-100 truncate">
                         {member.display_name || "Member"}
                       </p>
                       {member.role === "parent" && (
-                        <Crown className="w-4 h-4 text-gold-400 shrink-0" />
+                        <Crown className="w-3.5 h-3.5 text-gold-400 shrink-0" />
                       )}
                     </div>
                     <p className="text-xs text-midnight-400 font-body capitalize">
@@ -284,23 +256,23 @@ export default function FamilyPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2 text-xs text-midnight-400">
-                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <Clock className="w-3 h-3 shrink-0" />
                     <span className="truncate">
                       {member.last_active
                         ? new Date(member.last_active).toLocaleDateString()
-                        : "Not yet active"}
+                        : "Not active"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-midnight-400">
-                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                    <BookOpen className="w-3 h-3 shrink-0" />
                     <span>{member.lessons_completed || 0} lessons</span>
                   </div>
                 </div>
 
                 {member.age_group && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <GraduationCap className="w-3.5 h-3.5 text-midnight-500" />
-                    <span className="text-xs text-midnight-500 capitalize font-body">
+                  <div className="mt-3 flex items-center gap-1.5">
+                    <GraduationCap className="w-3 h-3 text-midnight-500" />
+                    <span className="text-[11px] text-midnight-500 capitalize font-body">
                       {member.age_group} track
                     </span>
                   </div>
@@ -323,14 +295,14 @@ export default function FamilyPage() {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto glow-border-strong rounded-2xl bg-midnight-900 p-6 z-50"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl bg-midnight-900 border border-midnight-700 p-6 z-50"
             >
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-display text-lg font-bold text-gold-400">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-base font-bold text-midnight-100">
                   Invite Family Member
                 </h3>
                 <button
@@ -341,13 +313,13 @@ export default function FamilyPage() {
                 </button>
               </div>
 
-              <p className="text-sm text-midnight-300 font-body mb-5">
+              <p className="text-sm text-midnight-300 font-body mb-4">
                 Share this link with a family member. It expires in 7 days.
               </p>
 
               {generatingLink ? (
                 <div className="flex items-center justify-center py-6">
-                  <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -355,24 +327,22 @@ export default function FamilyPage() {
                     type="text"
                     readOnly
                     value={inviteLink}
-                    className="flex-1 px-4 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-200 text-sm font-mono truncate"
+                    className="flex-1 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-200 text-sm font-mono truncate"
                   />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={handleCopy}
-                    className="shrink-0 px-4 py-3 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-400 hover:bg-gold-400/20 transition-colors"
+                    className="shrink-0 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-300 hover:text-midnight-100 hover:bg-midnight-700 transition-colors"
                   >
                     {copied ? (
-                      <Check className="w-5 h-5" />
+                      <Check className="w-4 h-4 text-green-400" />
                     ) : (
-                      <Copy className="w-5 h-5" />
+                      <Copy className="w-4 h-4" />
                     )}
-                  </motion.button>
+                  </button>
                 </div>
               )}
 
-              <p className="text-xs text-midnight-500 mt-4 font-body">
+              <p className="text-[11px] text-midnight-500 mt-3 font-body">
                 The invited member will join your family and can start learning
                 immediately.
               </p>

@@ -28,7 +28,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
 
       <div
         className={`transition-all duration-300 ${
-          sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-64"
+          sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-60"
         }`}
       >
         <DashboardTopBar

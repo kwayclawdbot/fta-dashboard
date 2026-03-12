@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Bell, Flame, ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, Bell, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 const routeTitles: Record<string, string> = {
-  "/dashboard": "Command Center",
+  "/dashboard": "Dashboard",
   "/courses": "Courses",
   "/live-sessions": "Live Sessions",
   "/ai-coach": "AI Coach",
@@ -34,7 +34,6 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pageTitle = routeTitles[pathname] || "Dashboard";
-  const streak = 0; // Placeholder
 
   const initials = (user.display_name || user.email || "U")
     .split(" ")
@@ -60,8 +59,8 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
   }
 
   return (
-    <header className="sticky top-0 z-20 bg-midnight-950/80 backdrop-blur-md border-b border-gold-400/10">
-      <div className="flex items-center justify-between h-16 px-4 lg:px-6">
+    <header className="sticky top-0 z-20 bg-midnight-950/90 backdrop-blur-md border-b border-midnight-700/50">
+      <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         {/* Left: hamburger + title */}
         <div className="flex items-center gap-3">
           <button
@@ -70,24 +69,16 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="font-display text-lg font-semibold text-midnight-100">
+          <h1 className="font-display text-base font-semibold text-midnight-100">
             {pageTitle}
           </h1>
         </div>
 
-        {/* Right: streak, notifications, avatar */}
-        <div className="flex items-center gap-4">
-          {/* Streak counter */}
-          <div className="flex items-center gap-1.5 text-sm">
-            <Flame className="w-4 h-4 text-gold-500" />
-            <span className="font-display font-bold text-gold-400">{streak}</span>
-          </div>
-
+        {/* Right: notifications, avatar */}
+        <div className="flex items-center gap-3">
           {/* Notification bell */}
           <button className="relative text-midnight-400 hover:text-midnight-200 transition-colors">
-            <Bell className="w-5 h-5" />
-            {/* Dot indicator — uncomment when notifications exist */}
-            {/* <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gold-400 rounded-full" /> */}
+            <Bell className="w-[18px] h-[18px]" />
           </button>
 
           {/* User dropdown */}
@@ -96,20 +87,20 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-400 text-xs font-bold font-display">
+              <div className="w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-400 text-[11px] font-bold font-display">
                 {initials}
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-midnight-400 hidden sm:block" />
+              <ChevronDown className="w-3 h-3 text-midnight-400 hidden sm:block" />
             </button>
 
             <AnimatePresence>
               {dropdownOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-56 rounded-xl bg-midnight-900 border border-gold-400/10 shadow-lg shadow-black/40 overflow-hidden"
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute right-0 mt-2 w-52 rounded-lg bg-midnight-900 border border-midnight-700 shadow-lg shadow-black/40 overflow-hidden"
                 >
                   <div className="px-4 py-3 border-b border-midnight-800">
                     <p className="text-sm font-medium text-midnight-100 truncate">
@@ -148,9 +139,6 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
           </div>
         </div>
       </div>
-
-      {/* Gold accent line */}
-      <div className="h-px bg-gradient-to-r from-transparent via-gold-400/30 to-transparent" />
     </header>
   );
 }

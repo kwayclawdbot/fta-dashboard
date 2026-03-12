@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Bell, CreditCard, LogOut, Save } from "lucide-react";
+import { LogOut, Save } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SettingsPage() {
@@ -63,11 +63,12 @@ export default function SettingsPage() {
     .slice(0, 2);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-xl mx-auto">
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="mb-8"
       >
         <h2 className="font-display text-2xl font-bold text-midnight-100">
           Settings
@@ -79,29 +80,24 @@ export default function SettingsPage() {
 
       {/* Profile Section */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.4 }}
-        className="glow-border rounded-xl bg-midnight-900/60 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.05, duration: 0.3 }}
+        className="mb-10"
       >
-        <div className="flex items-center gap-3 mb-5">
-          <User className="w-5 h-5 text-gold-400" />
-          <h3 className="font-display text-lg font-semibold text-midnight-100">
-            Profile
-          </h3>
-        </div>
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+          Profile
+        </h3>
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
           {/* Avatar */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-400 text-xl font-bold font-display">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-14 h-14 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 text-lg font-bold font-display">
               {initials}
             </div>
-            <div>
-              <p className="text-sm text-midnight-300 font-body">
-                Avatar is based on your initials
-              </p>
-            </div>
+            <p className="text-sm text-midnight-400 font-body">
+              Avatar is based on your initials
+            </p>
           </div>
 
           {/* Display name */}
@@ -113,7 +109,7 @@ export default function SettingsPage() {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
+              className="w-full px-4 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
             />
           </div>
 
@@ -126,7 +122,7 @@ export default function SettingsPage() {
               type="email"
               value={email}
               readOnly
-              className="w-full px-4 py-3 rounded-lg bg-midnight-800/50 border border-midnight-700 text-midnight-400 text-sm cursor-not-allowed"
+              className="w-full px-4 py-2.5 rounded-lg bg-midnight-800/50 border border-midnight-800 text-midnight-400 text-sm cursor-not-allowed"
             />
           </div>
 
@@ -134,7 +130,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="cta-button px-6 py-2.5 rounded-lg text-sm inline-flex items-center gap-2 disabled:opacity-50"
+              className="cta-button px-5 py-2 rounded-lg text-sm inline-flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {saving ? "Saving..." : "Save Changes"}
@@ -152,19 +148,19 @@ export default function SettingsPage() {
         </form>
       </motion.div>
 
+      {/* Divider */}
+      <div className="border-t border-midnight-800/50 mb-8" />
+
       {/* Notification Preferences */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-        className="glow-border rounded-xl bg-midnight-900/60 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="mb-10"
       >
-        <div className="flex items-center gap-3 mb-5">
-          <Bell className="w-5 h-5 text-gold-400" />
-          <h3 className="font-display text-lg font-semibold text-midnight-100">
-            Notifications
-          </h3>
-        </div>
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+          Notifications
+        </h3>
 
         <div className="space-y-4">
           {[
@@ -199,13 +195,13 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => toggle.onChange(!toggle.value)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
+                className={`relative w-10 h-5.5 rounded-full transition-colors ${
                   toggle.value ? "bg-gold-400" : "bg-midnight-700"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-midnight-950 transition-transform ${
-                    toggle.value ? "translate-x-5" : "translate-x-0"
+                  className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-midnight-950 transition-transform ${
+                    toggle.value ? "translate-x-4.5" : "translate-x-0"
                   }`}
                 />
               </button>
@@ -214,37 +210,40 @@ export default function SettingsPage() {
         </div>
       </motion.div>
 
+      {/* Divider */}
+      <div className="border-t border-midnight-800/50 mb-8" />
+
       {/* Billing */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
-        className="glow-border rounded-xl bg-midnight-900/60 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+        className="mb-10"
       >
-        <div className="flex items-center gap-3 mb-5">
-          <CreditCard className="w-5 h-5 text-gold-400" />
-          <h3 className="font-display text-lg font-semibold text-midnight-100">
-            Billing
-          </h3>
-        </div>
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+          Billing
+        </h3>
 
         <p className="text-sm text-midnight-400 font-body mb-4">
           Manage your subscription and payment methods.
         </p>
 
-        <button className="px-5 py-2.5 rounded-lg border border-gold-400/30 text-gold-400 text-sm font-medium hover:bg-gold-400/10 transition-colors">
+        <button className="px-4 py-2 rounded-lg border border-midnight-700 text-midnight-200 text-sm font-medium hover:bg-midnight-800 transition-colors">
           Manage Subscription
         </button>
       </motion.div>
 
+      {/* Divider */}
+      <div className="border-t border-midnight-800/50 mb-8" />
+
       {/* Danger Zone */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.4 }}
-        className="rounded-xl border border-red-500/20 bg-midnight-900/40 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
+        className="mb-8"
       >
-        <h3 className="font-display text-lg font-semibold text-red-500 mb-3">
+        <h3 className="font-display text-sm font-semibold text-red-500/80 uppercase tracking-wider mb-3">
           Danger Zone
         </h3>
         <p className="text-sm text-midnight-400 font-body mb-4">
@@ -253,7 +252,7 @@ export default function SettingsPage() {
         <button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/20 text-red-500 text-sm font-medium hover:bg-red-500/5 transition-colors disabled:opacity-50"
         >
           <LogOut className="w-4 h-4" />
           {loggingOut ? "Logging out..." : "Logout"}

@@ -89,20 +89,20 @@ const statusIcon = (status: Lesson["status"]) => {
   switch (status) {
     case "completed":
       return (
-        <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center">
-          <Check className="w-3.5 h-3.5 text-green-400" />
+        <div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center">
+          <Check className="w-3 h-3 text-green-400" />
         </div>
       );
     case "available":
       return (
-        <div className="w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center">
-          <Play className="w-3.5 h-3.5 text-gold-400" />
+        <div className="w-6 h-6 rounded-full bg-gold-400/15 flex items-center justify-center">
+          <Play className="w-3 h-3 text-gold-400" />
         </div>
       );
     case "locked":
       return (
-        <div className="w-7 h-7 rounded-full bg-midnight-700 flex items-center justify-center">
-          <Lock className="w-3.5 h-3.5 text-midnight-500" />
+        <div className="w-6 h-6 rounded-full bg-midnight-800 flex items-center justify-center">
+          <Lock className="w-3 h-3 text-midnight-500" />
         </div>
       );
   }
@@ -140,12 +140,13 @@ export default function CourseDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto">
       {/* Back link */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.2 }}
+        className="mb-6"
       >
         <Link
           href="/courses"
@@ -156,87 +157,44 @@ export default function CourseDetailPage() {
         </Link>
       </motion.div>
 
-      {/* Course Header */}
+      {/* Course Header -- no card wrapper, just content */}
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="glow-border rounded-xl bg-midnight-900/60 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="mb-8"
       >
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex-1">
-            <h2 className="font-display text-2xl font-bold text-midnight-100 mb-2">
-              {course.title}
-            </h2>
-            <p className="text-sm text-midnight-400 font-body mb-4">
-              {course.description}
-            </p>
-            <div className="flex items-center gap-4 text-xs text-midnight-400">
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5" />
-                {totalLessons} lessons
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {completedLessons}/{totalLessons} completed
-              </span>
-            </div>
-          </div>
-
-          {/* Progress circle */}
-          <div className="shrink-0">
-            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                stroke="rgba(251,191,36,0.1)"
-                strokeWidth="5"
-              />
-              <circle
-                cx="40"
-                cy="40"
-                r="34"
-                fill="none"
-                stroke="#FBBF24"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 34}
-                strokeDashoffset={
-                  2 * Math.PI * 34 - (progress / 100) * 2 * Math.PI * 34
-                }
-                className="transition-all duration-700"
-              />
-              <text
-                x="40"
-                y="40"
-                textAnchor="middle"
-                dominantBaseline="central"
-                className="fill-midnight-100 text-sm font-display font-bold"
-                transform="rotate(90 40 40)"
-              >
-                {progress}%
-              </text>
-            </svg>
-          </div>
+        <h2 className="font-display text-2xl font-bold text-midnight-100 mb-2">
+          {course.title}
+        </h2>
+        <p className="text-sm text-midnight-400 font-body mb-4 max-w-xl">
+          {course.description}
+        </p>
+        <div className="flex items-center gap-4 text-xs text-midnight-400 mb-4">
+          <span className="flex items-center gap-1">
+            <BookOpen className="w-3.5 h-3.5" />
+            {totalLessons} lessons
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            {completedLessons}/{totalLessons} completed
+          </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-5">
-          <div className="w-full h-2 rounded-full bg-midnight-800 overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-600"
-            />
-          </div>
+        {/* Progress bar -- slim */}
+        <div className="w-full max-w-sm h-1.5 rounded-full bg-midnight-800 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="h-full rounded-full bg-gold-400"
+          />
         </div>
+        <p className="text-xs text-midnight-500 mt-1.5">{progress}% complete</p>
       </motion.div>
 
-      {/* Modules */}
-      <div className="space-y-3">
+      {/* Modules -- no card wrappers, border-separated */}
+      <div className="border-t border-midnight-800/50">
         {course.modules.map((module, mi) => {
           const isExpanded = expandedModules.has(module.id);
           const moduleCompleted = module.lessons.every(
@@ -249,44 +207,44 @@ export default function CourseDetailPage() {
           return (
             <motion.div
               key={module.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: mi * 0.08, duration: 0.4 }}
-              className="glow-border rounded-xl bg-midnight-900/60 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: mi * 0.05, duration: 0.3 }}
+              className="border-b border-midnight-800/50"
             >
               {/* Module header */}
               <button
                 onClick={() => toggleModule(module.id)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-midnight-800/40 transition-colors"
+                className="w-full flex items-center justify-between py-4 hover:bg-midnight-900/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-display font-bold ${
+                    className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-display font-bold ${
                       moduleCompleted
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-gold-400/10 text-gold-400"
+                        ? "bg-green-500/15 text-green-400"
+                        : "bg-midnight-800 text-midnight-300"
                     }`}
                   >
                     {moduleCompleted ? (
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                     ) : (
                       mi + 1
                     )}
                   </div>
                   <div className="text-left">
-                    <p className="font-display text-sm font-semibold text-midnight-100">
+                    <p className="font-display text-sm font-medium text-midnight-100">
                       {module.title}
                     </p>
                     <p className="text-xs text-midnight-500 font-body">
-                      {moduleProgress}/{module.lessons.length} lessons completed
+                      {moduleProgress}/{module.lessons.length} lessons
                     </p>
                   </div>
                 </div>
                 <motion.div
                   animate={{ rotate: isExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <ChevronDown className="w-5 h-5 text-midnight-400" />
+                  <ChevronDown className="w-4 h-4 text-midnight-400" />
                 </motion.div>
               </button>
 
@@ -297,17 +255,17 @@ export default function CourseDetailPage() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
                     className="overflow-hidden"
                   >
-                    <div className="border-t border-midnight-800 px-5 py-2">
+                    <div className="pl-10 pb-3">
                       {module.lessons.map((lesson) => (
                         <div
                           key={lesson.id}
-                          className={`flex items-center gap-3 py-3 ${
+                          className={`flex items-center gap-3 py-2.5 ${
                             lesson.status === "locked"
-                              ? "opacity-50"
-                              : "cursor-pointer hover:bg-midnight-800/30 -mx-2 px-2 rounded-lg transition-colors"
+                              ? "opacity-40"
+                              : "cursor-pointer hover:opacity-80 transition-opacity"
                           }`}
                         >
                           {statusIcon(lesson.status)}
@@ -315,7 +273,7 @@ export default function CourseDetailPage() {
                             <p
                               className={`text-sm font-body ${
                                 lesson.status === "completed"
-                                  ? "text-midnight-300 line-through"
+                                  ? "text-midnight-400 line-through"
                                   : lesson.status === "available"
                                     ? "text-midnight-100"
                                     : "text-midnight-500"
@@ -324,13 +282,13 @@ export default function CourseDetailPage() {
                               {lesson.title}
                             </p>
                             {lesson.status === "locked" && lesson.dripDays && (
-                              <p className="text-xs text-midnight-600 mt-0.5 flex items-center gap-1">
-                                <Lock className="w-3 h-3" />
+                              <p className="text-[11px] text-midnight-600 mt-0.5 flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" />
                                 Available in {lesson.dripDays} days
                               </p>
                             )}
                           </div>
-                          <span className="text-xs text-midnight-500 font-body flex items-center gap-1 shrink-0">
+                          <span className="text-[11px] text-midnight-500 font-body flex items-center gap-1 shrink-0">
                             <Clock className="w-3 h-3" />
                             {lesson.duration}
                           </span>
@@ -348,14 +306,12 @@ export default function CourseDetailPage() {
       {/* Empty state */}
       {course.modules.length === 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glow-border rounded-xl bg-midnight-900/60 p-12 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="py-16 text-center"
         >
-          <div className="w-16 h-16 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center mb-4">
-            <BookOpen className="w-8 h-8 text-gold-400" />
-          </div>
-          <h3 className="font-display text-lg font-semibold text-midnight-100 mb-2">
+          <BookOpen className="w-8 h-8 text-midnight-500 mx-auto mb-3" />
+          <h3 className="font-display text-lg font-semibold text-midnight-200 mb-1">
             Course Coming Soon
           </h3>
           <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">

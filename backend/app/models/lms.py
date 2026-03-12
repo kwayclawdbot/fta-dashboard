@@ -74,6 +74,7 @@ class Lesson(Base):
     content_body: Mapped[str | None] = mapped_column(sa.Text)
     duration_minutes: Mapped[int | None] = mapped_column(sa.Integer)
     sort_order: Mapped[int] = mapped_column(sa.Integer, default=0)
+    has_quiz: Mapped[bool] = mapped_column(sa.Boolean, default=False)
 
     # Relationships
     module: Mapped[Module] = relationship(back_populates="lessons")
@@ -117,10 +118,14 @@ class LessonProgress(Base):
         sa.String(50), nullable=False, default="not_started"
     )
     progress_pct: Mapped[int] = mapped_column(sa.Integer, default=0)
+    time_spent_minutes: Mapped[int] = mapped_column(sa.Integer, default=0)
     completed_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
     )
+
+    # Relationships
+    lesson: Mapped[Lesson] = relationship()
 
     __table_args__ = (
         sa.UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson"),
@@ -165,3 +170,46 @@ class QuizAttempt(Base):
 
     # Relationships
     quiz: Mapped[Quiz] = relationship(back_populates="attempts")
+
+
+class UserBadge(Base):
+    __tablename__ = "user_badges"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    badge_key: Mapped[str] = mapped_column(sa.String(100), nullable=False)
+    badge_name: Mapped[str] = mapped_column(sa.String(255), nullable=False)
+    badge_description: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    earned_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint("user_id", "badge_key", name="uq_user_badge"),
+    )
+
+
+class LiveSession(Base):
+    __tablename__ = "live_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    title: Mapped[str] = mapped_column(sa.String(500), nullable=False)
+    description: Mapped[str | None] = mapped_column(sa.Text)
+    host_name: Mapped[str] = mapped_column(sa.String(255), nullable=False)
+    scheduled_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    duration_minutes: Mapped[int] = mapped_column(sa.Integer, default=60)
+    join_url: Mapped[str | None] = mapped_column(sa.Text)
+    recording_url: Mapped[str | None] = mapped_column(sa.Text)
+    thumbnail_url: Mapped[str | None] = mapped_column(sa.Text)
+    status: Mapped[str] = mapped_column(
+        sa.String(50), nullable=False, default="scheduled"
+    )  # scheduled, live, completed, cancelled
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
