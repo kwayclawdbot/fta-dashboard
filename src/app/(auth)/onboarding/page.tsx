@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserCircle, GraduationCap, Calendar, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
 
 const STEPS = [
   { label: "Family", icon: Users },
@@ -21,8 +21,6 @@ const slideVariants = {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const supabase = createClient();
-
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -49,40 +47,29 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Create family via backend API (bypasses RLS)
+      await apiFetch("/api/v1/families", {
+        method: "POST",
+        body: JSON.stringify({ name: familyName }),
+      });
 
-      // Create family record
-      const { data: family, error: familyError } = await supabase
-        .from("families")
-        .insert({ name: familyName })
-        .select("id")
-        .single();
+      // Update profile fields via backend API
+      await apiFetch("/api/v1/onboarding/profile", {
+        method: "PUT",
+        body: JSON.stringify({ role, track, age_group: ageGroup }),
+      });
 
-      if (familyError) throw familyError;
-
-      // Update user profile
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          family_id: family.id,
-          role,
-          track,
-          age_group: ageGroup,
-          onboarding_complete: true,
-        });
-
-      if (profileError) throw profileError;
+      // Mark onboarding complete
+      await apiFetch("/api/v1/onboarding/complete", {
+        method: "PUT",
+      });
 
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
       console.error("Onboarding error:", err);
-      const e = err as { message?: string; details?: string; hint?: string };
-      const message = e?.message || e?.details || "Something went wrong";
+      const e = err as { message?: string };
+      const message = e?.message || "Something went wrong";
       setError(message);
       setLoading(false);
     }

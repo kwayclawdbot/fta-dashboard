@@ -22,7 +22,7 @@ router = APIRouter()
 
 class FamilyCreateRequest(BaseModel):
     name: str
-    plan_tier: str = "free"
+    plan_tier: str = "challenge"
 
 
 class FamilyOut(BaseModel):
