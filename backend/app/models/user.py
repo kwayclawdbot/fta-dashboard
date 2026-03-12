@@ -58,3 +58,30 @@ class Profile(Base):
 
     # Relationships
     family: Mapped[Family | None] = relationship(back_populates="members")
+
+
+class FamilyInvite(Base):
+    __tablename__ = "family_invites"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    family_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("families.id", ondelete="CASCADE"), nullable=False
+    )
+    code: Mapped[str] = mapped_column(sa.String(32), unique=True, nullable=False)
+    role: Mapped[str] = mapped_column(sa.String(50), nullable=False, default="child")
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    used_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), sa.ForeignKey("profiles.id", ondelete="SET NULL")
+    )
+    used_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+    # Relationships
+    family: Mapped[Family] = relationship()

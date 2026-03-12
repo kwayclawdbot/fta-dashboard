@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.models.lms import Course, LessonProgress, Module
+from app.models.lms import Course, DripSchedule, Lesson, LessonProgress, Module
 from app.models.user import Profile
 
 router = APIRouter()
@@ -77,6 +77,56 @@ class CourseProgressOut(BaseModel):
     completed: int
     progress_pct: int
     lessons: list[LessonProgressOut]
+
+
+class LessonWithProgressOut(BaseModel):
+    id: UUID
+    slug: str
+    title: str
+    content_type: str
+    duration_minutes: int | None = None
+    sort_order: int
+    unlocked: bool
+    status: str  # not_started, in_progress, completed
+    progress_pct: int
+
+    model_config = {"from_attributes": True}
+
+
+class ModuleWithProgressOut(BaseModel):
+    id: UUID
+    slug: str
+    title: str
+    description: str | None = None
+    sort_order: int
+    lesson_count: int
+    completed_count: int
+    lessons: list[LessonWithProgressOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+# --- Helpers ---
+
+
+def _is_lesson_unlocked(
+    lesson: Lesson,
+    enrolled_at: datetime | None,
+) -> bool:
+    """Check if a lesson is unlocked based on drip schedule."""
+    if lesson.drip_schedule is None:
+        return True
+    if enrolled_at is None:
+        return False
+
+    now = datetime.now(timezone.utc)
+    # Check absolute availability date first
+    if lesson.drip_schedule.available_from is not None:
+        return now >= lesson.drip_schedule.available_from
+
+    # Check days_after_enrollment
+    days_since = (now - enrolled_at).days
+    return days_since >= lesson.drip_schedule.days_after_enrollment
 
 
 # --- Routes ---
@@ -201,3 +251,161 @@ async def get_course_progress(
             for p in progress_records
         ],
     )
+
+
+@router.get("/{slug}/modules", response_model=list[ModuleWithProgressOut])
+async def list_modules(
+    slug: str,
+    current_user: Annotated[Profile, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """List modules with lessons for a course, including lesson counts and completion."""
+    result = await db.execute(
+        select(Course)
+        .options(
+            selectinload(Course.modules)
+            .selectinload(Module.lessons)
+            .selectinload(Lesson.drip_schedule)
+        )
+        .where(Course.slug == slug, Course.published.is_(True))
+    )
+    course = result.scalar_one_or_none()
+
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Get all lesson IDs to fetch progress in bulk
+    all_lesson_ids = [
+        lesson.id
+        for module in course.modules
+        for lesson in module.lessons
+    ]
+
+    progress_map: dict[UUID, LessonProgress] = {}
+    if all_lesson_ids:
+        progress_result = await db.execute(
+            select(LessonProgress).where(
+                LessonProgress.user_id == current_user.id,
+                LessonProgress.lesson_id.in_(all_lesson_ids),
+            )
+        )
+        for p in progress_result.scalars().all():
+            progress_map[p.lesson_id] = p
+
+    enrolled_at = current_user.family.enrolled_at if current_user.family else None
+
+    modules_out = []
+    for module in sorted(course.modules, key=lambda m: m.sort_order):
+        lessons_out = []
+        completed_count = 0
+        for lesson in sorted(module.lessons, key=lambda l: l.sort_order):
+            prog = progress_map.get(lesson.id)
+            lesson_status = prog.status if prog else "not_started"
+            lesson_pct = prog.progress_pct if prog else 0
+            if lesson_status == "completed":
+                completed_count += 1
+
+            unlocked = _is_lesson_unlocked(lesson, enrolled_at)
+
+            lessons_out.append(
+                LessonWithProgressOut(
+                    id=lesson.id,
+                    slug=lesson.slug,
+                    title=lesson.title,
+                    content_type=lesson.content_type,
+                    duration_minutes=lesson.duration_minutes,
+                    sort_order=lesson.sort_order,
+                    unlocked=unlocked,
+                    status=lesson_status,
+                    progress_pct=lesson_pct,
+                )
+            )
+
+        modules_out.append(
+            ModuleWithProgressOut(
+                id=module.id,
+                slug=module.slug,
+                title=module.title,
+                description=module.description,
+                sort_order=module.sort_order,
+                lesson_count=len(module.lessons),
+                completed_count=completed_count,
+                lessons=lessons_out,
+            )
+        )
+
+    return modules_out
+
+
+@router.get("/{slug}/modules/{module_id}/lessons", response_model=list[LessonWithProgressOut])
+async def list_module_lessons(
+    slug: str,
+    module_id: UUID,
+    current_user: Annotated[Profile, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """List lessons in a module with progress and drip unlock status."""
+    # Verify course exists
+    course_result = await db.execute(
+        select(Course).where(Course.slug == slug, Course.published.is_(True))
+    )
+    course = course_result.scalar_one_or_none()
+    if course is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found",
+        )
+
+    # Fetch module with lessons and drip schedules
+    result = await db.execute(
+        select(Module)
+        .options(selectinload(Module.lessons).selectinload(Lesson.drip_schedule))
+        .where(Module.id == module_id, Module.course_id == course.id)
+    )
+    module = result.scalar_one_or_none()
+
+    if module is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module not found",
+        )
+
+    lesson_ids = [lesson.id for lesson in module.lessons]
+    progress_map: dict[UUID, LessonProgress] = {}
+    if lesson_ids:
+        progress_result = await db.execute(
+            select(LessonProgress).where(
+                LessonProgress.user_id == current_user.id,
+                LessonProgress.lesson_id.in_(lesson_ids),
+            )
+        )
+        for p in progress_result.scalars().all():
+            progress_map[p.lesson_id] = p
+
+    enrolled_at = current_user.family.enrolled_at if current_user.family else None
+
+    lessons_out = []
+    for lesson in sorted(module.lessons, key=lambda l: l.sort_order):
+        prog = progress_map.get(lesson.id)
+        lesson_status = prog.status if prog else "not_started"
+        lesson_pct = prog.progress_pct if prog else 0
+        unlocked = _is_lesson_unlocked(lesson, enrolled_at)
+
+        lessons_out.append(
+            LessonWithProgressOut(
+                id=lesson.id,
+                slug=lesson.slug,
+                title=lesson.title,
+                content_type=lesson.content_type,
+                duration_minutes=lesson.duration_minutes,
+                sort_order=lesson.sort_order,
+                unlocked=unlocked,
+                status=lesson_status,
+                progress_pct=lesson_pct,
+            )
+        )
+
+    return lessons_out

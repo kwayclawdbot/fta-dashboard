@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_CHALLENGE_PRICE_ID: str = ""
+    STRIPE_ACADEMY_PRICE_ID: str = ""
+
+    # Frontend
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # Anthropic
     ANTHROPIC_API_KEY: str = ""
