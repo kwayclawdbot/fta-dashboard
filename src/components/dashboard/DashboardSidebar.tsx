@@ -21,11 +21,18 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+interface SubNavItem {
+  label: string;
+  href: string;
+}
+
 interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
   requiresAcademy?: boolean;
+  subItems?: SubNavItem[];
+  parentOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -35,7 +42,17 @@ const navItems: NavItem[] = [
   { label: "AI Coach", href: "/ai-coach", icon: Bot, requiresAcademy: true },
   { label: "Community", href: "/community", icon: MessageCircle },
   { label: "Progress", href: "/progress", icon: Trophy },
-  { label: "Family", href: "/family", icon: Users, requiresAcademy: true },
+  {
+    label: "Family",
+    href: "/family",
+    icon: Users,
+    requiresAcademy: true,
+    subItems: [
+      { label: "Overview", href: "/family/overview" },
+      { label: "Leaderboard", href: "/family/leaderboard" },
+      { label: "Members", href: "/family/members" },
+    ],
+  },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -43,6 +60,7 @@ interface DashboardSidebarProps {
   user: {
     email?: string;
     display_name?: string;
+    role?: string;
   };
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -103,32 +121,62 @@ export default function DashboardSidebar({
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const isParentActive = pathname.startsWith(item.href + "/");
           const Icon = item.icon;
+          const showSubItems =
+            !collapsed &&
+            item.subItems &&
+            user.role === "parent" &&
+            (isActive || isParentActive);
 
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onMobileClose}
-              className={`
-                relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                ${isActive
-                  ? "text-gold-400 bg-gold-400/5"
-                  : "text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800/50"
-                }
-              `}
-            >
-              {isActive && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-400" />
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                onClick={onMobileClose}
+                className={`
+                  relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                  ${isActive || isParentActive
+                    ? "text-gold-400 bg-gold-400/5"
+                    : "text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800/50"
+                  }
+                `}
+              >
+                {(isActive || isParentActive) && (
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-400" />
+                )}
+                <Icon className="w-[18px] h-[18px] shrink-0" />
+                {!collapsed && (
+                  <span className="truncate font-medium">{item.label}</span>
+                )}
+                {!collapsed && item.requiresAcademy && (
+                  <Lock className="w-3 h-3 text-midnight-600 ml-auto shrink-0" />
+                )}
+              </Link>
+              {showSubItems && (
+                <div className="ml-9 mt-0.5 space-y-0.5">
+                  {item.subItems!.map((sub) => {
+                    const subActive = pathname === sub.href;
+                    return (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        onClick={onMobileClose}
+                        className={`
+                          block px-3 py-1.5 rounded-md text-xs transition-colors
+                          ${subActive
+                            ? "text-gold-400"
+                            : "text-midnight-400 hover:text-midnight-200"
+                          }
+                        `}
+                      >
+                        {sub.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-              <Icon className="w-[18px] h-[18px] shrink-0" />
-              {!collapsed && (
-                <span className="truncate font-medium">{item.label}</span>
-              )}
-              {!collapsed && item.requiresAcademy && (
-                <Lock className="w-3 h-3 text-midnight-600 ml-auto shrink-0" />
-              )}
-            </Link>
+            </div>
           );
         })}
       </nav>

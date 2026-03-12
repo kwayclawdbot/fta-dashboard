@@ -13,6 +13,7 @@ import {
   BookOpen,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface FamilyMember {
@@ -34,6 +35,7 @@ interface FamilyData {
 
 export default function FamilyPage() {
   const supabase = createClient();
+  const router = useRouter();
 
   const [family, setFamily] = useState<FamilyData | null>(null);
   const [members, setMembers] = useState<FamilyMember[]>([]);
@@ -42,6 +44,7 @@ export default function FamilyPage() {
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [userRole, setUserRole] = useState("");
 
   const loadFamily = useCallback(async () => {
     const {
@@ -52,9 +55,16 @@ export default function FamilyPage() {
     // Get user's profile to find family_id
     const { data: profile } = await supabase
       .from("profiles")
-      .select("family_id")
+      .select("family_id, role")
       .eq("id", user.id)
       .single();
+
+    if (profile?.role === "parent") {
+      router.replace("/family/overview");
+      return;
+    }
+
+    setUserRole(profile?.role || "");
 
     if (!profile?.family_id) {
       setLoading(false);

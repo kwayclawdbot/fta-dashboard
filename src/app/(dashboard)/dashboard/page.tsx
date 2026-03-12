@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api";
+import MilestoneAlert from "@/components/dashboard/MilestoneAlert";
 
 const stats = [
   { label: "Lessons", value: 0, icon: BookOpen },
@@ -21,11 +23,26 @@ const stats = [
   { label: "Badges", value: 0, icon: Award },
 ];
 
+interface FamilyActivity {
+  member_name: string | null;
+  lesson_title: string;
+  completed_at: string;
+}
+
+interface Milestone {
+  member_name: string | null;
+  achievement: string;
+  timestamp: string;
+}
+
 export default function DashboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [onboardingComplete, setOnboardingComplete] = useState(true);
   const [familyName, setFamilyName] = useState("");
   const [memberCount, setMemberCount] = useState(0);
+  const [isParent, setIsParent] = useState(false);
+  const [familyActivities, setFamilyActivities] = useState<FamilyActivity[]>([]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
@@ -44,12 +61,14 @@ export default function DashboardPage() {
     // Check profile for onboarding status & family
     const { data: profile } = await supabase
       .from("profiles")
-      .select("onboarding_complete, family_id")
+      .select("onboarding_complete, family_id, role")
       .eq("id", user.id)
       .single();
 
     if (profile) {
       setOnboardingComplete(profile.onboarding_complete ?? false);
+      const parentRole = profile.role === "parent";
+      setIsParent(parentRole);
 
       if (profile.family_id) {
         // Get family info
@@ -70,6 +89,24 @@ export default function DashboardPage() {
           .eq("family_id", profile.family_id);
 
         setMemberCount(count || 0);
+
+        // Load family activity + milestones for parents
+        if (parentRole) {
+          try {
+            const [actData, mileData] = await Promise.all([
+              apiFetch<{ activities: FamilyActivity[] }>(
+                "/api/v1/family-dashboard/activity"
+              ),
+              apiFetch<{ milestones: Milestone[] }>(
+                "/api/v1/family-dashboard/milestones"
+              ),
+            ]);
+            setFamilyActivities(actData.activities.slice(0, 3));
+            setMilestones(mileData.milestones.slice(0, 3));
+          } catch {
+            // silent -- parent dashboard data is supplementary
+          }
+        }
       }
     }
   }, []);
@@ -239,6 +276,70 @@ export default function DashboardPage() {
           </Link>
         </div>
       </motion.div>
+
+      {/* Family Activity -- parents only */}
+      {isParent && (milestones.length > 0 || familyActivities.length > 0) && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+          className="border-t border-midnight-800/50 pt-6 mt-10"
+        >
+          {/* Milestone alerts */}
+          {milestones.length > 0 && (
+            <div className="mb-6">
+              {milestones.map((m, i) => (
+                <MilestoneAlert
+                  key={i}
+                  memberName={m.member_name || "Member"}
+                  achievement={m.achievement}
+                  timestamp={m.timestamp}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Recent family activity */}
+          {familyActivities.length > 0 && (
+            <div>
+              <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+                Family Activity
+              </h3>
+              {familyActivities.map((act, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 py-2.5 border-b border-midnight-800/50 last:border-0"
+                >
+                  <p className="text-sm text-midnight-300 font-body flex-1 min-w-0 truncate">
+                    <span className="text-midnight-100">
+                      {act.member_name || "Member"}
+                    </span>{" "}
+                    completed {act.lesson_title}
+                  </p>
+                  <span className="text-xs text-midnight-500 font-body shrink-0">
+                    {(() => {
+                      const diff = Date.now() - new Date(act.completed_at).getTime();
+                      const mins = Math.floor(diff / 60000);
+                      const hours = Math.floor(diff / 3600000);
+                      const days = Math.floor(diff / 86400000);
+                      if (mins < 60) return `${mins}m ago`;
+                      if (hours < 24) return `${hours}h ago`;
+                      return `${days}d ago`;
+                    })()}
+                  </span>
+                </div>
+              ))}
+              <Link
+                href="/family/overview"
+                className="text-sm text-gold-400 hover:text-gold-300 font-medium transition-colors flex items-center gap-1 mt-3"
+              >
+                View all activity
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 }

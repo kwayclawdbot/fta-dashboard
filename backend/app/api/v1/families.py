@@ -296,6 +296,52 @@ async def accept_invite(
     )
 
 
+class RoleUpdateRequest(BaseModel):
+    role: str
+
+
+@router.put("/members/{user_id}/role", response_model=MemberOut)
+async def update_member_role(
+    user_id: UUID,
+    body: RoleUpdateRequest,
+    current_user: Annotated[Profile, Depends(require_role("parent", "admin"))],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Update a family member's role. Parent/admin only."""
+    if current_user.family_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are not part of a family",
+        )
+
+    if body.role not in ("parent", "child", "teen"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Role must be one of: parent, child, teen",
+        )
+
+    result = await db.execute(
+        select(Profile).where(
+            Profile.id == user_id,
+            Profile.family_id == current_user.family_id,
+        )
+    )
+    member = result.scalar_one_or_none()
+
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member not found in your family",
+        )
+
+    member.role = body.role
+    db.add(member)
+    await db.flush()
+    await db.refresh(member)
+
+    return member
+
+
 @router.delete("/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_member(
     user_id: UUID,
