@@ -57,7 +57,7 @@ export default function OnboardingPage() {
       // Create family record
       const { data: family, error: familyError } = await supabase
         .from("families")
-        .insert({ name: familyName, owner_id: user.id })
+        .insert({ name: familyName })
         .select("id")
         .single();
 
