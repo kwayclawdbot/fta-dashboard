@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { apiFetch } from "@/lib/api";
 
 interface FamilyMember {
   id: string;
@@ -60,16 +59,18 @@ export default function FamilyMembersPage() {
 
     setFamilyId(profile.family_id || "");
 
-    try {
-      const data = await apiFetch<FamilyMember[]>(
-        "/api/v1/families/me/members"
-      );
-      setMembers(data);
-    } catch {
-      // silent
-    } finally {
+    if (!profile.family_id) {
       setLoading(false);
+      return;
     }
+
+    const { data: memberData } = await supabase
+      .from("profiles")
+      .select("id, display_name, role, track, age_group, avatar_url, email, onboarding_complete")
+      .eq("family_id", profile.family_id);
+
+    setMembers((memberData as FamilyMember[]) || []);
+    setLoading(false);
   }, [supabase, router]);
 
   useEffect(() => {
@@ -79,17 +80,21 @@ export default function FamilyMembersPage() {
   async function generateInviteLink() {
     if (!familyId) return;
     setGeneratingLink(true);
-    try {
-      const data = await apiFetch<{ url: string }>(
-        "/api/v1/families/invites",
-        { method: "POST", body: JSON.stringify({ role: "child" }) }
-      );
-      setInviteLink(data.url);
-    } catch {
-      // silent
-    } finally {
-      setGeneratingLink(false);
-    }
+
+    const code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    await supabase.from("family_invites").insert({
+      family_id: familyId,
+      code,
+      invited_by: user?.id,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+
+    setInviteLink(`${window.location.origin}/signup/invite/${code}`);
+    setGeneratingLink(false);
   }
 
   async function handleCopy() {
@@ -99,32 +104,24 @@ export default function FamilyMembersPage() {
   }
 
   async function handleRemoveMember(userId: string) {
-    try {
-      await apiFetch(`/api/v1/families/members/${userId}`, {
-        method: "DELETE",
-      });
-      setMembers((prev) => prev.filter((m) => m.id !== userId));
-      setConfirmRemove(null);
-    } catch {
-      // silent
-    }
+    await supabase
+      .from("profiles")
+      .update({ family_id: null })
+      .eq("id", userId);
+    setMembers((prev) => prev.filter((m) => m.id !== userId));
+    setConfirmRemove(null);
   }
 
   async function handleRoleChange(userId: string, newRole: string) {
     setUpdatingRole(userId);
-    try {
-      await apiFetch(`/api/v1/families/members/${userId}/role`, {
-        method: "PUT",
-        body: JSON.stringify({ role: newRole }),
-      });
-      setMembers((prev) =>
-        prev.map((m) => (m.id === userId ? { ...m, role: newRole } : m))
-      );
-    } catch {
-      // silent
-    } finally {
-      setUpdatingRole(null);
-    }
+    await supabase
+      .from("profiles")
+      .update({ role: newRole })
+      .eq("id", userId);
+    setMembers((prev) =>
+      prev.map((m) => (m.id === userId ? { ...m, role: newRole } : m))
+    );
+    setUpdatingRole(null);
   }
 
   if (loading) {

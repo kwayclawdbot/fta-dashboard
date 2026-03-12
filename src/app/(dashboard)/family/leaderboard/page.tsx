@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Crown, Flame, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { apiFetch } from "@/lib/api";
 
 interface LeaderboardEntry {
   rank: number;
@@ -16,19 +15,33 @@ interface LeaderboardEntry {
   current_streak: number;
 }
 
-interface LeaderboardData {
-  period: string;
-  entries: LeaderboardEntry[];
+function calculateStreak(dates: string[]): number {
+  if (dates.length === 0) return 0;
+  const uniqueDays = [...new Set(dates.map((d) => new Date(d).toISOString().slice(0, 10)))].sort().reverse();
+  const today = new Date().toISOString().slice(0, 10);
+  let streak = 0;
+  const startDay = uniqueDays[0] === today ? today : uniqueDays[0];
+  let expected = new Date(startDay);
+  for (const d of uniqueDays) {
+    const current = new Date(d);
+    if (current.toISOString().slice(0, 10) === expected.toISOString().slice(0, 10)) {
+      streak++;
+      expected.setDate(expected.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
 }
 
 export default function FamilyLeaderboardPage() {
   const router = useRouter();
-  const [data, setData] = useState<LeaderboardData | null>(null);
+  const supabase = createClient();
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [period, setPeriod] = useState<"all" | "week">("all");
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -36,7 +49,7 @@ export default function FamilyLeaderboardPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, family_id")
       .eq("id", user.id)
       .single();
 
@@ -45,17 +58,61 @@ export default function FamilyLeaderboardPage() {
       return;
     }
 
-    try {
-      const result = await apiFetch<LeaderboardData>(
-        `/api/v1/family-dashboard/leaderboard?period=${period}`
-      );
-      setData(result);
-    } catch {
-      // silent
-    } finally {
+    if (!profile.family_id) {
       setLoading(false);
+      return;
     }
-  }, [router, period]);
+
+    // Get family members
+    const { data: members } = await supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url")
+      .eq("family_id", profile.family_id);
+
+    if (!members) {
+      setLoading(false);
+      return;
+    }
+
+    const memberIds = members.map((m) => m.id);
+
+    // Get lesson progress
+    let query = supabase
+      .from("lesson_progress")
+      .select("user_id, status, completed_at")
+      .in("user_id", memberIds)
+      .eq("status", "completed");
+
+    if (period === "week") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      query = query.gte("completed_at", weekAgo.toISOString());
+    }
+
+    const { data: progress } = await query;
+    const allProgress = progress || [];
+
+    const leaderboard: LeaderboardEntry[] = members
+      .map((m) => {
+        const memberProgress = allProgress.filter((p) => p.user_id === m.id);
+        const completionDates = memberProgress
+          .filter((p) => p.completed_at)
+          .map((p) => p.completed_at as string);
+        return {
+          rank: 0,
+          id: m.id,
+          display_name: m.display_name,
+          avatar_url: m.avatar_url,
+          lessons_completed: memberProgress.length,
+          current_streak: calculateStreak(completionDates),
+        };
+      })
+      .sort((a, b) => b.lessons_completed - a.lessons_completed)
+      .map((entry, i) => ({ ...entry, rank: i + 1 }));
+
+    setEntries(leaderboard);
+    setLoading(false);
+  }, [supabase, router, period]);
 
   useEffect(() => {
     setLoading(true);
@@ -129,7 +186,7 @@ export default function FamilyLeaderboardPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.3 }}
       >
-        {!data || data.entries.length < 2 ? (
+        {entries.length < 2 ? (
           <div className="py-16 text-center">
             <Users className="w-8 h-8 text-midnight-500 mx-auto mb-3" />
             <p className="font-display text-base font-semibold text-midnight-200 mb-1">
@@ -142,7 +199,7 @@ export default function FamilyLeaderboardPage() {
           </div>
         ) : (
           <div>
-            {data.entries.map((entry) => {
+            {entries.map((entry) => {
               const initials = (entry.display_name || "U")
                 .split(" ")
                 .map((w) => w[0])

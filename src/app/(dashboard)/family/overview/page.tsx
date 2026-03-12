@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { apiFetch } from "@/lib/api";
 
 interface MemberSummary {
   id: string;
@@ -64,24 +63,42 @@ const tierBadge = (tier: string) => {
   return colors[tier] || colors.free;
 };
 
+function calculateStreak(dates: string[]): number {
+  if (dates.length === 0) return 0;
+  const uniqueDays = [...new Set(dates.map((d) => new Date(d).toISOString().slice(0, 10)))].sort().reverse();
+  const today = new Date().toISOString().slice(0, 10);
+  let streak = 0;
+  const startDay = uniqueDays[0] === today ? today : uniqueDays[0];
+  let expected = new Date(startDay);
+  for (const d of uniqueDays) {
+    const current = new Date(d);
+    if (current.toISOString().slice(0, 10) === expected.toISOString().slice(0, 10)) {
+      streak++;
+      expected.setDate(expected.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
 export default function FamilyOverviewPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [overview, setOverview] = useState<FamilyOverview | null>(null);
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadData = useCallback(async () => {
-    const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Check role
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, family_id")
       .eq("id", user.id)
       .single();
 
@@ -90,28 +107,136 @@ export default function FamilyOverviewPage() {
       return;
     }
 
+    if (!profile.family_id) {
+      setError("No family found");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const [overviewData, activityData] = await Promise.all([
-        apiFetch<FamilyOverview>("/api/v1/family-dashboard/overview"),
-        apiFetch<{ activities: ActivityEntry[] }>(
-          "/api/v1/family-dashboard/activity"
-        ),
-      ]);
-      setOverview(overviewData);
-      // Filter to this week
+      // Get family
+      const { data: family } = await supabase
+        .from("families")
+        .select("name, plan_tier")
+        .eq("id", profile.family_id)
+        .single();
+
+      // Get family members
+      const { data: members } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, role")
+        .eq("family_id", profile.family_id);
+
+      if (!family || !members) {
+        setError("Failed to load family data");
+        setLoading(false);
+        return;
+      }
+
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      setActivities(
-        activityData.activities.filter(
-          (a) => new Date(a.completed_at) > weekAgo
-        )
-      );
-    } catch (err) {
+      const memberIds = members.map((m) => m.id);
+
+      // Get lesson progress for all members
+      const { data: progress } = await supabase
+        .from("lesson_progress")
+        .select("user_id, status, completed_at, time_spent_sec")
+        .in("user_id", memberIds);
+
+      // Get badges count per member
+      const { data: badges } = await supabase
+        .from("user_badges")
+        .select("user_id")
+        .in("user_id", memberIds);
+
+      const allProgress = progress || [];
+      const allBadges = badges || [];
+
+      let totalCompleted = 0;
+      let totalSeconds = 0;
+      const streaks: number[] = [];
+      let activeCount = 0;
+
+      const memberSummaries: MemberSummary[] = members.map((m) => {
+        const memberProgress = allProgress.filter((p) => p.user_id === m.id);
+        const completed = memberProgress.filter((p) => p.status === "completed");
+        const completedCount = completed.length;
+        const seconds = memberProgress.reduce((sum, p) => sum + (p.time_spent_sec || 0), 0);
+        const completionDates = completed
+          .filter((p) => p.completed_at)
+          .map((p) => p.completed_at as string);
+        const streak = calculateStreak(completionDates);
+        const lastActive = completionDates.length > 0
+          ? completionDates.sort().reverse()[0]
+          : null;
+        const badgesCount = allBadges.filter((b) => b.user_id === m.id).length;
+
+        totalCompleted += completedCount;
+        totalSeconds += seconds;
+        streaks.push(streak);
+        if (lastActive && new Date(lastActive) > weekAgo) activeCount++;
+
+        return {
+          id: m.id,
+          display_name: m.display_name,
+          avatar_url: m.avatar_url,
+          role: m.role,
+          lessons_completed: completedCount,
+          current_streak: streak,
+          last_active: lastActive,
+          badges_count: badgesCount,
+        };
+      });
+
+      const avgStreak = streaks.length > 0
+        ? Math.round((streaks.reduce((a, b) => a + b, 0) / streaks.length) * 10) / 10
+        : 0;
+
+      setOverview({
+        family_name: family.name,
+        plan_tier: family.plan_tier,
+        total_lessons_completed: totalCompleted,
+        total_hours: Math.round((totalSeconds / 3600) * 10) / 10,
+        average_streak: avgStreak,
+        active_members: activeCount,
+        members: memberSummaries,
+      });
+
+      // Get recent activities
+      const { data: recentProgress } = await supabase
+        .from("lesson_progress")
+        .select("user_id, completed_at, lesson_id")
+        .in("user_id", memberIds)
+        .eq("status", "completed")
+        .not("completed_at", "is", null)
+        .order("completed_at", { ascending: false })
+        .limit(20);
+
+      if (recentProgress && recentProgress.length > 0) {
+        const lessonIds = [...new Set(recentProgress.map((p) => p.lesson_id))];
+        const { data: lessons } = await supabase
+          .from("lessons")
+          .select("id, title")
+          .in("id", lessonIds);
+
+        const lessonMap = new Map((lessons || []).map((l) => [l.id, l.title]));
+        const memberMap = new Map(members.map((m) => [m.id, m.display_name]));
+
+        const acts: ActivityEntry[] = recentProgress
+          .filter((p) => new Date(p.completed_at) > weekAgo)
+          .map((p) => ({
+            member_name: memberMap.get(p.user_id) || null,
+            lesson_title: lessonMap.get(p.lesson_id) || "Unknown",
+            completed_at: p.completed_at,
+          }));
+        setActivities(acts);
+      }
+    } catch {
       setError("Failed to load family data");
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [supabase, router]);
 
   useEffect(() => {
     loadData();
