@@ -80,7 +80,9 @@ export default function OnboardingPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
+      console.error("Onboarding error:", err);
+      const e = err as { message?: string; details?: string; hint?: string };
+      const message = e?.message || e?.details || "Something went wrong";
       setError(message);
       setLoading(false);
     }
