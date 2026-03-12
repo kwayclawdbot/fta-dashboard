@@ -53,7 +53,7 @@ const courses: Course[] = [
 ];
 
 export default function CoursesPage() {
-  const userTier = "challenge";
+  const userTier = "academy";
 
   return (
     <div className="max-w-5xl mx-auto">
