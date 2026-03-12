@@ -80,7 +80,7 @@ export default function FamilyPage() {
     // Get family members
     const { data: memberData } = await supabase
       .from("profiles")
-      .select("id, display_name, role, track, age_group, avatar_url, last_active, lessons_completed")
+      .select("id, display_name, role, track, age_group, avatar_url")
       .eq("family_id", profile.family_id);
 
     if (memberData) {
