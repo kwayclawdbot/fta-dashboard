@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -9,497 +9,334 @@ import {
   Check,
   ChevronRight,
   Clock,
-  Lock,
   Play,
   BookOpen,
+  Bot,
+  StickyNote,
+  List,
+  Bookmark,
+  Share2,
+  ThumbsUp,
 } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import VideoPlayer from "@/components/dashboard/VideoPlayer";
 import QuizPanel from "@/components/dashboard/QuizPanel";
+import AiCoachPanel from "@/components/dashboard/AiCoachPanel";
 
-// --- Placeholder data (same structure as course detail page) ---
-
-interface LessonData {
+interface Lesson {
   id: string;
   title: string;
-  duration: string;
-  status: "completed" | "available" | "locked";
-  description?: string;
-  hasQuiz?: boolean;
+  description: string | null;
+  video_provider: string | null;
+  video_id: string | null;
+  video_duration_sec: number | null;
+  has_quiz: boolean;
+  sort_order: number;
+  module_id: string;
 }
 
-interface ModuleData {
+interface Module {
   id: string;
   title: string;
-  lessons: LessonData[];
+  sort_order: number;
+  lessons: Lesson[];
 }
 
-const COURSE_MODULES: Record<string, ModuleData[]> = {
-  "trading-foundations": [
-    {
-      id: "m1",
-      title: "Module 1: Getting Started",
-      lessons: [
-        {
-          id: "l1",
-          title: "Welcome to Trading",
-          duration: "8 min",
-          status: "completed",
-          description:
-            "An introduction to what trading is, how markets function, and what your journey as a family trader will look like. We cover the mindset shifts needed and set expectations for the program.",
-        },
-        {
-          id: "l2",
-          title: "How Markets Work",
-          duration: "12 min",
-          status: "completed",
-          description:
-            "Understand the mechanics behind stock exchanges, order types, and how prices move. This foundation is essential before placing any trade.",
-          hasQuiz: true,
-        },
-        {
-          id: "l3",
-          title: "Your Trading Account Setup",
-          duration: "10 min",
-          status: "available",
-          description:
-            "Step-by-step walkthrough of setting up your brokerage account, choosing the right platform, and configuring essential settings.",
-        },
-      ],
-    },
-    {
-      id: "m2",
-      title: "Module 2: Chart Reading Basics",
-      lessons: [
-        {
-          id: "l4",
-          title: "Candlestick Patterns",
-          duration: "15 min",
-          status: "available",
-          description:
-            "Learn to read candlestick charts like a pro. We cover the most common patterns and what they signal about market sentiment.",
-          hasQuiz: true,
-        },
-        {
-          id: "l5",
-          title: "Support & Resistance",
-          duration: "14 min",
-          status: "locked",
-          description:
-            "Discover how to identify key price levels where buyers and sellers tend to cluster.",
-        },
-        {
-          id: "l6",
-          title: "Trend Lines & Channels",
-          duration: "12 min",
-          status: "locked",
-          description:
-            "Draw accurate trend lines and understand price channels to better time your entries.",
-        },
-      ],
-    },
-    {
-      id: "m3",
-      title: "Module 3: Risk Management",
-      lessons: [
-        {
-          id: "l7",
-          title: "Position Sizing",
-          duration: "11 min",
-          status: "locked",
-          description: "Calculate the right position size for every trade based on your risk tolerance.",
-        },
-        {
-          id: "l8",
-          title: "Stop Losses & Take Profit",
-          duration: "13 min",
-          status: "locked",
-          description: "Set effective stop losses and take profit levels to protect your capital.",
-        },
-        {
-          id: "l9",
-          title: "Risk-Reward Ratios",
-          duration: "10 min",
-          status: "locked",
-          description: "Understand why risk-reward ratios matter and how to use them to filter trades.",
-          hasQuiz: true,
-        },
-      ],
-    },
-    {
-      id: "m4",
-      title: "Module 4: Your First Trade",
-      lessons: [
-        {
-          id: "l10",
-          title: "Paper Trading Practice",
-          duration: "20 min",
-          status: "locked",
-          description: "Practice trading with simulated money before risking real capital.",
-        },
-        {
-          id: "l11",
-          title: "Building a Trading Plan",
-          duration: "15 min",
-          status: "locked",
-          description: "Create your personalized trading plan with clear rules and guidelines.",
-        },
-        {
-          id: "l12",
-          title: "Going Live Safely",
-          duration: "18 min",
-          status: "locked",
-          description: "Everything you need to know before placing your first real trade.",
-          hasQuiz: true,
-        },
-      ],
-    },
-  ],
-};
+type SideTab = "coach" | "notes" | "lessons";
 
-// Placeholder quiz
 const PLACEHOLDER_QUIZ = [
-  {
-    question: "What does a long green candlestick indicate?",
-    options: [
-      "Strong selling pressure",
-      "Strong buying pressure",
-      "Market indecision",
-      "Low trading volume",
-    ],
-    correctIndex: 1,
-  },
-  {
-    question: "What is the primary purpose of a stop loss?",
-    options: [
-      "To maximize profits",
-      "To limit potential losses",
-      "To increase position size",
-      "To track market trends",
-    ],
-    correctIndex: 1,
-  },
-  {
-    question: "What does 'support level' refer to?",
-    options: [
-      "The highest price a stock has reached",
-      "A price level where buying pressure tends to prevent further decline",
-      "The average price over 200 days",
-      "The price at which most traders sell",
-    ],
-    correctIndex: 1,
-  },
+  { question: "What does a long green candlestick indicate?", options: ["Strong selling pressure", "Strong buying pressure", "Market indecision", "Low volume"], correctIndex: 1 },
+  { question: "What is the primary purpose of a stop loss?", options: ["Maximize profits", "Limit potential losses", "Increase position size", "Track trends"], correctIndex: 1 },
+  { question: "What does 'support level' refer to?", options: ["Highest price reached", "Price where buying prevents decline", "200-day average", "Price where most sell"], correctIndex: 1 },
 ];
+
+function formatDuration(sec: number | null) {
+  if (!sec) return "";
+  const m = Math.round(sec / 60);
+  return `${m} min`;
+}
 
 export default function LessonViewerPage() {
   const params = useParams();
   const slug = params.slug as string;
   const moduleId = params.moduleId as string;
   const lessonId = params.lessonId as string;
+  const supabase = createClient();
 
-  const modules = COURSE_MODULES[slug] || [];
+  const [modules, setModules] = useState<Module[]>([]);
+  const [courseTitle, setCourseTitle] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [sideTab, setSideTab] = useState<SideTab>("coach");
+  const [notes, setNotes] = useState("");
+
+  const loadData = useCallback(async () => {
+    const { data: course } = await supabase
+      .from("courses")
+      .select("id, title")
+      .eq("slug", slug)
+      .single();
+
+    if (!course) { setLoading(false); return; }
+    setCourseTitle(course.title);
+
+    const { data: mods } = await supabase
+      .from("modules")
+      .select("id, title, sort_order")
+      .eq("course_id", course.id)
+      .order("sort_order");
+
+    if (!mods) { setLoading(false); return; }
+
+    const modulesWithLessons: Module[] = [];
+    for (const mod of mods) {
+      const { data: lessons } = await supabase
+        .from("lessons")
+        .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id")
+        .eq("module_id", mod.id)
+        .order("sort_order");
+      modulesWithLessons.push({ ...mod, lessons: lessons || [] });
+    }
+    setModules(modulesWithLessons);
+
+    // Check progress
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: progress } = await supabase
+        .from("lesson_progress")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("lesson_id", lessonId)
+        .single();
+      if (progress?.status === "completed") setIsCompleted(true);
+    }
+
+    setLoading(false);
+  }, [supabase, slug, lessonId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
   const currentModule = modules.find((m) => m.id === moduleId);
   const currentLesson = currentModule?.lessons.find((l) => l.id === lessonId);
-
-  const [isCompleted, setIsCompleted] = useState(
-    currentLesson?.status === "completed"
-  );
-  const [showQuiz, setShowQuiz] = useState(false);
-
-  // Find prev/next lessons across modules
-  const allLessons = modules.flatMap((m) =>
-    m.lessons.map((l) => ({ ...l, moduleId: m.id }))
-  );
+  const allLessons = modules.flatMap((m) => m.lessons.map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title })));
   const currentIdx = allLessons.findIndex((l) => l.id === lessonId);
   const prevLesson = currentIdx > 0 ? allLessons[currentIdx - 1] : null;
-  const nextLesson =
-    currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
+  const nextLesson = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
 
-  const handleVideoProgress = useCallback((pct: number) => {
-    // Will be used with real video player
-  }, []);
-
-  function handleMarkComplete() {
+  async function handleMarkComplete() {
     setIsCompleted(true);
-    // TODO: call API - apiFetch(`/api/v1/progress/${lessonId}/complete`, { method: 'POST' })
-    if (currentLesson?.hasQuiz) {
-      setShowQuiz(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("lesson_progress").upsert({
+        user_id: user.id,
+        lesson_id: lessonId,
+        status: "completed",
+        progress_pct: 100,
+        completed_at: new Date().toISOString(),
+      }, { onConflict: "user_id,lesson_id" });
     }
+    if (currentLesson?.has_quiz) setShowQuiz(true);
   }
 
-  function handleQuizComplete(score: number, passed: boolean) {
-    // TODO: call API - apiFetch(`/api/v1/quizzes/${lessonId}/submit`, ...)
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (!currentModule || !currentLesson) {
     return (
       <div className="max-w-4xl mx-auto py-12 text-center">
-        <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-          Lesson Not Found
-        </h2>
-        <p className="text-midnight-400 text-sm font-body mb-6">
-          This lesson doesn&apos;t exist or is not available yet.
-        </p>
-        <Link
-          href={`/courses/${slug}`}
-          className="text-gold-400 text-sm font-body hover:underline"
-        >
-          Back to course
-        </Link>
+        <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">Lesson Not Found</h2>
+        <Link href={`/courses/${slug}`} className="text-gold-400 text-sm font-body hover:underline">Back to course</Link>
       </div>
     );
   }
 
+  const sideTabs: { id: SideTab; label: string; icon: typeof Bot }[] = [
+    { id: "coach", label: "AI Coach", icon: Bot },
+    { id: "notes", label: "Notes", icon: StickyNote },
+    { id: "lessons", label: "Lessons", icon: List },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       {/* Breadcrumb */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="mb-4"
-      >
-        <Link
-          href={`/courses/${slug}`}
-          className="inline-flex items-center gap-1.5 text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-body"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to course
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
+        <Link href={`/courses/${slug}`} className="hover:text-midnight-300 transition-colors flex items-center gap-1">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          {courseTitle}
         </Link>
+        <ChevronRight className="w-3 h-3" />
+        <span className="text-midnight-400">{currentModule.title}</span>
       </motion.div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main content - video + info */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="flex-1 lg:w-[65%] min-w-0"
-        >
-          {/* Lesson title */}
-          <h1 className="font-display text-xl font-bold text-midnight-100 mb-3">
-            {currentLesson.title}
-          </h1>
+      <div className="flex flex-col lg:flex-row gap-0">
+        {/* Main — video + info */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex-1 min-w-0">
+          {/* Title */}
+          <h1 className="font-display text-lg font-bold text-midnight-100 mb-3">{currentLesson.title}</h1>
 
           {/* Video */}
           <VideoPlayer
-            provider="placeholder"
+            provider={currentLesson.video_provider === "youtube" ? "youtube" : "placeholder"}
+            videoId={currentLesson.video_id || undefined}
             title={currentLesson.title}
-            onProgress={handleVideoProgress}
           />
 
-          {/* Lesson info */}
-          <div className="mt-6">
-            {/* Description */}
-            {currentLesson.description && (
-              <p className="text-sm text-midnight-300 font-body leading-relaxed mb-6">
-                {currentLesson.description}
-              </p>
-            )}
-
-            {/* Meta row */}
-            <div className="flex items-center gap-4 text-xs text-midnight-500 font-body mb-6">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {currentLesson.duration}
-              </span>
-              {currentLesson.hasQuiz && (
-                <span className="flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Includes quiz
-                </span>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 pb-6 border-b border-midnight-800">
+          {/* Below video bar */}
+          <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
               {!isCompleted ? (
-                <button
-                  onClick={handleMarkComplete}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors"
-                >
+                <button onClick={handleMarkComplete} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors">
                   <Check className="w-4 h-4" />
-                  Mark as Complete
+                  Mark Complete
                 </button>
               ) : (
-                <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-body">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-body">
                   <Check className="w-4 h-4" />
                   Completed
                 </div>
               )}
-
-              {/* Navigation */}
-              <div className="flex items-center gap-2 ml-auto">
-                {prevLesson && prevLesson.status !== "locked" && (
-                  <Link
-                    href={`/courses/${slug}/${prevLesson.moduleId}/${prevLesson.id}`}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800 transition-colors font-body"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Previous
-                  </Link>
-                )}
-                {nextLesson && nextLesson.status !== "locked" && (
-                  <Link
-                    href={`/courses/${slug}/${nextLesson.moduleId}/${nextLesson.id}`}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800 transition-colors font-body"
-                  >
-                    Next
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
+              {currentLesson.video_duration_sec && (
+                <span className="flex items-center gap-1 text-xs text-midnight-500 font-body">
+                  <Clock className="w-3.5 h-3.5" />
+                  {formatDuration(currentLesson.video_duration_sec)}
+                </span>
+              )}
             </div>
 
-            {/* Quiz section */}
-            {currentLesson.hasQuiz && isCompleted && showQuiz && (
-              <div className="mt-6">
-                <h3 className="font-display text-lg font-semibold text-midnight-100 mb-1">
-                  Lesson Quiz
-                </h3>
-                <p className="text-xs text-midnight-500 font-body mb-4">
-                  Test your understanding of this lesson
-                </p>
-                <div className="border-t border-midnight-800">
-                  <QuizPanel
-                    questions={PLACEHOLDER_QUIZ}
-                    onComplete={handleQuizComplete}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Show quiz prompt if completed but quiz not started */}
-            {currentLesson.hasQuiz && isCompleted && !showQuiz && (
-              <div className="mt-6 py-5">
-                <button
-                  onClick={() => setShowQuiz(true)}
-                  className="flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors font-body"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Take the lesson quiz
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-1">
+              <button className="p-2 rounded-lg text-midnight-500 hover:text-midnight-300 hover:bg-midnight-800 transition-colors"><ThumbsUp className="w-4 h-4" /></button>
+              <button className="p-2 rounded-lg text-midnight-500 hover:text-midnight-300 hover:bg-midnight-800 transition-colors"><Bookmark className="w-4 h-4" /></button>
+              <button className="p-2 rounded-lg text-midnight-500 hover:text-midnight-300 hover:bg-midnight-800 transition-colors"><Share2 className="w-4 h-4" /></button>
+            </div>
           </div>
+
+          {/* Description */}
+          {currentLesson.description && (
+            <p className="mt-4 text-sm text-midnight-400 font-body leading-relaxed border-t border-midnight-800 pt-4">
+              {currentLesson.description}
+            </p>
+          )}
+
+          {/* Navigation */}
+          <div className="mt-4 pt-4 border-t border-midnight-800 flex items-center justify-between">
+            {prevLesson ? (
+              <Link href={`/courses/${slug}/${prevLesson.moduleId}/${prevLesson.id}`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800/50 transition-colors font-body">
+                <ArrowLeft className="w-4 h-4" />
+                Previous
+              </Link>
+            ) : <div />}
+            {nextLesson ? (
+              <Link href={`/courses/${slug}/${nextLesson.moduleId}/${nextLesson.id}`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800/50 transition-colors font-body">
+                Next
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : <div />}
+          </div>
+
+          {/* Quiz */}
+          {currentLesson.has_quiz && isCompleted && showQuiz && (
+            <div className="mt-6 border-t border-midnight-800 pt-6">
+              <h3 className="font-display text-base font-semibold text-midnight-100 mb-1">Lesson Quiz</h3>
+              <p className="text-xs text-midnight-500 font-body mb-4">Test your understanding</p>
+              <QuizPanel questions={PLACEHOLDER_QUIZ} onComplete={() => {}} />
+            </div>
+          )}
+          {currentLesson.has_quiz && isCompleted && !showQuiz && (
+            <div className="mt-4">
+              <button onClick={() => setShowQuiz(true)} className="flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors font-body">
+                <BookOpen className="w-4 h-4" />
+                Take the lesson quiz
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </motion.div>
 
-        {/* Sidebar - lesson list */}
+        {/* Side Panel */}
         <motion.aside
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="lg:w-[35%] shrink-0"
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="lg:w-[380px] xl:w-[420px] shrink-0 lg:ml-4 mt-6 lg:mt-0"
         >
-          <div className="lg:sticky lg:top-6">
-            <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">
-              {currentModule.title}
-            </h3>
-
-            <div className="border border-midnight-800 rounded-lg overflow-hidden">
-              {currentModule.lessons.map((lesson, i) => {
-                const isActive = lesson.id === lessonId;
-                const isLocked = lesson.status === "locked";
-
-                return (
-                  <div key={lesson.id}>
-                    {i > 0 && <div className="border-t border-midnight-800" />}
-                    {isLocked ? (
-                      <div className="flex items-center gap-3 px-4 py-3 opacity-40">
-                        <div className="w-6 h-6 rounded-full bg-midnight-800 flex items-center justify-center shrink-0">
-                          <Lock className="w-3 h-3 text-midnight-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-midnight-500 font-body truncate">
-                            {lesson.title}
-                          </p>
-                        </div>
-                        <span className="text-xs text-midnight-600 font-body shrink-0">
-                          {lesson.duration}
-                        </span>
-                      </div>
-                    ) : (
-                      <Link
-                        href={`/courses/${slug}/${moduleId}/${lesson.id}`}
-                        className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                          isActive
-                            ? "bg-gold-400/5 border-l-2 border-l-gold-400"
-                            : "hover:bg-midnight-800/40"
-                        }`}
-                      >
-                        <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                            lesson.status === "completed"
-                              ? "bg-green-500/20"
-                              : isActive
-                                ? "bg-gold-400/20"
-                                : "bg-midnight-800"
-                          }`}
-                        >
-                          {lesson.status === "completed" ? (
-                            <Check className="w-3 h-3 text-green-400" />
-                          ) : isActive ? (
-                            <Play className="w-3 h-3 text-gold-400" />
-                          ) : (
-                            <Play className="w-3 h-3 text-midnight-500" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm font-body truncate ${
-                              isActive
-                                ? "text-gold-400 font-medium"
-                                : lesson.status === "completed"
-                                  ? "text-midnight-400"
-                                  : "text-midnight-200"
-                            }`}
-                          >
-                            {lesson.title}
-                          </p>
-                        </div>
-                        <span className="text-xs text-midnight-500 font-body shrink-0">
-                          {lesson.duration}
-                        </span>
-                      </Link>
-                    )}
-                  </div>
-                );
-              })}
+          <div className="lg:sticky lg:top-4 border border-midnight-800 rounded-lg overflow-hidden bg-midnight-900/30 flex flex-col" style={{ height: "calc(100vh - 120px)" }}>
+            {/* Tabs */}
+            <div className="flex border-b border-midnight-800 shrink-0">
+              {sideTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSideTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-body transition-colors ${
+                    sideTab === tab.id
+                      ? "text-gold-400 border-b-2 border-gold-400 bg-gold-400/5"
+                      : "text-midnight-500 hover:text-midnight-300"
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {/* Other modules */}
-            <div className="mt-6">
-              <h4 className="text-xs text-midnight-500 font-body uppercase tracking-wider mb-2">
-                Other Modules
-              </h4>
-              <div className="space-y-1">
-                {modules
-                  .filter((m) => m.id !== moduleId)
-                  .map((m) => {
-                    const firstAvailable = m.lessons.find(
-                      (l) => l.status !== "locked"
-                    );
-                    return (
-                      <div key={m.id}>
-                        {firstAvailable ? (
-                          <Link
-                            href={`/courses/${slug}/${m.id}/${firstAvailable.id}`}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800/40 transition-colors font-body"
-                          >
-                            <ChevronRight className="w-3.5 h-3.5" />
-                            <span className="truncate">{m.title}</span>
-                          </Link>
-                        ) : (
-                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-midnight-600 font-body opacity-50">
-                            <Lock className="w-3.5 h-3.5" />
-                            <span className="truncate">{m.title}</span>
-                          </div>
-                        )}
+            {/* Tab content */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {sideTab === "coach" && (
+                <AiCoachPanel lessonTitle={currentLesson.title} courseTitle={courseTitle} />
+              )}
+
+              {sideTab === "notes" && (
+                <div className="p-4 h-full flex flex-col">
+                  <p className="text-xs text-midnight-500 font-body mb-2">Personal notes for this lesson</p>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Type your notes here..."
+                    className="flex-1 w-full bg-midnight-800/50 border border-midnight-700 rounded-lg p-3 text-sm text-midnight-200 placeholder:text-midnight-600 font-body resize-none focus:outline-none focus:border-gold-400/40"
+                  />
+                  <p className="text-[10px] text-midnight-600 mt-2 font-body">Notes are saved locally in this session</p>
+                </div>
+              )}
+
+              {sideTab === "lessons" && (
+                <div className="overflow-y-auto h-full">
+                  {modules.map((mod) => (
+                    <div key={mod.id}>
+                      <div className="px-4 py-2 bg-midnight-900/80 border-b border-midnight-800">
+                        <p className="text-xs font-display font-semibold text-midnight-400 uppercase tracking-wider">{mod.title}</p>
                       </div>
-                    );
-                  })}
-              </div>
+                      {mod.lessons.map((lesson) => {
+                        const isActive = lesson.id === lessonId;
+                        return (
+                          <Link
+                            key={lesson.id}
+                            href={`/courses/${slug}/${mod.id}/${lesson.id}`}
+                            className={`flex items-center gap-3 px-4 py-2.5 border-b border-midnight-800/50 transition-colors ${
+                              isActive ? "bg-gold-400/5 border-l-2 border-l-gold-400" : "hover:bg-midnight-800/30"
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-gold-400/20" : "bg-midnight-800"}`}>
+                              {isActive ? <Play className="w-2.5 h-2.5 text-gold-400" /> : <Play className="w-2.5 h-2.5 text-midnight-500" />}
+                            </div>
+                            <span className={`text-xs font-body truncate flex-1 ${isActive ? "text-gold-400 font-medium" : "text-midnight-300"}`}>
+                              {lesson.title}
+                            </span>
+                            <span className="text-[10px] text-midnight-600 font-body shrink-0">
+                              {formatDuration(lesson.video_duration_sec)}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </motion.aside>
