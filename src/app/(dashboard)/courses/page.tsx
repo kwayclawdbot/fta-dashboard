@@ -15,45 +15,44 @@ interface Course {
 
 const courses: Course[] = [
   {
-    id: "trading-foundations",
-    title: "Trading Foundations",
+    id: "stocks-options",
+    title: "Stocks & Options Mastery",
     description:
-      "Master the basics of market structure, chart reading, and risk management. The essential starting point for every family trader.",
-    lessons: 12,
+      "Master the foundations of stock trading and options strategies. The essential starting point for every family trader.",
+    lessons: 9,
     tier: "challenge",
-    progress: 0,
+    progress: 22,
   },
   {
-    id: "options-mastery",
-    title: "Options Mastery",
+    id: "forex",
+    title: "Forex Trading",
     description:
-      "Learn to trade options with confidence. Calls, puts, spreads, and income strategies for consistent family wealth building.",
-    lessons: 18,
+      "Navigate the global currency markets with confidence. Currency pairs, pips, and macro analysis for diversified family portfolios.",
+    lessons: 5,
     tier: "academy",
     progress: 0,
   },
   {
-    id: "forex-fundamentals",
-    title: "Forex & Futures",
+    id: "futures",
+    title: "Futures & Commodities",
     description:
-      "Explore the world's largest market. Currency pairs, futures contracts, and macro analysis for diversified family portfolios.",
-    lessons: 15,
+      "Trade futures contracts across commodities and indices. Margin, leverage, and contract specifications.",
+    lessons: 3,
     tier: "academy",
     progress: 0,
   },
   {
-    id: "crypto-wealth",
-    title: "Crypto Wealth Building",
+    id: "crypto",
+    title: "Crypto & Digital Assets",
     description:
-      "Navigate digital assets safely. Bitcoin, Ethereum, DeFi, and long-term crypto strategies for generational wealth.",
-    lessons: 10,
+      "Understand blockchain technology and crypto trading strategies for generational wealth.",
+    lessons: 3,
     tier: "academy",
     progress: 0,
   },
 ];
 
 export default function CoursesPage() {
-  // Placeholder: challenge tier user (would come from user data)
   const userTier = "challenge";
 
   return (
@@ -72,7 +71,7 @@ export default function CoursesPage() {
         </p>
       </motion.div>
 
-      {/* Featured course -- full width */}
+      {/* Featured course */}
       {(() => {
         const featured = courses[0];
         const isLocked = featured.tier === "academy" && userTier === "challenge";
@@ -121,7 +120,6 @@ export default function CoursesPage() {
                   <p className="text-sm text-midnight-400 font-body mb-3">
                     {featured.description}
                   </p>
-                  {/* Thin progress bar */}
                   <div className="w-full max-w-xs h-1 rounded-full bg-midnight-800 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gold-400"
@@ -139,7 +137,7 @@ export default function CoursesPage() {
         );
       })()}
 
-      {/* Remaining courses -- grid */}
+      {/* Remaining courses */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {courses.slice(1).map((course, i) => {
           const isLocked = course.tier === "academy" && userTier === "challenge";

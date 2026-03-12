@@ -51,6 +51,139 @@ const PLACEHOLDER_QUIZ = [
   { question: "What does 'support level' refer to?", options: ["Highest price reached", "Price where buying prevents decline", "200-day average", "Price where most sell"], correctIndex: 1 },
 ];
 
+// ── Mock data for when Supabase has no match ──
+interface MockLesson {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  durationSec: number;
+}
+interface MockModule {
+  id: string;
+  title: string;
+  lessons: MockLesson[];
+}
+interface MockCourse {
+  title: string;
+  modules: MockModule[];
+}
+
+const MOCK_COURSES: Record<string, MockCourse> = {
+  "stocks-options": {
+    title: "Stocks & Options Mastery",
+    modules: [
+      {
+        id: "m1", title: "Module 1: Getting Started", lessons: [
+          { id: "l1", title: "What is the Stock Market?", description: "Learn the fundamentals of how stock markets operate, including exchanges, market makers, and how prices are determined through supply and demand.", duration: "8 min", durationSec: 480 },
+          { id: "l2", title: "How Markets Work", description: "Understand market mechanics — order types, bid-ask spreads, market hours, and the role of different participants.", duration: "12 min", durationSec: 720 },
+          { id: "l3", title: "Your Trading Account Setup", description: "Step-by-step guide to setting up your first brokerage account, understanding account types, and making your first deposit.", duration: "10 min", durationSec: 600 },
+        ],
+      },
+      {
+        id: "m2", title: "Module 2: Chart Reading Basics", lessons: [
+          { id: "l4", title: "Candlestick Patterns", description: "Master the most important candlestick patterns — doji, hammer, engulfing — and what they tell you about market sentiment.", duration: "15 min", durationSec: 900 },
+          { id: "l5", title: "Support & Resistance", description: "Identify key price levels where buying and selling pressure converge. Learn to draw and validate support/resistance zones.", duration: "14 min", durationSec: 840 },
+          { id: "l6", title: "Trend Lines & Channels", description: "Draw accurate trend lines, identify channels, and use them to time entries and exits.", duration: "12 min", durationSec: 720 },
+        ],
+      },
+      {
+        id: "m3", title: "Module 3: Options Fundamentals", lessons: [
+          { id: "l7", title: "What Are Options?", description: "Introduction to options contracts — calls, puts, strike prices, expiration, and how options derive their value.", duration: "11 min", durationSec: 660 },
+          { id: "l8", title: "Calls vs Puts", description: "Deep dive into buying calls and puts, when to use each, and how to calculate breakeven and max risk.", duration: "13 min", durationSec: 780 },
+          { id: "l9", title: "Risk-Reward Ratios", description: "Calculate risk-reward on every trade. Learn the golden ratios that professional traders use to stay profitable.", duration: "10 min", durationSec: 600 },
+        ],
+      },
+    ],
+  },
+  "trading-foundations": {
+    title: "Trading Foundations",
+    modules: [
+      {
+        id: "m1", title: "Module 1: Getting Started", lessons: [
+          { id: "l1", title: "Welcome to Trading", description: "An introduction to the world of trading and what you'll learn in this course.", duration: "8 min", durationSec: 480 },
+          { id: "l2", title: "How Markets Work", description: "Understand market mechanics — order types, bid-ask spreads, and market hours.", duration: "12 min", durationSec: 720 },
+          { id: "l3", title: "Your Trading Account Setup", description: "Step-by-step guide to setting up your first brokerage account.", duration: "10 min", durationSec: 600 },
+        ],
+      },
+      {
+        id: "m2", title: "Module 2: Chart Reading Basics", lessons: [
+          { id: "l4", title: "Candlestick Patterns", description: "Master the most important candlestick patterns and what they tell you about market sentiment.", duration: "15 min", durationSec: 900 },
+          { id: "l5", title: "Support & Resistance", description: "Identify key price levels where buying and selling pressure converge.", duration: "14 min", durationSec: 840 },
+          { id: "l6", title: "Trend Lines & Channels", description: "Draw accurate trend lines, identify channels, and use them to time entries.", duration: "12 min", durationSec: 720 },
+        ],
+      },
+    ],
+  },
+  "forex": {
+    title: "Forex Trading",
+    modules: [
+      {
+        id: "m1", title: "Module 1: Forex Fundamentals", lessons: [
+          { id: "l1", title: "What is Forex?", description: "Introduction to the foreign exchange market — the largest financial market in the world.", duration: "8 min", durationSec: 480 },
+          { id: "l2", title: "Major Currency Pairs", description: "Learn about EUR/USD, GBP/USD, USD/JPY and other major pairs you'll be trading.", duration: "10 min", durationSec: 600 },
+          { id: "l3", title: "Understanding Pips & Lots", description: "Master the units of measurement in forex — pips, lots, and how to calculate position sizes.", duration: "12 min", durationSec: 720 },
+        ],
+      },
+      {
+        id: "m2", title: "Module 2: Trading Sessions", lessons: [
+          { id: "l4", title: "Session Trading", description: "Understand the London, New York, and Asian sessions and when each pair is most volatile.", duration: "14 min", durationSec: 840 },
+          { id: "l5", title: "Fundamental Analysis", description: "Read economic calendars, understand interest rate decisions, and trade the news.", duration: "16 min", durationSec: 960 },
+        ],
+      },
+    ],
+  },
+  "futures": {
+    title: "Futures & Commodities",
+    modules: [
+      {
+        id: "m1", title: "Module 1: Futures 101", lessons: [
+          { id: "l1", title: "What Are Futures?", description: "Introduction to futures contracts, margin, and how they differ from stocks.", duration: "10 min", durationSec: 600 },
+          { id: "l2", title: "Contract Specifications", description: "Understand tick values, contract sizes, and expiration cycles for popular futures.", duration: "12 min", durationSec: 720 },
+          { id: "l3", title: "Margin & Leverage", description: "Learn how margin works in futures, initial vs maintenance margin, and managing leverage.", duration: "14 min", durationSec: 840 },
+        ],
+      },
+    ],
+  },
+  "crypto": {
+    title: "Crypto & Digital Assets",
+    modules: [
+      {
+        id: "m1", title: "Module 1: Crypto Basics", lessons: [
+          { id: "l1", title: "What is Blockchain?", description: "Understand the technology behind cryptocurrencies — blocks, chains, and decentralization.", duration: "10 min", durationSec: 600 },
+          { id: "l2", title: "Bitcoin & Ethereum", description: "Deep dive into the two largest cryptocurrencies and what makes each unique.", duration: "12 min", durationSec: 720 },
+          { id: "l3", title: "Wallets & Security", description: "Set up your first crypto wallet, understand seed phrases, and keep your assets safe.", duration: "11 min", durationSec: 660 },
+        ],
+      },
+    ],
+  },
+};
+
+function mockToModules(slug: string, moduleId: string, lessonId: string): { courseTitle: string; modules: Module[]; found: boolean } {
+  const mock = MOCK_COURSES[slug];
+  if (!mock) return { courseTitle: "", modules: [], found: false };
+
+  const modules: Module[] = mock.modules.map((m, mi) => ({
+    id: m.id,
+    title: m.title,
+    sort_order: mi,
+    lessons: m.lessons.map((l, li) => ({
+      id: l.id,
+      title: l.title,
+      description: l.description,
+      video_provider: null,
+      video_id: null,
+      video_duration_sec: l.durationSec,
+      has_quiz: li === m.lessons.length - 1,
+      sort_order: li,
+      module_id: m.id,
+    })),
+  }));
+
+  const hasMatch = modules.some((m) => m.id === moduleId && m.lessons.some((l) => l.id === lessonId));
+  return { courseTitle: mock.title, modules, found: hasMatch };
+}
+
 function formatDuration(sec: number | null) {
   if (!sec) return "";
   const m = Math.round(sec / 60);
@@ -71,50 +204,72 @@ export default function LessonViewerPage() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [sideTab, setSideTab] = useState<SideTab>("coach");
   const [notes, setNotes] = useState("");
+  const [isMock, setIsMock] = useState(false);
 
   const loadData = useCallback(async () => {
+    // Try Supabase first
     const { data: course } = await supabase
       .from("courses")
       .select("id, title")
       .eq("slug", slug)
       .single();
 
-    if (!course) { setLoading(false); return; }
-    setCourseTitle(course.title);
+    if (course) {
+      setCourseTitle(course.title);
 
-    const { data: mods } = await supabase
-      .from("modules")
-      .select("id, title, sort_order")
-      .eq("course_id", course.id)
-      .order("sort_order");
-
-    if (!mods) { setLoading(false); return; }
-
-    const modulesWithLessons: Module[] = [];
-    for (const mod of mods) {
-      const { data: lessons } = await supabase
-        .from("lessons")
-        .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id")
-        .eq("module_id", mod.id)
+      const { data: mods } = await supabase
+        .from("modules")
+        .select("id, title, sort_order")
+        .eq("course_id", course.id)
         .order("sort_order");
-      modulesWithLessons.push({ ...mod, lessons: lessons || [] });
-    }
-    setModules(modulesWithLessons);
 
-    // Check progress
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: progress } = await supabase
-        .from("lesson_progress")
-        .select("status")
-        .eq("user_id", user.id)
-        .eq("lesson_id", lessonId)
-        .single();
-      if (progress?.status === "completed") setIsCompleted(true);
+      if (mods && mods.length > 0) {
+        const modulesWithLessons: Module[] = [];
+        for (const mod of mods) {
+          const { data: lessons } = await supabase
+            .from("lessons")
+            .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id")
+            .eq("module_id", mod.id)
+            .order("sort_order");
+          modulesWithLessons.push({ ...mod, lessons: lessons || [] });
+        }
+
+        // Check if the requested lesson actually exists in DB results
+        const dbHasLesson = modulesWithLessons.some(
+          (m) => m.id === moduleId && m.lessons.some((l) => l.id === lessonId)
+        );
+
+        if (dbHasLesson) {
+          setModules(modulesWithLessons);
+
+          // Check progress
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: progress } = await supabase
+              .from("lesson_progress")
+              .select("status")
+              .eq("user_id", user.id)
+              .eq("lesson_id", lessonId)
+              .single();
+            if (progress?.status === "completed") setIsCompleted(true);
+          }
+
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
+    // Fallback to mock data
+    const mock = mockToModules(slug, moduleId, lessonId);
+    if (mock.found) {
+      setCourseTitle(mock.courseTitle);
+      setModules(mock.modules);
+      setIsMock(true);
     }
 
     setLoading(false);
-  }, [supabase, slug, lessonId]);
+  }, [supabase, slug, moduleId, lessonId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -127,15 +282,17 @@ export default function LessonViewerPage() {
 
   async function handleMarkComplete() {
     setIsCompleted(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("lesson_progress").upsert({
-        user_id: user.id,
-        lesson_id: lessonId,
-        status: "completed",
-        progress_pct: 100,
-        completed_at: new Date().toISOString(),
-      }, { onConflict: "user_id,lesson_id" });
+    if (!isMock) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from("lesson_progress").upsert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          status: "completed",
+          progress_pct: 100,
+          completed_at: new Date().toISOString(),
+        }, { onConflict: "user_id,lesson_id" });
+      }
     }
     if (currentLesson?.has_quiz) setShowQuiz(true);
   }
@@ -183,7 +340,7 @@ export default function LessonViewerPage() {
 
           {/* Video */}
           <VideoPlayer
-            provider={currentLesson.video_provider === "youtube" ? "youtube" : "placeholder"}
+            provider={(currentLesson.video_provider as "youtube" | "mux" | "bunny") || "placeholder"}
             videoId={currentLesson.video_id || undefined}
             title={currentLesson.title}
           />
