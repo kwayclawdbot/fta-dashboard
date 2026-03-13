@@ -1,59 +1,122 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Lock, BookOpen } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 interface Course {
   id: string;
+  slug: string;
   title: string;
-  description: string;
-  lessons: number;
-  tier: "challenge" | "academy";
+  description: string | null;
+  min_tier: string | null;
+  sort_order: number;
+  lessonCount: number;
   progress: number;
 }
 
-const courses: Course[] = [
-  {
-    id: "stocks-options",
-    title: "Stocks & Options Mastery",
-    description:
-      "Master the foundations of stock trading and options strategies. The essential starting point for every family trader.",
-    lessons: 9,
-    tier: "challenge",
-    progress: 22,
-  },
-  {
-    id: "forex",
-    title: "Forex Trading",
-    description:
-      "Navigate the global currency markets with confidence. Currency pairs, pips, and macro analysis for diversified family portfolios.",
-    lessons: 5,
-    tier: "academy",
-    progress: 0,
-  },
-  {
-    id: "futures",
-    title: "Futures & Commodities",
-    description:
-      "Trade futures contracts across commodities and indices. Margin, leverage, and contract specifications.",
-    lessons: 3,
-    tier: "academy",
-    progress: 0,
-  },
-  {
-    id: "crypto",
-    title: "Crypto & Digital Assets",
-    description:
-      "Understand blockchain technology and crypto trading strategies for generational wealth.",
-    lessons: 3,
-    tier: "academy",
-    progress: 0,
-  },
-];
-
 export default function CoursesPage() {
+  const supabase = createClient();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const userTier: string = "academy";
+
+  const loadCourses = useCallback(async () => {
+    const { data: rawCourses } = await supabase
+      .from("courses")
+      .select("*")
+      .eq("published", true)
+      .order("sort_order");
+
+    if (!rawCourses || rawCourses.length === 0) {
+      setLoading(false);
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const enriched: Course[] = [];
+
+    for (const c of rawCourses) {
+      // Get lesson count through modules
+      const { data: mods } = await supabase
+        .from("modules")
+        .select("id")
+        .eq("course_id", c.id);
+
+      let lessonCount = 0;
+      let completedCount = 0;
+
+      if (mods && mods.length > 0) {
+        const modIds = mods.map((m: { id: string }) => m.id);
+        const { data: lessons } = await supabase
+          .from("lessons")
+          .select("id")
+          .in("module_id", modIds);
+
+        lessonCount = lessons?.length ?? 0;
+
+        // Get user progress
+        if (user && lessons && lessons.length > 0) {
+          const lessonIds = lessons.map((l: { id: string }) => l.id);
+          const { count } = await supabase
+            .from("lesson_progress")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .in("lesson_id", lessonIds)
+            .eq("status", "completed");
+          completedCount = count ?? 0;
+        }
+      }
+
+      const progress =
+        lessonCount > 0 ? Math.round((completedCount / lessonCount) * 100) : 0;
+
+      enriched.push({
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        description: c.description,
+        min_tier: c.min_tier,
+        sort_order: c.sort_order,
+        lessonCount,
+        progress,
+      });
+    }
+
+    setCourses(enriched);
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="max-w-5xl mx-auto text-center py-20">
+        <BookOpen className="w-10 h-10 text-midnight-500 mx-auto mb-3" />
+        <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
+          No courses available yet
+        </h2>
+        <p className="text-sm text-midnight-400 font-body">
+          Check back soon for new courses.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -74,7 +137,8 @@ export default function CoursesPage() {
       {/* Featured course */}
       {(() => {
         const featured = courses[0];
-        const isLocked = featured.tier === "academy" && userTier === "challenge";
+        const isLocked =
+          featured.min_tier === "academy" && userTier === "challenge";
 
         return (
           <motion.div
@@ -84,7 +148,7 @@ export default function CoursesPage() {
             className="mb-6"
           >
             <Link
-              href={`/courses/${featured.id}`}
+              href={`/courses/${featured.slug}`}
               className={`block relative rounded-xl border border-midnight-700/60 bg-midnight-900/40 p-6 transition-colors hover:border-midnight-600 ${
                 isLocked ? "pointer-events-none opacity-60" : ""
               }`}
@@ -105,14 +169,16 @@ export default function CoursesPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                        featured.tier === "challenge"
+                        featured.min_tier === "challenge"
                           ? "bg-green-500/10 text-green-400"
                           : "bg-gold-400/10 text-gold-400"
                       }`}
                     >
-                      {featured.tier}
+                      {featured.min_tier || "challenge"}
                     </span>
-                    <span className="text-xs text-midnight-500">{featured.lessons} lessons</span>
+                    <span className="text-xs text-midnight-500">
+                      {featured.lessonCount} lessons
+                    </span>
                   </div>
                   <h3 className="font-display text-xl font-semibold text-midnight-100 mb-2">
                     {featured.title}
@@ -126,7 +192,9 @@ export default function CoursesPage() {
                       style={{ width: `${featured.progress}%` }}
                     />
                   </div>
-                  <p className="text-xs text-midnight-500 mt-1.5">{featured.progress}% complete</p>
+                  <p className="text-xs text-midnight-500 mt-1.5">
+                    {featured.progress}% complete
+                  </p>
                 </div>
                 <div className="shrink-0 w-10 h-10 rounded-lg bg-gold-400/10 flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-gold-400" />
@@ -140,7 +208,8 @@ export default function CoursesPage() {
       {/* Remaining courses */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {courses.slice(1).map((course, i) => {
-          const isLocked = course.tier === "academy" && userTier === "challenge";
+          const isLocked =
+            course.min_tier === "academy" && userTier === "challenge";
 
           return (
             <motion.div
@@ -150,7 +219,7 @@ export default function CoursesPage() {
               transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
             >
               <Link
-                href={`/courses/${course.id}`}
+                href={`/courses/${course.slug}`}
                 className={`block relative rounded-lg border border-midnight-700/40 bg-midnight-900/30 p-5 transition-colors hover:border-midnight-600 h-full ${
                   isLocked ? "pointer-events-none opacity-60" : ""
                 }`}
@@ -167,12 +236,12 @@ export default function CoursesPage() {
                 <div className="flex items-center gap-2 mb-3">
                   <span
                     className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                      course.tier === "challenge"
+                      course.min_tier === "challenge"
                         ? "bg-green-500/10 text-green-400"
                         : "bg-gold-400/10 text-gold-400"
                     }`}
                   >
-                    {course.tier}
+                    {course.min_tier || "challenge"}
                   </span>
                 </div>
 
@@ -191,7 +260,7 @@ export default function CoursesPage() {
                     />
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-midnight-500">
-                    <span>{course.lessons} lessons</span>
+                    <span>{course.lessonCount} lessons</span>
                     <span>{course.progress}%</span>
                   </div>
                 </div>

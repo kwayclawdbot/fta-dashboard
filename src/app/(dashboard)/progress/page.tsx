@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -14,69 +14,27 @@ import {
   Zap,
   GraduationCap,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-// --- Placeholder data ---
+interface Stats {
+  totalLessons: number;
+  completed: number;
+  hoursWatched: number;
+  currentStreak: number;
+}
 
-const STATS = {
-  totalLessons: 42,
-  completed: 12,
-  hoursWatched: 4.5,
-  currentStreak: 3,
-};
+interface CourseProgress {
+  slug: string;
+  title: string;
+  completed: number;
+  total: number;
+}
 
-const COURSE_PROGRESS = [
-  {
-    slug: "trading-foundations",
-    title: "Trading Foundations",
-    completed: 2,
-    total: 12,
-  },
-  {
-    slug: "options-basics",
-    title: "Options Trading Basics",
-    completed: 6,
-    total: 15,
-  },
-  {
-    slug: "technical-analysis",
-    title: "Technical Analysis",
-    completed: 4,
-    total: 15,
-  },
-];
-
-const RECENT_ACTIVITY = [
-  {
-    lessonId: "l2",
-    title: "How Markets Work",
-    completedAt: "2026-03-12T14:30:00Z",
-  },
-  {
-    lessonId: "l1",
-    title: "Welcome to Trading",
-    completedAt: "2026-03-12T13:15:00Z",
-  },
-  {
-    lessonId: "opt-6",
-    title: "Buying Your First Call",
-    completedAt: "2026-03-11T16:45:00Z",
-  },
-  {
-    lessonId: "opt-5",
-    title: "Understanding Premiums",
-    completedAt: "2026-03-11T15:20:00Z",
-  },
-  {
-    lessonId: "ta-4",
-    title: "Moving Averages",
-    completedAt: "2026-03-10T11:00:00Z",
-  },
-  {
-    lessonId: "ta-3",
-    title: "Volume Analysis",
-    completedAt: "2026-03-10T10:30:00Z",
-  },
-];
+interface RecentItem {
+  lessonId: string;
+  title: string;
+  completedAt: string;
+}
 
 interface Badge {
   key: string;
@@ -87,52 +45,15 @@ interface Badge {
   earnedAt?: string;
 }
 
-const ALL_BADGES: Badge[] = [
-  {
-    key: "first_lesson",
-    name: "First Lesson",
-    description: "Completed your first lesson",
-    icon: Star,
-    earned: true,
-    earnedAt: "2026-03-10",
-  },
-  {
-    key: "module_master",
-    name: "Module Master",
-    description: "Completed all lessons in a module",
-    icon: Award,
-    earned: false,
-  },
-  {
-    key: "week_warrior",
-    name: "Week Warrior",
-    description: "7-day learning streak",
-    icon: Flame,
-    earned: false,
-  },
-  {
-    key: "quiz_ace",
-    name: "Quiz Ace",
-    description: "Scored 100% on a quiz",
-    icon: Target,
-    earned: true,
-    earnedAt: "2026-03-11",
-  },
-  {
-    key: "course_complete",
-    name: "Course Complete",
-    description: "Finished an entire course",
-    icon: GraduationCap,
-    earned: false,
-  },
-  {
-    key: "fast_learner",
-    name: "Fast Learner",
-    description: "Complete 5 lessons in one day",
-    icon: Zap,
-    earned: false,
-  },
-];
+// Badge icon map for DB badges
+const BADGE_ICONS: Record<string, React.ElementType> = {
+  first_lesson: Star,
+  module_master: Award,
+  week_warrior: Flame,
+  quiz_ace: Target,
+  course_complete: GraduationCap,
+  fast_learner: Zap,
+};
 
 function formatRelativeTime(dateStr: string) {
   const date = new Date(dateStr);
@@ -149,6 +70,276 @@ function formatRelativeTime(dateStr: string) {
 }
 
 export default function ProgressPage() {
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Stats>({
+    totalLessons: 0,
+    completed: 0,
+    hoursWatched: 0,
+    currentStreak: 0,
+  });
+  const [courseProgress, setCourseProgress] = useState<CourseProgress[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentItem[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+
+  const loadProgress = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // Get all lessons count
+    const { count: totalLessons } = await supabase
+      .from("lessons")
+      .select("id", { count: "exact", head: true });
+
+    // Get user's completed lessons
+    const { data: completedProgress } = await supabase
+      .from("lesson_progress")
+      .select("lesson_id, completed_at")
+      .eq("user_id", user.id)
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false });
+
+    const completedCount = completedProgress?.length ?? 0;
+
+    // Calculate hours watched from completed lessons
+    let hoursWatched = 0;
+    if (completedProgress && completedProgress.length > 0) {
+      const lessonIds = completedProgress.map(
+        (p: { lesson_id: string }) => p.lesson_id
+      );
+      const { data: lessonDurations } = await supabase
+        .from("lessons")
+        .select("id, video_duration_sec")
+        .in("id", lessonIds);
+
+      if (lessonDurations) {
+        const totalSec = lessonDurations.reduce(
+          (sum: number, l: { video_duration_sec: number | null }) =>
+            sum + (l.video_duration_sec || 0),
+          0
+        );
+        hoursWatched = Math.round((totalSec / 3600) * 10) / 10;
+      }
+    }
+
+    // Calculate streak (consecutive days with at least 1 completion)
+    let streak = 0;
+    if (completedProgress && completedProgress.length > 0) {
+      const dates = [
+        ...new Set(
+          completedProgress
+            .filter((p: { completed_at: string | null }) => p.completed_at)
+            .map((p: { completed_at: string }) =>
+              new Date(p.completed_at).toDateString()
+            )
+        ),
+      ].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+      const today = new Date().toDateString();
+      const yesterday = new Date(
+        Date.now() - 86400000
+      ).toDateString();
+
+      if (dates[0] === today || dates[0] === yesterday) {
+        streak = 1;
+        for (let i = 1; i < dates.length; i++) {
+          const prev = new Date(dates[i - 1]);
+          const curr = new Date(dates[i]);
+          const diffDays = Math.round(
+            (prev.getTime() - curr.getTime()) / 86400000
+          );
+          if (diffDays === 1) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    setStats({
+      totalLessons: totalLessons ?? 0,
+      completed: completedCount,
+      hoursWatched,
+      currentStreak: streak,
+    });
+
+    // Course progress
+    const { data: courses } = await supabase
+      .from("courses")
+      .select("id, slug, title")
+      .eq("published", true)
+      .order("sort_order");
+
+    if (courses && courses.length > 0) {
+      const completedLessonIds = new Set(
+        (completedProgress || []).map(
+          (p: { lesson_id: string }) => p.lesson_id
+        )
+      );
+
+      const progress: CourseProgress[] = [];
+      for (const course of courses) {
+        const { data: mods } = await supabase
+          .from("modules")
+          .select("id")
+          .eq("course_id", course.id);
+
+        if (mods && mods.length > 0) {
+          const modIds = mods.map((m: { id: string }) => m.id);
+          const { data: lessons } = await supabase
+            .from("lessons")
+            .select("id")
+            .in("module_id", modIds);
+
+          const total = lessons?.length ?? 0;
+          const completed =
+            lessons?.filter((l: { id: string }) =>
+              completedLessonIds.has(l.id)
+            ).length ?? 0;
+
+          if (total > 0) {
+            progress.push({
+              slug: course.slug,
+              title: course.title,
+              completed,
+              total,
+            });
+          }
+        }
+      }
+      setCourseProgress(progress);
+    }
+
+    // Recent activity
+    if (completedProgress && completedProgress.length > 0) {
+      const recentIds = completedProgress
+        .slice(0, 6)
+        .map((p: { lesson_id: string }) => p.lesson_id);
+
+      const { data: recentLessons } = await supabase
+        .from("lessons")
+        .select("id, title")
+        .in("id", recentIds);
+
+      const lessonMap = new Map(
+        (recentLessons || []).map((l: { id: string; title: string }) => [
+          l.id,
+          l.title,
+        ])
+      );
+
+      const recent: RecentItem[] = completedProgress
+        .slice(0, 6)
+        .map(
+          (p: { lesson_id: string; completed_at: string }) => ({
+            lessonId: p.lesson_id,
+            title: lessonMap.get(p.lesson_id) || "Lesson",
+            completedAt: p.completed_at,
+          })
+        );
+
+      setRecentActivity(recent);
+    }
+
+    // Badges from DB
+    const { data: allBadges } = await supabase
+      .from("badges")
+      .select("id, slug, title, description, icon_url");
+
+    // For now, check earned badges by matching criteria
+    // Since we don't have a user_badges table, we'll check basic criteria
+    const earnedSlugs = new Set<string>();
+    if (completedCount >= 1) earnedSlugs.add("first_lesson");
+    if (completedCount >= 5) earnedSlugs.add("fast_learner");
+    if (streak >= 7) earnedSlugs.add("week_warrior");
+
+    if (allBadges && allBadges.length > 0) {
+      setBadges(
+        allBadges.map(
+          (b: {
+            id: string;
+            slug: string;
+            title: string;
+            description: string;
+          }) => ({
+            key: b.slug,
+            name: b.title,
+            description: b.description,
+            icon: BADGE_ICONS[b.slug] || Star,
+            earned: earnedSlugs.has(b.slug),
+          })
+        )
+      );
+    } else {
+      // Fallback badges if none in DB
+      setBadges([
+        {
+          key: "first_lesson",
+          name: "First Lesson",
+          description: "Completed your first lesson",
+          icon: Star,
+          earned: completedCount >= 1,
+        },
+        {
+          key: "module_master",
+          name: "Module Master",
+          description: "Completed all lessons in a module",
+          icon: Award,
+          earned: false,
+        },
+        {
+          key: "week_warrior",
+          name: "Week Warrior",
+          description: "7-day learning streak",
+          icon: Flame,
+          earned: streak >= 7,
+        },
+        {
+          key: "quiz_ace",
+          name: "Quiz Ace",
+          description: "Scored 100% on a quiz",
+          icon: Target,
+          earned: false,
+        },
+        {
+          key: "course_complete",
+          name: "Course Complete",
+          description: "Finished an entire course",
+          icon: GraduationCap,
+          earned: false,
+        },
+        {
+          key: "fast_learner",
+          name: "Fast Learner",
+          description: "Complete 5 lessons in one day",
+          icon: Zap,
+          earned: completedCount >= 5,
+        },
+      ]);
+    }
+
+    setLoading(false);
+  }, [supabase]);
+
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-10">
       {/* Page title */}
@@ -165,7 +356,7 @@ export default function ProgressPage() {
         </p>
       </motion.div>
 
-      {/* Stats row - simple text, no cards */}
+      {/* Stats row */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -174,9 +365,9 @@ export default function ProgressPage() {
       >
         <div>
           <p className="text-2xl font-display font-bold text-midnight-100">
-            {STATS.completed}
+            {stats.completed}
             <span className="text-midnight-500 text-base font-normal">
-              /{STATS.totalLessons}
+              /{stats.totalLessons}
             </span>
           </p>
           <p className="text-xs text-midnight-500 font-body mt-0.5 flex items-center gap-1">
@@ -186,7 +377,7 @@ export default function ProgressPage() {
         </div>
         <div>
           <p className="text-2xl font-display font-bold text-midnight-100">
-            {STATS.hoursWatched}
+            {stats.hoursWatched}
             <span className="text-midnight-500 text-base font-normal">h</span>
           </p>
           <p className="text-xs text-midnight-500 font-body mt-0.5 flex items-center gap-1">
@@ -196,7 +387,7 @@ export default function ProgressPage() {
         </div>
         <div>
           <p className="text-2xl font-display font-bold text-gold-400">
-            {STATS.currentStreak}
+            {stats.currentStreak}
             <span className="text-midnight-500 text-base font-normal">
               {" "}
               days
@@ -218,37 +409,47 @@ export default function ProgressPage() {
         <h2 className="font-display text-lg font-semibold text-midnight-100 mb-4">
           Course Progress
         </h2>
-        <div className="space-y-4">
-          {COURSE_PROGRESS.map((course) => {
-            const pct =
-              course.total > 0
-                ? Math.round((course.completed / course.total) * 100)
-                : 0;
-            return (
-              <div
-                key={course.slug}
-                className="py-3 border-b border-midnight-800/50 last:border-0"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-body text-midnight-200">
-                    {course.title}
-                  </h3>
-                  <span className="text-xs text-midnight-400 font-body">
-                    {course.completed}/{course.total} lessons
-                  </span>
+        {courseProgress.length === 0 ? (
+          <p className="text-sm text-midnight-500 font-body py-6">
+            No course progress yet. Start a course to track your progress.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {courseProgress.map((course) => {
+              const pct =
+                course.total > 0
+                  ? Math.round((course.completed / course.total) * 100)
+                  : 0;
+              return (
+                <div
+                  key={course.slug}
+                  className="py-3 border-b border-midnight-800/50 last:border-0"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-body text-midnight-200">
+                      {course.title}
+                    </h3>
+                    <span className="text-xs text-midnight-400 font-body">
+                      {course.completed}/{course.total} lessons
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-midnight-800 overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{
+                        duration: 0.8,
+                        ease: "easeOut",
+                        delay: 0.3,
+                      }}
+                      className="h-full rounded-full bg-gold-400"
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-midnight-800 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-                    className="h-full rounded-full bg-gold-400"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </motion.section>
 
       {/* Recent activity */}
@@ -261,7 +462,7 @@ export default function ProgressPage() {
           Recent Activity
         </h2>
         <div className="space-y-0">
-          {RECENT_ACTIVITY.map((item, i) => (
+          {recentActivity.map((item) => (
             <div
               key={item.lessonId}
               className="flex items-center gap-3 py-3 border-b border-midnight-800/50 last:border-0"
@@ -278,7 +479,7 @@ export default function ProgressPage() {
             </div>
           ))}
         </div>
-        {RECENT_ACTIVITY.length === 0 && (
+        {recentActivity.length === 0 && (
           <p className="text-sm text-midnight-500 font-body py-6">
             No completed lessons yet. Start learning to see your activity here.
           </p>
@@ -295,7 +496,7 @@ export default function ProgressPage() {
           Badges
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {ALL_BADGES.map((badge) => {
+          {badges.map((badge) => {
             const Icon = badge.icon;
             return (
               <div
@@ -308,9 +509,7 @@ export default function ProgressPage() {
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                    badge.earned
-                      ? "bg-gold-400/20"
-                      : "bg-midnight-800"
+                    badge.earned ? "bg-gold-400/20" : "bg-midnight-800"
                   }`}
                 >
                   <Icon
