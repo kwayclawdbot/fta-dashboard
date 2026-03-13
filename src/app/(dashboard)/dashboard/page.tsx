@@ -20,6 +20,7 @@ import {
   Star,
   Newspaper,
   Target,
+  LineChart,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -483,6 +484,16 @@ export default function DashboardPage() {
             className="rounded-lg border border-midnight-800/60 bg-midnight-900/40 p-4 space-y-2"
           >
             <h3 className="text-xs font-mono font-bold text-midnight-300 uppercase mb-2">Quick Actions</h3>
+            <Link href="/simulator" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-body text-midnight-300 hover:bg-midnight-800/50 hover:text-midnight-100 transition-colors">
+              <LineChart className="w-3.5 h-3.5 text-gold-400" />
+              Trading Simulator
+              <ArrowRight className="w-3 h-3 ml-auto text-midnight-600" />
+            </Link>
+            <Link href="/simulator/lessons" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-body text-midnight-300 hover:bg-midnight-800/50 hover:text-midnight-100 transition-colors">
+              <BarChart3 className="w-3.5 h-3.5 text-gold-400" />
+              Pattern Practice
+              <ArrowRight className="w-3 h-3 ml-auto text-midnight-600" />
+            </Link>
             <Link href="/courses" className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-body text-midnight-300 hover:bg-midnight-800/50 hover:text-midnight-100 transition-colors">
               <BookOpen className="w-3.5 h-3.5 text-gold-400" />
               Browse Courses

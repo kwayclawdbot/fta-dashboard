@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  LineChart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -43,10 +44,21 @@ const navItems: NavItem[] = [
   { label: "Community", href: "/community", icon: MessageCircle },
   { label: "Progress", href: "/progress", icon: Trophy },
   {
+    label: "Simulator",
+    href: "/simulator",
+    icon: LineChart,
+    subItems: [
+      { label: "Trading Floor", href: "/simulator" },
+      { label: "Pattern Practice", href: "/simulator/lessons" },
+      { label: "Leaderboard", href: "/simulator/leaderboard" },
+    ],
+  },
+  {
     label: "Family",
     href: "/family",
     icon: Users,
     requiresAcademy: true,
+    parentOnly: true,
     subItems: [
       { label: "Overview", href: "/family/overview" },
       { label: "Leaderboard", href: "/family/leaderboard" },
@@ -126,8 +138,8 @@ export default function DashboardSidebar({
           const showSubItems =
             !collapsed &&
             item.subItems &&
-            user.role === "parent" &&
-            (isActive || isParentActive);
+            (isActive || isParentActive) &&
+            (!item.parentOnly || user.role === "parent");
 
           return (
             <div key={item.href}>
