@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import type { OHLCV } from "@/lib/simulator/market-engine";
-import type { IndicatorPoint } from "@/lib/simulator/indicators";
 
 export interface TradeMarker {
   time: number;
@@ -12,209 +11,232 @@ export interface TradeMarker {
   text: string;
 }
 
-export interface PatternAnnotation {
-  startBar: number;
-  endBar: number;
-  label: string;
+export interface PriceLine {
+  price: number;
+  color: string;
+  lineWidth?: number;
+  lineStyle?: number; // 0=solid, 1=dotted, 2=dashed, 3=lg dashed
+  title?: string;
+  axisLabelVisible?: boolean;
+}
+
+export interface ChartHandle {
+  addHorizontalLine: (price: number, color: string, title?: string) => string;
+  removeLine: (id: string) => void;
+  clearAllLines: () => void;
 }
 
 interface CandlestickChartProps {
   bars: OHLCV[];
-  sma20?: IndicatorPoint[];
-  sma50?: IndicatorPoint[];
-  sma200?: IndicatorPoint[];
   markers?: TradeMarker[];
-  annotations?: PatternAnnotation[];
+  priceLines?: PriceLine[];
   height?: number;
+  fitContent?: boolean;
 }
 
-export default function CandlestickChart({
-  bars,
-  sma20,
-  sma50,
-  sma200,
-  markers,
-  height = 400,
-}: CandlestickChartProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const chartRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const candleSeriesRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const volumeSeriesRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sma20SeriesRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sma50SeriesRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sma200SeriesRef = useRef<any>(null);
-  const initRef = useRef(false);
+const CandlestickChart = forwardRef<ChartHandle, CandlestickChartProps>(
+  function CandlestickChart({ bars, markers, priceLines, height = 400, fitContent = true }, ref) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chartRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const candleSeriesRef = useRef<any>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const volumeSeriesRef = useRef<any>(null);
+    const initRef = useRef(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userLinesRef = useRef<Map<string, any>>(new Map());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hintLinesRef = useRef<any[]>([]);
 
-  const initChart = useCallback(async () => {
-    if (!containerRef.current || initRef.current) return;
-
-    const lc = await import("lightweight-charts");
-    initRef.current = true;
-
-    const chart = lc.createChart(containerRef.current, {
-      width: containerRef.current.clientWidth,
-      height,
-      layout: {
-        background: { type: lc.ColorType.Solid, color: "transparent" },
-        textColor: "#75819d",
-        fontFamily: "var(--font-body), sans-serif",
-        fontSize: 11,
+    // Expose drawing API to parent
+    useImperativeHandle(ref, () => ({
+      addHorizontalLine(price: number, color: string, title?: string) {
+        if (!candleSeriesRef.current) return "";
+        const id = crypto.randomUUID();
+        const line = candleSeriesRef.current.createPriceLine({
+          price,
+          color,
+          lineWidth: 1,
+          lineStyle: 2, // dashed
+          title: title || "",
+          axisLabelVisible: true,
+        });
+        userLinesRef.current.set(id, line);
+        return id;
       },
-      grid: {
-        vertLines: { color: "rgba(15, 27, 55, 0.8)" },
-        horzLines: { color: "rgba(15, 27, 55, 0.8)" },
+      removeLine(id: string) {
+        const line = userLinesRef.current.get(id);
+        if (line && candleSeriesRef.current) {
+          candleSeriesRef.current.removePriceLine(line);
+          userLinesRef.current.delete(id);
+        }
       },
-      crosshair: {
-        mode: lc.CrosshairMode.Normal,
-        vertLine: { color: "rgba(251, 191, 36, 0.3)", style: lc.LineStyle.Dashed },
-        horzLine: { color: "rgba(251, 191, 36, 0.3)", style: lc.LineStyle.Dashed },
+      clearAllLines() {
+        if (!candleSeriesRef.current) return;
+        userLinesRef.current.forEach((line) => {
+          candleSeriesRef.current.removePriceLine(line);
+        });
+        userLinesRef.current.clear();
       },
-      rightPriceScale: {
-        borderColor: "rgba(15, 27, 55, 0.8)",
-      },
-      timeScale: {
-        borderColor: "rgba(15, 27, 55, 0.8)",
-        timeVisible: false,
-      },
-    });
+    }));
 
-    chartRef.current = chart;
+    const initChart = useCallback(async () => {
+      if (!containerRef.current || initRef.current) return;
 
-    // Candlestick series (v5 API)
-    const candleSeries = chart.addSeries(lc.CandlestickSeries, {
-      upColor: "#4ADE80",
-      downColor: "#EF4444",
-      borderUpColor: "#4ADE80",
-      borderDownColor: "#EF4444",
-      wickUpColor: "#4ADE80",
-      wickDownColor: "#EF4444",
-    });
-    candleSeriesRef.current = candleSeries;
+      const lc = await import("lightweight-charts");
+      initRef.current = true;
 
-    // Volume histogram (v5 API)
-    const volumeSeries = chart.addSeries(lc.HistogramSeries, {
-      priceFormat: { type: "volume" },
-      priceScaleId: "volume",
-    });
-    chart.priceScale("volume").applyOptions({
-      scaleMargins: { top: 0.85, bottom: 0 },
-    });
-    volumeSeriesRef.current = volumeSeries;
+      const chart = lc.createChart(containerRef.current, {
+        width: containerRef.current.clientWidth,
+        height,
+        layout: {
+          background: { type: lc.ColorType.Solid, color: "transparent" },
+          textColor: "#75819d",
+          fontFamily: "var(--font-body), sans-serif",
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { color: "rgba(15, 27, 55, 0.8)" },
+          horzLines: { color: "rgba(15, 27, 55, 0.8)" },
+        },
+        crosshair: {
+          mode: lc.CrosshairMode.Normal,
+          vertLine: { color: "rgba(251, 191, 36, 0.3)", style: lc.LineStyle.Dashed },
+          horzLine: { color: "rgba(251, 191, 36, 0.3)", style: lc.LineStyle.Dashed },
+        },
+        rightPriceScale: {
+          borderColor: "rgba(15, 27, 55, 0.8)",
+        },
+        timeScale: {
+          borderColor: "rgba(15, 27, 55, 0.8)",
+          timeVisible: false,
+          rightOffset: 5,
+        },
+      });
 
-    // SMA lines (v5 API)
-    sma20SeriesRef.current = chart.addSeries(lc.LineSeries, {
-      color: "#FBBF24",
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      title: "SMA 20",
-    });
+      chartRef.current = chart;
 
-    sma50SeriesRef.current = chart.addSeries(lc.LineSeries, {
-      color: "#60A5FA",
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      title: "SMA 50",
-    });
+      // Candlestick series
+      const candleSeries = chart.addSeries(lc.CandlestickSeries, {
+        upColor: "#4ADE80",
+        downColor: "#EF4444",
+        borderUpColor: "#4ADE80",
+        borderDownColor: "#EF4444",
+        wickUpColor: "#4ADE80",
+        wickDownColor: "#EF4444",
+      });
+      candleSeriesRef.current = candleSeries;
 
-    sma200SeriesRef.current = chart.addSeries(lc.LineSeries, {
-      color: "#A78BFA",
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      title: "SMA 200",
-    });
+      // Volume histogram
+      const volumeSeries = chart.addSeries(lc.HistogramSeries, {
+        priceFormat: { type: "volume" },
+        priceScaleId: "volume",
+      });
+      chart.priceScale("volume").applyOptions({
+        scaleMargins: { top: 0.85, bottom: 0 },
+      });
+      volumeSeriesRef.current = volumeSeries;
 
-    // Handle resize
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        chart.applyOptions({ width: entry.contentRect.width });
+      // Handle resize
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          chart.applyOptions({ width: entry.contentRect.width });
+        }
+      });
+      ro.observe(containerRef.current);
+
+      return () => {
+        ro.disconnect();
+        chart.remove();
+        initRef.current = false;
+      };
+    }, [height]);
+
+    useEffect(() => {
+      const cleanup = initChart();
+      return () => {
+        cleanup?.then((fn) => fn?.());
+      };
+    }, [initChart]);
+
+    // Update data when bars change
+    useEffect(() => {
+      if (!candleSeriesRef.current || !volumeSeriesRef.current) return;
+
+      const candleData = bars.map((b) => ({
+        time: b.time,
+        open: b.open,
+        high: b.high,
+        low: b.low,
+        close: b.close,
+      }));
+      candleSeriesRef.current.setData(candleData);
+
+      const volumeData = bars.map((b) => ({
+        time: b.time,
+        value: b.volume,
+        color: b.close >= b.open ? "rgba(74, 222, 128, 0.3)" : "rgba(239, 68, 68, 0.3)",
+      }));
+      volumeSeriesRef.current.setData(volumeData);
+
+      // Trade markers
+      if (markers && markers.length > 0) {
+        candleSeriesRef.current.setMarkers(
+          markers.map((m) => ({
+            time: m.time,
+            position: m.position,
+            color: m.color,
+            shape: m.shape,
+            text: m.text,
+          }))
+        );
       }
-    });
-    ro.observe(containerRef.current);
 
-    return () => {
-      ro.disconnect();
-      chart.remove();
-      initRef.current = false;
-    };
-  }, [height]);
+      // Fit content so bars fill from left — no empty space
+      if (chartRef.current && bars.length > 0 && fitContent) {
+        chartRef.current.timeScale().fitContent();
+      }
+    }, [bars, markers, fitContent]);
 
-  useEffect(() => {
-    const cleanup = initChart();
-    return () => {
-      cleanup?.then((fn) => fn?.());
-    };
-  }, [initChart]);
+    // Manage hint price lines (S/R from scenarios)
+    useEffect(() => {
+      if (!candleSeriesRef.current) return;
 
-  // Update data when bars change
-  useEffect(() => {
-    if (!candleSeriesRef.current || !volumeSeriesRef.current) return;
+      // Remove old hint lines
+      hintLinesRef.current.forEach((line) => {
+        try {
+          candleSeriesRef.current.removePriceLine(line);
+        } catch {
+          // ignore
+        }
+      });
+      hintLinesRef.current = [];
 
-    const candleData = bars.map((b) => ({
-      time: b.time,
-      open: b.open,
-      high: b.high,
-      low: b.low,
-      close: b.close,
-    }));
-    candleSeriesRef.current.setData(candleData);
+      // Add new hint lines
+      if (priceLines && priceLines.length > 0) {
+        priceLines.forEach((pl) => {
+          const line = candleSeriesRef.current.createPriceLine({
+            price: pl.price,
+            color: pl.color,
+            lineWidth: pl.lineWidth ?? 1,
+            lineStyle: pl.lineStyle ?? 2,
+            title: pl.title || "",
+            axisLabelVisible: pl.axisLabelVisible ?? false,
+          });
+          hintLinesRef.current.push(line);
+        });
+      }
+    }, [priceLines]);
 
-    const volumeData = bars.map((b) => ({
-      time: b.time,
-      value: b.volume,
-      color: b.close >= b.open ? "rgba(74, 222, 128, 0.3)" : "rgba(239, 68, 68, 0.3)",
-    }));
-    volumeSeriesRef.current.setData(volumeData);
+    return (
+      <div
+        ref={containerRef}
+        className="w-full rounded-lg overflow-hidden"
+        style={{ height }}
+      />
+    );
+  }
+);
 
-    // SMA data
-    if (sma20SeriesRef.current && sma20) {
-      sma20SeriesRef.current.setData(
-        sma20.map((p) => ({ time: p.time, value: p.value }))
-      );
-    }
-    if (sma50SeriesRef.current && sma50) {
-      sma50SeriesRef.current.setData(
-        sma50.map((p) => ({ time: p.time, value: p.value }))
-      );
-    }
-    if (sma200SeriesRef.current && sma200) {
-      sma200SeriesRef.current.setData(
-        sma200.map((p) => ({ time: p.time, value: p.value }))
-      );
-    }
-
-    // Trade markers
-    if (markers && markers.length > 0) {
-      candleSeriesRef.current.setMarkers(
-        markers.map((m) => ({
-          time: m.time,
-          position: m.position,
-          color: m.color,
-          shape: m.shape,
-          text: m.text,
-        }))
-      );
-    }
-
-    // Auto-scroll to latest
-    if (chartRef.current && bars.length > 0) {
-      chartRef.current.timeScale().scrollToPosition(2, false);
-    }
-  }, [bars, sma20, sma50, sma200, markers]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="w-full rounded-lg overflow-hidden"
-      style={{ height }}
-    />
-  );
-}
+export default CandlestickChart;

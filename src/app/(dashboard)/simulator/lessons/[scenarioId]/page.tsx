@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,10 +8,11 @@ import { ArrowLeft, BookOpen, Play } from "lucide-react";
 import Link from "next/link";
 import ScenarioDecisionPanel from "@/components/simulator/ScenarioDecisionPanel";
 import ScenarioResultPanel from "@/components/simulator/ScenarioResultPanel";
+import ChartDrawingTools from "@/components/simulator/ChartDrawingTools";
 import { getScenarioById, SCENARIOS, type Decision } from "@/lib/simulator/scenarios";
 import { generatePatternBars } from "@/lib/simulator/pattern-injector";
-import { sma } from "@/lib/simulator/indicators";
 import type { OHLCV } from "@/lib/simulator/market-engine";
+import type { PriceLine, ChartHandle } from "@/components/simulator/CandlestickChart";
 import { createClient } from "@/lib/supabase/client";
 
 const CandlestickChart = dynamic(
@@ -33,6 +34,7 @@ export default function ScenarioPracticePage() {
   const [scores, setScores] = useState({ pattern: 0, trade: 0, total: 0, passed: false });
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 100000));
 
+  const chartRef = useRef<ChartHandle | null>(null);
   const allBarsRef = useRef<{
     leadIn: OHLCV[];
     pattern: OHLCV[];
@@ -50,6 +52,69 @@ export default function ScenarioPracticePage() {
     setVisibleBars([]);
   }, [scenario, seed]);
 
+  // Compute S/R hint lines from waypoints (greyed out)
+  const hintPriceLines: PriceLine[] = useMemo(() => {
+    if (!scenario || !allBarsRef.current) return [];
+    const allPatternBars = [...allBarsRef.current.leadIn, ...allBarsRef.current.pattern];
+    if (allPatternBars.length === 0) return [];
+
+    // Find key support and resistance from the pattern waypoints
+    const highs: number[] = [];
+    const lows: number[] = [];
+    const startPrice = allBarsRef.current.leadIn[0]?.close ?? 100;
+
+    scenario.waypoints.forEach((wp) => {
+      const price = startPrice * wp.priceRatio;
+      if (wp.priceRatio >= 1.0) highs.push(price);
+      else lows.push(price);
+    });
+
+    const lines: PriceLine[] = [];
+
+    // Resistance — highest waypoint peaks
+    if (highs.length > 0) {
+      const resistance = Math.max(...highs);
+      lines.push({
+        price: Math.round(resistance * 100) / 100,
+        color: "rgba(239, 68, 68, 0.25)",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "R",
+        axisLabelVisible: false,
+      });
+    }
+
+    // Support — lowest waypoint troughs
+    if (lows.length > 0) {
+      const support = Math.min(...lows);
+      lines.push({
+        price: Math.round(support * 100) / 100,
+        color: "rgba(74, 222, 128, 0.25)",
+        lineWidth: 1,
+        lineStyle: 2,
+        title: "S",
+        axisLabelVisible: false,
+      });
+    }
+
+    // Neckline / midpoint for patterns like H&S, double top/bottom
+    if (highs.length > 0 && lows.length > 0) {
+      const neckline = startPrice;
+      if (neckline !== Math.max(...highs) && neckline !== Math.min(...lows)) {
+        lines.push({
+          price: Math.round(neckline * 100) / 100,
+          color: "rgba(251, 191, 36, 0.2)",
+          lineWidth: 1,
+          lineStyle: 3,
+          title: "",
+          axisLabelVisible: false,
+        });
+      }
+    }
+
+    return lines;
+  }, [scenario, seed]);
+
   const stopPlayback = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -57,7 +122,6 @@ export default function ScenarioPracticePage() {
     }
   }, []);
 
-  // Start chart playback
   function startPlayback() {
     if (!allBarsRef.current) return;
     setPhase("playing");
@@ -81,7 +145,6 @@ export default function ScenarioPracticePage() {
     }, 200);
   }
 
-  // Play resolution bars after decision
   function playResolution(decision: Decision) {
     if (!allBarsRef.current) return;
     setUserDecision(decision);
@@ -108,16 +171,13 @@ export default function ScenarioPracticePage() {
   function calculateScores(decision: Decision) {
     if (!scenario || !allBarsRef.current) return;
 
-    // Pattern identification score (0-50)
     const isCorrectDecision = decision === scenario.correctAction;
     const patternScore = isCorrectDecision ? 50 : 0;
 
-    // Trade P&L score (0-50)
     const patternEnd =
       allBarsRef.current.pattern[allBarsRef.current.pattern.length - 1]?.close ?? 100;
     const resolutionEnd =
-      allBarsRef.current.resolution[allBarsRef.current.resolution.length - 1]?.close ??
-      patternEnd;
+      allBarsRef.current.resolution[allBarsRef.current.resolution.length - 1]?.close ?? patternEnd;
     const priceChange = (resolutionEnd - patternEnd) / patternEnd;
 
     let tradeScore = 0;
@@ -126,7 +186,6 @@ export default function ScenarioPracticePage() {
     } else if (decision === "sell") {
       tradeScore = priceChange < 0 ? Math.min(50, Math.round(Math.abs(priceChange) * 500)) : 0;
     } else {
-      // "wait" — score based on how volatile/unclear the resolution was
       const absChange = Math.abs(priceChange);
       tradeScore = absChange < 0.03 ? 50 : absChange < 0.05 ? 30 : 10;
     }
@@ -136,8 +195,6 @@ export default function ScenarioPracticePage() {
 
     setScores({ pattern: patternScore, trade: tradeScore, total: totalScore, passed });
     setPhase("result");
-
-    // Save to Supabase
     saveScore(decision, patternScore, tradeScore, totalScore, passed);
   }
 
@@ -152,7 +209,6 @@ export default function ScenarioPracticePage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       await supabase.from("sim_scenario_scores").insert({
         user_id: user.id,
         scenario_id: scenarioId,
@@ -163,7 +219,7 @@ export default function ScenarioPracticePage() {
         decision,
       });
     } catch {
-      // ignore if tables don't exist
+      // ignore
     }
   }
 
@@ -180,7 +236,6 @@ export default function ScenarioPracticePage() {
     router.push(`/simulator/lessons/${SCENARIOS[nextIdx].id}`);
   }
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => stopPlayback();
   }, [stopPlayback]);
@@ -196,14 +251,12 @@ export default function ScenarioPracticePage() {
     );
   }
 
-  const sma20 = sma(visibleBars, 20);
-
   const currentIdx = SCENARIOS.findIndex((s) => s.id === scenarioId);
   const hasNext = currentIdx < SCENARIOS.length - 1;
+  const currentPrice = visibleBars.length > 0 ? visibleBars[visibleBars.length - 1].close : 0;
 
   return (
     <div className="space-y-4">
-      {/* Back link */}
       <Link
         href="/simulator/lessons"
         className="inline-flex items-center gap-1.5 text-xs text-midnight-400 hover:text-gold-400 transition-colors"
@@ -235,12 +288,18 @@ export default function ScenarioPracticePage() {
             </span>
           </div>
 
+          {/* Drawing tools */}
+          {visibleBars.length > 0 && (
+            <ChartDrawingTools chartRef={chartRef} currentPrice={currentPrice} />
+          )}
+
           {/* Chart */}
           <div className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-2">
             {visibleBars.length > 0 ? (
               <CandlestickChart
+                ref={chartRef}
                 bars={visibleBars}
-                sma20={sma20}
+                priceLines={hintPriceLines}
                 height={380}
               />
             ) : (
@@ -269,7 +328,6 @@ export default function ScenarioPracticePage() {
 
         {/* Right: Education + Decision/Result */}
         <div className="lg:col-span-4 space-y-4">
-          {/* Education panel */}
           <div className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <BookOpen className="w-4 h-4 text-gold-400" />
@@ -280,17 +338,18 @@ export default function ScenarioPracticePage() {
             <p className="text-xs text-midnight-300 leading-relaxed">
               {scenario.education}
             </p>
+            {hintPriceLines.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-midnight-700/30">
+                <p className="text-[10px] text-midnight-500">
+                  Hint: greyed-out S/R levels are drawn on the chart
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Phase-specific panels */}
           <AnimatePresence mode="wait">
             {phase === "intro" && (
-              <motion.div
-                key="intro"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button
                   onClick={startPlayback}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-400 hover:bg-gold-400/20 transition-colors text-sm font-display font-semibold"
@@ -302,12 +361,7 @@ export default function ScenarioPracticePage() {
             )}
 
             {phase === "decision" && (
-              <motion.div
-                key="decision"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div key="decision" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <ScenarioDecisionPanel
                   patternName={scenario.name}
                   onDecision={playResolution}
@@ -316,12 +370,7 @@ export default function ScenarioPracticePage() {
             )}
 
             {phase === "result" && userDecision && (
-              <motion.div
-                key="result"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <ScenarioResultPanel
                   patternName={scenario.name}
                   userDecision={userDecision}

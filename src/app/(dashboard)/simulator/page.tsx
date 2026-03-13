@@ -4,6 +4,7 @@ import { useState, useReducer, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import TimeControls from "@/components/simulator/TimeControls";
+import ChartDrawingTools from "@/components/simulator/ChartDrawingTools";
 import OrderPanel from "@/components/simulator/OrderPanel";
 import PortfolioSummary from "@/components/simulator/PortfolioSummary";
 import PositionsList from "@/components/simulator/PositionsList";
@@ -13,7 +14,6 @@ import {
   SYMBOL_PRESETS,
   type OHLCV,
 } from "@/lib/simulator/market-engine";
-import { sma } from "@/lib/simulator/indicators";
 import {
   portfolioReducer,
   initialPortfolioState,
@@ -26,6 +26,7 @@ import {
   resetPortfolio,
   type Position,
 } from "@/lib/simulator/portfolio-manager";
+import type { ChartHandle } from "@/components/simulator/CandlestickChart";
 
 const CandlestickChart = dynamic(
   () => import("@/components/simulator/CandlestickChart"),
@@ -45,12 +46,13 @@ export default function SimulatorPage() {
   const engineRef = useRef<MarketEngine | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chartRef = useRef<ChartHandle | null>(null);
 
   // Initialize engine for current symbol
   useEffect(() => {
     const config = SYMBOL_PRESETS[symbol];
     const engine = new MarketEngine(config);
-    engine.generateBars(50); // initial bars
+    engine.generateBars(50);
     engineRef.current = engine;
     setBars([...engine.allBars]);
   }, [symbol]);
@@ -63,7 +65,7 @@ export default function SimulatorPage() {
         const saved = await loadPortfolio();
         if (saved) dispatch({ type: "SET_STATE", state: saved });
       } catch {
-        // Supabase tables may not exist yet — use local state
+        // Supabase tables may not exist yet
       }
       setLoading(false);
     }
@@ -94,13 +96,11 @@ export default function SimulatorPage() {
       const bar = engine.tick();
       setBars([...engine.allBars]);
 
-      // Update position prices
       dispatch({
         type: "UPDATE_PRICES",
         prices: { [symbol]: bar.close },
       });
 
-      // Check stop loss / take profit
       checkStopsTakeProfits(bar.close);
     }, ms);
 
@@ -226,9 +226,6 @@ export default function SimulatorPage() {
   }
 
   const currentPrice = bars.length > 0 ? bars[bars.length - 1].close : 0;
-  const sma20 = sma(bars, 20);
-  const sma50 = sma(bars, 50);
-  const sma200 = sma(bars, 200);
 
   // Trade markers for chart
   const tradeMarkers = portfolio.trades
@@ -299,34 +296,36 @@ export default function SimulatorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left: Chart area */}
         <div className="lg:col-span-8 space-y-3">
-          {/* Symbol selector + time controls */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-1 bg-midnight-900 border border-midnight-700/50 rounded-lg p-0.5 overflow-x-auto">
-              {SYMBOLS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSymbol(s)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium whitespace-nowrap transition-colors ${
-                    symbol === s
-                      ? "bg-gold-400/15 text-gold-400"
-                      : "text-midnight-400 hover:text-midnight-200"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 min-w-0" />
-            <TimeControls
-              isPlaying={isPlaying}
-              speed={speed}
-              barCount={bars.length}
-              onTogglePlay={() => setIsPlaying(!isPlaying)}
-              onSpeedChange={setSpeed}
-              onStepForward={handleStepForward}
-              onReset={handleReset}
-            />
+          {/* Symbol selector */}
+          <div className="flex gap-1 bg-midnight-900 border border-midnight-700/50 rounded-lg p-0.5 overflow-x-auto">
+            {SYMBOLS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSymbol(s)}
+                className={`px-3 py-1.5 rounded-md text-xs font-mono font-medium whitespace-nowrap transition-colors ${
+                  symbol === s
+                    ? "bg-gold-400/15 text-gold-400"
+                    : "text-midnight-400 hover:text-midnight-200"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
           </div>
+
+          {/* Time controls */}
+          <TimeControls
+            isPlaying={isPlaying}
+            speed={speed}
+            barCount={bars.length}
+            onTogglePlay={() => setIsPlaying(!isPlaying)}
+            onSpeedChange={setSpeed}
+            onStepForward={handleStepForward}
+            onReset={handleReset}
+          />
+
+          {/* Drawing tools */}
+          <ChartDrawingTools chartRef={chartRef} currentPrice={currentPrice} />
 
           {/* Chart */}
           <motion.div
@@ -335,10 +334,8 @@ export default function SimulatorPage() {
             className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-2"
           >
             <CandlestickChart
+              ref={chartRef}
               bars={bars}
-              sma20={sma20}
-              sma50={sma50}
-              sma200={sma200}
               markers={tradeMarkers}
               height={420}
             />
@@ -346,9 +343,7 @@ export default function SimulatorPage() {
 
           {/* Price info bar */}
           <div className="flex items-center gap-4 px-2 text-xs font-mono">
-            <span className="text-midnight-400">
-              {symbol}
-            </span>
+            <span className="text-midnight-400">{symbol}</span>
             <span className="text-midnight-100 font-medium">
               ${currentPrice.toFixed(2)}
             </span>
@@ -360,19 +355,9 @@ export default function SimulatorPage() {
                     : "text-red-500"
                 }
               >
-                {bars[bars.length - 1].close >= bars[bars.length - 2].close
-                  ? "+"
-                  : ""}
-                {(
-                  bars[bars.length - 1].close - bars[bars.length - 2].close
-                ).toFixed(2)}{" "}
-                (
-                {(
-                  ((bars[bars.length - 1].close - bars[bars.length - 2].close) /
-                    bars[bars.length - 2].close) *
-                  100
-                ).toFixed(2)}
-                %)
+                {bars[bars.length - 1].close >= bars[bars.length - 2].close ? "+" : ""}
+                {(bars[bars.length - 1].close - bars[bars.length - 2].close).toFixed(2)}{" "}
+                ({(((bars[bars.length - 1].close - bars[bars.length - 2].close) / bars[bars.length - 2].close) * 100).toFixed(2)}%)
               </span>
             )}
             <span className="text-midnight-500">
