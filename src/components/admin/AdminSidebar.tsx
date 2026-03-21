@@ -11,7 +11,6 @@ import {
   LogOut,
   ArrowLeft,
   Shield,
-  ScanSearch,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,7 +20,6 @@ const navItems = [
   { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Community", href: "/admin/community", icon: MessageCircle },
-  { label: "Scanners", href: "/admin/scanners", icon: ScanSearch },
 ];
 
 export default function AdminSidebar() {
