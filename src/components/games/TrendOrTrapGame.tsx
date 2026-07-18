@@ -181,6 +181,7 @@ export default function TrendOrTrapGame() {
           revealed={showResolution ? revealed : Math.min(revealed, di)}
           decisionIndex={di}
           highlightFrom={showResolution ? di : undefined}
+          levels={data.levels}
         />
 
         <p className="mt-2 text-center text-xs text-night-300">

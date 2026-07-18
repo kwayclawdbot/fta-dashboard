@@ -268,7 +268,15 @@ function genSeries(item) {
       else p += dir * step * (1.4 + rnd() * 0.6); // break with volume
       closes.push(jig(p));
     }
-    return { closes, decisionIndex: di, vol: 1.2 };
+    // the level the break happens on: resistance breaking up, support breaking down
+    const levels = [
+      {
+        price: round2(level),
+        kind: dir > 0 ? "resistance" : "support",
+        label: dir > 0 ? "Resistance" : "Support",
+      },
+    ];
+    return { closes, decisionIndex: di, vol: 1.2, levels };
   }
   function doubleBottom() {
     // down, low1, up to neckline, down to low2, break up
@@ -277,7 +285,11 @@ function genSeries(item) {
     const pts = [base, base - step, lo, base - step * 1.3, neck, base - step * 1.1, lo + 0.2];
     const di = pts.length; // decision right as second bottom turns up
     const res = [neck + 0.3, neck + step, neck + step * 2, neck + step * 2.8];
-    return { closes: [...pts, ...res], decisionIndex: di, vol: 1 };
+    const levels = [
+      { price: round2(lo), kind: "support", label: "Support" },
+      { price: round2(neck), kind: "resistance", label: "Neckline" },
+    ];
+    return { closes: [...pts, ...res], decisionIndex: di, vol: 1, levels };
   }
   function headShoulders() {
     const sh = base + step * 1.4;
@@ -286,7 +298,9 @@ function genSeries(item) {
     const pts = [base, sh, neck, head, neck + 0.2, sh - 0.3, neck];
     const di = pts.length;
     const res = [neck - step, neck - step * 2, neck - step * 2.9, neck - step * 3.6];
-    return { closes: [...pts, ...res], decisionIndex: di, vol: 1 };
+    // the neckline is the floor price stands on, then breaks below (bearish)
+    const levels = [{ price: round2(neck), kind: "support", label: "Neckline" }];
+    return { closes: [...pts, ...res], decisionIndex: di, vol: 1, levels };
   }
   function levelBounce(dir) {
     // dir = +1 support bounce (climbing), -1 resistance reject (falling)
@@ -305,7 +319,15 @@ function genSeries(item) {
       r += dir * step * (1.0 + rnd() * 0.5);
       res.push(jig(r));
     }
-    return { closes: [...pts, ...res], decisionIndex: di, vol: 1.1 };
+    // dir>0 = support bounce (floor), dir<0 = resistance rejection (ceiling)
+    const levels = [
+      {
+        price: round2(level),
+        kind: dir > 0 ? "support" : "resistance",
+        label: dir > 0 ? "Support" : "Resistance",
+      },
+    ];
+    return { closes: [...pts, ...res], decisionIndex: di, vol: 1.1, levels };
   }
   function trendBreak(dir) {
     // rising trend that then breaks the OTHER way (the trap) -> answer=dir
@@ -354,7 +376,15 @@ function genSeries(item) {
       q += dir * step * (1.5 + rnd() * 0.6);
       closes.push(jig(q));
     }
-    return { closes, decisionIndex: di, vol: 1.2 };
+    // the ceiling of the quiet range that price bursts through
+    const levels = [
+      {
+        price: round2(base + step),
+        kind: dir > 0 ? "resistance" : "support",
+        label: dir > 0 ? "Resistance" : "Support",
+      },
+    ];
+    return { closes, decisionIndex: di, vol: 1.2, levels };
   }
   function baitGrab() {
     // uptrend, quick dip below prior low (trap), then reclaim + run
@@ -372,7 +402,9 @@ function genSeries(item) {
       q += step * (1.5 + rnd() * 0.6); // the grab + run
       closes.push(jig(q));
     }
-    return { closes, decisionIndex: di, vol: 1.2 };
+    // the support the bait briefly sweeps below before the grab
+    const levels = [{ price: round2(priorLow), kind: "support", label: "Support" }];
+    return { closes, decisionIndex: di, vol: 1.2, levels };
   }
 
   const routes = {
@@ -403,9 +435,11 @@ function genSeries(item) {
   };
 
   const build = routes[id] || (() => staircase(climbing ? 1 : -1));
-  const { closes, decisionIndex, vol } = build();
+  const { closes, decisionIndex, vol, levels } = build();
   const candles = closesToCandles(closes, rnd, vol);
-  return { kind: "series", candles, decisionIndex };
+  const out = { kind: "series", candles, decisionIndex };
+  if (levels && levels.length) out.levels = levels;
+  return out;
 }
 
 /* =================================================================
