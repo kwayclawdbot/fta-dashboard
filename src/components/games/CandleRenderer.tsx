@@ -1,12 +1,14 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import type { OHLC, LevelLine } from "@/lib/games/types";
+import type { OHLC, LevelLine, Trendline } from "@/lib/games/types";
 
 const GREEN = "#22C55E";
 const RED = "#DC2626";
 const SUPPORT = "#22C55E"; // green-500 family — a floor
 const RESISTANCE = "#EF4444"; // red-500 family — a ceiling
+const TREND_GOLD = "#FBBF24"; // gold-400 — a swing / broken trendline
+const TREND_SOFT = "rgba(226,232,240,0.9)"; // soft-white — a second line (e.g. slow MA)
 const PAD_X = 26;
 const PAD_TOP = 20;
 const PAD_BOT = 20;
@@ -28,6 +30,7 @@ export default function CandleRenderer({
   decisionIndex,
   highlightFrom,
   levels,
+  trendlines,
   height = VH,
 }: {
   candles: OHLC[];
@@ -35,6 +38,7 @@ export default function CandleRenderer({
   decisionIndex?: number; // draws a dashed "your call" line
   highlightFrom?: number; // glow candles at/after this index (the resolution)
   levels?: LevelLine[]; // dashed S/R lines drawn before the candles
+  trendlines?: Trendline[]; // diagonal swing / MA / broken-trend lines
   height?: number;
 }) {
   const reduce = useReducedMotion();
@@ -53,6 +57,14 @@ export default function CandleRenderer({
   for (const lv of levels || []) {
     min = Math.min(min, lv.price);
     max = Math.max(max, lv.price);
+  }
+  // keep trendline endpoints (and any polyline points) in frame
+  for (const tl of trendlines || []) {
+    const pts = tl.points?.length ? tl.points : [tl.from, tl.to];
+    for (const p of pts) {
+      min = Math.min(min, p.price);
+      max = Math.max(max, p.price);
+    }
   }
   const range = max - min || 1;
   min -= range * 0.08;
@@ -154,6 +166,63 @@ export default function CandleRenderer({
               style={{ letterSpacing: "0.02em" }}
             >
               {lv.label}
+            </text>
+          </motion.g>
+        );
+      })}
+
+      {/* diagonal trendlines — swing / MA / broken-trend, drawn BEFORE candles */}
+      {(trendlines || []).map((tl, i) => {
+        const soft = tl.tone === "soft";
+        const stroke = soft ? TREND_SOFT : TREND_GOLD;
+        const poly = tl.points?.length ? tl.points : [tl.from, tl.to];
+        const pathD = poly
+          .map((p, k) => `${k === 0 ? "M" : "L"} ${xFor(p.index)} ${yFor(p.price)}`)
+          .join(" ");
+        const anchor = poly[poly.length - 1];
+        const rawAx = xFor(anchor.index);
+        const ay = yFor(anchor.price);
+        const chipW = 10 + tl.label.length * 6.2;
+        // keep the chip inside the frame
+        const ax = Math.max(PAD_X + chipW / 2, Math.min(vw - PAD_X - chipW / 2, rawAx));
+        // above the endpoint, or below if it would clip the top
+        const chipY = ay < PAD_TOP + 26 ? ay + 8 : ay - 26;
+        return (
+          <motion.g
+            key={`tl-${i}`}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: reduce ? 0 : 0.12 + i * 0.1 }}
+          >
+            <path
+              d={pathD}
+              fill="none"
+              stroke={stroke}
+              strokeWidth={2}
+              strokeDasharray="7 5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.92}
+            />
+            <rect
+              x={ax - chipW / 2}
+              y={chipY}
+              width={chipW}
+              height={18}
+              rx={9}
+              fill={stroke}
+              opacity={0.95}
+            />
+            <text
+              x={ax}
+              y={chipY + 13}
+              textAnchor="middle"
+              fill="#0b1220"
+              fontSize={11}
+              fontWeight={800}
+              style={{ letterSpacing: "0.02em" }}
+            >
+              {tl.label}
             </text>
           </motion.g>
         );

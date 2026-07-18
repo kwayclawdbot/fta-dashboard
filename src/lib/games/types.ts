@@ -22,12 +22,35 @@ export interface LevelLine {
   label: string; // "Support" | "Resistance" | "Neckline" | …
 }
 
+/** A point on a chart, addressed by candle index + price. */
+export interface ChartPoint {
+  index: number; // candle index (may be fractional / extrapolated past the ends)
+  price: number;
+}
+
+/**
+ * A DIAGONAL annotation line — a swing trendline, a moving-average line, a
+ * broken trendline, etc. Drawn dashed (gold or soft-white) with a small label
+ * chip, before the candles pop in — same treatment as LevelLine.
+ * `points` (optional) draws a multi-segment polyline (e.g. a moving average);
+ * when absent the line runs straight from `from` to `to`.
+ */
+export interface Trendline {
+  kind: "trendline";
+  from: ChartPoint;
+  to: ChartPoint;
+  points?: ChartPoint[]; // optional polyline; drawn INSTEAD of from→to when present
+  label: string; // "Uptrend" | "Downtrend" | "50 MA" | "Trendline" | …
+  tone?: "gold" | "soft"; // gold (default) or soft-white
+}
+
 /** trend-or-trap: a mini candlestick chart (battles in a row). */
 export interface SeriesChart {
   kind: "series";
   candles: OHLC[];
   decisionIndex: number; // candles[0..decisionIndex) = setup; rest = resolution
   levels?: LevelLine[]; // S/R lines the scenario turns on (drawn before candles)
+  trendlines?: Trendline[]; // diagonal swing / MA / broken-trend lines
 }
 
 export type ChartData = CandleChart | SeriesChart;
@@ -37,6 +60,7 @@ export interface CardVisual {
   name: string; // pattern name, shown big on the back
   candles: OHLC[]; // the pattern's candles (1-3 for candlesticks, ~10-14 for charts)
   levels?: LevelLine[]; // S/R lines for chart patterns
+  trendlines?: Trendline[]; // diagonal lines for trend patterns
 }
 
 export interface GameRound {

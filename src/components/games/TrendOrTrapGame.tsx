@@ -182,6 +182,7 @@ export default function TrendOrTrapGame() {
           decisionIndex={di}
           highlightFrom={showResolution ? di : undefined}
           levels={data.levels}
+          trendlines={data.trendlines}
         />
 
         <p className="mt-2 text-center text-xs text-night-300">

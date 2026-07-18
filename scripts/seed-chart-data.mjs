@@ -201,6 +201,104 @@ function closesToCandles(closes, rnd, vol = 1) {
   return candles;
 }
 
+/* ---------- trendline helpers (computed FROM the generated candles so the
+ * diagonal always sits along the real swings, never floats off the shape) --- */
+function linreg(pts) {
+  const nn = pts.length;
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (const { x, y } of pts) {
+    sx += x; sy += y; sxx += x * x; sxy += x * y;
+  }
+  const den = nn * sxx - sx * sx || 1;
+  const m = (nn * sxy - sx * sy) / den;
+  const c = (sy - m * sx) / nn;
+  return { m, c };
+}
+// A rising/falling SUPPORT line — tangent UNDER the lows of [a,b], extended to `ext`.
+function supportLine(candles, a, b, ext, label) {
+  const pts = [];
+  for (let i = a; i <= b; i++) pts.push({ x: i, y: candles[i].l });
+  let { m, c } = linreg(pts);
+  let off = Infinity;
+  for (const p of pts) off = Math.min(off, p.y - (m * p.x + c));
+  c += off; // drop the line until it just touches the lowest low
+  return {
+    kind: "trendline",
+    from: { index: a, price: round2(m * a + c) },
+    to: { index: ext, price: round2(m * ext + c) },
+    label,
+    tone: "gold",
+  };
+}
+// A RESISTANCE line — tangent OVER the highs of [a,b], extended to `ext`.
+function resistanceLine(candles, a, b, ext, label) {
+  const pts = [];
+  for (let i = a; i <= b; i++) pts.push({ x: i, y: candles[i].h });
+  let { m, c } = linreg(pts);
+  let off = -Infinity;
+  for (const p of pts) off = Math.max(off, p.y - (m * p.x + c));
+  c += off; // raise the line until it just touches the highest high
+  return {
+    kind: "trendline",
+    from: { index: a, price: round2(m * a + c) },
+    to: { index: ext, price: round2(m * ext + c) },
+    label,
+    tone: "gold",
+  };
+}
+// A moving-average polyline (for the golden/death cross round).
+function maLine(candles, w, label, tone, endIdx) {
+  const closes = candles.map((k) => k.c);
+  const last = endIdx == null ? closes.length - 1 : endIdx;
+  const points = [];
+  for (let i = 0; i <= last; i++) {
+    let s = 0, cnt = 0;
+    for (let j = Math.max(0, i - w + 1); j <= i; j++) { s += closes[j]; cnt++; }
+    points.push({ index: i, price: round2(s / cnt) });
+  }
+  return { kind: "trendline", from: points[0], to: points[points.length - 1], points, label, tone };
+}
+/**
+ * Attach the ONE annotation that matches each round's own description.
+ * Level-based rounds already carry `levels` (support/resistance/neckline/swept
+ * level); this covers the trend / momentum / MA-cross rounds with a diagonal.
+ */
+function trendlinesFor(id, candles, di) {
+  const nC = candles.length;
+  const b = Math.max(1, di - 1); // last setup bar
+  const up = (label) => [supportLine(candles, 0, b, nC - 1, label)];
+  const down = (label) => [resistanceLine(candles, 0, b, nC - 1, label)];
+  switch (id) {
+    case "tot-001": // higher highs + higher lows
+    case "tot-019": // steady weekly uptrend
+    case "tot-022": // buyers keep making higher lows
+    case "tot-003": // buyers flood in
+    case "tot-011": // three white soldiers thrust
+    case "tot-023": // earnings beat, buyers rush
+      return up("Uptrend");
+    case "tot-002": // lower highs + lower lows
+    case "tot-020": // steady weekly downtrend
+    case "tot-004": // sellers flood in
+    case "tot-012": // three black crows thrust
+      return down("Downtrend");
+    case "tot-017": // pulls back to a rising trendline, bounces
+    case "tot-018": // falls straight through a rising trendline
+      return up("Trendline");
+    case "tot-013": // extended DOWN leg, then reclaims up (RSI < 30 bounce)
+      return down("Downtrend");
+    case "tot-014": // extended UP leg, then rolls over (RSI > 70)
+      return up("Uptrend");
+    case "tot-007": // 50MA crosses ABOVE 200MA — golden cross
+    case "tot-008": // 50MA crosses BELOW 200MA — death cross
+      return [
+        maLine(candles, 3, "50 MA", "gold"),
+        maLine(candles, 6, "200 MA", "soft", nC - 3), // trim 2 bars so labels don't collide
+      ];
+    default:
+      return [];
+  }
+}
+
 function genSeries(item) {
   const rnd = mulberry32(hashStr(item.id));
   const climbing = item.answer === "CLIMBING";
@@ -439,6 +537,8 @@ function genSeries(item) {
   const candles = closesToCandles(closes, rnd, vol);
   const out = { kind: "series", candles, decisionIndex };
   if (levels && levels.length) out.levels = levels;
+  const trendlines = trendlinesFor(id, candles, decisionIndex);
+  if (trendlines.length) out.trendlines = trendlines;
   return out;
 }
 
@@ -467,6 +567,7 @@ async function main() {
   ];
   const summary = [];
   let issues = 0;
+  let unannotated = 0;
 
   for (const item of items) {
     const data =
@@ -486,9 +587,15 @@ async function main() {
       const first = cs[data.decisionIndex - 1]?.c ?? cs[0].c;
       const last = cs[cs.length - 1].c;
       ok = climbing ? last > first : last < first;
+      const ann = data.levels
+        ? `L:${data.levels.map((l) => l.label).join("/")}`
+        : data.trendlines
+          ? `T:${data.trendlines.map((t) => t.label).join("/")}`
+          : "— NONE";
       summary.push(
-        `${item.id} ${item.answer.padEnd(9)} candles=${cs.length} di=${data.decisionIndex} setupEnd=${first} resEnd=${last} ${ok ? "" : "  <-- MISMATCH"}`
+        `${item.id} ${item.answer.padEnd(9)} di=${data.decisionIndex} ${first}->${last} [${ann}] ${ok ? "" : "  <-- MISMATCH"}`
       );
+      if (!data.levels && !data.trendlines) unannotated++;
     }
     if (!ok) issues++;
 
@@ -512,10 +619,14 @@ async function main() {
   );
 
   console.log(summary.join("\n"));
+  const totSeries = items.filter((i) => i.game === "trend-or-trap").length;
   console.log(
     `\n${items.length} rounds processed, ${issues} answer mismatches. ${
       dry ? "(dry run — no writes)" : "chart_data written."
     }`
+  );
+  console.log(
+    `trend-or-trap annotation coverage: ${totSeries - unannotated}/${totSeries} (${unannotated} unannotated)`
   );
   console.log("SQL record: supabase/migrations/023_chart_data_seed.sql");
 }
