@@ -274,15 +274,6 @@ export default function FlashcardsPage() {
                 isKid={isKid}
                 reduce={!!reduce}
               />
-              {/* drag hint trails */}
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-4">
-                <span className="rounded-full bg-red-500/10 px-2 py-1 text-[10px] font-bold text-red-500 opacity-0 sm:opacity-60">
-                  ← Again
-                </span>
-                <span className="rounded-full bg-chip-green px-2 py-1 text-[10px] font-bold text-green-700 opacity-0 sm:opacity-60">
-                  Got it →
-                </span>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
