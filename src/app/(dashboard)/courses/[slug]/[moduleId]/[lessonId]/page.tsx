@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
+import { useLessonBridge } from "@/lib/lesson-bridge";
 import VideoPlayer from "@/components/dashboard/VideoPlayer";
 import QuizPanel from "@/components/dashboard/QuizPanel";
 import AiCoachPanel from "@/components/dashboard/AiCoachPanel";
@@ -294,6 +295,18 @@ export default function LessonViewerPage() {
   const currentIdx = allLessons.findIndex((l) => l.id === lessonId);
   const prevLesson = currentIdx > 0 ? allLessons[currentIdx - 1] : null;
   const nextLesson = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
+
+  // Bridge embedded interactive HTML lessons -> platform (XP, quiz_attempts, progress).
+  // Origin-validated inside the hook; only active for html-embed lessons.
+  const isHtmlEmbed = currentLesson?.video_provider === "html" && !!currentLesson?.video_id;
+  useLessonBridge({
+    supabase,
+    lessonId,
+    quizId,
+    isMock,
+    enabled: !!isHtmlEmbed,
+    onComplete: () => setIsCompleted(true),
+  });
 
   async function handleMarkComplete() {
     setIsCompleted(true);
