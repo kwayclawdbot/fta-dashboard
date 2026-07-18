@@ -542,7 +542,7 @@ export default function CourseEditorPage() {
                                 <Video className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm text-zinc-200 truncate">{lesson.title}</p>
-                                  <div className="flex items-center gap-3 text-[10px] text-zinc-500 mt-0.5">
+                                  <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-0.5">
                                     {lesson.video_provider && <span>{lesson.video_provider}</span>}
                                     {lesson.video_duration_sec && <span>{Math.round(lesson.video_duration_sec / 60)} min</span>}
                                     {lesson.drip_week && lesson.drip_week > 0 && <span>Week {lesson.drip_week}</span>}
@@ -567,8 +567,8 @@ export default function CourseEditorPage() {
                                       <div key={r.id} className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/30 rounded-lg">
                                         <Icon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                                         <span className="text-xs text-zinc-300 flex-1 truncate">{r.title}</span>
-                                        <span className="text-[10px] text-zinc-500">{RESOURCE_LABELS[r.type]}</span>
-                                        {r.is_primary && <span className="text-[10px] text-amber-400">Primary</span>}
+                                        <span className="text-[11px] text-zinc-500">{RESOURCE_LABELS[r.type]}</span>
+                                        {r.is_primary && <span className="text-[11px] text-amber-400">Primary</span>}
                                         <button onClick={() => openEditResource(r)} className="p-1 text-zinc-500 hover:text-amber-400"><Pencil className="w-3 h-3" /></button>
                                         <button onClick={() => handleDeleteResource(r.id)} className="p-1 text-zinc-500 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
                                       </div>
@@ -613,7 +613,7 @@ export default function CourseEditorPage() {
                     <ClipboardCheck className="w-5 h-5 text-zinc-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-zinc-100">{t.title}</p>
-                      <div className="flex items-center gap-3 text-[10px] text-zinc-500 mt-0.5">
+                      <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-0.5">
                         <span className="capitalize">{t.type}</span>
                         <span>{t.questions.length} question{t.questions.length !== 1 ? "s" : ""}</span>
                         <span>Pass: {t.passing_score}%</span>

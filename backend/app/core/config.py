@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Anthropic
     ANTHROPIC_API_KEY: str = ""
 
+    # OpenAI (TTS for coach voice responses)
+    OPENAI_API_KEY: str = ""
+
     # Auth
     JWT_SECRET: str = ""
 

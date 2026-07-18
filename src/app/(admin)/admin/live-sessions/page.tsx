@@ -412,7 +412,7 @@ export default function AdminLiveSessionsPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
-                      className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${statusColor(
+                      className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${statusColor(
                         session.status
                       )}`}
                     >

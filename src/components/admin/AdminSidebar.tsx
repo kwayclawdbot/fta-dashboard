@@ -11,12 +11,14 @@ import {
   LogOut,
   ArrowLeft,
   Shield,
+  Clapperboard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Courses", href: "/admin/courses", icon: BookOpen },
+  { label: "Coach Demos", href: "/admin/coach-demos", icon: Clapperboard },
   { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Community", href: "/admin/community", icon: MessageCircle },

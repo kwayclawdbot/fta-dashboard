@@ -5,7 +5,7 @@ import { Play, Pause, Maximize2 } from "lucide-react";
 
 interface VideoPlayerProps {
   videoId?: string;
-  provider?: "mux" | "youtube" | "bunny" | "placeholder";
+  provider?: "mux" | "youtube" | "bunny" | "html" | "placeholder";
   title: string;
   onProgress?: (percent: number) => void;
 }
@@ -30,7 +30,7 @@ export default function VideoPlayer({
 
   return (
     <div className="relative w-full">
-      <div className="relative aspect-video bg-midnight-950 rounded-lg overflow-hidden">
+      <div className={`relative bg-midnight-950 rounded-lg overflow-hidden ${provider === "html" ? "aspect-[4/3] lg:aspect-[16/10]" : "aspect-video"}`}>
         {/* YouTube */}
         {provider === "youtube" && videoId && !playing && (
           <button
@@ -95,8 +95,20 @@ export default function VideoPlayer({
           </div>
         )}
 
+        {/* Interactive HTML lesson (from course-creator) */}
+        {provider === "html" && videoId && (
+          <iframe
+            className="absolute inset-0 w-full h-full border-0"
+            src={videoId}
+            allow="autoplay; microphone"
+            allowFullScreen
+            title={title}
+            style={{ background: "#020408" }}
+          />
+        )}
+
         {/* Placeholder */}
-        {(provider === "placeholder" || !videoId) && (
+        {(provider === "placeholder" || !videoId) && provider !== "html" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div
               className="absolute inset-0 opacity-5"

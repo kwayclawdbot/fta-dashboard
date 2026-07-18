@@ -401,12 +401,12 @@ export default function AdminCoursesPage() {
                       {course.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-500 font-mono">
+                  <td className="px-4 py-3 text-sm text-zinc-500">
                     {course.slug}
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
                         course.min_tier === "challenge"
                           ? "bg-green-500/10 text-green-400"
                           : "bg-amber-400/10 text-amber-400"

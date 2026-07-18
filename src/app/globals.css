@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/*
+  FTA design system — deck-aligned "warm paper" light theme.
+  The midnight-* ramp is intentionally remapped so the whole app flips light
+  while existing class pairings keep their relationships:
+    bg-midnight-950 = paper page bg   · bg-midnight-900 = white card
+    border-midnight-700/800 = warm sand · text-midnight-50 = ink heading
+    text-midnight-300/400/500 = grays  · night-* = the ONLY true darks,
+  reserved for deliberate "pro chart" / special-moment islands.
+*/
 @theme inline {
   --color-gold-50: #FFFBEB;
   --color-gold-100: #FEF3C7;
@@ -12,24 +21,54 @@
   --color-gold-800: #92400E;
   --color-gold-900: #78350F;
 
-  --color-midnight-50: #f0f2f5;
-  --color-midnight-100: #d1d5de;
-  --color-midnight-200: #a3abbe;
-  --color-midnight-300: #75819d;
-  --color-midnight-400: #47577d;
-  --color-midnight-500: #192d5c;
-  --color-midnight-600: #14244a;
-  --color-midnight-700: #0f1b37;
-  --color-midnight-800: #0a1225;
-  --color-midnight-900: #050912;
-  --color-midnight-950: #020408;
+  /* Inverted ramp: light surfaces + readable grays (deck paper/ink system) */
+  --color-midnight-50: #101828;
+  --color-midnight-100: #1D2939;
+  --color-midnight-200: #344054;
+  --color-midnight-300: #475467;
+  --color-midnight-400: #5B6472;
+  --color-midnight-500: #667085;
+  --color-midnight-600: #98A2B3;
+  --color-midnight-700: #E4DBC6;
+  --color-midnight-800: #EAE2D0;
+  --color-midnight-900: #FFFFFF;
+  --color-midnight-950: #FBF7EF;
 
-  --color-red-500: #EF4444;
-  --color-green-400: #4ADE80;
-  --color-green-500: #22C55E;
+  /* True darks — deliberate islands only (charts, film moments, end cards) */
+  --color-night-50: #F0F2F5;
+  --color-night-300: #75819D;
+  --color-night-500: #192D5C;
+  --color-night-700: #0F1B37;
+  --color-night-800: #0A1225;
+  --color-night-900: #050912;
+  --color-night-950: #04060C;
+
+  /* Semantic aliases (deck names) */
+  --color-paper: #FBF7EF;
+  --color-ink: #101828;
+  --color-soft: #5B6472;
+  --color-sand: #EAE2D0;
+  --color-chip-amber: #FEF3C7;
+  --color-chip-sky: #E0F2FE;
+  --color-chip-green: #DCFCE7;
+
+  /* Market semantics (deck values) */
+  --color-red-500: #DC2626;
+  --color-red-600: #B91C1C;
+  --color-green-400: #22C55E;
+  --color-green-500: #16A34A;
+  --color-green-600: #15803D;
 
   --font-display: var(--font-poppins), sans-serif;
   --font-body: var(--font-inter), sans-serif;
+
+  /* Softer, friendlier shape language */
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  --shadow-soft: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 16px rgba(16, 24, 40, 0.06);
+  --shadow-lift: 0 2px 4px rgba(16, 24, 40, 0.06), 0 12px 32px rgba(16, 24, 40, 0.10);
 }
 
 html {
@@ -37,24 +76,28 @@ html {
 }
 
 body {
-  background: #020408;
-  color: #f0f2f5;
+  background: #FBF7EF;
+  color: #101828;
   font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #050912;
+  background: #F3EDE1;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(251, 191, 36, 0.4);
-  border-radius: 3px;
+  background: #D8CDB4;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B45309;
 }
 
 .text-gradient-gold {
-  background: linear-gradient(135deg, #FCD34D, #F59E0B, #D97706);
+  background: linear-gradient(135deg, #D97706, #B45309);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -71,29 +114,29 @@ body {
   right: -4px;
   top: 50%;
   height: 3px;
-  background: #EF4444;
+  background: #DC2626;
   transform: rotate(-5deg);
 }
 
-/* Use sparingly -- at most 1-2 per page for key interactive elements */
+/* Legacy decorative classes remapped to the paper system */
 .glow-border {
-  border: 1px solid rgba(251, 191, 36, 0.15);
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.06);
+  border: 1px solid #EAE2D0;
+  box-shadow: var(--shadow-soft);
 }
 
 .glow-border-strong {
-  border: 2px solid rgba(251, 191, 36, 0.3);
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
+  border: 2px solid #FBBF24;
+  box-shadow: var(--shadow-soft);
 }
 
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, #EAE2D0, transparent);
 }
 
 .cta-button {
-  background: linear-gradient(135deg, #FBBF24, #F59E0B, #D97706);
-  color: #020408;
+  background: linear-gradient(135deg, #FBBF24, #F59E0B);
+  color: #101828;
   font-weight: 700;
   font-family: var(--font-display);
   letter-spacing: 0.02em;
@@ -102,30 +145,45 @@ body {
   overflow: hidden;
 }
 .cta-button:hover {
-  box-shadow: 0 0 24px rgba(251, 191, 36, 0.3);
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
 }
 
-/* Urgency bar */
 .urgency-bar {
-  background: linear-gradient(90deg, #020408, #1a0a00, #020408);
-  border-top: 1px solid rgba(251, 191, 36, 0.2);
-  border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+  background: #FEF3C7;
+  border-top: 1px solid #FDE68A;
+  border-bottom: 1px solid #FDE68A;
 }
 
-/* Stack row highlight */
 .stack-row {
   transition: all 0.3s ease;
 }
 .stack-row:hover {
-  background: rgba(251, 191, 36, 0.05);
+  background: rgba(245, 158, 11, 0.07);
 }
 
-/* Testimonial card */
 .testimonial-card {
-  background: linear-gradient(135deg, rgba(10, 18, 37, 0.8), rgba(5, 9, 18, 0.9));
-  border: 1px solid rgba(251, 191, 36, 0.1);
+  background: #FFFFFF;
+  border: 1px solid #EAE2D0;
+  box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
 }
 .testimonial-card:hover {
-  border-color: rgba(251, 191, 36, 0.3);
+  border-color: #FBBF24;
+}
+
+/* Warm paper card — the default surface of the redesign */
+.paper-card {
+  background: #FFFFFF;
+  border: 1px solid #EAE2D0;
+  border-radius: 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Deliberate dark island (pro chart pane, special moments) */
+.night-island {
+  background: #04060C;
+  color: #F0F2F5;
+  border-radius: 1rem;
+  overflow: hidden;
 }

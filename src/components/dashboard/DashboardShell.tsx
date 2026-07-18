@@ -8,6 +8,9 @@ interface DashboardShellProps {
   user: {
     email?: string;
     display_name?: string;
+    role?: string;
+    age_group?: string;
+    track?: string;
   };
   children: React.ReactNode;
 }

@@ -188,7 +188,7 @@ type FilterType = "all" | "announcement" | "win" | "question" | "discussion";
 // ── Components ──
 
 function AvatarCircle({ initials, role, size = "md" }: { initials: string; role: string; size?: "sm" | "md" | "lg" }) {
-  const sizes = { sm: "w-7 h-7 text-[10px]", md: "w-9 h-9 text-xs", lg: "w-11 h-11 text-sm" };
+  const sizes = { sm: "w-7 h-7 text-[11px]", md: "w-9 h-9 text-xs", lg: "w-11 h-11 text-sm" };
   const bg = role === "coach" || role === "admin"
     ? "bg-gold-400/20 text-gold-400 ring-1 ring-gold-400/30"
     : role === "child"
@@ -215,7 +215,7 @@ function PostCard({ post, onReact }: { post: Post; onReact: (postId: string, emo
     >
       {/* Pinned indicator */}
       {post.pinned && (
-        <div className="flex items-center gap-1.5 text-[10px] text-gold-400 font-display font-semibold uppercase tracking-wider mb-3">
+        <div className="flex items-center gap-1.5 text-[11px] text-gold-400 font-display font-semibold uppercase tracking-wider mb-3">
           <Pin className="w-3 h-3" />
           Pinned
         </div>
@@ -227,11 +227,11 @@ function PostCard({ post, onReact }: { post: Post; onReact: (postId: string, emo
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display text-sm font-semibold text-midnight-100">{post.author}</span>
-            <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_COLORS[post.role]}`}>
+            <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_COLORS[post.role]}`}>
               {post.role}
             </span>
             {post.badge && (
-              <span className="text-[10px] text-midnight-500 font-body flex items-center gap-1">
+              <span className="text-[11px] text-midnight-500 font-body flex items-center gap-1">
                 <Star className="w-2.5 h-2.5 text-gold-400" />
                 {post.badge}
               </span>
@@ -239,7 +239,7 @@ function PostCard({ post, onReact }: { post: Post; onReact: (postId: string, emo
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-[11px] text-midnight-500 font-body">{post.time}</span>
-            <span className={`text-[10px] font-display font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 ${cat.color}`}>
+            <span className={`text-[11px] font-display font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 ${cat.color}`}>
               <cat.icon className="w-2.5 h-2.5" />
               {cat.label}
             </span>
@@ -308,18 +308,18 @@ function PostCard({ post, onReact }: { post: Post; onReact: (postId: string, emo
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-display font-semibold text-midnight-200">{comment.author}</span>
-                      <span className={`text-[9px] font-display font-bold uppercase tracking-wider px-1 py-0.5 rounded ${ROLE_COLORS[comment.role]}`}>
+                      <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1 py-0.5 rounded ${ROLE_COLORS[comment.role]}`}>
                         {comment.role}
                       </span>
-                      <span className="text-[10px] text-midnight-600 font-body">{comment.time}</span>
+                      <span className="text-[11px] text-midnight-600 font-body">{comment.time}</span>
                     </div>
                     <p className="text-xs text-midnight-300 font-body leading-relaxed mt-0.5">{comment.text}</p>
                     <div className="flex items-center gap-3 mt-1">
-                      <button className="text-[10px] text-midnight-500 hover:text-midnight-300 font-body flex items-center gap-1 transition-colors">
+                      <button className="text-[11px] text-midnight-500 hover:text-midnight-300 font-body flex items-center gap-1 transition-colors">
                         <ThumbsUp className="w-2.5 h-2.5" />
                         {comment.likes}
                       </button>
-                      <button className="text-[10px] text-midnight-500 hover:text-midnight-300 font-body transition-colors">
+                      <button className="text-[11px] text-midnight-500 hover:text-midnight-300 font-body transition-colors">
                         Reply
                       </button>
                     </div>
@@ -536,19 +536,19 @@ export default function CommunityPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <p className="font-display text-lg font-bold text-midnight-100">47</p>
-                <p className="text-[10px] text-midnight-500 font-body">Families</p>
+                <p className="text-[11px] text-midnight-500 font-body">Families</p>
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-midnight-100">128</p>
-                <p className="text-[10px] text-midnight-500 font-body">Members</p>
+                <p className="text-[11px] text-midnight-500 font-body">Members</p>
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-gold-400">23</p>
-                <p className="text-[10px] text-midnight-500 font-body">Online now</p>
+                <p className="text-[11px] text-midnight-500 font-body">Online now</p>
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-green-400">312</p>
-                <p className="text-[10px] text-midnight-500 font-body">Posts this week</p>
+                <p className="text-[11px] text-midnight-500 font-body">Posts this week</p>
               </div>
             </div>
           </div>
@@ -562,7 +562,7 @@ export default function CommunityPage() {
             <div className="space-y-2.5">
               {MOCK_MEMBERS.filter((m) => m.streak).sort((a, b) => (b.streak || 0) - (a.streak || 0)).map((member, i) => (
                 <div key={member.name} className="flex items-center gap-2.5">
-                  <span className="text-[10px] font-display font-bold text-midnight-500 w-4 text-right">
+                  <span className="text-[11px] font-display font-bold text-midnight-500 w-4 text-right">
                     {i === 0 ? <Crown className="w-3.5 h-3.5 text-gold-400 inline" /> : `#${i + 1}`}
                   </span>
                   <AvatarCircle initials={member.avatar} role={member.role} size="sm" />
@@ -593,7 +593,7 @@ export default function CommunityPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-body text-midnight-200 truncate">{member.name}</p>
-                    <p className={`text-[10px] font-body ${ROLE_COLORS[member.role].split(" ")[0]}`}>{member.role}</p>
+                    <p className={`text-[11px] font-body ${ROLE_COLORS[member.role].split(" ")[0]}`}>{member.role}</p>
                   </div>
                 </div>
               ))}

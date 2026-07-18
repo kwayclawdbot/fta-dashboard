@@ -9,7 +9,7 @@ export default function AuthLayout({
     <div className="min-h-screen bg-midnight-950 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <div className="mb-8 text-center">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-gold-400">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-gold-600">
           Family Trading Academy
         </h1>
         <p className="mt-1.5 text-midnight-400 text-sm font-body">

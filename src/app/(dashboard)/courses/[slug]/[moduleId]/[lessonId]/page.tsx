@@ -320,6 +320,71 @@ export default function LessonViewerPage() {
     { id: "lessons", label: "Lessons", icon: List },
   ];
 
+  const isHtmlLesson = currentLesson.video_provider === "html" && currentLesson.video_id;
+
+  // ── HTML Lesson: full-width embedded, no sidebar ──
+  if (isHtmlLesson) {
+    return (
+      <div className="max-w-[1600px] mx-auto">
+        {/* Breadcrumb */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
+          <Link href={`/courses/${slug}`} className="hover:text-midnight-300 transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" />
+            {courseTitle}
+          </Link>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-midnight-400">{currentModule.title}</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-midnight-300">{currentLesson.title}</span>
+        </motion.div>
+
+        {/* Full-width embedded lesson */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+          <div className="relative w-full rounded-lg overflow-hidden border border-midnight-800" style={{ height: "calc(100vh - 160px)" }}>
+            <iframe
+              className="absolute inset-0 w-full h-full border-0"
+              src={currentLesson.video_id!}
+              allow="autoplay; microphone"
+              allowFullScreen
+              title={currentLesson.title}
+              style={{ background: "#FBF7EF" }}
+            />
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              {!isCompleted ? (
+                <button onClick={handleMarkComplete} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors">
+                  <Check className="w-4 h-4" />
+                  Mark Complete
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-body">
+                  <Check className="w-4 h-4" />
+                  Completed
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {prevLesson && (
+                <Link href={`/courses/${slug}/${prevLesson.moduleId}/${prevLesson.id}`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 hover:bg-midnight-800/50 transition-colors font-body">
+                  <ArrowLeft className="w-4 h-4" /> Previous
+                </Link>
+              )}
+              {nextLesson && (
+                <Link href={`/courses/${slug}/${nextLesson.moduleId}/${nextLesson.id}`} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gold-400/10 text-gold-400 hover:bg-gold-400/20 text-sm transition-colors font-body">
+                  Next <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ── Video Lesson: standard layout with sidebar ──
   return (
     <div className="max-w-[1400px] mx-auto">
       {/* Breadcrumb */}
@@ -402,7 +467,31 @@ export default function LessonViewerPage() {
             <div className="mt-6 border-t border-midnight-800 pt-6">
               <h3 className="font-display text-base font-semibold text-midnight-100 mb-1">Lesson Quiz</h3>
               <p className="text-xs text-midnight-500 font-body mb-4">Test your understanding</p>
-              <QuizPanel questions={PLACEHOLDER_QUIZ} onComplete={() => {}} />
+              <QuizPanel questions={PLACEHOLDER_QUIZ} onComplete={async (score, passed) => {
+                try {
+                  const correct = Math.round(score * PLACEHOLDER_QUIZ.length / 100);
+                  const res = await fetch("/api/coach", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      action: "feedback",
+                      lesson_id: lessonId,
+                      score: correct,
+                      total: PLACEHOLDER_QUIZ.length,
+                      answers: PLACEHOLDER_QUIZ.map((q, i) => ({ question: q.question, is_correct: i < correct })),
+                      audio: true,
+                    }),
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.audio_url) {
+                      const audio = new Audio(data.audio_url);
+                      audio.volume = 0.9;
+                      audio.play().catch(() => {});
+                    }
+                  }
+                } catch (e) { console.warn("[Coach] Feedback error:", e); }
+              }} />
             </div>
           )}
           {currentLesson.has_quiz && isCompleted && !showQuiz && (
@@ -445,7 +534,7 @@ export default function LessonViewerPage() {
             {/* Tab content */}
             <div className="flex-1 min-h-0 overflow-hidden">
               {sideTab === "coach" && (
-                <AiCoachPanel lessonTitle={currentLesson.title} courseTitle={courseTitle} />
+                <AiCoachPanel lessonTitle={currentLesson.title} lessonId={lessonId} courseTitle={courseTitle} sectionContent={currentLesson.description || ""} />
               )}
 
               {sideTab === "notes" && (
@@ -457,7 +546,7 @@ export default function LessonViewerPage() {
                     placeholder="Type your notes here..."
                     className="flex-1 w-full bg-midnight-800/50 border border-midnight-700 rounded-lg p-3 text-sm text-midnight-200 placeholder:text-midnight-600 font-body resize-none focus:outline-none focus:border-gold-400/40"
                   />
-                  <p className="text-[10px] text-midnight-600 mt-2 font-body">Notes are saved locally in this session</p>
+                  <p className="text-[11px] text-midnight-600 mt-2 font-body">Notes are saved locally in this session</p>
                 </div>
               )}
 
@@ -484,7 +573,7 @@ export default function LessonViewerPage() {
                             <span className={`text-xs font-body truncate flex-1 ${isActive ? "text-gold-400 font-medium" : "text-midnight-300"}`}>
                               {lesson.title}
                             </span>
-                            <span className="text-[10px] text-midnight-600 font-body shrink-0">
+                            <span className="text-[11px] text-midnight-600 font-body shrink-0">
                               {formatDuration(lesson.video_duration_sec)}
                             </span>
                           </Link>

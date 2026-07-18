@@ -183,7 +183,7 @@ export default function SimLeaderboardPage() {
                         <Crown className="w-4 h-4 text-gold-400" />
                       )}
                       <span
-                        className={`font-mono font-bold ${
+                        className={`font-bold ${
                           rankColors[entry.rank] || "text-midnight-500"
                         }`}
                       >
@@ -193,7 +193,7 @@ export default function SimLeaderboardPage() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 text-[10px] font-bold font-display">
+                      <div className="w-7 h-7 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 text-[11px] font-bold font-display">
                         {entry.displayName
                           .split(" ")
                           .map((w) => w[0])
@@ -206,21 +206,21 @@ export default function SimLeaderboardPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-midnight-200">
+                  <td className="py-3 px-4 text-right text-midnight-200">
                     ${entry.portfolioValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </td>
                   <td
-                    className={`py-3 px-4 text-right font-mono font-medium ${
+                    className={`py-3 px-4 text-right font-medium ${
                       entry.returnPct >= 0 ? "text-green-400" : "text-red-500"
                     }`}
                   >
                     {entry.returnPct >= 0 ? "+" : ""}
                     {entry.returnPct}%
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-midnight-300 hidden sm:table-cell">
+                  <td className="py-3 px-4 text-right text-midnight-300 hidden sm:table-cell">
                     {entry.totalTrades > 0 ? `${entry.winRate}%` : "—"}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-midnight-400 hidden sm:table-cell">
+                  <td className="py-3 px-4 text-right text-midnight-400 hidden sm:table-cell">
                     {entry.totalTrades}
                   </td>
                 </motion.tr>

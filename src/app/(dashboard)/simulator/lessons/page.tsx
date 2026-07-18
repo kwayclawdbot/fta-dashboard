@@ -70,7 +70,7 @@ export default function LessonsPage() {
               style={{ width: `${(totalPassed / SCENARIOS.length) * 100}%` }}
             />
           </div>
-          <span className="text-xs font-mono text-midnight-400">
+          <span className="text-xs text-midnight-400">
             {totalPassed}/{SCENARIOS.length} completed
           </span>
         </div>
@@ -83,7 +83,7 @@ export default function LessonsPage() {
           <h2 className="text-sm font-display font-semibold text-midnight-100">
             Chart Patterns
           </h2>
-          <span className="text-[10px] text-midnight-500">({chartPatterns.length})</span>
+          <span className="text-[11px] text-midnight-500">({chartPatterns.length})</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {chartPatterns.map((s, i) => (
@@ -104,7 +104,7 @@ export default function LessonsPage() {
           <h2 className="text-sm font-display font-semibold text-midnight-100">
             Candlestick Patterns
           </h2>
-          <span className="text-[10px] text-midnight-500">({candlestickPatterns.length})</span>
+          <span className="text-[11px] text-midnight-500">({candlestickPatterns.length})</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {candlestickPatterns.map((s, i) => (
@@ -155,13 +155,13 @@ function ScenarioCard({
         </p>
         <div className="flex items-center gap-2">
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+            className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
               DIFFICULTY_COLORS[scenario.difficulty]
             }`}
           >
             {scenario.difficulty}
           </span>
-          <span className="text-[10px] text-midnight-500">
+          <span className="text-[11px] text-midnight-500">
             →{" "}
             {scenario.correctAction === "buy"
               ? "Bullish"

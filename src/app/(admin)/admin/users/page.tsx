@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import { Users, Search, ChevronDown, Shield, User, Crown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -183,9 +183,8 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {filtered.map((profile) => (
-                <>
+                <Fragment key={profile.id}>
                   <tr
-                    key={profile.id}
                     className="border-b border-zinc-800/50 hover:bg-zinc-900/30 transition-colors"
                   >
                     <td className="px-4 py-3">
@@ -217,7 +216,7 @@ export default function AdminUsersPage() {
                       {profile.family_id ? (
                         <button
                           onClick={() => viewFamily(profile.family_id!)}
-                          className="text-xs text-amber-400 hover:text-amber-300 transition-colors font-mono"
+                          className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
                         >
                           {expandedFamilyId === profile.family_id
                             ? "Hide"
@@ -253,7 +252,7 @@ export default function AdminUsersPage() {
                       <tr key={`family-${profile.family_id}`}>
                         <td colSpan={6} className="px-4 py-2 bg-zinc-900/60">
                           <div className="ml-4 border-l-2 border-amber-400/20 pl-4">
-                            <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 font-bold">
+                            <p className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2 font-bold">
                               Family Members
                             </p>
                             {familyMembers.map((m) => (
@@ -262,7 +261,7 @@ export default function AdminUsersPage() {
                                 className="flex items-center gap-3 py-1.5"
                               >
                                 <div
-                                  className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${roleColor(
+                                  className={`flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${roleColor(
                                     m.role
                                   )}`}
                                 >
@@ -281,7 +280,7 @@ export default function AdminUsersPage() {
                         </td>
                       </tr>
                     )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

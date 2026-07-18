@@ -8,12 +8,10 @@ import {
   LayoutDashboard,
   BookOpen,
   Video,
-  Bot,
   MessageCircle,
   Trophy,
   Users,
   Settings,
-  Lock,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -31,48 +29,86 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
-  requiresAcademy?: boolean;
   subItems?: SubNavItem[];
   parentOnly?: boolean;
 }
 
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Courses", href: "/courses", icon: BookOpen },
-  { label: "Live Sessions", href: "/live-sessions", icon: Video, requiresAcademy: true },
-  { label: "AI Coach", href: "/ai-coach", icon: Bot, requiresAcademy: true },
-  { label: "Community", href: "/community", icon: MessageCircle },
-  { label: "Progress", href: "/progress", icon: Trophy },
-  {
-    label: "Simulator",
-    href: "/simulator",
-    icon: LineChart,
-    subItems: [
-      { label: "Trading Floor", href: "/simulator" },
-      { label: "Pattern Practice", href: "/simulator/lessons" },
-      { label: "Leaderboard", href: "/simulator/leaderboard" },
-    ],
-  },
-  {
-    label: "Family",
-    href: "/family",
-    icon: Users,
-    requiresAcademy: true,
-    parentOnly: true,
-    subItems: [
-      { label: "Overview", href: "/family/overview" },
-      { label: "Leaderboard", href: "/family/leaderboard" },
-      { label: "Members", href: "/family/members" },
-    ],
-  },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
+// Role-aware navigation: parents get the full family command center,
+// teens get the learner+practice set, kids get the 5-item Kids Corner.
+function getNavItems(role?: string, ageGroup?: string): NavItem[] {
+  const isChild = role === "child";
+  const isKid = isChild && ageGroup === "kids";
+
+  if (isKid) {
+    return [
+      { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
+      { label: "My Lessons", href: "/courses", icon: BookOpen },
+      { label: "Practice", href: "/simulator/lessons", icon: LineChart },
+      { label: "My Badges", href: "/progress", icon: Trophy },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ];
+  }
+
+  if (isChild) {
+    // Teens
+    return [
+      { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Courses", href: "/courses", icon: BookOpen },
+      { label: "Live Classes", href: "/live-sessions", icon: Video },
+      {
+        label: "Practice",
+        href: "/simulator",
+        icon: LineChart,
+        subItems: [
+          { label: "Trading Floor", href: "/simulator" },
+          { label: "Pattern Practice", href: "/simulator/lessons" },
+          { label: "Leaderboard", href: "/simulator/leaderboard" },
+        ],
+      },
+      { label: "Community", href: "/community", icon: MessageCircle },
+      { label: "My Progress", href: "/progress", icon: Trophy },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ];
+  }
+
+  // Parents (and coach/admin)
+  return [
+    { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Courses", href: "/courses", icon: BookOpen },
+    { label: "Live Classes", href: "/live-sessions", icon: Video },
+    {
+      label: "Family",
+      href: "/family",
+      icon: Users,
+      parentOnly: true,
+      subItems: [
+        { label: "Overview", href: "/family/overview" },
+        { label: "Leaderboard", href: "/family/leaderboard" },
+        { label: "Members", href: "/family/members" },
+      ],
+    },
+    { label: "Community", href: "/community", icon: MessageCircle },
+    {
+      label: "Simulator",
+      href: "/simulator",
+      icon: LineChart,
+      subItems: [
+        { label: "Trading Floor", href: "/simulator" },
+        { label: "Pattern Practice", href: "/simulator/lessons" },
+        { label: "Leaderboard", href: "/simulator/leaderboard" },
+      ],
+    },
+    { label: "Progress", href: "/progress", icon: Trophy },
+    { label: "Settings", href: "/settings", icon: Settings },
+  ];
+}
 
 interface DashboardSidebarProps {
   user: {
     email?: string;
     display_name?: string;
     role?: string;
+    age_group?: string;
   };
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -89,6 +125,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const navItems = getNavItems(user.role, user.age_group);
   const supabase = createClient();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -111,7 +148,7 @@ export default function DashboardSidebar({
       {/* Logo */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-midnight-700/50">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="font-display text-lg font-bold text-gold-400">
+          <span className="font-display text-lg font-bold text-gold-600">
             {collapsed ? "F" : "FTA"}
           </span>
           {!collapsed && (
@@ -149,20 +186,17 @@ export default function DashboardSidebar({
                 className={`
                   relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
                   ${isActive || isParentActive
-                    ? "text-gold-400 bg-gold-400/5"
+                    ? "text-gold-700 bg-gold-400/15"
                     : "text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800/50"
                   }
                 `}
               >
                 {(isActive || isParentActive) && (
-                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-400" />
+                  <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-500" />
                 )}
                 <Icon className="w-[18px] h-[18px] shrink-0" />
                 {!collapsed && (
                   <span className="truncate font-medium">{item.label}</span>
-                )}
-                {!collapsed && item.requiresAcademy && (
-                  <Lock className="w-3 h-3 text-midnight-600 ml-auto shrink-0" />
                 )}
               </Link>
               {showSubItems && (
@@ -177,7 +211,7 @@ export default function DashboardSidebar({
                         className={`
                           block px-3 py-1.5 rounded-md text-xs transition-colors
                           ${subActive
-                            ? "text-gold-400"
+                            ? "text-gold-700"
                             : "text-midnight-400 hover:text-midnight-200"
                           }
                         `}
@@ -210,7 +244,7 @@ export default function DashboardSidebar({
       {/* User / Logout */}
       <div className="px-3 py-4 border-t border-midnight-800/50">
         <div className="flex items-center gap-3 px-3 mb-3">
-          <div className="w-7 h-7 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 text-[11px] font-bold font-display shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 text-[11px] font-bold font-display shrink-0">
             {initials}
           </div>
           {!collapsed && (

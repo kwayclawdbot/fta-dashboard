@@ -276,7 +276,7 @@ export default function ScenarioPracticePage() {
               <p className="text-xs text-midnight-400">{scenario.description}</p>
             </div>
             <span
-              className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+              className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
                 scenario.difficulty === "beginner"
                   ? "bg-green-400/10 text-green-400 border-green-400/20"
                   : scenario.difficulty === "intermediate"
@@ -294,7 +294,7 @@ export default function ScenarioPracticePage() {
           )}
 
           {/* Chart */}
-          <div className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-2">
+          <div className="night-island border border-night-700/60 p-2">
             {visibleBars.length > 0 ? (
               <CandlestickChart
                 ref={chartRef}
@@ -313,7 +313,7 @@ export default function ScenarioPracticePage() {
 
           {/* Bar counter */}
           {phase !== "intro" && (
-            <p className="text-[10px] font-mono text-midnight-500 px-1">
+            <p className="text-[11px] text-midnight-500 px-1">
               Bar {visibleBars.length} •{" "}
               {phase === "playing"
                 ? "Watching pattern form..."
@@ -340,7 +340,7 @@ export default function ScenarioPracticePage() {
             </p>
             {hintPriceLines.length > 0 && (
               <div className="mt-3 pt-3 border-t border-midnight-700/30">
-                <p className="text-[10px] text-midnight-500">
+                <p className="text-[11px] text-midnight-500">
                   Hint: greyed-out S/R levels are drawn on the chart
                 </p>
               </div>

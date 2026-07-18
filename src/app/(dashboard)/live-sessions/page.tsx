@@ -86,7 +86,7 @@ function TrackBadge({ track }: { track: Track }) {
   const cfg = TRACK_CONFIG[track] || TRACK_CONFIG["all"];
   return (
     <span
-      className={`text-[10px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${cfg.color} ${cfg.bgColor}`}
+      className={`text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${cfg.color} ${cfg.bgColor}`}
     >
       {cfg.label}
     </span>
@@ -95,7 +95,7 @@ function TrackBadge({ track }: { track: Track }) {
 
 function HostAvatar({ initials }: { initials: string }) {
   return (
-    <div className="w-8 h-8 rounded-full bg-gold-400/20 text-gold-400 ring-1 ring-gold-400/30 flex items-center justify-center text-[10px] font-display font-bold shrink-0">
+    <div className="w-8 h-8 rounded-full bg-gold-400/20 text-gold-400 ring-1 ring-gold-400/30 flex items-center justify-center text-[11px] font-display font-bold shrink-0">
       {initials}
     </div>
   );
@@ -116,13 +116,13 @@ function LiveRoom({ session }: { session: LiveSession }) {
       <div className="flex items-center justify-between px-4 py-2 bg-red-500/10 border-b border-red-500/20">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs font-mono font-bold text-red-400 uppercase">
+          <span className="text-xs font-bold text-red-400 uppercase">
             Live Now
           </span>
-          <span className="text-[10px] font-mono text-midnight-400">|</span>
+          <span className="text-[11px] text-midnight-400">|</span>
           <TrackBadge track={session.track} />
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono text-midnight-400">
+        <div className="flex items-center gap-2 text-[11px] text-midnight-400">
           <Users className="w-3 h-3" />
           {session.attendees}/{session.maxAttendees}
         </div>
@@ -139,28 +139,28 @@ function LiveRoom({ session }: { session: LiveSession }) {
                 <p className="text-sm font-display font-semibold text-midnight-100">
                   {session.host}
                 </p>
-                <p className="text-[10px] text-midnight-500 font-mono mt-1">
+                <p className="text-[11px] text-midnight-500 mt-1">
                   Speaking...
                 </p>
               </div>
             </div>
             <div className="absolute bottom-3 right-3 w-32 h-24 rounded-lg bg-midnight-800 border border-midnight-700 flex items-center justify-center">
               {videoOn ? (
-                <p className="text-[10px] text-midnight-500 font-mono">
+                <p className="text-[11px] text-midnight-500">
                   Camera On
                 </p>
               ) : (
                 <div className="text-center">
-                  <div className="w-8 h-8 rounded-full bg-midnight-700 text-midnight-400 flex items-center justify-center text-[10px] font-display font-bold mx-auto">
+                  <div className="w-8 h-8 rounded-full bg-midnight-700 text-midnight-400 flex items-center justify-center text-[11px] font-display font-bold mx-auto">
                     KC
                   </div>
-                  <p className="text-[9px] text-midnight-600 font-mono mt-1">
+                  <p className="text-[11px] text-midnight-600 mt-1">
                     You
                   </p>
                 </div>
               )}
             </div>
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded bg-midnight-950/80 text-[10px] font-mono text-midnight-300">
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded bg-midnight-950/80 text-[11px] text-midnight-300">
               <Users className="w-3 h-3" />
               {session.attendees} watching
             </div>
@@ -236,7 +236,7 @@ function LiveRoom({ session }: { session: LiveSession }) {
               style={{ height: "calc(100%)" }}
             >
               <div className="px-3 py-2.5 border-b border-midnight-800/60">
-                <p className="text-xs font-mono font-bold text-midnight-300 uppercase">
+                <p className="text-xs font-bold text-midnight-300 uppercase">
                   Live Chat
                 </p>
               </div>
@@ -261,7 +261,7 @@ function LiveRoom({ session }: { session: LiveSession }) {
                 ].map((chat, i) => (
                   <div key={i} className="flex gap-2">
                     <span
-                      className={`text-[10px] font-mono font-bold shrink-0 ${
+                      className={`text-[11px] font-bold shrink-0 ${
                         chat.coach ? "text-gold-400" : "text-midnight-400"
                       }`}
                     >
@@ -322,7 +322,7 @@ function SessionCard({
             {session.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="text-[9px] font-mono text-midnight-500 bg-midnight-800/50 px-1.5 py-0.5 rounded"
+                className="text-[11px] text-midnight-500 bg-midnight-800/50 px-1.5 py-0.5 rounded"
               >
                 {tag}
               </span>
@@ -334,7 +334,7 @@ function SessionCard({
           <p className="text-xs text-midnight-500 font-body line-clamp-2">
             {session.description}
           </p>
-          <div className="flex items-center gap-3 mt-2 text-[10px] font-mono text-midnight-500">
+          <div className="flex items-center gap-3 mt-2 text-[11px] text-midnight-500">
             <span className="flex items-center gap-1">
               {isRecording ? (
                 <Play className="w-3 h-3" />
@@ -358,7 +358,7 @@ function SessionCard({
         </div>
         <div className="shrink-0">
           {locked ? (
-            <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-500 text-xs font-mono">
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-500 text-xs">
               <Lock className="w-3 h-3" />
               Locked
             </div>
@@ -368,13 +368,13 @@ function SessionCard({
                 href={session.recordingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-200 text-xs font-mono hover:bg-midnight-700 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-200 text-xs hover:bg-midnight-700 transition-colors"
               >
                 <Play className="w-3 h-3" />
                 Watch
               </a>
             ) : (
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-200 text-xs font-mono hover:bg-midnight-700 transition-colors">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-200 text-xs hover:bg-midnight-700 transition-colors">
                 <Play className="w-3 h-3" />
                 Watch
               </button>
@@ -384,13 +384,13 @@ function SessionCard({
               href={session.zoomUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-400 text-xs font-mono hover:bg-gold-400/20 transition-colors border border-gold-400/20"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-400 text-xs hover:bg-gold-400/20 transition-colors border border-gold-400/20"
             >
               <Calendar className="w-3 h-3" />
               RSVP
             </a>
           ) : (
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-400 text-xs font-mono hover:bg-gold-400/20 transition-colors border border-gold-400/20">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-400 text-xs hover:bg-gold-400/20 transition-colors border border-gold-400/20">
               <Calendar className="w-3 h-3" />
               RSVP
             </button>
@@ -528,7 +528,7 @@ export default function LiveSessionsPage() {
           {liveSession && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-xs font-mono font-bold text-red-400">
+              <span className="text-xs font-bold text-red-400">
                 1 LIVE NOW
               </span>
             </div>
@@ -578,7 +578,7 @@ export default function LiveSessionsPage() {
             {t.label}
             {t.count > 0 && (
               <span
-                className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   tab === t.id
                     ? "bg-gold-400/10 text-gold-400"
                     : "bg-midnight-800 text-midnight-500"
@@ -599,7 +599,7 @@ export default function LiveSessionsPage() {
             <button
               key={t}
               onClick={() => setTrackFilter(t)}
-              className={`px-2.5 py-1 rounded text-[11px] font-mono transition-colors ${
+              className={`px-2.5 py-1 rounded text-[11px] transition-colors ${
                 trackFilter === t
                   ? `${TRACK_CONFIG[t].bgColor} ${TRACK_CONFIG[t].color} border border-current/20`
                   : "text-midnight-500 hover:text-midnight-300"

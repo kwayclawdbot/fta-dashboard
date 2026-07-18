@@ -274,7 +274,7 @@ export default function FamilyOverviewPage() {
             {overview.family_name}
           </h2>
           <span
-            className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
+            className={`text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
               overview.plan_tier
             )}`}
           >

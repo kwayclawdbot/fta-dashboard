@@ -9,10 +9,12 @@ from app.api.v1.progress import router as progress_router
 from app.api.v1.quizzes import router as quizzes_router
 from app.api.v1.family_dashboard import router as family_dashboard_router
 from app.api.v1.stripe import router as stripe_router
+from app.api.v1.coach import router as coach_router
 
 api_router = APIRouter()
 
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(coach_router, prefix="/coach", tags=["coach"])
 api_router.include_router(courses_router, prefix="/courses", tags=["courses"])
 api_router.include_router(families_router, prefix="/families", tags=["families"])
 api_router.include_router(family_dashboard_router, prefix="/family-dashboard", tags=["family-dashboard"])

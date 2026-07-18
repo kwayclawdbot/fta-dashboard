@@ -315,7 +315,7 @@ export default function FamilyMembersPage() {
                     type="text"
                     readOnly
                     value={inviteLink}
-                    className="flex-1 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-200 text-sm font-mono truncate"
+                    className="flex-1 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-200 text-sm truncate"
                   />
                   <button
                     onClick={handleCopy}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserCircle, GraduationCap, Calendar, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 
 const STEPS = [
   { label: "Family", icon: Users },
@@ -21,6 +21,7 @@ const slideVariants = {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -47,22 +48,30 @@ export default function OnboardingPage() {
     setLoading(true);
 
     try {
-      // Create family via backend API (bypasses RLS)
-      await apiFetch("/api/v1/families", {
-        method: "POST",
-        body: JSON.stringify({ name: familyName }),
-      });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
 
-      // Update profile fields via backend API
-      await apiFetch("/api/v1/onboarding/profile", {
-        method: "PUT",
-        body: JSON.stringify({ role, track, age_group: ageGroup }),
-      });
+      // Create the family and attach this profile to it
+      const { data: fam, error: famErr } = await supabase
+        .from("families")
+        .insert({ name: familyName })
+        .select("id")
+        .single();
+      if (famErr) throw famErr;
 
-      // Mark onboarding complete
-      await apiFetch("/api/v1/onboarding/complete", {
-        method: "PUT",
-      });
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({
+          family_id: fam.id,
+          role,
+          track,
+          age_group: ageGroup,
+          onboarding_complete: true,
+        })
+        .eq("id", user.id);
+      if (profErr) throw profErr;
 
       router.push("/dashboard");
       router.refresh();

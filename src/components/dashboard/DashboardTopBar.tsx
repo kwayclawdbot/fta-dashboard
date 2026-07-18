@@ -8,13 +8,19 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 const routeTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
+  "/dashboard": "Home",
   "/courses": "Courses",
-  "/live-sessions": "Live Sessions",
-  "/ai-coach": "AI Coach",
+  "/live-sessions": "Live Classes",
   "/community": "Community",
   "/progress": "Progress",
   "/family": "Family",
+  "/family/overview": "Family Overview",
+  "/family/leaderboard": "Family Leaderboard",
+  "/family/members": "Family Members",
+  "/simulator": "Trading Floor",
+  "/simulator/lessons": "Pattern Practice",
+  "/simulator/leaderboard": "Leaderboard",
+  "/upgrade": "Upgrade",
   "/settings": "Settings",
 };
 
@@ -33,7 +39,7 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const pageTitle = routeTitles[pathname] || "Dashboard";
+  const pageTitle = routeTitles[pathname] || "Home";
 
   const initials = (user.display_name || user.email || "U")
     .split(" ")
@@ -87,7 +93,7 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-400 text-[11px] font-bold font-display">
+              <div className="w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 text-[11px] font-bold font-display">
                 {initials}
               </div>
               <ChevronDown className="w-3 h-3 text-midnight-400 hidden sm:block" />
@@ -100,7 +106,7 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute right-0 mt-2 w-52 rounded-lg bg-midnight-900 border border-midnight-700 shadow-lg shadow-black/40 overflow-hidden"
+                  className="absolute right-0 mt-2 w-52 rounded-lg bg-midnight-900 border border-midnight-700 shadow-lg shadow-ink/10 overflow-hidden"
                 >
                   <div className="px-4 py-3 border-b border-midnight-800">
                     <p className="text-sm font-medium text-midnight-100 truncate">

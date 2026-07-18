@@ -177,7 +177,7 @@ export default function FamilyPage() {
               {family.name}
             </h2>
             <span
-              className={`text-[10px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
+              className={`text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
                 family.plan_tier || "free"
               )}`}
             >
@@ -332,7 +332,7 @@ export default function FamilyPage() {
                     type="text"
                     readOnly
                     value={inviteLink}
-                    className="flex-1 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-200 text-sm font-mono truncate"
+                    className="flex-1 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-200 text-sm truncate"
                   />
                   <button
                     onClick={handleCopy}
