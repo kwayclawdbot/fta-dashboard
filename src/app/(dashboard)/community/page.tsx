@@ -251,7 +251,17 @@ export default function CommunityPage() {
 
   // Realtime: stream new messages live
   useEffect(() => {
-    const channel = supabase
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      // Authenticate the realtime socket so RLS lets this user receive INSERTs.
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (token) {
+        try { await supabase.realtime.setAuth(token); } catch { /* noop */ }
+      }
+      if (cancelled) return;
+      channel = supabase
       .channel("community-room")
       .on(
         "postgres_changes",
@@ -288,9 +298,11 @@ export default function CommunityPage() {
         }
       )
       .subscribe();
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
