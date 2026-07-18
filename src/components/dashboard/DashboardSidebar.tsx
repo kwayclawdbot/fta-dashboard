@@ -18,6 +18,7 @@ import {
   X,
   LineChart,
   Gamepad2,
+  Layers,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -45,6 +46,7 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
       { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
       { label: "My Lessons", href: "/courses", icon: BookOpen },
       { label: "Games", href: "/games", icon: Gamepad2 },
+      { label: "My Cards", href: "/flashcards", icon: Layers },
       { label: "My Badges", href: "/progress", icon: Trophy },
       { label: "Settings", href: "/settings", icon: Settings },
     ];
@@ -63,10 +65,11 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
         subItems: [
           { label: "Trading Floor", href: "/simulator" },
           { label: "Pattern Practice", href: "/simulator/lessons" },
-          { label: "Games", href: "/games" },
           { label: "Leaderboard", href: "/simulator/leaderboard" },
         ],
       },
+      { label: "Games", href: "/games", icon: Gamepad2 },
+      { label: "Flashcards", href: "/flashcards", icon: Layers },
       { label: "Community", href: "/community", icon: MessageCircle },
       { label: "My Progress", href: "/progress", icon: Trophy },
       { label: "Settings", href: "/settings", icon: Settings },
@@ -84,7 +87,7 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
       icon: Users,
       parentOnly: true,
       subItems: [
-        { label: "Overview", href: "/family/overview" },
+        { label: "Overview & Report Cards", href: "/family/overview" },
         { label: "Leaderboard", href: "/family/leaderboard" },
         { label: "Members", href: "/family/members" },
       ],
@@ -97,10 +100,11 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
       subItems: [
         { label: "Trading Floor", href: "/simulator" },
         { label: "Pattern Practice", href: "/simulator/lessons" },
-        { label: "Games", href: "/games" },
         { label: "Leaderboard", href: "/simulator/leaderboard" },
       ],
     },
+    { label: "Games", href: "/games", icon: Gamepad2 },
+    { label: "Flashcards", href: "/flashcards", icon: Layers },
     { label: "Progress", href: "/progress", icon: Trophy },
     { label: "Settings", href: "/settings", icon: Settings },
   ];
