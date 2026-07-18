@@ -45,11 +45,12 @@ interface Module {
 
 type SideTab = "coach" | "notes" | "lessons";
 
-const PLACEHOLDER_QUIZ = [
-  { question: "What does a long green candlestick indicate?", options: ["Strong selling pressure", "Strong buying pressure", "Market indecision", "Low volume"], correctIndex: 1 },
-  { question: "What is the primary purpose of a stop loss?", options: ["Maximize profits", "Limit potential losses", "Increase position size", "Track trends"], correctIndex: 1 },
-  { question: "What does 'support level' refer to?", options: ["Highest price reached", "Price where buying prevents decline", "200-day average", "Price where most sell"], correctIndex: 1 },
-];
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+}
 
 // ── Mock data for when Supabase has no match ──
 interface MockLesson {
@@ -205,6 +206,7 @@ export default function LessonViewerPage() {
   const [sideTab, setSideTab] = useState<SideTab>("coach");
   const [notes, setNotes] = useState("");
   const [isMock, setIsMock] = useState(false);
+  const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
 
   const loadData = useCallback(async () => {
     // Try Supabase first
@@ -241,6 +243,15 @@ export default function LessonViewerPage() {
 
         if (dbHasLesson) {
           setModules(modulesWithLessons);
+
+          // Load the real quiz for this lesson (if any). No placeholders.
+          const { data: quizRow } = await supabase
+            .from("quizzes")
+            .select("questions")
+            .eq("lesson_id", lessonId)
+            .maybeSingle();
+          const qs = (quizRow?.questions as QuizQuestion[] | undefined) || [];
+          setQuiz(Array.isArray(qs) && qs.length > 0 ? qs : null);
 
           // Check progress
           const { data: { user } } = await supabase.auth.getUser();
@@ -294,7 +305,7 @@ export default function LessonViewerPage() {
         }, { onConflict: "user_id,lesson_id" });
       }
     }
-    if (currentLesson?.has_quiz) setShowQuiz(true);
+    if (currentLesson?.has_quiz && quiz) setShowQuiz(true);
   }
 
   if (loading) {
@@ -462,14 +473,14 @@ export default function LessonViewerPage() {
             ) : <div />}
           </div>
 
-          {/* Quiz */}
-          {currentLesson.has_quiz && isCompleted && showQuiz && (
+          {/* Quiz — only when a real quiz row exists for this lesson */}
+          {quiz && isCompleted && showQuiz && (
             <div className="mt-6 border-t border-midnight-800 pt-6">
               <h3 className="font-display text-base font-semibold text-midnight-100 mb-1">Lesson Quiz</h3>
               <p className="text-xs text-midnight-500 font-body mb-4">Test your understanding</p>
-              <QuizPanel questions={PLACEHOLDER_QUIZ} onComplete={async (score, passed) => {
+              <QuizPanel questions={quiz} onComplete={async (score) => {
                 try {
-                  const correct = Math.round(score * PLACEHOLDER_QUIZ.length / 100);
+                  const correct = Math.round((score * quiz.length) / 100);
                   const res = await fetch("/api/coach", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -477,8 +488,8 @@ export default function LessonViewerPage() {
                       action: "feedback",
                       lesson_id: lessonId,
                       score: correct,
-                      total: PLACEHOLDER_QUIZ.length,
-                      answers: PLACEHOLDER_QUIZ.map((q, i) => ({ question: q.question, is_correct: i < correct })),
+                      total: quiz.length,
+                      answers: quiz.map((q, i) => ({ question: q.question, is_correct: i < correct })),
                       audio: true,
                     }),
                   });
@@ -494,7 +505,7 @@ export default function LessonViewerPage() {
               }} />
             </div>
           )}
-          {currentLesson.has_quiz && isCompleted && !showQuiz && (
+          {quiz && isCompleted && !showQuiz && (
             <div className="mt-4">
               <button onClick={() => setShowQuiz(true)} className="flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors font-body">
                 <BookOpen className="w-4 h-4" />

@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, UserCircle, GraduationCap, Calendar, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { Users, GraduationCap, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-
-const STEPS = [
-  { label: "Family", icon: Users },
-  { label: "Role", icon: UserCircle },
-  { label: "Track", icon: GraduationCap },
-  { label: "Age", icon: Calendar },
-];
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 200 : -200, opacity: 0 }),
@@ -19,44 +12,74 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -200 : 200, opacity: 0 }),
 };
 
+type Mode = "loading" | "parent" | "child";
+
 export default function OnboardingPage() {
   const router = useRouter();
   const supabase = createClient();
+
+  const [mode, setMode] = useState<Mode>("loading");
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Form state
+  // Parent flow state
   const [familyName, setFamilyName] = useState("");
-  const [role, setRole] = useState<"parent" | "child" | "">("");
-  const [track, setTrack] = useState<"kids" | "adults" | "">("");
-  const [ageGroup, setAgeGroup] = useState<"kids" | "teens" | "adults" | "">("");
+
+  // Child flow state
+  const [displayName, setDisplayName] = useState("");
+  const [ageBand, setAgeBand] = useState<"kids" | "teens" | "">("");
+
+  // Detect whether this is a family owner (parent) or an invited child.
+  useEffect(() => {
+    async function detect() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("family_id, role, display_name")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.family_id && profile.role === "child") {
+        setDisplayName(profile.display_name || "");
+        setMode("child");
+      } else {
+        setMode("parent");
+      }
+    }
+    detect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function goNext() {
     setDirection(1);
     setStep((s) => s + 1);
   }
-
   function goBack() {
     setDirection(-1);
     setStep((s) => s - 1);
   }
 
-  async function handleComplete() {
+  // ── Parent: create the family, become owner ──
+  async function completeParent() {
     setError("");
     setLoading(true);
-
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
-      // Create the family and attach this profile to it
       const { data: fam, error: famErr } = await supabase
         .from("families")
-        .insert({ name: familyName })
+        .insert({ name: familyName.trim() })
         .select("id")
         .single();
       if (famErr) throw famErr;
@@ -65,9 +88,9 @@ export default function OnboardingPage() {
         .from("profiles")
         .update({
           family_id: fam.id,
-          role,
-          track,
-          age_group: ageGroup,
+          role: "parent",
+          age_group: "adults",
+          track: "adults",
           onboarding_complete: true,
         })
         .eq("id", user.id);
@@ -76,55 +99,88 @@ export default function OnboardingPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
-      console.error("Onboarding error:", err);
       const e = err as { message?: string };
-      const message = e?.message || "Something went wrong";
-      setError(message);
+      setError(e?.message || "Something went wrong");
       setLoading(false);
     }
   }
 
+  // ── Child: short join — confirm name + age band ──
+  async function completeChild() {
+    setError("");
+    setLoading(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({
+          display_name: displayName.trim() || "Explorer",
+          age_group: ageBand, // kids | teens
+          track: ageBand, // matches age band
+          onboarding_complete: true,
+        })
+        .eq("id", user.id);
+      if (profErr) throw profErr;
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e?.message || "Something went wrong");
+      setLoading(false);
+    }
+  }
+
+  if (mode === "loading") {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-7 h-7 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const steps = mode === "parent" ? ["Family", "All set"] : ["Your name", "Your age"];
   const canProceed =
-    (step === 0 && familyName.trim().length > 0) ||
-    (step === 1 && role !== "") ||
-    (step === 2 && track !== "") ||
-    (step === 3 && ageGroup !== "");
+    mode === "parent"
+      ? step === 0
+        ? familyName.trim().length > 0
+        : true
+      : step === 0
+        ? displayName.trim().length > 0
+        : ageBand !== "";
+  const isLast = step === steps.length - 1;
 
   return (
     <div className="w-full max-w-lg mx-auto">
       {/* Progress dots */}
       <div className="flex items-center justify-center gap-3 mb-8">
-        {STEPS.map((s, i) => {
+        {steps.map((s, i) => {
           const isDone = i < step;
           const isCurrent = i === step;
           return (
-            <div key={s.label} className="flex items-center gap-3">
+            <div key={s} className="flex items-center gap-3">
               <div
                 className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
                   isDone
                     ? "bg-gold-400/15 border-gold-400/30"
                     : isCurrent
                       ? "bg-gold-400/10 border-gold-400/40"
-                      : "bg-midnight-800 border-midnight-700"
+                      : "bg-midnight-800 border-sand"
                 }`}
               >
                 {isDone ? (
                   <Check className="w-3.5 h-3.5 text-gold-400" />
                 ) : (
-                  <span className={`text-xs font-display font-bold ${
-                    isCurrent ? "text-gold-400" : "text-midnight-500"
-                  }`}>
+                  <span className={`text-xs font-display font-bold ${isCurrent ? "text-gold-600" : "text-midnight-500"}`}>
                     {i + 1}
                   </span>
                 )}
               </div>
-              {i < STEPS.length - 1 && (
-                <div
-                  className={`w-6 h-px ${
-                    isDone ? "bg-gold-400/30" : "bg-midnight-700"
-                  }`}
-                />
-              )}
+              {i < steps.length - 1 && <div className={`w-6 h-px ${isDone ? "bg-gold-400/30" : "bg-sand"}`} />}
             </div>
           );
         })}
@@ -134,7 +190,7 @@ export default function OnboardingPage() {
       <div className="relative overflow-hidden min-h-[280px]">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            key={step}
+            key={`${mode}-${step}`}
             custom={direction}
             variants={slideVariants}
             initial="enter"
@@ -143,156 +199,92 @@ export default function OnboardingPage() {
             transition={{ type: "tween", duration: 0.25 }}
             className="w-full"
           >
-            {step === 0 && (
+            {/* PARENT — step 0: family name */}
+            {mode === "parent" && step === 0 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-                    What&apos;s your family name?
-                  </h2>
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">What&apos;s your family name?</h2>
                   <p className="text-midnight-400 text-sm font-body">
-                    This is how your family will appear in the academy
+                    You&apos;re the family owner — this is how your family appears in the academy.
                   </p>
+                </div>
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-midnight-400" />
+                  <input
+                    type="text"
+                    value={familyName}
+                    onChange={(e) => setFamilyName(e.target.value)}
+                    placeholder="e.g. The Johnson Family"
+                    autoFocus
+                    className="w-full pl-11 pr-4 py-3.5 rounded-lg bg-midnight-900 border border-sand text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-base font-body"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* PARENT — step 1: confirm */}
+            {mode === "parent" && step === 1 && (
+              <div className="space-y-6 text-center">
+                <div className="w-14 h-14 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-gold-500" />
                 </div>
                 <div>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-midnight-400" />
-                    <input
-                      type="text"
-                      value={familyName}
-                      onChange={(e) => setFamilyName(e.target.value)}
-                      placeholder="e.g. The Johnson Family"
-                      autoFocus
-                      className="w-full pl-11 pr-4 py-3.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-base font-body"
-                    />
-                  </div>
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
+                    You&apos;re all set, {familyName.trim() || "friend"}
+                  </h2>
+                  <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">
+                    We&apos;ll create your family and set you up as the owner. You can invite your kids anytime from the
+                    Family page — they join with a link, no signup hassle.
+                  </p>
                 </div>
               </div>
             )}
 
-            {step === 1 && (
+            {/* CHILD — step 0: confirm name */}
+            {mode === "child" && step === 0 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-                    What&apos;s your role?
-                  </h2>
-                  <p className="text-midnight-400 text-sm font-body">
-                    Are you a parent leading the family or a young trader?
-                  </p>
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">Welcome! What should we call you?</h2>
+                  <p className="text-midnight-400 text-sm font-body">You&apos;ve joined your family — let&apos;s set up your corner.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {(["parent", "child"] as const).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setRole(r)}
-                      className={`p-5 rounded-lg border text-center transition-colors ${
-                        role === r
-                          ? "border-gold-400/40 bg-gold-400/5"
-                          : "border-midnight-700 bg-midnight-800 hover:border-midnight-600"
-                      }`}
-                    >
-                      <UserCircle
-                        className={`w-6 h-6 mx-auto mb-2 ${
-                          role === r ? "text-gold-400" : "text-midnight-400"
-                        }`}
-                      />
-                      <p
-                        className={`font-display font-semibold text-base capitalize ${
-                          role === r ? "text-gold-400" : "text-midnight-200"
-                        }`}
-                      >
-                        {r}
-                      </p>
-                      <p className="text-xs text-midnight-400 mt-1 font-body">
-                        {r === "parent"
-                          ? "Manage family & track progress"
-                          : "Learn to trade with your family"}
-                      </p>
-                    </button>
-                  ))}
+                <div className="relative">
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-midnight-400" />
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your name"
+                    autoFocus
+                    className="w-full pl-11 pr-4 py-3.5 rounded-lg bg-midnight-900 border border-sand text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-base font-body"
+                  />
                 </div>
               </div>
             )}
 
-            {step === 2 && (
+            {/* CHILD — step 1: age band */}
+            {mode === "child" && step === 1 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-                    Select your track
-                  </h2>
-                  <p className="text-midnight-400 text-sm font-body">
-                    Content will be tailored to your learning level
-                  </p>
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">How old are you?</h2>
+                  <p className="text-midnight-400 text-sm font-body">We&apos;ll pick the right lessons and adventures for you.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {([
-                    { value: "kids" as const, label: "Kids", desc: "Under 16, simplified lessons" },
-                    { value: "adults" as const, label: "Adults", desc: "Full curriculum, advanced concepts" },
-                  ]).map((t) => (
-                    <button
-                      key={t.value}
-                      onClick={() => setTrack(t.value)}
-                      className={`p-5 rounded-lg border text-center transition-colors ${
-                        track === t.value
-                          ? "border-gold-400/40 bg-gold-400/5"
-                          : "border-midnight-700 bg-midnight-800 hover:border-midnight-600"
-                      }`}
-                    >
-                      <GraduationCap
-                        className={`w-6 h-6 mx-auto mb-2 ${
-                          track === t.value ? "text-gold-400" : "text-midnight-400"
-                        }`}
-                      />
-                      <p
-                        className={`font-display font-semibold text-base ${
-                          track === t.value ? "text-gold-400" : "text-midnight-200"
-                        }`}
-                      >
-                        {t.label}
-                      </p>
-                      <p className="text-xs text-midnight-400 mt-1 font-body">
-                        {t.desc}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-                    What&apos;s your age group?
-                  </h2>
-                  <p className="text-midnight-400 text-sm font-body">
-                    We&apos;ll customize your experience even further
-                  </p>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {([
-                    { value: "kids" as const, label: "Kids", range: "8-12" },
-                    { value: "teens" as const, label: "Teens", range: "13-17" },
-                    { value: "adults" as const, label: "Adults", range: "18+" },
+                    { value: "kids" as const, label: "Kid", range: "8 – 12" },
+                    { value: "teens" as const, label: "Teen", range: "13 – 17" },
                   ]).map((a) => (
                     <button
                       key={a.value}
-                      onClick={() => setAgeGroup(a.value)}
-                      className={`p-4 rounded-lg border text-center transition-colors ${
-                        ageGroup === a.value
-                          ? "border-gold-400/40 bg-gold-400/5"
-                          : "border-midnight-700 bg-midnight-800 hover:border-midnight-600"
+                      onClick={() => setAgeBand(a.value)}
+                      className={`p-5 rounded-lg border text-center transition-colors ${
+                        ageBand === a.value ? "border-gold-400/40 bg-gold-400/5" : "border-sand bg-midnight-900 hover:border-gold-300"
                       }`}
                     >
-                      <p
-                        className={`font-display font-semibold text-base ${
-                          ageGroup === a.value ? "text-gold-400" : "text-midnight-200"
-                        }`}
-                      >
+                      <GraduationCap className={`w-6 h-6 mx-auto mb-2 ${ageBand === a.value ? "text-gold-600" : "text-midnight-400"}`} />
+                      <p className={`font-display font-semibold text-base ${ageBand === a.value ? "text-gold-700" : "text-midnight-200"}`}>
                         {a.label}
                       </p>
-                      <p className="text-xs text-midnight-500 mt-1 font-body">
-                        {a.range}
-                      </p>
+                      <p className="text-xs text-midnight-500 mt-1 font-body">{a.range}</p>
                     </button>
                   ))}
                 </div>
@@ -302,7 +294,6 @@ export default function OnboardingPage() {
         </AnimatePresence>
       </div>
 
-      {/* Error */}
       {error && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -316,10 +307,7 @@ export default function OnboardingPage() {
       {/* Navigation */}
       <div className="flex items-center justify-between mt-8">
         {step > 0 ? (
-          <button
-            onClick={goBack}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-medium"
-          >
+          <button onClick={goBack} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-medium">
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
@@ -327,7 +315,7 @@ export default function OnboardingPage() {
           <div />
         )}
 
-        {step < STEPS.length - 1 ? (
+        {!isLast ? (
           <button
             onClick={goNext}
             disabled={!canProceed}
@@ -338,11 +326,11 @@ export default function OnboardingPage() {
           </button>
         ) : (
           <button
-            onClick={handleComplete}
+            onClick={mode === "parent" ? completeParent : completeChild}
             disabled={!canProceed || loading}
             className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {loading ? "Setting up..." : "Complete Setup"}
+            {loading ? "Setting up..." : mode === "parent" ? "Create my family" : "Start learning"}
             {!loading && <Check className="w-4 h-4" />}
           </button>
         )}

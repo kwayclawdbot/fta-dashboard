@@ -101,17 +101,19 @@ export default function FamilyPage() {
     // Generate a random invite code
     const code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
-    // Store invite in database
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    await supabase.from("family_invites").insert({
+    // Store invite in database — children join via this code
+    const { error } = await supabase.from("family_invites").insert({
       family_id: family.id,
       code,
-      invited_by: user?.id,
+      role: "child",
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
+
+    if (error) {
+      console.error("Invite creation failed:", error.message);
+      setGeneratingLink(false);
+      return;
+    }
 
     const link = `${window.location.origin}/signup/invite/${code}`;
     setInviteLink(link);

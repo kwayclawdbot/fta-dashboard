@@ -45,13 +45,13 @@ function InviteSignupForm() {
       // Look up invite code
       const { data: invite } = await supabase
         .from("family_invites")
-        .select("family_id, role, expires_at, used")
+        .select("family_id, role, expires_at, used_by")
         .eq("code", code)
         .single();
 
       if (
         !invite ||
-        invite.used ||
+        invite.used_by ||
         new Date(invite.expires_at) < new Date()
       ) {
         setInviteValid(false);
@@ -62,7 +62,7 @@ function InviteSignupForm() {
       // Get family info
       const { data: family } = await supabase
         .from("families")
-        .select("id, name, owner_id")
+        .select("id, name")
         .eq("id", invite.family_id)
         .single();
 
@@ -72,12 +72,14 @@ function InviteSignupForm() {
         return;
       }
 
-      // Get inviter name
+      // Inviter name = the family's owner (parent)
       const { data: inviter } = await supabase
         .from("profiles")
         .select("display_name")
-        .eq("id", family.owner_id)
-        .single();
+        .eq("family_id", family.id)
+        .eq("role", "parent")
+        .limit(1)
+        .maybeSingle();
 
       setInviteData({
         family_id: family.id,
@@ -126,12 +128,13 @@ function InviteSignupForm() {
         onboarding_complete: false,
       });
 
-      // Mark invite as used
+      // Mark invite as used (records who redeemed it)
       await supabase
         .from("family_invites")
-        .update({ used: true })
+        .update({ used_by: signUpData.user.id })
         .eq("code", code);
 
+      // Invited children finish a short kid onboarding at /onboarding
       router.push("/onboarding");
       router.refresh();
       return;

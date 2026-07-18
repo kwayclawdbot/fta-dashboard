@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Check,
@@ -10,6 +11,7 @@ import {
   Crown,
 } from "lucide-react";
 import { createCheckoutUrl, PLANS } from "@/lib/stripe";
+import { createClient } from "@/lib/supabase/client";
 
 type Tier = "challenge" | "academy";
 
@@ -29,9 +31,31 @@ const features = [
 ];
 
 export default function UpgradePage() {
+  const router = useRouter();
+  const supabase = createClient();
   // Placeholder current plan
   const currentPlan: string = "free";
   const [loadingTier, setLoadingTier] = useState<Tier | null>(null);
+
+  // Billing is parent-only — children never see upgrade/billing.
+  useEffect(() => {
+    async function guard() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (profile?.role === "child") {
+        router.replace("/dashboard");
+      }
+    }
+    guard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCheckout(tier: Tier) {
     setLoadingTier(tier);

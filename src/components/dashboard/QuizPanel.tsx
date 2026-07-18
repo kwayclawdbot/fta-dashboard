@@ -8,6 +8,7 @@ interface QuizQuestion {
   question: string;
   options: string[];
   correctIndex: number;
+  explanation?: string;
 }
 
 interface QuizPanelProps {
@@ -118,6 +119,11 @@ export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
                   {!isCorrect && (
                     <p className="text-xs text-midnight-500 font-body">
                       Correct: {q.options[q.correctIndex]}
+                    </p>
+                  )}
+                  {q.explanation && (
+                    <p className="text-xs text-midnight-400 font-body mt-1 leading-relaxed">
+                      {q.explanation}
                     </p>
                   )}
                 </div>
