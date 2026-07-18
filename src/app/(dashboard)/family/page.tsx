@@ -59,6 +59,12 @@ export default function FamilyPage() {
       .eq("id", user.id)
       .single();
 
+    // Kid privacy lock: children never see family management surfaces.
+    if (profile?.role === "child") {
+      router.replace("/dashboard");
+      return;
+    }
+
     setUserRole(profile?.role || "");
 
     if (!profile?.family_id) {

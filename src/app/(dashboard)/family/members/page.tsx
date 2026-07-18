@@ -52,6 +52,11 @@ export default function FamilyMembersPage() {
       .eq("id", user.id)
       .single();
 
+    // Kid privacy lock: children go straight back to their own home.
+    if (profile?.role === "child") {
+      router.replace("/dashboard");
+      return;
+    }
     if (!profile || profile.role !== "parent") {
       router.replace("/family");
       return;

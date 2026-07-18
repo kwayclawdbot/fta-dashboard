@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import ReportCard from "@/components/dashboard/ReportCard";
 
 interface MemberSummary {
   id: string;
@@ -417,6 +418,31 @@ export default function FamilyOverviewPage() {
           </div>
         )}
       </motion.section>
+
+      {/* Per-child report cards */}
+      {overview.members.filter((m) => m.role === "child").length > 0 && (
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.12, duration: 0.3 }}
+          className="mb-10"
+        >
+          <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+            Report Cards
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {overview.members
+              .filter((m) => m.role === "child")
+              .map((m) => (
+                <ReportCard
+                  key={m.id}
+                  childId={m.id}
+                  childName={m.display_name || "Member"}
+                />
+              ))}
+          </div>
+        </motion.section>
+      )}
 
       {/* This Week activity */}
       <motion.section

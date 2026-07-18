@@ -17,8 +17,13 @@ import {
   Target,
   Trophy,
   Users,
+  Zap,
+  Layers,
+  Gamepad2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getUserXp, levelForXp } from "@/lib/xp";
+import { dailyFiveCount } from "@/lib/flashcards";
 
 /* ---------- types ---------- */
 
@@ -65,6 +70,7 @@ interface FamilyMember {
   role: string;
   age_group: string | null;
   completed: number;
+  xp: number;
 }
 
 /* ---------- deck language ---------- */
@@ -107,6 +113,8 @@ export default function DashboardHome() {
   const [home, setHome] = useState<HomeState | null>(null);
   const [firstName, setFirstName] = useState("");
   const [family, setFamily] = useState<FamilyMember[]>([]);
+  const [xp, setXp] = useState(0);
+  const [dueCount, setDueCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -125,10 +133,20 @@ export default function DashboardHome() {
           .single(),
       ]);
 
-      setHome(state as HomeState);
+      const hs = state as HomeState;
+      setHome(hs);
       setFirstName(profile?.display_name?.split(" ")[0] || "");
 
-      // Parent view: family strip with per-member completed counts
+      // Own XP + Daily 5 due count
+      const track = hs?.track || "adults";
+      const [xpTotal, due] = await Promise.all([
+        getUserXp(supabase, user.id),
+        dailyFiveCount(supabase, user.id, track),
+      ]);
+      setXp(xpTotal);
+      setDueCount(due);
+
+      // Parent view: family strip with per-member completed counts + XP level
       if (profile?.role === "parent" && profile?.family_id) {
         const { data: members } = await supabase
           .from("profiles")
@@ -136,20 +154,32 @@ export default function DashboardHome() {
           .eq("family_id", profile.family_id)
           .neq("id", user.id);
         if (members?.length) {
-          const { data: prog } = await supabase
-            .from("lesson_progress")
-            .select("user_id")
-            .eq("status", "completed")
-            .in(
-              "user_id",
-              members.map((m) => m.id)
-            );
+          const memberIds = members.map((m) => m.id);
+          const [{ data: prog }, { data: xpRows }] = await Promise.all([
+            supabase
+              .from("lesson_progress")
+              .select("user_id")
+              .eq("status", "completed")
+              .in("user_id", memberIds),
+            supabase
+              .from("xp_events")
+              .select("user_id, amount")
+              .in("user_id", memberIds),
+          ]);
           const counts: Record<string, number> = {};
           (prog || []).forEach((r) => {
             counts[r.user_id] = (counts[r.user_id] || 0) + 1;
           });
+          const xpByMember: Record<string, number> = {};
+          (xpRows || []).forEach((r: { user_id: string; amount: number }) => {
+            xpByMember[r.user_id] = (xpByMember[r.user_id] || 0) + (r.amount || 0);
+          });
           setFamily(
-            members.map((m) => ({ ...m, completed: counts[m.id] || 0 }))
+            members.map((m) => ({
+              ...m,
+              completed: counts[m.id] || 0,
+              xp: xpByMember[m.id] || 0,
+            }))
           );
         }
       }
@@ -172,6 +202,7 @@ export default function DashboardHome() {
   const isKid = home?.role === "child" && home?.track === "kids";
   const isTeen = home?.role === "child" && home?.track === "teens";
   const isParent = !isKid && !isTeen;
+  const level = levelForXp(xp);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -202,12 +233,29 @@ export default function DashboardHome() {
             </p>
           )}
         </div>
-        {home?.cohort && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
-            <Flame className="w-3.5 h-3.5" />
-            {home.cohort}
-          </span>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {isKid ? (
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-chip-amber text-gold-800 font-display font-bold">
+              <Zap className="w-5 h-5" />
+              Level {level.level} · {level.name}
+              <span className="text-gold-700/80 font-body font-semibold">
+                {xp} XP
+              </span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-sand text-ink text-sm font-semibold">
+              <Zap className="w-4 h-4 text-gold-500" />
+              <span className="font-display">{level.name}</span>
+              <span className="text-soft font-normal">{xp} XP</span>
+            </span>
+          )}
+          {home?.cohort && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
+              <Flame className="w-3.5 h-3.5" />
+              {home.cohort}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* No program yet */}
@@ -417,7 +465,7 @@ export default function DashboardHome() {
                           {m.display_name}
                         </p>
                         <p className="text-xs text-soft capitalize">
-                          {m.age_group || m.role}
+                          {m.age_group || m.role} · {levelForXp(m.xp).name}
                         </p>
                       </div>
                       <span className="text-xs text-soft">
@@ -465,6 +513,24 @@ export default function DashboardHome() {
                 {isKid ? "More fun" : "Keep going"}
               </h3>
               <div className="space-y-2">
+                <QuickLink
+                  href="/flashcards"
+                  icon={Layers}
+                  label={isKid ? "Your 5 cards are waiting" : "Daily 5 flashcards"}
+                  sub={
+                    dueCount > 0
+                      ? `${dueCount} card${dueCount === 1 ? "" : "s"} ready today`
+                      : isKid
+                        ? "Come back tomorrow for more"
+                        : "All caught up for today"
+                  }
+                />
+                <QuickLink
+                  href="/games"
+                  icon={Gamepad2}
+                  label={isKid ? "Play a game" : "Practice games"}
+                  sub="Trend or Trap and Candle Battle"
+                />
                 <QuickLink
                   href="/courses"
                   icon={BookOpen}

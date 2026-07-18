@@ -15,13 +15,14 @@ import {
   VideoOff,
   Monitor,
   Hand,
-  ChevronDown,
-  ExternalLink,
   BookOpen,
   Filter,
+  Check,
+  CalendarCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 
 // ── Types ──
 
@@ -300,11 +301,17 @@ function LiveRoom({ session }: { session: LiveSession }) {
 function SessionCard({
   session,
   locked,
+  rsvp,
+  onRsvp,
 }: {
   session: LiveSession;
   locked: boolean;
+  rsvp?: { count: number; going: boolean };
+  onRsvp?: () => void;
 }) {
   const isRecording = session.status === "completed";
+  const families = rsvp?.count ?? 0;
+  const going = rsvp?.going ?? false;
 
   return (
     <div
@@ -347,12 +354,18 @@ function SessionCard({
               <Clock className="w-3 h-3" />
               {session.durationMin} min
             </span>
-            {session.attendees && (
+            {isRecording && session.attendees ? (
               <span className="flex items-center gap-1">
                 <Users className="w-3 h-3" />
                 {session.attendees} attended
               </span>
-            )}
+            ) : null}
+            {!isRecording && onRsvp ? (
+              <span className="flex items-center gap-1 text-gold-700">
+                <Users className="w-3 h-3" />
+                {families} famil{families === 1 ? "y" : "ies"} going
+              </span>
+            ) : null}
             <span>{session.host}</span>
           </div>
         </div>
@@ -379,21 +392,29 @@ function SessionCard({
                 Watch
               </button>
             )
-          ) : session.zoomUrl ? (
-            <a
-              href={session.zoomUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-400 text-xs hover:bg-gold-400/20 transition-colors border border-gold-400/20"
+          ) : onRsvp ? (
+            <button
+              onClick={onRsvp}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                going
+                  ? "bg-chip-green text-green-700 border-green-500/30"
+                  : "bg-gold-400/10 text-gold-700 hover:bg-gold-400/20 border-gold-400/30"
+              }`}
             >
-              <Calendar className="w-3 h-3" />
-              RSVP
-            </a>
-          ) : (
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-400 text-xs hover:bg-gold-400/20 transition-colors border border-gold-400/20">
-              <Calendar className="w-3 h-3" />
-              RSVP
+              {going ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  Going
+                </>
+              ) : (
+                <>
+                  <CalendarCheck className="w-3 h-3" />
+                  RSVP
+                </>
+              )}
             </button>
+          ) : (
+            <span className="text-[11px] text-midnight-500">TBA</span>
           )}
         </div>
       </div>
@@ -430,6 +451,57 @@ export default function LiveSessionsPage() {
   const [trackFilter, setTrackFilter] = useState<Track>("all");
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState("");
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [rsvpInfo, setRsvpInfo] = useState<
+    Record<string, { count: number; going: boolean }>
+  >({});
+
+  const loadRsvps = useCallback(
+    async (uid: string) => {
+      const { data } = await supabase
+        .from("session_rsvps")
+        .select("session_id, user_id, family_id");
+      const map: Record<string, { fams: Set<string>; going: boolean }> = {};
+      (data || []).forEach(
+        (r: { session_id: string; user_id: string; family_id: string | null }) => {
+          const e = map[r.session_id] || { fams: new Set<string>(), going: false };
+          if (r.family_id) e.fams.add(r.family_id);
+          else e.fams.add(r.user_id); // no family → count the individual
+          if (r.user_id === uid) e.going = true;
+          map[r.session_id] = e;
+        }
+      );
+      const out: Record<string, { count: number; going: boolean }> = {};
+      Object.entries(map).forEach(([k, v]) => {
+        out[k] = { count: v.fams.size, going: v.going };
+      });
+      setRsvpInfo(out);
+    },
+    [supabase]
+  );
+
+  const toggleRsvp = useCallback(
+    async (sessionId: string) => {
+      if (!userId) return;
+      const going = rsvpInfo[sessionId]?.going;
+      if (going) {
+        await supabase
+          .from("session_rsvps")
+          .delete()
+          .eq("session_id", sessionId)
+          .eq("user_id", userId);
+      } else {
+        await supabase
+          .from("session_rsvps")
+          .insert({ session_id: sessionId, user_id: userId, family_id: familyId });
+        const already = await hasXpForRef(supabase, userId, "rsvp", sessionId);
+        if (!already) await awardXp(supabase, userId, "rsvp", XP.RSVP, sessionId);
+      }
+      await loadRsvps(userId);
+    },
+    [supabase, userId, familyId, rsvpInfo, loadRsvps]
+  );
 
   const loadSessions = useCallback(async () => {
     const { data } = await supabase
@@ -460,7 +532,10 @@ export default function LiveSessionsPage() {
           scheduledDate: formatScheduledDate(s.scheduled_at),
           durationMin: s.duration_min || 45,
           track: (s.track as Track) || "all",
-          status: s.status as "live" | "upcoming" | "completed",
+          status:
+            s.status === "scheduled"
+              ? "upcoming"
+              : (s.status as "live" | "upcoming" | "completed"),
           zoomUrl: s.zoom_join_url || undefined,
           recordingUrl: s.recording_url || undefined,
           tags: [s.track || "General"].filter(Boolean),
@@ -474,6 +549,25 @@ export default function LiveSessionsPage() {
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  useEffect(() => {
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("family_id")
+        .eq("id", user.id)
+        .single();
+      setFamilyId(profile?.family_id ?? null);
+      await loadRsvps(user.id);
+    }
+    loadUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const liveSession = sessions.find((s) => s.status === "live");
   const upcoming = sessions.filter((s) => s.status === "upcoming");
@@ -685,6 +779,8 @@ export default function LiveSessionsPage() {
                 <SessionCard
                   session={session}
                   locked={isTrackLocked(session.track)}
+                  rsvp={rsvpInfo[session.id]}
+                  onRsvp={() => toggleRsvp(session.id)}
                 />
               </motion.div>
             ))

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 import VideoPlayer from "@/components/dashboard/VideoPlayer";
 import QuizPanel from "@/components/dashboard/QuizPanel";
 import AiCoachPanel from "@/components/dashboard/AiCoachPanel";
@@ -306,6 +307,11 @@ export default function LessonViewerPage() {
           progress_pct: 100,
           completed_at: new Date().toISOString(),
         }, { onConflict: "user_id,lesson_id" });
+
+        // +50 XP for completing a lesson (once per lesson).
+        if (!(await hasXpForRef(supabase, user.id, "lesson", lessonId))) {
+          await awardXp(supabase, user.id, "lesson", XP.LESSON, lessonId);
+        }
       }
     }
     if (currentLesson?.has_quiz && quiz) setShowQuiz(true);
@@ -499,6 +505,14 @@ export default function LessonViewerPage() {
                           is_correct: answers?.[i] === q.correctIndex,
                         })),
                       });
+
+                      // XP: +30 for a pass, +20 bonus at 100% (once per quiz).
+                      if (passed && !(await hasXpForRef(supabase, user.id, "quiz", quizId))) {
+                        await awardXp(supabase, user.id, "quiz", XP.QUIZ_PASS, quizId);
+                        if (score >= 100) {
+                          await awardXp(supabase, user.id, "bonus", XP.QUIZ_PERFECT_BONUS, `${quizId}-perfect`);
+                        }
+                      }
                     }
                   } catch (e) { console.warn("[Quiz] attempt save error:", e); }
                 }

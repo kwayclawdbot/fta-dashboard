@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -12,8 +13,11 @@ import {
   Home,
   ChevronDown,
   Sparkles,
+  Hand,
+  ArrowRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { XP, awardXp, countXpToday } from "@/lib/xp";
 
 // The single global community room (seeded in migration 016)
 const COMMUNITY_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
@@ -42,6 +46,7 @@ interface CurrentUser {
   display_name: string;
   role: Role;
   age_group: string | null;
+  family_id: string | null;
 }
 
 // ── Style maps (warm-paper light theme) ──
@@ -144,6 +149,7 @@ export default function CommunityPage() {
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [posting, setPosting] = useState(false);
   const [stats, setStats] = useState({ families: 0, members: 0, posts: 0 });
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const authorCache = useRef<Record<string, Author>>({});
 
@@ -177,7 +183,7 @@ export default function CommunityPage() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, role, age_group")
+          .select("display_name, role, age_group, family_id")
           .eq("id", user.id)
           .single();
         if (profile) {
@@ -186,6 +192,7 @@ export default function CommunityPage() {
             display_name: profile.display_name || "You",
             role: (profile.role as Role) || "parent",
             age_group: profile.age_group,
+            family_id: profile.family_id ?? null,
           };
           authorCache.current[user.id] = {
             display_name: cu.display_name,
@@ -193,6 +200,22 @@ export default function CommunityPage() {
             age_group: cu.age_group,
           };
           if (mounted) setMe(cu);
+
+          // First-post welcome: show when this family has no posts yet.
+          if (profile.family_id) {
+            const { data: fam } = await supabase
+              .from("profiles")
+              .select("id")
+              .eq("family_id", profile.family_id);
+            const ids = (fam || []).map((m) => m.id);
+            if (ids.length) {
+              const { count } = await supabase
+                .from("chat_messages")
+                .select("id", { count: "exact", head: true })
+                .in("user_id", ids);
+              if (mounted && (count || 0) === 0) setShowWelcome(true);
+            }
+          }
         }
       }
 
@@ -345,8 +368,26 @@ export default function CommunityPage() {
       });
       setStats((s) => ({ ...s, posts: s.posts + 1 }));
       setNewPostText("");
+      setShowWelcome(false);
+
+      // +5 XP per post, capped at the first few posts per day.
+      const todayPosts = await countXpToday(supabase, me.id, "community");
+      if (todayPosts < 3) {
+        await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
+      }
     }
     setPosting(false);
+  }
+
+  function prefillWelcome() {
+    setNewCategory("discussion");
+    setNewPostText(
+      "Hi everyone! We just joined FTA. Here are the 5 companies our family picked: "
+    );
+    setShowWelcome(false);
+    document
+      .querySelector<HTMLTextAreaElement>("textarea")
+      ?.focus();
   }
 
   const filtered = filter === "all" ? messages : messages.filter((m) => m.category === filter);
@@ -371,6 +412,40 @@ export default function CommunityPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main feed */}
         <div className="flex-1 min-w-0 space-y-4">
+          {/* First-post welcome */}
+          <AnimatePresence>
+            {showWelcome && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                className="paper-card p-5 bg-chip-amber/40 border-gold-300"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gold-500/20 flex items-center justify-center shrink-0">
+                    <Hand className="w-5 h-5 text-gold-700" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display font-bold text-ink">
+                      New here? Say hello
+                    </h3>
+                    <p className="text-sm text-soft mt-0.5">
+                      Introduce your family and post the 5 companies you picked.
+                      It is the best way to meet everyone.
+                    </p>
+                    <button
+                      onClick={prefillWelcome}
+                      className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs mt-3"
+                    >
+                      Start my hello post
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Compose */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="paper-card p-4">
             <div className="flex gap-3">
@@ -511,6 +586,22 @@ export default function CommunityPage() {
               <Stat icon={MessageCircle} value={stats.posts} label="Posts" />
             </div>
           </div>
+
+          <Link
+            href="/leaderboard"
+            className="paper-card p-4 flex items-center gap-3 group hover:border-gold-300 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-lg bg-chip-amber text-gold-800 flex items-center justify-center shrink-0">
+              <Trophy className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm font-semibold text-ink">
+                Family XP leaderboard
+              </p>
+              <p className="text-[11px] text-soft">See how your family ranks</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-midnight-600 group-hover:text-gold-700" />
+          </Link>
 
           <div className="paper-card p-4">
             <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-3">

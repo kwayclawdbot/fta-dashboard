@@ -14,7 +14,10 @@ import {
   Zap,
   GraduationCap,
 } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getUserXp, levelProgress } from "@/lib/xp";
 
 interface Stats {
   totalLessons: number;
@@ -81,6 +84,7 @@ export default function ProgressPage() {
   const [courseProgress, setCourseProgress] = useState<CourseProgress[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentItem[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [xp, setXp] = useState(0);
 
   const loadProgress = useCallback(async () => {
     const {
@@ -91,6 +95,8 @@ export default function ProgressPage() {
       setLoading(false);
       return;
     }
+
+    setXp(await getUserXp(supabase, user.id));
 
     // Get all lessons count
     const { count: totalLessons } = await supabase
@@ -354,6 +360,58 @@ export default function ProgressPage() {
         <p className="text-sm text-midnight-400 font-body mt-1">
           Track your learning journey and achievements
         </p>
+      </motion.div>
+
+      {/* Level progress */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.05 }}
+        className="paper-card p-6"
+      >
+        {(() => {
+          const lp = levelProgress(xp);
+          return (
+            <>
+              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-chip-amber text-gold-700 flex items-center justify-center font-display font-bold">
+                    {lp.current.level}
+                  </div>
+                  <div>
+                    <p className="font-display text-lg font-bold text-ink">
+                      {lp.current.name}
+                    </p>
+                    <p className="text-xs text-soft">
+                      {xp.toLocaleString()} XP earned
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/leaderboard"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
+                >
+                  <Trophy className="w-4 h-4" />
+                  Family XP leaderboard
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-sand overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${lp.pct}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                  className="h-full rounded-full bg-gold-500"
+                />
+              </div>
+              <p className="text-xs text-soft mt-2">
+                {lp.next
+                  ? `${lp.toNext} XP to ${lp.next.name}`
+                  : "Top level reached — Playbook Pro"}
+              </p>
+            </>
+          );
+        })()}
       </motion.div>
 
       {/* Stats row */}

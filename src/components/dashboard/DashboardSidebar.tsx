@@ -17,6 +17,7 @@ import {
   ChevronRight,
   X,
   LineChart,
+  Gamepad2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -43,7 +44,7 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
     return [
       { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
       { label: "My Lessons", href: "/courses", icon: BookOpen },
-      { label: "Practice", href: "/simulator/lessons", icon: LineChart },
+      { label: "Games", href: "/games", icon: Gamepad2 },
       { label: "My Badges", href: "/progress", icon: Trophy },
       { label: "Settings", href: "/settings", icon: Settings },
     ];
@@ -62,6 +63,7 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
         subItems: [
           { label: "Trading Floor", href: "/simulator" },
           { label: "Pattern Practice", href: "/simulator/lessons" },
+          { label: "Games", href: "/games" },
           { label: "Leaderboard", href: "/simulator/leaderboard" },
         ],
       },
@@ -95,6 +97,7 @@ function getNavItems(role?: string, ageGroup?: string): NavItem[] {
       subItems: [
         { label: "Trading Floor", href: "/simulator" },
         { label: "Pattern Practice", href: "/simulator/lessons" },
+        { label: "Games", href: "/games" },
         { label: "Leaderboard", href: "/simulator/leaderboard" },
       ],
     },
