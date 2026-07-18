@@ -207,6 +207,7 @@ export default function LessonViewerPage() {
   const [notes, setNotes] = useState("");
   const [isMock, setIsMock] = useState(false);
   const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
+  const [quizId, setQuizId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     // Try Supabase first
@@ -247,11 +248,13 @@ export default function LessonViewerPage() {
           // Load the real quiz for this lesson (if any). No placeholders.
           const { data: quizRow } = await supabase
             .from("quizzes")
-            .select("questions")
+            .select("id, questions")
             .eq("lesson_id", lessonId)
             .maybeSingle();
           const qs = (quizRow?.questions as QuizQuestion[] | undefined) || [];
-          setQuiz(Array.isArray(qs) && qs.length > 0 ? qs : null);
+          const hasQuiz = Array.isArray(qs) && qs.length > 0;
+          setQuiz(hasQuiz ? qs : null);
+          setQuizId(hasQuiz ? quizRow!.id : null);
 
           // Check progress
           const { data: { user } } = await supabase.auth.getUser();
@@ -478,7 +481,27 @@ export default function LessonViewerPage() {
             <div className="mt-6 border-t border-midnight-800 pt-6">
               <h3 className="font-display text-base font-semibold text-midnight-100 mb-1">Lesson Quiz</h3>
               <p className="text-xs text-midnight-500 font-body mb-4">Test your understanding</p>
-              <QuizPanel questions={quiz} onComplete={async (score) => {
+              <QuizPanel questions={quiz} onComplete={async (score, passed, answers) => {
+                // Persist the attempt (report-card data) — real users only.
+                if (!isMock && quizId) {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      await supabase.from("quiz_attempts").insert({
+                        user_id: user.id,
+                        quiz_id: quizId,
+                        score,
+                        passed,
+                        answers: quiz.map((q, i) => ({
+                          question: q.question,
+                          selected: answers?.[i] ?? null,
+                          correct_index: q.correctIndex,
+                          is_correct: answers?.[i] === q.correctIndex,
+                        })),
+                      });
+                    }
+                  } catch (e) { console.warn("[Quiz] attempt save error:", e); }
+                }
                 try {
                   const correct = Math.round((score * quiz.length) / 100);
                   const res = await fetch("/api/coach", {

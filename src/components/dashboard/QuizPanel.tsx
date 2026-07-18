@@ -13,7 +13,7 @@ interface QuizQuestion {
 
 interface QuizPanelProps {
   questions: QuizQuestion[];
-  onComplete?: (score: number, passed: boolean) => void;
+  onComplete?: (score: number, passed: boolean, answers?: number[]) => void;
 }
 
 export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
@@ -41,7 +41,7 @@ export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
       const score = Math.round((correct / questions.length) * 100);
       const passed = score >= PASS_THRESHOLD;
       setShowResults(true);
-      onComplete?.(score, passed);
+      onComplete?.(score, passed, newAnswers);
     } else {
       setCurrentIndex(currentIndex + 1);
     }
