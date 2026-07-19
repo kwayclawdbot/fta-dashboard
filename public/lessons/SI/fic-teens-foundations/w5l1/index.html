@@ -14,120 +14,277 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* image strip (shared helper) */
-  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
-  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
-  /* bespoke: position-size calculator (isolated ps* namespace) */
-  .pscalc{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
-  .psrow{display:flex;flex-wrap:wrap;gap:16px}
-  .psfield{flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px}
-  .psfield label{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft)}
-  .psfield input{font-family:var(--font-display);font-weight:600;font-size:17px;padding:12px 14px;border:1.5px solid var(--sand);border-radius:var(--r-lg);background:var(--paper);color:var(--ink);width:100%;box-sizing:border-box}
-  .psfield input:focus{outline:none;border-color:var(--green-2,#16A34A)}
-  .psrisk{display:flex;gap:10px;margin-top:6px}
-  .psriskbtn{flex:1;font-family:var(--font-display);font-weight:700;font-size:15px;padding:12px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
-  .psriskbtn.on{border-color:var(--green-border,#16A34A);background:var(--green-bg,#E7F6EC);color:var(--green,#15803D)}
-  .psout{display:flex;flex-wrap:wrap;gap:14px;margin-top:22px}
-  .pscard{flex:1;min-width:150px;background:var(--paper);border:1px solid var(--sand);border-radius:var(--r-lg);padding:16px;text-align:center}
-  .pscard .psk{font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
-  .pscard .psv{font-family:var(--font-display);font-weight:800;font-size:26px;color:var(--ink);margin-top:6px}
-  .pscard.big .psv{color:var(--green,#15803D)}
-  .psnote{margin-top:16px;padding:13px 16px;border-radius:var(--r-md);background:var(--gold-bg,#FEF6E0);border:1px solid #FDE68A;color:#7a4d06;font-size:14px;line-height:1.5;font-family:var(--font-display);font-weight:600}
+/* ============================================================
+   BESPOKE COMPONENTS for w5l1 — 1-2% Rule & Position Sizing.
+   Layered on the shared warm-paper skin.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + floating coins ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.02)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 26s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.02)}to{transform:scale(1.14)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.9),rgba(251,247,239,.82) 55%,rgba(251,247,239,.72))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(40px,8.2vw,78px);font-weight:900;line-height:.98;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.badge b{color:var(--gold-700)}
+.coins{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.coin{position:absolute;top:-8%;width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#fde8a6,#f5c243 46%,#c9860c);
+  box-shadow:0 3px 8px rgba(120,80,10,.28),inset 0 0 0 2px rgba(255,255,255,.35);
+  opacity:0;animation:coinFall linear infinite}
+.coin::after{content:"$";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font:800 13px/1 var(--font-display);color:#8a5b06}
+@keyframes coinFall{0%{transform:translateY(0) rotate(0);opacity:0}
+  8%{opacity:.8}90%{opacity:.8}100%{transform:translateY(118vh) rotate(220deg);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- data chart cards (survival curve) ---------- */
+.chartcard{max-width:820px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(19px,2.6vw,26px)/1.12 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-line{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:2px;background:var(--gold-600)}
+.seg{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.seg button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 15px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.seg button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+
+/* ---------- process flow: the sizing formula (count-up) ---------- */
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch;max-width:920px;margin:26px auto 0}
+@media(max-width:760px){.flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg);padding:2px 0}}
+.step{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px 18px 20px;text-align:center;
+  box-shadow:var(--shadow-soft);position:relative}
+.step .sn{position:absolute;top:-13px;left:50%;transform:translateX(-50%);width:26px;height:26px;border-radius:50%;
+  background:var(--gold);color:var(--ink);font:800 13px/26px var(--font-display)}
+.step .sk{font:700 11.5px var(--font-display);letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-700);margin-top:4px}
+.step .sv{font:900 clamp(24px,4vw,34px)/1 var(--font-display);color:var(--ink);margin:10px 0 8px;font-variant-numeric:tabular-nums}
+.step.result .sv{color:var(--green)}
+.step .sd{font-size:13px;color:var(--soft);line-height:1.5}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--gold-600);font:900 24px var(--font-display)}
+
+/* ---------- position-size calculator + animated risk slice ---------- */
+.pscalc{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift)}
+.psrow{display:flex;flex-wrap:wrap;gap:16px}
+.psfield{flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px}
+.psfield label{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft)}
+.psfield input{font-family:var(--font-display);font-weight:600;font-size:17px;padding:12px 14px;border:1.5px solid var(--sand);border-radius:var(--r-lg);background:var(--paper);color:var(--ink);width:100%;box-sizing:border-box}
+.psfield input:focus{outline:none;border-color:var(--green-2)}
+.psrisk{display:flex;gap:10px;margin-top:6px}
+.psriskbtn{flex:1;font-family:var(--font-display);font-weight:700;font-size:15px;padding:12px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+.psriskbtn.on{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+.psslice{margin-top:22px}
+.psslice svg{width:100%;height:auto;display:block;overflow:visible}
+.psslice-cap{display:flex;justify-content:space-between;font:700 12px var(--font-display);color:var(--soft);margin-top:7px}
+.psslice-cap b{color:var(--gold-700)}
+.psout{display:flex;flex-wrap:wrap;gap:14px;margin-top:20px}
+.pscard{flex:1;min-width:150px;background:var(--paper);border:1px solid var(--sand);border-radius:var(--r-lg);padding:16px;text-align:center}
+.pscard .psk{font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+.pscard .psv{font-family:var(--font-display);font-weight:800;font-size:26px;color:var(--ink);margin-top:6px;font-variant-numeric:tabular-nums}
+.pscard.big .psv{color:var(--green)}
+.psnote{margin-top:16px;padding:13px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14px;line-height:1.5;font-family:var(--font-display);font-weight:600}
+
+/* ---------- cinematic video: coach intro / outro ---------- */
+.cv{max-width:900px;margin:30px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.28),rgba(11,18,32,.55));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* ---------- JS cinematic scene (b-roll fallback) ---------- */
+.scene{position:relative;width:100%;aspect-ratio:16/9;background:radial-gradient(120% 120% at 50% 18%,#16233b,#0b1220 70%);overflow:hidden}
+.scene .acct{position:absolute;left:8%;right:8%;bottom:26%;height:16px;border-radius:99px;background:rgba(255,255,255,.14)}
+.scene .risk{position:absolute;left:8%;bottom:26%;height:16px;width:2%;border-radius:99px;
+  background:linear-gradient(90deg,#F59E0B,#FBBF24);box-shadow:0 0 22px rgba(251,191,36,.6);transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+.scene .shield{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);font-size:64px;filter:drop-shadow(0 0 26px rgba(251,191,36,.5));opacity:0;transition:opacity 1s ease .3s}
+.scene.play .shield{opacity:1;animation:pulseShield 2.6s ease-in-out .8s infinite}
+@keyframes pulseShield{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
+.scene .cap{position:absolute;left:0;right:0;bottom:11%;text-align:center;color:#fff;font:700 clamp(15px,2.4vw,20px) var(--font-display);opacity:0;transition:opacity .6s ease}
+.scene .cap.show{opacity:1}
+.scene .risklbl{position:absolute;bottom:33%;left:8%;color:#FBBF24;font:800 13px var(--font-display);opacity:0;transition:opacity .5s ease}
+.scene.play .risklbl{opacity:1}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .coin{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .anim{transition:none}
+  .scene .risk,.scene .shield,.scene .cap{transition:none}
+  .scene.play .shield{animation:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="coins" id="coins" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Teens · Module 5 · Lesson 5.1</div>
-      <h1 style="font-size:clamp(36px,7vw,62px);font-weight:900;line-height:1.02;margin:12px 0 12px">Never risk more than a sliver</h1>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Risk</span>
+        <span class="w" style="animation-delay:.13s">Only</span>
+        <span class="w" style="animation-delay:.21s">a</span>
+        <span class="w gold" style="animation-delay:.29s">Sliver</span>
+      </h1>
       <p class="lead">The number-one survival rule in trading: keep only about 1 to 2 percent of your account on the line in any single trade. Learn to size a position, and one bad call can never take you out.</p>
       <div class="badges">
-        <span class="badge"><b>7</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
-        <span class="badge">~<b>3</b> min</span>
+        <span class="badge">SI-100 · <b>Teens</b></span>
+        <span class="badge">~<b>4</b> min</span>
+        <span class="badge">Level · <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A calm teenager at a desk weighing a trading decision, a soft protective shield glowing around a small stack of coins" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · THE SURVIVAL RULE -->
+<!-- ============ 2 · SURVIVAL RULE (anchor: survival-rule) — data component 1: survival curve ============ -->
 <section id="survival-rule">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">The Survival Rule</div>
+    <div class="anim center-narrow"><div class="label">The Survival Rule</div>
       <h2 class="title">Only a sliver is ever on the line</h2>
-      <p class="lead" style="margin:0 auto">Great traders are wrong all the time. What keeps them alive is that a wrong call only ever costs them a small, planned slice of the account.</p>
+      <p class="lead center">Great traders are wrong all the time. What keeps them alive is that a wrong call only ever costs a small, planned slice of the account. Stay small, and losing streaks can't end you.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/one-percent-shield.jpg" alt="A pie with one thin slice highlighted under a protective shield, showing only a small part is at risk" /></div>
-      <div>
-        <p class="bigdef">Risk about <span class="hi">1 to 2 percent</span> of your account per trade. No more.</p>
-        <div class="two">
-          <div class="cmp safe">
-            <span class="tag">Small loss</span>
-            <h3>You stay in the game</h3>
-            <p>Wrong on a 2 percent trade? You lose a sliver and calmly take the next setup.</p>
-          </div>
-          <div class="cmp grow">
-            <span class="tag">Oversized bet</span>
-            <h3>One wrong call ends it</h3>
-            <p>All-in with no plan? A single bad trade can swallow the whole account.</p>
-          </div>
+
+    <div class="two anim d1" style="max-width:820px;margin:26px auto 0">
+      <div class="cmp safe"><span class="tag">Small loss</span><h3>You stay in the game</h3><p>Wrong on a 2% trade? You lose a sliver, shrug, and calmly take the next clean setup. Nothing broke.</p></div>
+      <div class="cmp grow"><span class="tag">Oversized bet</span><h3>One wrong call ends it</h3><p>All-in with no plan? A single bad trade can swallow the whole account, and now you're done before the good setups even show up.</p></div>
+    </div>
+
+    <div class="chartcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">$1,000 account · lose every trade · illustrative</div>
+          <div class="chart-big" id="survHeadline">At 2% per trade: $668 left after 20 losses</div>
         </div>
-        <div class="insight">This was never about being right every time. It's about surviving every time you're wrong, so you're still here when the great setups show up.</div>
+        <div class="seg" role="group" aria-label="Risk per trade">
+          <button data-r="0.02" class="on" type="button">2%</button>
+          <button data-r="0.10" type="button">10%</button>
+          <button data-r="0.25" type="button">25%</button>
+        </div>
       </div>
+      <div id="survChart" class="chart-svg" role="img" aria-label="Line chart of a $1,000 account shrinking through a losing streak at the chosen risk per trade"></div>
+      <div class="chart-foot"><span class="dot-line" id="survDot"></span> Account balance after each losing trade in a row &nbsp;·&nbsp; Losses before you drop below $100: <b id="survWipe">114</b></div>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/survive-vs-blowup.jpg" alt="A forked path: one figure walking steadily forward, the other path ending in a small burst" /></div>
+
+    <div class="insight anim d3" style="max-width:820px;margin:22px auto 0">This was never about being right every time. It's about surviving every time you're wrong, so you're still standing when the great setups finally show up.</div>
   </div>
 </section>
 
-<!-- 3 · POSITION SIZING -->
+<!-- ============ 3 · POSITION SIZING (anchor: position-sizing) — formula flow + cinematic moment ============ -->
 <section id="position-sizing">
   <div class="inner">
-    <div class="anim"><div class="label">Sizing the Trade</div><h2 class="title">How many shares? Let the risk decide.</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/stop-loss-net.jpg" alt="A safety net catching a falling arrow right at a marked stop level" /></div>
-      <div>
-        <p class="bigdef">A stop-loss is your exit, decided <span class="hi">before</span> you buy.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Risk per share</span>
-            <h3>Entry minus stop</h3>
-            <p>Plan to buy at 50 and set your stop at 48? That's 2 dollars of risk on every share.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Share count</span>
-            <h3>Dollars at risk &divide; risk per share</h3>
-            <p>Take your account times 1 or 2 percent, then divide by the risk per share. That's how many shares fit.</p>
-          </div>
-        </div>
-        <div class="insight">Move your stop closer to your entry and each share risks less, so the same small slice buys you more shares. That is position sizing doing its job.</div>
+    <div class="anim center-narrow"><div class="label">Sizing the Trade</div>
+      <h2 class="title">How many shares? Let the risk decide.</h2>
+      <p class="lead center">A stop-loss is your exit, decided before you ever buy. Once you know where you'd get out, three quick steps turn your 1-2% rule into an exact number of shares.</p>
+    </div>
+
+    <div class="flow anim d1">
+      <div class="step result">
+        <span class="sn">1</span>
+        <div class="sk">Set the slice</div>
+        <div class="sv" data-count="20" data-prefix="$">$0</div>
+        <div class="sd">$1,000 account &times; 2% = the most you'll risk on this trade.</div>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="step">
+        <span class="sn">2</span>
+        <div class="sk">Measure the risk</div>
+        <div class="sv" data-count="2" data-prefix="$">$0</div>
+        <div class="sd">Entry $50 &minus; stop $48 = risk per share if you get stopped out.</div>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="step result">
+        <span class="sn">3</span>
+        <div class="sk">Size it</div>
+        <div class="sv" data-count="10" data-suffix=" sh">0</div>
+        <div class="sd">$20 at risk &divide; $2 per share = how many shares fit the slice.</div>
       </div>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/position-scale.jpg" alt="A balance scale weighing a small risk weight against a large account stack, sitting level" /></div>
-    <div class="disclaim anim d3">The numbers here are illustrative teaching tools built from values you choose. They plan your risk. They are not a forecast or a promise about any real stock.</div>
+
+    <div class="cv anim d2" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before you size a single trade, watch what the 1-2% rule really buys you. I'll pause the narration the moment you press play.</p>
+      </div>
+      <div class="video-wrap" id="cvWrap">
+        <video id="compVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="compOv" aria-label="Play the risk clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">See the sliver at work</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">That calm comes from one thing: knowing a wrong call only costs a sliver. Hit Continue whenever you're ready.</p>
+      </div>
+    </div>
+
+    <div class="disclaim anim d3" style="margin-top:20px">The numbers here are illustrative teaching tools built from values you choose. They plan your risk. They are not a forecast or a promise about any real stock.</div>
   </div>
 </section>
 
-<!-- 4 · POSITION-SIZE CALCULATOR (bespoke interactive) -->
+<!-- ============ 4 · CALCULATOR (anchor: calculator) — data component 2: live position sizer ============ -->
 <section id="calculator">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn · Size a Trade</div>
+    <div class="anim center-narrow"><div class="label">Your Turn · Size a Trade</div>
       <h2 class="title">Run your own numbers</h2>
-      <p class="lead" style="margin:0 auto">Type in a pretend account, pick your risk percent, then punch in an entry and a stop. Watch the share count and the dollars at risk update live.</p>
+      <p class="lead center">Type in a pretend account, pick your risk percent, then punch in an entry and a stop. Watch the slice, the dollars at risk, and the share count update live.</p>
     </div>
-    <div class="imgstrip anim d1" style="max-width:720px;aspect-ratio:16/5"><img src="./assets/sizing-lane.jpg" alt="A small car staying between two guardrails on a lane, a metaphor for staying inside your risk" /></div>
-    <div class="pscalc anim d2" id="psCalc">
+    <div class="pscalc anim d1" id="psCalc">
       <div class="psrow">
         <div class="psfield">
           <label for="psAcct">Account size ($)</label>
@@ -151,6 +308,13 @@
           <input id="psStop" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 48" value="48" />
         </div>
       </div>
+      <div class="psslice" id="psSlice" role="img" aria-label="Bar showing the small slice of the account placed at risk">
+        <svg viewBox="0 0 700 60" preserveAspectRatio="none">
+          <rect x="0" y="14" width="700" height="32" rx="12" fill="#F3EDE1" stroke="#EAE2D0"/>
+          <rect id="psSliceBar" x="0" y="14" width="0" height="32" rx="12" fill="#F59E0B"/>
+        </svg>
+        <div class="psslice-cap"><span>Whole account</span><span><b id="psSlicePct">1%</b> at risk</span></div>
+      </div>
       <div class="psout">
         <div class="pscard"><div class="psk">Risk / share</div><div class="psv" id="psRps">&mdash;</div></div>
         <div class="pscard"><div class="psk">Dollars at risk</div><div class="psv" id="psRisked">&mdash;</div></div>
@@ -161,13 +325,12 @@
   </div>
 </section>
 
-<!-- 5 · SMART vs ACCOUNT-KILLER SORTER (interactive) -->
+<!-- ============ 5 · HABIT SORTER (anchor: habit-sorter) — mini-game ============ -->
 <section id="habit-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Sort It Yourself</div>
+    <div class="anim center-narrow"><div class="label">Sort It Yourself</div>
       <h2 class="title">Smart habit or account-killer?</h2>
-      <p class="lead" style="margin:0 auto">Tap a habit, then drop it under the right column. One side keeps your slice small. The other side quietly bets the whole stack.</p>
+      <p class="lead center">Tap a habit to pick it up, then tap the column where it belongs. One side keeps your slice small. The other quietly bets the whole stack.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
@@ -193,13 +356,12 @@
   </div>
 </section>
 
-<!-- 6 · QUIZ -->
+<!-- ============ 6 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five scenarios. Show me the survival rule stuck.</p>
+      <p class="lead center">Five scenarios. Show me the survival rule stuck.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="1">
@@ -253,10 +415,10 @@
   </div>
 </section>
 
-<!-- 7 · BRIDGE / SUMMARY -->
+<!-- ============ 7 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You've Got Guardrails</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You've Got Guardrails</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>Risk only about 1 to 2 percent of your account on any single trade.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>A stop-loss is your exit, decided before you buy.</p></div>
@@ -296,75 +458,445 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id":"hero","start":0.0,"end":20.208,"interactive":false,"label":"The 1-2% Rule"},{"id":"survival-rule","start":20.708,"end":78.476,"interactive":false,"label":"The Survival Rule"},{"id":"position-sizing","start":78.976,"end":140.344,"interactive":false,"label":"Sizing the Trade"},{"id":"calculator","start":140.844,"end":170.796,"interactive":true,"label":"Size a Trade"},{"id":"habit-sorter","start":171.296,"end":194.096,"interactive":true,"label":"Smart or Account-Killer"},{"id":"quiz","start":194.596,"end":203.596,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":204.096,"end":239.544,"interactive":false,"label":"You've Got Guardrails"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":20.208,"interactive":false,"label":"The 1-2% Rule"},
+  {"id":"survival-rule","start":20.708,"end":78.476,"interactive":false,"label":"The Survival Rule"},
+  {"id":"position-sizing","start":78.976,"end":140.344,"interactive":true,"label":"Sizing the Trade"},
+  {"id":"calculator","start":140.844,"end":170.796,"interactive":true,"label":"Size a Trade"},
+  {"id":"habit-sorter","start":171.296,"end":194.096,"interactive":true,"label":"Smart or Account-Killer"},
+  {"id":"quiz","start":194.596,"end":203.596,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":204.096,"end":239.544,"interactive":false,"label":"You've Got Guardrails"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: position-size calculator (isolated ps* namespace) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic clip, charts, calculator, sorter,
+   quiz, complete. Self-contained; every ftaBridge emit is a
+   harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var calc=document.getElementById('psCalc'); if(!calc) return;
-  var acctEl=document.getElementById('psAcct'),
-      entryEl=document.getElementById('psEntry'),
-      stopEl=document.getElementById('psStop'),
-      r1=document.getElementById('psRisk1'), r2=document.getElementById('psRisk2'),
-      rpsEl=document.getElementById('psRps'), riskedEl=document.getElementById('psRisked'),
-      sharesEl=document.getElementById('psShares'), noteEl=document.getElementById('psNote');
-  var riskPct=1;
-  var DASH='—';
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function money(n){
-    return '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-  function blank(msg){
-    rpsEl.textContent=DASH; riskedEl.textContent=DASH; sharesEl.textContent=DASH;
-    noteEl.textContent=msg;
-  }
-  function num(el){
-    var v=parseFloat(el.value);
-    return isFinite(v)?v:NaN;
-  }
-  function compute(){
-    var acct=num(acctEl), entry=num(entryEl), stop=num(stopEl);
-    if(isNaN(acct)||isNaN(entry)||isNaN(stop)){
-      blank('Type in all four numbers to see your size.'); return;
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {}, completed = false;
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'position-sizing':false, 'calculator':false, 'habit-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
+  });
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
     }
-    if(acct<=0){ blank('Give your practice account a size above zero.'); return; }
-    if(entry<=0||stop<=0){ blank('Entry and stop should be prices above zero.'); return; }
-    var rps=entry-stop;
-    if(rps<=0){
-      blank('For a long trade, set your stop BELOW your entry so there is a real risk per share.'); return;
-    }
-    var dollarsAtRisk=acct*(riskPct/100);
-    var shares=Math.floor(dollarsAtRisk/rps);
-    rpsEl.textContent=money(rps);
-    riskedEl.textContent=money(dollarsAtRisk);
-    if(shares<1){
-      sharesEl.textContent='0';
-      noteEl.textContent='At '+riskPct+'%, this stop is too wide for even one share. Tighten the stop or grow the account. (Illustrative tool.)';
-      return;
-    }
-    sharesEl.textContent=shares.toLocaleString();
-    noteEl.textContent='About '+shares.toLocaleString()+' shares keeps your loss near '+money(dollarsAtRisk)+' if the stop hits. Illustrative practice tool, not advice.';
   }
-  function setRisk(p){
-    riskPct=p;
-    r1.classList.toggle('on', p===1);
-    r2.classList.toggle('on', p===2);
-    compute();
+
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){
+      contBtn.disabled=true;
+      contBtn.textContent = gateHint(s.id);
+    } else {
+      contBtn.disabled=false;
+      contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →';
+    }
   }
-  r1.addEventListener('click',function(){ setRisk(1); });
-  r2.addEventListener('click',function(){ setRisk(2); });
-  [acctEl,entryEl,stopEl].forEach(function(el){ el.addEventListener('input',compute); });
-  compute();
+  function gateHint(id){
+    if(id==='position-sizing') return 'Play the clip to continue';
+    if(id==='calculator') return 'Try the calculator to continue';
+    if(id==='habit-sorter') return 'Sort every habit to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- floating coins (hero) ---- */
+  (function(){
+    var wrap=document.getElementById('coins'); if(!wrap||reduce) return;
+    var N=14;
+    for(var i=0;i<N;i++){
+      var c=document.createElement('span'); c.className='coin';
+      var dur=6+Math.random()*6, delay=-Math.random()*10, sz=16+Math.random()*16;
+      c.style.left=(Math.random()*96)+'%';
+      c.style.width=c.style.height=sz+'px';
+      c.style.animationDuration=dur+'s';
+      c.style.animationDelay=delay+'s';
+      c.style.opacity=(.5+Math.random()*.5);
+      wrap.appendChild(c);
+    }
+  })();
+
+  function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+  /* ---- data component 1: survival curve (lazy-drawn, re-animates on toggle) ---- */
+  var curRisk=0.02;
+  function survColor(r){ return r<=0.02?{line:'#16A34A',g:'#22C55E'}:r<=0.10?{line:'#D97706',g:'#FBBF24'}:{line:'#DC2626',g:'#EF4444'}; }
+  function drawSurvival(box, r){
+    var W=700,H=300,padL=54,padR=16,padT=20,padB=42;
+    var N=25, maxV=1000;
+    var pts=[]; for(var n=0;n<=N;n++){ pts.push(maxV*Math.pow(1-r,n)); }
+    var plotH=H-padT-padB, plotW=W-padL-padR, stepX=plotW/N;
+    var coords=pts.map(function(v,i){ return [padL+i*stepX,(H-padB)-(v/maxV)*plotH]; });
+    var line=coords.map(function(c){ return c[0].toFixed(1)+','+c[1].toFixed(1); }).join(' ');
+    var area='M'+padL+','+(H-padB)+' L'+line.replace(/ /g,' L')+' L'+coords[coords.length-1][0].toFixed(1)+','+(H-padB)+' Z';
+    var col=survColor(r);
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    s+='<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+col.g+'" stop-opacity=".34"/><stop offset="100%" stop-color="'+col.g+'" stop-opacity="0"/></linearGradient></defs>';
+    // gridlines at 1000/750/500/250
+    for(var k=1;k<=4;k++){
+      var gy2=padT+(plotH/4)*(k-1);
+      var gv=maxV*(1-(k-1)/4);
+      s+='<line x1="'+padL+'" y1="'+gy2+'" x2="'+(W-padR)+'" y2="'+gy2+'" stroke="#eee5d2" stroke-width="1"/>';
+      s+='<text x="'+(padL-8)+'" y="'+(gy2+4)+'" text-anchor="end" font-family="Inter,sans-serif" font-size="10.5" fill="#98A2B3">'+money(gv)+'</text>';
+    }
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#e4dbc6" stroke-width="1.5"/>';
+    // area
+    s+='<path d="'+area+'" fill="url(#sg)" opacity="'+(reduce?'1':'0')+'">'+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.6s" begin="0.4s" fill="freeze"/>')+'</path>';
+    // line draw-on
+    var len=1700;
+    s+='<polyline points="'+line+'" fill="none" stroke="'+col.line+'" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"';
+    if(!reduce){ s+=' stroke-dasharray="'+len+'" stroke-dashoffset="'+len+'"><animate attributeName="stroke-dashoffset" from="'+len+'" to="0" dur="1.1s" fill="freeze"/></polyline>'; }
+    else { s+='/>'; }
+    // marker at 20 losses
+    var m20=coords[20];
+    s+='<circle cx="'+m20[0].toFixed(1)+'" cy="'+m20[1].toFixed(1)+'" r="6" fill="'+col.line+'" stroke="#fff" stroke-width="2.5" opacity="'+(reduce?'1':'0')+'">'+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.05s" fill="freeze"/>')+'</circle>';
+    // x labels
+    [0,5,10,15,20,25].forEach(function(m){
+      var x=padL+(m/N)*plotW;
+      s+='<text x="'+x+'" y="'+(H-padB+20)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5B6472">'+(m===0?'0':m)+'</text>';
+    });
+    s+='<text x="'+(padL+plotW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="10.5" fill="#98A2B3">Losing trades in a row</text>';
+    s+='</svg>';
+    box.innerHTML=s;
+    // live readouts
+    var after20=maxV*Math.pow(1-r,20);
+    var wipe=Math.ceil(Math.log(0.1)/Math.log(1-r));
+    document.getElementById('survHeadline').textContent='At '+Math.round(r*100)+'% per trade: '+money(after20)+' left after 20 losses';
+    document.getElementById('survWipe').textContent=wipe;
+    var dot=document.getElementById('survDot'); if(dot) dot.style.background=col.line;
+  }
+  var survEl=document.getElementById('survChart');
+  var survIO=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawSurvival(e.target,curRisk); } });
+  },{threshold:.25});
+  if(survEl) survIO.observe(survEl);
+  (function(){
+    var btns=document.querySelectorAll('#survival-rule .seg button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        curRisk=parseFloat(b.dataset.r);
+        if(survEl){ survEl.dataset.drawn='1'; drawSurvival(survEl,curRisk); }
+      });
+    });
+  })();
+
+  /* ---- process flow: count-up the sizing formula ---- */
+  (function(){
+    var flow=document.getElementById('position-sizing'); if(!flow) return;
+    var nums=flow.querySelectorAll('.step .sv[data-count]');
+    var fired=false;
+    function countUp(el){
+      var to=parseFloat(el.dataset.count), pre=el.dataset.prefix||'', suf=el.dataset.suffix||'';
+      if(reduce){ el.textContent=pre+to+suf; return; }
+      var start=performance.now(), dur=1100;
+      function step(now){
+        var p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3);
+        el.textContent=pre+Math.round(to*e)+suf;
+        if(p<1) requestAnimationFrame(step); else el.textContent=pre+to+suf;
+      }
+      requestAnimationFrame(step);
+    }
+    var fio=new IntersectionObserver(function(en){
+      en.forEach(function(e){
+        if(e.isIntersecting && !fired){ fired=true; nums.forEach(function(el,i){ setTimeout(function(){ countUp(el); }, i*260); }); fio.disconnect(); }
+      });
+    },{threshold:.4});
+    fio.observe(flow.querySelector('.flow'));
+  })();
+
+  /* ---- cinematic clip / scene: pause narration, coach outro, satisfy gate ---- */
+  (function(){
+    var vid=document.getElementById('compVid'), ov=document.getElementById('compOv'), outro=document.getElementById('cvOutro');
+    var scene=document.getElementById('cvScene');
+    if(!ov) return;
+    var wasPlaying=false, psIdx=idxOf('position-sizing');
+    function pauseNarr(){ wasPlaying = !audio.paused; if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; } }
+    function afterClip(){
+      if(outro) outro.style.display='block';
+      satisfyGate('position-sizing');
+      if(wasPlaying && audio.currentTime < ST[psIdx].end-0.3){ audio.play(); playBtn.textContent=PAUSE; }
+    }
+    if(vid){
+      ov.addEventListener('click',function(){
+        pauseNarr(); ov.classList.add('hide');
+        var p=vid.play(); if(p&&p.catch) p.catch(function(){});
+      });
+      vid.addEventListener('ended', afterClip);
+    } else if(scene){
+      // JS-animated cinematic fallback
+      ov.addEventListener('click',function(){
+        pauseNarr(); ov.classList.add('hide'); scene.classList.add('play');
+        var risk=scene.querySelector('.risk'); if(risk) risk.style.width='2%';
+        var caps=scene.querySelectorAll('.cap'), ci=0;
+        function nextCap(){
+          caps.forEach(function(c){ c.classList.remove('show'); });
+          if(ci<caps.length){ caps[ci].classList.add('show'); ci++; setTimeout(nextCap, reduce?400:1900); }
+          else { setTimeout(afterClip, reduce?0:600); }
+        }
+        setTimeout(nextCap, reduce?0:500);
+      });
+    }
+  })();
+
+  /* ---- data component 2: live position-size calculator + animated risk slice ---- */
+  (function(){
+    var calc=document.getElementById('psCalc'); if(!calc) return;
+    var acctEl=document.getElementById('psAcct'), entryEl=document.getElementById('psEntry'),
+        stopEl=document.getElementById('psStop'),
+        r1=document.getElementById('psRisk1'), r2=document.getElementById('psRisk2'),
+        rpsEl=document.getElementById('psRps'), riskedEl=document.getElementById('psRisked'),
+        sharesEl=document.getElementById('psShares'), noteEl=document.getElementById('psNote'),
+        sliceBar=document.getElementById('psSliceBar'), slicePct=document.getElementById('psSlicePct');
+    var riskPct=1, DASH='—', touched=false, sliceShown=false, sliceRAF=null;
+    function money2(n){ return '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function num(el){ var v=parseFloat(el.value); return isFinite(v)?v:NaN; }
+    // animate the SVG slice rect width (0..700) via rAF tween
+    function tweenSlice(toW){
+      if(sliceRAF) cancelAnimationFrame(sliceRAF);
+      if(reduce){ sliceBar.setAttribute('width', toW.toFixed(1)); return; }
+      var fromW=parseFloat(sliceBar.getAttribute('width'))||0, start=performance.now(), dur=650;
+      (function step(now){
+        var p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3);
+        sliceBar.setAttribute('width',(fromW+(toW-fromW)*e).toFixed(1));
+        if(p<1) sliceRAF=requestAnimationFrame(step);
+      })(start);
+    }
+    function setSlice(frac){
+      var w=Math.max(0,Math.min(1,frac))*700;
+      // enforce a visible minimum sliver when there is real risk
+      if(frac>0 && w<6) w=6;
+      tweenSlice(w);
+      slicePct.textContent=(frac>0?(Math.round(frac*1000)/10):0)+'%';
+    }
+    function blank(msg,frac){ rpsEl.textContent=DASH; riskedEl.textContent=DASH; sharesEl.textContent=DASH; noteEl.textContent=msg; setSlice(frac||0); }
+    function compute(){
+      var acct=num(acctEl), entry=num(entryEl), stop=num(stopEl);
+      if(isNaN(acct)||isNaN(entry)||isNaN(stop)){ blank('Type in all four numbers to see your size.',0); return; }
+      if(acct<=0){ blank('Give your practice account a size above zero.',0); return; }
+      if(entry<=0||stop<=0){ blank('Entry and stop should be prices above zero.',0); return; }
+      var rps=entry-stop;
+      if(rps<=0){ blank('For a long trade, set your stop BELOW your entry so there is a real risk per share.',0); return; }
+      var dollarsAtRisk=acct*(riskPct/100), shares=Math.floor(dollarsAtRisk/rps);
+      rpsEl.textContent=money2(rps);
+      riskedEl.textContent=money2(dollarsAtRisk);
+      setSlice(dollarsAtRisk/acct);
+      if(shares<1){ sharesEl.textContent='0'; noteEl.textContent='At '+riskPct+'%, this stop is too wide for even one share. Tighten the stop or grow the account. (Illustrative tool.)'; return; }
+      sharesEl.textContent=shares.toLocaleString();
+      noteEl.textContent='About '+shares.toLocaleString()+' shares keeps your loss near '+money2(dollarsAtRisk)+' if the stop hits. Illustrative practice tool, not advice.';
+    }
+    function setRisk(p){ riskPct=p; r1.classList.toggle('on',p===1); r2.classList.toggle('on',p===2); mark(); compute(); }
+    function mark(){ if(!touched){ touched=true; satisfyGate('calculator'); } }
+    r1.addEventListener('click',function(){ setRisk(1); });
+    r2.addEventListener('click',function(){ setRisk(2); });
+    [acctEl,entryEl,stopEl].forEach(function(el){ el.addEventListener('input',function(){ mark(); compute(); }); });
+    // first paint (with slice draw-on) happens when the calculator scrolls into view;
+    // after that, every input re-computes and re-animates live.
+    var cio=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting && !sliceShown){ sliceShown=true; compute(); cio.disconnect(); } });
+    },{threshold:.3});
+    cio.observe(calc);
+  })();
+
+  /* ---- habit sorter mini-game ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('#habit-sorter .col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty'); fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Small, planned risk is what keeps you in the game.';
+          satisfyGate('habit-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- quiz grading + bridge emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel'); sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){ o.disabled=true; if(i===corr) o.classList.add('correct'); if(i===s && i!==corr) o.classList.add('wrong'); });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — the survival rule is locked in.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(completed) return; completed=true;
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
-<style id="fta-anim">
-@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
-@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
-.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
-</style>
-<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
 </body>
 </html>

@@ -14,167 +14,334 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  .svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
-  .svgcard svg{width:100%;height:auto;display:block}
-  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
-  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
-  /* animated emotion vs plan lines */
-  .eline{stroke-dasharray:1;stroke-dashoffset:1;fill:none;stroke-linecap:round}
-  .svgcard.play .eline{animation:draw 1.3s ease forwards}
-  .svgcard.play .eline.plan{animation-delay:.4s}
-  @keyframes draw{to{stroke-dashoffset:0}}
-  .emk{transform-box:fill-box;transform-origin:center;opacity:0}
-  .svgcard.play .emk{animation:pop .4s ease forwards, bob 1.8s ease-in-out infinite}
-  .svgcard.play .emk.k1{animation-delay:.7s,1.1s}
-  .svgcard.play .emk.k2{animation-delay:1.1s,1.5s}
-  @keyframes pop{to{opacity:1}}
-  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-  /* bespoke: fear & greed dial */
-  .fg{max-width:660px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
-  .fgtop{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft);margin-bottom:8px}
-  .fgmeter{height:14px;border-radius:99px;background:linear-gradient(90deg,#3B82F6,#22C55E,#F59E0B,#EF4444);position:relative;margin:4px 0 14px}
-  #fgRange{width:100%;-webkit-appearance:none;appearance:none;height:26px;background:transparent;cursor:pointer;margin:0}
-  #fgRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
-  #fgRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer}
-  .fgzone{font-family:var(--font-display);font-weight:800;font-size:22px;text-align:center;margin:2px 0 16px}
-  .fgcard{border-radius:var(--r-md);padding:13px 16px;margin-top:10px;font-size:14.5px;line-height:1.5}
-  .fgcard .lab{font-family:var(--font-display);font-weight:800;font-size:12px;letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:3px}
-  .fgemo{background:var(--red-bg);border:1px solid var(--red-border)}
-  .fgemo .lab{color:var(--red)}
-  .fgplan{background:var(--green-bg);border:1px solid var(--green-border)}
-  .fgplan .lab{color:var(--green)}
+/* ============================================================
+   BESPOKE COMPONENTS for w5l2 — layered on the warm-paper skin.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + drifting motes ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.02)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 26s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(38px,8vw,74px);font-weight:900;line-height:1.0;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.badge b{color:var(--gold-700)}
+.motes{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.mote{position:absolute;bottom:-6%;width:12px;height:12px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(251,191,36,.55) 55%,rgba(22,197,94,.0));
+  filter:blur(.3px);opacity:0;animation:moteRise linear infinite}
+@keyframes moteRise{0%{transform:translateY(0) scale(.8);opacity:0}
+  10%{opacity:.7}80%{opacity:.55}100%{transform:translateY(-118vh) scale(1.15);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- data chart cards ---------- */
+.chartcard{max-width:820px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(19px,2.6vw,26px)/1.12 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-feel,.dot-plan{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:2px}
+.dot-feel{background:#EF4444}.dot-plan{background:var(--green-2)}
+
+/* ---------- plans-over-feelings: animated two-line SVG ---------- */
+.svgcard{max-width:820px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-lift)}
+.svgcard svg{width:100%;height:auto;display:block;overflow:visible}
+.eline{stroke-dasharray:1;stroke-dashoffset:1;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.svgcard.play .eline{animation:draw 1.35s ease forwards}
+.svgcard.play .eline.plan{animation-delay:.45s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.emk{transform-box:fill-box;transform-origin:center;opacity:0}
+.svgcard.play .emk{animation:pop .4s ease forwards, bob 1.9s ease-in-out infinite}
+.svgcard.play .emk.k1{animation-delay:.85s,1.25s}
+.svgcard.play .emk.k2{animation-delay:1.3s,1.7s}
+@keyframes pop{to{opacity:1}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* ---------- cinematic video: coach intro / outro ---------- */
+.cv{max-width:900px;margin:8px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.28),rgba(11,18,32,.55));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* ---------- self-contained JS cinematic fallback scene ---------- */
+.cine-scene{position:relative;width:100%;aspect-ratio:16/9;background:radial-gradient(120% 120% at 50% 12%,#16233c,#0b1220 70%);
+  border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-lift)}
+.cine-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.cine-cap{position:absolute;left:0;right:0;bottom:16px;text-align:center;color:#fff;font:700 15px var(--font-display);
+  text-shadow:0 2px 12px rgba(0,0,0,.6);opacity:0;transition:opacity .5s ease;padding:0 20px}
+.cine-cap.show{opacity:1}
+.cl{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+.cine-scene.run .cl.feel{animation:draw 2.6s ease .2s forwards}
+.cine-scene.run .cl.plan{animation:draw 2.6s ease 1.1s forwards}
+
+/* ---------- journal process-flow (animated reveal) ---------- */
+.jflow{max-width:900px;margin:26px auto 0;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+@media(max-width:820px){.jflow{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.jflow{grid-template-columns:1fr}}
+.jstep{position:relative;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-lg);
+  padding:16px 14px 14px;box-shadow:var(--shadow-soft);opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease,transform .5s ease}
+.jstep.on{opacity:1;transform:none}
+.jstep .jn{width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--ink);font:800 14px var(--font-display);
+  display:flex;align-items:center;justify-content:center;margin-bottom:9px;box-shadow:0 3px 10px rgba(251,191,36,.35)}
+.jstep h5{font:800 15px var(--font-display);color:var(--ink);margin-bottom:4px}
+.jstep p{font-size:13px;color:var(--soft);line-height:1.45}
+
+/* ---------- emotion dial: gauge + slider + live headline ---------- */
+.fg{max-width:680px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);
+  padding:26px;box-shadow:var(--shadow-lift)}
+.fg-gauge{position:relative;max-width:360px;margin:0 auto}
+.fg-gauge svg{width:100%;height:auto;display:block;overflow:visible}
+.fg-needle{transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.fg-reduce .fg-needle{transition:none}
+.fg-read{position:absolute;left:0;right:0;bottom:2px;text-align:center}
+.fg-num{font:900 clamp(40px,9vw,58px)/1 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .3s ease}
+.fg-zone{font:800 15px var(--font-display);letter-spacing:.02em;transition:color .3s ease;margin-top:-2px}
+.fgtop{display:flex;justify-content:space-between;font:700 13px var(--font-display);color:var(--soft);margin:14px 0 4px}
+#fgRange{width:100%;-webkit-appearance:none;appearance:none;height:26px;background:transparent;cursor:pointer;margin:0}
+#fgRange::-webkit-slider-runnable-track{height:14px;border-radius:99px;
+  background:linear-gradient(90deg,#3B82F6,#22C55E,#F59E0B,#EF4444)}
+#fgRange::-moz-range-track{height:14px;border-radius:99px;
+  background:linear-gradient(90deg,#3B82F6,#22C55E,#F59E0B,#EF4444)}
+#fgRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-6px;border-radius:50%;
+  background:#fff;border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+#fgRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer}
+.fgcards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+@media(max-width:560px){.fgcards{grid-template-columns:1fr}}
+.fgcard{border-radius:var(--r-md);padding:13px 16px;font-size:14.5px;line-height:1.5}
+.fgcard .lab{font:800 12px var(--font-display);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:3px}
+.fgemo{background:var(--red-bg);border:1px solid var(--red-border)}.fgemo .lab{color:var(--red)}
+.fgplan{background:var(--green-bg);border:1px solid var(--green-border)}.fgplan .lab{color:var(--green)}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .mote{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .anim{transition:none}
+  .fg-needle{transition:none}
+  .jstep{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="motes" id="motes" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Teens &middot; Module 5 &middot; Lesson 5.2</div>
-      <h1 style="font-size:clamp(34px,7vw,60px);font-weight:900;line-height:1.03;margin:12px 0 12px">Your real opponent is you</h1>
-      <p class="lead">The hardest part of investing is not the charts. It is the person holding the phone. Beat fear and greed with two unstoppable tools: a plan, and a journal.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Your</span>
+        <span class="w" style="animation-delay:.13s">real</span>
+        <span class="w" style="animation-delay:.21s">opponent</span>
+        <span class="w" style="animation-delay:.29s">is</span>
+        <span class="w gold" style="animation-delay:.37s">you</span>
+      </h1>
+      <p class="lead">The hardest part of investing isn't the charts. It's the person holding the phone. Beat fear and greed with two unstoppable tools: a written plan, and a journal.</p>
       <div class="badges">
-        <span class="badge"><b>8</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
-        <span class="badge">~<b>2.5</b> min</span>
+        <span class="badge">SI-100 · <b>Teens</b></span>
+        <span class="badge">~<b>2.75</b> min</span>
+        <span class="badge">Level · <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A calm teenager writing in a trading journal at a tidy desk with a steady chart nearby" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · FEAR & GREED -->
+<!-- ============ 2 · FEAR & GREED (anchor: fear-greed) — animated bar chart ============ -->
 <section id="fear-greed">
   <div class="inner">
-    <div class="anim"><div class="label">The Two Villains</div><h2 class="title">Fear and greed</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/fear-greed.jpg" alt="A fear and greed meter with a needle between a worried face and a greedy face" /></div>
-      <div>
-        <p class="bigdef">Two emotions wreck more traders than any bad chart ever will.</p>
-        <div class="two">
-          <div class="cmp gamble">
-            <span class="tag">Greed</span>
-            <h3>Buy high</h3>
-            <p>Everyone is hyped, so you jump in at the top, scared of missing out.</p>
-          </div>
-          <div class="cmp gamble">
-            <span class="tag">Fear</span>
-            <h3>Sell low</h3>
-            <p>It dips, everyone panics, so you dump it at the bottom.</p>
-          </div>
-        </div>
-        <div class="insight">Buy high, sell low: the exact opposite of the plan. Feelings are loud, and they are usually wrong at the worst possible moment.</div>
-      </div>
+    <div class="anim center-narrow"><div class="label">The Two Villains</div>
+      <h2 class="title">Fear and greed run the show</h2>
+      <p class="lead center">Two emotions wreck more traders than any bad chart ever will. Greed buys the top. Fear sells the bottom. Same $1,000, one wild year — watch what each one does with it.</p>
     </div>
+    <div class="chartcard anim d1">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">$1,000 to start &middot; one year &middot; illustrative</div>
+          <div class="chart-big">Feelings shrink it. A plan grows it.</div>
+        </div>
+      </div>
+      <div id="fgChart" class="chart-svg" role="img" aria-label="Bar chart comparing $1,000 traded on emotion ending around $720 versus $1,000 traded on a written plan ending around $1,180 over one year"></div>
+      <div class="chart-foot"><span class="dot-feel"></span> Traded on feelings &nbsp;&middot;&nbsp; <span class="dot-plan"></span> Traded on a plan &nbsp;&middot;&nbsp; dashed line = your starting $1,000</div>
+    </div>
+    <div class="two anim d2" style="max-width:820px;margin:26px auto 0">
+      <div class="cmp gamble"><span class="tag">Greed</span><h3>Buy high</h3><p>Everyone's hyped, so you jump in at the top — scared of missing out. You pay the most right before it cools off.</p></div>
+      <div class="cmp gamble"><span class="tag">Fear</span><h3>Sell low</h3><p>It dips, everyone panics, so you dump it at the bottom. You lock in the loss right before it recovers.</p></div>
+    </div>
+    <div class="insight anim d3" style="max-width:820px;margin:22px auto 0">Buy high, sell low: the exact opposite of a good plan. Feelings are loud, and they're usually wrong at the worst possible moment.</div>
   </div>
 </section>
 
-<!-- 3 · PLANS OVER FEELINGS (animated SVG) -->
+<!-- ============ 3 · PLANS OVER FEELINGS (anchor: plans-over-feelings) — animated two-line SVG ============ -->
 <section id="plans-over-feelings">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Plans Over Feelings</div>
+    <div class="anim center-narrow"><div class="label">Plans Over Feelings</div>
       <h2 class="title">A written plan gets the vote</h2>
-      <p class="lead" style="margin:0 auto">Watch the two lines. The red one is the emotional trader, whipsawed by fear and greed. The green one is you, with entry, exit, and stop decided in advance.</p>
+      <p class="lead center">Watch the two lines draw in. Red is the emotional trader, whipsawed by every headline. Green is you — entry, exit, and stop decided in advance, before the feelings ever showed up.</p>
     </div>
     <div class="svgcard anim d1" id="svgEmo">
       <svg viewBox="0 0 680 300" role="img" aria-label="Illustrative chart: an emotional trader line buys high and sells low while a steady plan line climbs calmly">
         <line x1="55" y1="30" x2="55" y2="250" stroke="#EAE2D0" stroke-width="2"/>
         <line x1="55" y1="250" x2="640" y2="250" stroke="#EAE2D0" stroke-width="2"/>
-        <!-- emotional line -->
         <path class="eline" pathLength="1" d="M70,150 C 150,70 200,66 235,78 C 320,150 360,235 430,232 C 500,150 545,150 610,175" stroke="#EF4444" stroke-width="4"/>
-        <!-- plan line -->
         <path class="eline plan" pathLength="1" d="M70,205 C 250,190 430,165 610,120" stroke="#22C55E" stroke-width="5"/>
-        <!-- markers -->
-        <g class="emk k1"><circle cx="235" cy="78" r="8" fill="#EF4444"/><text x="235" y="60" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#DC2626" text-anchor="middle">bought (greed)</text></g>
+        <g class="emk k1"><circle cx="235" cy="78" r="8" fill="#EF4444"/><text x="235" y="58" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#DC2626" text-anchor="middle">bought (greed)</text></g>
         <g class="emk k2"><circle cx="430" cy="232" r="8" fill="#EF4444"/><text x="430" y="252" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#DC2626" text-anchor="middle">sold (fear)</text></g>
         <text x="612" y="112" font-family="Poppins,sans-serif" font-size="14" font-weight="800" fill="#16A34A">the plan</text>
       </svg>
     </div>
     <div class="disclaim anim d1">Illustrative example, not a forecast or a promise. The shapes show the idea, not real prices.</div>
-    <div class="imgstrip anim d2"><img src="./assets/plan-vs-feelings.jpg" alt="A chaotic emotional rollercoaster beside a calm steady climbing arrow" /></div>
+    <div class="two anim d2" style="max-width:820px;margin:22px auto 0">
+      <div class="cmp grow"><span class="tag">Decide first</span><h3>Entry, exit, stop</h3><p>Write down where you'll buy, where you'll take profit, and where you'll bail — <b>before</b> you're in the trade and emotional.</p></div>
+      <div class="cmp grow"><span class="tag">Then obey</span><h3>Follow the paper</h3><p>When the market gets loud, you don't guess. You already made the calm decision. You just follow it.</p></div>
+    </div>
   </div>
 </section>
 
-<!-- 4 · THE JOURNAL -->
+<!-- ============ 4 · THE JOURNAL (anchor: the-journal) — cinematic moment + process flow ============ -->
 <section id="the-journal">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Your Journal Is Your Coach</div>
+    <div class="anim center-narrow"><div class="label">Your Journal Is Your Coach</div>
       <h2 class="title">Write it down, then review it</h2>
-      <p class="lead" style="margin:0 auto">Every trade gets logged. Over time your journal shows you the truth about your own habits.</p>
+      <p class="lead center">Every trade gets logged. Over time your journal becomes a mirror — it shows you the mistakes you keep repeating and the setups that actually work for you. And it's free.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/journal.jpg" alt="An open journal notebook with blank rows and a pen" /></div>
-      <div>
-        <p class="bigdef">Log five things every time: <span class="hi">why in, the plan, the exit, the stop, and what happened.</span></p>
-        <div class="insight">Then read it back. The journal is a mirror. It shows the mistakes you keep repeating and the setups that actually work for you. It is your own coach, and it is free.</div>
+
+    <div class="cv anim d1" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before we talk about what goes in the journal, watch what a disciplined trader does after the bell rings. Press play — I'll pause the narration for you.</p>
+      </div>
+      <div class="video-wrap" id="cvWrap">
+        <video id="journalVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="journalOv" aria-label="Play the journaling clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Watch the after-the-bell habit</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">See it? No hype, no panic — just a pen and the truth. That quiet habit is what separates traders who improve from traders who repeat. Hit Continue when you're ready.</p>
       </div>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/mistake-review.jpg" alt="A teenager reviewing past trades with checkmarks and a magnifying glass" /></div>
+
+    <div class="jflow anim d2" id="jflow" aria-label="Five things to log in every trade">
+      <div class="jstep"><div class="jn">1</div><h5>Why in</h5><p>The reason you took the trade. The actual setup, not a vibe.</p></div>
+      <div class="jstep"><div class="jn">2</div><h5>The plan</h5><p>Your entry price and the size you chose going in.</p></div>
+      <div class="jstep"><div class="jn">3</div><h5>The exit</h5><p>Where you'll take profit if it works out.</p></div>
+      <div class="jstep"><div class="jn">4</div><h5>The stop</h5><p>Where you'll bail to protect your money if it doesn't.</p></div>
+      <div class="jstep"><div class="jn">5</div><h5>What happened</h5><p>The outcome — and whether you followed your own plan.</p></div>
+    </div>
   </div>
 </section>
 
-<!-- 5 · EMOTION DIAL (bespoke slider) -->
+<!-- ============ 5 · EMOTION DIAL (anchor: emotion-dial) — gauge slider + live headline ============ -->
 <section id="emotion-dial">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn &middot; Feel the Gap</div>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; Feel the Gap</div>
       <h2 class="title">Drag the fear &amp; greed dial</h2>
-      <p class="lead" style="margin:0 auto">Slide from extreme fear to extreme greed. See what the emotional move would be, and what the disciplined, plan-following move is instead.</p>
+      <p class="lead center">Slide from extreme fear to extreme greed. Watch the needle move and the live reading change. See what the emotional move would be — and what the disciplined, plan-following move is instead.</p>
     </div>
     <div class="fg anim d1" id="fgDial">
+      <div class="fg-gauge">
+        <svg viewBox="0 0 300 176" role="img" aria-label="Fear and greed gauge with a needle">
+          <defs>
+            <linearGradient id="fgArc" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#3B82F6"/><stop offset="38%" stop-color="#22C55E"/>
+              <stop offset="70%" stop-color="#F59E0B"/><stop offset="100%" stop-color="#EF4444"/>
+            </linearGradient>
+          </defs>
+          <path d="M30 150 A120 120 0 0 1 270 150" fill="none" stroke="url(#fgArc)" stroke-width="18" stroke-linecap="round"/>
+          <g class="fg-needle" id="fgNeedle" style="transform:rotate(0deg);transform-origin:150px 150px">
+            <polygon points="150,44 156,150 144,150" fill="var(--ink)"/>
+          </g>
+          <circle cx="150" cy="150" r="11" fill="var(--ink)"/>
+          <circle cx="150" cy="150" r="4" fill="#fff"/>
+        </svg>
+        <div class="fg-read">
+          <div class="fg-num" id="fgNum">50</div>
+          <div class="fg-zone" id="fgZone">Neutral</div>
+        </div>
+      </div>
       <div class="fgtop"><span>&#128561; Extreme fear</span><span>Extreme greed &#129297;</span></div>
-      <div class="fgmeter"></div>
       <input type="range" id="fgRange" min="0" max="100" value="50" aria-label="Fear and greed level" />
-      <div class="fgzone" id="fgZone">Neutral</div>
-      <div class="fgcard fgemo"><span class="lab">Emotion says</span><span id="fgEmo">Eh, nothing exciting. Ignore it.</span></div>
-      <div class="fgcard fgplan"><span class="lab">Your plan says</span><span id="fgPlan">Quiet day. Review your journal, no trade needed.</span></div>
+      <div class="fgcards">
+        <div class="fgcard fgemo"><span class="lab">Emotion says</span><span id="fgEmo">Eh, nothing exciting. Ignore it.</span></div>
+        <div class="fgcard fgplan"><span class="lab">Your plan says</span><span id="fgPlan">Quiet day. Review your journal — no trade needed.</span></div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 6 · SORTER -->
+<!-- ============ 6 · PLAN-SORTER (anchor: plan-sorter) — mini-game ============ -->
 <section id="plan-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Sort It Yourself</div>
+    <div class="anim center-narrow"><div class="label">Sort It Yourself</div>
       <h2 class="title">Plan move or feelings move?</h2>
-      <p class="lead" style="margin:0 auto">Tap a card, then drop it in the right column. One column is calm and disciplined. The other is fear and greed talking.</p>
+      <p class="lead center">Tap a card to pick it up, then tap the column where it belongs. One column is calm and disciplined. The other is fear and greed talking.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
         <button class="chip" data-bucket="plan">Set your stop before you buy</button>
         <button class="chip" data-bucket="plan">Follow the exit you wrote down</button>
         <button class="chip" data-bucket="plan">Log the trade in your journal</button>
-        <button class="chip" data-bucket="feelings">Buy because it is mooning and you fear missing out</button>
-        <button class="chip" data-bucket="feelings">Panic sell the second it dips</button>
+        <button class="chip" data-bucket="feelings">Buy because it's mooning and you fear missing out</button>
+        <button class="chip" data-bucket="feelings">Panic-sell the second it dips</button>
         <button class="chip" data-bucket="feelings">Double down to win it all back</button>
       </div>
       <div class="cols">
@@ -192,13 +359,12 @@
   </div>
 </section>
 
-<!-- 7 · QUIZ -->
+<!-- ============ 7 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Show me you can keep your cool and trust the plan.</p>
+      <p class="lead center">Five questions. Show me you can keep your cool and trust the plan.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="1">
@@ -207,7 +373,7 @@
         <button class="opt" data-idx="1">Buy high and sell low, the opposite of the plan</button>
         <button class="opt" data-idx="2">Ignore the market completely</button>
         <button class="opt" data-idx="3">Always win</button>
-        <div class="exp">Greed makes people buy at the top and fear makes them sell at the bottom. That is buy high, sell low, exactly backwards.</div>
+        <div class="exp">Greed makes people buy at the top and fear makes them sell at the bottom. That's buy high, sell low — exactly backwards.</div>
       </div>
       <div class="q" data-correct="0">
         <h4>2. What is the point of a written trade plan (entry, exit, stop)?</h4>
@@ -215,7 +381,7 @@
         <button class="opt" data-idx="1">To guarantee a profit</button>
         <button class="opt" data-idx="2">To impress your friends</button>
         <button class="opt" data-idx="3">To avoid ever taking a loss</button>
-        <div class="exp">When entry, exit, and stop are decided in advance, fear and greed do not get a vote. Plans beat feelings.</div>
+        <div class="exp">When entry, exit, and stop are decided in advance, fear and greed don't get a vote. Plans beat feelings.</div>
       </div>
       <div class="q" data-correct="2">
         <h4>3. Why is cutting a small loss quickly considered a win?</h4>
@@ -252,14 +418,14 @@
   </div>
 </section>
 
-<!-- 8 · BRIDGE -->
+<!-- ============ 8 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">The Inner Game</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">The Inner Game</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>Fear and greed push you to buy high and sell low.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>A written plan decides entry, exit, and stop in advance.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Your journal is a free coach. Log every trade and review it.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Your journal is a free coach &mdash; log every trade and review it.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>Small losses are wins. They protect you for the next shot.</p></div>
     </div>
     <div class="nextcard anim d2">
@@ -287,45 +453,394 @@
   <button id="spd">1x</button>
 </div>
 
+<!-- nav dots -->
 <nav id="dots"></nav>
+
+<!-- continue -->
 <div id="contWrap"><button id="contBtn">Continue</button></div>
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id":"hero","start":0.0,"end":20.0,"interactive":false,"label":"The Real Opponent"},{"id":"fear-greed","start":20.5,"end":46.0,"interactive":false,"label":"The Two Villains"},{"id":"plans-over-feelings","start":46.5,"end":75.0,"interactive":false,"label":"Plans Over Feelings"},{"id":"the-journal","start":75.5,"end":99.0,"interactive":false,"label":"Your Journal Is Your Coach"},{"id":"emotion-dial","start":99.5,"end":112.0,"interactive":true,"label":"Feel the Gap"},{"id":"plan-sorter","start":112.5,"end":124.0,"interactive":true,"label":"Plan Move or Feelings Move"},{"id":"quiz","start":124.5,"end":131.0,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":131.5,"end":152.0,"interactive":false,"label":"The Inner Game"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":22.368,"interactive":false,"label":"The Real Opponent"},
+  {"id":"fear-greed","start":22.868,"end":52.532,"interactive":false,"label":"The Two Villains"},
+  {"id":"plans-over-feelings","start":53.032,"end":83.392,"interactive":false,"label":"Plans Over Feelings"},
+  {"id":"the-journal","start":83.892,"end":108.852,"interactive":true,"label":"Your Journal Is Your Coach"},
+  {"id":"emotion-dial","start":109.352,"end":123.608,"interactive":true,"label":"Feel the Gap"},
+  {"id":"plan-sorter","start":124.108,"end":136.468,"interactive":true,"label":"Plan or Feelings?"},
+  {"id":"quiz","start":136.968,"end":141.984,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":142.484,"end":165.452,"interactive":false,"label":"The Inner Game"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- animated emotion vs plan SVG ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic video, charts, sorter, quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var card=document.getElementById('svgEmo'); if(!card) return;
-  function play(){ card.classList.add('play'); }
-  document.addEventListener('fta:section',function(e){
-    var id=(e&&e.detail&&(e.detail.id||e.detail.section))||'';
-    if(id==='plans-over-feelings') play();
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'the-journal':false, 'emotion-dial':false, 'plan-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
   });
-  setTimeout(function(){ var r=card.getBoundingClientRect(); if(r.top<window.innerHeight&&r.bottom>0) play(); },1200);
-})();
-/* ---------- bespoke: fear & greed dial (isolated) ---------- */
-(function(){
-  var range=document.getElementById('fgRange'); if(!range) return;
-  var zone=document.getElementById('fgZone'), emo=document.getElementById('fgEmo'), plan=document.getElementById('fgPlan');
-  var states=[
-    {max:20,z:"Extreme fear",c:"#3B82F6",e:"Panic! Sell everything right now!",p:"Check your stop. If it is not hit, do nothing."},
-    {max:40,z:"Fear",c:"#38BDF8",e:"Get out before it drops any more.",p:"Stick to the exit and stop you already wrote."},
-    {max:60,z:"Neutral",c:"#22C55E",e:"Eh, nothing exciting. Ignore it.",p:"Quiet day. Review your journal, no trade needed."},
-    {max:80,z:"Greed",c:"#F59E0B",e:"It is going up, buy more before you miss out!",p:"Only add if the plan said to. Keep the size small."},
-    {max:101,z:"Extreme greed",c:"#EF4444",e:"Go all in, you literally cannot lose!",p:"This is when discipline matters most. Never overbet."}
-  ];
-  function update(){
-    var v=+range.value, s=states[states.length-1];
-    for(var i=0;i<states.length;i++){ if(v<states[i].max){ s=states[i]; break; } }
-    zone.textContent=s.z; zone.style.color=s.c;
-    emo.textContent=s.e; plan.textContent=s.p;
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
+    }
   }
-  range.addEventListener('input',update);
-  update();
+
+  function gateHint(id){
+    if(id==='the-journal') return 'Play the clip to continue';
+    if(id==='emotion-dial') return 'Drag the dial to continue';
+    if(id==='plan-sorter') return 'Sort all the cards to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){ contBtn.disabled=true; contBtn.textContent = gateHint(s.id); }
+    else { contBtn.disabled=false; contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →'; }
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- drifting motes (hero) ---- */
+  (function(){
+    var wrap=document.getElementById('motes'); if(!wrap||reduce) return;
+    var N=16;
+    for(var i=0;i<N;i++){
+      var c=document.createElement('span'); c.className='mote';
+      var dur=8+Math.random()*8, delay=-Math.random()*12, sz=7+Math.random()*13;
+      c.style.left=(Math.random()*96)+'%';
+      c.style.width=c.style.height=sz+'px';
+      c.style.animationDuration=dur+'s';
+      c.style.animationDelay=delay+'s';
+      wrap.appendChild(c);
+    }
+  })();
+
+  function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+  /* ---- fear-greed bar chart (animated on scroll-in, count-up labels) ---- */
+  var FEEL_END=720, PLAN_END=1180, START_REF=1000;
+  function drawFgChart(box){
+    var W=680,H=300,padL=20,padR=20,padT=34,padB=52;
+    var maxV=1320, plotH=H-padT-padB, plotW=W-padL-padR;
+    var groups=[
+      {x:padL+plotW*0.28, val:FEEL_END, fill:'#EF4444', lab:'Feelings', id:'fgFeelLbl', end:FEEL_END},
+      {x:padL+plotW*0.68, val:PLAN_END, fill:'#22C55E', lab:'Plan', id:'fgPlanLbl', end:PLAN_END}
+    ];
+    var bW=104;
+    var refY=(H-padB)-(START_REF/maxV)*plotH;
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#e4dbc6" stroke-width="1.5"/>';
+    // starting-$1000 reference line
+    s+='<line x1="'+padL+'" y1="'+refY+'" x2="'+(W-padR)+'" y2="'+refY+'" stroke="#B45309" stroke-width="1.4" stroke-dasharray="6 5"/>';
+    s+='<text x="'+(W-padR)+'" y="'+(refY-7)+'" text-anchor="end" font-family="Inter,sans-serif" font-size="12" fill="#B45309">Started at $1,000</text>';
+    groups.forEach(function(g,i){
+      var h=(g.val/maxV)*plotH, y=(H-padB)-h, x=g.x-bW/2;
+      var dc=reduce?'0s':'0.95s', bg=reduce?'0s':(0.15+i*0.18)+'s';
+      s+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+h+'" rx="8" fill="'+g.fill+'">';
+      if(!reduce){ s+='<animate attributeName="height" from="0" to="'+h+'" dur="'+dc+'" begin="'+bg+'" fill="freeze"/><animate attributeName="y" from="'+(H-padB)+'" to="'+y+'" dur="'+dc+'" begin="'+bg+'" fill="freeze"/>'; }
+      s+='</rect>';
+      s+='<text x="'+g.x+'" y="'+(H-padB+22)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="14" fill="#5B6472">'+g.lab+'</text>';
+      s+='<text id="'+g.id+'" x="'+g.x+'" y="'+(y-12)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="17" fill="'+(i===0?'#B91C1C':'#15803d')+'">'+money(START_REF)+'</text>';
+    });
+    s+='</svg>';
+    box.innerHTML=s;
+    // count-up the value labels from the starting $1,000 to each ending value
+    countUpText('fgFeelLbl', START_REF, FEEL_END, 1100);
+    countUpText('fgPlanLbl', START_REF, PLAN_END, 1100);
+  }
+  function countUpText(id, from, to, dur){
+    var el=document.getElementById(id); if(!el) return;
+    if(reduce){ el.textContent=money(to); return; }
+    var start=performance.now();
+    function step(now){
+      var p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3);
+      el.textContent=money(from+(to-from)*e);
+      if(p<1) requestAnimationFrame(step); else el.textContent=money(to);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---- lazy chart draw + line-chart reveal via IntersectionObserver ---- */
+  var chartIO=new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if(!e.isIntersecting) return;
+      if(e.target.id==='fgChart' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawFgChart(e.target); }
+      if(e.target.id==='svgEmo'){ e.target.classList.add('play'); }
+    });
+  },{threshold:.25});
+  var fgEl=document.getElementById('fgChart'), svgEmo=document.getElementById('svgEmo');
+  if(fgEl) chartIO.observe(fgEl);
+  if(svgEmo) chartIO.observe(svgEmo);
+  // also play the two-line SVG when its section becomes active
+  document.addEventListener('fta:section',function(e){
+    var id=e&&e.detail&&e.detail.id;
+    if(id==='plans-over-feelings' && svgEmo) svgEmo.classList.add('play');
+  });
+
+  /* ---- journal 5-step process flow reveal ---- */
+  (function(){
+    var flow=document.getElementById('jflow'); if(!flow) return;
+    var steps=Array.prototype.slice.call(flow.querySelectorAll('.jstep'));
+    var jio=new IntersectionObserver(function(en){
+      en.forEach(function(e){
+        if(!e.isIntersecting || flow.dataset.run) return;
+        flow.dataset.run='1';
+        steps.forEach(function(st,i){ setTimeout(function(){ st.classList.add('on'); }, reduce?0:i*180); });
+      });
+    },{threshold:.3});
+    jio.observe(flow);
+  })();
+
+  /* ---- cinematic video: pause narration, coach outro, satisfy gate ---- */
+  (function(){
+    var vid=document.getElementById('journalVid'), ov=document.getElementById('journalOv'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var wasPlaying=false, jIdx=idxOf('the-journal'), finished=false;
+    function done(){
+      if(finished) return; finished=true;
+      if(outro) outro.style.display='block';
+      satisfyGate('the-journal');
+      if(wasPlaying && audio.currentTime < ST[jIdx].end-0.3){ audio.play(); playBtn.textContent=PAUSE; }
+    }
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      var p=vid.play();
+      if(p&&p.catch) p.catch(function(){ /* if the file is missing, still satisfy the gate */ done(); });
+    });
+    vid.addEventListener('ended',done);
+    vid.addEventListener('error',done);
+  })();
+
+  /* ---- emotion dial: gauge needle + live headline number + gate ---- */
+  (function(){
+    var range=document.getElementById('fgRange'); if(!range) return;
+    var dial=document.getElementById('fgDial');
+    var needle=document.getElementById('fgNeedle');
+    var num=document.getElementById('fgNum'), zone=document.getElementById('fgZone');
+    var emo=document.getElementById('fgEmo'), plan=document.getElementById('fgPlan');
+    if(reduce && dial) dial.classList.add('fg-reduce');
+    var states=[
+      {max:20,z:"Extreme fear",c:"#3B82F6",e:"Panic! Sell everything right now!",p:"Check your stop. If it's not hit, do nothing."},
+      {max:40,z:"Fear",c:"#38BDF8",e:"Get out before it drops any more.",p:"Stick to the exit and stop you already wrote."},
+      {max:60,z:"Neutral",c:"#22C55E",e:"Eh, nothing exciting. Ignore it.",p:"Quiet day. Review your journal — no trade needed."},
+      {max:80,z:"Greed",c:"#F59E0B",e:"It's going up — buy more before you miss out!",p:"Only add if the plan said to. Keep the size small."},
+      {max:101,z:"Extreme greed",c:"#EF4444",e:"Go all in, you literally cannot lose!",p:"This is when discipline matters most. Never overbet."}
+    ];
+    function update(){
+      var v=+range.value, s=states[states.length-1];
+      for(var i=0;i<states.length;i++){ if(v<states[i].max){ s=states[i]; break; } }
+      num.textContent=v; num.style.color=s.c;
+      zone.textContent=s.z; zone.style.color=s.c;
+      emo.textContent=s.e; plan.textContent=s.p;
+      var ang=(v-50)/50*90; // -90deg (fear) .. +90deg (greed)
+      needle.style.transform='rotate('+ang+'deg)';
+    }
+    range.addEventListener('input',function(){ update(); satisfyGate('emotion-dial'); });
+    update();
+  })();
+
+  /* ---- plan sorter (click to pick, click a column to place) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('.col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty');
+          fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Plan moves stay calm; feelings moves chase fear and greed.';
+          satisfyGate('plan-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- quiz grading + bridge emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var sv=(qi in sel)?sel[qi]:null;
+        var isC=sv===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){
+          o.disabled=true;
+          if(i===corr) o.classList.add('correct');
+          if(i===sv && i!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:sv, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you keep your cool and trust the plan.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
 </body>
