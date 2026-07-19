@@ -14,194 +14,341 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* ---- bespoke: animated head-and-shoulders SVG ---- */
-  .hs-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px 26px 20px;
-    box-shadow:var(--shadow-soft);max-width:660px;margin:26px auto 0}
-  .hs-svg{display:block;width:100%;max-width:600px;margin:0 auto;height:auto}
-  .hs-line{fill:none;stroke:var(--gold-600);stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;
-    stroke-dasharray:1500;stroke-dashoffset:1500;animation:hsdraw 5s ease-in-out infinite}
-  @keyframes hsdraw{0%{stroke-dashoffset:1500}60%{stroke-dashoffset:0}92%{stroke-dashoffset:0}100%{stroke-dashoffset:1500}}
-  .hs-neck{fill:none;stroke:var(--soft);stroke-width:2;stroke-dasharray:7 7}
-  .hs-dot{fill:var(--gold);stroke:var(--ink);stroke-width:1.5}
-  .hs-txt{font-family:var(--font-display);font-weight:700;font-size:14px;fill:var(--soft)}
-  .hs-txt.head{fill:var(--gold-700)}
+/* ============================================================
+   BESPOKE COMPONENTS for w3l1 (Adults · Chart Patterns & Indicators)
+   layered on the shared warm-paper skin (lesson-theme.css).
+   ============================================================ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
 
-  /* ---- bespoke: RSI reader ---- */
-  .rsi-wrap{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;max-width:960px;margin:24px auto 0}
-  @media(max-width:860px){.rsi-wrap{grid-template-columns:1fr}}
-  .rsi-art{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft)}
-  .rsi-art img{width:100%;display:block;animation:rsifloat 5s ease-in-out infinite}
-  @keyframes rsifloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-  .rsi-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
-  .rsi-top{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--soft);margin-bottom:8px}
-  #rsiRange{width:100%;-webkit-appearance:none;appearance:none;height:12px;border-radius:99px;cursor:pointer;margin:6px 0 20px;
-    background:linear-gradient(90deg,#2563EB 0%,#38BDF8 26%,#22C55E 42%,#22C55E 60%,#F59E0B 76%,#DC2626 100%)}
-  #rsiRange::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
-  #rsiRange::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer}
-  .rsi-val{font-family:var(--font-display);font-weight:900;font-size:56px;line-height:1;text-align:center;margin:2px 0 10px;color:var(--green)}
-  .rsi-zone{text-align:center;margin-bottom:8px}
-  .rsi-pill{display:inline-block;font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.5px;
-    padding:8px 22px;border-radius:99px;color:#fff;background:var(--green);animation:rsipulse 2.2s ease-in-out infinite}
-  @keyframes rsipulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-  .rsi-note{text-align:center;font-size:14px;color:var(--soft);min-height:22px;margin-top:4px}
+/* ---------- HERO: kinetic title + b-roll backdrop + floating candles ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 28s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.02)}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.45) 72%,rgba(251,247,239,.12) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.18),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(40px,8.4vw,80px);font-weight:900;line-height:.98;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+.particles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.candle{position:absolute;bottom:-12%;width:8px;border-radius:2px;opacity:0;animation:floatUp linear infinite}
+.candle::before,.candle::after{content:"";position:absolute;left:50%;width:2px;height:7px;background:inherit;
+  transform:translateX(-50%);border-radius:2px}
+.candle::before{top:-7px}.candle::after{bottom:-7px}
+@keyframes floatUp{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:.5}86%{opacity:.5}100%{transform:translateY(-126vh) rotate(6deg);opacity:0}}
+
+/* ---------- shared data chartcards (pattern + moving-average) ---------- */
+.chartcard{max-width:840px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(18px,2.5vw,25px)/1.14 var(--font-display);color:var(--ink);margin-top:6px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:14px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:16px;
+  flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot .k{display:inline-flex;align-items:center;gap:7px}
+.chart-foot i{width:16px;height:4px;border-radius:2px;display:inline-block}
+.chart-note{margin:10px auto 0;font-size:14px;color:var(--soft);line-height:1.55;text-align:center;max-width:660px}
+.seg{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{font:700 12.5px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 13px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.seg button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+.bias{display:inline-block;font:800 12.5px var(--font-display);letter-spacing:.5px;padding:5px 14px;
+  border-radius:var(--r-full);color:#fff;white-space:nowrap}
+.bias.bull{background:var(--green)} .bias.bear{background:var(--red)}
+.svg-line{fill:none;stroke-linejoin:round;stroke-linecap:round}
+.draw{stroke-dasharray:1;stroke-dashoffset:1}
+
+/* ---------- RSI gauge + slider (interactive) ---------- */
+.rsi-wrap{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;max-width:960px;margin:24px auto 0}
+@media(max-width:860px){.rsi-wrap{grid-template-columns:1fr}}
+.gauge-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);
+  padding:22px 22px 10px;box-shadow:var(--shadow-soft);text-align:center}
+.gauge-card svg{width:100%;max-width:360px;height:auto;display:block;margin:0 auto}
+.gauge-tick{font-family:var(--font-body);font-size:12px;fill:var(--dim);font-weight:600}
+.gauge-val{font-family:var(--font-display);font-weight:900;font-size:40px}
+.gauge-cap{font-family:var(--font-display);font-size:12px;font-weight:600;fill:var(--soft)}
+.rsi-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+.rsi-top{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--soft);margin-bottom:8px}
+#rsiRange{width:100%;-webkit-appearance:none;appearance:none;height:12px;border-radius:99px;cursor:pointer;margin:6px 0 20px;
+  background:linear-gradient(90deg,#2563EB 0%,#38BDF8 26%,#22C55E 42%,#22C55E 60%,#F59E0B 76%,#DC2626 100%)}
+#rsiRange::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+#rsiRange::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer}
+.rsi-val{font-family:var(--font-display);font-weight:900;font-size:56px;line-height:1;text-align:center;margin:2px 0 10px;color:var(--green)}
+.rsi-zone{text-align:center;margin-bottom:8px}
+.rsi-pill{display:inline-block;font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.5px;
+  padding:8px 22px;border-radius:99px;color:#fff;background:var(--green);animation:rsipulse 2.2s ease-in-out infinite}
+@keyframes rsipulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.rsi-note{text-align:center;font-size:14px;color:var(--soft);min-height:22px;margin-top:4px}
+
+/* ---------- head & shoulders quick illustration (static) ---------- */
+.hs-mini{max-width:560px;margin:22px auto 0}
+.hs-mini svg{width:100%;height:auto;display:block}
+.hs-neck{fill:none;stroke:var(--soft);stroke-width:2;stroke-dasharray:7 7}
+.hs-dot{fill:var(--gold);stroke:var(--ink);stroke-width:1.5}
+.hs-txt{font-family:var(--font-display);font-weight:700;font-size:13px;fill:var(--soft)}
+.hs-txt.head{fill:var(--gold-700)}
+
+/* ---------- cinematic coach moment (oscillators) ---------- */
+.cv{max-width:900px;margin:26px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.cv .video-ov{flex-direction:column;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.28),rgba(11,18,32,.58));border:none}
+.cv .play-circ{transition:transform .2s}
+.cv .video-ov:hover .play-circ{transform:scale(1.08)}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* JS-animated cinematic fallback scene (only shown if the b-roll clip is unavailable) */
+.cine-scene{display:none;position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;
+  background:radial-gradient(130% 120% at 50% 0,#17243f,#0b1220)}
+.cine-scene svg{position:absolute;inset:0;width:100%;height:100%}
+.cs-band{opacity:0}
+.cs-price{fill:none;stroke:#FBBF24;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:1600;stroke-dashoffset:1600}
+.cs-ema{fill:none;stroke:#38BDF8;stroke-width:2.4;stroke-linecap:round;stroke-dasharray:1600;stroke-dashoffset:1600}
+.cs-cross{opacity:0}
+.cs-cap{fill:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;opacity:0}
+.cine-scene.playing .cs-price{animation:csdraw 4.4s ease-in-out .3s forwards}
+.cine-scene.playing .cs-ema{animation:csdraw 4.4s ease-in-out .5s forwards}
+.cine-scene.playing .cs-band{animation:csfade 1s ease .2s forwards}
+.cine-scene.playing .cs-cross{animation:cspop .5s ease 3.4s forwards}
+.cine-scene.playing .cs-cap{animation:csfade 1s ease 4.2s forwards}
+@keyframes csdraw{to{stroke-dashoffset:0}}
+@keyframes csfade{to{opacity:1}}
+@keyframes cspop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .candle{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .rsi-pill{animation:none}
+  .draw{stroke-dasharray:none;stroke-dashoffset:0}
+  .cine-scene .cs-price,.cine-scene .cs-ema{stroke-dasharray:none;stroke-dashoffset:0}
+  .cine-scene .cs-band,.cine-scene .cs-cross,.cine-scene .cs-cap{opacity:1}
+  .anim{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="particles" id="particles" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Adults &middot; Module 3 &middot; Lesson 3.1</div>
-      <h1 style="font-size:clamp(38px,7vw,68px);font-weight:900;line-height:1;margin:12px 0 12px">Patterns &amp; Indicators</h1>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Read</span>
+        <span class="w" style="animation-delay:.13s">the</span>
+        <span class="w" style="animation-delay:.21s">Chart's</span>
+        <span class="w gold" style="animation-delay:.29s">Clues</span>
+      </h1>
       <p class="lead">Charts leave clues. Patterns and indicators are the tools that read them, hinting at what price might do next. Never guaranteeing it. In the next few minutes you'll learn the headline few and how to read them honestly.</p>
       <div class="badges">
-        <span class="badge"><b>8</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">SI-100 &middot; <b>Adults</b></span>
         <span class="badge">~<b>3.5</b> min</span>
+        <span class="badge">Level &middot; <b>Intermediate</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="An analyst's dashboard of glowing indicator gauges and abstract chart-pattern shapes" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · PATTERNS -->
+<!-- ============ 2 · PATTERNS (anchor: patterns) — animated pattern selector ============ -->
 <section id="patterns">
   <div class="inner">
-    <div class="anim" style="max-width:760px">
-      <div class="label">Patterns That Repeat</div>
+    <div class="anim center-narrow"><div class="label">Patterns That Repeat</div>
       <h2 class="title">Shapes the crowd keeps drawing</h2>
-      <p class="lead">Because human behavior repeats, a handful of shapes show up again and again. Learn the headline few and you can read a chart faster.</p>
+      <p class="lead center">Because human behavior repeats, a handful of shapes show up again and again. Pick one below and watch it draw — each carries its own bias.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/head-shoulders.jpg" alt="A head and shoulders chart shape with three peaks and a neckline" /></div>
-      <div>
-        <p class="bigdef">The <span class="hi">head and shoulders</span> is the classic reversal: three peaks, a taller head between two lower shoulders, sitting on a neckline.</p>
-        <div class="insight">When price breaks below the neckline, traders read it as the trend possibly turning over. Flip the shape upside down and you get an inverse head and shoulders, its bullish twin.</div>
+
+    <div class="chartcard anim d1">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Pattern reader &middot; illustrative shapes</div>
+          <div class="chart-big"><span id="patName">Head &amp; Shoulders</span> <span class="bias bear" id="patBias">Bearish</span></div>
+        </div>
+        <div class="seg" role="group" aria-label="Choose a chart pattern">
+          <button data-pat="hs" class="on" type="button">Head &amp; Shoulders</button>
+          <button data-pat="dt" type="button">Double Top</button>
+          <button data-pat="flag" type="button">Bull Flag</button>
+          <button data-pat="ihs" type="button">Inverse H&amp;S</button>
+        </div>
       </div>
+      <div id="patChart" class="chart-svg" role="img" aria-label="Animated illustration of the selected chart pattern"></div>
+      <p class="chart-note" id="patNote">Three peaks, a taller head between two lower shoulders. A break below the neckline warns the uptrend may be turning over.</p>
     </div>
 
-    <div class="hs-card anim d2">
-      <svg class="hs-svg" viewBox="0 0 600 300" role="img" aria-label="Illustrative head and shoulders shape with a neckline">
-        <polyline class="hs-line" points="20,235 110,120 175,190 300,60 425,190 490,120 580,235" />
-        <line class="hs-neck" x1="150" y1="190" x2="452" y2="190" />
-        <circle class="hs-dot" cx="110" cy="120" r="5" />
-        <circle class="hs-dot" cx="300" cy="60" r="6" />
-        <circle class="hs-dot" cx="490" cy="120" r="5" />
-        <text class="hs-txt" x="110" y="108" text-anchor="middle">Shoulder</text>
-        <text class="hs-txt head" x="300" y="48" text-anchor="middle">Head</text>
-        <text class="hs-txt" x="490" y="108" text-anchor="middle">Shoulder</text>
-        <text class="hs-txt" x="301" y="210" text-anchor="middle">Neckline</text>
-      </svg>
-      <div class="disclaim">Illustrative shape, a clean textbook version of a messy real chart.</div>
-    </div>
-
-    <div class="two anim d3" style="margin-top:26px">
+    <div class="two anim d2" style="max-width:840px;margin:26px auto 0">
       <div class="cmp safe">
-        <span class="tag">Reversal</span>
-        <h3>Trend may turn</h3>
-        <p>Head and shoulders, double top, double bottom. Price tests a level twice and either rejects it or holds.</p>
+        <span class="tag">Reversal</span><h3>Trend may turn</h3>
+        <p>Head and shoulders, double top, double bottom. Price tests a level and either rejects it or holds — hinting the trend could flip.</p>
       </div>
       <div class="cmp grow">
-        <span class="tag">Continuation</span>
-        <h3>Trend may resume</h3>
+        <span class="tag">Continuation</span><h3>Trend may resume</h3>
         <p>Wedges and flags. A brief pause inside a move that often gives way to the trend picking back up.</p>
       </div>
     </div>
 
-    <div class="disclaim anim d4"><b>The confirming tell:</b> a breakout means more when volume rises with it. A move on weak volume is far easier to fade.</div>
+    <div class="disclaim anim d3"><b>The confirming tell:</b> a breakout means more when volume rises with it. A move on weak volume is far easier to fade.</div>
   </div>
 </section>
 
-<!-- 3 · MOVING AVERAGES -->
+<!-- ============ 3 · MOVING AVERAGES (anchor: moving-averages) — animated crossover chart ============ -->
 <section id="moving-averages">
   <div class="inner">
-    <div class="anim" style="max-width:760px">
-      <div class="label">Moving Averages</div>
+    <div class="anim center-narrow"><div class="label">Moving Averages</div>
       <h2 class="title">Turn a jagged line into a signal</h2>
-      <p class="lead">A moving average plots the average price over a chosen period, so the noise becomes a smooth, readable line.</p>
+      <p class="lead center">A moving average plots the average price over a chosen window, so the noise becomes a smooth line. Watch a short average cross a long one — the classic momentum tell.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div>
-        <p class="bigdef">Two flavors, one idea. <span class="hi">SMA</span> weights every period equally. <span class="hi">EMA</span> leans on recent prices, so it reacts faster.</p>
-        <div class="two">
-          <div class="cmp safe">
-            <span class="tag">SMA</span>
-            <h3>Steady &amp; even</h3>
-            <p>The simple moving average treats every period the same. Smoother, and slower to turn.</p>
-          </div>
-          <div class="cmp grow">
-            <span class="tag">EMA</span>
-            <h3>Quick &amp; recent</h3>
-            <p>The exponential moving average weights recent prices more, so it responds sooner to a shift.</p>
-          </div>
+
+    <div class="chartcard anim d1">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">50-day vs 200-day &middot; illustrative</div>
+          <div class="chart-big"><span class="bias bull" id="maBias">Bullish</span> <span id="maHeadline">Short MA is +4.2% above the long MA</span></div>
+        </div>
+        <div class="seg" role="group" aria-label="Cross type">
+          <button data-ma="golden" class="on" type="button">Golden cross</button>
+          <button data-ma="death" type="button">Death cross</button>
         </div>
       </div>
-      <div class="define-art"><img src="./assets/moving-average.jpg" alt="A jagged price line with two smooth moving averages crossing over it" /></div>
-    </div>
-    <div class="two anim d2" style="margin-top:26px">
-      <div class="cmp grow">
-        <span class="tag">Golden Cross</span>
-        <h3>&#9650; Bullish</h3>
-        <p>A shorter moving average crosses <b>above</b> a longer one. Momentum is turning up.</p>
+      <div id="maChart" class="chart-svg" role="img" aria-label="Animated line chart of a short and long moving average crossing"></div>
+      <div class="chart-foot">
+        <span class="k"><i style="background:#98A2B3"></i> Price</span>
+        <span class="k"><i style="background:#2563EB"></i> Long MA (slow)</span>
+        <span class="k"><i style="background:#D97706"></i> Short MA (fast)</span>
       </div>
+    </div>
+
+    <div class="two anim d2" style="max-width:840px;margin:26px auto 0">
       <div class="cmp safe">
-        <span class="tag">Death Cross</span>
-        <h3>&#9660; Bearish</h3>
-        <p>A shorter moving average crosses <b>below</b> a longer one. Momentum is rolling over.</p>
+        <span class="tag">SMA</span><h3>Steady &amp; even</h3>
+        <p>The simple moving average treats every period the same. Smoother, and slower to turn.</p>
+      </div>
+      <div class="cmp grow">
+        <span class="tag">EMA</span><h3>Quick &amp; recent</h3>
+        <p>The exponential moving average weights recent prices more, so it responds sooner to a shift.</p>
       </div>
     </div>
-    <div class="insight anim d3" style="max-width:900px;margin-left:auto;margin-right:auto">Same two lines, opposite meaning. What matters is which way the shorter average crosses the longer one.</div>
+    <div class="insight anim d3" style="max-width:840px;margin-left:auto;margin-right:auto">Same two lines, opposite meaning. What matters is which way the shorter average crosses the longer one — up reads bullish, down reads bearish.</div>
   </div>
 </section>
 
-<!-- 4 · OSCILLATORS -->
+<!-- ============ 4 · OSCILLATORS (anchor: oscillators) — concept + CINEMATIC coach moment ============ -->
 <section id="oscillators">
   <div class="inner">
-    <div class="anim" style="max-width:760px">
-      <div class="label">Momentum Meters</div>
+    <div class="anim center-narrow"><div class="label">Momentum Meters</div>
       <h2 class="title">Reading momentum, not the future</h2>
-      <p class="lead">Oscillators measure how fast and how far price has moved, swinging inside a fixed range.</p>
+      <p class="lead center">Oscillators measure how fast and how far price has moved, swinging inside a fixed range. The RSI runs 0 to 100. Above 70 is generally overbought; below 30, generally oversold.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div>
-        <p class="bigdef">The <span class="hi">RSI</span> runs from 0 to 100. Above <span class="hi">70</span> is generally overbought; below <span class="hi">30</span>, generally oversold.</p>
-        <div class="insight">The stochastic oscillator works much the same way, using 80 and 20 as its markers. Different scale, same read on momentum.</div>
+
+    <div class="two anim d1" style="max-width:840px;margin:26px auto 0">
+      <div class="cmp grow"><span class="tag">RSI</span><h3>70 / 30</h3>
+        <p>Above 70 overbought, below 30 oversold. A momentum reading from 0 to 100.</p></div>
+      <div class="cmp safe"><span class="tag">Stochastic</span><h3>80 / 20</h3>
+        <p>Above 80 overbought, below 20 oversold. Same idea, tighter bands.</p></div>
+    </div>
+
+    <div class="cv anim d2" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before you try the meters yourself, watch how momentum and a moving-average cross line up in real time. I'll pause the narration the moment you press play.</p>
       </div>
-      <div>
-        <div class="two" style="grid-template-columns:1fr 1fr">
-          <div class="cmp grow">
-            <span class="tag">RSI</span>
-            <h3>70 / 30</h3>
-            <p>Above 70 overbought, below 30 oversold. A momentum reading from 0 to 100.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Stochastic</span>
-            <h3>80 / 20</h3>
-            <p>Above 80 overbought, below 20 oversold. Same idea, tighter bands.</p>
-          </div>
+      <div class="video-wrap">
+        <video id="cineVid" preload="metadata" playsinline poster="./assets/rsi-meter.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <!-- self-contained animated fallback, revealed only if the clip can't load -->
+        <div class="cine-scene" id="cineScene" aria-hidden="true">
+          <svg viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice">
+            <rect class="cs-band" x="0" y="40" width="640" height="52" fill="#DC2626" opacity="0" fill-opacity=".16"/>
+            <rect class="cs-band" x="0" y="268" width="640" height="52" fill="#2563EB" opacity="0" fill-opacity=".16"/>
+            <text class="cs-cap" x="18" y="70">Overbought</text>
+            <text class="cs-cap" x="18" y="300">Oversold</text>
+            <polyline class="cs-ema" points="30,250 130,240 230,222 330,200 430,168 530,132 610,104"/>
+            <polyline class="cs-price" points="30,300 100,230 160,270 230,200 300,240 360,150 430,190 500,120 560,150 610,90"/>
+            <circle class="cs-cross" cx="360" cy="185" r="10" fill="none" stroke="#22C55E" stroke-width="3"/>
+            <text class="cs-cap" x="320" y="336" text-anchor="middle">Momentum and the cross agree — a cleaner read</text>
+          </svg>
         </div>
+        <button class="video-ov" id="cineOv" aria-label="Play the coach's clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Watch momentum in motion</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cineOutro">
+        <p class="cv-text">See it? No single meter is a crystal ball — but when momentum and the trend point the same way, the read is far more trustworthy. Hit Continue whenever you're ready.</p>
       </div>
     </div>
-    <div class="disclaim anim d2"><b>Honest limit:</b> a stock can stay overbought far longer than feels reasonable. These meters read the temperature, not the future.</div>
+
+    <div class="disclaim anim d3"><b>Honest limit:</b> a stock can stay overbought far longer than feels reasonable. These meters read the temperature, not the future.</div>
   </div>
 </section>
 
-<!-- 5 · RSI DIAL (bespoke interactive) -->
+<!-- ============ 5 · RSI DIAL (anchor: rsi-dial) — animated gauge + slider ============ -->
 <section id="rsi-dial">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Your Turn &middot; Read the Meter</div>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; Read the Meter</div>
       <h2 class="title">Read the RSI</h2>
-      <p class="lead" style="margin:0 auto">Drag the slider to set a reading. Watch the zone and its color change as you cross the classic thresholds.</p>
+      <p class="lead center">Drag the slider to set a reading. Watch the needle swing and the zone change color as you cross the classic 30 and 70 thresholds.</p>
     </div>
     <div class="rsi-wrap anim d1">
-      <div class="rsi-art"><img src="./assets/rsi-meter.jpg" alt="A semicircular gauge dial with a needle between a blue oversold zone and a red overbought zone" /></div>
+      <div class="gauge-card">
+        <svg id="rsiGauge" viewBox="0 0 320 200" role="img" aria-label="Semicircular RSI gauge with oversold, neutral and overbought zones">
+          <path d="M35,160 A125,125 0 0 1 86.53,58.87" fill="none" stroke="#2563EB" stroke-width="18" stroke-linecap="butt"/>
+          <path d="M86.53,58.87 A125,125 0 0 1 233.47,58.87" fill="none" stroke="#22C55E" stroke-width="18" stroke-linecap="butt"/>
+          <path d="M233.47,58.87 A125,125 0 0 1 285,160" fill="none" stroke="#DC2626" stroke-width="18" stroke-linecap="butt"/>
+          <text class="gauge-tick" x="30" y="182" text-anchor="middle">0</text>
+          <text class="gauge-tick" x="70" y="52" text-anchor="middle">30</text>
+          <text class="gauge-tick" x="250" y="52" text-anchor="middle">70</text>
+          <text class="gauge-tick" x="290" y="182" text-anchor="middle">100</text>
+          <line id="rsiNeedle" x1="160" y1="160" x2="160" y2="65" stroke="#101828" stroke-width="4.5" stroke-linecap="round"/>
+          <circle cx="160" cy="160" r="9" fill="#101828"/>
+          <text id="gaugeVal" class="gauge-val" x="160" y="140" text-anchor="middle" fill="#16A34A">50</text>
+          <text class="gauge-cap" x="160" y="192" text-anchor="middle">RSI reading</text>
+        </svg>
+      </div>
       <div class="rsi-card" id="rsiCard">
         <div class="rsi-top"><span>0 &middot; Oversold</span><span>Overbought &middot; 100</span></div>
         <input type="range" id="rsiRange" min="0" max="100" value="50" aria-label="RSI reading" />
@@ -214,13 +361,12 @@
   </div>
 </section>
 
-<!-- 6 · SIGNAL SORTER (interactive) -->
+<!-- ============ 6 · SIGNAL SORTER (anchor: signal-sorter) — mini-game ============ -->
 <section id="signal-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn</div>
+    <div class="anim center-narrow"><div class="label">Your Turn</div>
       <h2 class="title">Bullish or bearish signal?</h2>
-      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Read the momentum behind each one.</p>
+      <p class="lead center">Tap a card to pick it up, then tap the column where it belongs. Read the momentum behind each one.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
@@ -248,13 +394,12 @@
   </div>
 </section>
 
-<!-- 7 · QUIZ -->
+<!-- ============ 7 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+      <p class="lead center">Five questions. Answer them to earn your points for the lesson.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="2">
@@ -308,10 +453,10 @@
   </div>
 </section>
 
-<!-- 8 · BRIDGE / SUMMARY -->
+<!-- ============ 8 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">Up Next: Fundamentals Lite</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You've Got The Read</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>Patterns like head and shoulders hint at reversals, and volume helps confirm a breakout.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>Moving averages smooth price; a golden cross reads bullish, a death cross bearish.</p></div>
@@ -351,26 +496,483 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 22.104, "interactive": false, "label": "Patterns & Indicators"}, {"id": "patterns", "start": 22.604, "end": 68.564, "interactive": false, "label": "Patterns That Repeat"}, {"id": "moving-averages", "start": 69.064, "end": 109.264, "interactive": false, "label": "Moving Averages"}, {"id": "oscillators", "start": 109.764, "end": 145.284, "interactive": false, "label": "Momentum Meters"}, {"id": "rsi-dial", "start": 145.784, "end": 172.448, "interactive": true, "label": "Read the RSI"}, {"id": "signal-sorter", "start": 172.948, "end": 199.996, "interactive": true, "label": "Bullish or Bearish Signal"}, {"id": "quiz", "start": 200.496, "end": 206.952, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 207.452, "end": 240.956, "interactive": false, "label": "Up Next: Fundamentals Lite"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":22.104,"interactive":false,"label":"Patterns & Indicators"},
+  {"id":"patterns","start":22.604,"end":68.564,"interactive":false,"label":"Patterns That Repeat"},
+  {"id":"moving-averages","start":69.064,"end":109.264,"interactive":false,"label":"Moving Averages"},
+  {"id":"oscillators","start":109.764,"end":145.284,"interactive":true,"label":"Momentum Meters"},
+  {"id":"rsi-dial","start":145.784,"end":172.448,"interactive":true,"label":"Read the RSI"},
+  {"id":"signal-sorter","start":172.948,"end":199.996,"interactive":true,"label":"Bullish or Bearish Signal"},
+  {"id":"quiz","start":200.496,"end":206.952,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":207.452,"end":240.956,"interactive":false,"label":"Up Next: Fundamentals Lite"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: RSI reader (isolated) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, animated charts, RSI gauge/slider, cinematic
+   moment, mini-game sorter, graded quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var r=document.getElementById('rsiRange'); if(!r) return;
-  var vEl=document.getElementById('rsiVal'), pill=document.getElementById('rsiPill'), note=document.getElementById('rsiNote');
-  var BLUE='#2563EB', GREEN='#16A34A', RED='#DC2626';
-  function upd(){
-    var v=+r.value, color, zone, msg;
-    if(v<=30){ color=BLUE; zone='Oversold'; msg='At or below 30. Momentum is stretched to the downside.'; }
-    else if(v>=70){ color=RED; zone='Overbought'; msg='At or above 70. Momentum is stretched to the upside.'; }
-    else{ color=GREEN; zone='Neutral'; msg='Between the lines. No strong momentum signal.'; }
-    vEl.textContent=v; vEl.style.color=color;
-    pill.textContent=zone; pill.style.background=color;
-    note.textContent=msg;
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // interactive anchors that gate Continue until their interaction completes
+  var gates = { 'oscillators':false, 'rsi-dial':false, 'signal-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
+  });
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
+    }
   }
-  r.addEventListener('input',upd); upd();
+
+  function gateHint(id){
+    if(id==='oscillators') return 'Play the clip to continue';
+    if(id==='rsi-dial') return 'Move the slider to continue';
+    if(id==='signal-sorter') return 'Sort all the cards to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){ contBtn.disabled=true; contBtn.textContent=gateHint(s.id); }
+    else { contBtn.disabled=false; contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →'; }
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont(); setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    if(s.interactive && t>=s.end-0.12){ audio.pause(); playBtn.textContent=PLAY; showCont(cur); }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- hero: floating candles + video fallback ---- */
+  (function(){
+    var wrap=document.getElementById('particles');
+    if(wrap && !reduce){
+      var N=14, up='#22C55E', dn='#DC2626';
+      for(var i=0;i<N;i++){
+        var c=document.createElement('span'); c.className='candle';
+        var dur=7+Math.random()*7, delay=-Math.random()*12, bh=16+Math.random()*22;
+        c.style.left=(2+Math.random()*94)+'%';
+        c.style.height=bh+'px';
+        c.style.background=(Math.random()<0.5?up:dn);
+        c.style.animationDuration=dur+'s';
+        c.style.animationDelay=delay+'s';
+        wrap.appendChild(c);
+      }
+    }
+    var hv=document.getElementById('heroBroll');
+    if(hv){ hv.addEventListener('error',function(){ hv.style.display='none'; }, true); }
+  })();
+
+  /* ---- number helpers ---- */
+  function easeOut(p){ return 1-Math.pow(1-p,3); }
+
+  /* ============================================================
+     ANIMATED DATA COMPONENT #1 — pattern selector (patterns)
+     ============================================================ */
+  (function(){
+    var box=document.getElementById('patChart');
+    var nameEl=document.getElementById('patName'), biasEl=document.getElementById('patBias'), noteEl=document.getElementById('patNote');
+    if(!box) return;
+    var PAT={
+      hs:{name:'Head & Shoulders', bias:'Bearish', bull:false,
+        pts:'40,232 130,120 196,186 300,66 404,186 470,120 560,232',
+        neck:[176,186,424,186], dots:[[130,120],[300,66],[470,120]], heads:[1],
+        note:'Three peaks, a taller head between two lower shoulders. A break below the neckline warns the uptrend may be turning over.'},
+      dt:{name:'Double Top', bias:'Bearish', bull:false,
+        pts:'40,236 150,92 250,182 360,92 470,236 560,236',
+        neck:[150,182,470,182], dots:[[150,92],[360,92]], heads:[],
+        note:'Two peaks at roughly the same level reject resistance twice. Losing the middle low hints momentum is failing.'},
+      flag:{name:'Bull Flag', bias:'Bullish', bull:true,
+        pts:'40,252 150,108 214,140 288,166 356,146 424,176 470,150 560,58',
+        neck:null, dots:[[150,108],[560,58]], heads:[],
+        note:'A sharp pole up, then a gentle drift lower as buyers pause. The trend often resumes higher on the breakout.'},
+      ihs:{name:'Inverse H&S', bias:'Bullish', bull:true,
+        pts:'40,80 130,192 196,126 300,246 404,126 470,192 560,80',
+        neck:[176,126,424,126], dots:[[130,192],[300,246],[470,192]], heads:[1],
+        note:'The bottoming twin of head and shoulders. A break above the neckline hints the downtrend may be ending.'}
+    };
+    var drawn=false, sel='hs';
+    function svgFor(key){
+      var p=PAT[key];
+      var color = p.bull ? '#16A34A' : '#D97706';
+      var s='<svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet">';
+      s+='<line x1="30" y1="270" x2="570" y2="270" stroke="#e4dbc6" stroke-width="1.5"/>';
+      if(p.neck){ s+='<line class="hs-neck" x1="'+p.neck[0]+'" y1="'+p.neck[1]+'" x2="'+p.neck[2]+'" y2="'+p.neck[3]+'"/>'; }
+      s+='<polyline class="svg-line'+(reduce?'':' draw')+'" points="'+p.pts+'" stroke="'+color+'" stroke-width="4" style="stroke-dasharray:1500;stroke-dashoffset:'+(reduce?0:1500)+'">';
+      if(!reduce){ s+='<animate attributeName="stroke-dashoffset" from="1500" to="0" dur="1.15s" fill="freeze"/>'; }
+      s+='</polyline>';
+      (p.dots||[]).forEach(function(d,i){
+        var r=(p.heads.indexOf(i)>=0)?7:5;
+        s+='<circle class="hs-dot" cx="'+d[0]+'" cy="'+d[1]+'" r="'+r+'" opacity="'+(reduce?1:0)+'">';
+        if(!reduce){ s+='<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="'+(0.5+i*0.18)+'s" fill="freeze"/>'; }
+        s+='</circle>';
+      });
+      s+='</svg>';
+      return s;
+    }
+    function render(key){
+      var p=PAT[key];
+      box.innerHTML=svgFor(key);
+      nameEl.innerHTML=p.name.replace('&','&amp;');
+      biasEl.textContent=p.bias;
+      biasEl.className='bias '+(p.bull?'bull':'bear');
+      noteEl.textContent=p.note;
+    }
+    var btns=document.querySelectorAll('.seg [data-pat]');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on'); sel=b.dataset.pat; render(sel);
+      });
+    });
+    var cio=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting && !drawn){ drawn=true; render(sel); } });
+    },{threshold:.3});
+    cio.observe(box);
+  })();
+
+  /* ============================================================
+     ANIMATED DATA COMPONENT #2 — moving-average crossover (toggle + live headline number)
+     ============================================================ */
+  (function(){
+    var box=document.getElementById('maChart');
+    var biasEl=document.getElementById('maBias'), headEl=document.getElementById('maHeadline');
+    if(!box) return;
+    var xs=[50,120,190,260,330,400,470,540,610,680];
+    var DATA={
+      golden:{ bull:true, gap:4.2, cross:[300,181],
+        price:[224,206,214,190,198,174,182,156,140,122],
+        longY:[176,178,180,181,181,180,178,176,174,172],
+        shortY:[214,208,199,188,180,171,159,146,132,120] },
+      death:{ bull:false, gap:-3.8, cross:[430,152],
+        price:[100,116,108,128,140,158,168,186,196,210],
+        longY:[150,148,148,150,152,152,150,150,152,154],
+        shortY:[96,108,121,134,148,161,173,185,197,207] }
+    };
+    var drawn=false, curMode='golden', gapAnim=null;
+    function poly(ys){ return xs.map(function(x,i){ return x+','+ys[i]; }).join(' '); }
+    function svgFor(mode){
+      var d=DATA[mode];
+      var s='<svg viewBox="0 0 700 300" preserveAspectRatio="xMidYMid meet">';
+      for(var g=1;g<=3;g++){ var gy=20+(240/4)*g; s+='<line x1="50" y1="'+gy+'" x2="684" y2="'+gy+'" stroke="#eee5d2" stroke-width="1"/>'; }
+      s+='<line x1="50" y1="270" x2="684" y2="270" stroke="#e4dbc6" stroke-width="1.5"/>';
+      // faint price
+      s+='<polyline class="svg-line" points="'+poly(d.price)+'" stroke="#98A2B3" stroke-width="1.6" opacity=".55" fill="none"/>';
+      // long MA
+      s+='<polyline class="svg-line" points="'+poly(d.longY)+'" stroke="#2563EB" stroke-width="3" fill="none" style="stroke-dasharray:1400;stroke-dashoffset:'+(reduce?0:1400)+'">';
+      if(!reduce){ s+='<animate attributeName="stroke-dashoffset" from="1400" to="0" dur="1.05s" fill="freeze"/>'; }
+      s+='</polyline>';
+      // short MA
+      s+='<polyline class="svg-line" points="'+poly(d.shortY)+'" stroke="#D97706" stroke-width="3.4" fill="none" style="stroke-dasharray:1400;stroke-dashoffset:'+(reduce?0:1400)+'">';
+      if(!reduce){ s+='<animate attributeName="stroke-dashoffset" from="1400" to="0" dur="1.05s" begin="0.18s" fill="freeze"/>'; }
+      s+='</polyline>';
+      // crossover marker
+      s+='<circle cx="'+d.cross[0]+'" cy="'+d.cross[1]+'" r="9" fill="none" stroke="'+(d.bull?'#16A34A':'#DC2626')+'" stroke-width="3" opacity="'+(reduce?1:0)+'">';
+      if(!reduce){ s+='<animate attributeName="opacity" from="0" to="1" dur="0.4s" begin="1.15s" fill="freeze"/><animate attributeName="r" from="16" to="9" dur="0.4s" begin="1.15s" fill="freeze"/>'; }
+      s+='</circle>';
+      s+='<text x="'+d.cross[0]+'" y="'+(d.cross[1]-18)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="12" fill="'+(d.bull?'#15803d':'#b91c1c')+'" opacity="'+(reduce?1:0)+'">'+(d.bull?'Golden cross':'Death cross')+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="1.35s" fill="freeze"/>')+'</text>';
+      s+='</svg>';
+      return s;
+    }
+    function setHeadline(mode){
+      var d=DATA[mode];
+      biasEl.textContent=d.bull?'Bullish':'Bearish';
+      biasEl.className='bias '+(d.bull?'bull':'bear');
+      var target=d.gap, from=0, t0=null;
+      if(gapAnim){ cancelAnimationFrame(gapAnim); }
+      function word(v){ return (v>=0?'+':'')+v.toFixed(1)+'%'; }
+      function txt(v){ return 'Short MA is '+word(v)+(d.bull?' above':' below')+' the long MA'; }
+      if(reduce){ headEl.textContent=txt(target); return; }
+      function step(now){
+        if(!t0) t0=now;
+        var p=Math.min(1,(now-t0)/900), e=easeOut(p);
+        headEl.textContent=txt(from+(target-from)*e);
+        if(p<1) gapAnim=requestAnimationFrame(step); else headEl.textContent=txt(target);
+      }
+      gapAnim=requestAnimationFrame(step);
+    }
+    function render(mode){ curMode=mode; box.innerHTML=svgFor(mode); setHeadline(mode); }
+    var btns=document.querySelectorAll('.seg [data-ma]');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on'); render(b.dataset.ma);
+      });
+    });
+    var cio=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting && !drawn){ drawn=true; render(curMode); } });
+    },{threshold:.3});
+    cio.observe(box);
+  })();
+
+  /* ============================================================
+     ANIMATED DATA COMPONENT #3 — RSI gauge + slider (rsi-dial gate)
+     ============================================================ */
+  (function(){
+    var range=document.getElementById('rsiRange');
+    if(!range) return;
+    var needle=document.getElementById('rsiNeedle'), gaugeVal=document.getElementById('gaugeVal');
+    var vEl=document.getElementById('rsiVal'), pill=document.getElementById('rsiPill'), note=document.getElementById('rsiNote');
+    var BLUE='#2563EB', GREEN='#16A34A', RED='#DC2626';
+    var CX=160, CY=160, LEN=95;
+    function zone(v){
+      if(v<=30) return {c:BLUE, z:'Oversold', m:'At or below 30. Momentum is stretched to the downside.'};
+      if(v>=70) return {c:RED, z:'Overbought', m:'At or above 70. Momentum is stretched to the upside.'};
+      return {c:GREEN, z:'Neutral', m:'Between the lines. No strong momentum signal.'};
+    }
+    function place(v){
+      var a=(180-(v/100)*180)*Math.PI/180;
+      needle.setAttribute('x2', (CX+LEN*Math.cos(a)).toFixed(1));
+      needle.setAttribute('y2', (CY-LEN*Math.sin(a)).toFixed(1));
+    }
+    function paint(v){
+      var z=zone(v);
+      gaugeVal.textContent=v; gaugeVal.setAttribute('fill', z.c); needle.setAttribute('stroke', z.c);
+      vEl.textContent=v; vEl.style.color=z.c;
+      pill.textContent=z.z; pill.style.background=z.c;
+      note.textContent=z.m;
+      place(v);
+    }
+    var gated=false;
+    range.addEventListener('input',function(){
+      paint(+range.value);
+      if(!gated){ gated=true; satisfyGate('rsi-dial'); }
+    });
+    // scroll-in: sweep needle 0 -> 50 and count value up
+    var swept=false;
+    function sweep(){
+      if(reduce){ paint(50); return; }
+      var t0=null, target=50;
+      function step(now){
+        if(!t0) t0=now;
+        var p=Math.min(1,(now-t0)/1100), e=easeOut(p), v=Math.round(target*e);
+        paint(v);
+        if(p<1) requestAnimationFrame(step); else paint(target);
+      }
+      requestAnimationFrame(step);
+    }
+    var cio=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting && !swept){ swept=true; sweep(); } });
+    },{threshold:.35});
+    cio.observe(document.getElementById('rsiGauge'));
+    paint(50);
+  })();
+
+  /* ============================================================
+     CINEMATIC MOMENT — coach clip (oscillators gate). Pauses narration.
+     Falls back to a self-contained animated scene if the clip won't load.
+     ============================================================ */
+  (function(){
+    var vid=document.getElementById('cineVid'), ov=document.getElementById('cineOv');
+    var outro=document.getElementById('cineOutro'), scene=document.getElementById('cineScene');
+    if(!ov) return;
+    var osIdx=idxOf('oscillators'), wasPlaying=false, ended=false, useScene=false, sceneTimer=null;
+    function swapToScene(){ useScene=true; if(vid) vid.style.display='none'; if(scene) scene.style.display='block'; }
+    if(vid){ vid.addEventListener('error',function(){ if(!ended) swapToScene(); }, true); }
+    else { swapToScene(); }
+    function finish(){
+      if(ended) return; ended=true;
+      if(outro) outro.style.display='block';
+      satisfyGate('oscillators');
+      if(wasPlaying && audio.currentTime < ST[osIdx].end-0.3){ audio.play(); playBtn.textContent=PAUSE; }
+    }
+    function runScene(){ if(scene){ scene.classList.add('playing'); } sceneTimer=setTimeout(finish, reduce?400:6200); }
+    if(vid){ vid.addEventListener('ended', finish); }
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      if(!useScene && vid){
+        var p=vid.play();
+        if(p && p.catch){ p.catch(function(){ swapToScene(); runScene(); }); }
+      } else { runScene(); }
+    });
+  })();
+
+  /* ---- signal sorter mini-game (signal-sorter gate) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('.col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty'); fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Read the momentum behind each signal and the direction follows.';
+          satisfyGate('signal-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- graded quiz + bridge emit (quiz gate) ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel'); sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){
+          o.disabled=true;
+          if(i===corr) o.classList.add('correct');
+          if(i===s && i!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you can read the chart honestly.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
 </body>

@@ -14,200 +14,448 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* bespoke: Greeks-lite pill row */
-  .greeks-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
-  @media(max-width:640px){.greeks-row{grid-template-columns:1fr}}
-  .gpill{border:1px solid var(--sand);background:var(--card);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-soft)}
-  .gpill .gk{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--gold-600)}
-  .gpill .gd{font-size:13.5px;color:var(--soft);margin-top:4px}
+/* ============================================================
+   BESPOKE COMPONENTS for w4l1 (Options 101) — layered on the
+   shared warm-paper skin. Distinct layout per section.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:770px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
 
-  /* bespoke: moneyness explorer */
-  .mn-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:30px;align-items:center;max-width:940px;margin:24px auto 0}
-  @media(max-width:860px){.mn-wrap{grid-template-columns:1fr}}
-  .mn-viz{position:relative;height:300px;border-radius:var(--r-xl);border:1px solid var(--sand);
-    background:linear-gradient(180deg,var(--green-bg),var(--paper-2) 50%,var(--red-bg));box-shadow:var(--shadow-soft);overflow:hidden}
-  .mn-zone{position:absolute;left:0;right:0;font-family:var(--font-display);font-weight:700;font-size:11.5px;
-    letter-spacing:1.5px;text-transform:uppercase;color:var(--soft);padding:8px 12px}
-  .mn-zone.up{top:0}.mn-zone.down{bottom:0}
-  .mn-strike{position:absolute;left:0;right:0;top:50%;height:0;border-top:2.5px dashed var(--gold-600)}
-  .mn-strike span{position:absolute;right:10px;top:-11px;font-family:var(--font-display);font-weight:800;font-size:12px;
-    color:var(--ink);background:var(--gold-bg);border:1px solid #FDE68A;border-radius:var(--r-full);padding:2px 10px}
-  .mn-price{position:absolute;left:0;right:0;top:26%;height:0;border-top:3px solid var(--ink);transition:top .28s cubic-bezier(.22,1,.36,1)}
-  .mn-price .dot{position:absolute;left:16px;top:-9px;width:18px;height:18px;border-radius:50%;background:var(--ink);
-    border:3px solid var(--card);box-shadow:var(--shadow-soft);animation:mnpulse 2.4s ease-in-out infinite}
-  .mn-price .tag{position:absolute;left:44px;top:-13px;font-family:var(--font-display);font-weight:800;font-size:12px;
-    color:var(--card);background:var(--ink);border-radius:var(--r-full);padding:3px 11px}
-  @keyframes mnpulse{0%,100%{box-shadow:0 0 0 0 rgba(16,24,40,.28)}50%{box-shadow:0 0 0 8px rgba(16,24,40,0)}}
-  .mn-panel{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
-  .mn-top{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--soft);margin-bottom:6px}
-  #mnRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;
-    background:linear-gradient(90deg,var(--red-2),var(--sand) 50%,var(--green));cursor:pointer;margin:6px 0 18px}
-  #mnRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
-  #mnRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
-  .mn-badges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-  .mn-badge{border-radius:var(--r-lg);padding:14px;text-align:center;border:1px solid var(--sand);background:var(--paper-2)}
-  .mn-badge .bt{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
-  .mn-badge .bs{font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:1px;margin-top:4px;color:var(--dim)}
-  .mn-badge.itm{border-color:var(--green-border);background:var(--green-bg)}
-  .mn-badge.itm .bs{color:var(--green)}
-  .mn-badge.otm{border-color:var(--sand);background:var(--paper-2)}
-  .mn-badge.otm .bs{color:var(--dim)}
-  .mn-exp{font-size:14.5px;color:var(--ink);font-weight:600;min-height:44px}
+/* ---------- HERO: kinetic title + b-roll backdrop + drifting ticks ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.02)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 28s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 44%,rgba(251,247,239,.44) 74%,rgba(251,247,239,.12) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(40px,8.4vw,80px);font-weight:900;line-height:.98;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.badge b{color:var(--gold-700)}
+.ticks{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.tick{position:absolute;top:-6%;font:800 20px/1 var(--font-display);opacity:0;animation:tickFall linear infinite}
+.tick.up{color:rgba(22,163,74,.55)}.tick.down{color:rgba(220,38,38,.5)}
+@keyframes tickFall{0%{transform:translateY(0);opacity:0}10%{opacity:.85}88%{opacity:.85}100%{transform:translateY(118vh);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- calls-and-puts: two-directions animated SVG ---------- */
+.dirwrap{display:grid;grid-template-columns:1.05fr .95fr;gap:30px;align-items:center;max-width:960px;margin:26px auto 0}
+@media(max-width:860px){.dirwrap{grid-template-columns:1fr}}
+.dirviz{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:18px;box-shadow:var(--shadow-lift)}
+.dirviz svg{width:100%;height:auto;display:block;overflow:visible}
+.dir-accent{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);margin-top:16px}
+.dir-accent img{width:100%;display:block}
+.draw{stroke-dasharray:var(--len);stroke-dashoffset:var(--len)}
+.dirviz.vis .draw{animation:drawOn 1.15s ease forwards}
+.dirviz.vis .draw.d-put{animation-delay:.35s}
+@keyframes drawOn{to{stroke-dashoffset:0}}
+.fadein{opacity:0}.dirviz.vis .fadein{animation:fIn .5s ease forwards}
+.dirviz.vis .fadein.f2{animation-delay:.9s}.dirviz.vis .fadein.f3{animation-delay:1.25s}
+@keyframes fIn{to{opacity:1}}
+
+/* ---------- cinematic coach moment ---------- */
+.cv{max-width:900px;margin:30px auto 0}
+.cv-intro,.cv-outro{max-width:770px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{flex-direction:column;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.30),rgba(11,18,32,.58)) !important;border:none}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+/* JS cinematic scene (fallback when b-roll unavailable) */
+.cscene{position:absolute;inset:0;display:block;background:radial-gradient(120% 120% at 50% 0%,#122036,#0b1220 70%)}
+.cscene svg{width:100%;height:100%;display:block}
+.cscene .s-draw{stroke-dasharray:var(--l);stroke-dashoffset:var(--l)}
+.cscene.play .s-draw{animation:drawOn 1.5s ease forwards}
+.cscene.play .s-draw.s-up{animation-delay:1.4s;animation-duration:1.4s}
+.cscene.play .s-draw.s-dn{animation-delay:1.4s;animation-duration:1.4s}
+.cscene .s-fade{opacity:0}
+.cscene.play .s-fade{animation:fIn .6s ease forwards}
+.cscene.play .s-fade.sf-up{animation-delay:2.5s}
+.cscene.play .s-fade.sf-dn{animation-delay:2.7s}
+.cscene .s-dot{opacity:0}
+.cscene.play .s-dot{animation:dotRun 2.9s ease forwards}
+@keyframes dotRun{0%{opacity:0}8%{opacity:1}100%{opacity:1}}
+
+/* ---------- anatomy: annotated contract ticket ---------- */
+.ticket{max-width:820px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);box-shadow:var(--shadow-lift);overflow:hidden}
+.ticket-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 20px;background:var(--paper-2);border-bottom:1px dashed var(--sand-2)}
+.ticket-sym{font:800 18px var(--font-display);color:var(--ink);letter-spacing:.5px}
+.ticket-live{font:700 12px var(--font-display);letter-spacing:1.5px;text-transform:uppercase;color:var(--green);
+  display:inline-flex;align-items:center;gap:6px}
+.ticket-live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(22,163,74,.5);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}50%{box-shadow:0 0 0 7px rgba(22,163,74,0)}}
+.ticket-parts{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+@media(max-width:640px){.ticket-parts{grid-template-columns:1fr}}
+.tpart{padding:22px 20px;border-right:1px solid var(--sand);position:relative}
+.tpart:last-child{border-right:none}
+@media(max-width:640px){.tpart{border-right:none;border-bottom:1px solid var(--sand)}.tpart:last-child{border-bottom:none}}
+.tpart .tk{font:700 11.5px var(--font-display);letter-spacing:1.6px;text-transform:uppercase;color:var(--gold-700)}
+.tpart .tv{font:800 clamp(22px,3.4vw,30px) var(--font-display);color:var(--ink);margin-top:4px;line-height:1.05}
+.tpart .tvs{font-size:13.5px;color:var(--soft);margin-top:6px}
+.ticket-foot{padding:16px 20px;background:linear-gradient(180deg,var(--gold-bg),var(--card));border-top:1px dashed var(--sand-2);
+  font-size:14.5px;color:#7a4d06}
+.ticket-foot b{color:var(--gold-600)}
+.split{display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.split .pill{font:700 12px var(--font-display);padding:5px 11px;border-radius:var(--r-full);border:1px solid var(--sand);background:var(--card)}
+.split .pill.intr{color:var(--green);border-color:var(--green-border);background:var(--green-bg)}
+.split .pill.time{color:var(--gold-700);border-color:#FDE68A;background:var(--gold-bg)}
+
+/* ---------- payoff chart (data component #1: Call/Put toggle) ---------- */
+.chartcard{max-width:840px;margin:28px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.chart-kicker{font:700 12px var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(19px,2.6vw,25px)/1.12 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.cp-toggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.cp-toggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 17px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.cp-toggle button.on{color:var(--ink);box-shadow:0 3px 10px rgba(16,24,40,.14)}
+.cp-toggle button.on[data-cp="call"]{background:var(--green-2);color:#fff}
+.cp-toggle button.on[data-cp="put"]{background:var(--red);color:#fff}
+
+/* ---------- greeks gauges ---------- */
+.greeks-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px auto 0;max-width:840px}
+@media(max-width:720px){.greeks-row{grid-template-columns:1fr}}
+.gcard{border:1px solid var(--sand);background:var(--card);border-radius:var(--r-xl);padding:20px 18px;
+  box-shadow:var(--shadow-soft);text-align:center}
+.gcard svg{width:132px;height:78px;display:block;margin:0 auto}
+.garc{stroke-dasharray:var(--c);stroke-dashoffset:var(--c);transition:stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1)}
+.gcard.on .garc{stroke-dashoffset:var(--off)}
+.gcard .gk{font:800 18px var(--font-display);color:var(--gold-600);margin-top:6px}
+.gcard .gd{font-size:13.5px;color:var(--soft);margin-top:2px}
+
+/* ---------- moneyness: count-up worked example ---------- */
+.money-cards{max-width:900px;margin:26px auto 0}
+.mex{max-width:820px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);
+  box-shadow:var(--shadow-lift);padding:26px 24px;text-align:center}
+.mex .mex-k{font:700 12px var(--font-display);letter-spacing:1.5px;text-transform:uppercase;color:var(--soft)}
+.mex .mex-num{font:900 clamp(38px,7vw,60px)/1 var(--font-display);color:var(--green);margin:8px 0 4px;font-variant-numeric:tabular-nums}
+.mex .mex-sub{font-size:15px;color:var(--soft)}
+.mex .mex-sub b{color:var(--ink)}
+.mex-eq{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;font:700 14px var(--font-display);color:var(--ink)}
+.mex-eq .box{border:1px solid var(--sand);background:var(--paper-2);border-radius:var(--r-md);padding:8px 14px}
+.mex-eq .op{color:var(--soft);align-self:center}
+
+/* ---------- moneyness slider (data component #2) ---------- */
+.mn-wrap{display:grid;grid-template-columns:.85fr 1.15fr;gap:30px;align-items:center;max-width:960px;margin:24px auto 0}
+@media(max-width:860px){.mn-wrap{grid-template-columns:1fr}}
+.mn-viz{position:relative;height:320px;border-radius:var(--r-xl);border:1px solid var(--sand);
+  background:linear-gradient(180deg,var(--green-bg),var(--paper-2) 50%,var(--red-bg));box-shadow:var(--shadow-soft);overflow:hidden}
+.mn-zone{position:absolute;left:0;right:0;font:700 11.5px var(--font-display);
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--soft);padding:9px 13px}
+.mn-zone.up{top:0}.mn-zone.down{bottom:0}
+.mn-strike{position:absolute;left:0;right:0;top:50%;height:0;border-top:2.5px dashed var(--gold-600)}
+.mn-strike span{position:absolute;right:10px;top:-12px;font:800 12px var(--font-display);
+  color:var(--ink);background:var(--gold-bg);border:1px solid #FDE68A;border-radius:var(--r-full);padding:2px 11px}
+.mn-price{position:absolute;left:0;right:0;top:24%;height:0;border-top:3px solid var(--ink);transition:top .22s cubic-bezier(.22,1,.36,1)}
+.mn-price .dot{position:absolute;left:16px;top:-9px;width:18px;height:18px;border-radius:50%;background:var(--ink);
+  border:3px solid var(--card);box-shadow:var(--shadow-soft);animation:mnpulse 2.4s ease-in-out infinite}
+.mn-price .tag{position:absolute;left:44px;top:-14px;font:800 12px var(--font-display);
+  color:var(--card);background:var(--ink);border-radius:var(--r-full);padding:3px 11px}
+@keyframes mnpulse{0%,100%{box-shadow:0 0 0 0 rgba(16,24,40,.28)}50%{box-shadow:0 0 0 8px rgba(16,24,40,0)}}
+.mn-panel{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
+.mn-headline{text-align:center;margin-bottom:6px}
+.mn-headline .mh-lab{font:700 11.5px var(--font-display);letter-spacing:1.5px;text-transform:uppercase;color:var(--soft)}
+.mn-headline .mh-num{font:900 clamp(34px,6vw,48px)/1 var(--font-display);color:var(--gold-600);font-variant-numeric:tabular-nums}
+.mn-headline .mh-sub{font-size:13.5px;color:var(--soft)}
+.mn-top{display:flex;justify-content:space-between;font:700 12.5px var(--font-display);color:var(--soft);margin:14px 0 4px}
+#mnRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;
+  background:linear-gradient(90deg,var(--red-2),var(--sand) 50%,var(--green));cursor:pointer;margin:6px 0 18px}
+#mnRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+#mnRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
+.mn-badges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.mn-badge{border-radius:var(--r-lg);padding:14px;text-align:center;border:1px solid var(--sand);background:var(--paper-2);transition:all .2s ease}
+.mn-badge .bt{font:800 15px var(--font-display);color:var(--ink)}
+.mn-badge .bs{font:800 12px var(--font-display);letter-spacing:1px;margin-top:4px;color:var(--dim)}
+.mn-badge .bv{font-size:12.5px;color:var(--soft);margin-top:3px}
+.mn-badge.itm{border-color:var(--green-border);background:var(--green-bg)}
+.mn-badge.itm .bs{color:var(--green)}
+.mn-badge.otm{border-color:var(--sand);background:var(--paper-2)}
+.mn-badge.otm .bs{color:var(--dim)}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .tick{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .anim{transition:none}
+  .dirviz .draw{stroke-dashoffset:0}
+  .dirviz .fadein{opacity:1}
+  .cscene .s-draw{stroke-dashoffset:0}.cscene .s-fade,.cscene .s-dot{opacity:1}
+  .garc{transition:none}
+  .ticket-live::before{animation:none}.mn-price .dot{animation:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Adults &middot; Module 4 &middot; Lesson 4.1</div>
-      <h1 style="font-size:clamp(34px,6.4vw,62px);font-weight:900;line-height:1;margin:12px 0 12px">Options 101</h1>
-      <p class="lead">An option is a contract that gives you the right, but never the obligation, to buy or sell at a set price. You're buying a choice. In the next few minutes you'll meet calls and puts, break down every contract, and get a feel for the Greeks.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Options</span>
+        <span class="w gold" style="animation-delay:.15s">101</span>
+      </h1>
+      <p class="lead">An option is a contract that gives you the right, but never the obligation, to buy or sell at a set price. You're buying a choice, not a promise to act. In the next few minutes you'll meet calls and puts, break down every contract, and get a plain-language feel for the Greeks.</p>
       <div class="badges">
-        <span class="badge"><b>8</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
-        <span class="badge">~<b>3.5</b> min</span>
+        <span class="badge">SI-100 &middot; <b>Adults</b></span>
+        <span class="badge">~<b>4</b> min</span>
+        <span class="badge">Level &middot; <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="An options contract at a fork in the road, one path rising and one falling" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · CALLS AND PUTS -->
+<!-- ============ 2 · CALLS & PUTS (anchor: calls-and-puts) — animated directions + cinematic ============ -->
 <section id="calls-and-puts">
   <div class="inner">
-    <div class="anim"><div class="label">The Right, Not the Obligation</div><h2 class="title">Two contracts, two directions</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/call-put.jpg" alt="A green upward arrow for a call beside a red downward arrow for a put" /></div>
+    <div class="anim center-narrow"><div class="label">The Right, Not the Obligation</div>
+      <h2 class="title">Two contracts, two directions</h2>
+      <p class="lead center">A <b>call</b> is the right to buy. A <b>put</b> is the right to sell. That single choice — which direction you're betting on — decides everything else.</p>
+    </div>
+
+    <div class="dirwrap anim d1">
+      <div class="dirviz" id="dirViz" role="img" aria-label="A call payoff rising to the upside and a put payoff rising to the downside from a shared starting price">
+        <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet">
+          <line x1="60" y1="150" x2="500" y2="150" stroke="#e4dbc6" stroke-width="1.5"/>
+          <circle cx="60" cy="150" r="6" fill="#101828"/>
+          <text x="60" y="176" text-anchor="middle" font-family="Inter,sans-serif" font-size="12" fill="#5B6472" class="fadein">Today's price</text>
+          <!-- call: rising -->
+          <path class="draw" style="--len:470" d="M60 150 L500 40" fill="none" stroke="#22C55E" stroke-width="5" stroke-linecap="round"/>
+          <path class="fadein f2" d="M500 40 l-20 2 l10 14 z" fill="#22C55E"/>
+          <text x="470" y="34" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="15" fill="#15803d" class="fadein f2">CALL &middot; right to buy</text>
+          <text x="470" y="54" text-anchor="end" font-family="Inter,sans-serif" font-size="12.5" fill="#5B6472" class="fadein f2">Profits as price rises &#9650;</text>
+          <!-- put: falling -->
+          <path class="draw d-put" style="--len:470" d="M60 150 L500 262" fill="none" stroke="#DC2626" stroke-width="5" stroke-linecap="round"/>
+          <path class="fadein f3" d="M500 262 l-20 -2 l10 -14 z" fill="#DC2626"/>
+          <text x="470" y="250" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="15" fill="#b91c1c" class="fadein f3">PUT &middot; right to sell</text>
+          <text x="470" y="270" text-anchor="end" font-family="Inter,sans-serif" font-size="12.5" fill="#5B6472" class="fadein f3">Profits as price falls &#9660;</text>
+        </svg>
+      </div>
       <div>
-        <p class="bigdef">A <span class="hi">call</span> is the right to buy. A <span class="hi">put</span> is the right to sell.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Call</span>
-            <h3>Right to buy</h3>
-            <p>You lock in the right to buy the underlying at the strike. Buy calls when you're bullish and expect the price to rise.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Put</span>
-            <h3>Right to sell</h3>
-            <p>You lock in the right to sell the underlying at the strike. Buy puts when you're bearish and expect the price to fall.</p>
-          </div>
+        <div class="two" style="grid-template-columns:1fr;gap:16px;margin-top:0">
+          <div class="cmp grow"><span class="tag">Call &middot; bullish</span><h3>Right to buy</h3><p>Lock in the right to buy the underlying at the strike. You buy calls when you expect the price to rise.</p></div>
+          <div class="cmp" style="background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)"><span class="tag" style="color:var(--red)">Put &middot; bearish</span><h3>Right to sell</h3><p>Lock in the right to sell the underlying at the strike. You buy puts when you expect the price to fall.</p></div>
         </div>
-        <div class="insight">Both are derivative contracts: their value comes from something else, the stock or asset sitting underneath them.</div>
+        <div class="dir-accent"><img src="./assets/call-put.jpg" alt="A green upward arrow for a call beside a red downward arrow for a put" /></div>
+      </div>
+    </div>
+
+    <div class="insight anim d2" style="max-width:900px;margin:22px auto 0">Both are <b>derivative contracts</b>: their value comes from something else — the stock or asset sitting underneath them.</div>
+
+    <!-- cinematic coach moment (gates Continue) -->
+    <div class="cv anim d3" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before we break a contract apart, watch a price reach a fork. One road rewards the call buyer, the other rewards the put. I'll pause the narration the moment you press play.</p>
+      </div>
+      <div class="video-wrap">
+        <video id="coachVid" preload="metadata" playsinline muted poster="./assets/cinematic-poster.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <div class="cscene" id="coachScene" style="display:none" aria-hidden="true">
+          <svg viewBox="0 0 640 340" preserveAspectRatio="xMidYMid slice">
+            <line x1="70" y1="180" x2="590" y2="180" stroke="rgba(255,255,255,.12)" stroke-width="1.5"/>
+            <text x="300" y="30" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="14" fill="rgba(255,255,255,.6)" letter-spacing="2">A PRICE REACHES A FORK</text>
+            <path class="s-draw" style="--l:270" d="M70 200 C160 190 240 175 300 175" fill="none" stroke="#FBBF24" stroke-width="4.5" stroke-linecap="round"/>
+            <path class="s-draw s-up" style="--l:340" d="M300 175 C400 160 490 110 585 70" fill="none" stroke="#22C55E" stroke-width="5" stroke-linecap="round"/>
+            <path class="s-draw s-dn" style="--l:340" d="M300 175 C400 190 490 245 585 290" fill="none" stroke="#EF4444" stroke-width="5" stroke-linecap="round"/>
+            <circle class="s-dot" cx="300" cy="175" r="8" fill="#fff"/>
+            <g class="s-fade sf-up">
+              <text x="585" y="58" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="#4ade80">Call wins &#9650;</text>
+            </g>
+            <g class="s-fade sf-dn">
+              <text x="585" y="308" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="#f87171">Put wins &#9660;</text>
+            </g>
+          </svg>
+        </div>
+        <button class="video-ov" id="coachOv" aria-label="Play the fork clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label" id="ovLabel">Watch the fork play out</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">One event, two opposite winners. That's the whole idea of calls versus puts — you choose the direction, then you choose your contract. Hit Continue when you're ready.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 3 · ANATOMY -->
+<!-- ============ 3 · ANATOMY (anchor: anatomy) — ticket + payoff toggle + greeks gauges ============ -->
 <section id="anatomy">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Strike, Expiration, Premium</div>
+    <div class="anim center-narrow"><div class="label">Strike &middot; Expiration &middot; Premium</div>
       <h2 class="title">The three parts of every contract</h2>
-      <p class="lead" style="margin:0 auto">Once you can name these three, you can read any option quote. Then we add a light touch of the Greeks.</p>
+      <p class="lead center">Name these three and you can read any option quote. Here's a real-shaped one, broken into its pieces.</p>
     </div>
-    <div class="define anim d1" style="margin-top:26px">
-      <div>
-        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">Strike, expiration, premium.</p>
-        <div class="insight" style="margin-top:16px"><b>Strike</b> is the agreed price you can buy or sell at. <b>Expiration</b> is the deadline, the date the contract stops existing. <b>Premium</b> is what you pay to own the right.</div>
-        <p class="lead" style="font-size:16px;margin-top:16px">Premium splits in two: <b>intrinsic value</b> (real money right now) plus <b>time value</b> (what you pay for the chance the price moves your way before expiration).</p>
+
+    <div class="ticket anim d1">
+      <div class="ticket-top">
+        <span class="ticket-sym">AAPL &middot; 150 Call</span>
+        <span class="ticket-live">Live quote</span>
       </div>
-      <div class="define-art"><img src="./assets/premium.jpg" alt="A ticket handed over as an option premium, with a clock hinting at time value" /></div>
-    </div>
-    <div class="two anim d2" style="margin-top:26px">
-      <div class="cmp grow">
-        <span class="tag">Leverage</span>
-        <h3>Control more with less</h3>
-        <p>A smaller amount of capital can control a larger position. Leverage amplifies both gains and losses.</p>
+      <div class="ticket-parts">
+        <div class="tpart"><div class="tk">Strike</div><div class="tv">$150</div><div class="tvs">The agreed price you can buy (call) or sell (put) at.</div></div>
+        <div class="tpart"><div class="tk">Expiration</div><div class="tv">Jan 17</div><div class="tvs">The deadline — the date the contract stops existing.</div></div>
+        <div class="tpart"><div class="tk">Premium</div><div class="tv">$5.00</div><div class="tvs">What you pay to own the right. Cost = $5 &times; 100 = $500.</div></div>
       </div>
-      <div class="cmp safe">
-        <span class="tag">Defined risk</span>
-        <h3>Buyer's max loss</h3>
-        <p>When you buy an option, the most you can lose is the premium you paid, nothing beyond it.</p>
+      <div class="ticket-foot">Premium splits in two: <b>intrinsic value</b> (real money right now) plus <b>time value</b> (what you pay for the chance the price moves your way before expiration).
+        <div class="split"><span class="pill intr">Intrinsic value</span><span class="op" style="align-self:center;color:var(--soft);font-weight:700">+</span><span class="pill time">Time value</span></div>
       </div>
     </div>
-    <div class="define anim d3" style="margin-top:28px">
-      <div>
-        <div class="label" style="color:var(--gold-700)">Greeks Lite</div>
-        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px);margin-top:6px">Three dials that tell you how a contract reacts.</p>
-        <div class="greeks-row">
-          <div class="gpill"><div class="gk">Delta</div><div class="gd">Sensitivity to direction</div></div>
-          <div class="gpill"><div class="gk">Theta</div><div class="gd">Time decay</div></div>
-          <div class="gpill"><div class="gk">Vega</div><div class="gd">Sensitivity to volatility</div></div>
+
+    <div class="two anim d2" style="max-width:840px;margin:26px auto 0">
+      <div class="cmp grow"><span class="tag">Leverage</span><h3>Control more with less</h3><p>A smaller amount of capital can control a larger position. Leverage amplifies both gains and losses.</p></div>
+      <div class="cmp safe"><span class="tag">Defined risk</span><h3>Buyer's max loss</h3><p>When you buy an option, the most you can lose is the premium you paid — $500 here — nothing beyond it.</p></div>
+    </div>
+
+    <!-- payoff chart: data component #1 (toggle Call/Put + live headline) -->
+    <div class="chartcard anim d3">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">$150 strike &middot; $5.00 premium &middot; per contract &middot; illustrative</div>
+          <div class="chart-big" id="payoffHeadline">Call &middot; breaks even at $155</div>
+        </div>
+        <div class="cp-toggle" role="group" aria-label="Option type">
+          <button data-cp="call" class="on" type="button">Call</button>
+          <button data-cp="put" type="button">Put</button>
         </div>
       </div>
-      <div class="define-art"><img src="./assets/greeks.jpg" alt="Three gauge dials representing sensitivity to direction, time, and volatility" /></div>
+      <div id="payoffChart" class="chart-svg" role="img" aria-label="Profit and loss diagram for a bought option as the stock price at expiration changes"></div>
+      <div class="chart-foot"><b id="payoffMaxLoss">Max loss $500</b> (your premium) &nbsp;&middot;&nbsp; profit builds once price clears the breakeven line</div>
+    </div>
+
+    <!-- greeks gauges -->
+    <div class="anim d4 center-narrow" style="margin-top:34px;max-width:840px">
+      <div class="label" style="color:var(--gold-700)">Greeks Lite</div>
+      <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px);margin-top:6px">Three dials that tell you how a contract reacts.</p>
+    </div>
+    <div class="greeks-row anim d4" id="greeksRow">
+      <div class="gcard" data-frac="0.72">
+        <svg viewBox="0 0 132 78"><path d="M12 70 A54 54 0 0 1 120 70" fill="none" stroke="#eee5d2" stroke-width="12" stroke-linecap="round"/><path class="garc" d="M12 70 A54 54 0 0 1 120 70" fill="none" stroke="#22C55E" stroke-width="12" stroke-linecap="round"/></svg>
+        <div class="gk">Delta</div><div class="gd">Sensitivity to direction</div>
+      </div>
+      <div class="gcard" data-frac="0.48">
+        <svg viewBox="0 0 132 78"><path d="M12 70 A54 54 0 0 1 120 70" fill="none" stroke="#eee5d2" stroke-width="12" stroke-linecap="round"/><path class="garc" d="M12 70 A54 54 0 0 1 120 70" fill="none" stroke="#D97706" stroke-width="12" stroke-linecap="round"/></svg>
+        <div class="gk">Theta</div><div class="gd">Time decay each day</div>
+      </div>
+      <div class="gcard" data-frac="0.58">
+        <svg viewBox="0 0 132 78"><path d="M12 70 A54 54 0 0 1 120 70" fill="none" stroke="#eee5d2" stroke-width="12" stroke-linecap="round"/><path class="garc" d="M12 70 A54 54 0 0 1 120 70" fill="none" stroke="#3b82f6" stroke-width="12" stroke-linecap="round"/></svg>
+        <div class="gk">Vega</div><div class="gd">Sensitivity to volatility</div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 4 · MONEYNESS -->
+<!-- ============ 4 · MONEYNESS (anchor: moneyness) — ITM/OTM cards + count-up ============ -->
 <section id="moneyness">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">In or Out of the Money</div>
+    <div class="anim center-narrow"><div class="label">In or Out of the Money</div>
       <h2 class="title">Is it worth something yet?</h2>
-      <p class="lead" style="margin:0 auto">Moneyness answers one question: does the option hold real value right now, or is it all time and hope?</p>
+      <p class="lead center">Moneyness answers one question: does the option hold real value right now, or is it all time and hope?</p>
     </div>
-    <div class="two anim d1" style="margin-top:26px">
-      <div class="cmp grow">
-        <span class="tag">Call ITM</span>
-        <h3>Price above the strike</h3>
-        <p>A call is in-the-money when the price sits above the strike, because you'd rather buy low while the market trades higher.</p>
-      </div>
-      <div class="cmp safe">
-        <span class="tag">Put ITM</span>
-        <h3>Price below the strike</h3>
-        <p>A put is in-the-money when the price sits below the strike, because you'd rather sell high than at the lower market.</p>
+    <div class="two money-cards anim d1">
+      <div class="cmp grow"><span class="tag">Call ITM</span><h3>Price above the strike</h3><p>A call is in-the-money when the price sits above the strike — you'd rather buy low while the market trades higher.</p></div>
+      <div class="cmp" style="background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)"><span class="tag" style="color:var(--red)">Put ITM</span><h3>Price below the strike</h3><p>A put is in-the-money when the price sits below the strike — you'd rather sell high than at the lower market.</p></div>
+    </div>
+
+    <div class="mex anim d2" id="mexBox">
+      <div class="mex-k">Worked example &middot; that $150 call, with the stock now at $165</div>
+      <div class="mex-num" id="mexNum">$0</div>
+      <div class="mex-sub"><b>intrinsic value</b> — real worth baked in today</div>
+      <div class="mex-eq">
+        <span class="box">Price $165</span><span class="op">&minus;</span><span class="box">Strike $150</span><span class="op">=</span><span class="box">$15 &times; 100 shares</span>
       </div>
     </div>
-    <div class="insight anim d2" style="max-width:820px;margin:22px auto 0">Out-of-the-money is simply the opposite in each case. In-the-money options carry intrinsic value, real worth baked in today. Out-of-the-money options are all time value.</div>
+    <div class="insight anim d3" style="max-width:900px;margin:22px auto 0">Out-of-the-money is simply the opposite in each case. In-the-money options carry <b>intrinsic value</b> — real worth today. Out-of-the-money options are all <b>time value and hope</b>.</div>
   </div>
 </section>
 
-<!-- 5 · MONEYNESS SLIDER (bespoke interactive) -->
+<!-- ============ 5 · MOVE THE PRICE (anchor: moneyness-slider) — data component #2 ============ -->
 <section id="moneyness-slider">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Your Turn &middot; Move the Price</div>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; Move the Price</div>
       <h2 class="title">Slide the price past the strike</h2>
-      <p class="lead" style="margin:0 auto">Move the stock price up and down against the fixed strike line. Watch the call and put badges flip between in-the-money and out-of-the-money.</p>
+      <p class="lead center">Drag the stock price up and down against the fixed $150 strike. Watch the call and put badges flip between in-the-money and out-of-the-money, and watch the intrinsic value change in real time.</p>
     </div>
     <div class="mn-wrap anim d1">
       <div class="mn-viz" id="mnViz">
         <div class="mn-zone up">Price higher</div>
         <div class="mn-zone down">Price lower</div>
-        <div class="mn-strike"><span>Strike</span></div>
-        <div class="mn-price" id="mnMarker"><span class="dot"></span><span class="tag">Price</span></div>
+        <div class="mn-strike"><span>Strike $150</span></div>
+        <div class="mn-price" id="mnMarker"><span class="dot"></span><span class="tag" id="mnPriceTag">$165</span></div>
       </div>
       <div class="mn-panel">
-        <div class="mn-top"><span>Below strike</span><span>Above strike</span></div>
-        <input type="range" id="mnRange" min="0" max="100" value="72" aria-label="Stock price relative to strike" />
-        <div class="mn-badges">
-          <div class="mn-badge" id="mnCall"><div class="bt">Call</div><div class="bs" id="mnCallState">OTM</div></div>
-          <div class="mn-badge" id="mnPut"><div class="bt">Put</div><div class="bs" id="mnPutState">OTM</div></div>
+        <div class="mn-headline">
+          <div class="mh-lab" id="mhLab">Call intrinsic value</div>
+          <div class="mh-num" id="mhNum">$1,500</div>
+          <div class="mh-sub" id="mhSub">The call is in-the-money by $15 a share</div>
         </div>
-        <div class="mn-exp" id="mnExp">Drag the slider to move the price.</div>
-        <div class="disclaim" style="margin-top:14px">Illustrative positions only, the shape of the idea, not a forecast or a promise.</div>
+        <div class="mn-top"><span>Below strike</span><span>Above strike</span></div>
+        <input type="range" id="mnRange" min="120" max="180" value="165" step="1" aria-label="Stock price relative to the $150 strike" />
+        <div class="mn-badges">
+          <div class="mn-badge" id="mnCall"><div class="bt">Call</div><div class="bs" id="mnCallState">OTM</div><div class="bv" id="mnCallVal">$0 intrinsic</div></div>
+          <div class="mn-badge" id="mnPut"><div class="bt">Put</div><div class="bs" id="mnPutState">OTM</div><div class="bv" id="mnPutVal">$0 intrinsic</div></div>
+        </div>
+        <div class="disclaim" style="margin-top:14px">Illustrative positions only — the shape of the idea, not a forecast or a promise.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 6 · CALL OR PUT SORTER (interactive) -->
+<!-- ============ 6 · CALL OR PUT SORTER (anchor: call-put-sorter) — mini-game ============ -->
 <section id="call-put-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn</div>
+    <div class="anim center-narrow"><div class="label">Your Turn</div>
       <h2 class="title">Call or put?</h2>
-      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Bullish, price-rising views lean toward calls. Bearish, price-falling views lean toward puts.</p>
+      <p class="lead center">Tap a card to pick it up, then tap the column where it belongs. Bullish, price-rising views lean toward calls. Bearish, price-falling views lean toward puts.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
@@ -235,54 +483,53 @@
   </div>
 </section>
 
-<!-- 7 · QUIZ -->
+<!-- ============ 7 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+      <p class="lead center">Five questions. Answer them to earn your points for the lesson.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="0">
-        <h4>1. What are options?</h4>
-        <button class="opt" data-idx="0">Derivative contracts based on an underlying asset</button>
-        <button class="opt" data-idx="1">Real-estate investments</button>
-        <button class="opt" data-idx="2">Foreign currencies</button>
-        <button class="opt" data-idx="3">Government bonds</button>
-        <div class="exp">Options are derivative contracts whose value comes from an underlying asset.</div>
+        <h4>1. What is an option?</h4>
+        <button class="opt" data-idx="0">A contract giving the right, not the obligation, to buy or sell at a set price</button>
+        <button class="opt" data-idx="1">A loan you take out against your shares</button>
+        <button class="opt" data-idx="2">A guaranteed dividend from a company</button>
+        <button class="opt" data-idx="3">A government bond that never expires</button>
+        <div class="exp">An option is a derivative contract: it gives you the right, but never the obligation, to buy or sell the underlying at a set price.</div>
       </div>
       <div class="q" data-correct="1">
         <h4>2. Why would you buy a put option?</h4>
         <button class="opt" data-idx="0">To profit from a rising price</button>
-        <button class="opt" data-idx="1">To profit from a declining price</button>
+        <button class="opt" data-idx="1">To profit from a falling price</button>
         <button class="opt" data-idx="2">To collect the stock's dividend</button>
         <button class="opt" data-idx="3">To guarantee a profit</button>
-        <div class="exp">A put gains value when the underlying falls, so buyers use puts to profit from or hedge a decline.</div>
+        <div class="exp">A put is the right to sell, so it gains value as the underlying falls. Buyers use puts for a bearish view or to hedge a decline.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. Which three parts define every option contract?</h4>
+        <button class="opt" data-idx="0">Ticker, dividend, and broker fee</button>
+        <button class="opt" data-idx="1">Volatility, volume, and float</button>
+        <button class="opt" data-idx="2">Strike, expiration, and premium</button>
+        <button class="opt" data-idx="3">Delta, theta, and vega</button>
+        <div class="exp">Every contract has a strike (the agreed price), an expiration (the deadline), and a premium (what you pay). Delta, theta and vega are the Greeks — how it reacts, not what it is.</div>
       </div>
       <div class="q" data-correct="0">
-        <h4>3. When is a call option in-the-money (ITM)?</h4>
-        <button class="opt" data-idx="0">When the asset's price is above the strike price</button>
-        <button class="opt" data-idx="1">When the expiration date passes</button>
-        <button class="opt" data-idx="2">When volatility is high</button>
-        <button class="opt" data-idx="3">When a dividend is paid</button>
-        <div class="exp">A call is ITM when the underlying's current price is above the strike price.</div>
-      </div>
-      <div class="q" data-correct="0">
-        <h4>4. What is the key leverage advantage of options?</h4>
-        <button class="opt" data-idx="0">Controlling a larger position with less capital</button>
-        <button class="opt" data-idx="1">Guaranteed profits</button>
-        <button class="opt" data-idx="2">Zero risk</button>
-        <button class="opt" data-idx="3">They never expire</button>
-        <div class="exp">Options provide leverage: a smaller premium controls a larger position, amplifying gains and losses.</div>
+        <h4>4. When is a call option in-the-money?</h4>
+        <button class="opt" data-idx="0">When the stock price is above the strike price</button>
+        <button class="opt" data-idx="1">When the stock price is below the strike price</button>
+        <button class="opt" data-idx="2">Only on the expiration date</button>
+        <button class="opt" data-idx="3">Whenever volatility is high</button>
+        <div class="exp">A call is in-the-money when the price sits above the strike — it carries real intrinsic value because you'd rather buy low while the market trades higher.</div>
       </div>
       <div class="q" data-correct="1">
         <h4>5. When you BUY an option, what is the most you can lose?</h4>
         <button class="opt" data-idx="0">Your entire account</button>
         <button class="opt" data-idx="1">The premium you paid</button>
         <button class="opt" data-idx="2">Twice the premium</button>
-        <button class="opt" data-idx="3">Nothing, options are risk-free</button>
-        <div class="exp">When you buy an option, the premium is your maximum loss if it expires worthless.</div>
+        <button class="opt" data-idx="3">Nothing — buying options is risk-free</button>
+        <div class="exp">A bought option has defined risk: if it expires worthless, the premium you paid is your maximum loss — nothing beyond it.</div>
       </div>
       <div class="quiz-result" id="quizResult">
         <div class="score" id="quizScore">0 / 5</div>
@@ -295,19 +542,19 @@
   </div>
 </section>
 
-<!-- 8 · BRIDGE / SUMMARY -->
+<!-- ============ 8 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You've Got the Vocabulary</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You've Got the Vocabulary</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>A call is the right to buy, a put is the right to sell. Both are contracts, never obligations.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>Every option has a strike, an expiration, and a premium.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>In-the-money means real intrinsic value; out-of-the-money is all time value.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Delta, theta, vega read direction, time, and volatility at a glance.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>In-the-money means real intrinsic value; out-of-the-money is all time and hope.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Delta, theta and vega read direction, time, and volatility at a glance.</p></div>
     </div>
     <div class="nextcard anim d2">
       <div><div class="up">Up next &middot; Lesson 4.2</div><h3>Buying Options on a Thesis &mdash; Without Blowing Up</h3></div>
-      <span class="badge">Turn vocabulary into a careful play &rarr;</span>
+      <span class="badge">Turn vocabulary into a careful, risk-aware play &rarr;</span>
     </div>
     <div class="finish-row anim d3">
       <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
@@ -338,30 +585,409 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 26.4, "interactive": false, "label": "Options 101"}, {"id": "calls-and-puts", "start": 26.9, "end": 64.316, "interactive": false, "label": "The Right Not the Obligation"}, {"id": "anatomy", "start": 64.816, "end": 117.016, "interactive": false, "label": "Strike Expiration Premium"}, {"id": "moneyness", "start": 117.516, "end": 153.828, "interactive": false, "label": "In or Out of the Money"}, {"id": "moneyness-slider", "start": 154.328, "end": 184.088, "interactive": true, "label": "Move the Price"}, {"id": "call-put-sorter", "start": 184.588, "end": 209.092, "interactive": true, "label": "Call or Put"}, {"id": "quiz", "start": 209.592, "end": 216.648, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 217.148, "end": 252.404, "interactive": false, "label": "Up Next Trading a Thesis"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":26.4,"interactive":false,"label":"Options 101"},
+  {"id":"calls-and-puts","start":26.9,"end":64.316,"interactive":true,"label":"Calls vs Puts"},
+  {"id":"anatomy","start":64.816,"end":117.016,"interactive":false,"label":"Strike · Expiration · Premium"},
+  {"id":"moneyness","start":117.516,"end":153.828,"interactive":false,"label":"In or Out of the Money"},
+  {"id":"moneyness-slider","start":154.328,"end":184.088,"interactive":true,"label":"Move the Price"},
+  {"id":"call-put-sorter","start":184.588,"end":209.092,"interactive":true,"label":"Call or Put"},
+  {"id":"quiz","start":209.592,"end":216.648,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":217.148,"end":252.404,"interactive":false,"label":"Up Next · Trading a Thesis"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: moneyness explorer (isolated) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic (b-roll OR JS scene), payoff chart,
+   greeks gauges, count-up, moneyness slider, sorter, quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var r=document.getElementById('mnRange'); if(!r) return;
-  var marker=document.getElementById('mnMarker');
-  var call=document.getElementById('mnCall'), put=document.getElementById('mnPut');
-  var callS=document.getElementById('mnCallState'), putS=document.getElementById('mnPutState');
-  var exp=document.getElementById('mnExp');
-  function setBadge(el,st,itm){ el.classList.toggle('itm',itm); el.classList.toggle('otm',!itm); st.textContent=itm?'IN THE MONEY':'OUT OF THE MONEY'; }
-  function upd(){
-    var v=+r.value;                 // 0..100, 50 = at the strike
-    marker.style.top=(100-v)+'%';   // higher value = higher on screen
-    var above=v>52, below=v<48;
-    setBadge(call,callS,above);
-    setBadge(put,putS,below);
-    if(above){ exp.textContent='Price is above the strike. The call is in-the-money; the put is out-of-the-money.'; }
-    else if(below){ exp.textContent='Price is below the strike. The put is in-the-money; the call is out-of-the-money.'; }
-    else{ exp.textContent='Price is right at the strike. Both sit at the money with no intrinsic value.'; }
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // interactive anchors that must be completed before Continue unlocks
+  var gates = { 'calls-and-puts':false, 'moneyness-slider':false, 'call-put-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
+  });
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){ d.classList.toggle('active', i===idx); d.classList.toggle('done', i<idx); });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
+    }
   }
-  r.addEventListener('input',upd); upd();
+
+  function gateHint(id){
+    if(id==='calls-and-puts') return 'Play the clip to continue';
+    if(id==='moneyness-slider') return 'Move the slider to continue';
+    if(id==='call-put-sorter') return 'Sort all the cards to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){ contBtn.disabled=true; contBtn.textContent=gateHint(s.id); }
+    else { contBtn.disabled=false; contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →'; }
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){ contBtn.disabled=false; contBtn.textContent='Done — Continue →'; }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont(); setActive(idx); audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){ sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x'; });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime); seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    if(s.interactive && t>=s.end-0.12){ audio.pause(); playBtn.textContent=PLAY; showCont(cur); }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- hero video error → show Ken-Burns fallback cleanly ---- */
+  (function(){
+    var hv=document.getElementById('heroBroll'); if(!hv) return;
+    hv.addEventListener('error',function(){ hv.style.display='none'; });
+    // if no source resolves shortly, hide so fallback shows
+    setTimeout(function(){ if(hv.readyState===0){ hv.style.display='none'; } },3000);
+  })();
+
+  /* ---- hero drifting up/down ticks ---- */
+  (function(){
+    var wrap=document.getElementById('ticks'); if(!wrap||reduce) return;
+    var N=12;
+    for(var i=0;i<N;i++){
+      var up=Math.random()>.5;
+      var c=document.createElement('span'); c.className='tick '+(up?'up':'down');
+      c.textContent=up?'▲':'▼';
+      var dur=7+Math.random()*7, delay=-Math.random()*12, sz=13+Math.random()*16;
+      c.style.left=(Math.random()*95)+'%';
+      c.style.fontSize=sz+'px';
+      c.style.animationDuration=dur+'s';
+      c.style.animationDelay=delay+'s';
+      wrap.appendChild(c);
+    }
+  })();
+
+  /* ---- direction viz reveal (adds .vis for stroke draw) ---- */
+  (function(){
+    var dv=document.getElementById('dirViz'); if(!dv) return;
+    var dio=new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting){ dv.classList.add('vis'); dio.disconnect(); } }); },{threshold:.3});
+    dio.observe(dv);
+  })();
+
+  /* ---- CINEMATIC: b-roll video if available, else JS scene. Gates calls-and-puts. ---- */
+  (function(){
+    var vid=document.getElementById('coachVid'), ov=document.getElementById('coachOv');
+    var scene=document.getElementById('coachScene'), outro=document.getElementById('cvOutro'), ovLabel=document.getElementById('ovLabel');
+    if(!ov) return;
+    var mode='pending', wasPlaying=false, cpIdx=idxOf('calls-and-puts'), ended=false;
+    function useVideo(){ if(mode!=='pending')return; mode='video'; if(scene) scene.style.display='none'; }
+    function useScene(){ if(mode!=='pending')return; mode='scene'; if(vid) vid.style.display='none'; if(scene) scene.style.display='block'; }
+    if(vid){
+      vid.addEventListener('canplay', useVideo);
+      vid.addEventListener('loadeddata', useVideo);
+      vid.addEventListener('error', useScene);
+    } else { useScene(); }
+    setTimeout(function(){ if(mode==='pending'){ if(vid && vid.readyState>=2) useVideo(); else useScene(); } }, 2800);
+
+    function endCinema(){
+      if(ended) return; ended=true;
+      if(outro) outro.style.display='block';
+      satisfyGate('calls-and-puts');
+      if(wasPlaying && cpIdx>=0 && audio.currentTime < ST[cpIdx].end-0.3){ audio.play(); playBtn.textContent=PAUSE; }
+    }
+    function runScene(){ if(scene) scene.classList.add('play'); setTimeout(endCinema, reduce?250:5400); }
+
+    ov.addEventListener('click',function(){
+      if(mode==='pending'){ if(vid && vid.readyState>=2) useVideo(); else useScene(); }
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      if(mode==='video' && vid){
+        var p=vid.play();
+        if(p && p.catch) p.catch(function(){ useScene(); runScene(); });
+      } else { runScene(); }
+    });
+    if(vid) vid.addEventListener('ended', endCinema);
+  })();
+
+  /* ---- PAYOFF CHART (data #1): Call/Put toggle + live headline ---- */
+  (function(){
+    var box=document.getElementById('payoffChart'); if(!box) return;
+    var K=150, prem=5, mult=100, lo=120, hi=180;
+    var kind='call', drawn=false;
+    function pl(k,S){ var intr = k==='call' ? Math.max(S-K,0) : Math.max(K-S,0); return (intr - prem)*mult; }
+    function draw(k){
+      var W=760,H=320,padL=58,padR=18,padT=22,padB=46;
+      var plotW=W-padL-padR, plotH=H-padT-padB;
+      var yMin=-800, yMax=2600;
+      var N=hi-lo;
+      function X(S){ return padL + ((S-lo)/(hi-lo))*plotW; }
+      function Y(v){ return padT + (1-(v-yMin)/(yMax-yMin))*plotH; }
+      var pts=[]; for(var S=lo;S<=hi;S++){ pts.push([X(S),Y(pl(k,S))]); }
+      var line=pts.map(function(p){ return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' ');
+      var zeroY=Y(0);
+      var col = k==='call' ? '#16A34A' : '#DC2626';
+      var be = k==='call' ? K+prem : K-prem;
+      var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      s+='<defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+col+'" stop-opacity=".16"/><stop offset="100%" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>';
+      // zero P/L line
+      s+='<line x1="'+padL+'" y1="'+zeroY.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+zeroY.toFixed(1)+'" stroke="#c9bd9e" stroke-width="1.5" stroke-dasharray="5 5"/>';
+      s+='<text x="'+(padL-8)+'" y="'+(zeroY+4).toFixed(1)+'" text-anchor="end" font-family="Inter,sans-serif" font-size="11" fill="#98A2B3">$0 P/L</text>';
+      // strike marker
+      s+='<line x1="'+X(K).toFixed(1)+'" y1="'+padT+'" x2="'+X(K).toFixed(1)+'" y2="'+(H-padB)+'" stroke="#EAE2D0" stroke-width="1.5"/>';
+      s+='<text x="'+X(K).toFixed(1)+'" y="'+(H-padB+18)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5B6472">Strike $150</text>';
+      // breakeven marker
+      s+='<line x1="'+X(be).toFixed(1)+'" y1="'+padT+'" x2="'+X(be).toFixed(1)+'" y2="'+(H-padB)+'" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="3 4"/>';
+      s+='<text x="'+X(be).toFixed(1)+'" y="'+(padT+2)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="11.5" fill="#B45309">Breakeven $'+be+'</text>';
+      // area under curve
+      s+='<path d="M'+pts[0][0].toFixed(1)+','+zeroY.toFixed(1)+' L'+line.replace(/ /g,' L')+' L'+pts[pts.length-1][0].toFixed(1)+','+zeroY.toFixed(1)+' Z" fill="url(#pg)"/>';
+      // payoff line (draw-on)
+      var len=1700;
+      s+='<polyline points="'+line+'" fill="none" stroke="'+col+'" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"';
+      if(!reduce){ s+=' stroke-dasharray="'+len+'" stroke-dashoffset="'+len+'"><animate attributeName="stroke-dashoffset" from="'+len+'" to="0" dur="1s" fill="freeze"/></polyline>'; }
+      else { s+='/>'; }
+      // x labels
+      [120,135,150,165,180].forEach(function(m){
+        s+='<text x="'+X(m).toFixed(1)+'" y="'+(H-padB+34)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#98A2B3">$'+m+'</text>';
+      });
+      // axis titles
+      s+='<text x="'+(padL+plotW/2)+'" y="'+(H-6)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11.5" fill="#5B6472">Stock price at expiration</text>';
+      s+='</svg>';
+      box.innerHTML=s;
+      document.getElementById('payoffHeadline').textContent=(k==='call'?'Call':'Put')+' · breaks even at $'+be;
+      document.getElementById('payoffMaxLoss').textContent='Max loss $'+(prem*mult);
+    }
+    var cio=new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting && !drawn){ drawn=true; draw(kind); cio.disconnect(); } }); },{threshold:.25});
+    cio.observe(box);
+    var btns=document.querySelectorAll('.cp-toggle button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on'); kind=b.dataset.cp; drawn=true; draw(kind);
+      });
+    });
+  })();
+
+  /* ---- GREEKS gauges: fill arcs on scroll ---- */
+  (function(){
+    var row=document.getElementById('greeksRow'); if(!row) return;
+    var cards=row.querySelectorAll('.gcard');
+    cards.forEach(function(c){
+      var arc=c.querySelector('.garc'); if(!arc) return;
+      var L=arc.getTotalLength ? arc.getTotalLength() : 170;
+      var frac=parseFloat(c.dataset.frac)||0.5;
+      arc.style.setProperty('--c', L);
+      arc.style.setProperty('--off', (L*(1-frac)).toFixed(1));
+    });
+    var gio=new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting){ cards.forEach(function(c,i){ setTimeout(function(){ c.classList.add('on'); }, reduce?0:i*140); }); gio.disconnect(); } }); },{threshold:.3});
+    gio.observe(row);
+  })();
+
+  /* ---- MONEYNESS count-up ($150 call, stock $165 → $1,500 intrinsic) ---- */
+  (function(){
+    var box=document.getElementById('mexBox'), num=document.getElementById('mexNum'); if(!box||!num) return;
+    var target=1500, done=false;
+    function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+    function run(){
+      if(reduce){ num.textContent=money(target); return; }
+      var start=performance.now(), dur=1400;
+      function step(now){ var p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3); num.textContent=money(target*e); if(p<1) requestAnimationFrame(step); else num.textContent=money(target); }
+      requestAnimationFrame(step);
+    }
+    var mio=new IntersectionObserver(function(en){ en.forEach(function(e){ if(e.isIntersecting && !done){ done=true; run(); mio.disconnect(); } }); },{threshold:.4});
+    mio.observe(box);
+  })();
+
+  /* ---- MONEYNESS SLIDER (data #2): live intrinsic value + badges ---- */
+  (function(){
+    var r=document.getElementById('mnRange'); if(!r) return;
+    var K=150, mult=100;
+    var marker=document.getElementById('mnMarker'), priceTag=document.getElementById('mnPriceTag');
+    var call=document.getElementById('mnCall'), put=document.getElementById('mnPut');
+    var callS=document.getElementById('mnCallState'), putS=document.getElementById('mnPutState');
+    var callV=document.getElementById('mnCallVal'), putV=document.getElementById('mnPutVal');
+    var mhLab=document.getElementById('mhLab'), mhNum=document.getElementById('mhNum'), mhSub=document.getElementById('mhSub');
+    function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+    function setBadge(el,st,vEl,itm,intr){
+      el.classList.toggle('itm',itm); el.classList.toggle('otm',!itm);
+      st.textContent=itm?'IN THE MONEY':'OUT OF THE MONEY';
+      vEl.textContent=money(intr*mult)+' intrinsic';
+    }
+    function upd(){
+      var S=+r.value;
+      // marker: price 120..180 → bottom..top (100%..0%)
+      var frac=(S-120)/60; marker.style.top=((1-frac)*100)+'%';
+      priceTag.textContent='$'+S;
+      var callIntr=Math.max(S-K,0), putIntr=Math.max(K-S,0);
+      setBadge(call,callS,callV, S>K, callIntr);
+      setBadge(put,putS,putV, S<K, putIntr);
+      if(S>K){ mhLab.textContent='Call intrinsic value'; mhNum.style.color='var(--green)'; mhNum.textContent=money(callIntr*mult); mhSub.textContent='The call is in-the-money by $'+callIntr+' a share'; }
+      else if(S<K){ mhLab.textContent='Put intrinsic value'; mhNum.style.color='var(--red)'; mhNum.textContent=money(putIntr*mult); mhSub.textContent='The put is in-the-money by $'+putIntr+' a share'; }
+      else { mhLab.textContent='Intrinsic value'; mhNum.style.color='var(--gold-600)'; mhNum.textContent='$0'; mhSub.textContent='Price is right at the strike — both are at-the-money'; }
+    }
+    var interacted=false;
+    r.addEventListener('input',function(){ upd(); if(!interacted){ interacted=true; satisfyGate('moneyness-slider'); } });
+    upd();
+  })();
+
+  /* ---- CALL/PUT SORTER (mini-game) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb'); if(!pool) return;
+    var cols=document.querySelectorAll('.col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no'); drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty'); fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Bullish leans to calls, bearish leans to puts.';
+          satisfyGate('call-put-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- QUIZ grading + quizAnswer emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel'); sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){ o.disabled=true; if(i===corr) o.classList.add('correct'); if(i===s && i!==corr) o.classList.add('wrong'); });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — the vocabulary is locked in.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
 </body>

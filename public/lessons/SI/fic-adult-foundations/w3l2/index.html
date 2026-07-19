@@ -14,182 +14,425 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* bespoke: P/E calculator (isolated) */
-  .pe-wrap{max-width:760px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
-    border-radius:var(--r-xl);padding:28px;box-shadow:var(--shadow-soft)}
-  .pe-inputs{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  @media(max-width:560px){.pe-inputs{grid-template-columns:1fr}}
-  .pe-field{display:flex;flex-direction:column;gap:7px}
-  .pe-field span{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft)}
-  .pe-field input{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--ink);
-    padding:12px 14px;border:1px solid var(--sand);border-radius:var(--r-md);background:var(--paper);
-    width:100%;transition:border-color .15s ease,box-shadow .15s ease}
-  .pe-field input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(251,191,36,.22)}
-  .pe-out{margin:22px 0 6px;text-align:center;padding:18px;border-radius:var(--r-lg);
-    background:linear-gradient(170deg,var(--gold-bg),var(--card));border:1px solid #FDE68A}
-  .pe-cap{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft);letter-spacing:1px;text-transform:uppercase}
-  .pe-big{font-family:var(--font-display);font-weight:900;font-size:64px;line-height:1;color:var(--gold-600);margin:6px 0}
-  .pe-big.na{font-size:30px;color:var(--red)}
-  .pe-big.pulse{animation:pePulse .45s ease}
-  @keyframes pePulse{0%{transform:scale(.82);opacity:.4}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
-  .pe-unit{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--soft)}
-  .pe-read{margin-top:14px;border-left:4px solid var(--gold);background:var(--gold-bg);
-    border-radius:0 var(--r-md) var(--r-md) 0;padding:15px 18px;color:#7a4d06;font-size:15px;line-height:1.55}
+/* ============================================================
+   BESPOKE COMPONENTS for w3l2 — layered on the warm-paper skin.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + drifting glyphs ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.02)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 28s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.18),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(38px,7.6vw,74px);font-weight:900;line-height:1;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.badge b{color:var(--gold-700)}
+.glyphs{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.glyph{position:absolute;bottom:-8%;font-family:var(--font-display);font-weight:800;color:var(--gold-600);
+  opacity:0;animation:glyphRise linear infinite;text-shadow:0 2px 8px rgba(120,80,10,.12)}
+@keyframes glyphRise{0%{transform:translateY(0) rotate(-4deg);opacity:0}
+  10%{opacity:.5}88%{opacity:.5}100%{transform:translateY(-116vh) rotate(6deg);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- TWO-WAYS: animated split toolkit ---------- */
+.split{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:stretch;max-width:960px;margin:28px auto 0}
+@media(max-width:780px){.split{grid-template-columns:1fr;gap:12px}}
+.tk{border-radius:var(--r-xl);padding:24px 22px;border:1px solid var(--sand);background:var(--card);
+  box-shadow:var(--shadow-soft);text-align:left;position:relative;overflow:hidden}
+.tk.tech{background:linear-gradient(165deg,var(--sky-bg),var(--card))}
+.tk.fund{background:linear-gradient(165deg,var(--green-bg),var(--card));border-color:var(--green-border)}
+.tk .tag{font:700 12px var(--font-display);letter-spacing:1.6px;text-transform:uppercase}
+.tk.tech .tag{color:#0369A1}.tk.fund .tag{color:var(--green)}
+.tk h3{font-size:20px;margin:6px 0 4px}
+.tk p{color:var(--soft);font-size:14.5px;margin-top:6px}
+.tk-viz{height:96px;margin:14px 0 6px;border-radius:var(--r-md);background:var(--paper-2);border:1px solid var(--sand);overflow:hidden}
+.tk-viz svg{width:100%;height:100%;display:block}
+.tk-ask{margin-top:12px;font:700 13.5px var(--font-display);color:var(--ink);opacity:0;transform:translateY(6px);
+  transition:opacity .5s ease .55s,transform .5s ease .55s}
+.vis .tk-ask{opacity:1;transform:none}
+.tk-mid{display:flex;align-items:center;justify-content:center;font:900 14px var(--font-display);color:var(--gold-700);
+  background:var(--gold-bg);border:1px dashed var(--gold);border-radius:var(--r-full);min-width:64px;padding:8px 12px}
+@media(max-width:780px){.tk-mid{min-width:0}}
+/* mini-viz draw animations, gated on .vis */
+.cs-line{stroke-dasharray:340;stroke-dashoffset:340;transition:stroke-dashoffset 1.3s ease .35s}
+.vis .cs-line{stroke-dashoffset:0}
+.cs-cndl{opacity:0;transform:scaleY(0);transform-origin:center bottom;transition:opacity .4s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+.vis .cs-cndl{opacity:1;transform:scaleY(1)}
+.fb-bar{transform:scaleY(0);transform-origin:center bottom;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.vis .fb-bar{transform:scaleY(1)}
+
+/* ---------- statement tiles ---------- */
+.stmts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;max-width:960px;margin:24px auto 0}
+@media(max-width:780px){.stmts{grid-template-columns:1fr}}
+.stmt{border-radius:var(--r-lg);padding:22px;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);position:relative}
+.stmt .ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.stmt .ico svg{width:22px;height:22px}
+.stmt.a .ico{background:var(--green-bg)}.stmt.a .ico svg{stroke:var(--green)}
+.stmt.b .ico{background:var(--sky-bg)}.stmt.b .ico svg{stroke:#0369A1}
+.stmt.c .ico{background:var(--gold-bg)}.stmt.c .ico svg{stroke:var(--gold-600)}
+.stmt .when{font:700 11px var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.stmt h3{font-size:17px;margin:5px 0 6px}
+.stmt p{color:var(--soft);font-size:14px}
+
+/* ---------- data chart cards ---------- */
+.chartcard{max-width:840px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(18px,2.5vw,25px)/1.14 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-rev,.dot-cost,.dot-net{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:2px}
+.dot-rev{background:var(--gold-500)}.dot-cost{background:#E4756B}.dot-net{background:var(--green)}
+.mtoggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.mtoggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 15px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.mtoggle button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+
+/* ---------- P/E calculator (sliders + gauge) ---------- */
+.pe-wrap{max-width:820px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift)}
+.pe-sliders{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:560px){.pe-sliders{grid-template-columns:1fr}}
+.pe-field{display:flex;flex-direction:column;gap:8px}
+.pe-field .fl{display:flex;justify-content:space-between;align-items:baseline}
+.pe-field .fl span{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft)}
+.pe-field .fl b{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--ink)}
+.pe-range{-webkit-appearance:none;appearance:none;height:6px;border-radius:99px;background:var(--sand);cursor:pointer}
+.pe-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--gold);
+  border:2px solid #fff;box-shadow:0 2px 8px rgba(251,191,36,.5);cursor:pointer}
+.pe-range::-moz-range-thumb{width:20px;height:20px;border:2px solid #fff;border-radius:50%;background:var(--gold);
+  box-shadow:0 2px 8px rgba(251,191,36,.5);cursor:pointer}
+.pe-out{margin:22px 0 6px;text-align:center;padding:16px 18px;border-radius:var(--r-lg);
+  background:linear-gradient(170deg,var(--gold-bg),var(--card));border:1px solid #FDE68A}
+.pe-cap{font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--soft);letter-spacing:1px;text-transform:uppercase}
+.pe-big{font-family:var(--font-display);font-weight:900;font-size:clamp(48px,9vw,66px);line-height:1;color:var(--gold-600);margin:4px 0}
+.pe-big.na{font-size:30px;color:var(--red)}
+.pe-big.pulse{animation:pePulse .4s ease}
+@keyframes pePulse{0%{transform:scale(.86);opacity:.5}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
+.pe-unit{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--soft)}
+.pe-gauge{width:100%;margin-top:8px}
+.pe-gauge svg{width:100%;height:auto;display:block;overflow:visible}
+.pe-marker{transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+.pe-read{margin-top:14px;border-left:4px solid var(--gold);background:var(--gold-bg);
+  border-radius:0 var(--r-md) var(--r-md) 0;padding:15px 18px;color:#7a4d06;font-size:15px;line-height:1.55}
+
+/* ---------- cinematic block: coach intro / outro ---------- */
+.cv{max-width:920px;margin:28px auto 0}
+.cv-intro,.cv-outro{max-width:780px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.30),rgba(11,18,32,.58));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+/* JS cinematic scene (fallback when no b-roll) */
+.cine-scene{display:none;position:absolute;inset:0;background:radial-gradient(120% 120% at 50% 0%,#122036,#0b1220)}
+.video-wrap.scene-mode video{display:none}
+.video-wrap.scene-mode .cine-scene{display:block}
+.cs-svg{width:100%;height:100%;display:block}
+.cine-scene .cs-post{stroke-dasharray:440;stroke-dashoffset:440}
+.cine-scene.run .cs-post{animation:csDraw 1.5s ease .6s forwards}
+@keyframes csDraw{to{stroke-dashoffset:0}}
+.cine-scene .cs-day,.cine-scene .cs-daylab{opacity:0}
+.cine-scene.run .cs-day{animation:csFade .5s ease .25s forwards}
+.cine-scene.run .cs-daylab{animation:csFade .5s ease .35s forwards}
+.cine-scene .cs-spark{opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(0)}
+.cine-scene.run .cs-spark{animation:csPop .6s cubic-bezier(.2,.8,.2,1) 1.7s forwards}
+.cine-scene .cs-badge,.cine-scene .cs-price{opacity:0;transform:translateY(8px)}
+.cine-scene.run .cs-badge{animation:csUp .6s ease 2.1s forwards}
+.cine-scene.run .cs-price{animation:csUp .6s ease 2.5s forwards}
+@keyframes csFade{to{opacity:1}}
+@keyframes csPop{0%{opacity:0;transform:scale(0)}60%{opacity:1;transform:scale(1.25)}100%{opacity:1;transform:scale(1)}}
+@keyframes csUp{to{opacity:1;transform:none}}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .glyph{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .anim{transition:none}
+  .cs-line,.cs-cndl,.fb-bar,.tk-ask,.pe-marker{transition:none}
+  .cs-line{stroke-dashoffset:0}.cs-cndl{opacity:1;transform:none}.fb-bar{transform:scaleY(1)}.tk-ask{opacity:1;transform:none}
+  .cine-scene.run .cs-post,.cine-scene.run .cs-day,.cine-scene.run .cs-daylab,.cine-scene.run .cs-spark,.cine-scene.run .cs-badge,.cine-scene.run .cs-price{animation:none;opacity:1;transform:none;stroke-dashoffset:0}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="glyphs" id="glyphs" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Adults &middot; Module 3 &middot; Lesson 3.2</div>
-      <h1 style="font-size:clamp(38px,7vw,68px);font-weight:900;line-height:1;margin:12px 0 12px">The Company Behind the Ticker</h1>
-      <p class="lead">Behind every ticker is a real business with real products, customers, and revenue. Fundamental analysis asks whether it is actually a good one. In the next few minutes you'll learn to read a company the way an owner would.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">The</span>
+        <span class="w gold" style="animation-delay:.13s">Company</span>
+        <span class="w" style="animation-delay:.21s">Behind</span>
+        <span class="w" style="animation-delay:.29s">the</span>
+        <span class="w" style="animation-delay:.37s">Ticker</span>
+      </h1>
+      <p class="lead">Behind every ticker is a real business with real products, customers, and revenue. Fundamental analysis asks whether it's actually a good one. For the next few minutes, you'll learn to read a company the way an owner would.</p>
       <div class="badges">
-        <span class="badge"><b>8</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">SI-100 &middot; <b>Adults</b></span>
         <span class="badge">~<b>4</b> min</span>
+        <span class="badge">Level &middot; <b>Intermediate</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A magnifying glass held over financial statements and a company building" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · TWO WAYS TO LOOK -->
+<!-- ============ 2 · TWO-WAYS (anchor: two-ways) — animated split toolkit ============ -->
 <section id="two-ways">
   <div class="inner">
-    <div class="anim"><div class="label">Two Ways to Look</div><h2 class="title">Read the chart, or read the company</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/two-ways.jpg" alt="A split image of a price chart on one side and a company with financial documents on the other" /></div>
-      <div>
-        <p class="bigdef">Two toolkits. <span class="hi">Different questions.</span></p>
-        <div class="two">
-          <div class="cmp safe">
-            <span class="tag">Technical</span>
-            <h3>Reads the chart</h3>
-            <p>Price, patterns, and volume. It studies what buyers and sellers are doing right now, and where they might act next.</p>
-          </div>
-          <div class="cmp grow">
-            <span class="tag">Fundamental</span>
-            <h3>Reads the company</h3>
-            <p>Financial statements, industry, and the wider economy. It estimates a company's intrinsic value and how fast it can grow.</p>
-          </div>
+    <div class="anim center-narrow"><div class="label">Two Ways to Look</div>
+      <h2 class="title">Read the chart, or read the company</h2>
+      <p class="lead center">Two toolkits, two different questions. Technical analysis studies price. Fundamental analysis studies the business behind it. Strong investors learn to use both.</p>
+    </div>
+    <div class="split anim d1">
+      <div class="tk tech">
+        <span class="tag">Technical</span>
+        <h3>Reads the chart</h3>
+        <div class="tk-viz">
+          <svg viewBox="0 0 240 96" preserveAspectRatio="none" aria-hidden="true">
+            <polyline class="cs-line" points="8,72 40,58 72,64 104,40 136,48 168,24 200,32 232,14" fill="none" stroke="#0369A1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect class="cs-cndl" x="52"  y="46" width="8" height="26" rx="2" fill="#0EA5E9" style="transition-delay:.5s"/>
+            <rect class="cs-cndl" x="116" y="30" width="8" height="34" rx="2" fill="#0EA5E9" style="transition-delay:.65s"/>
+            <rect class="cs-cndl" x="180" y="20" width="8" height="30" rx="2" fill="#0EA5E9" style="transition-delay:.8s"/>
+          </svg>
         </div>
-        <div class="insight">Technical analysis asks "what is price doing?" Fundamental analysis asks "what is this business worth?" Strong investors learn to use both.</div>
+        <p>Price, patterns, and volume. It studies what buyers and sellers are doing right now, and where they might act next.</p>
+        <div class="tk-ask">Asks: &ldquo;What is price doing?&rdquo;</div>
+      </div>
+      <div class="tk-mid">vs</div>
+      <div class="tk fund">
+        <span class="tag">Fundamental</span>
+        <h3>Reads the company</h3>
+        <div class="tk-viz">
+          <svg viewBox="0 0 240 96" preserveAspectRatio="none" aria-hidden="true">
+            <rect class="fb-bar" x="24"  y="40" width="30" height="48" rx="3" fill="#16A34A" style="transition-delay:.35s"/>
+            <rect class="fb-bar" x="70"  y="30" width="30" height="58" rx="3" fill="#22C55E" style="transition-delay:.5s"/>
+            <rect class="fb-bar" x="116" y="22" width="30" height="66" rx="3" fill="#16A34A" style="transition-delay:.65s"/>
+            <rect class="fb-bar" x="162" y="14" width="30" height="74" rx="3" fill="#22C55E" style="transition-delay:.8s"/>
+            <rect class="fb-bar" x="208" y="8"  width="30" height="80" rx="3" fill="#16A34A" style="transition-delay:.95s"/>
+          </svg>
+        </div>
+        <p>Financial statements, the industry, and the wider economy. It estimates what a company is truly worth and how fast it can grow.</p>
+        <div class="tk-ask">Asks: &ldquo;What is this business worth?&rdquo;</div>
       </div>
     </div>
+    <div class="insight anim d2" style="max-width:820px;margin:24px auto 0">Same stock, two lenses. Technical asks <b>when</b> to act. Fundamental asks <b>whether</b> the business deserves your money in the first place. This lesson lives on the fundamental side.</div>
   </div>
 </section>
 
-<!-- 3 · THREE FINANCIAL STATEMENTS -->
+<!-- ============ 3 · THE-STATEMENTS (anchor: the-statements) — tiles + animated waterfall ============ -->
 <section id="the-statements">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">The Reports</div>
+    <div class="anim center-narrow"><div class="label">The Reports</div>
       <h2 class="title">Three financial statements</h2>
-      <p class="lead" style="margin:0 auto">Every public company reports its health three ways. Each one answers a different question about the business.</p>
+      <p class="lead center">Every public company reports its health three ways. Each one answers a different question about the business.</p>
     </div>
-    <div class="define anim d1" style="margin:24px auto 0;max-width:900px">
-      <div class="define-art"><img src="./assets/statements.jpg" alt="Three document cards for an income statement, a balance sheet, and a cash flow statement" /></div>
-      <div>
-        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">One shows profit. One shows position. One shows <span class="hi">cash</span>.</p>
-        <div class="insight">Read together, the three statements tell you whether a company earns money, what it owns and owes, and where its cash really goes.</div>
-      </div>
-    </div>
-    <div class="two anim d2" style="margin-top:26px;grid-template-columns:1fr 1fr 1fr">
-      <div class="cmp grow">
-        <span class="tag">Over a period</span>
+    <div class="stmts anim d1">
+      <div class="stmt a">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+        <div class="when">Over a period</div>
         <h3>Income statement</h3>
         <p>Revenue minus expenses gives net income. It tells you whether the company actually made money during the period.</p>
       </div>
-      <div class="cmp safe">
-        <span class="tag">A point in time</span>
+      <div class="stmt b">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 8l7-5 7 5"/><path d="M4 21h16"/></svg></div>
+        <div class="when">A point in time</div>
         <h3>Balance sheet</h3>
         <p>A snapshot of assets on one side, liabilities and equity on the other. What the company owns and what it owes.</p>
       </div>
-      <div class="cmp grow">
-        <span class="tag">Follow the cash</span>
+      <div class="stmt c">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13"/><path d="M12 5l7 7-7 7"/><circle cx="5" cy="5" r="2"/></svg></div>
+        <div class="when">Follow the cash</div>
         <h3>Cash flow statement</h3>
-        <p>Tracks real cash split into operating, investing, and financing activities. Profit on paper is not the same as cash in hand.</p>
+        <p>Real cash split into operating, investing, and financing. Profit on paper is not the same as cash in hand.</p>
       </div>
+    </div>
+    <div class="chartcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Income statement &middot; one year &middot; illustrative $ millions</div>
+          <div class="chart-big">From revenue down to net income</div>
+        </div>
+      </div>
+      <div id="wfChart" class="chart-svg" role="img" aria-label="Waterfall chart showing 120 million in revenue reduced by 50 million cost of goods, 30 million operating expenses, and 12 million interest and tax, leaving 28 million net income"></div>
+      <div class="chart-foot"><span class="dot-rev"></span> Revenue &nbsp;&middot;&nbsp; <span class="dot-cost"></span> What it costs to run &nbsp;&middot;&nbsp; <span class="dot-net"></span> Net income kept</div>
     </div>
   </div>
 </section>
 
-<!-- 4 · P/E, EPS & HEALTH -->
+<!-- ============ 4 · KEY-NUMBERS (anchor: key-numbers) — EPS/PE + peer toggle + cinematic ============ -->
 <section id="key-numbers">
   <div class="inner">
-    <div class="anim" style="max-width:820px"><div class="label">The Key Numbers</div><h2 class="title">P/E, EPS, and a health check</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div>
-        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Two ratios tell you profit and price. <span class="hi">EPS</span> and <span class="hi">P/E.</span></p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">EPS</span>
-            <h3>Profit per share</h3>
-            <p>Earnings per share is the company's profit divided across its shares. It is the slice of profit attributed to each share you own.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">P/E</span>
-            <h3>Price per dollar of earnings</h3>
-            <p>Share price divided by EPS. It shows how much the market pays for each dollar of earnings. Only meaningful compared to peers.</p>
-          </div>
-        </div>
-        <div class="insight">Two more health checks. The <b>current ratio</b> measures short-term liquidity, whether a company can cover its near-term bills. <b>Debt-to-equity</b> measures leverage, how much it borrows against what owners put in.</div>
-      </div>
-      <div class="define-art"><img src="./assets/catalyst.jpg" alt="A spark striking a rising bar chart, representing an earnings report or news catalyst" /></div>
+    <div class="anim center-narrow"><div class="label">The Key Numbers</div>
+      <h2 class="title">P/E, EPS, and what moves a stock</h2>
+      <p class="lead center">Two ratios turn a giant report into something you can compare in seconds. Then catalysts decide when the market re-prices what you found.</p>
     </div>
-    <div class="insight anim d2" style="margin-top:26px;max-width:900px">Stocks move on <b>catalysts</b>, like earnings reports and major news. Companies file a <b>10-K</b> each year, a <b>10-Q</b> each quarter, and an <b>8-K</b> when a major event happens. Watching the calendar for these is part of the job.</div>
+    <div class="two anim d1" style="max-width:840px;margin:24px auto 0">
+      <div class="cmp grow">
+        <span class="tag">EPS</span>
+        <h3>Profit per share</h3>
+        <p>Earnings per share is the company's profit divided across its shares. It's the slice of profit attributed to each share you own.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">P/E</span>
+        <h3>Price per dollar of earnings</h3>
+        <p>Share price divided by EPS. It shows how much the market pays for each dollar of earnings — only meaningful compared to peers.</p>
+      </div>
+    </div>
+
+    <div class="chartcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Four companies &middot; illustrative &middot; not recommendations</div>
+          <div class="chart-big" id="peerHeadline">By P/E, Beta looks priciest at 40&times; — even with the lowest share price.</div>
+        </div>
+        <div class="mtoggle" role="group" aria-label="Metric">
+          <button data-metric="pe" class="on" type="button">P/E ratio</button>
+          <button data-metric="price" type="button">Share price</button>
+        </div>
+      </div>
+      <div id="peerChart" class="chart-svg" role="img" aria-label="Bar chart comparing four companies by price-to-earnings ratio and by share price"></div>
+      <div class="chart-foot">Highest price and highest valuation aren't the same thing. <b>Always compare P/E to peers in the same industry.</b></div>
+    </div>
+
+    <div class="insight anim d3" style="max-width:840px;margin:22px auto 0">Two quick health checks round it out. The <b>current ratio</b> asks whether a company can cover its short-term bills. <b>Debt-to-equity</b> asks how much it borrows against what owners put in. Stocks then move on <b>catalysts</b> — earnings and major news. Companies file a <b>10-K</b> yearly, a <b>10-Q</b> quarterly, and an <b>8-K</b> when something big happens.</div>
+
+    <div class="cv anim d4" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Numbers tell you what a company is worth. Catalysts decide when the market agrees. Watch what a single earnings surprise can do to a quiet stock — I'll pause the narration the moment you press play.</p>
+      </div>
+      <div class="video-wrap" id="cineWrap">
+        <video id="cineVid" preload="metadata" playsinline poster="./assets/catalyst.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <div class="cine-scene" id="cineScene" aria-hidden="true">
+          <svg viewBox="0 0 720 360" class="cs-svg" preserveAspectRatio="xMidYMid meet">
+            <line x1="60" y1="300" x2="680" y2="300" stroke="#2a3a55" stroke-width="1.5"/>
+            <line x1="60" y1="60" x2="60" y2="300" stroke="#2a3a55" stroke-width="1.5"/>
+            <polyline points="60,236 120,240 180,232 240,242 300,234 350,238" fill="none" stroke="#7c8aa5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <line class="cs-day" x1="350" y1="70" x2="350" y2="300" stroke="#FBBF24" stroke-width="2" stroke-dasharray="6 6"/>
+            <text class="cs-daylab" x="358" y="86" font-family="Poppins,sans-serif" font-weight="700" font-size="14" fill="#FBBF24">Earnings day</text>
+            <polyline class="cs-post" points="350,238 410,214 470,176 520,140 570,116 620,98 680,84" fill="none" stroke="#22C55E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <g class="cs-spark" transform="translate(410,214)">
+              <path d="M0,-20 L5,-6 L20,0 L5,6 L0,20 L-5,6 L-20,0 L-5,-6 Z" fill="#FBBF24"/>
+            </g>
+            <g class="cs-badge" transform="translate(452,150)">
+              <rect x="0" y="-24" width="188" height="34" rx="17" fill="#16A34A"/>
+              <text x="16" y="-2" font-family="Poppins,sans-serif" font-weight="800" font-size="15" fill="#fff">Earnings beat &middot; +18%</text>
+            </g>
+            <text class="cs-price" x="560" y="70" font-family="Poppins,sans-serif" font-weight="900" font-size="26" fill="#fff">$92 &rarr; $109</text>
+          </svg>
+        </div>
+        <button class="video-ov" id="cineOv" aria-label="Play the catalyst clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">See a catalyst hit</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">One report, and the market re-priced the whole company in a single session. That's why the numbers and the calendar work together. Hit Continue whenever you're ready.</p>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- 5 · P/E CALCULATOR (bespoke interactive) -->
+<!-- ============ 5 · PE-CALCULATOR (anchor: pe-calculator) — sliders + gauge ============ -->
 <section id="pe-calculator">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Your Turn &middot; Run the Numbers</div>
-      <h2 class="title">P/E calculator</h2>
-      <p class="lead" style="margin:0 auto">Type a share price and an earnings-per-share figure. The calculator divides one by the other to show the price-to-earnings ratio. Change the inputs and watch the number recalculate.</p>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; Run the Numbers</div>
+      <h2 class="title">Feel a P/E ratio move</h2>
+      <p class="lead center">Drag the share price and the earnings per share. The calculator divides one by the other and drops the P/E onto a valuation band. Watch where the number lands.</p>
     </div>
     <div class="pe-wrap anim d1">
-      <div class="pe-inputs">
-        <label class="pe-field"><span>Share price ($)</span><input id="pePrice" type="number" min="0" step="0.01" value="50" aria-label="Share price in dollars" /></label>
-        <label class="pe-field"><span>EPS &middot; earnings per share ($)</span><input id="peEps" type="number" step="0.01" value="5" aria-label="Earnings per share in dollars" /></label>
+      <div class="pe-sliders">
+        <label class="pe-field">
+          <span class="fl"><span>Share price</span><b id="pePriceVal">$60</b></span>
+          <input id="pePrice" class="pe-range" type="range" min="5" max="500" step="1" value="60" aria-label="Share price in dollars" />
+        </label>
+        <label class="pe-field">
+          <span class="fl"><span>EPS &middot; earnings per share</span><b id="peEpsVal">$4.00</b></span>
+          <input id="peEps" class="pe-range" type="range" min="0.25" max="25" step="0.25" value="4" aria-label="Earnings per share in dollars" />
+        </label>
       </div>
       <div class="pe-out">
         <div class="pe-cap">Price &divide; EPS =</div>
-        <div class="pe-big" id="peBig">10.0</div>
+        <div class="pe-big" id="peBig">15.0</div>
         <div class="pe-unit">P/E ratio</div>
+        <div class="pe-gauge" id="peGauge" role="img" aria-label="Valuation band from value to premium with a marker at the current P/E"></div>
       </div>
-      <div class="pe-read" id="peRead">A lower P/E can mean cheaper or slower growth. A higher P/E can mean pricier or faster expected growth. Always compare to peers.</div>
-      <div class="disclaim" style="margin-top:16px">These numbers are illustrative examples to show how the math works. They are not advice or a recommendation to buy anything.</div>
+      <div class="pe-read" id="peRead">Around 15&times;, this is a fairly typical valuation — roughly in line with a broad market average. A lower P/E can mean cheaper or slower growth; a higher one can mean pricier or faster expected growth.</div>
+      <div class="disclaim" style="margin-top:16px">These numbers are illustrative examples to show how the math works. They're not advice or a recommendation to buy anything.</div>
     </div>
   </div>
 </section>
 
-<!-- 6 · STRENGTH SORTER (interactive) -->
+<!-- ============ 6 · STRENGTH-SORTER (anchor: strength-sorter) — mini-game ============ -->
 <section id="strength-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn</div>
+    <div class="anim center-narrow"><div class="label">Sort It Yourself</div>
       <h2 class="title">Strength or warning sign?</h2>
-      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. One column collects signs of a healthy business. The other collects red flags.</p>
+      <p class="lead center">Tap a card to pick it up, then tap the column where it belongs. One column collects signs of a healthy business. The other collects red flags worth a second look.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
         <button class="chip" data-bucket="strength">Earnings per share growing over time</button>
         <button class="chip" data-bucket="strength">Manageable debt relative to equity</button>
-        <button class="chip" data-bucket="strength">A healthy current ratio (can cover short-term bills)</button>
-        <button class="chip" data-bucket="strength">Rising revenue with controlled expenses</button>
+        <button class="chip" data-bucket="strength">A healthy current ratio</button>
+        <button class="chip" data-bucket="strength">Rising revenue with controlled costs</button>
         <button class="chip" data-bucket="warning">Losing money quarter after quarter</button>
         <button class="chip" data-bucket="warning">Very high debt relative to equity</button>
-        <button class="chip" data-bucket="warning">Can't cover its short-term obligations</button>
+        <button class="chip" data-bucket="warning">Can't cover short-term obligations</button>
         <button class="chip" data-bucket="warning">Costs growing faster than revenue</button>
       </div>
       <div class="cols">
@@ -207,13 +450,12 @@
   </div>
 </section>
 
-<!-- 7 · QUIZ -->
+<!-- ============ 7 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+      <p class="lead center">Five questions. Answer them to earn your points and prove you can read a company.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="1">
@@ -222,31 +464,31 @@
         <button class="opt" data-idx="1">To assess a company's financial health and growth potential</button>
         <button class="opt" data-idx="2">To identify candlestick patterns</button>
         <button class="opt" data-idx="3">To time entries with moving averages</button>
-        <div class="exp">Fundamental analysis evaluates a company's financials, industry, and economics to estimate intrinsic value.</div>
+        <div class="exp">Fundamental analysis evaluates a company's financials, industry, and economics to estimate its intrinsic value. Chart-reading is technical analysis.</div>
       </div>
       <div class="q" data-correct="2">
         <h4>2. What does the price-to-earnings (P/E) ratio measure?</h4>
         <button class="opt" data-idx="0">A company's total debt</button>
-        <button class="opt" data-idx="1">How efficiently it uses assets</button>
+        <button class="opt" data-idx="1">How efficiently it uses its assets</button>
         <button class="opt" data-idx="2">The market's valuation of a company relative to its earnings</button>
         <button class="opt" data-idx="3">Last year's dividends</button>
-        <div class="exp">P/E compares share price to earnings per share, showing how the market values each dollar of earnings.</div>
+        <div class="exp">P/E compares share price to earnings per share, showing how much the market pays for each dollar of earnings. It's only meaningful versus peers.</div>
       </div>
       <div class="q" data-correct="2">
-        <h4>3. Which financial statement reports cash flows from operating, investing, and financing activities?</h4>
+        <h4>3. Which financial statement reports cash from operating, investing, and financing activities?</h4>
         <button class="opt" data-idx="0">Balance sheet</button>
         <button class="opt" data-idx="1">Income statement</button>
         <button class="opt" data-idx="2">Cash flow statement</button>
         <button class="opt" data-idx="3">Proxy statement</button>
-        <div class="exp">The cash flow statement reports cash from operating, investing, and financing activities.</div>
+        <div class="exp">The cash flow statement tracks real cash split into operating, investing, and financing activities — because paper profit isn't the same as cash in hand.</div>
       </div>
-      <div class="q" data-correct="2">
-        <h4>4. What do liquidity ratios like the current ratio measure?</h4>
-        <button class="opt" data-idx="0">Long-term debt only</button>
-        <button class="opt" data-idx="1">Inventory turnover</button>
-        <button class="opt" data-idx="2">A company's ability to meet short-term obligations</button>
-        <button class="opt" data-idx="3">The dividend yield</button>
-        <div class="exp">Liquidity ratios such as the current ratio measure the ability to cover short-term obligations.</div>
+      <div class="q" data-correct="1">
+        <h4>4. A company files an 8-K. What does that usually signal?</h4>
+        <button class="opt" data-idx="0">Its routine annual summary</button>
+        <button class="opt" data-idx="1">A major event worth investors' attention — a catalyst</button>
+        <button class="opt" data-idx="2">A guaranteed rise in the share price</button>
+        <button class="opt" data-idx="3">Nothing — 8-Ks are never important</button>
+        <div class="exp">An 8-K is filed when something major happens. The 10-K is yearly and the 10-Q is quarterly. These events are the catalysts that re-price a stock.</div>
       </div>
       <div class="q" data-correct="1">
         <h4>5. What is EPS (earnings per share)?</h4>
@@ -254,7 +496,7 @@
         <button class="opt" data-idx="1">The portion of a company's profit assigned to each share</button>
         <button class="opt" data-idx="2">The number of shares outstanding</button>
         <button class="opt" data-idx="3">Total revenue for the year</button>
-        <div class="exp">EPS is the profit attributed to each outstanding share, a core profitability measure.</div>
+        <div class="exp">EPS is profit divided across the shares — the slice of earnings attributed to each share you own, and the denominator inside the P/E ratio.</div>
       </div>
       <div class="quiz-result" id="quizResult">
         <div class="score" id="quizScore">0 / 5</div>
@@ -267,15 +509,15 @@
   </div>
 </section>
 
-<!-- 8 · BRIDGE / SUMMARY -->
+<!-- ============ 8 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You've Got the Fundamentals</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You've Got the Fundamentals</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>Fundamental analysis reads the company; technical analysis reads the chart.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>The three statements: income statement, balance sheet, cash flow statement.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>EPS is profit per share; P/E shows what the market pays per dollar of earnings.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Catalysts like earnings and major news move stocks. Watch the filings.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Catalysts like earnings and major news move stocks — watch the filings.</p></div>
     </div>
     <div class="nextcard anim d2">
       <div><div class="up">Up next &middot; Lesson 4.1</div><h3>Calls, Puts &amp; Premium (Greeks Lite)</h3></div>
@@ -310,30 +552,466 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 22.368, "interactive": false, "label": "The Company Behind the Ticker"}, {"id": "two-ways", "start": 22.868, "end": 55.076, "interactive": false, "label": "Two Ways to Look"}, {"id": "the-statements", "start": 55.576, "end": 93.928, "interactive": false, "label": "Three Financial Statements"}, {"id": "key-numbers", "start": 94.428, "end": 145.692, "interactive": false, "label": "P E, E P S and Health"}, {"id": "pe-calculator", "start": 146.192, "end": 182.408, "interactive": true, "label": "P E Calculator"}, {"id": "strength-sorter", "start": 182.908, "end": 209.428, "interactive": true, "label": "Strength or Warning Sign"}, {"id": "quiz", "start": 209.928, "end": 216.336, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 216.836, "end": 251.756, "interactive": false, "label": "Up Next Options"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":22.368,"interactive":false,"label":"The Company Behind the Ticker"},
+  {"id":"two-ways","start":22.868,"end":55.076,"interactive":false,"label":"Two Ways to Look"},
+  {"id":"the-statements","start":55.576,"end":93.928,"interactive":false,"label":"Three Financial Statements"},
+  {"id":"key-numbers","start":94.428,"end":145.692,"interactive":true,"label":"P/E, EPS & Catalysts"},
+  {"id":"pe-calculator","start":146.192,"end":182.408,"interactive":true,"label":"P/E Calculator"},
+  {"id":"strength-sorter","start":182.908,"end":209.428,"interactive":true,"label":"Strength or Warning Sign"},
+  {"id":"quiz","start":209.928,"end":216.336,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":216.836,"end":251.756,"interactive":false,"label":"Up Next"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: P/E calculator (isolated) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic clip (video OR JS scene fallback),
+   charts, P/E sliders, sorter, quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var price=document.getElementById('pePrice'), eps=document.getElementById('peEps');
-  if(!price||!eps) return;
-  var big=document.getElementById('peBig'), read=document.getElementById('peRead');
-  var GOOD='A lower P/E can mean cheaper or slower growth. A higher P/E can mean pricier or faster expected growth. Always compare to peers.';
-  var NA='No positive earnings, so P/E is not meaningful. When EPS is zero or negative, the ratio does not apply.';
-  function upd(){
-    var p=parseFloat(price.value), e=parseFloat(eps.value);
-    if(!isFinite(p)||!isFinite(e)||e<=0){
-      big.classList.remove('pulse'); big.classList.add('na');
-      big.textContent='n/a'; read.textContent=NA; return;
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'key-numbers':false, 'pe-calculator':false, 'strength-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
+  });
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
     }
-    big.classList.remove('na');
-    big.textContent=(p/e).toFixed(1);
-    read.textContent=GOOD;
-    big.classList.remove('pulse'); void big.offsetWidth; big.classList.add('pulse');
   }
-  price.addEventListener('input',upd); eps.addEventListener('input',upd); upd();
+
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){
+      contBtn.disabled=true;
+      contBtn.textContent = gateHint(s.id);
+    } else {
+      contBtn.disabled=false;
+      contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →';
+    }
+  }
+  function gateHint(id){
+    if(id==='key-numbers') return 'Play the coach clip to continue';
+    if(id==='pe-calculator') return 'Try the calculator to continue';
+    if(id==='strength-sorter') return 'Sort all the cards to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- hero fallback: hide video if b-roll missing so Ken Burns shows ---- */
+  (function(){
+    var hv=document.getElementById('heroBroll'); if(!hv) return;
+    hv.addEventListener('error',function(){ hv.style.display='none'; });
+    setTimeout(function(){ if(hv.readyState===0){ hv.style.display='none'; } },2600);
+  })();
+
+  /* ---- drifting hero glyphs ---- */
+  (function(){
+    var wrap=document.getElementById('glyphs'); if(!wrap||reduce) return;
+    var marks=['$','%','P/E','EPS','$','▲','10-K','%'];
+    for(var i=0;i<12;i++){
+      var g=document.createElement('span'); g.className='glyph';
+      g.textContent=marks[i%marks.length];
+      var dur=9+Math.random()*8, delay=-Math.random()*14, sz=15+Math.random()*22;
+      g.style.left=(4+Math.random()*90)+'%';
+      g.style.fontSize=sz+'px';
+      g.style.animationDuration=dur+'s';
+      g.style.animationDelay=delay+'s';
+      wrap.appendChild(g);
+    }
+  })();
+
+  function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+  function fmtM(n){ return '$'+n+'M'; }
+
+  /* ---- lazy-drawn charts ---- */
+  var chartIO=new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if(!e.isIntersecting) return;
+      if(e.target.id==='wfChart' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawWaterfall(e.target); }
+      if(e.target.id==='peerChart' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawPeer(e.target, curMetric); }
+      if(e.target.id==='peGauge' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawGauge(e.target); updatePe(); }
+    });
+  },{threshold:.25});
+  ['wfChart','peerChart','peGauge'].forEach(function(id){ var el=document.getElementById(id); if(el) chartIO.observe(el); });
+
+  /* ---- the-statements: income statement waterfall ---- */
+  function drawWaterfall(box){
+    var W=720,H=340,padL=40,padR=16,padT=30,padB=54;
+    var plotW=W-padL-padR, plotH=H-padT-padB, maxV=130;
+    var base=H-padB;
+    function y(level){ return base-(level/maxV)*plotH; }
+    // columns: label, kind(up/down), from, to, value, fill
+    var cols=[
+      {lab:'Revenue',      kind:'up',   from:0,   to:120, val:120, fill:'#F59E0B'},
+      {lab:'Cost of sales',kind:'down', from:120, to:70,  val:50,  fill:'#E4756B'},
+      {lab:'Operating',    kind:'down', from:70,  to:40,  val:30,  fill:'#E4756B'},
+      {lab:'Interest & tax',kind:'down',from:40,  to:28,  val:12,  fill:'#E4756B'},
+      {lab:'Net income',   kind:'up',   from:0,   to:28,  val:28,  fill:'#16A34A'}
+    ];
+    var n=cols.length, colW=plotW/n, barW=Math.min(66,colW-38);
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    s+='<line x1="'+padL+'" y1="'+base+'" x2="'+(W-padR)+'" y2="'+base+'" stroke="#e4dbc6" stroke-width="1.5"/>';
+    cols.forEach(function(c,i){
+      var cx=padL+i*colW+colW/2, x=cx-barW/2;
+      var yTop=y(Math.max(c.from,c.to)), yBot=y(Math.min(c.from,c.to)), h=yBot-yTop;
+      var dur=reduce?'0s':'0.7s', bg=reduce?'0s':(0.15+i*0.36)+'s';
+      // connector dashed line at the "to" level toward next column
+      if(i<n-1){
+        var lvlY=y(c.to);
+        s+='<line x1="'+(x+barW)+'" y1="'+lvlY+'" x2="'+(padL+(i+1)*colW+colW/2-barW/2)+'" y2="'+lvlY+'" stroke="#d9cfb0" stroke-width="1.4" stroke-dasharray="4 4" opacity="'+(reduce?'.7':'0')+'">'+(reduce?'':'<animate attributeName="opacity" from="0" to="0.7" dur="0.3s" begin="'+((0.15+i*0.36)+0.5)+'s" fill="freeze"/>')+'</line>';
+      }
+      // bar (up grows from baseline of its own segment; down grows downward from top)
+      if(c.kind==='up'){
+        s+='<rect x="'+x+'" y="'+yTop+'" width="'+barW+'" height="'+h+'" rx="4" fill="'+c.fill+'">';
+        if(!reduce){ s+='<animate attributeName="height" from="0" to="'+h+'" dur="'+dur+'" begin="'+bg+'" fill="freeze"/><animate attributeName="y" from="'+yBot+'" to="'+yTop+'" dur="'+dur+'" begin="'+bg+'" fill="freeze"/>'; }
+        s+='</rect>';
+      } else {
+        s+='<rect x="'+x+'" y="'+yTop+'" width="'+barW+'" height="'+h+'" rx="4" fill="'+c.fill+'" opacity="0.9">';
+        if(!reduce){ s+='<animate attributeName="height" from="0" to="'+h+'" dur="'+dur+'" begin="'+bg+'" fill="freeze"/>'; }
+        s+='</rect>';
+      }
+      // value label
+      var vy=yTop-8, sign=(c.kind==='down'?'−':''), op=reduce?'1':'0', ab=reduce?'0s':(0.15+i*0.36+0.45)+'s';
+      var vfill=c.kind==='down'?'#B23B30':(i===n-1?'#15803d':'#8a6b12');
+      s+='<text x="'+cx+'" y="'+vy+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="13" fill="'+vfill+'" opacity="'+op+'">'+sign+fmtM(c.val)+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="'+ab+'" fill="freeze"/>')+'</text>';
+      // category label
+      s+='<text x="'+cx+'" y="'+(base+20)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11.5" fill="#5B6472">'+c.lab+'</text>';
+      s+='<text x="'+cx+'" y="'+(base+35)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="10.5" fill="#98A2B3">'+(c.kind==='down'?'subtract':(i===0?'top line':'bottom line'))+'</text>';
+    });
+    s+='</svg>';
+    box.innerHTML=s;
+  }
+
+  /* ---- key-numbers: peer comparison with metric toggle ---- */
+  var curMetric='pe';
+  var PEER={
+    names:['Alpha','Beta','Gamma','Delta'],
+    pe:[12,40,18,10],
+    price:[120,40,90,30]
+  };
+  function drawPeer(box, metric){
+    var W=680,H=300,padL=44,padR=16,padT=24,padB=52;
+    var plotW=W-padL-padR, plotH=H-padT-padB, base=H-padB;
+    var vals=metric==='pe'?PEER.pe:PEER.price;
+    var maxV=Math.max.apply(null,vals)*1.18;
+    var n=vals.length, colW=plotW/n, barW=Math.min(70,colW-46);
+    var maxIdx=vals.indexOf(Math.max.apply(null,vals));
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    s+='<line x1="'+padL+'" y1="'+base+'" x2="'+(W-padR)+'" y2="'+base+'" stroke="#e4dbc6" stroke-width="1.5"/>';
+    vals.forEach(function(v,i){
+      var cx=padL+i*colW+colW/2, x=cx-barW/2;
+      var h=(v/maxV)*plotH, yTop=base-h;
+      var hot=i===maxIdx;
+      var fill=hot?'#D97706':'#FBBF24';
+      var dur=reduce?'0s':'0.7s', bg=reduce?'0s':(0.1+i*0.12)+'s';
+      s+='<rect x="'+x+'" y="'+yTop+'" width="'+barW+'" height="'+h+'" rx="5" fill="'+fill+'">';
+      if(!reduce){ s+='<animate attributeName="height" from="0" to="'+h+'" dur="'+dur+'" begin="'+bg+'" fill="freeze"/><animate attributeName="y" from="'+base+'" to="'+yTop+'" dur="'+dur+'" begin="'+bg+'" fill="freeze"/>'; }
+      s+='</rect>';
+      var lbl=metric==='pe'?(v+'×'):('$'+v);
+      var op=reduce?'1':'0', ab=reduce?'0s':(0.1+i*0.12+0.5)+'s';
+      s+='<text x="'+cx+'" y="'+(yTop-9)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="'+(hot?'#B45309':'#8a6b12')+'" opacity="'+op+'">'+lbl+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="'+ab+'" fill="freeze"/>')+'</text>';
+      s+='<text x="'+cx+'" y="'+(base+22)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="12.5" font-weight="'+(hot?'700':'400')+'" fill="'+(hot?'#B45309':'#5B6472')+'">'+PEER.names[i]+'</text>';
+    });
+    s+='</svg>';
+    box.innerHTML=s;
+    var head=document.getElementById('peerHeadline');
+    if(head){
+      head.innerHTML = metric==='pe'
+        ? 'By P/E, Beta looks priciest at 40&times; — even with the lowest share price.'
+        : 'Alpha has the biggest price tag ($120), yet nearly the lowest P/E of the four.';
+    }
+  }
+  (function(){
+    var btns=document.querySelectorAll('.mtoggle button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        curMetric=b.dataset.metric;
+        var el=document.getElementById('peerChart');
+        if(el){ el.dataset.drawn='1'; drawPeer(el, curMetric); }
+      });
+    });
+  })();
+
+  /* ---- pe-calculator: sliders + valuation gauge ---- */
+  var GMIN=0,GMAX=60,gx0=40,gx1=640,gtrackW=600;
+  function gpos(pe){ var c=Math.max(GMIN,Math.min(GMAX,pe)); return gx0+(c/GMAX)*gtrackW; }
+  function drawGauge(box){
+    var W=680,H=92;
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    // zone bands: value 0-15, fair 15-25, premium 25-60
+    var yb=40, hb=16, r=8;
+    s+='<rect x="'+gpos(0)+'" y="'+yb+'" width="'+(gpos(15)-gpos(0))+'" height="'+hb+'" rx="'+r+'" fill="#BBF7D0"/>';
+    s+='<rect x="'+gpos(15)+'" y="'+yb+'" width="'+(gpos(25)-gpos(15))+'" height="'+hb+'" fill="#FDE68A"/>';
+    s+='<rect x="'+gpos(25)+'" y="'+yb+'" width="'+(gpos(60)-gpos(25))+'" height="'+hb+'" rx="'+r+'" fill="#FCA5A5"/>';
+    // zone captions
+    s+='<text x="'+((gpos(0)+gpos(15))/2)+'" y="'+(yb+hb+18)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="11" fill="#16A34A">Value</text>';
+    s+='<text x="'+((gpos(15)+gpos(25))/2)+'" y="'+(yb+hb+18)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="11" fill="#B45309">Fair</text>';
+    s+='<text x="'+((gpos(25)+gpos(60))/2)+'" y="'+(yb+hb+18)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="11" fill="#B91C1C">Premium</text>';
+    // ticks
+    [0,15,25,40,60].forEach(function(t){
+      s+='<text x="'+gpos(t)+'" y="'+(yb-8)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="10.5" fill="#98A2B3">'+(t===60?'60+':t+'×')+'</text>';
+    });
+    // marker
+    s+='<g class="pe-marker" id="peMarker" transform="translate('+gpos(15)+',0)"><polygon points="0,'+(yb-2)+' -9,'+(yb-16)+' 9,'+(yb-16)+'" fill="#101828"/><rect x="-2" y="'+(yb-2)+'" width="4" height="'+(hb+4)+'" fill="#101828"/></g>';
+    s+='</svg>';
+    box.innerHTML=s;
+  }
+  (function(){
+    var price=document.getElementById('pePrice'), eps=document.getElementById('peEps');
+    var pv=document.getElementById('pePriceVal'), ev=document.getElementById('peEpsVal');
+    var big=document.getElementById('peBig'), read=document.getElementById('peRead');
+    if(!price||!eps) return;
+    window.updatePe=function(){
+      var p=parseFloat(price.value), e=parseFloat(eps.value);
+      pv.textContent='$'+Math.round(p);
+      ev.textContent='$'+e.toFixed(2);
+      var pe=p/e;
+      big.classList.remove('na');
+      big.textContent=pe.toFixed(1);
+      big.classList.remove('pulse'); void big.offsetWidth; big.classList.add('pulse');
+      var mk=document.getElementById('peMarker');
+      if(mk) mk.setAttribute('transform','translate('+gpos(pe)+',0)');
+      if(pe<15) read.innerHTML='At '+pe.toFixed(1)+'×, the market is paying a <b>modest</b> price for each dollar of earnings — often a value or slower-growth profile.';
+      else if(pe<=25) read.innerHTML='At '+pe.toFixed(1)+'×, this is a <b>fairly typical</b> valuation — roughly in line with a broad market average.';
+      else read.innerHTML='At '+pe.toFixed(1)+'×, the market is paying a <b>premium</b> — usually a bet on faster future growth. Only fair to judge versus peers.';
+    };
+    function onInput(){ window.updatePe(); satisfyGate('pe-calculator'); }
+    price.addEventListener('input',onInput);
+    eps.addEventListener('input',onInput);
+    // initial (marker drawn lazily; updatePe called after gauge draws)
+    window.updatePe();
+  })();
+
+  /* ---- cinematic clip: video if b-roll present, else JS scene; pause narration + gate ---- */
+  (function(){
+    var vid=document.getElementById('cineVid'), ov=document.getElementById('cineOv');
+    var wrap=document.getElementById('cineWrap'), scene=document.getElementById('cineScene'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var mode='video', ended=false, wasPlaying=false, kiIdx=idxOf('key-numbers');
+    function toScene(){ if(mode==='scene') return; mode='scene'; wrap.classList.add('scene-mode'); }
+    vid.addEventListener('error',toScene);
+    setTimeout(function(){ if(vid.readyState===0) toScene(); },2600);
+    function finishCine(){
+      if(ended) return; ended=true;
+      if(outro) outro.style.display='block';
+      satisfyGate('key-numbers');
+      if(wasPlaying && audio.currentTime < ST[kiIdx].end-0.3){ audio.play(); playBtn.textContent=PAUSE; }
+    }
+    function runScene(){ if(scene) scene.classList.add('run'); setTimeout(finishCine, reduce?900:6300); }
+    vid.addEventListener('ended',finishCine);
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      if(mode==='video'){
+        var p=vid.play();
+        if(p&&p.catch) p.catch(function(){ toScene(); runScene(); });
+      } else { runScene(); }
+    });
+  })();
+
+  /* ---- strength sorter (click to pick, click a column to place) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('#strength-sorter .col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty');
+          fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Strengths compound; warning signs are your cue to dig deeper before you buy.';
+          satisfyGate('strength-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- quiz grading + bridge emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){
+          o.disabled=true;
+          if(i===corr) o.classList.add('correct');
+          if(i===s && i!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you can read a company now.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
 </body>
