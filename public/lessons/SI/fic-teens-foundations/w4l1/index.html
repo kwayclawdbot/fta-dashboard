@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calls &amp; Puts Explained · SI-100 Teens · Module 4 · Lesson 4.1</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="4" />
+<meta name="fta-lesson" content="L4.1" />
+<meta name="fta-lesson-title" content="Calls &amp; Puts Explained" />
+<meta name="fta-lesson-objectives" content="Define an option as a right, not an obligation|Tell a call apart from a put|Match a bullish or bearish outlook to the right contract|Name the strike, expiration, and premium" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* image strip + define art helpers */
+  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/7}
+  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .disclaim-wrap{max-width:760px;margin:20px auto 0}
+  /* bespoke: call-or-put tap game (isolated, own ids/classes) */
+  .cpg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .cpg-desc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:74px}
+  .cpg-btns{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
+  .cpg-btn{flex:1;min-width:190px;font-family:var(--font-display);font-weight:700;font-size:16px;padding:16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+  .cpg-btn[data-pick="CALL"]:hover{border-color:var(--green-2);background:var(--green-bg)}
+  .cpg-btn[data-pick="PUT"]:hover{border-color:var(--red-2);background:var(--red-bg)}
+  .cpg-btn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+  .cpg-btn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+  .cpg-btn:disabled{cursor:default}
+  .cpg-why{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+  .cpg-why.show{display:block}
+  .cpg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
+  #cpgNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+  #cpgNext.show{display:inline-block}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens · Module 4 · Lesson 4.1</div>
+      <h1 style="font-size:clamp(36px,7vw,62px);font-weight:900;line-height:1.02;margin:12px 0 12px">Calls &amp; puts, explained</h1>
+      <p class="lead">An option is a ticket that gives you a right, not a promise. Learn the two kinds, calls and puts, and you can bet on a stock going up or down without owning a single share.</p>
+      <div class="badges">
+        <span class="badge"><b>7</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager at a fork weighing a green upward path against a red downward path" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · AN OPTION IS A CONTRACT -->
+<section id="option-basics">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">The Big Idea</div>
+      <h2 class="title">An option is a contract</h2>
+      <p class="lead" style="margin:0 auto">It gives you the right, but not the obligation, to buy or sell 100 shares of a stock at a set price before a set date. You own the right. You never have to use it.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/contract-anatomy.jpg" alt="A contract scroll with three highlighted parts and small lock, calendar, and coin icons" /></div>
+      <div>
+        <p class="bigdef">Every contract carries the <span class="hi">same three parts</span>.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Strike</span>
+            <h3>The locked-in price</h3>
+            <p>The set price where you can buy or sell, no matter where the market goes.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Expiration</span>
+            <h3>The deadline</h3>
+            <p>Your window to act. After this date the contract is done.</p>
+          </div>
+        </div>
+        <div class="insight">The <b>premium</b> is what you pay to own the ticket in the first place. If you bought the option, that premium is the most you can lose.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · CALL VS PUT -->
+<section id="call-vs-put">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Two Flavors</div>
+      <h2 class="title">Call or put?</h2>
+      <p class="lead" style="margin:0 auto">Your outlook picks the tool. Think the price goes up, or down?</p>
+    </div>
+    <div class="two anim d1" style="max-width:900px;margin:22px auto 0">
+      <div class="cmp grow">
+        <span class="tag">Call · bet UP</span>
+        <h3>The right to BUY</h3>
+        <p>Grab a call when you think the price is climbing. It's like a coupon that locks in today's price before the stock rises, so you win if it goes up.</p>
+        <div class="define-art" style="margin-top:14px"><img src="./assets/call-coupon.jpg" alt="A coupon ticket with an upward arrow and a lock, illustrating a call option" /></div>
+      </div>
+      <div class="cmp gamble">
+        <span class="tag">Put · bet DOWN</span>
+        <h3>The right to SELL</h3>
+        <p>Grab a put when you think the price is falling. It's like insurance that pays off when the stock drops, cushioning the move down.</p>
+        <div class="define-art" style="margin-top:14px"><img src="./assets/put-insurance.jpg" alt="An open umbrella shielding a downward arrow, illustrating a put option" /></div>
+      </div>
+    </div>
+    <div class="insight anim d2" style="max-width:760px;margin:20px auto 0">Bullish, expecting up? That points to a <b>call</b>. Bearish, expecting down? That points to a <b>put</b>. Real companies like Nike, Apple, Roblox, or Spotify can go either way. Your read on the direction is what picks the contract.</div>
+    <div class="disclaim-wrap anim d3">
+      <div class="disclaim">Options are an advanced, higher-risk tool. This lesson is conceptual and paper-trade practice only. No prices or returns here are real, and none are a forecast or a promise.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · CALL OR PUT? GAME (bespoke interactive) -->
+<section id="call-or-put-game">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn · Call or Put?</div>
+      <h2 class="title">Read the situation, make the call</h2>
+      <p class="lead" style="margin:0 auto">I'll describe a setup. You decide: does this outlook fit a call or a put? Tap your pick and see why.</p>
+    </div>
+    <div class="imgstrip anim d1" style="max-width:720px;aspect-ratio:16/6"><img src="./assets/up-vs-down.jpg" alt="A green up arrow with a coupon icon beside a red down arrow with an umbrella icon" /></div>
+    <div class="cpg anim d2" id="cpgGame">
+      <div class="cpg-desc" id="cpgDesc">Loading round…</div>
+      <div class="cpg-btns">
+        <button class="cpg-btn" data-pick="CALL" id="cpgCall">&#128994; Call (bet the price goes up)</button>
+        <button class="cpg-btn" data-pick="PUT" id="cpgPut">&#128308; Put (bet the price goes down)</button>
+      </div>
+      <div class="cpg-why" id="cpgWhy"></div>
+      <div class="cpg-foot">
+        <span id="cpgProg">Round 1 of 6</span>
+        <button id="cpgNext">Next round &rarr;</button>
+        <span id="cpgScore">Score 0</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · CALL/PUT SORTER (interactive) -->
+<section id="bet-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Which side does each clue describe?</h2>
+      <p class="lead" style="margin:0 auto">Tap a clue, then tap the side it belongs to. Some describe a call (betting up), some describe a put (betting down).</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="call">Right to BUY at the strike</button>
+        <button class="chip" data-bucket="call">You profit if the price rises</button>
+        <button class="chip" data-bucket="call">Like a coupon locking a low price</button>
+        <button class="chip" data-bucket="put">Right to SELL at the strike</button>
+        <button class="chip" data-bucket="put">You profit if the price falls</button>
+        <button class="chip" data-bucket="put">Like insurance against a drop</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="call">
+          <h4>&#128994; Call (betting UP)</h4><div class="sub">The right to buy</div>
+          <div class="drop" id="dropCall"></div>
+        </div>
+        <div class="col gamble" data-bucket="put">
+          <h4>&#128308; Put (betting DOWN)</h4><div class="sub">The right to sell</div>
+          <div class="drop" id="dropPut"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a clue to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions on calls, puts, and the contract. Show me it clicked.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="0">
+        <h4>1. A call option gives you the right to:</h4>
+        <button class="opt" data-idx="0">Buy a stock at a set price</button>
+        <button class="opt" data-idx="1">Sell a stock at a set price</button>
+        <button class="opt" data-idx="2">Get a refund on a bad stock</button>
+        <button class="opt" data-idx="3">Collect a guaranteed dividend</button>
+        <div class="exp">A call is the right to BUY at the strike price. You buy calls when you expect the price to rise.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. If you buy a put option, you profit when the stock price:</h4>
+        <button class="opt" data-idx="0">Goes UP</button>
+        <button class="opt" data-idx="1">Goes DOWN</button>
+        <button class="opt" data-idx="2">Stays exactly the same</button>
+        <button class="opt" data-idx="3">Pays a dividend</button>
+        <div class="exp">A put gains value as the stock falls, so put buyers profit from downward moves.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. You expect a company to do great and its stock to climb. Which fits your view?</h4>
+        <button class="opt" data-idx="0">Buy a put</button>
+        <button class="opt" data-idx="1">Sell all your stock</button>
+        <button class="opt" data-idx="2">Buy a call</button>
+        <button class="opt" data-idx="3">Do nothing at all</button>
+        <div class="exp">A bullish outlook fits buying a call, which profits if the price rises.</div>
+      </div>
+      <div class="q" data-correct="3">
+        <h4>4. What is the most a buyer can lose on an option they bought?</h4>
+        <button class="opt" data-idx="0">Their entire account</button>
+        <button class="opt" data-idx="1">Twice the premium</button>
+        <button class="opt" data-idx="2">Nothing, options are risk-free</button>
+        <button class="opt" data-idx="3">The premium they paid</button>
+        <div class="exp">When you buy an option, the premium is your maximum loss if it expires worthless.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>5. Why should beginners be cautious with options?</h4>
+        <button class="opt" data-idx="0">They add risk and complexity, and can expire worthless</button>
+        <button class="opt" data-idx="1">They never expire</button>
+        <button class="opt" data-idx="2">They always beat stocks</button>
+        <button class="opt" data-idx="3">They pay guaranteed income</button>
+        <div class="exp">Options have a deadline and can go to zero. Learn stocks first and practice on paper before using real money.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You Get Options Now</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>An option is a right, not an obligation, to buy or sell at a set price.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>A call bets the price goes UP; a put bets it goes DOWN.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Every contract has a strike, an expiration, and a premium.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Options are higher-risk. Keep it paper-trade practice for now.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 4.2</div><h3>Why Options Can Grow (or Vaporize) Fast</h3></div>
+      <span class="badge">See what that deadline really costs &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id":"hero","start":0.0,"end":23.304,"interactive":false,"label":"Calls and Puts Explained"},{"id":"option-basics","start":23.804,"end":56.156,"interactive":false,"label":"An Option Is a Contract"},{"id":"call-vs-put","start":56.656,"end":101.824,"interactive":false,"label":"Call or Put"},{"id":"call-or-put-game","start":102.324,"end":118.644,"interactive":true,"label":"Call or Put? Your Turn"},{"id":"bet-sorter","start":119.144,"end":138.344,"interactive":true,"label":"Sort the Clues"},{"id":"quiz","start":138.844,"end":149.5,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":150.0,"end":174.504,"interactive":false,"label":"You Get Options Now"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: call-or-put tap game (isolated) ---------- */
+(function(){
+  var game=document.getElementById('cpgGame'); if(!game) return;
+  var rounds=[
+    {desc:"You think Nike jumps after it reveals a big new product everyone's hyped about.",ans:"CALL",
+     why:"You expect the price UP, so a call fits. A call is the right to buy before it climbs."},
+    {desc:"You think a stock is about to fall hard after some rough news.",ans:"PUT",
+     why:"You expect the price DOWN, so a put fits. A put profits when the stock drops."},
+    {desc:"You want to profit if a stock drops.",ans:"PUT",
+     why:"Wanting to win on a fall points straight to a put, the right to sell."},
+    {desc:"You're bullish on Apple before a huge launch event and expect the price to climb.",ans:"CALL",
+     why:"Bullish means expecting up, and a call is the up bet."},
+    {desc:"You think Roblox will slide after a weak earnings report.",ans:"PUT",
+     why:"Expecting a slide is a down bet, so it's a put."},
+    {desc:"You're convinced Spotify will run higher into a big update and want to bet on the rise.",ans:"CALL",
+     why:"Betting on a rise is a call, the right to buy at the locked-in strike."}
+  ];
+  var i=0, score=0;
+  var desc=document.getElementById('cpgDesc'), why=document.getElementById('cpgWhy');
+  var callBtn=document.getElementById('cpgCall'), putBtn=document.getElementById('cpgPut');
+  var prog=document.getElementById('cpgProg'), sc=document.getElementById('cpgScore'), next=document.getElementById('cpgNext');
+  function render(){
+    var r=rounds[i];
+    desc.textContent=r.desc;
+    why.className='cpg-why'; why.textContent='';
+    callBtn.disabled=false; putBtn.disabled=false;
+    callBtn.className='cpg-btn'; putBtn.className='cpg-btn';
+    callBtn.setAttribute('data-pick','CALL'); putBtn.setAttribute('data-pick','PUT');
+    prog.textContent='Round '+(i+1)+' of '+rounds.length;
+    sc.textContent='Score '+score;
+    next.className='';
+  }
+  function answer(pick){
+    if(callBtn.disabled) return;
+    var r=rounds[i]; var correct=(pick===r.ans);
+    if(correct) score++;
+    callBtn.disabled=true; putBtn.disabled=true;
+    var chosen=pick==='CALL'?callBtn:putBtn;
+    var rightBtn=r.ans==='CALL'?callBtn:putBtn;
+    rightBtn.classList.add('right');
+    if(!correct) chosen.classList.add('wrong');
+    why.textContent=(correct?'Correct! ':'Not quite. ')+r.why;
+    why.classList.add('show');
+    sc.textContent='Score '+score;
+    if(i<rounds.length-1){ next.classList.add('show'); }
+    else { next.textContent='Done · '+score+'/'+rounds.length+' ✓'; next.classList.add('show'); }
+  }
+  callBtn.addEventListener('click',function(){answer('CALL');});
+  putBtn.addEventListener('click',function(){answer('PUT');});
+  next.addEventListener('click',function(){
+    if(i<rounds.length-1){ i++; render(); }
+    else { next.classList.remove('show'); why.textContent='Nice — you matched every outlook to the right contract. That is the whole idea.'; why.classList.add('show'); }
+  });
+  render();
+})();
+</script>
+<style id="fta-anim">
+@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
+@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
+.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
+</style>
+<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
+</body>
+</html>

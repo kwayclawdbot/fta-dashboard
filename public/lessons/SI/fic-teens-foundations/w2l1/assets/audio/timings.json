@@ -1,0 +1,49 @@
+{
+  "total_seconds": 125.424,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 13.8,
+      "dur": 13.8
+    },
+    {
+      "id": "one-candle",
+      "start": 14.3,
+      "end": 41.948,
+      "dur": 27.648
+    },
+    {
+      "id": "body-wick",
+      "start": 42.448,
+      "end": 74.296,
+      "dur": 31.848
+    },
+    {
+      "id": "candle-reader",
+      "start": 74.796,
+      "end": 88.164,
+      "dur": 13.368
+    },
+    {
+      "id": "who-won-sorter",
+      "start": 88.664,
+      "end": 100.52,
+      "dur": 11.856
+    },
+    {
+      "id": "quiz",
+      "start": 101.02,
+      "end": 107.284,
+      "dur": 6.264
+    },
+    {
+      "id": "bridge",
+      "start": 107.784,
+      "end": 125.136,
+      "dur": 17.352
+    }
+  ]
+}

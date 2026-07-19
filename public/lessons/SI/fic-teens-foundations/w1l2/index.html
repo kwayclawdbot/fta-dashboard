@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How the Market Works · SI-100 Teens · Module 1 · Lesson 1.2</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="1" />
+<meta name="fta-lesson" content="L1.2" />
+<meta name="fta-lesson-title" content="How the Stock Market Actually Works" />
+<meta name="fta-lesson-objectives" content="Define a stock as a unit of ownership|Trace a familiar brand to the public company behind it|Explain the market as a network of exchanges|Identify a stock's ticker symbol" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: reveal deck (self-contained) */
+  .rvgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px;max-width:860px;margin:24px auto 0}
+  .rvcard{position:relative;min-height:124px;border:1px solid var(--sand);border-radius:var(--r-lg);background:var(--card);box-shadow:var(--shadow-soft);cursor:pointer;padding:18px 18px 20px;text-align:left;font-family:var(--font-body);transition:transform .15s ease,border-color .15s ease}
+  .rvcard:hover{transform:translateY(-3px);border-color:var(--gold)}
+  .rvcard .rvfront{display:block;font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink)}
+  .rvcard .rvback{display:none;font-size:14px;color:var(--soft);line-height:1.5;margin-top:8px}
+  .rvcard .rvhint{position:absolute;right:14px;bottom:11px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold-600)}
+  .rvcard.flipped{background:linear-gradient(165deg,var(--gold-bg),var(--card));border-color:#FDE68A}
+  .rvcard.flipped .rvfront{font-size:15px}
+  .rvcard.flipped .rvback{display:block}
+  .rvcard.flipped .rvhint{display:none}
+  .rvfb{min-height:26px;margin-top:16px;text-align:center;font-weight:600;color:var(--soft)}
+  .rvfb.done{color:var(--green)}
+  .brandstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
+  .brandstrip img{width:100%;height:100%;object-fit:cover;display:block}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens · Module 1 · Lesson 1.2</div>
+      <h1 style="font-size:clamp(34px,6.6vw,60px);font-weight:900;line-height:1.02;margin:12px 0 12px">How the stock market actually works</h1>
+      <p class="lead">Roblox. Nike. Apple. You already know these companies. This lesson turns stuff you use every day into stuff you can actually own a piece of.</p>
+      <div class="badges">
+        <span class="badge"><b>7</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>2.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager at a kitchen counter with a laptop open to a simple stock watchlist" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · WHAT IS A STOCK -->
+<section id="own-a-slice">
+  <div class="inner">
+    <div class="anim"><div class="label">The Big Idea</div><h2 class="title">You can own a slice</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/own-a-slice.jpg" alt="A whole company icon splitting into many equal shares, with one slice highlighted in gold" /></div>
+      <div>
+        <p class="bigdef">A stock is a <span class="hi">share of ownership</span> in a real company. Buy one share and you literally own a tiny piece of it.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Price gains</span>
+            <h3>It can grow</h3>
+            <p>If the company does well and more people want in, your slice can be worth more than you paid.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Dividends</span>
+            <h3>It can pay you</h3>
+            <p>Some companies send shareholders a small cash payment, often each quarter, just for holding.</p>
+          </div>
+        </div>
+        <div class="insight">You don't need 100 shares to count. One share makes you a real part-owner, a shareholder.</div>
+      </div>
+    </div>
+    <div class="brandstrip anim d2"><img src="./assets/brands.jpg" alt="A game controller, a sneaker, and a smartphone each linked by a line to a public company building" /></div>
+  </div>
+</section>
+
+<!-- 3 · HOW TRADES HAPPEN -->
+<section id="how-trades-happen">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:740px;margin:0 auto">
+      <div class="label">The Matching System</div>
+      <h2 class="title">Not one building — a network</h2>
+      <p class="lead" style="margin:0 auto">The stock market isn't a place you walk into. It's a giant matching system that pairs buyers with sellers all day long.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/matching-engine.jpg" alt="Buy orders and sell orders streaming from two sides and pairing off in the middle" /></div>
+      <div>
+        <p class="bigdef">When you want to buy and someone wants to sell, <span class="hi">the market matches you</span>. That's the whole engine.</p>
+        <div class="insight">Every company gets a short <b>ticker symbol</b> so there's no mix-up. Apple is AAPL. Nike is NKE. That little code is how you find and trade it.</div>
+      </div>
+    </div>
+    <div class="brandstrip anim d2" style="aspect-ratio:16/6"><img src="./assets/exchanges-network.jpg" alt="Several exchange node icons connected by lines into a network map" /></div>
+  </div>
+</section>
+
+<!-- 4 · REVEAL DECK (bespoke interactive) -->
+<section id="market-words">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn · Flip to Learn</div>
+      <h2 class="title">Five words on every trading screen</h2>
+      <p class="lead" style="margin:0 auto">Tap each card to flip it and reveal what it means. Lock these in now and every screen you open later makes sense.</p>
+    </div>
+    <div class="rvgrid" id="rvGrid">
+      <button class="rvcard" data-rv><span class="rvfront">Stock</span><span class="rvback">A share of ownership in a company. Buy one and you own a tiny slice.</span><span class="rvhint">Tap to flip</span></button>
+      <button class="rvcard" data-rv><span class="rvfront">Ticker symbol</span><span class="rvback">A short code that names a stock, like AAPL for Apple or NKE for Nike.</span><span class="rvhint">Tap to flip</span></button>
+      <button class="rvcard" data-rv><span class="rvfront">Stock exchange</span><span class="rvback">A marketplace that matches buyers and sellers. The market is a network of these, not one building.</span><span class="rvhint">Tap to flip</span></button>
+      <button class="rvcard" data-rv><span class="rvfront">Dividend</span><span class="rvback">A cash payment some companies send shareholders just for holding, often every quarter. Not every company pays one.</span><span class="rvhint">Tap to flip</span></button>
+      <button class="rvcard" data-rv><span class="rvfront">Shareholder</span><span class="rvback">That's you, once you own even one share. You're a real part-owner of the company.</span><span class="rvhint">Tap to flip</span></button>
+    </div>
+    <div class="rvfb" id="rvFb">Tap a card to reveal it.</div>
+  </div>
+</section>
+
+<!-- 5 · REAL OR MYTH SORTER (interactive) -->
+<section id="myth-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Owning a share: real or myth?</h2>
+      <p class="lead" style="margin:0 auto">Tap a statement to pick it up, then tap the column where it belongs. A few of these trip people up.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="real">You own a tiny slice of the company</button>
+        <button class="chip" data-bucket="real">You can gain if the price rises</button>
+        <button class="chip" data-bucket="real">Some companies pay you a dividend</button>
+        <button class="chip" data-bucket="myth">You must buy 100 shares to be an owner</button>
+        <button class="chip" data-bucket="myth">One share lets you run the company</button>
+        <button class="chip" data-bucket="myth">Your money can never go down</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="real">
+          <h4>&#10003; Real</h4><div class="sub">True about owning a stock</div>
+          <div class="drop" id="dropReal"></div>
+        </div>
+        <div class="col gamble" data-bucket="myth">
+          <h4>&#10007; Myth</h4><div class="sub">Not how stocks actually work</div>
+          <div class="drop" id="dropMyth"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a statement to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Show me you can spot a real company and how the market moves.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What is a stock?</h4>
+        <button class="opt" data-idx="0">A loan you give to a company</button>
+        <button class="opt" data-idx="1">A share of ownership in a company</button>
+        <button class="opt" data-idx="2">A type of savings account</button>
+        <button class="opt" data-idx="3">A government tax refund</button>
+        <div class="exp">A stock is a share of ownership. Buy one and you own a tiny slice of the company behind a product you might already use.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. What is Apple's ticker symbol?</h4>
+        <button class="opt" data-idx="0">APPLE</button>
+        <button class="opt" data-idx="1">APL</button>
+        <button class="opt" data-idx="2">AAPL</button>
+        <button class="opt" data-idx="3">APPL</button>
+        <div class="exp">Apple trades under AAPL. A ticker is the short code that names a stock so there's no mix-up.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. What mostly moves a stock's price up or down?</h4>
+        <button class="opt" data-idx="0">The weather</button>
+        <button class="opt" data-idx="1">Supply and demand — buyers versus sellers</button>
+        <button class="opt" data-idx="2">The company's founding year</button>
+        <button class="opt" data-idx="3">The number of employees</button>
+        <div class="exp">More buyers than sellers pushes price up; more sellers than buyers pushes it down. That tug-of-war is the whole engine.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. What is the stock market, really?</h4>
+        <button class="opt" data-idx="0">One single building in New York where all stocks live</button>
+        <button class="opt" data-idx="1">A network of exchanges that matches buyers and sellers</button>
+        <button class="opt" data-idx="2">A government savings program</button>
+        <button class="opt" data-idx="3">A private club only for adults</button>
+        <div class="exp">It's not one building. It's a giant network of exchanges, a matching system pairing buyers and sellers all day.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>5. You buy 1 share of a company you love. Which is TRUE?</h4>
+        <button class="opt" data-idx="0">You now own a tiny slice and are a real shareholder</button>
+        <button class="opt" data-idx="1">You need at least 100 shares to own any of it</button>
+        <button class="opt" data-idx="2">The company must pay you back with interest</button>
+        <button class="opt" data-idx="3">Your money is guaranteed to grow</button>
+        <div class="exp">One share makes you a real part-owner. There's no 100-share minimum, and no investment is guaranteed to grow.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You Own The Idea Now</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>A stock is a share of ownership in a real company.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>You can own a piece of brands you already use.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The market is a network of exchanges, not one building.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Every stock has a ticker, and price moves on supply and demand.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 2.1</div><h3>Candlesticks &amp; Timeframes</h3></div>
+      <span class="badge">One candle = one battle. Learn to read it &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id":"hero","start":0.0,"end":18.96,"interactive":false,"label":"How the Market Works"},{"id":"own-a-slice","start":19.46,"end":49.124,"interactive":false,"label":"You Can Own a Slice"},{"id":"how-trades-happen","start":49.624,"end":76.936,"interactive":false,"label":"A Matching Network"},{"id":"market-words","start":77.436,"end":88.788,"interactive":true,"label":"Flip to Learn"},{"id":"myth-sorter","start":89.288,"end":102.296,"interactive":true,"label":"Real or Myth?"},{"id":"quiz","start":102.796,"end":109.852,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":110.352,"end":133.416,"interactive":false,"label":"You Own the Idea"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: reveal deck (isolated) ---------- */
+(function(){
+  var grid=document.getElementById('rvGrid'); if(!grid) return;
+  var cards=Array.prototype.slice.call(grid.querySelectorAll('.rvcard'));
+  var fb=document.getElementById('rvFb'), seen=0, N=cards.length;
+  cards.forEach(function(c){
+    c.addEventListener('click',function(){
+      var nowFlipped=c.classList.toggle('flipped');
+      if(nowFlipped && !c.dataset.seen){ c.dataset.seen='1'; seen++;
+        if(fb){
+          if(seen>=N){ fb.textContent='All '+N+' flipped — vocab unlocked.'; fb.classList.add('done'); }
+          else fb.textContent='Flipped '+seen+' of '+N+'.';
+        }
+      }
+    });
+  });
+})();
+</script>
+<style id="fta-anim">
+@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
+@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
+.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
+</style>
+<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
+</body>
+</html>

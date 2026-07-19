@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chart Patterns &amp; Indicators · SI-100 Teens · Module 3 · Lesson 3.1</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="3" />
+<meta name="fta-lesson" content="L3.1" />
+<meta name="fta-lesson-title" content="Chart Patterns &amp; Indicators" />
+<meta name="fta-lesson-objectives" content="Tell a reversal pattern from a continuation pattern|Read a double bottom, double top, flag and breakout|Layer a moving average, RSI and volume on price|Use patterns and indicators as clues, not certainties" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* inline SVG pattern diagram card */
+  .svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
+  .svgcard svg{width:100%;height:auto;display:block}
+  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
+  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .imgrow{max-width:820px;margin:22px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .imgrow figure{margin:0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/10}
+  .imgrow img{width:100%;height:100%;object-fit:cover;display:block}
+  @media(max-width:640px){.imgrow{grid-template-columns:1fr}}
+  /* bespoke: name-that-pattern tap game */
+  .ntpg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .ntpdesc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:78px}
+  .ntpbtns{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  @media(max-width:520px){.ntpbtns{grid-template-columns:1fr}}
+  .ntpbtn{font-family:var(--font-display);font-weight:700;font-size:16px;padding:16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+  .ntpbtn:hover{border-color:var(--green-2);background:var(--green-bg)}
+  .ntpbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+  .ntpbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+  .ntpbtn:disabled{cursor:default}
+  .ntpwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+  .ntpwhy.show{display:block}
+  .ntpfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
+  #ntpNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+  #ntpNext.show{display:inline-block}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens · Module 3 · Lesson 3.1</div>
+      <h1 style="font-size:clamp(36px,7vw,62px);font-weight:900;line-height:1.02;margin:12px 0 12px">Chart patterns &amp; indicators</h1>
+      <p class="lead">A chart can look like chaos. But the same shapes show up again and again, because crowds repeat themselves. Learn to name those shapes, then layer a few simple math helpers on top to read what the crowd is really doing.</p>
+      <div class="badges">
+        <span class="badge"><b>7</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>4</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager at a desk studying a chart covered in simple pattern shapes" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · PATTERNS -->
+<section id="patterns">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Shapes the Crowd Draws</div>
+      <h2 class="title">Patterns are repeatable shapes</h2>
+      <p class="lead" style="margin:0 auto">A pattern is a shape a crowd keeps drawing on a chart. Some flip the trend (reversal). Some just pause it, then keep going (continuation).</p>
+    </div>
+    <div class="svgcard anim d1">
+      <svg viewBox="0 0 680 300" role="img" aria-label="A double bottom W shape beside a double top M shape">
+        <!-- floor line for W -->
+        <line x1="40" y1="230" x2="300" y2="230" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <polyline points="50,80 110,230 170,150 230,230 290,70" fill="none" stroke="#16A34A" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="110" cy="230" r="6" fill="#16A34A"/>
+        <circle cx="230" cy="230" r="6" fill="#16A34A"/>
+        <text x="170" y="278" font-family="Poppins,sans-serif" font-size="15" font-weight="800" fill="#16A34A" text-anchor="middle">Double bottom (W) · reversal up</text>
+        <!-- ceiling line for M -->
+        <line x1="380" y1="72" x2="640" y2="72" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <polyline points="390,220 440,72 510,150 580,72 630,220" fill="none" stroke="#DC2626" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="440" cy="72" r="6" fill="#DC2626"/>
+        <circle cx="580" cy="72" r="6" fill="#DC2626"/>
+        <text x="510" y="278" font-family="Poppins,sans-serif" font-size="15" font-weight="800" fill="#DC2626" text-anchor="middle">Double top (M) · reversal down</text>
+      </svg>
+    </div>
+    <div class="two anim d2">
+      <div class="cmp grow">
+        <span class="tag">Reversal</span>
+        <h3>The trend flips</h3>
+        <p>A double bottom (that W) hints a fall is turning into a rise. A double top (the M) warns a rise may be turning into a drop.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">Continuation</span>
+        <h3>The trend rests, then runs</h3>
+        <p>A flag is a tight little pause right after a big move, like the stock catching its breath before it keeps going the same way.</p>
+      </div>
+    </div>
+    <div class="imgstrip anim d2"><img src="./assets/patterns.jpg" alt="A green W shape beside a red M shape as two chart patterns" /></div>
+    <div class="define anim d3" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/breakout.jpg" alt="A price line punching up through a ceiling on a breakout" /></div>
+      <div>
+        <p class="bigdef">A <span class="hi">breakout</span> is price finally punching through a ceiling it was stuck under.</p>
+        <div class="insight">When price breaks a level it had been rejected at before, traders watch to see if the crowd follows through. A break with a big crowd behind it means more than a quiet one.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · INDICATORS -->
+<section id="indicators">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Three Simple Helpers</div>
+      <h2 class="title">Indicators layer math on price</h2>
+      <p class="lead" style="margin:0 auto">Patterns read the shape. Indicators are simple math helpers drawn right on the price to confirm what you see.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/moving-average.jpg" alt="A jagged price line with a smooth average line running through it" /></div>
+      <div>
+        <p class="bigdef">A <span class="hi">moving average</span> is the average price drawn as one smooth line.</p>
+        <div class="insight">It cuts through the day-to-day noise so the trend direction is easy to see. A rising average points up; a falling one points down.</div>
+      </div>
+    </div>
+    <div class="two anim d2">
+      <div class="cmp grow">
+        <span class="tag">RSI · momentum</span>
+        <h3>The rubber band</h3>
+        <p>Stretch price too far, too fast, and momentum gets tight, possibly overbought or oversold, and tends to snap back. RSI measures how stretched it is. A clue, not a promise.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">Volume · conviction</span>
+        <h3>Size of the crowd</h3>
+        <p>Volume is how many shares actually traded. A move on huge volume has real conviction. The same move on a thin, quiet day is easy to doubt.</p>
+      </div>
+    </div>
+    <div class="disclaim anim d2">These shapes, curves, and gauges are <b>illustrative teaching pictures, not a forecast or a promise</b>. Patterns and indicators are clues you use to confirm an idea, never crystal balls.</div>
+    <div class="imgrow anim d3">
+      <figure><img src="./assets/rsi-gauge.jpg" alt="A stretched rubber band as a metaphor for momentum snapping back" /></figure>
+      <figure><img src="./assets/volume-bars.jpg" alt="A row of volume bars under a price line showing the size of the crowd" /></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · NAME THAT PATTERN (bespoke interactive) -->
+<section id="name-that-pattern">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn · Name That Pattern</div>
+      <h2 class="title">Which shape is price drawing?</h2>
+      <p class="lead" style="margin:0 auto">I'll describe what price is doing. You tap the pattern that matches. Read the clue, make the call, and see if you nailed it.</p>
+    </div>
+    <div class="ntpg anim d1" id="ntpGame">
+      <div class="ntpdesc" id="ntpDesc">Loading round…</div>
+      <div class="ntpbtns">
+        <button class="ntpbtn" data-pat="DB" id="patDB">&#128994; Double bottom (W)</button>
+        <button class="ntpbtn" data-pat="DT" id="patDT">&#128308; Double top (M)</button>
+        <button class="ntpbtn" data-pat="FLAG" id="patFLAG">&#127937; Flag (pause)</button>
+        <button class="ntpbtn" data-pat="BREAK" id="patBREAK">&#128640; Breakout</button>
+      </div>
+      <div class="ntpwhy" id="ntpWhy"></div>
+      <div class="ntpfoot">
+        <span id="ntpProg">Round 1 of 5</span>
+        <button id="ntpNext">Next round &rarr;</button>
+        <span id="ntpScore">Score 0</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · BULLISH / BEARISH SORTER (interactive) -->
+<section id="signal-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Bullish or bearish signal?</h2>
+      <p class="lead" style="margin:0 auto">Tap a clue, then tap the side the crowd is leaning. Some point to the buyers taking over, some to the sellers.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="bull">Price breaks above resistance on heavy volume</button>
+        <button class="chip" data-bucket="bull">A double bottom breaks up above its middle peak</button>
+        <button class="chip" data-bucket="bull">A short moving average crosses above a long one</button>
+        <button class="chip" data-bucket="bear">A double top rolls over after two rejections</button>
+        <button class="chip" data-bucket="bear">Price cracks below support on heavy selling</button>
+        <button class="chip" data-bucket="bear">A short moving average crosses below a long one</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="bull">
+          <h4>&#128994; Bullish signal</h4><div class="sub">Buyers taking the rope</div>
+          <div class="drop" id="dropBull"></div>
+        </div>
+        <div class="col gamble" data-bucket="bear">
+          <h4>&#128308; Bearish signal</h4><div class="sub">Sellers taking the rope</div>
+          <div class="drop" id="dropBear"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a clue to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Read each one like a real chart in front of you.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. A stock falls, dips to the same floor twice forming a "W", then pushes up above the middle peak. This double bottom is:</h4>
+        <button class="opt" data-idx="0">A continuation — the fall keeps going</button>
+        <button class="opt" data-idx="1">A reversal that hints a fall is turning into a rise</button>
+        <button class="opt" data-idx="2">A guaranteed profit</button>
+        <button class="opt" data-idx="3">A dividend payment</button>
+        <div class="exp">A double bottom (the W) is a reversal up: price held the same floor twice and buyers took back control.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>2. Price rallies to the same ceiling twice, gets rejected both times forming an "M", then rolls over. A double top warns of:</h4>
+        <button class="opt" data-idx="0">A rise that may be turning into a drop</button>
+        <button class="opt" data-idx="1">A price that will rise forever</button>
+        <button class="opt" data-idx="2">Volume no longer mattering</button>
+        <button class="opt" data-idx="3">A stock split</button>
+        <div class="exp">A double top (the M) is a reversal down: two rejections at the same ceiling warn the rise may be flipping to a fall.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. What does a moving average do to a jagged price line?</h4>
+        <button class="opt" data-idx="0">Counts how many shares traded</button>
+        <button class="opt" data-idx="1">Smooths the average price so the trend is easier to see</button>
+        <button class="opt" data-idx="2">Predicts tomorrow's exact price</button>
+        <button class="opt" data-idx="3">Sets the company's dividend</button>
+        <div class="exp">A moving average draws the average price as one smooth line, cutting the noise so the trend direction stands out.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>4. RSI pushes up near the top of its range and the rally stalls. That stretched reading is a clue the stock might be:</h4>
+        <button class="opt" data-idx="0">Possibly overbought and due to cool off</button>
+        <button class="opt" data-idx="1">Guaranteed to double from here</button>
+        <button class="opt" data-idx="2">Paying a dividend today</button>
+        <button class="opt" data-idx="3">Closed for trading</button>
+        <div class="exp">A high RSI is like a stretched rubber band: the move may be overheated and tend to snap back. It's a clue about momentum, not a promise.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. A stock breaks above resistance. What makes that breakout more believable?</h4>
+        <button class="opt" data-idx="0">It happened on a quiet, low-volume day</button>
+        <button class="opt" data-idx="1">A surge of volume — a big crowd — is behind the move</button>
+        <button class="opt" data-idx="2">The company changed its logo</button>
+        <button class="opt" data-idx="3">Nothing can ever confirm a breakout</button>
+        <div class="exp">Volume is the proof. A breakout backed by a big crowd is far more trustworthy than one on thin, quiet volume.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You Can Read the Chart</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Reversal patterns flip the trend; continuation patterns pause it, then it runs.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Double bottom = W (rise); double top = M (drop); flag = pause; breakout = punch through.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Moving average smooths the trend, RSI reads momentum, volume shows conviction.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Patterns and indicators are clues for confirmation, never crystal balls.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 3.2</div><h3>Earnings &amp; Catalysts — Why Stocks Move</h3></div>
+      <span class="badge">The news that lights the fuse &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id":"hero","start":0.0,"end":28.008,"interactive":false,"label":"Chart Patterns & Indicators"},{"id":"patterns","start":28.508,"end":84.764,"interactive":false,"label":"Patterns: Shapes the Crowd Draws"},{"id":"indicators","start":85.264,"end":161.872,"interactive":false,"label":"Indicators: Math Helpers on Price"},{"id":"name-that-pattern","start":162.372,"end":177.54,"interactive":true,"label":"Name That Pattern"},{"id":"signal-sorter","start":178.04,"end":194.288,"interactive":true,"label":"Bullish or Bearish?"},{"id":"quiz","start":194.788,"end":202.588,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":203.088,"end":233.256,"interactive":false,"label":"You Can Read the Chart"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: name-that-pattern tap game (isolated) ---------- */
+(function(){
+  var game=document.getElementById('ntpGame'); if(!game) return;
+  var rounds=[
+    {desc:"Price falls hard, then dips to the same floor twice, holds, and pushes up above the little peak between the two lows.",ans:"DB",
+     why:"That W shape is a double bottom, a reversal up. The buyers grabbed the rope back."},
+    {desc:"Price rallies to the same ceiling twice, gets rejected both times, and starts rolling over.",ans:"DT",
+     why:"That M shape is a double top, a reversal down. Sellers took control at the ceiling."},
+    {desc:"After a big run up, price goes quiet and drifts sideways in a tight little pause, then continues higher.",ans:"FLAG",
+     why:"A flag is a continuation. The stock caught its breath, then kept trending the same way."},
+    {desc:"Price has been stuck under a ceiling for a while, then punches up through it on a surge of volume.",ans:"BREAK",
+     why:"A breakout, and the big volume crowd behind it makes the move believable."},
+    {desc:"Price squeezes into a tight coil in the middle of a strong uptrend, then breaks out and keeps climbing.",ans:"FLAG",
+     why:"Another continuation. A tight pause like a flag or pennant, then the trend resumes."}
+  ];
+  var PATS={DB:"Double bottom (W)",DT:"Double top (M)",FLAG:"Flag (pause)",BREAK:"Breakout"};
+  var i=0, score=0;
+  var desc=document.getElementById('ntpDesc'), why=document.getElementById('ntpWhy');
+  var btns=Array.prototype.slice.call(game.querySelectorAll('.ntpbtn'));
+  var prog=document.getElementById('ntpProg'), sc=document.getElementById('ntpScore'), next=document.getElementById('ntpNext');
+  function render(){
+    var r=rounds[i];
+    desc.textContent=r.desc;
+    why.className='ntpwhy'; why.textContent='';
+    btns.forEach(function(b){ b.disabled=false; b.className='ntpbtn'; });
+    prog.textContent='Round '+(i+1)+' of '+rounds.length;
+    sc.textContent='Score '+score;
+    next.className='';
+  }
+  function answer(pat, btn){
+    if(btns[0].disabled) return;
+    var r=rounds[i]; var correct=(pat===r.ans);
+    if(correct) score++;
+    btns.forEach(function(b){ b.disabled=true; });
+    var rightBtn=game.querySelector('.ntpbtn[data-pat="'+r.ans+'"]');
+    if(rightBtn) rightBtn.classList.add('right');
+    if(!correct && btn) btn.classList.add('wrong');
+    why.textContent=(correct?'Nailed it! ':'Not quite. It was a '+PATS[r.ans]+'. ')+r.why;
+    why.classList.add('show');
+    sc.textContent='Score '+score;
+    next.textContent=(i<rounds.length-1)?'Next round →':('Done · '+score+'/'+rounds.length+' ✓');
+    next.classList.add('show');
+  }
+  btns.forEach(function(b){ b.addEventListener('click',function(){ answer(b.getAttribute('data-pat'), b); }); });
+  next.addEventListener('click',function(){
+    if(i<rounds.length-1){ i++; render(); }
+    else { next.classList.remove('show'); why.textContent='Nice work. Four shapes, read cold. That is the skill.'; why.classList.add('show'); }
+  });
+  render();
+})();
+</script>
+<style id="fta-anim">
+@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
+@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
+.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
+</style>
+<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
+</body>
+</html>

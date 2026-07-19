@@ -1,0 +1,49 @@
+{
+  "total_seconds": 174.792,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 23.304,
+      "dur": 23.304
+    },
+    {
+      "id": "option-basics",
+      "start": 23.804,
+      "end": 56.156,
+      "dur": 32.352
+    },
+    {
+      "id": "call-vs-put",
+      "start": 56.656,
+      "end": 101.824,
+      "dur": 45.168
+    },
+    {
+      "id": "call-or-put-game",
+      "start": 102.324,
+      "end": 118.644,
+      "dur": 16.32
+    },
+    {
+      "id": "bet-sorter",
+      "start": 119.144,
+      "end": 138.344,
+      "dur": 19.2
+    },
+    {
+      "id": "quiz",
+      "start": 138.844,
+      "end": 149.5,
+      "dur": 10.656
+    },
+    {
+      "id": "bridge",
+      "start": 150.0,
+      "end": 174.504,
+      "dur": 24.504
+    }
+  ]
+}

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Earnings &amp; Catalysts &middot; SI-100 Teens &middot; Module 3 &middot; Lesson 3.2</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="3" />
+<meta name="fta-lesson" content="L3.2" />
+<meta name="fta-lesson-title" content="Earnings &amp; Catalysts — Why Stocks Move" />
+<meta name="fta-lesson-objectives" content="Define a catalyst and name common ones|Explain why a stock can beat earnings and still fall|Use expectations versus surprise to predict a reaction|Separate real catalysts from market noise" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  .svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
+  .svgcard svg{width:100%;height:auto;display:block}
+  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
+  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  /* animated expectations-vs-result bars */
+  .bar{transform-box:fill-box;transform-origin:bottom center;transform:scaleY(0)}
+  .svgcard.play .bar{animation:grow .9s cubic-bezier(.2,.8,.2,1) forwards}
+  .svgcard.play .bar.b2{animation-delay:.25s}
+  @keyframes grow{to{transform:scaleY(1)}}
+  .surprise{opacity:0}
+  .svgcard.play .surprise{animation:fadein .5s ease .95s forwards}
+  @keyframes fadein{to{opacity:1}}
+  .pulse{transform-box:fill-box;transform-origin:center;animation:pl 1.6s ease-in-out infinite}
+  @keyframes pl{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  /* bespoke: reaction tap game (3 outcomes) */
+  .rg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .rgdesc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:74px}
+  .rgbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+  .rgbtn{font-family:var(--font-display);font-weight:700;font-size:15px;padding:15px 10px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+  .rgbtn[data-a="POP"]:hover{border-color:var(--green-2);background:var(--green-bg)}
+  .rgbtn[data-a="DUMP"]:hover{border-color:var(--red-2);background:var(--red-bg)}
+  .rgbtn[data-a="FLAT"]:hover{border-color:#CBB994;background:var(--gold-bg)}
+  .rgbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+  .rgbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+  .rgbtn:disabled{cursor:default}
+  .rgwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+  .rgwhy.show{display:block}
+  .rgfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
+  #rgNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+  #rgNext.show{display:inline-block}
+  @media(max-width:520px){.rgbtns{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens &middot; Module 3 &middot; Lesson 3.2</div>
+      <h1 style="font-size:clamp(34px,7vw,60px);font-weight:900;line-height:1.03;margin:12px 0 12px">Why stocks suddenly move</h1>
+      <p class="lead">A stock rips ten percent overnight, or tanks, and everyone asks the same thing: why? The answer is almost always news. Learn how a headline becomes a price.</p>
+      <div class="badges">
+        <span class="badge"><b>7</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>2.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager reacting with excitement to a phone showing a stock chart spiking on breaking news" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · CATALYSTS -->
+<section id="catalysts">
+  <div class="inner">
+    <div class="anim"><div class="label">The Spark</div><h2 class="title">Meet the catalyst</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/earnings-report.jpg" alt="A phone showing a company earnings report next to a jumping stock chart" /></div>
+      <div>
+        <p class="bigdef">A <span class="hi">catalyst</span> is news or an event big enough to shake a price loose.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Common catalysts</span>
+            <h3>These move stocks</h3>
+            <p>Earnings reports, a new product launch, a big partnership, a lawsuit, a surprise from the CEO.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Why it matters</span>
+            <h3>Action lives here</h3>
+            <p>Traders circle these dates on the calendar. No catalyst, and a stock usually just drifts sideways.</p>
+          </div>
+        </div>
+        <div class="insight">Think of companies you already know. When a phone maker, a sneaker brand, or a streaming service drops a report, the chart reacts almost instantly.</div>
+      </div>
+    </div>
+    <div class="imgstrip anim d2"><img src="./assets/news-cycle.jpg" alt="A loop from breaking news to traders to a moving stock chart and back" /></div>
+  </div>
+</section>
+
+<!-- 3 · EARNINGS MOVE (animated SVG) -->
+<section id="earnings-move">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Beat, Miss or Priced In</div>
+      <h2 class="title">Price moves on the surprise</h2>
+      <p class="lead" style="margin:0 auto">A company can post great numbers and still drop. The secret is expectations. Watch the gap between what the crowd expected and what actually happened.</p>
+    </div>
+    <div class="svgcard anim d1" id="svgEarn">
+      <svg viewBox="0 0 680 320" role="img" aria-label="Illustrative bar chart comparing what investors expected versus the actual result, with the surprise gap driving the price move">
+        <line x1="60" y1="40" x2="60" y2="250" stroke="#EAE2D0" stroke-width="2"/>
+        <line x1="60" y1="250" x2="640" y2="250" stroke="#EAE2D0" stroke-width="2"/>
+        <!-- expected bar (gray, shorter) -->
+        <rect class="bar" x="140" y="150" width="120" height="100" rx="6" fill="#B7AE9A"/>
+        <text x="200" y="272" font-family="Poppins,sans-serif" font-size="15" font-weight="700" fill="#5B6472" text-anchor="middle">Expected</text>
+        <!-- actual bar (green, taller = a beat) -->
+        <rect class="bar b2" x="420" y="80" width="120" height="170" rx="6" fill="#22C55E"/>
+        <text x="480" y="272" font-family="Poppins,sans-serif" font-size="15" font-weight="700" fill="#16A34A" text-anchor="middle">Actual result</text>
+        <!-- surprise bracket -->
+        <g class="surprise">
+          <line x1="300" y1="150" x2="380" y2="150" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="300" y1="80" x2="380" y2="80" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <g class="pulse">
+            <rect x="292" y="96" width="96" height="38" rx="10" fill="#FEF3C7" stroke="#FDE68A"/>
+            <text x="340" y="120" font-family="Poppins,sans-serif" font-size="14" font-weight="800" fill="#7a4d06" text-anchor="middle">SURPRISE</text>
+          </g>
+        </g>
+        <text x="340" y="300" font-family="Inter,sans-serif" font-size="12.5" font-weight="600" fill="#98A2B3" text-anchor="middle">Illustrative — not a forecast or a promise.</text>
+      </svg>
+    </div>
+    <div class="disclaim anim d1">Illustrative example. Bar heights are made up to show the idea, not real numbers.</div>
+    <div class="define anim d2" style="margin-top:22px">
+      <div>
+        <div class="two">
+          <div class="cmp grow"><span class="tag">Beat</span><h3>Actual &gt; expected</h3><p>A positive surprise. The stock usually pops.</p></div>
+          <div class="cmp gamble"><span class="tag">Miss</span><h3>Actual &lt; expected</h3><p>A letdown. The stock usually dumps, even if profit still grew.</p></div>
+        </div>
+        <div class="insight">When people say a result was <span class="hi">already priced in</span>, they mean the good news was expected, so it was baked into the price before the report even landed.</div>
+      </div>
+      <div class="define-art"><img src="./assets/hype-to-price.jpg" alt="A megaphone and hype turning into a stock price spike" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · REACTION GAME (bespoke) -->
+<section id="react-game">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn &middot; Read the Reaction</div>
+      <h2 class="title">Pop, dump, or barely move?</h2>
+      <p class="lead" style="margin:0 auto">I describe a scenario. You predict the reaction. Focus on the surprise versus what was expected, not just whether the news sounds good.</p>
+    </div>
+    <div class="imgstrip anim d1" style="max-width:720px;aspect-ratio:16/5"><img src="./assets/catalyst-vs-noise.jpg" alt="A rocket as a big market mover beside faint static as market noise" /></div>
+    <div class="rg anim d2" id="rgGame">
+      <div class="rgdesc" id="rgDesc">Loading round&hellip;</div>
+      <div class="rgbtns">
+        <button class="rgbtn" data-a="POP" id="rgPop">&#128640; Pop (up)</button>
+        <button class="rgbtn" data-a="DUMP" id="rgDump">&#128201; Dump (down)</button>
+        <button class="rgbtn" data-a="FLAT" id="rgFlat">&#10132; Barely moves</button>
+      </div>
+      <div class="rgwhy" id="rgWhy"></div>
+      <div class="rgfoot">
+        <span id="rgProg">Round 1 of 5</span>
+        <button id="rgNext">Next round &rarr;</button>
+        <span id="rgScore">Score 0</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · SORTER -->
+<section id="headline-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Catalyst or just noise?</h2>
+      <p class="lead" style="margin:0 auto">Tap a headline, then tap the bucket it belongs in. Some can really move a price. Some are background chatter.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="catalyst">Company reports earnings tonight</button>
+        <button class="chip" data-bucket="catalyst">Surprise recall of millions of products</button>
+        <button class="chip" data-bucket="catalyst">A major new product launches Friday</button>
+        <button class="chip" data-bucket="noise">A random person online says buy</button>
+        <button class="chip" data-bucket="noise">The company tweaked its logo color</button>
+        <button class="chip" data-bucket="noise">It is the stock&rsquo;s third birthday</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="catalyst">
+          <h4>&#128640; Catalyst</h4><div class="sub">Can move the price</div>
+          <div class="drop" id="dropCatalyst"></div>
+        </div>
+        <div class="col gamble" data-bucket="noise">
+          <h4>&#128173; Noise</h4><div class="sub">Traders scroll past it</div>
+          <div class="drop" id="dropNoise"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a headline to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Prove you can read what moves a stock.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What is a &ldquo;catalyst&rdquo; in the stock market?</h4>
+        <button class="opt" data-idx="0">A fee your broker charges</button>
+        <button class="opt" data-idx="1">News or an event big enough to move a stock fast</button>
+        <button class="opt" data-idx="2">The lowest price a stock hit this year</button>
+        <button class="opt" data-idx="3">A type of savings account</button>
+        <div class="exp">A catalyst is news or an event, like an earnings report or a product launch, that can move a stock quickly.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>2. A company reports strong earnings, but the stock DROPS. What is the most likely reason?</h4>
+        <button class="opt" data-idx="0">Investors expected even better numbers, so the result disappointed</button>
+        <button class="opt" data-idx="1">Strong earnings always make a stock fall</button>
+        <button class="opt" data-idx="2">The company paid a dividend that day</button>
+        <button class="opt" data-idx="3">The stock market was closed</button>
+        <div class="exp">Price moves on the surprise versus expectations. If the crowd expected more, even good results disappoint. It was already priced in.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. What does EPS (earnings per share) tell you?</h4>
+        <button class="opt" data-idx="0">How many shares exist</button>
+        <button class="opt" data-idx="1">How much profit the company made per share of stock</button>
+        <button class="opt" data-idx="2">The stock&rsquo;s highest price ever</button>
+        <button class="opt" data-idx="3">The date of the next dividend</button>
+        <div class="exp">EPS is profit divided by the number of shares. Higher EPS generally means a more profitable company.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>4. A HIGH price-to-earnings (P/E) ratio usually means investors are:</h4>
+        <button class="opt" data-idx="0">Paying more for each dollar of earnings, often betting on future growth</button>
+        <button class="opt" data-idx="1">Getting the stock for free</button>
+        <button class="opt" data-idx="2">Sure the company will fail</button>
+        <button class="opt" data-idx="3">Being charged a penalty fee</button>
+        <div class="exp">A high P/E means investors pay more per dollar of earnings, usually because they expect strong growth ahead.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. Why check trading VOLUME when a stock jumps on news?</h4>
+        <button class="opt" data-idx="0">Volume sets the company&rsquo;s dividend</button>
+        <button class="opt" data-idx="1">High volume shows lots of traders agree, so the move is more believable</button>
+        <button class="opt" data-idx="2">Volume tells you the company&rsquo;s age</button>
+        <button class="opt" data-idx="3">Volume replaces the need for a chart</button>
+        <div class="exp">A big move on strong volume means real conviction. The same move on weak volume is easy to distrust.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">The News Cycle</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>A catalyst is the news or event that moves a stock fast.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Price moves on the surprise, not just the result.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Good news can still drop a stock if it was priced in.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Volume tells you whether a move is for real.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Week 4</div><h3>Options: Big Swings, Big Risk</h3></div>
+      <span class="badge">See how a catalyst can supercharge a trade &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 19.008, "interactive": false, "label": "Why Stocks Move"}, {"id": "catalysts", "start": 19.508, "end": 50.012, "interactive": false, "label": "Catalysts"}, {"id": "earnings-move", "start": 50.512, "end": 89.224, "interactive": false, "label": "Beat, Miss or Priced In"}, {"id": "react-game", "start": 89.724, "end": 103.092, "interactive": true, "label": "Read the Reaction"}, {"id": "headline-sorter", "start": 103.592, "end": 120.944, "interactive": true, "label": "Catalyst or Noise"}, {"id": "quiz", "start": 121.444, "end": 127.66, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 128.16, "end": 148.512, "interactive": false, "label": "The News Cycle"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- animated earnings SVG: play on section enter ---------- */
+(function(){
+  var card=document.getElementById('svgEarn'); if(!card) return;
+  function play(){ card.classList.add('play'); }
+  document.addEventListener('fta:section',function(e){
+    var id=(e&&e.detail&&(e.detail.id||e.detail.section))||'';
+    if(id==='earnings-move') play();
+  });
+  // safety: also play if it is already on screen for a moment
+  setTimeout(function(){ var r=card.getBoundingClientRect(); if(r.top<window.innerHeight&&r.bottom>0) play(); },1200);
+})();
+/* ---------- bespoke: reaction tap game (isolated) ---------- */
+(function(){
+  var game=document.getElementById('rgGame'); if(!game) return;
+  var rounds=[
+    {desc:"A phone company crushes it, selling way more phones than Wall Street expected.",ans:"POP",
+     why:"Actual beat expectations by a lot. That positive surprise pops the stock."},
+    {desc:"A streaming service adds new subscribers, but fewer than the huge number analysts predicted.",ans:"DUMP",
+     why:"It grew, but it missed high expectations. The letdown sinks it. That is priced in in action."},
+    {desc:"A sneaker brand reports earnings exactly in line with what everyone expected. No surprises.",ans:"FLAT",
+     why:"No surprise, no fuel. When reality matches expectations, price barely budges."},
+    {desc:"A car company announces a surprise recall of millions of vehicles that nobody saw coming.",ans:"DUMP",
+     why:"A nasty surprise out of nowhere. Bad catalyst, price drops."},
+    {desc:"A game company beats earnings AND raises its forecast for next year.",ans:"POP",
+     why:"A beat now plus a brighter outlook. Double good surprise, strong pop."}
+  ];
+  var i=0, score=0;
+  var desc=document.getElementById('rgDesc'), why=document.getElementById('rgWhy');
+  var pop=document.getElementById('rgPop'), dump=document.getElementById('rgDump'), flat=document.getElementById('rgFlat');
+  var prog=document.getElementById('rgProg'), sc=document.getElementById('rgScore'), next=document.getElementById('rgNext');
+  var btns=[pop,dump,flat];
+  function render(){
+    var r=rounds[i];
+    desc.textContent=r.desc;
+    why.className='rgwhy'; why.textContent='';
+    btns.forEach(function(b){b.disabled=false;b.className='rgbtn';});
+    prog.textContent='Round '+(i+1)+' of '+rounds.length;
+    sc.textContent='Score '+score;
+    next.className='';
+  }
+  function answer(a){
+    if(pop.disabled) return;
+    var r=rounds[i]; var correct=(a===r.ans);
+    if(correct) score++;
+    btns.forEach(function(b){b.disabled=true;});
+    var chosen=btns.filter(function(b){return b.getAttribute('data-a')===a;})[0];
+    var rightBtn=btns.filter(function(b){return b.getAttribute('data-a')===r.ans;})[0];
+    rightBtn.classList.add('right');
+    if(!correct&&chosen) chosen.classList.add('wrong');
+    why.textContent=(correct?'Nailed it. ':'Not quite. ')+r.why;
+    why.classList.add('show');
+    sc.textContent='Score '+score;
+    next.classList.add('show');
+    if(i===rounds.length-1) next.textContent='Done · '+score+'/'+rounds.length+' ✓';
+  }
+  pop.addEventListener('click',function(){answer('POP');});
+  dump.addEventListener('click',function(){answer('DUMP');});
+  flat.addEventListener('click',function(){answer('FLAT');});
+  next.addEventListener('click',function(){
+    if(i<rounds.length-1){ i++; render(); }
+    else { next.classList.remove('show'); why.textContent='That is the whole skill. React to the surprise, not just the headline.'; why.classList.add('show'); }
+  });
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "total_seconds": 168.048,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 24.048,
+      "dur": 24.048
+    },
+    {
+      "id": "leverage",
+      "start": 24.548,
+      "end": 51.26,
+      "dur": 26.712
+    },
+    {
+      "id": "grow-or-vaporize",
+      "start": 51.76,
+      "end": 79.576,
+      "dur": 27.816
+    },
+    {
+      "id": "time-decay",
+      "start": 80.076,
+      "end": 110.94,
+      "dur": 30.864
+    },
+    {
+      "id": "grow-game",
+      "start": 111.44,
+      "end": 125.24,
+      "dur": 13.8
+    },
+    {
+      "id": "habit-sorter",
+      "start": 125.74,
+      "end": 136.492,
+      "dur": 10.752
+    },
+    {
+      "id": "quiz",
+      "start": 136.992,
+      "end": 141.552,
+      "dur": 4.56
+    },
+    {
+      "id": "bridge",
+      "start": 142.052,
+      "end": 167.708,
+      "dur": 25.656
+    }
+  ]
+}

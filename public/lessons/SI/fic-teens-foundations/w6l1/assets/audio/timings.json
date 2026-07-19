@@ -1,0 +1,49 @@
+{
+  "total_seconds": 183.24,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 16.752,
+      "dur": 16.752
+    },
+    {
+      "id": "what-is-paper",
+      "start": 17.252,
+      "end": 59.972,
+      "dur": 42.72
+    },
+    {
+      "id": "setup-orders",
+      "start": 60.472,
+      "end": 122.128,
+      "dur": 61.656
+    },
+    {
+      "id": "ticket-builder",
+      "start": 122.628,
+      "end": 141.684,
+      "dur": 19.056
+    },
+    {
+      "id": "market-limit-sorter",
+      "start": 142.184,
+      "end": 154.184,
+      "dur": 12.0
+    },
+    {
+      "id": "quiz",
+      "start": 154.684,
+      "end": 159.94,
+      "dur": 5.256
+    },
+    {
+      "id": "bridge",
+      "start": 160.44,
+      "end": 182.952,
+      "dur": 22.512
+    }
+  ]
+}

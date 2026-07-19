@@ -1,0 +1,49 @@
+{
+  "total_seconds": 233.544,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 28.008,
+      "dur": 28.008
+    },
+    {
+      "id": "patterns",
+      "start": 28.508,
+      "end": 84.764,
+      "dur": 56.256
+    },
+    {
+      "id": "indicators",
+      "start": 85.264,
+      "end": 161.872,
+      "dur": 76.608
+    },
+    {
+      "id": "name-that-pattern",
+      "start": 162.372,
+      "end": 177.54,
+      "dur": 15.168
+    },
+    {
+      "id": "signal-sorter",
+      "start": 178.04,
+      "end": 194.288,
+      "dur": 16.248
+    },
+    {
+      "id": "quiz",
+      "start": 194.788,
+      "end": 202.588,
+      "dur": 7.8
+    },
+    {
+      "id": "bridge",
+      "start": 203.088,
+      "end": 233.256,
+      "dur": 30.168
+    }
+  ]
+}

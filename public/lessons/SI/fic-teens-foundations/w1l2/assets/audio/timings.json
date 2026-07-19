@@ -1,0 +1,49 @@
+{
+  "total_seconds": 133.704,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 18.96,
+      "dur": 18.96
+    },
+    {
+      "id": "own-a-slice",
+      "start": 19.46,
+      "end": 49.124,
+      "dur": 29.664
+    },
+    {
+      "id": "how-trades-happen",
+      "start": 49.624,
+      "end": 76.936,
+      "dur": 27.312
+    },
+    {
+      "id": "market-words",
+      "start": 77.436,
+      "end": 88.788,
+      "dur": 11.352
+    },
+    {
+      "id": "myth-sorter",
+      "start": 89.288,
+      "end": 102.296,
+      "dur": 13.008
+    },
+    {
+      "id": "quiz",
+      "start": 102.796,
+      "end": 109.852,
+      "dur": 7.056
+    },
+    {
+      "id": "bridge",
+      "start": 110.352,
+      "end": 133.416,
+      "dur": 23.064
+    }
+  ]
+}

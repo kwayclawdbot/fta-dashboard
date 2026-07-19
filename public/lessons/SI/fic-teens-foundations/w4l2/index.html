@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Options: Grow or Vaporize &middot; SI-100 Teens &middot; Module 4 &middot; Lesson 4.2</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="4" />
+<meta name="fta-lesson" content="L4.2" />
+<meta name="fta-lesson-title" content="Why Options Can Grow (or Vaporize) Fast" />
+<meta name="fta-lesson-objectives" content="Explain how leverage multiplies gains and losses|Know that the premium is a buyer's maximum loss|Describe time decay and why deadlines matter|List the beginner rules that keep options safe" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  .svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
+  .svgcard svg{width:100%;height:auto;display:block}
+  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
+  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  /* animated grow/vaporize paths */
+  .gline{stroke-dasharray:1;stroke-dashoffset:1;fill:none;stroke-linecap:round}
+  .svgcard.play .gline{animation:draw 1.2s ease forwards}
+  .svgcard.play .gline.v{animation-delay:.35s}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .zdot{transform-box:fill-box;transform-origin:center;opacity:0}
+  .svgcard.play .zdot{animation:pop .4s ease 1.5s forwards, pulse 1.6s ease-in-out 1.9s infinite}
+  @keyframes pop{to{opacity:1}}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+  /* bespoke: grow-or-vaporize 2-button game */
+  .gvg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .gvdesc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:74px}
+  .gvbtns{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
+  .gvbtn{flex:1;min-width:180px;font-family:var(--font-display);font-weight:700;font-size:16px;padding:16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+  .gvbtn[data-a="GROW"]:hover{border-color:var(--green-2);background:var(--green-bg)}
+  .gvbtn[data-a="VAPORIZE"]:hover{border-color:var(--red-2);background:var(--red-bg)}
+  .gvbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+  .gvbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+  .gvbtn:disabled{cursor:default}
+  .gvwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+  .gvwhy.show{display:block}
+  .gvfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
+  #gvNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+  #gvNext.show{display:inline-block}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens &middot; Module 4 &middot; Lesson 4.2</div>
+      <h1 style="font-size:clamp(34px,7vw,60px);font-weight:900;line-height:1.03;margin:12px 0 12px">Rocket, or puff of smoke?</h1>
+      <p class="lead">An option can turn a small bet into a rocket, or into nothing at all. Same tool, two very different endings. Learn what makes it grow, what makes it vaporize, and how to stay safe.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>2.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager watching a rocket launch on one side and a puff of smoke on the other" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · LEVERAGE -->
+<section id="leverage">
+  <div class="inner">
+    <div class="anim"><div class="label">The Superpower and the Trap</div><h2 class="title">Leverage cuts both ways</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/leverage.jpg" alt="A small kid using a lever to lift a giant boulder" /></div>
+      <div>
+        <p class="bigdef">A little money controls a <span class="hi">much bigger</span> position. That is leverage.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">When you are right</span>
+            <h3>Gains multiply</h3>
+            <p>A small move in the stock turns into a big move in your option. Amazing upside.</p>
+          </div>
+          <div class="cmp gamble">
+            <span class="tag">When you are wrong</span>
+            <h3>Losses multiply</h3>
+            <p>The lever does not care which way you miss. It amplifies losses just as hard.</p>
+          </div>
+        </div>
+        <div class="insight">Same lever, both directions. Respect it, because leverage is exactly why options can move so fast.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · GROW OR VAPORIZE (animated SVG) -->
+<section id="grow-or-vaporize">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Two Endings</div>
+      <h2 class="title">Grow big, or go to zero</h2>
+      <p class="lead" style="margin:0 auto">Watch the two paths. One option catches the move and rips higher. The other fades to nothing. When you buy an option, the premium you paid is the most you can lose, and it really can hit zero.</p>
+    </div>
+    <div class="svgcard anim d1" id="svgGV">
+      <svg viewBox="0 0 680 300" role="img" aria-label="Illustrative chart: one option value line rockets upward while another decays to zero by expiration">
+        <line x1="55" y1="30" x2="55" y2="250" stroke="#EAE2D0" stroke-width="2"/>
+        <line x1="55" y1="250" x2="640" y2="250" stroke="#EAE2D0" stroke-width="2"/>
+        <text x="40" y="150" font-family="Inter,sans-serif" font-size="12" font-weight="600" fill="#98A2B3" text-anchor="end" transform="rotate(-90 40 150)">option value</text>
+        <text x="345" y="278" font-family="Inter,sans-serif" font-size="12.5" font-weight="600" fill="#98A2B3" text-anchor="middle">time &rarr; expiration</text>
+        <!-- grow line -->
+        <path class="gline" pathLength="1" d="M70,215 C 220,205 330,175 480,60" stroke="#22C55E" stroke-width="5"/>
+        <text x="500" y="52" font-family="Poppins,sans-serif" font-size="15" font-weight="800" fill="#16A34A">Grows &#128640;</text>
+        <!-- vaporize line -->
+        <path class="gline v" pathLength="1" d="M70,150 C 240,175 400,225 610,244" stroke="#B7AE9A" stroke-width="5" stroke-dasharray="1"/>
+        <circle class="zdot" cx="610" cy="244" r="9" fill="#EF4444"/>
+        <text x="500" y="235" font-family="Poppins,sans-serif" font-size="15" font-weight="800" fill="#DC2626">Vaporizes &rarr; 0</text>
+      </svg>
+    </div>
+    <div class="disclaim anim d1">Illustrative example. The shapes show the idea, not real prices, and this is not a forecast or a promise.</div>
+    <div class="imgstrip anim d2"><img src="./assets/grow-or-vaporize.jpg" alt="A rocket blasting up a path on one side and a wisp of vapor on the other" /></div>
+  </div>
+</section>
+
+<!-- 4 · TIME DECAY -->
+<section id="time-decay">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">The Sneaky Enemy</div>
+      <h2 class="title">Time decay: the melting clock</h2>
+      <p class="lead" style="margin:0 auto">Every option has a deadline. And every day, a little of your premium quietly melts away, even when the stock does nothing.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/expiration-clock.jpg" alt="An hourglass running out of sand beside a clock" /></div>
+      <div>
+        <p class="bigdef">An option loses value as its <span class="hi">expiration date</span> gets closer. That is time decay.</p>
+        <div class="insight">Less time left means fewer chances for the stock to move your way, so the option is worth less each day. Waiting has a cost.</div>
+      </div>
+    </div>
+    <div class="define anim d2" style="margin-top:18px">
+      <div>
+        <div class="two">
+          <div class="cmp gamble"><span class="tag">Wait too long</span><h3>It melts</h3><p>Like this ice cube in the sun. The move can show up after your option has already faded.</p></div>
+          <div class="cmp safe"><span class="tag">The takeaway</span><h3>Time is not free</h3><p>The clock runs even on quiet days. You are paying rent on that contract.</p></div>
+        </div>
+      </div>
+      <div class="define-art"><img src="./assets/ice-cube-melting.jpg" alt="An ice cube melting on a sunny windowsill" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · GROW GAME (bespoke) -->
+<section id="grow-game">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn &middot; Grow or Vaporize?</div>
+      <h2 class="title">You call the ending</h2>
+      <p class="lead" style="margin:0 auto">I give you an option and what the stock does before the deadline. You decide: did it grow, or vaporize? Watch direction AND time.</p>
+    </div>
+    <div class="imgstrip anim d1" style="max-width:720px;aspect-ratio:16/5"><img src="./assets/paper-trade.jpg" alt="A teenager practicing trades with a notebook and a phone chart, training wheels nearby" /></div>
+    <div class="gvg anim d2" id="gvGame">
+      <div class="gvdesc" id="gvDesc">Loading round&hellip;</div>
+      <div class="gvbtns">
+        <button class="gvbtn" data-a="GROW" id="gvGrow">&#128640; It grew</button>
+        <button class="gvbtn" data-a="VAPORIZE" id="gvVap">&#128168; It vaporized</button>
+      </div>
+      <div class="gvwhy" id="gvWhy"></div>
+      <div class="gvfoot">
+        <span id="gvProg">Round 1 of 5</span>
+        <button id="gvNext">Next round &rarr;</button>
+        <span id="gvScore">Score 0</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · SORTER -->
+<section id="habit-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Smart habit or rookie mistake?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card, then drop it in the right column. This is the whole safety kit for options.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="smart">Practice on paper before real money</button>
+        <button class="chip" data-bucket="smart">Only risk what you can afford to lose</button>
+        <button class="chip" data-bucket="smart">Learn how stocks work first</button>
+        <button class="chip" data-bucket="rookie">Bet your whole account on one option</button>
+        <button class="chip" data-bucket="rookie">Ignore the expiration date</button>
+        <button class="chip" data-bucket="rookie">Buy just because a stranger online is hyped</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="smart">
+          <h4>&#9989; Smart habit</h4><div class="sub">Keeps you in the game</div>
+          <div class="drop" id="dropSmart"></div>
+        </div>
+        <div class="col gamble" data-bucket="rookie">
+          <h4>&#9888;&#65039; Rookie mistake</h4><div class="sub">How accounts blow up</div>
+          <div class="drop" id="dropRookie"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Show me you respect the leverage and the clock.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What is the most a buyer can lose on an option they bought?</h4>
+        <button class="opt" data-idx="0">Their entire account</button>
+        <button class="opt" data-idx="1">The premium they paid</button>
+        <button class="opt" data-idx="2">Twice the premium</button>
+        <button class="opt" data-idx="3">Nothing — options are risk-free</button>
+        <div class="exp">When you buy an option, the premium you paid is your maximum loss if it expires worthless.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. Why does &ldquo;leverage&rdquo; make options risky?</h4>
+        <button class="opt" data-idx="0">It only ever increases your gains</button>
+        <button class="opt" data-idx="1">It multiplies losses just as much as it multiplies gains</button>
+        <button class="opt" data-idx="2">It removes all the risk</button>
+        <button class="opt" data-idx="3">It pays you a dividend</button>
+        <div class="exp">Leverage lets a small amount control a big position. That multiplies gains, but it multiplies losses exactly the same way.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. What is &ldquo;time decay&rdquo;?</h4>
+        <button class="opt" data-idx="0">An option gains value as expiration nears</button>
+        <button class="opt" data-idx="1">An option loses value as its expiration date gets closer</button>
+        <button class="opt" data-idx="2">The stock splitting over time</button>
+        <button class="opt" data-idx="3">A fee for holding overnight</button>
+        <div class="exp">As the deadline approaches there is less time for the stock to move, so the option quietly loses value. Waiting costs you.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. You think a stock is going UP. Which option fits a bullish view?</h4>
+        <button class="opt" data-idx="0">Buy a put</button>
+        <button class="opt" data-idx="1">Buy a call</button>
+        <button class="opt" data-idx="2">Sell all your shares</button>
+        <button class="opt" data-idx="3">Do nothing, ever</button>
+        <div class="exp">A call is the right to buy at a set price, so it fits a bullish (up) outlook. A put fits a bearish (down) one.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>5. Should a beginner rush into trading options with real money?</h4>
+        <button class="opt" data-idx="0">No — learn stocks first and practice on paper before risking real money</button>
+        <button class="opt" data-idx="1">Yes, options always beat stocks</button>
+        <button class="opt" data-idx="2">Yes, because they never expire</button>
+        <button class="opt" data-idx="3">Yes, they are guaranteed income</button>
+        <div class="exp">Options add risk and complexity and can expire worthless. Learn stocks first, practice on paper, and understand each contract before using real money.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">The Golden Rule</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Leverage multiplies gains and losses. Both directions.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The premium is the most a buyer can lose.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Time decay melts the premium as expiration nears.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Learn stocks first, practice on paper, never overbet.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Week 5</div><h3>Psychology &amp; the Journal</h3></div>
+      <span class="badge">Plans over feelings &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 24.048, "interactive": false, "label": "Rocket or Smoke"}, {"id": "leverage", "start": 24.548, "end": 51.26, "interactive": false, "label": "Leverage Cuts Both Ways"}, {"id": "grow-or-vaporize", "start": 51.76, "end": 79.576, "interactive": false, "label": "Grow or Vaporize"}, {"id": "time-decay", "start": 80.076, "end": 110.94, "interactive": false, "label": "The Melting Clock"}, {"id": "grow-game", "start": 111.44, "end": 125.24, "interactive": true, "label": "Grow or Vaporize? You Call It"}, {"id": "habit-sorter", "start": 125.74, "end": 136.492, "interactive": true, "label": "Smart Habit or Rookie Mistake"}, {"id": "quiz", "start": 136.992, "end": 141.552, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 142.052, "end": 167.708, "interactive": false, "label": "The Golden Rule"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- animated grow/vaporize SVG ---------- */
+(function(){
+  var card=document.getElementById('svgGV'); if(!card) return;
+  function play(){ card.classList.add('play'); }
+  document.addEventListener('fta:section',function(e){
+    var id=(e&&e.detail&&(e.detail.id||e.detail.section))||'';
+    if(id==='grow-or-vaporize') play();
+  });
+  setTimeout(function(){ var r=card.getBoundingClientRect(); if(r.top<window.innerHeight&&r.bottom>0) play(); },1200);
+})();
+/* ---------- bespoke: grow-or-vaporize tap game (isolated) ---------- */
+(function(){
+  var game=document.getElementById('gvGame'); if(!game) return;
+  var rounds=[
+    {desc:"You buy a call (a bet it goes up). The stock jumps way up, fast, well before the deadline.",ans:"GROW",
+     why:"Right direction with plenty of time left. The call gains value. It grows."},
+    {desc:"You buy a call, but the stock just sits flat for weeks until the option expires.",ans:"VAPORIZE",
+     why:"No move, plus time decay eating away every day. Flat until expiry means it melts to zero."},
+    {desc:"You buy a put (a bet it goes down). Instead, the stock climbs higher and higher.",ans:"VAPORIZE",
+     why:"You bet down and it went up. Wrong direction, so the put vaporizes."},
+    {desc:"You buy a put, and the company reports terrible news. The stock craters the next day.",ans:"GROW",
+     why:"You bet down and it dropped hard and fast. The put grows in value."},
+    {desc:"You buy a call. The stock does rise, but so slowly that the deadline arrives before it gets there.",ans:"VAPORIZE",
+     why:"Right direction, but too slow. Time decay beat the move, so it expires near zero."}
+  ];
+  var i=0, score=0;
+  var desc=document.getElementById('gvDesc'), why=document.getElementById('gvWhy');
+  var grow=document.getElementById('gvGrow'), vap=document.getElementById('gvVap');
+  var prog=document.getElementById('gvProg'), sc=document.getElementById('gvScore'), next=document.getElementById('gvNext');
+  var btns=[grow,vap];
+  function render(){
+    var r=rounds[i];
+    desc.textContent=r.desc;
+    why.className='gvwhy'; why.textContent='';
+    btns.forEach(function(b){b.disabled=false;b.className='gvbtn';});
+    prog.textContent='Round '+(i+1)+' of '+rounds.length;
+    sc.textContent='Score '+score;
+    next.className='';
+  }
+  function answer(a){
+    if(grow.disabled) return;
+    var r=rounds[i]; var correct=(a===r.ans);
+    if(correct) score++;
+    btns.forEach(function(b){b.disabled=true;});
+    var chosen=btns.filter(function(b){return b.getAttribute('data-a')===a;})[0];
+    var rightBtn=btns.filter(function(b){return b.getAttribute('data-a')===r.ans;})[0];
+    rightBtn.classList.add('right');
+    if(!correct&&chosen) chosen.classList.add('wrong');
+    why.textContent=(correct?'Yes! ':'Not quite. ')+r.why;
+    why.classList.add('show');
+    sc.textContent='Score '+score;
+    next.classList.add('show');
+    if(i===rounds.length-1) next.textContent='Done · '+score+'/'+rounds.length+' ✓';
+  }
+  grow.addEventListener('click',function(){answer('GROW');});
+  vap.addEventListener('click',function(){answer('VAPORIZE');});
+  next.addEventListener('click',function(){
+    if(i<rounds.length-1){ i++; render(); }
+    else { next.classList.remove('show'); why.textContent='That is the game: direction gets you paid, but the clock is always ticking.'; why.classList.add('show'); }
+  });
+  render();
+})();
+</script>
+</body>
+</html>

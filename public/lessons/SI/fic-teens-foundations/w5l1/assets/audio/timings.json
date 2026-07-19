@@ -1,0 +1,49 @@
+{
+  "total_seconds": 239.832,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 20.208,
+      "dur": 20.208
+    },
+    {
+      "id": "survival-rule",
+      "start": 20.708,
+      "end": 78.476,
+      "dur": 57.768
+    },
+    {
+      "id": "position-sizing",
+      "start": 78.976,
+      "end": 140.344,
+      "dur": 61.368
+    },
+    {
+      "id": "calculator",
+      "start": 140.844,
+      "end": 170.796,
+      "dur": 29.952
+    },
+    {
+      "id": "habit-sorter",
+      "start": 171.296,
+      "end": 194.096,
+      "dur": 22.8
+    },
+    {
+      "id": "quiz",
+      "start": 194.596,
+      "end": 203.596,
+      "dur": 9.0
+    },
+    {
+      "id": "bridge",
+      "start": 204.096,
+      "end": 239.544,
+      "dur": 35.448
+    }
+  ]
+}

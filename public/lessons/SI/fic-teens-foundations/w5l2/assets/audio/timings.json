@@ -1,0 +1,55 @@
+{
+  "total_seconds": 165.792,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 22.368,
+      "dur": 22.368
+    },
+    {
+      "id": "fear-greed",
+      "start": 22.868,
+      "end": 52.532,
+      "dur": 29.664
+    },
+    {
+      "id": "plans-over-feelings",
+      "start": 53.032,
+      "end": 83.392,
+      "dur": 30.36
+    },
+    {
+      "id": "the-journal",
+      "start": 83.892,
+      "end": 108.852,
+      "dur": 24.96
+    },
+    {
+      "id": "emotion-dial",
+      "start": 109.352,
+      "end": 123.608,
+      "dur": 14.256
+    },
+    {
+      "id": "plan-sorter",
+      "start": 124.108,
+      "end": 136.468,
+      "dur": 12.36
+    },
+    {
+      "id": "quiz",
+      "start": 136.968,
+      "end": 141.984,
+      "dur": 5.016
+    },
+    {
+      "id": "bridge",
+      "start": 142.484,
+      "end": 165.452,
+      "dur": 22.968
+    }
+  ]
+}

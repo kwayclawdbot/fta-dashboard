@@ -1,0 +1,49 @@
+{
+  "total_seconds": 148.8,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 19.008,
+      "dur": 19.008
+    },
+    {
+      "id": "catalysts",
+      "start": 19.508,
+      "end": 50.012,
+      "dur": 30.504
+    },
+    {
+      "id": "earnings-move",
+      "start": 50.512,
+      "end": 89.224,
+      "dur": 38.712
+    },
+    {
+      "id": "react-game",
+      "start": 89.724,
+      "end": 103.092,
+      "dur": 13.368
+    },
+    {
+      "id": "headline-sorter",
+      "start": 103.592,
+      "end": 120.944,
+      "dur": 17.352
+    },
+    {
+      "id": "quiz",
+      "start": 121.444,
+      "end": 127.66,
+      "dur": 6.216
+    },
+    {
+      "id": "bridge",
+      "start": 128.16,
+      "end": 148.512,
+      "dur": 20.352
+    }
+  ]
+}

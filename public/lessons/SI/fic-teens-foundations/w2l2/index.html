@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Support, Resistance &amp; Trend · SI-100 Teens · Module 2 · Lesson 2.2</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.2" />
+<meta name="fta-lesson-title" content="Support, Resistance &amp; Trend" />
+<meta name="fta-lesson-objectives" content="Spot support (floors) and resistance (ceilings) on a chart|Name an uptrend, downtrend, and range from the highs and lows|Explain role reversal when a level breaks|Use the trend to frame a trade" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  .svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
+  .svgcard svg{width:100%;height:auto;display:block}
+  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
+  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
+
+  .bx{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .bxdesc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:64px}
+  .bxbtns{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+  .bxbtn{flex:1;min-width:150px;font-family:var(--font-display);font-weight:700;font-size:15px;padding:15px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+  .bxbtn:hover{border-color:var(--green-2);background:var(--green-bg)}
+  .bxbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+  .bxbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+  .bxbtn:disabled{cursor:default}
+  .bxwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+  .bxwhy.show{display:block}
+  .bxfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
+  .bxnext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+  .bxnext.show{display:inline-block}
+  .bxrow{display:flex;align-items:center;gap:14px;margin-top:18px;flex-wrap:wrap}
+  .bxrow label{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink);min-width:130px}
+  .bxrow input[type=number]{flex:1;min-width:90px;padding:10px 12px;border:1.5px solid var(--sand);border-radius:var(--r-md);font-size:15px;font-family:var(--font-body)}
+  .bxrange{width:100%;margin-top:10px}
+  .bxout{font-family:var(--font-display);font-weight:800;font-size:34px;color:var(--green);margin-top:12px}
+  .bxbar{height:18px;border-radius:var(--r-full);background:linear-gradient(90deg,var(--green-2),var(--green));margin-top:12px;transition:width .25s ease;max-width:100%}
+  .bxbartrack{height:18px;border-radius:var(--r-full);background:var(--sand);margin-top:12px;overflow:hidden}
+  .bxchk{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--sand);border-radius:var(--r-lg);margin-top:10px;cursor:pointer;font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink);transition:all .15s ease}
+  .bxchk .box{width:24px;height:24px;border-radius:6px;border:2px solid var(--sand);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff}
+  .bxchk.on{border-color:var(--green-border);background:var(--green-bg)}
+  .bxchk.on .box{background:var(--green);border-color:var(--green)}
+  .bxgo{display:none;margin-top:18px;padding:16px;border-radius:var(--r-lg);background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);font-family:var(--font-display);font-weight:800;font-size:18px;text-align:center}
+  .bxgo.show{display:block}
+  .bxcard{perspective:1000px;cursor:pointer}
+  .bxcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:18px}
+  .bxflip{position:relative;min-height:120px;border-radius:var(--r-lg);border:1.5px solid var(--sand);background:var(--paper);padding:16px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--ink);transition:all .2s ease}
+  .bxflip.flipped{background:var(--green-bg);border-color:var(--green-border);color:var(--green);font-weight:600;font-size:14px}
+
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens · Module 2 · Lesson 2.2</div>
+      <h1 style="font-size:clamp(36px,7vw,62px);font-weight:900;line-height:1.02;margin:12px 0 12px">Floors, ceilings, and the trend</h1>
+      <p class="lead">Charts aren&#x27;t random. Price keeps stopping at the same spots, like there&#x27;s an invisible floor holding it up and an invisible ceiling pushing it down. Find those, and you stop guessing.</p>
+      <div class="badges"><span class="badge"><b>7</b> sections</span><span class="badge"><b>3</b> hands-on</span><span class="badge"><b>5</b>-question quiz</span><span class="badge">~<b>2.5</b> min</span></div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager tracing an invisible floor and ceiling on a stock chart" /></div>
+    </div>
+  </div>
+</section>
+
+<section id="floor-ceiling">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto"><div class="label">Support &amp; Resistance</div><h2 class="title">Support and resistance</h2><p class="lead" style="margin:0 auto">Price stops at the same spots again and again. Those spots have names.</p></div><div class="define anim d1" style="margin-top:22px"><div class="define-art"><img src="./assets/support-resistance.jpg" alt="A price line bouncing up off a floor and down off a ceiling" /></div><div><p class="bigdef">A <span class="hi">floor</span> holds price up. A <span class="hi">ceiling</span> caps it.</p><div class="two"><div class="cmp grow"><span class="tag">Support</span><h3>The floor</h3><p>Buyers keep stepping in here, so the fall stalls and price bounces.</p></div><div class="cmp safe"><span class="tag">Resistance</span><h3>The ceiling</h3><p>Sellers keep showing up here, so the rise stalls and price gets pushed back.</p></div></div><div class="insight">These are zones, not exact lines. Treat a level like a neighborhood, not a single address. The more bounces, the more people are watching it.</div></div></div><div class="imgstrip anim d2" style="aspect-ratio:16/6"><img src="./assets/zones.jpg" alt="Shaded support and resistance zones drawn as bands on a chart" /></div>
+  </div>
+</section>
+
+<section id="trend-lines">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto"><div class="label">Trend &amp; Role Reversal</div><h2 class="title">The trend, and a level that flips</h2><p class="lead" style="margin:0 auto">Zoom out and price leans a direction. Learn to name it.</p></div><div class="imgstrip anim d2" style="aspect-ratio:16/6"><img src="./assets/trend-staircase.jpg" alt="Three tiny charts: a rising staircase, a falling staircase, and a flat zigzag box" /></div><div class="define anim d1" style="margin-top:22px"><div class="define-art"><img src="./assets/role-reversal.jpg" alt="A ceiling line that breaks and then acts as a floor" /></div><div><p class="bigdef">Break a ceiling, and it can become the new <span class="hi">floor</span>.</p><div class="two"><div class="cmp grow"><span class="tag">Uptrend</span><h3>Higher highs &amp; lows</h3><p>Buyers stacking the staircase upward. Trade with it.</p></div><div class="cmp safe"><span class="tag">Downtrend</span><h3>Lower highs &amp; lows</h3><p>Sellers pressing the staircase down.</p></div></div><div class="insight">Sideways between the floor and ceiling is a range. And when price finally breaks resistance, that old ceiling often flips into support. Trade with the trend, not against it.</div></div></div>
+  </div>
+</section>
+
+<section id="trend-caller">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto"><div class="label">Your Turn · Trend Caller</div><h2 class="title">Uptrend, downtrend, or range?</h2><p class="lead" style="margin:0 auto">I&#x27;ll describe how price is moving. Read the highs and the lows, then call it.</p></div><div class="bx anim d2" id="bxGame"><div class="bxdesc" id="bxDesc">Loading round...</div><div class="bxbtns"><button class="bxbtn" data-key="UP">&#11014;&#65039; Uptrend</button><button class="bxbtn" data-key="DOWN">&#11015;&#65039; Downtrend</button><button class="bxbtn" data-key="RANGE">&#8596;&#65039; Range</button></div><div class="bxwhy" id="bxWhy"></div><div class="bxfoot"><span id="bxProg">Round 1</span><button class="bxnext" id="bxNext">Next round &rarr;</button><span id="bxScore">Score 0</span></div></div>
+  </div>
+</section>
+
+<section id="sr-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Which is it, floor or ceiling?</h2>
+      <p class="lead" style="margin:0 auto">Tap a clue, then tap the level it describes.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool"><button class="chip" data-bucket="support">Buyers keep stepping in here</button><button class="chip" data-bucket="support">Price keeps bouncing UP off this level</button><button class="chip" data-bucket="support">A floor under the price</button><button class="chip" data-bucket="resistance">Sellers keep showing up here</button><button class="chip" data-bucket="resistance">Price keeps getting rejected DOWN</button><button class="chip" data-bucket="resistance">A ceiling over the price</button></div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="support">
+          <h4>&#128994; Support (floor)</h4><div class="sub">Buyers step in, price bounces up</div>
+          <div class="drop" id="dropSupport"></div>
+        </div>
+        <div class="col gamble" data-bucket="resistance">
+          <h4>&#128308; Resistance (ceiling)</h4><div class="sub">Sellers step in, price gets pushed down</div>
+          <div class="drop" id="dropResistance"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a clue to begin.</div>
+    </div>
+  </div>
+</section>
+
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Find the floor, the ceiling, and the trend.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. Support is best described as:</h4>
+        <button class="opt" data-idx="0">A price ceiling where sellers take over</button><button class="opt" data-idx="1">A price floor where buyers keep stepping in</button><button class="opt" data-idx="2">A guaranteed price the stock returns to</button><button class="opt" data-idx="3">A fee you pay to trade</button>
+        <div class="exp">Support is a floor. Buyers step in there, so the fall stalls and price tends to bounce.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. A stock keeps getting pushed back down every time it reaches the same price. That level is:</h4>
+        <button class="opt" data-idx="0">Support</button><button class="opt" data-idx="1">Resistance</button><button class="opt" data-idx="2">An uptrend</button><button class="opt" data-idx="3">A dividend</button>
+        <div class="exp">A level that repeatedly caps the rise is resistance, the ceiling where sellers show up.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. An uptrend is made of:</h4>
+        <button class="opt" data-idx="0">Lower highs and lower lows</button><button class="opt" data-idx="1">The same price every day</button><button class="opt" data-idx="2">Higher highs and higher lows</button><button class="opt" data-idx="3">No highs or lows at all</button>
+        <div class="exp">An uptrend is a staircase up: each high and each low lands above the last.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>4. A stock breaks above a ceiling it was stuck under for months, then pulls back and holds right at that old level. What likely happened?</h4>
+        <button class="opt" data-idx="0">The old resistance flipped into new support</button><button class="opt" data-idx="1">The stock can never rise again</button><button class="opt" data-idx="2">Support and resistance switched off</button><button class="opt" data-idx="3">Nothing, levels don&#x27;t matter</button>
+        <div class="exp">Role reversal: once price breaks resistance, that old ceiling often becomes the new floor.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>5. Price is bouncing between the same floor and ceiling with no clear direction. This is a:</h4>
+        <button class="opt" data-idx="0">Strong uptrend</button><button class="opt" data-idx="1">Strong downtrend</button><button class="opt" data-idx="2">Range</button><button class="opt" data-idx="3">Breakout</button>
+        <div class="exp">No clear direction, stuck between support and resistance, is a range.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You Can Read Levels</div><h2 class="title">Carry these with you</h2></div>
+    <div class="takeaways anim d1"><div class="take"><span class="ck">&#10003;</span><p>Support is the floor where buyers step in; resistance is the ceiling where sellers show up.</p></div><div class="take"><span class="ck">&#10003;</span><p>Levels are zones, not exact lines. More bounces means more eyes on them.</p></div><div class="take"><span class="ck">&#10003;</span><p>Uptrend = higher highs and higher lows; downtrend = the reverse; sideways = a range.</p></div><div class="take"><span class="ck">&#10003;</span><p>Break a level and it can flip: old resistance becomes new support. Trade with the trend.</p></div></div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 3.1</div><h3>Chart Patterns &amp; Indicators</h3></div>
+      <span class="badge">Read the shapes the crowd draws &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id":"hero","start":0.0,"end":17.352,"interactive":false,"label":"One Chart, Two Levels"},{"id":"floor-ceiling","start":17.852,"end":52.1,"interactive":false,"label":"Support & Resistance"},{"id":"trend-lines","start":52.6,"end":89.248,"interactive":false,"label":"Trend & Role Reversal"},{"id":"trend-caller","start":89.748,"end":103.26,"interactive":true,"label":"Your Turn \u00b7 Trend Caller"},{"id":"sr-sorter","start":103.76,"end":117.56,"interactive":true,"label":"Sort It Yourself"},{"id":"quiz","start":118.06,"end":125.212,"interactive":true,"label":"Lock It In"},{"id":"bridge","start":125.712,"end":146.16,"interactive":false,"label":"You Can Read Levels"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke interaction (isolated) ---------- */
+(function(){
+  var game=document.getElementById('bxGame'); if(!game) return;
+  var rounds=[{"desc": "Each peak is higher than the last, and each dip is also higher than the last. A clean staircase upward.", "ans": "UP", "why": "Higher highs and higher lows means buyers are in control. That's an uptrend."}, {"desc": "Every bounce tops out lower than the one before, and every dip drops lower too.", "ans": "DOWN", "why": "Lower highs and lower lows is a downtrend. Sellers are winning."}, {"desc": "Price keeps bouncing between the same floor and the same ceiling, going nowhere.", "ans": "RANGE", "why": "Stuck between support and resistance with no clear direction is a range."}, {"desc": "After a long slide, price makes a higher low, then pushes to a higher high for the first time in weeks.", "ans": "UP", "why": "The pattern just flipped to higher highs and higher lows. An uptrend may be starting."}, {"desc": "Each rally is weaker than the last, and each low breaks below the previous low.", "ans": "DOWN", "why": "Lower highs and lower lows. That's a downtrend."}];
+  var i=0, score=0;
+  var desc=document.getElementById('bxDesc'), why=document.getElementById('bxWhy');
+  var btns=Array.prototype.slice.call(game.querySelectorAll('.bxbtn'));
+  var prog=document.getElementById('bxProg'), sc=document.getElementById('bxScore'), next=document.getElementById('bxNext');
+  function render(){var r=rounds[i];desc.textContent=r.desc;why.className='bxwhy';why.textContent='';
+    btns.forEach(function(b){b.disabled=false;b.className='bxbtn';});
+    prog.textContent='Round '+(i+1)+' of '+rounds.length;sc.textContent='Score '+score;next.className='bxnext';}
+  function answer(key,btn){if(btns[0].disabled)return;var r=rounds[i];var ok=(key===r.ans);if(ok)score++;
+    btns.forEach(function(b){b.disabled=true;if(b.getAttribute('data-key')===r.ans)b.classList.add('right');});
+    if(!ok)btn.classList.add('wrong');
+    why.textContent=(ok?'Correct! ':'Not quite. ')+r.why;why.classList.add('show');sc.textContent='Score '+score;
+    next.classList.add('bxnext');next.classList.add('show');
+    if(i>=rounds.length-1){next.textContent='Done · '+score+'/'+rounds.length+' ✓';}}
+  btns.forEach(function(b){b.addEventListener('click',function(){answer(b.getAttribute('data-key'),b);});});
+  next.addEventListener('click',function(){if(i<rounds.length-1){i++;render();}
+    else{next.classList.remove('show');why.textContent='Nice — you called every one. That is the skill.';why.classList.add('show');}});
+  render();
+})();
+</script>
+<style id="fta-anim">
+@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
+@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
+.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
+</style>
+<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
+</body>
+</html>
