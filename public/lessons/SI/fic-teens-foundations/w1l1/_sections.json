@@ -1,0 +1,16 @@
+[
+  {"id":"hero","label":"Why Start at 15","interactive":false,
+   "script":"Alright, real talk. Your single biggest advantage as an investor isn't money. It's time. Start at fifteen instead of forty, and the math does something almost unfair in your favor. Hit start, and I'll show you exactly why."},
+  {"id":"money-job","label":"Give Your Money a Job","interactive":false,
+   "script":"So here's the difference. Saving keeps your money safe and flat. It just sits in an account. Investing gives your money a job. You buy a slice of a real company, and it can grow. Now the magic word: compounding. Your money earns money. Then that new money earns money too. It snowballs. Look at the seed on the left turning into a whole tree of coins. That's your dollars, put to work, making more dollars, year after year."},
+  {"id":"compounding","label":"Same Start, Different Ending","interactive":true,
+   "script":"Watch this. Both lines start with the exact same amount. But one just sits there, and the other gets invested and compounds. Keep your eye on the invested line. See how it barely moves at first, then pulls away hard? That gap is time doing the heavy lifting. Quick honest note: the growth rates on screen are an illustrative example, not a promise. Real markets go up and down. What matters is the shape."},
+  {"id":"head-start","label":"Time Machine Slider","interactive":true,
+   "script":"Now you try. Drag the slider from year one all the way to year thirty and watch the multiple climb. Notice it's slow, slow, slow, then it rips. That's why starting at fifteen beats starting at forty, even when the forty-year-old invests way more. The teenager's money just has more years to compound. This is illustrative, an example, not a forecast. But the lesson is real: time is the lever."},
+  {"id":"habits-sorter","label":"Sort the Habits","interactive":true,
+   "script":"Let's make it stick. Tap each move and drop it into the right column. Some habits keep time on your side and let compounding snowball. Others fight the clock and waste your edge. Sort all six yourself and see how many you nail."},
+  {"id":"quiz","label":"Quick Check","interactive":true,
+   "script":"Five quick questions to lock it in. No pressure. Just show me you've got it."},
+  {"id":"bridge","label":"You've Got the Why","interactive":false,
+   "script":"Here's what to carry out of this one. Time plus compounding is your biggest edge. Starting early beats starting big. And invested money works while flat money just sits. You've got the why. Next up, lesson one point two: how the stock market actually works, using companies you already know like Roblox, Nike, and Apple. See you there."}
+]

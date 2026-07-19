@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Compounding · SI-100 Teens · Module 1 · Lesson 1.1</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="1" />
+<meta name="fta-lesson" content="L1.1" />
+<meta name="fta-lesson-title" content="Compounding — Why Starting at 15 Beats 40" />
+<meta name="fta-lesson-objectives" content="See why time is an investor's biggest edge|Define compounding in plain terms|Explain why starting early beats starting big|Tell smart long-term habits from get-rich-quick moves" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: years slider (self-contained) */
+  .slab{max-width:740px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px 26px 22px;box-shadow:var(--shadow-soft)}
+  .slab .yrrow{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+  .slab .yrbig{font-family:var(--font-display);font-weight:700;font-size:22px;color:var(--ink)}
+  .slab .yrbig b{font-weight:900}
+  .slab .mult{font-family:var(--font-display);font-weight:900;font-size:44px;line-height:1;color:var(--gold-600)}
+  .slab .mcap{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soft);text-align:right}
+  #yrSlider{width:100%;height:6px;-webkit-appearance:none;appearance:none;border-radius:99px;background:var(--sand);cursor:pointer;margin:18px 0 4px}
+  #yrSlider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--gold-600);box-shadow:0 2px 8px rgba(16,24,40,.25)}
+  #yrSlider::-moz-range-thumb{width:24px;height:24px;border:none;border-radius:50%;background:var(--gold-600)}
+  .slbar{height:18px;border-radius:99px;background:var(--paper-2);overflow:hidden;margin-top:14px;border:1px solid var(--sand)}
+  .slbar>i{display:block;height:100%;width:10%;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--green-2));transition:width .18s ease}
+  .slnote{font-size:12.5px;color:var(--soft);margin-top:13px;text-align:center}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Teens · Module 1 · Lesson 1.1</div>
+      <h1 style="font-size:clamp(36px,7vw,64px);font-weight:900;line-height:1;margin:12px 0 12px">Why starting at 15 beats 40</h1>
+      <p class="lead">Your biggest edge as an investor isn't cash. It's time. Start young and the math bends almost unfairly in your favor. Let me show you.</p>
+      <div class="badges">
+        <span class="badge"><b>7</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>2.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager at a bright kitchen counter, laptop open to a simple rising stock watchlist in the morning" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · WHAT COMPOUNDING IS -->
+<section id="money-job">
+  <div class="inner">
+    <div class="anim"><div class="label">The Snowball</div><h2 class="title">Give your money a job</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/seed-tree.jpg" alt="A piggy bank sitting still next to a seedling growing into a tree that sprouts coins" /></div>
+      <div>
+        <p class="bigdef">Compounding means <span class="hi">your money earns money</span> — and then that new money earns money too. It snowballs.</p>
+        <div class="two">
+          <div class="cmp safe">
+            <span class="tag">Saving</span>
+            <h3>Safe &amp; flat</h3>
+            <p>Cash in an account is safe and easy to reach. Good for emergencies. But mostly it just sits there, flat.</p>
+          </div>
+          <div class="cmp grow">
+            <span class="tag">Investing</span>
+            <h3>Owned &amp; growing</h3>
+            <p>You own a slice of a real company. It can grow, and the growth starts growing on itself. That's the snowball.</p>
+          </div>
+        </div>
+        <div class="insight">Flat money sits. Invested money works. Watch the seed on the left turn into a whole tree of coins — that's compounding.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · COMPOUNDING CLIP -->
+<section id="compounding">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Same Start, Different Ending</div>
+      <h2 class="title">One line put to work</h2>
+      <p class="lead" style="margin:0 auto">Both lines begin with the exact same amount. One sits. One gets invested and compounds. Watch the invested line barely move, then pull away hard.</p>
+    </div>
+    <div class="video-wrap anim d1">
+      <video id="compVid" preload="metadata" playsinline muted poster="./assets/compounding-poster.jpg">
+        <source src="./assets/compounding.mp4" type="video/mp4" />
+      </video>
+      <div class="video-ov" id="compOv"><div class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></div></div>
+    </div>
+    <div class="disclaim anim d2"><b>One honest note:</b> the growth rates on screen are an illustrative example, not a forecast or a promise. Real markets rise and fall and nobody can guarantee a return. What's real is the <i>shape</i>: money that starts early has more time to snowball.</div>
+  </div>
+</section>
+
+<!-- 4 · YEARS SLIDER (bespoke interactive) -->
+<section id="head-start">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn · Time Machine</div>
+      <h2 class="title">Drag the years, watch it rip</h2>
+      <p class="lead" style="margin:0 auto">Slide from year 1 to year 30. Notice it crawls at first, then takes off. That takeoff is why a 15-year-old with less money can still beat a 40-year-old with more.</p>
+    </div>
+    <div class="hero-art anim d1" style="max-width:720px;margin:22px auto 0;aspect-ratio:16/7"><img src="./assets/snowball.jpg" alt="A tiny snowball rolling downhill and growing into a giant one made of gold coins" /></div>
+    <div class="slab anim d2">
+      <div class="yrrow">
+        <div class="yrbig">After <b id="yrVal">5 years</b></div>
+        <div><div class="mcap">Illustrative growth</div><div class="mult" id="yrMult">&times;1.47</div></div>
+      </div>
+      <input id="yrSlider" type="range" min="1" max="30" value="5" step="1" aria-label="Years invested" />
+      <div class="slbar"><i id="yrBar"></i></div>
+      <div class="slnote">Shown at an illustrative 8% per year, growth on top of growth. This is an example to show the shape, not a forecast or a promise. No dollars here on purpose — just the multiple.</div>
+    </div>
+    <div class="define anim d2" style="margin-top:26px">
+      <div class="define-art"><img src="./assets/early-late.jpg" alt="Two growing bar stacks: one started early climbing tall, one started late staying shorter" /></div>
+      <div>
+        <p class="bigdef">Same monthly amount. <span class="hi">The early starter wins</span> — not by investing more, but by giving compounding more years to work.</p>
+        <div class="insight">Time is the lever. Starting at 15 hands you an extra 25 years of snowball that a 40-year-old can never buy back.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · HABITS SORTER (interactive) -->
+<section id="habits-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Sort It Yourself</div>
+      <h2 class="title">Which habits keep time on your side?</h2>
+      <p class="lead" style="margin:0 auto">Tap a move to pick it up, then tap the column where it belongs. Some habits let compounding snowball. Others waste your biggest edge.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="time">Start investing as a teen</button>
+        <button class="chip" data-bucket="time">Reinvest your gains</button>
+        <button class="chip" data-bucket="time">Invest a little every month</button>
+        <button class="chip" data-bucket="clock">Wait until you're 40 to start</button>
+        <button class="chip" data-bucket="clock">Spend every gain right away</button>
+        <button class="chip" data-bucket="clock">Panic-sell on the first red day</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="time">
+          <h4>&#10003; Time on your side</h4><div class="sub">Habits that let compounding snowball</div>
+          <div class="drop" id="dropTime"></div>
+        </div>
+        <div class="col gamble" data-bucket="clock">
+          <h4>&#10007; Fighting the clock</h4><div class="sub">Habits that waste your biggest edge</div>
+          <div class="drop" id="dropClock"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a move to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Nail them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. Which is the best description of compounding?</h4>
+        <button class="opt" data-idx="0">Adding more of your own cash to the account each month</button>
+        <button class="opt" data-idx="1">Your money earns money, and that new money earns money too</button>
+        <button class="opt" data-idx="2">A yearly fee your broker charges you</button>
+        <button class="opt" data-idx="3">Selling everything once a year and starting over</button>
+        <div class="exp">Compounding is growth on top of growth. Your gains start making their own gains, so it snowballs the longer you leave it alone.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. Your friend keeps their birthday money in a savings account; you buy a share of a company you like. What's the key difference?</h4>
+        <button class="opt" data-idx="0">Saving and investing are basically the same thing</button>
+        <button class="opt" data-idx="1">Investing keeps your money flat and safe</button>
+        <button class="opt" data-idx="2">Saving keeps money safe and flat; investing puts it to work so it can grow</button>
+        <button class="opt" data-idx="3">Saving is only for adults, investing is only for teens</button>
+        <div class="exp">Saving keeps money safe but flat. Investing gives it a job so it can grow. Over years, that difference gets huge thanks to compounding.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. Maya starts investing a small amount at 15. Jordan waits and invests a bigger amount starting at 40. Who has the biggest advantage working for them?</h4>
+        <button class="opt" data-idx="0">Maya — she gave compounding way more years to snowball</button>
+        <button class="opt" data-idx="1">Jordan — starting with more always wins</button>
+        <button class="opt" data-idx="2">Neither, age has nothing to do with it</button>
+        <button class="opt" data-idx="3">Whoever checks their phone the most</button>
+        <div class="exp">Starting early beats starting big. Maya's money has an extra 25 years to compound, an edge Jordan can't buy back later.</div>
+      </div>
+      <div class="q" data-correct="3">
+        <h4>4. On the time-machine slider, the growth multiple starts slow, then takes off. What single thing is doing that heavy lifting?</h4>
+        <button class="opt" data-idx="0">Luck</button>
+        <button class="opt" data-idx="1">Checking the price every hour</button>
+        <button class="opt" data-idx="2">Picking one hot stock</button>
+        <button class="opt" data-idx="3">Time — more years means more compounding</button>
+        <div class="exp">Time is the lever. The longer money compounds, the more the growth stacks on itself, which is why the curve rips upward at the end.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. The 8% growth rate on the slider is best described as:</h4>
+        <button class="opt" data-idx="0">A guaranteed return you'll definitely earn</button>
+        <button class="opt" data-idx="1">An illustrative example to show the shape, not a promise</button>
+        <button class="opt" data-idx="2">The exact return the market gives every single year</button>
+        <button class="opt" data-idx="3">A rate the Family Investing Club promises you</button>
+        <div class="exp">The rate is illustrative. It shows the shape of compounding. Real markets rise and fall, and no one can guarantee a return.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You've Got The Why</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Time plus compounding is your single biggest edge.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Compounding is growth on top of growth — it snowballs.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Starting early beats starting big.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Invested money works while flat money just sits.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 1.2</div><h3>How the Stock Market Actually Works</h3></div>
+      <span class="badge">Roblox, Nike, Apple — own the idea of them &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id":"hero","start":0.0,"end":15.648,"interactive":false,"label":"Why Start at 15"},{"id":"money-job","start":16.148,"end":46.604,"interactive":false,"label":"Give Your Money a Job"},{"id":"compounding","start":47.104,"end":76.216,"interactive":true,"label":"Same Start, Different Ending"},{"id":"head-start","start":76.716,"end":103.716,"interactive":true,"label":"Time Machine Slider"},{"id":"habits-sorter","start":104.216,"end":120.776,"interactive":true,"label":"Sort the Habits"},{"id":"quiz","start":121.276,"end":127.036,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":127.536,"end":149.352,"interactive":false,"label":"You've Got the Why"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: years / compounding-multiple slider (isolated) ---------- */
+(function(){
+  var s=document.getElementById('yrSlider'); if(!s) return;
+  var yr=document.getElementById('yrVal'), mu=document.getElementById('yrMult'), bar=document.getElementById('yrBar');
+  var MAX=Math.pow(1.08,30);
+  function upd(){
+    var y=parseInt(s.value,10);
+    var m=Math.pow(1.08,y);
+    yr.textContent=y+(y===1?' year':' years');
+    mu.innerHTML='&times;'+m.toFixed(2);
+    bar.style.width=Math.max(6,Math.min(100,(m/MAX)*100))+'%';
+  }
+  s.addEventListener('input',upd); upd();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "total_seconds": 149.64,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, teens playful mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 15.648,
+      "dur": 15.648
+    },
+    {
+      "id": "money-job",
+      "start": 16.148,
+      "end": 46.604,
+      "dur": 30.456
+    },
+    {
+      "id": "compounding",
+      "start": 47.104,
+      "end": 76.216,
+      "dur": 29.112
+    },
+    {
+      "id": "head-start",
+      "start": 76.716,
+      "end": 103.716,
+      "dur": 27.0
+    },
+    {
+      "id": "habits-sorter",
+      "start": 104.216,
+      "end": 120.776,
+      "dur": 16.56
+    },
+    {
+      "id": "quiz",
+      "start": 121.276,
+      "end": 127.036,
+      "dur": 5.76
+    },
+    {
+      "id": "bridge",
+      "start": 127.536,
+      "end": 149.352,
+      "dur": 21.816
+    }
+  ]
+}

@@ -35,6 +35,8 @@ const EXACT_ALLOWED_ORIGINS = new Set<string>([
 /** True if `origin` is an approved lesson host (prod university or a here.now review publish). */
 export function isAllowedLessonOrigin(origin: string): boolean {
   if (!origin || origin === "null") return false;
+  // Same-origin lessons (served from this app's own /lessons/... path) are trusted.
+  if (typeof window !== "undefined" && origin === window.location.origin) return true;
   if (EXACT_ALLOWED_ORIGINS.has(origin)) return true;
   try {
     const u = new URL(origin);
