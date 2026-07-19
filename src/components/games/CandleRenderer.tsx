@@ -47,28 +47,83 @@ export default function CandleRenderer({
   const bodyW = 17;
   const vw = PAD_X * 2 + n * slot;
 
-  let min = Infinity;
-  let max = -Infinity;
+  // --- price domain ---------------------------------------------------------
+  // The chart shows a "setup" (candles[0..di)) during the call, then reveals a
+  // "resolution" (the rest). Scaling to the FULL series crushes the setup into
+  // an unreadable sliver whenever the resolution move is large (breakouts,
+  // squeezes, floods) — the shape the player must read no longer matches the
+  // scenario text. So we anchor the domain to the SETUP + every annotation, and
+  // only when that setup would occupy less than SETUP_OCC of the frame do we
+  // expand toward the resolution side(s) just enough to hit SETUP_OCC. The
+  // resolution can then run past the frame — `.night-island` clips it, which
+  // reads as a decisive move. The domain is derived from constants (candles,
+  // levels, trendlines, di) so it is identical in the decision and resolution
+  // phases: the chart never rescales as candles reveal.
+  const SETUP_OCC = 0.6;
+  const di = decisionIndex != null ? decisionIndex : n;
+  const setupCount = di > 0 && di < n ? di : n;
+
+  let sMin = Infinity;
+  let sMax = -Infinity;
+  const seeSetup = (v: number) => {
+    if (v < sMin) sMin = v;
+    if (v > sMax) sMax = v;
+  };
+  for (let i = 0; i < setupCount; i++) {
+    seeSetup(candles[i].l);
+    seeSetup(candles[i].h);
+  }
+  // annotations must always be fully framed (their setup-side anchors define the
+  // shape; far trendline ends may sit in the resolution and are handled below)
+  for (const lv of levels || []) seeSetup(lv.price);
+  for (const tl of trendlines || []) {
+    const pts = tl.points?.length ? tl.points : [tl.from, tl.to];
+    for (const p of pts) if (p.index <= setupCount) seeSetup(p.price);
+  }
+  if (!isFinite(sMin) || !isFinite(sMax)) {
+    for (const c of candles) {
+      seeSetup(c.l);
+      seeSetup(c.h);
+    }
+  }
+
+  // full extent — resolution candles + far trendline ends
+  let fMin = sMin;
+  let fMax = sMax;
   for (const c of candles) {
-    min = Math.min(min, c.l);
-    max = Math.max(max, c.h);
+    if (c.l < fMin) fMin = c.l;
+    if (c.h > fMax) fMax = c.h;
   }
-  // keep level lines in frame
-  for (const lv of levels || []) {
-    min = Math.min(min, lv.price);
-    max = Math.max(max, lv.price);
-  }
-  // keep trendline endpoints (and any polyline points) in frame
   for (const tl of trendlines || []) {
     const pts = tl.points?.length ? tl.points : [tl.from, tl.to];
     for (const p of pts) {
-      min = Math.min(min, p.price);
-      max = Math.max(max, p.price);
+      if (p.price < fMin) fMin = p.price;
+      if (p.price > fMax) fMax = p.price;
     }
   }
-  const range = max - min || 1;
-  min -= range * 0.08;
-  max += range * 0.08;
+
+  const setupRange = sMax - sMin || 1;
+  const fullRange = fMax - fMin || 1;
+  let min: number;
+  let max: number;
+  if (setupRange / fullRange >= SETUP_OCC) {
+    // the setup is already legible in the natural frame — show everything
+    min = fMin;
+    max = fMax;
+  } else {
+    // expand the domain around the setup to give it exactly SETUP_OCC, biasing
+    // the added room toward wherever the resolution actually goes
+    const domain = setupRange / SETUP_OCC;
+    const slack = domain - setupRange;
+    const upRoom = Math.max(0, fMax - sMax);
+    const dnRoom = Math.max(0, sMin - fMin);
+    const roomTot = upRoom + dnRoom || 1;
+    min = sMin - slack * (dnRoom / roomTot);
+    max = sMax + slack * (upRoom / roomTot);
+  }
+  const pad = (max - min) * 0.08 || 1;
+  min -= pad;
+  max += pad;
 
   const yFor = (p: number) =>
     PAD_TOP + (1 - (p - min) / (max - min)) * (height - PAD_TOP - PAD_BOT);
@@ -131,7 +186,13 @@ export default function CandleRenderer({
                   cy={y}
                   r={5}
                   fill={stroke}
-                  animate={reduce ? { opacity: 0.3 } : { r: [4, 9, 4], opacity: [0.35, 0.05, 0.35] }}
+                  style={{ transformBox: "fill-box", transformOrigin: "center" }}
+                  initial={{ scale: 1, opacity: 0.35 }}
+                  animate={
+                    reduce
+                      ? { opacity: 0.3 }
+                      : { scale: [0.8, 1.9, 0.8], opacity: [0.4, 0.05, 0.4] }
+                  }
                   transition={{ duration: 1.8, repeat: Infinity }}
                 />
               );
