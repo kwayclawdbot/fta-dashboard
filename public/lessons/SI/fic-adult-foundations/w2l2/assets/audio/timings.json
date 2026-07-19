@@ -1,0 +1,55 @@
+{
+  "total_seconds": 219.864,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 25.104,
+      "dur": 25.104
+    },
+    {
+      "id": "support-resistance",
+      "start": 25.604,
+      "end": 57.908,
+      "dur": 32.304
+    },
+    {
+      "id": "trend",
+      "start": 58.408,
+      "end": 95.464,
+      "dur": 37.056
+    },
+    {
+      "id": "volume",
+      "start": 95.964,
+      "end": 125.868,
+      "dur": 29.904
+    },
+    {
+      "id": "trend-classifier",
+      "start": 126.368,
+      "end": 147.584,
+      "dur": 21.216
+    },
+    {
+      "id": "sr-sorter",
+      "start": 148.084,
+      "end": 174.652,
+      "dur": 26.568
+    },
+    {
+      "id": "quiz",
+      "start": 175.152,
+      "end": 182.016,
+      "dur": 6.864
+    },
+    {
+      "id": "bridge",
+      "start": 182.516,
+      "end": 219.524,
+      "dur": 37.008
+    }
+  ]
+}

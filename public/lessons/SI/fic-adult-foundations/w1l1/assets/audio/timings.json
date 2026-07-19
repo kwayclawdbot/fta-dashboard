@@ -1,0 +1,49 @@
+{
+  "total_seconds": 180.96,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 26.304,
+      "dur": 26.304
+    },
+    {
+      "id": "what-investing-is",
+      "start": 26.804,
+      "end": 56.804,
+      "dur": 30.0
+    },
+    {
+      "id": "compounding",
+      "start": 57.304,
+      "end": 97.264,
+      "dur": 39.96
+    },
+    {
+      "id": "compounding-lab",
+      "start": 97.764,
+      "end": 122.532,
+      "dur": 24.768
+    },
+    {
+      "id": "goals-sorter",
+      "start": 123.032,
+      "end": 149.144,
+      "dur": 26.112
+    },
+    {
+      "id": "quiz",
+      "start": 149.644,
+      "end": 155.212,
+      "dur": 5.568
+    },
+    {
+      "id": "bridge",
+      "start": 155.712,
+      "end": 180.672,
+      "dur": 24.96
+    }
+  ]
+}

@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What a Stock Is &amp; How the Market Works &middot; SI-100 Adults &middot; Module 1 &middot; Lesson 1.2</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="1" />
+<meta name="fta-lesson" content="L1.2" />
+<meta name="fta-lesson-title" content="What a Stock Is &amp; How the Market Works" />
+<meta name="fta-lesson-objectives" content="Define a stock as ownership|See how exchanges and IPOs work|Understand supply and demand pricing|Read the major market indexes" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: supply & demand price slider (isolated) */
+  .sd-wrap{max-width:780px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:28px 26px;box-shadow:var(--shadow-soft)}
+  .sd-stage{position:relative;height:250px;border-radius:var(--r-lg);border:1px solid var(--sand);overflow:hidden;
+    background:linear-gradient(180deg,var(--green-bg),var(--paper-2) 48%,var(--paper-2) 52%,var(--red-bg))}
+  .sd-tick{position:absolute;left:16px;font-family:var(--font-display);font-weight:700;font-size:11.5px;letter-spacing:1px;text-transform:uppercase}
+  .sd-tick.hi{top:12px;color:var(--green)}
+  .sd-tick.mid{top:50%;transform:translateY(-50%);color:var(--soft)}
+  .sd-tick.lo{bottom:12px;color:var(--red)}
+  .sd-token{position:absolute;left:50%;transform:translateX(-50%);top:88px;width:76px;height:76px;border-radius:50%;
+    background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-lift);
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:34px;color:var(--ink);
+    transition:top .4s cubic-bezier(.34,1.56,.64,1),background .3s ease;animation:sdfloat 3.4s ease-in-out infinite}
+  @keyframes sdfloat{0%,100%{margin-top:0}50%{margin-top:-7px}}
+  .sd-token.up{background:var(--green-2)}
+  .sd-token.down{background:var(--red)}
+  .sd-token.flat{background:var(--gold)}
+  .sd-ends{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--soft);margin:22px 0 6px}
+  .sd-ends .sell{color:var(--red)}.sd-ends .buy{color:var(--green)}
+  #sdRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;cursor:pointer;
+    background:linear-gradient(90deg,var(--red-bg),var(--sand),var(--green-bg))}
+  #sdRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+  #sdRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
+  .sd-verdict{margin-top:22px;text-align:center;font-family:var(--font-display);font-weight:800;font-size:clamp(16px,2.3vw,20px);
+    padding:15px 18px;border-radius:var(--r-lg);border:1px solid var(--sand);background:var(--paper-2);color:var(--ink);transition:all .3s ease}
+  .sd-verdict.up{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+  .sd-verdict.down{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+  .sd-verdict.flat{background:var(--gold-bg);border-color:#FDE68A;color:var(--gold-700)}
+  /* index text-chip pills */
+  .idx-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .idx-chip{display:flex;flex-direction:column;gap:2px;padding:12px 18px;border-radius:var(--r-lg);
+    border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);min-width:150px}
+  .idx-chip .nm{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
+  .idx-chip .ds{font-size:12.5px;color:var(--soft)}
+  .idx-chip.dow{border-color:var(--gold);background:linear-gradient(160deg,var(--gold-bg),var(--card))}
+  .idx-chip.sp{border-color:var(--green-border);background:linear-gradient(160deg,var(--green-bg),var(--card))}
+  .idx-chip.nasdaq{border-color:#BAE6FD;background:linear-gradient(160deg,var(--sky-bg),var(--card))}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 1 &middot; Lesson 1.2</div>
+      <h1 style="font-size:clamp(38px,7vw,68px);font-weight:900;line-height:1;margin:12px 0 12px">What a Stock Is</h1>
+      <p class="lead">Buy a stock and you own a real slice of a real business. In the next few minutes you'll see exactly what a share is, and how the market that trades it actually works.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A bustling abstract stock exchange marketplace where people trade glowing slices of companies" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · WHAT IS A STOCK -->
+<section id="what-is-a-stock">
+  <div class="inner">
+    <div class="anim"><div class="label">The Definition</div><h2 class="title">You own a slice</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/ownership.jpg" alt="A company drawn as a pie with one slice lifted out and held by a small investor" /></div>
+      <div>
+        <p class="bigdef">A stock is a security that represents <span class="hi">proportionate ownership</span> in a company.</p>
+        <p class="lead" style="margin-top:12px">Buy a single share and you become a <b>shareholder</b>, with a real claim on that company's assets and its earnings. Own more shares, own more of the pie.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Dividends</span>
+            <h3>A share of the profits</h3>
+            <p>Some companies return part of their profits to shareholders as dividends, cash paid out on a regular schedule.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">No minimum</span>
+            <h3>One share is enough</h3>
+            <p>There's no hundred-share minimum. A single share already makes you a part-owner of the business.</p>
+          </div>
+        </div>
+        <div class="insight">Ownership, not a loan. That distinction is the foundation of everything else in this course.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · HOW THE MARKET WORKS -->
+<section id="how-market-works">
+  <div class="inner">
+    <div class="anim"><div class="label">The Marketplace</div><h2 class="title">How the market works</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">The stock market isn't one building. It's a <span class="hi">network</span> of exchanges and brokers connecting buyers and sellers.</p>
+        <div class="two">
+          <div class="cmp safe">
+            <span class="tag">Going public</span>
+            <h3>The IPO</h3>
+            <p>A private company first sells shares to the public through an Initial Public Offering, or IPO, to raise money.</p>
+          </div>
+          <div class="cmp grow">
+            <span class="tag">After the IPO</span>
+            <h3>Trading on the exchange</h3>
+            <p>Once shares are public, they trade freely between investors on an exchange, day after day.</p>
+          </div>
+        </div>
+        <div class="insight">Buyers and sellers rarely meet. Exchanges and brokers route the orders that connect them.</div>
+      </div>
+      <div class="define-art"><img src="./assets/market-network.jpg" alt="A network diagram of buyers and sellers connected through one central exchange hub" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · PRICE DISCOVERY (bespoke supply/demand slider) -->
+<section id="price-discovery">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; The Price Engine</div>
+      <h2 class="title">Supply &amp; demand</h2>
+      <p class="lead" style="margin:0 auto">Slide between more sellers and more buyers, and watch the price token rise or fall. This tug-of-war is what moves a price up and down every day.</p>
+    </div>
+    <div class="sd-wrap anim d1" id="sdCalc">
+      <div class="sd-stage">
+        <div class="sd-tick hi">Higher price</div>
+        <div class="sd-tick mid">Steady</div>
+        <div class="sd-tick lo">Lower price</div>
+        <div class="sd-token flat" id="sdToken">&rarr;</div>
+      </div>
+      <div class="sd-ends"><span class="sell">&larr; More sellers</span><span class="buy">More buyers &rarr;</span></div>
+      <input type="range" id="sdRange" min="0" max="100" value="50" aria-label="Balance of buyers and sellers" />
+      <div class="sd-verdict flat" id="sdVerdict">Balanced &rarr; price holds steady</div>
+      <div class="disclaim" style="margin-top:16px">This is an illustrative model of supply and demand, not a forecast or a promise. Real prices react to many forces at once.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · INDICES -->
+<section id="indices">
+  <div class="inner">
+    <div class="anim"><div class="label">The Scoreboard</div><h2 class="title">Reading the indexes</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/indices.jpg" alt="Three baskets of different sizes filled with abstract company shapes, representing three market indexes" /></div>
+      <div>
+        <p class="bigdef">An index is a <span class="hi">snapshot</span> of one part of the market.</p>
+        <p class="lead" style="margin-top:12px">No one tracks every stock at once. Instead we watch indexes, each a basket that tells you how its slice of the market is doing.</p>
+        <div class="idx-chips">
+          <div class="idx-chip dow"><span class="nm">Dow Jones (DJIA)</span><span class="ds">30 large U.S. companies</span></div>
+          <div class="idx-chip sp"><span class="nm">S&amp;P 500</span><span class="ds">500 largest U.S. companies</span></div>
+          <div class="idx-chip nasdaq"><span class="nm">Nasdaq Composite</span><span class="ds">Tech-heavy</span></div>
+        </div>
+        <div class="insight">When the news says "the market" rose or fell, it usually means one of these indexes moved.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · FACT OR MYTH (sorter) -->
+<section id="fact-or-myth">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Fact or myth?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Some of these sound true only because they get repeated so often.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="fact">You own a real slice of the company</button>
+        <button class="chip" data-bucket="myth">You need at least 100 shares to be an owner</button>
+        <button class="chip" data-bucket="fact">More buyers than sellers pushes the price up</button>
+        <button class="chip" data-bucket="myth">A stock is a loan you make to the company</button>
+        <button class="chip" data-bucket="fact">An IPO is how a company first sells shares to the public</button>
+        <button class="chip" data-bucket="myth">Stock prices move at random with no cause</button>
+        <button class="chip" data-bucket="fact">A ticker is a stock's short code, like a nickname</button>
+        <button class="chip" data-bucket="myth">The Dow Jones tracks 500 companies</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="fact">
+          <h4>&#10003; Fact</h4><div class="sub">True to how stocks and markets actually work</div>
+          <div class="drop" id="dropFact"></div>
+        </div>
+        <div class="col gamble" data-bucket="myth">
+          <h4>&#10007; Myth</h4><div class="sub">Sounds right, but it isn't</div>
+          <div class="drop" id="dropMyth"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What does a stock represent?</h4>
+        <button class="opt" data-idx="0">A loan you make to the company</button>
+        <button class="opt" data-idx="1">Ownership in a company and a claim on its assets and earnings</button>
+        <button class="opt" data-idx="2">A fixed-interest savings product</button>
+        <button class="opt" data-idx="3">A short-term deposit at a bank</button>
+        <div class="exp">A stock is ownership in the issuing company plus a proportionate claim on its assets and earnings.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. A company pays you every quarter for being a shareholder. What are those payments called?</h4>
+        <button class="opt" data-idx="0">Bonds</button>
+        <button class="opt" data-idx="1">Dividends</button>
+        <button class="opt" data-idx="2">Capital gains</button>
+        <button class="opt" data-idx="3">Interest</button>
+        <div class="exp">Regular payments to shareholders are dividends. Capital gains come from selling at a higher price; bonds are loans.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. How does a private company first become available to trade on an exchange?</h4>
+        <button class="opt" data-idx="0">By getting referrals from top executives</button>
+        <button class="opt" data-idx="1">Through a private placement with a few investors</button>
+        <button class="opt" data-idx="2">Through an Initial Public Offering (IPO)</button>
+        <button class="opt" data-idx="3">By registering with a local bank</button>
+        <div class="exp">An IPO is the process by which a company first issues stock to the public to raise funds.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. Which index tracks 30 large U.S. companies across various sectors?</h4>
+        <button class="opt" data-idx="0">S&amp;P 500</button>
+        <button class="opt" data-idx="1">Dow Jones Industrial Average (DJIA)</button>
+        <button class="opt" data-idx="2">Nasdaq Composite</button>
+        <button class="opt" data-idx="3">Russell 2000</button>
+        <div class="exp">The DJIA tracks 30 large U.S. companies. The S&amp;P 500 tracks 500; the Nasdaq Composite is tech-heavy.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. What primarily moves a stock's price up or down day to day?</h4>
+        <button class="opt" data-idx="0">The company's founding year</button>
+        <button class="opt" data-idx="1">Supply and demand — the balance of buyers and sellers</button>
+        <button class="opt" data-idx="2">The number of employees</button>
+        <button class="opt" data-idx="3">The color of its logo</button>
+        <div class="exp">When more people want to buy than sell, price rises; when sellers outnumber buyers, it falls.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You've Got The What</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>A stock is real ownership, a slice of a business with a claim on its assets and earnings.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Companies go public through an IPO, then their shares trade on exchanges.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Supply and demand, the balance of buyers and sellers, moves the price.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Indexes like the Dow, S&amp;P 500, and Nasdaq are snapshots of the market.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 2.1</div><h3>Candlestick Anatomy &amp; Timeframes</h3></div>
+      <span class="badge">Learn to read the chart itself &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 28.608, "interactive": false, "label": "What a Stock Is"}, {"id": "what-is-a-stock", "start": 29.108, "end": 62.156, "interactive": false, "label": "You Own a Slice"}, {"id": "how-market-works", "start": 62.656, "end": 92.656, "interactive": false, "label": "How the Market Works"}, {"id": "price-discovery", "start": 93.156, "end": 126.516, "interactive": true, "label": "Supply and Demand"}, {"id": "indices", "start": 127.016, "end": 156.536, "interactive": false, "label": "Reading the Indexes"}, {"id": "fact-or-myth", "start": 157.036, "end": 179.692, "interactive": true, "label": "Fact or Myth"}, {"id": "quiz", "start": 180.192, "end": 187.944, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 188.444, "end": 219.956, "interactive": false, "label": "Up Next: Candlesticks"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: supply & demand price slider (isolated) ---------- */
+(function(){
+  var r=document.getElementById('sdRange'); if(!r) return;
+  var token=document.getElementById('sdToken'), verdict=document.getElementById('sdVerdict');
+  // token vertical travel inside the 250px stage (token is 76px tall)
+  var TOP_HI=12, TOP_LO=162; // px from top: high price near top, low price near bottom
+  function upd(){
+    var v=+r.value;
+    var topPx=TOP_LO-(v/100)*(TOP_LO-TOP_HI);
+    token.style.top=topPx+'px';
+    token.classList.remove('up','down','flat');
+    verdict.classList.remove('up','down','flat');
+    if(v<=40){
+      token.classList.add('down'); verdict.classList.add('down');
+      token.innerHTML='&darr;'; verdict.innerHTML='More sellers than buyers &rarr; price falls';
+    } else if(v<=59){
+      token.classList.add('flat'); verdict.classList.add('flat');
+      token.innerHTML='&rarr;'; verdict.innerHTML='Balanced &rarr; price holds steady';
+    } else {
+      token.classList.add('up'); verdict.classList.add('up');
+      token.innerHTML='&uarr;'; verdict.innerHTML='More buyers than sellers &rarr; price rises';
+    }
+  }
+  r.addEventListener('input',upd); upd();
+})();
+</script>
+</body>
+</html>

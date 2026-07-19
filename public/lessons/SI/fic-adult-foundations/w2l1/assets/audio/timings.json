@@ -1,0 +1,55 @@
+{
+  "total_seconds": 232.728,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 30.12,
+      "dur": 30.12
+    },
+    {
+      "id": "anatomy",
+      "start": 30.62,
+      "end": 66.836,
+      "dur": 36.216
+    },
+    {
+      "id": "body-color",
+      "start": 67.336,
+      "end": 101.248,
+      "dur": 33.912
+    },
+    {
+      "id": "timeframes",
+      "start": 101.748,
+      "end": 137.196,
+      "dur": 35.448
+    },
+    {
+      "id": "candle-builder",
+      "start": 137.696,
+      "end": 168.464,
+      "dur": 30.768
+    },
+    {
+      "id": "bull-bear-sorter",
+      "start": 168.964,
+      "end": 196.084,
+      "dur": 27.12
+    },
+    {
+      "id": "quiz",
+      "start": 196.584,
+      "end": 202.032,
+      "dur": 5.448
+    },
+    {
+      "id": "bridge",
+      "start": 202.532,
+      "end": 232.388,
+      "dur": 29.856
+    }
+  ]
+}

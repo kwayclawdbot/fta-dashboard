@@ -1,0 +1,55 @@
+{
+  "total_seconds": 252.744,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 26.4,
+      "dur": 26.4
+    },
+    {
+      "id": "calls-and-puts",
+      "start": 26.9,
+      "end": 64.316,
+      "dur": 37.416
+    },
+    {
+      "id": "anatomy",
+      "start": 64.816,
+      "end": 117.016,
+      "dur": 52.2
+    },
+    {
+      "id": "moneyness",
+      "start": 117.516,
+      "end": 153.828,
+      "dur": 36.312
+    },
+    {
+      "id": "moneyness-slider",
+      "start": 154.328,
+      "end": 184.088,
+      "dur": 29.76
+    },
+    {
+      "id": "call-put-sorter",
+      "start": 184.588,
+      "end": 209.092,
+      "dur": 24.504
+    },
+    {
+      "id": "quiz",
+      "start": 209.592,
+      "end": 216.648,
+      "dur": 7.056
+    },
+    {
+      "id": "bridge",
+      "start": 217.148,
+      "end": 252.404,
+      "dur": 35.256
+    }
+  ]
+}

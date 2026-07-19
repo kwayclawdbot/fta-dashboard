@@ -1,0 +1,55 @@
+{
+  "total_seconds": 252.096,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 22.368,
+      "dur": 22.368
+    },
+    {
+      "id": "two-ways",
+      "start": 22.868,
+      "end": 55.076,
+      "dur": 32.208
+    },
+    {
+      "id": "the-statements",
+      "start": 55.576,
+      "end": 93.928,
+      "dur": 38.352
+    },
+    {
+      "id": "key-numbers",
+      "start": 94.428,
+      "end": 145.692,
+      "dur": 51.264
+    },
+    {
+      "id": "pe-calculator",
+      "start": 146.192,
+      "end": 182.408,
+      "dur": 36.216
+    },
+    {
+      "id": "strength-sorter",
+      "start": 182.908,
+      "end": 209.428,
+      "dur": 26.52
+    },
+    {
+      "id": "quiz",
+      "start": 209.928,
+      "end": 216.336,
+      "dur": 6.408
+    },
+    {
+      "id": "bridge",
+      "start": 216.836,
+      "end": 251.756,
+      "dur": 34.92
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "total_seconds": 241.296,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 22.104,
+      "dur": 22.104
+    },
+    {
+      "id": "patterns",
+      "start": 22.604,
+      "end": 68.564,
+      "dur": 45.96
+    },
+    {
+      "id": "moving-averages",
+      "start": 69.064,
+      "end": 109.264,
+      "dur": 40.2
+    },
+    {
+      "id": "oscillators",
+      "start": 109.764,
+      "end": 145.284,
+      "dur": 35.52
+    },
+    {
+      "id": "rsi-dial",
+      "start": 145.784,
+      "end": 172.448,
+      "dur": 26.664
+    },
+    {
+      "id": "signal-sorter",
+      "start": 172.948,
+      "end": 199.996,
+      "dur": 27.048
+    },
+    {
+      "id": "quiz",
+      "start": 200.496,
+      "end": 206.952,
+      "dur": 6.456
+    },
+    {
+      "id": "bridge",
+      "start": 207.452,
+      "end": 240.956,
+      "dur": 33.504
+    }
+  ]
+}

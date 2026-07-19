@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chart Patterns &amp; Indicators &middot; SI-100 Adults &middot; Module 3 &middot; Lesson 3.1</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="3" />
+<meta name="fta-lesson" content="L3.1" />
+<meta name="fta-lesson-title" content="Chart Patterns &amp; Indicators" />
+<meta name="fta-lesson-objectives" content="Recognize key reversal and continuation patterns|Use moving averages and crosses|Read RSI and momentum oscillators|Confirm signals with volume" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* ---- bespoke: animated head-and-shoulders SVG ---- */
+  .hs-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px 26px 20px;
+    box-shadow:var(--shadow-soft);max-width:660px;margin:26px auto 0}
+  .hs-svg{display:block;width:100%;max-width:600px;margin:0 auto;height:auto}
+  .hs-line{fill:none;stroke:var(--gold-600);stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;
+    stroke-dasharray:1500;stroke-dashoffset:1500;animation:hsdraw 5s ease-in-out infinite}
+  @keyframes hsdraw{0%{stroke-dashoffset:1500}60%{stroke-dashoffset:0}92%{stroke-dashoffset:0}100%{stroke-dashoffset:1500}}
+  .hs-neck{fill:none;stroke:var(--soft);stroke-width:2;stroke-dasharray:7 7}
+  .hs-dot{fill:var(--gold);stroke:var(--ink);stroke-width:1.5}
+  .hs-txt{font-family:var(--font-display);font-weight:700;font-size:14px;fill:var(--soft)}
+  .hs-txt.head{fill:var(--gold-700)}
+
+  /* ---- bespoke: RSI reader ---- */
+  .rsi-wrap{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;max-width:960px;margin:24px auto 0}
+  @media(max-width:860px){.rsi-wrap{grid-template-columns:1fr}}
+  .rsi-art{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft)}
+  .rsi-art img{width:100%;display:block;animation:rsifloat 5s ease-in-out infinite}
+  @keyframes rsifloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .rsi-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .rsi-top{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--soft);margin-bottom:8px}
+  #rsiRange{width:100%;-webkit-appearance:none;appearance:none;height:12px;border-radius:99px;cursor:pointer;margin:6px 0 20px;
+    background:linear-gradient(90deg,#2563EB 0%,#38BDF8 26%,#22C55E 42%,#22C55E 60%,#F59E0B 76%,#DC2626 100%)}
+  #rsiRange::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+  #rsiRange::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:3px solid var(--ink);cursor:pointer}
+  .rsi-val{font-family:var(--font-display);font-weight:900;font-size:56px;line-height:1;text-align:center;margin:2px 0 10px;color:var(--green)}
+  .rsi-zone{text-align:center;margin-bottom:8px}
+  .rsi-pill{display:inline-block;font-family:var(--font-display);font-weight:800;font-size:15px;letter-spacing:.5px;
+    padding:8px 22px;border-radius:99px;color:#fff;background:var(--green);animation:rsipulse 2.2s ease-in-out infinite}
+  @keyframes rsipulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .rsi-note{text-align:center;font-size:14px;color:var(--soft);min-height:22px;margin-top:4px}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 3 &middot; Lesson 3.1</div>
+      <h1 style="font-size:clamp(38px,7vw,68px);font-weight:900;line-height:1;margin:12px 0 12px">Patterns &amp; Indicators</h1>
+      <p class="lead">Charts leave clues. Patterns and indicators are the tools that read them, hinting at what price might do next. Never guaranteeing it. In the next few minutes you'll learn the headline few and how to read them honestly.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="An analyst's dashboard of glowing indicator gauges and abstract chart-pattern shapes" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · PATTERNS -->
+<section id="patterns">
+  <div class="inner">
+    <div class="anim" style="max-width:760px">
+      <div class="label">Patterns That Repeat</div>
+      <h2 class="title">Shapes the crowd keeps drawing</h2>
+      <p class="lead">Because human behavior repeats, a handful of shapes show up again and again. Learn the headline few and you can read a chart faster.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/head-shoulders.jpg" alt="A head and shoulders chart shape with three peaks and a neckline" /></div>
+      <div>
+        <p class="bigdef">The <span class="hi">head and shoulders</span> is the classic reversal: three peaks, a taller head between two lower shoulders, sitting on a neckline.</p>
+        <div class="insight">When price breaks below the neckline, traders read it as the trend possibly turning over. Flip the shape upside down and you get an inverse head and shoulders, its bullish twin.</div>
+      </div>
+    </div>
+
+    <div class="hs-card anim d2">
+      <svg class="hs-svg" viewBox="0 0 600 300" role="img" aria-label="Illustrative head and shoulders shape with a neckline">
+        <polyline class="hs-line" points="20,235 110,120 175,190 300,60 425,190 490,120 580,235" />
+        <line class="hs-neck" x1="150" y1="190" x2="452" y2="190" />
+        <circle class="hs-dot" cx="110" cy="120" r="5" />
+        <circle class="hs-dot" cx="300" cy="60" r="6" />
+        <circle class="hs-dot" cx="490" cy="120" r="5" />
+        <text class="hs-txt" x="110" y="108" text-anchor="middle">Shoulder</text>
+        <text class="hs-txt head" x="300" y="48" text-anchor="middle">Head</text>
+        <text class="hs-txt" x="490" y="108" text-anchor="middle">Shoulder</text>
+        <text class="hs-txt" x="301" y="210" text-anchor="middle">Neckline</text>
+      </svg>
+      <div class="disclaim">Illustrative shape, a clean textbook version of a messy real chart.</div>
+    </div>
+
+    <div class="two anim d3" style="margin-top:26px">
+      <div class="cmp safe">
+        <span class="tag">Reversal</span>
+        <h3>Trend may turn</h3>
+        <p>Head and shoulders, double top, double bottom. Price tests a level twice and either rejects it or holds.</p>
+      </div>
+      <div class="cmp grow">
+        <span class="tag">Continuation</span>
+        <h3>Trend may resume</h3>
+        <p>Wedges and flags. A brief pause inside a move that often gives way to the trend picking back up.</p>
+      </div>
+    </div>
+
+    <div class="disclaim anim d4"><b>The confirming tell:</b> a breakout means more when volume rises with it. A move on weak volume is far easier to fade.</div>
+  </div>
+</section>
+
+<!-- 3 · MOVING AVERAGES -->
+<section id="moving-averages">
+  <div class="inner">
+    <div class="anim" style="max-width:760px">
+      <div class="label">Moving Averages</div>
+      <h2 class="title">Turn a jagged line into a signal</h2>
+      <p class="lead">A moving average plots the average price over a chosen period, so the noise becomes a smooth, readable line.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef">Two flavors, one idea. <span class="hi">SMA</span> weights every period equally. <span class="hi">EMA</span> leans on recent prices, so it reacts faster.</p>
+        <div class="two">
+          <div class="cmp safe">
+            <span class="tag">SMA</span>
+            <h3>Steady &amp; even</h3>
+            <p>The simple moving average treats every period the same. Smoother, and slower to turn.</p>
+          </div>
+          <div class="cmp grow">
+            <span class="tag">EMA</span>
+            <h3>Quick &amp; recent</h3>
+            <p>The exponential moving average weights recent prices more, so it responds sooner to a shift.</p>
+          </div>
+        </div>
+      </div>
+      <div class="define-art"><img src="./assets/moving-average.jpg" alt="A jagged price line with two smooth moving averages crossing over it" /></div>
+    </div>
+    <div class="two anim d2" style="margin-top:26px">
+      <div class="cmp grow">
+        <span class="tag">Golden Cross</span>
+        <h3>&#9650; Bullish</h3>
+        <p>A shorter moving average crosses <b>above</b> a longer one. Momentum is turning up.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">Death Cross</span>
+        <h3>&#9660; Bearish</h3>
+        <p>A shorter moving average crosses <b>below</b> a longer one. Momentum is rolling over.</p>
+      </div>
+    </div>
+    <div class="insight anim d3" style="max-width:900px;margin-left:auto;margin-right:auto">Same two lines, opposite meaning. What matters is which way the shorter average crosses the longer one.</div>
+  </div>
+</section>
+
+<!-- 4 · OSCILLATORS -->
+<section id="oscillators">
+  <div class="inner">
+    <div class="anim" style="max-width:760px">
+      <div class="label">Momentum Meters</div>
+      <h2 class="title">Reading momentum, not the future</h2>
+      <p class="lead">Oscillators measure how fast and how far price has moved, swinging inside a fixed range.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef">The <span class="hi">RSI</span> runs from 0 to 100. Above <span class="hi">70</span> is generally overbought; below <span class="hi">30</span>, generally oversold.</p>
+        <div class="insight">The stochastic oscillator works much the same way, using 80 and 20 as its markers. Different scale, same read on momentum.</div>
+      </div>
+      <div>
+        <div class="two" style="grid-template-columns:1fr 1fr">
+          <div class="cmp grow">
+            <span class="tag">RSI</span>
+            <h3>70 / 30</h3>
+            <p>Above 70 overbought, below 30 oversold. A momentum reading from 0 to 100.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Stochastic</span>
+            <h3>80 / 20</h3>
+            <p>Above 80 overbought, below 20 oversold. Same idea, tighter bands.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="disclaim anim d2"><b>Honest limit:</b> a stock can stay overbought far longer than feels reasonable. These meters read the temperature, not the future.</div>
+  </div>
+</section>
+
+<!-- 5 · RSI DIAL (bespoke interactive) -->
+<section id="rsi-dial">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Read the Meter</div>
+      <h2 class="title">Read the RSI</h2>
+      <p class="lead" style="margin:0 auto">Drag the slider to set a reading. Watch the zone and its color change as you cross the classic thresholds.</p>
+    </div>
+    <div class="rsi-wrap anim d1">
+      <div class="rsi-art"><img src="./assets/rsi-meter.jpg" alt="A semicircular gauge dial with a needle between a blue oversold zone and a red overbought zone" /></div>
+      <div class="rsi-card" id="rsiCard">
+        <div class="rsi-top"><span>0 &middot; Oversold</span><span>Overbought &middot; 100</span></div>
+        <input type="range" id="rsiRange" min="0" max="100" value="50" aria-label="RSI reading" />
+        <div class="rsi-val" id="rsiVal">50</div>
+        <div class="rsi-zone"><span class="rsi-pill" id="rsiPill">Neutral</span></div>
+        <div class="rsi-note" id="rsiNote">Between the lines. No strong momentum signal.</div>
+        <div class="disclaim" style="margin-top:16px">RSI is one signal, not a guarantee.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · SIGNAL SORTER (interactive) -->
+<section id="signal-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Bullish or bearish signal?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Read the momentum behind each one.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="bullish">Golden cross: short MA crosses above the long MA</button>
+        <button class="chip" data-bucket="bullish">RSI turning up from below 30 (oversold)</button>
+        <button class="chip" data-bucket="bullish">A double bottom completing</button>
+        <button class="chip" data-bucket="bullish">Price reclaiming its long moving average</button>
+        <button class="chip" data-bucket="bearish">Death cross: short MA crosses below the long MA</button>
+        <button class="chip" data-bucket="bearish">RSI above 70 (overbought)</button>
+        <button class="chip" data-bucket="bearish">Head and shoulders breaking the neckline</button>
+        <button class="chip" data-bucket="bearish">A double top rejecting resistance</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="bullish">
+          <h4>&#9650; Bullish signal</h4><div class="sub">Momentum leaning up</div>
+          <div class="drop" id="dropBullish"></div>
+        </div>
+        <div class="col gamble" data-bucket="bearish">
+          <h4>&#9660; Bearish signal</h4><div class="sub">Momentum leaning down</div>
+          <div class="drop" id="dropBearish"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="2">
+        <h4>1. Which pattern signals a potential trend change and consists of three peaks?</h4>
+        <button class="opt" data-idx="0">Rectangle</button>
+        <button class="opt" data-idx="1">Triple bottom</button>
+        <button class="opt" data-idx="2">Head and shoulders</button>
+        <button class="opt" data-idx="3">Bull flag</button>
+        <div class="exp">The head and shoulders has three peaks (a higher middle head between two shoulders) and often signals a reversal.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. What is the main difference between an SMA and an EMA?</h4>
+        <button class="opt" data-idx="0">The SMA reacts more quickly to price</button>
+        <button class="opt" data-idx="1">The EMA weights all periods equally</button>
+        <button class="opt" data-idx="2">The EMA places more weight on recent price data</button>
+        <button class="opt" data-idx="3">The SMA only works on daily charts</button>
+        <div class="exp">The EMA weights recent prices more heavily, so it responds faster than the equally weighted SMA.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. When does a golden cross occur?</h4>
+        <button class="opt" data-idx="0">When a shorter MA crosses below a longer MA</button>
+        <button class="opt" data-idx="1">When a shorter MA crosses above a longer MA</button>
+        <button class="opt" data-idx="2">When price breaks below support</button>
+        <button class="opt" data-idx="3">When RSI drops under 30</button>
+        <div class="exp">A golden cross (bullish) is when a shorter MA crosses above a longer MA; the reverse is a death cross.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. On the RSI oscillator, a reading above 70 generally signals the stock is:</h4>
+        <button class="opt" data-idx="0">Oversold</button>
+        <button class="opt" data-idx="1">Overbought</button>
+        <button class="opt" data-idx="2">Paying a dividend</button>
+        <button class="opt" data-idx="3">Delisted</button>
+        <div class="exp">RSI runs 0-100; above 70 is generally overbought, below 30 generally oversold.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. What most helps confirm that a chart-pattern breakout is real?</h4>
+        <button class="opt" data-idx="0">A rising P/E ratio</button>
+        <button class="opt" data-idx="1">Increased volume on the breakout</button>
+        <button class="opt" data-idx="2">A new CEO</button>
+        <button class="opt" data-idx="3">A lower share price</button>
+        <div class="exp">A breakout backed by increased volume is more trustworthy than one on weak volume.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Up Next: Fundamentals Lite</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Patterns like head and shoulders hint at reversals, and volume helps confirm a breakout.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Moving averages smooth price; a golden cross reads bullish, a death cross bearish.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>RSI and the stochastic read momentum, not certainty.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Every one of these is a clue, never a guarantee.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 3.2</div><h3>Fundamentals Lite: P/E, Earnings &amp; Catalysts</h3></div>
+      <span class="badge">Look at the company behind the chart &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 22.104, "interactive": false, "label": "Patterns & Indicators"}, {"id": "patterns", "start": 22.604, "end": 68.564, "interactive": false, "label": "Patterns That Repeat"}, {"id": "moving-averages", "start": 69.064, "end": 109.264, "interactive": false, "label": "Moving Averages"}, {"id": "oscillators", "start": 109.764, "end": 145.284, "interactive": false, "label": "Momentum Meters"}, {"id": "rsi-dial", "start": 145.784, "end": 172.448, "interactive": true, "label": "Read the RSI"}, {"id": "signal-sorter", "start": 172.948, "end": 199.996, "interactive": true, "label": "Bullish or Bearish Signal"}, {"id": "quiz", "start": 200.496, "end": 206.952, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 207.452, "end": 240.956, "interactive": false, "label": "Up Next: Fundamentals Lite"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: RSI reader (isolated) ---------- */
+(function(){
+  var r=document.getElementById('rsiRange'); if(!r) return;
+  var vEl=document.getElementById('rsiVal'), pill=document.getElementById('rsiPill'), note=document.getElementById('rsiNote');
+  var BLUE='#2563EB', GREEN='#16A34A', RED='#DC2626';
+  function upd(){
+    var v=+r.value, color, zone, msg;
+    if(v<=30){ color=BLUE; zone='Oversold'; msg='At or below 30. Momentum is stretched to the downside.'; }
+    else if(v>=70){ color=RED; zone='Overbought'; msg='At or above 70. Momentum is stretched to the upside.'; }
+    else{ color=GREEN; zone='Neutral'; msg='Between the lines. No strong momentum signal.'; }
+    vEl.textContent=v; vEl.style.color=color;
+    pill.textContent=zone; pill.style.background=color;
+    note.textContent=msg;
+  }
+  r.addEventListener('input',upd); upd();
+})();
+</script>
+</body>
+</html>

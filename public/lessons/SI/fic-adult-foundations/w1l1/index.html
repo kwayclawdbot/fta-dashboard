@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Why Invest &amp; the Power of Compounding &middot; SI-100 Adults &middot; Module 1 &middot; Lesson 1.1</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="1" />
+<meta name="fta-lesson" content="L1.1" />
+<meta name="fta-lesson-title" content="Why Invest — The Power of Compounding" />
+<meta name="fta-lesson-objectives" content="Understand why idle money loses ground|Define investing versus saving|See how compounding grows money over time|Tell reasonable goals from gambles" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: compounding slider */
+  .cl-wrap{display:grid;grid-template-columns:.85fr 1.15fr;gap:30px;align-items:center;max-width:960px;margin:24px auto 0}
+  @media(max-width:860px){.cl-wrap{grid-template-columns:1fr}}
+  .cl-art{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft)}
+  .cl-art img{width:100%;display:block;animation:clfloat 5s ease-in-out infinite}
+  @keyframes clfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .cl-calc{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
+  .cl-top{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft);margin-bottom:6px}
+  #clRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;background:var(--sand);cursor:pointer;margin:6px 0 18px}
+  #clRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+  #clRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
+  .cl-years{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--soft);text-align:center}
+  .cl-years span{color:var(--ink);font-weight:800}
+  .cl-mult{font-family:var(--font-display);font-weight:900;font-size:52px;line-height:1;text-align:center;color:var(--green);margin:6px 0 14px}
+  .cl-bartrack{height:16px;border-radius:99px;background:var(--paper-2);border:1px solid var(--sand);overflow:hidden}
+  .cl-fill{height:100%;width:2%;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--green-2));transition:width .25s ease}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 1 &middot; Lesson 1.1</div>
+      <h1 style="font-size:clamp(38px,7vw,68px);font-weight:900;line-height:1;margin:12px 0 12px">Why Invest</h1>
+      <p class="lead">Idle money quietly loses ground as the cost of living rises. Investing is how you put it to work. In the next few minutes you'll see exactly why time and compounding change everything.</p>
+      <div class="badges">
+        <span class="badge"><b>7</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A dawn kitchen table with a laptop showing a rising index chart" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · WHAT INVESTING IS -->
+<section id="what-investing-is">
+  <div class="inner">
+    <div class="anim"><div class="label">The Foundation</div><h2 class="title">Give your money a job</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/seed.jpg" alt="A seed growing into a coin-bearing tree" /></div>
+      <div>
+        <p class="bigdef">Investing means <span class="hi">giving your money a job</span> — putting it into assets like shares of a company and letting it grow over time.</p>
+        <div class="two">
+          <div class="cmp safe">
+            <span class="tag">Saving</span>
+            <h3>Safe &amp; flat</h3>
+            <p>Keeps your money available for emergencies. That matters. But safe money mostly stays flat.</p>
+          </div>
+          <div class="cmp grow">
+            <span class="tag">Investing</span>
+            <h3>Owned &amp; growing</h3>
+            <p>You own a piece of something that can become worth more. That chance to grow is the whole point.</p>
+          </div>
+        </div>
+        <div class="insight">Flat versus growing. That single difference is the reason this course exists.</div>
+      </div>
+    </div>
+    <div class="define anim d2" style="margin-top:26px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Left alone, cash doesn't just sit there — it slowly buys <span class="hi">less</span>.</p>
+        <div class="insight">As prices creep up year after year, idle money loses buying power. Investing is how you give it a fighting chance to keep up and pull ahead.</div>
+      </div>
+      <div class="define-art"><img src="./assets/idle-money.jpg" alt="A small stack of coins shrinking beside rising price tags and a wilting plant" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · COMPOUNDING (embedded clip) -->
+<section id="compounding">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">The Compounding Engine</div>
+      <h2 class="title">Same start. One line put to work.</h2>
+      <p class="lead" style="margin:0 auto">Both lines begin with the same dollars. Watch the invested line pull away, year after year — that's compounding, returns earning their own returns.</p>
+    </div>
+    <div class="video-wrap anim d1">
+      <video id="compVid" preload="metadata" playsinline muted poster="./assets/compounding-poster.jpg">
+        <source src="./assets/compounding.mp4" type="video/mp4" />
+      </video>
+      <div class="video-ov" id="compOv"><div class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></div></div>
+    </div>
+    <div class="disclaim anim d2"><b>One honest note:</b> the growth rates here (7% vs 0.5%) are an illustrative example, not a forecast or a promise. Real markets rise and fall, and no one can guarantee a return. What the chart shows is the <i>shape</i> of the idea: a dollar put to work early has more time to compound.</div>
+  </div>
+</section>
+
+<!-- 4 · COMPOUNDING LAB (bespoke slider) -->
+<section id="compounding-lab">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Feel the Snowball</div>
+      <h2 class="title">Drag the years, watch the curve bend</h2>
+      <p class="lead" style="margin:0 auto">Slide from one year out to forty. The growth multiple barely moves at first, then bends sharply upward. That bend is the whole point of starting early.</p>
+    </div>
+    <div class="cl-wrap anim d1">
+      <div class="cl-art"><img src="./assets/snowball.jpg" alt="A snowball rolling downhill and growing, with a rising trail behind it" /></div>
+      <div class="cl-calc" id="clCalc">
+        <div class="cl-top"><span>1 year</span><span>40 years</span></div>
+        <input type="range" id="clRange" min="1" max="40" value="1" aria-label="Years invested" />
+        <div class="cl-years"><span id="clYears">1</span> years invested becomes a multiple of</div>
+        <div class="cl-mult">&times;<span id="clMult">1.07</span></div>
+        <div class="cl-bartrack"><div class="cl-fill" id="clFill"></div></div>
+        <div class="disclaim" style="margin-top:16px">Illustrative 7% yearly growth — the <i>shape</i> of the idea, not a forecast or a promise.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · GOALS SORTER (interactive) -->
+<section id="goals-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Reasonable, or a gamble?</h2>
+      <p class="lead" style="margin:0 auto">Tap a goal to pick it up, then tap the column where it belongs. Reasonable goals play out over years. Gambles are measured in days.</p>
+    </div>
+    <div class="define anim d1" style="margin:22px auto 0;max-width:820px">
+      <div class="define-art"><img src="./assets/goals.jpg" alt="Patient long-term goals on a steady road versus tumbling dice in a storm" /></div>
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Compounding rewards <span class="hi">patience</span>. So should your goals.</p>
+        <div class="insight">A goal you can reach in a week isn't a goal — it's a bet. Real investing goals are measured in years and decades.</div>
+      </div>
+    </div>
+    <div class="sorter anim d2">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="reasonable">Retire comfortably</button>
+        <button class="chip" data-bucket="reasonable">Buy a home</button>
+        <button class="chip" data-bucket="reasonable">Fund an education</button>
+        <button class="chip" data-bucket="reasonable">Build a business</button>
+        <button class="chip" data-bucket="gamble">Triple my money this month</button>
+        <button class="chip" data-bucket="gamble">Small deposit &rarr; fortune by next week</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="reasonable">
+          <h4>&#10003; Reasonable</h4><div class="sub">Years to decades — compounding rewards this</div>
+          <div class="drop" id="dropReasonable"></div>
+        </div>
+        <div class="col gamble" data-bucket="gamble">
+          <h4>&#10007; Gamble</h4><div class="sub">Days to weeks — this is how people lose money</div>
+          <div class="drop" id="dropGamble"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a goal to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What happens to money that just sits idle in a bank account over time?</h4>
+        <button class="opt" data-idx="0">It automatically doubles every few years</button>
+        <button class="opt" data-idx="1">It slowly loses buying power as the cost of living rises</button>
+        <button class="opt" data-idx="2">It stays exactly as valuable as the day you deposited it</button>
+        <button class="opt" data-idx="3">It is invested by the bank on your behalf for high returns</button>
+        <div class="exp">Idle cash buys a little less each year as the cost of living creeps up. That quiet erosion is why we invest.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. What is the best one-line definition of investing?</h4>
+        <button class="opt" data-idx="0">Keeping your money safe and available for emergencies</button>
+        <button class="opt" data-idx="1">Guessing which stock will jump the most this week</button>
+        <button class="opt" data-idx="2">Giving your money a job by putting it into assets that can grow</button>
+        <button class="opt" data-idx="3">Moving cash between two bank accounts</button>
+        <div class="exp">Investing means giving your money a job — putting it into assets like shares so it can grow over time. That's different from saving, which just keeps money flat and safe.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. What does "compounding" actually mean?</h4>
+        <button class="opt" data-idx="0">Your returns start earning their own returns</button>
+        <button class="opt" data-idx="1">Adding more cash to your account every month</button>
+        <button class="opt" data-idx="2">A fee the broker charges each year</button>
+        <button class="opt" data-idx="3">Selling everything once a year and starting over</button>
+        <div class="exp">Compounding is returns earning returns — your gains start making gains. Early on it's barely visible; given decades, the invested line pulls far ahead.</div>
+      </div>
+      <div class="q" data-correct="3">
+        <h4>4. The 7% growth rate shown in the compounding chart is best described as:</h4>
+        <button class="opt" data-idx="0">A guaranteed return you will definitely earn</button>
+        <button class="opt" data-idx="1">The exact return of the stock market every year</button>
+        <button class="opt" data-idx="2">A promise made by the Family Investing Club</button>
+        <button class="opt" data-idx="3">An illustrative example, not a forecast or a promise</button>
+        <div class="exp">The rate is illustrative — it shows the shape of the idea. Real markets rise and fall, and no one can guarantee a return.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. Which is a reasonable investing goal rather than a gamble?</h4>
+        <button class="opt" data-idx="0">Tripling your money by the end of the month</button>
+        <button class="opt" data-idx="1">Funding an education over many years</button>
+        <button class="opt" data-idx="2">Turning a small deposit into a fortune by next week</button>
+        <button class="opt" data-idx="3">Betting your savings on one stock overnight</button>
+        <div class="exp">Reasonable goals play out over years and decades — exactly the timeframe compounding rewards. Get-rich-this-week targets are gambles, not goals.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You've Got The Why</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Idle money loses ground to rising costs.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Invested money puts itself to work and can grow.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Compounding is the engine — time is the lever.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The goals worth setting are patient ones, measured in years.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 1.2</div><h3>What a Stock Is &amp; How the Market Works</h3></div>
+      <span class="badge">Open the hood on the &ldquo;what&rdquo; &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id":"hero","start":0.0,"end":26.304,"interactive":false,"label":"Why Invest"},{"id":"what-investing-is","start":26.804,"end":56.804,"interactive":false,"label":"Give Your Money a Job"},{"id":"compounding","start":57.304,"end":97.264,"interactive":true,"label":"The Compounding Engine"},{"id":"compounding-lab","start":97.764,"end":122.532,"interactive":true,"label":"Feel the Snowball"},{"id":"goals-sorter","start":123.032,"end":149.144,"interactive":true,"label":"Reasonable or a Gamble"},{"id":"quiz","start":149.644,"end":155.212,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":155.712,"end":180.672,"interactive":false,"label":"You've Got the Why"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: compounding slider (isolated) ---------- */
+(function(){
+  var r=document.getElementById('clRange'); if(!r) return;
+  var yEl=document.getElementById('clYears'), mEl=document.getElementById('clMult'), fill=document.getElementById('clFill');
+  var maxMult=Math.pow(1.07,40);
+  function upd(){
+    var y=+r.value, m=Math.pow(1.07,y);
+    yEl.textContent=y; mEl.textContent=m.toFixed(2);
+    fill.style.width=Math.max(2,(m/maxMult)*100)+'%';
+  }
+  r.addEventListener('input',upd); upd();
+})();
+</script>
+</body>
+</html>

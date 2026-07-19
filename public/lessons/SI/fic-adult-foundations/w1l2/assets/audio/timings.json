@@ -1,0 +1,55 @@
+{
+  "total_seconds": 220.296,
+  "gap": 0.5,
+  "voice": "coral (gpt-4o-mini-tts, adult charismatic mentor)",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 28.608,
+      "dur": 28.608
+    },
+    {
+      "id": "what-is-a-stock",
+      "start": 29.108,
+      "end": 62.156,
+      "dur": 33.048
+    },
+    {
+      "id": "how-market-works",
+      "start": 62.656,
+      "end": 92.656,
+      "dur": 30.0
+    },
+    {
+      "id": "price-discovery",
+      "start": 93.156,
+      "end": 126.516,
+      "dur": 33.36
+    },
+    {
+      "id": "indices",
+      "start": 127.016,
+      "end": 156.536,
+      "dur": 29.52
+    },
+    {
+      "id": "fact-or-myth",
+      "start": 157.036,
+      "end": 179.692,
+      "dur": 22.656
+    },
+    {
+      "id": "quiz",
+      "start": 180.192,
+      "end": 187.944,
+      "dur": 7.752
+    },
+    {
+      "id": "bridge",
+      "start": 188.444,
+      "end": 219.956,
+      "dur": 31.512
+    }
+  ]
+}

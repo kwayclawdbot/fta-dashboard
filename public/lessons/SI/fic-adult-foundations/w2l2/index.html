@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Support, Resistance, Trend &amp; Volume &middot; SI-100 Adults &middot; Module 2 &middot; Lesson 2.2</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.2" />
+<meta name="fta-lesson-title" content="Support, Resistance, Trend &amp; Volume" />
+<meta name="fta-lesson-objectives" content="Spot support and resistance levels|Identify uptrend, downtrend and range|Use volume to confirm moves|Tell a breakout from a pullback" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* ---- support & resistance animated SVG ---- */
+  .sr-viz{max-width:760px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);background:var(--card)}
+  .sr-viz svg{width:100%;display:block}
+  .sr-price{fill:none;stroke:var(--gold-600);stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:2000;stroke-dashoffset:2000;animation:srdraw 3.4s ease forwards}
+  @keyframes srdraw{to{stroke-dashoffset:0}}
+  .sr-res{stroke:var(--red);stroke-width:2.5;stroke-dasharray:8 7}
+  .sr-sup{stroke:var(--green);stroke-width:2.5;stroke-dasharray:8 7}
+  .sr-ball{fill:var(--ink)}
+  .sr-lab{font-family:var(--font-display);font-weight:700;font-size:15px}
+  .sr-lab.r{fill:var(--red-2)}.sr-lab.s{fill:var(--green)}
+
+  /* ---- bespoke: trend classifier ---- */
+  .tc-wrap{max-width:640px;margin:26px auto 0}
+  .tc-stage{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft);text-align:center}
+  .tc-count{font-family:var(--font-display);font-weight:700;font-size:12.5px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-700)}
+  .tc-chart{margin:14px auto;border-radius:var(--r-lg);background:var(--paper-2);border:1px solid var(--sand);overflow:hidden;animation:tcfloat 5s ease-in-out infinite}
+  .tc-chart svg{width:100%;display:block}
+  .tc-line{fill:none;stroke:var(--gold-600);stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1600;stroke-dashoffset:1600;animation:tcdraw 1.1s ease forwards}
+  .tc-dot{fill:var(--gold-700)}
+  @keyframes tcdraw{to{stroke-dashoffset:0}}
+  @keyframes tcfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .tc-fb{min-height:24px;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--soft);margin:8px 0 14px}
+  .tc-fb.good{color:var(--green)}.tc-fb.bad{color:var(--red)}
+  .tc-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .tc-btn{font-family:var(--font-display);font-weight:700;font-size:15px;padding:12px 22px;border-radius:var(--r-full);border:1px solid var(--sand);background:var(--paper);color:var(--ink);cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+  .tc-btn:hover:not(:disabled){transform:translateY(-2px);border-color:var(--gold)}
+  .tc-btn:disabled{cursor:default;opacity:.9}
+  .tc-btn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+  .tc-btn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+  .tc-score{margin-top:16px;font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--gold-600)}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 2 &middot; Lesson 2.2</div>
+      <h1 style="font-size:clamp(36px,6.6vw,64px);font-weight:900;line-height:1.02;margin:12px 0 12px">Floors, Ceilings &amp; Trends</h1>
+      <p class="lead">Price moves between floors and ceilings, it drifts in trends, and volume tells you which moves to believe. Learn to read those three things and a chart stops looking like noise.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A price chart with a clear floor line and ceiling line, a ball bouncing between them" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · SUPPORT & RESISTANCE -->
+<section id="support-resistance">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">The Floor &amp; The Ceiling</div><h2 class="title">Support &amp; resistance</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/floor-ceiling.jpg" alt="A price ball bouncing between a floor held up by buyers and a ceiling pressed down by sellers" /></div>
+      <div>
+        <p class="bigdef"><span class="hi">Support</span> is a price floor where buying tends to stop a decline. <span class="hi">Resistance</span> is the ceiling where selling stalls a rise.</p>
+        <div class="insight">These levels form because the market remembers them. Where buyers stepped in before, they tend to step in again. Where sellers took over before, they tend to take over again.</div>
+      </div>
+    </div>
+    <div class="sr-viz anim d2">
+      <svg viewBox="0 0 680 320" role="img" aria-label="Illustrative price line bouncing between a support floor and a resistance ceiling" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <line class="sr-res" x1="40" y1="72" x2="640" y2="72" />
+        <line class="sr-sup" x1="40" y1="250" x2="640" y2="250" />
+        <text class="sr-lab r" x="48" y="60">Resistance (ceiling)</text>
+        <text class="sr-lab s" x="48" y="272">Support (floor)</text>
+        <path class="sr-price" id="srPath" d="M40,250 L140,82 L240,250 L340,82 L440,250 L540,82 L620,168" />
+        <circle class="sr-ball" r="9">
+          <animateMotion dur="6s" repeatCount="indefinite">
+            <mpath xlink:href="#srPath" />
+          </animateMotion>
+        </circle>
+      </svg>
+    </div>
+    <div class="disclaim anim d3"><b>Illustrative:</b> the price path above is the shape of the idea, not a real quote. Support and resistance are zones, not exact numbers, and either level can eventually break.</div>
+  </div>
+</section>
+
+<!-- 3 · THE THREE TRENDS -->
+<section id="trend">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Direction</div><h2 class="title">The three trends</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">Zoom out and every chart is doing one of three things.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Uptrend</span>
+            <h3>Staircase up</h3>
+            <p>Higher highs and higher lows. Draw the trendline by connecting the higher lows.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Downtrend</span>
+            <h3>Staircase down</h3>
+            <p>Lower highs and lower lows. Draw the trendline by connecting the lower highs.</p>
+          </div>
+        </div>
+        <div class="insight">The third case is a sideways range: no clear direction, price chopping between a rough floor and ceiling. And no trend lasts forever, so trends bend, pause, and reverse.</div>
+      </div>
+      <div class="define-art"><img src="./assets/trend-staircase.jpg" alt="A staircase climbing up, a staircase descending, and a flat hallway for a sideways range" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · VOLUME CONFIRMS -->
+<section id="volume">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Conviction</div><h2 class="title">Volume confirms</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/volume-bars.jpg" alt="A row of volume bars beneath a rising price line, one tall bar highlighted under a breakout" /></div>
+      <div>
+        <p class="bigdef">Volume is the number of shares traded in a period. It tells you how much <span class="hi">conviction</span> is behind a move.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Rising volume</span>
+            <h3>Believe it</h3>
+            <p>A move that pushes through a level on rising volume has real buyers or sellers behind it.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Weak volume</span>
+            <h3>Stay skeptical</h3>
+            <p>A breakout on thin volume is suspect. It can fail and snap right back through the level.</p>
+          </div>
+        </div>
+        <div class="insight">A breakout is a decisive close through support, resistance, or a trendline. Volume does not predict the move, it confirms whether the move is real.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · TREND CLASSIFIER (bespoke interactive) -->
+<section id="trend-classifier">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn &middot; Train Your Eye</div>
+      <h2 class="title">Name that trend</h2>
+      <p class="lead" style="margin:0 auto">A chart appears. Call it: uptrend, downtrend, or sideways range. Tap your answer, get instant feedback, then the next one loads.</p>
+    </div>
+    <div class="tc-wrap anim d1">
+      <div class="tc-stage">
+        <div class="tc-count" id="tcCount">Chart 1 of 3</div>
+        <div class="tc-chart" id="tcChart"></div>
+        <div class="tc-fb" id="tcFb">Which trend is this?</div>
+        <div class="tc-btns" id="tcBtns">
+          <button class="tc-btn" data-a="up">Uptrend</button>
+          <button class="tc-btn" data-a="down">Downtrend</button>
+          <button class="tc-btn" data-a="side">Sideways</button>
+        </div>
+        <div class="tc-score" id="tcScore">Score: 0 of 0</div>
+        <div class="disclaim" style="margin-top:14px">Illustrative charts: the shape of the pattern, not real quotes.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · SUPPORT/RESISTANCE SORTER (interactive) -->
+<section id="sr-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Support or resistance?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Support is the floor where buyers step in. Resistance is the ceiling where sellers take over.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="support">A price floor where buyers step in</button>
+        <button class="chip" data-bucket="resistance">A price ceiling where sellers step in</button>
+        <button class="chip" data-bucket="support">Price tends to bounce up from here</button>
+        <button class="chip" data-bucket="resistance">Price tends to stall and turn down here</button>
+        <button class="chip" data-bucket="support">Formed by repeated lows holding</button>
+        <button class="chip" data-bucket="resistance">Formed by repeated highs capping price</button>
+        <button class="chip" data-bucket="support">Demand outweighs supply at this level</button>
+        <button class="chip" data-bucket="resistance">Supply outweighs demand at this level</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="support">
+          <h4>&#9650; Support (floor)</h4><div class="sub">Buyers step in &mdash; demand holds price up</div>
+          <div class="drop" id="dropSupport"></div>
+        </div>
+        <div class="col gamble" data-bucket="resistance">
+          <h4>&#9660; Resistance (ceiling)</h4><div class="sub">Sellers take over &mdash; supply caps price</div>
+          <div class="drop" id="dropResistance"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What is the significance of a support level?</h4>
+        <button class="opt" data-idx="0">It is a ceiling that prevents prices from rising</button>
+        <button class="opt" data-idx="1">It is a price floor where buying tends to stop a decline</button>
+        <button class="opt" data-idx="2">It shows the trading volume</button>
+        <button class="opt" data-idx="3">It marks the all-time high of a stock</button>
+        <div class="exp">Support acts like a floor where buying pressure tends to halt a decline; resistance is the ceiling.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. True or False: In an uptrend, a trendline is drawn by connecting consecutive higher highs.</h4>
+        <button class="opt" data-idx="0">True</button>
+        <button class="opt" data-idx="1">False</button>
+        <button class="opt" data-idx="2">True, only on weekly charts</button>
+        <button class="opt" data-idx="3">True, only for downtrends</button>
+        <div class="exp">False. In an uptrend, a trendline connects consecutive higher LOWS; lower highs are connected in a downtrend.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. Why does volume matter when reading a price move?</h4>
+        <button class="opt" data-idx="0">It sets the company's dividend</button>
+        <button class="opt" data-idx="1">It shows the strength behind a move and helps confirm breakouts</button>
+        <button class="opt" data-idx="2">It determines the P/E ratio</button>
+        <button class="opt" data-idx="3">It replaces the need for support and resistance</button>
+        <div class="exp">A move backed by rising volume is more reliable; volume confirms the conviction behind price action.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. What defines an uptrend?</h4>
+        <button class="opt" data-idx="0">Lower highs and lower lows</button>
+        <button class="opt" data-idx="1">Higher highs and higher lows</button>
+        <button class="opt" data-idx="2">A flat sideways range</button>
+        <button class="opt" data-idx="3">One big spike then nothing</button>
+        <div class="exp">An uptrend is a staircase up: each peak and each pullback low is higher than the last.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. What is a breakout?</h4>
+        <button class="opt" data-idx="0">Price bouncing back to a trendline</button>
+        <button class="opt" data-idx="1">Price closing decisively through a level, potentially starting a new move</button>
+        <button class="opt" data-idx="2">A dividend payment</button>
+        <button class="opt" data-idx="3">A type of brokerage account</button>
+        <div class="exp">A breakout is a decisive close through support/resistance or a trendline; volume helps confirm it is real.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You Can Read A Chart</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Support is the floor, resistance is the ceiling. Both are zones, and either can break.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Trends come in three: up, down, and sideways range.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Draw the line along higher lows in an uptrend, lower highs in a downtrend.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Volume confirms conviction. A breakout is a decisive close through a level.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 3.1</div><h3>Chart Patterns &amp; Indicators</h3></div>
+      <span class="badge">Turn levels into signals &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 25.104, "interactive": false, "label": "Floors Ceilings and Trends"}, {"id": "support-resistance", "start": 25.604, "end": 57.908, "interactive": false, "label": "Support and Resistance"}, {"id": "trend", "start": 58.408, "end": 95.464, "interactive": false, "label": "The Three Trends"}, {"id": "volume", "start": 95.964, "end": 125.868, "interactive": false, "label": "Volume Confirms"}, {"id": "trend-classifier", "start": 126.368, "end": 147.584, "interactive": true, "label": "Name That Trend"}, {"id": "sr-sorter", "start": 148.084, "end": 174.652, "interactive": true, "label": "Support or Resistance"}, {"id": "quiz", "start": 175.152, "end": 182.016, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 182.516, "end": 219.524, "interactive": false, "label": "Up Next Patterns and Indicators"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: trend classifier (isolated) ---------- */
+(function(){
+  var chartEl=document.getElementById('tcChart'); if(!chartEl) return;
+  var fbEl=document.getElementById('tcFb'), countEl=document.getElementById('tcCount'),
+      scoreEl=document.getElementById('tcScore'), btnWrap=document.getElementById('tcBtns');
+  var btns=Array.prototype.slice.call(btnWrap.querySelectorAll('.tc-btn'));
+  var charts=[
+    {a:'up',   pts:[[30,272],[90,214],[150,244],[210,172],[270,204],[330,132],[390,162],[450,92],[510,120],[580,54]]},
+    {a:'side', pts:[[30,160],[90,112],[150,200],[210,120],[270,196],[330,126],[390,198],[450,120],[510,192],[580,150]]},
+    {a:'down', pts:[[30,52],[90,110],[150,80],[210,152],[270,120],[330,190],[390,160],[450,228],[510,200],[580,270]]}
+  ];
+  // shuffle for variety
+  for(var i=charts.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=charts[i]; charts[i]=charts[j]; charts[j]=t; }
+  function label(a){ return a==='up'?'uptrend':a==='down'?'downtrend':'sideways range'; }
+  function svg(pts){
+    var poly=pts.map(function(p){return p[0]+','+p[1];}).join(' ');
+    var dots=pts.map(function(p){return '<circle class="tc-dot" cx="'+p[0]+'" cy="'+p[1]+'" r="3.4"/>';}).join('');
+    return '<svg viewBox="0 0 610 300" role="img" aria-label="Illustrative price chart">'+
+           '<polyline class="tc-line" points="'+poly+'"/>'+dots+'</svg>';
+  }
+  var idx=0, score=0, answered=false;
+  function render(){
+    answered=false;
+    countEl.textContent='Chart '+(idx+1)+' of '+charts.length;
+    chartEl.innerHTML=svg(charts[idx].pts);
+    fbEl.textContent='Which trend is this?'; fbEl.className='tc-fb';
+    btns.forEach(function(b){ b.disabled=false; b.classList.remove('right','wrong'); });
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click',function(){
+      if(answered) return; answered=true;
+      var correct=charts[idx].a, pick=b.dataset.a, ok=(pick===correct);
+      if(ok) score++;
+      btns.forEach(function(x){ x.disabled=true; if(x.dataset.a===correct) x.classList.add('right'); });
+      if(!ok) b.classList.add('wrong');
+      fbEl.textContent=(ok?'Correct. ':'Not quite. ')+'That is a '+label(correct)+'.';
+      fbEl.className='tc-fb '+(ok?'good':'bad');
+      scoreEl.textContent='Score: '+score+' of '+(idx+1);
+      setTimeout(function(){
+        idx++;
+        if(idx<charts.length){ render(); }
+        else{
+          chartEl.innerHTML='';
+          countEl.textContent='Done';
+          btnWrap.style.display='none';
+          fbEl.textContent='You named '+score+' of '+charts.length+' correctly. Reps make it instant.';
+          fbEl.className='tc-fb good';
+          scoreEl.textContent='Final score: '+score+' of '+charts.length;
+        }
+      },1250);
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

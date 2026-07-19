@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calls, Puts &amp; Premium (Greeks Lite) &middot; SI-100 Adults &middot; Module 4 &middot; Lesson 4.1</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="4" />
+<meta name="fta-lesson" content="L4.1" />
+<meta name="fta-lesson-title" content="Calls, Puts &amp; Premium (Greeks Lite)" />
+<meta name="fta-lesson-objectives" content="Define calls and puts|Know strike, expiration and premium|Tell in-the-money from out-of-the-money|Grasp delta, theta and vega at a glance" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: Greeks-lite pill row */
+  .greeks-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+  @media(max-width:640px){.greeks-row{grid-template-columns:1fr}}
+  .gpill{border:1px solid var(--sand);background:var(--card);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-soft)}
+  .gpill .gk{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--gold-600)}
+  .gpill .gd{font-size:13.5px;color:var(--soft);margin-top:4px}
+
+  /* bespoke: moneyness explorer */
+  .mn-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:30px;align-items:center;max-width:940px;margin:24px auto 0}
+  @media(max-width:860px){.mn-wrap{grid-template-columns:1fr}}
+  .mn-viz{position:relative;height:300px;border-radius:var(--r-xl);border:1px solid var(--sand);
+    background:linear-gradient(180deg,var(--green-bg),var(--paper-2) 50%,var(--red-bg));box-shadow:var(--shadow-soft);overflow:hidden}
+  .mn-zone{position:absolute;left:0;right:0;font-family:var(--font-display);font-weight:700;font-size:11.5px;
+    letter-spacing:1.5px;text-transform:uppercase;color:var(--soft);padding:8px 12px}
+  .mn-zone.up{top:0}.mn-zone.down{bottom:0}
+  .mn-strike{position:absolute;left:0;right:0;top:50%;height:0;border-top:2.5px dashed var(--gold-600)}
+  .mn-strike span{position:absolute;right:10px;top:-11px;font-family:var(--font-display);font-weight:800;font-size:12px;
+    color:var(--ink);background:var(--gold-bg);border:1px solid #FDE68A;border-radius:var(--r-full);padding:2px 10px}
+  .mn-price{position:absolute;left:0;right:0;top:26%;height:0;border-top:3px solid var(--ink);transition:top .28s cubic-bezier(.22,1,.36,1)}
+  .mn-price .dot{position:absolute;left:16px;top:-9px;width:18px;height:18px;border-radius:50%;background:var(--ink);
+    border:3px solid var(--card);box-shadow:var(--shadow-soft);animation:mnpulse 2.4s ease-in-out infinite}
+  .mn-price .tag{position:absolute;left:44px;top:-13px;font-family:var(--font-display);font-weight:800;font-size:12px;
+    color:var(--card);background:var(--ink);border-radius:var(--r-full);padding:3px 11px}
+  @keyframes mnpulse{0%,100%{box-shadow:0 0 0 0 rgba(16,24,40,.28)}50%{box-shadow:0 0 0 8px rgba(16,24,40,0)}}
+  .mn-panel{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
+  .mn-top{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--soft);margin-bottom:6px}
+  #mnRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;
+    background:linear-gradient(90deg,var(--red-2),var(--sand) 50%,var(--green));cursor:pointer;margin:6px 0 18px}
+  #mnRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+  #mnRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
+  .mn-badges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .mn-badge{border-radius:var(--r-lg);padding:14px;text-align:center;border:1px solid var(--sand);background:var(--paper-2)}
+  .mn-badge .bt{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
+  .mn-badge .bs{font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:1px;margin-top:4px;color:var(--dim)}
+  .mn-badge.itm{border-color:var(--green-border);background:var(--green-bg)}
+  .mn-badge.itm .bs{color:var(--green)}
+  .mn-badge.otm{border-color:var(--sand);background:var(--paper-2)}
+  .mn-badge.otm .bs{color:var(--dim)}
+  .mn-exp{font-size:14.5px;color:var(--ink);font-weight:600;min-height:44px}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 4 &middot; Lesson 4.1</div>
+      <h1 style="font-size:clamp(34px,6.4vw,62px);font-weight:900;line-height:1;margin:12px 0 12px">Options 101</h1>
+      <p class="lead">An option is a contract that gives you the right, but never the obligation, to buy or sell at a set price. You're buying a choice. In the next few minutes you'll meet calls and puts, break down every contract, and get a feel for the Greeks.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="An options contract at a fork in the road, one path rising and one falling" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · CALLS AND PUTS -->
+<section id="calls-and-puts">
+  <div class="inner">
+    <div class="anim"><div class="label">The Right, Not the Obligation</div><h2 class="title">Two contracts, two directions</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div class="define-art"><img src="./assets/call-put.jpg" alt="A green upward arrow for a call beside a red downward arrow for a put" /></div>
+      <div>
+        <p class="bigdef">A <span class="hi">call</span> is the right to buy. A <span class="hi">put</span> is the right to sell.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Call</span>
+            <h3>Right to buy</h3>
+            <p>You lock in the right to buy the underlying at the strike. Buy calls when you're bullish and expect the price to rise.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Put</span>
+            <h3>Right to sell</h3>
+            <p>You lock in the right to sell the underlying at the strike. Buy puts when you're bearish and expect the price to fall.</p>
+          </div>
+        </div>
+        <div class="insight">Both are derivative contracts: their value comes from something else, the stock or asset sitting underneath them.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · ANATOMY -->
+<section id="anatomy">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Strike, Expiration, Premium</div>
+      <h2 class="title">The three parts of every contract</h2>
+      <p class="lead" style="margin:0 auto">Once you can name these three, you can read any option quote. Then we add a light touch of the Greeks.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:26px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">Strike, expiration, premium.</p>
+        <div class="insight" style="margin-top:16px"><b>Strike</b> is the agreed price you can buy or sell at. <b>Expiration</b> is the deadline, the date the contract stops existing. <b>Premium</b> is what you pay to own the right.</div>
+        <p class="lead" style="font-size:16px;margin-top:16px">Premium splits in two: <b>intrinsic value</b> (real money right now) plus <b>time value</b> (what you pay for the chance the price moves your way before expiration).</p>
+      </div>
+      <div class="define-art"><img src="./assets/premium.jpg" alt="A ticket handed over as an option premium, with a clock hinting at time value" /></div>
+    </div>
+    <div class="two anim d2" style="margin-top:26px">
+      <div class="cmp grow">
+        <span class="tag">Leverage</span>
+        <h3>Control more with less</h3>
+        <p>A smaller amount of capital can control a larger position. Leverage amplifies both gains and losses.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">Defined risk</span>
+        <h3>Buyer's max loss</h3>
+        <p>When you buy an option, the most you can lose is the premium you paid, nothing beyond it.</p>
+      </div>
+    </div>
+    <div class="define anim d3" style="margin-top:28px">
+      <div>
+        <div class="label" style="color:var(--gold-700)">Greeks Lite</div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px);margin-top:6px">Three dials that tell you how a contract reacts.</p>
+        <div class="greeks-row">
+          <div class="gpill"><div class="gk">Delta</div><div class="gd">Sensitivity to direction</div></div>
+          <div class="gpill"><div class="gk">Theta</div><div class="gd">Time decay</div></div>
+          <div class="gpill"><div class="gk">Vega</div><div class="gd">Sensitivity to volatility</div></div>
+        </div>
+      </div>
+      <div class="define-art"><img src="./assets/greeks.jpg" alt="Three gauge dials representing sensitivity to direction, time, and volatility" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · MONEYNESS -->
+<section id="moneyness">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">In or Out of the Money</div>
+      <h2 class="title">Is it worth something yet?</h2>
+      <p class="lead" style="margin:0 auto">Moneyness answers one question: does the option hold real value right now, or is it all time and hope?</p>
+    </div>
+    <div class="two anim d1" style="margin-top:26px">
+      <div class="cmp grow">
+        <span class="tag">Call ITM</span>
+        <h3>Price above the strike</h3>
+        <p>A call is in-the-money when the price sits above the strike, because you'd rather buy low while the market trades higher.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">Put ITM</span>
+        <h3>Price below the strike</h3>
+        <p>A put is in-the-money when the price sits below the strike, because you'd rather sell high than at the lower market.</p>
+      </div>
+    </div>
+    <div class="insight anim d2" style="max-width:820px;margin:22px auto 0">Out-of-the-money is simply the opposite in each case. In-the-money options carry intrinsic value, real worth baked in today. Out-of-the-money options are all time value.</div>
+  </div>
+</section>
+
+<!-- 5 · MONEYNESS SLIDER (bespoke interactive) -->
+<section id="moneyness-slider">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Move the Price</div>
+      <h2 class="title">Slide the price past the strike</h2>
+      <p class="lead" style="margin:0 auto">Move the stock price up and down against the fixed strike line. Watch the call and put badges flip between in-the-money and out-of-the-money.</p>
+    </div>
+    <div class="mn-wrap anim d1">
+      <div class="mn-viz" id="mnViz">
+        <div class="mn-zone up">Price higher</div>
+        <div class="mn-zone down">Price lower</div>
+        <div class="mn-strike"><span>Strike</span></div>
+        <div class="mn-price" id="mnMarker"><span class="dot"></span><span class="tag">Price</span></div>
+      </div>
+      <div class="mn-panel">
+        <div class="mn-top"><span>Below strike</span><span>Above strike</span></div>
+        <input type="range" id="mnRange" min="0" max="100" value="72" aria-label="Stock price relative to strike" />
+        <div class="mn-badges">
+          <div class="mn-badge" id="mnCall"><div class="bt">Call</div><div class="bs" id="mnCallState">OTM</div></div>
+          <div class="mn-badge" id="mnPut"><div class="bt">Put</div><div class="bs" id="mnPutState">OTM</div></div>
+        </div>
+        <div class="mn-exp" id="mnExp">Drag the slider to move the price.</div>
+        <div class="disclaim" style="margin-top:14px">Illustrative positions only, the shape of the idea, not a forecast or a promise.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · CALL OR PUT SORTER (interactive) -->
+<section id="call-put-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Call or put?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Bullish, price-rising views lean toward calls. Bearish, price-falling views lean toward puts.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="call">You expect the price to rise</button>
+        <button class="chip" data-bucket="put">You expect the price to fall</button>
+        <button class="chip" data-bucket="call">You want the right to BUY at the strike</button>
+        <button class="chip" data-bucket="put">You want the right to SELL at the strike</button>
+        <button class="chip" data-bucket="call">A bullish outlook on the stock</button>
+        <button class="chip" data-bucket="put">A bearish outlook on the stock</button>
+        <button class="chip" data-bucket="call">You profit if it climbs above the strike</button>
+        <button class="chip" data-bucket="put">You profit if it drops below the strike</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="call">
+          <h4>&#9650; Buy a Call</h4><div class="sub">Bullish &mdash; you think the price will rise</div>
+          <div class="drop" id="dropCall"></div>
+        </div>
+        <div class="col gamble" data-bucket="put">
+          <h4>&#9660; Buy a Put</h4><div class="sub">Bearish &mdash; you think the price will fall</div>
+          <div class="drop" id="dropPut"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="0">
+        <h4>1. What are options?</h4>
+        <button class="opt" data-idx="0">Derivative contracts based on an underlying asset</button>
+        <button class="opt" data-idx="1">Real-estate investments</button>
+        <button class="opt" data-idx="2">Foreign currencies</button>
+        <button class="opt" data-idx="3">Government bonds</button>
+        <div class="exp">Options are derivative contracts whose value comes from an underlying asset.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. Why would you buy a put option?</h4>
+        <button class="opt" data-idx="0">To profit from a rising price</button>
+        <button class="opt" data-idx="1">To profit from a declining price</button>
+        <button class="opt" data-idx="2">To collect the stock's dividend</button>
+        <button class="opt" data-idx="3">To guarantee a profit</button>
+        <div class="exp">A put gains value when the underlying falls, so buyers use puts to profit from or hedge a decline.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. When is a call option in-the-money (ITM)?</h4>
+        <button class="opt" data-idx="0">When the asset's price is above the strike price</button>
+        <button class="opt" data-idx="1">When the expiration date passes</button>
+        <button class="opt" data-idx="2">When volatility is high</button>
+        <button class="opt" data-idx="3">When a dividend is paid</button>
+        <div class="exp">A call is ITM when the underlying's current price is above the strike price.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>4. What is the key leverage advantage of options?</h4>
+        <button class="opt" data-idx="0">Controlling a larger position with less capital</button>
+        <button class="opt" data-idx="1">Guaranteed profits</button>
+        <button class="opt" data-idx="2">Zero risk</button>
+        <button class="opt" data-idx="3">They never expire</button>
+        <div class="exp">Options provide leverage: a smaller premium controls a larger position, amplifying gains and losses.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. When you BUY an option, what is the most you can lose?</h4>
+        <button class="opt" data-idx="0">Your entire account</button>
+        <button class="opt" data-idx="1">The premium you paid</button>
+        <button class="opt" data-idx="2">Twice the premium</button>
+        <button class="opt" data-idx="3">Nothing, options are risk-free</button>
+        <div class="exp">When you buy an option, the premium is your maximum loss if it expires worthless.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You've Got the Vocabulary</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>A call is the right to buy, a put is the right to sell. Both are contracts, never obligations.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Every option has a strike, an expiration, and a premium.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>In-the-money means real intrinsic value; out-of-the-money is all time value.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Delta, theta, vega read direction, time, and volatility at a glance.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 4.2</div><h3>Buying Options on a Thesis &mdash; Without Blowing Up</h3></div>
+      <span class="badge">Turn vocabulary into a careful play &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 26.4, "interactive": false, "label": "Options 101"}, {"id": "calls-and-puts", "start": 26.9, "end": 64.316, "interactive": false, "label": "The Right Not the Obligation"}, {"id": "anatomy", "start": 64.816, "end": 117.016, "interactive": false, "label": "Strike Expiration Premium"}, {"id": "moneyness", "start": 117.516, "end": 153.828, "interactive": false, "label": "In or Out of the Money"}, {"id": "moneyness-slider", "start": 154.328, "end": 184.088, "interactive": true, "label": "Move the Price"}, {"id": "call-put-sorter", "start": 184.588, "end": 209.092, "interactive": true, "label": "Call or Put"}, {"id": "quiz", "start": 209.592, "end": 216.648, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 217.148, "end": 252.404, "interactive": false, "label": "Up Next Trading a Thesis"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: moneyness explorer (isolated) ---------- */
+(function(){
+  var r=document.getElementById('mnRange'); if(!r) return;
+  var marker=document.getElementById('mnMarker');
+  var call=document.getElementById('mnCall'), put=document.getElementById('mnPut');
+  var callS=document.getElementById('mnCallState'), putS=document.getElementById('mnPutState');
+  var exp=document.getElementById('mnExp');
+  function setBadge(el,st,itm){ el.classList.toggle('itm',itm); el.classList.toggle('otm',!itm); st.textContent=itm?'IN THE MONEY':'OUT OF THE MONEY'; }
+  function upd(){
+    var v=+r.value;                 // 0..100, 50 = at the strike
+    marker.style.top=(100-v)+'%';   // higher value = higher on screen
+    var above=v>52, below=v<48;
+    setBadge(call,callS,above);
+    setBadge(put,putS,below);
+    if(above){ exp.textContent='Price is above the strike. The call is in-the-money; the put is out-of-the-money.'; }
+    else if(below){ exp.textContent='Price is below the strike. The put is in-the-money; the call is out-of-the-money.'; }
+    else{ exp.textContent='Price is right at the strike. Both sit at the money with no intrinsic value.'; }
+  }
+  r.addEventListener('input',upd); upd();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{
+ "lesson": "w6l2",
+ "voice": "coral",
+ "model": "gpt-4o-mini-tts",
+ "gap": 0.5,
+ "total": 189.284,
+ "sections": [
+  {
+   "index": 0,
+   "id": "hero",
+   "file": "0_hero.mp3",
+   "duration": 21.36,
+   "start": 0.0,
+   "end": 21.36,
+   "interactive": false,
+   "label": "The First-Trade Checklist"
+  },
+  {
+   "index": 1,
+   "id": "plan-vs-gamble",
+   "file": "1_plan-vs-gamble.mp3",
+   "duration": 27.504,
+   "start": 21.86,
+   "end": 49.364,
+   "interactive": false,
+   "label": "Plan vs Gamble"
+  },
+  {
+   "index": 2,
+   "id": "the-checklist",
+   "file": "2_the-checklist.mp3",
+   "duration": 29.52,
+   "start": 49.864,
+   "end": 79.384,
+   "interactive": false,
+   "label": "The Six Boxes"
+  },
+  {
+   "index": 3,
+   "id": "stop-and-size",
+   "file": "3_stop-and-size.mp3",
+   "duration": 39.12,
+   "start": 79.884,
+   "end": 119.004,
+   "interactive": false,
+   "label": "Stop and Size"
+  },
+  {
+   "index": 4,
+   "id": "checklist-builder",
+   "file": "4_checklist-builder.mp3",
+   "duration": 17.256,
+   "start": 119.504,
+   "end": 136.76,
+   "interactive": true,
+   "label": "Build Your Plan"
+  },
+  {
+   "index": 5,
+   "id": "plan-sorter",
+   "file": "5_plan-sorter.mp3",
+   "duration": 14.808,
+   "start": 137.26,
+   "end": 152.068,
+   "interactive": true,
+   "label": "Plan or Gamble"
+  },
+  {
+   "index": 6,
+   "id": "quiz",
+   "file": "6_quiz.mp3",
+   "duration": 8.352,
+   "start": 152.568,
+   "end": 160.92,
+   "interactive": true,
+   "label": "Quick Check"
+  },
+  {
+   "index": 7,
+   "id": "bridge",
+   "file": "7_bridge.mp3",
+   "duration": 27.864,
+   "start": 161.42,
+   "end": 189.284,
+   "interactive": false,
+   "label": "You're Ready"
+  }
+ ]
+}
