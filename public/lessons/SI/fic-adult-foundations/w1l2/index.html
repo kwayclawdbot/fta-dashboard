@@ -14,171 +14,335 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* bespoke: supply & demand price slider (isolated) */
-  .sd-wrap{max-width:780px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:28px 26px;box-shadow:var(--shadow-soft)}
-  .sd-stage{position:relative;height:250px;border-radius:var(--r-lg);border:1px solid var(--sand);overflow:hidden;
-    background:linear-gradient(180deg,var(--green-bg),var(--paper-2) 48%,var(--paper-2) 52%,var(--red-bg))}
-  .sd-tick{position:absolute;left:16px;font-family:var(--font-display);font-weight:700;font-size:11.5px;letter-spacing:1px;text-transform:uppercase}
-  .sd-tick.hi{top:12px;color:var(--green)}
-  .sd-tick.mid{top:50%;transform:translateY(-50%);color:var(--soft)}
-  .sd-tick.lo{bottom:12px;color:var(--red)}
-  .sd-token{position:absolute;left:50%;transform:translateX(-50%);top:88px;width:76px;height:76px;border-radius:50%;
-    background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-lift);
-    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:34px;color:var(--ink);
-    transition:top .4s cubic-bezier(.34,1.56,.64,1),background .3s ease;animation:sdfloat 3.4s ease-in-out infinite}
-  @keyframes sdfloat{0%,100%{margin-top:0}50%{margin-top:-7px}}
-  .sd-token.up{background:var(--green-2)}
-  .sd-token.down{background:var(--red)}
-  .sd-token.flat{background:var(--gold)}
-  .sd-ends{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--soft);margin:22px 0 6px}
-  .sd-ends .sell{color:var(--red)}.sd-ends .buy{color:var(--green)}
-  #sdRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;cursor:pointer;
-    background:linear-gradient(90deg,var(--red-bg),var(--sand),var(--green-bg))}
-  #sdRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
-  #sdRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
-  .sd-verdict{margin-top:22px;text-align:center;font-family:var(--font-display);font-weight:800;font-size:clamp(16px,2.3vw,20px);
-    padding:15px 18px;border-radius:var(--r-lg);border:1px solid var(--sand);background:var(--paper-2);color:var(--ink);transition:all .3s ease}
-  .sd-verdict.up{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
-  .sd-verdict.down{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
-  .sd-verdict.flat{background:var(--gold-bg);border-color:#FDE68A;color:var(--gold-700)}
-  /* index text-chip pills */
-  .idx-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
-  .idx-chip{display:flex;flex-direction:column;gap:2px;padding:12px 18px;border-radius:var(--r-lg);
-    border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);min-width:150px}
-  .idx-chip .nm{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
-  .idx-chip .ds{font-size:12.5px;color:var(--soft)}
-  .idx-chip.dow{border-color:var(--gold);background:linear-gradient(160deg,var(--gold-bg),var(--card))}
-  .idx-chip.sp{border-color:var(--green-border);background:linear-gradient(160deg,var(--green-bg),var(--card))}
-  .idx-chip.nasdaq{border-color:#BAE6FD;background:linear-gradient(160deg,var(--sky-bg),var(--card))}
+/* ============================================================
+   BESPOKE COMPONENTS for w1l2 (Adults) — layered on warm-paper skin.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + drifting tickers ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.03)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 28s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.44) 72%,rgba(251,247,239,.12) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.18),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(40px,8.2vw,80px);font-weight:900;line-height:.98;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.badge b{color:var(--gold-700)}
+.tickers{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.tkr{position:absolute;bottom:-8%;font:700 12px/1 var(--font-display);color:var(--gold-700);letter-spacing:.4px;
+  background:rgba(255,255,255,.72);border:1px solid var(--sand);border-radius:var(--r-full);padding:5px 11px;
+  box-shadow:var(--shadow-soft);opacity:0;animation:tkrFloat linear infinite}
+@keyframes tkrFloat{0%{transform:translateY(0);opacity:0}10%{opacity:.9}86%{opacity:.9}100%{transform:translateY(-118vh);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- data chart cards (shared shell) ---------- */
+.chartcard{max-width:840px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(18px,2.5vw,25px)/1.14 var(--font-display);color:var(--ink);margin-top:5px;font-variant-numeric:tabular-nums}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.yr-toggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.yr-toggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 15px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.yr-toggle button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+
+/* ---------- ownership donut ---------- */
+.own-grid{display:grid;grid-template-columns:210px 1fr;gap:28px;align-items:center}
+@media(max-width:640px){.own-grid{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.donut-wrap{position:relative;width:200px;height:200px;margin:0 auto}
+.donut-svg{width:200px;height:200px;display:block}
+.donut-bg{fill:none;stroke:var(--paper-2);stroke-width:17}
+.donut-arc{fill:none;stroke:var(--gold);stroke-width:17;stroke-linecap:round;
+  stroke-dasharray:452.39;stroke-dashoffset:452.39;transition:stroke-dashoffset .95s cubic-bezier(.2,.7,.2,1)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.dc-pct{font:900 42px var(--font-display);color:var(--gold-700);line-height:1;font-variant-numeric:tabular-nums}
+.dc-sub{font-size:12px;color:var(--soft);margin-top:2px}
+.own-right .own-note{font-size:14.5px;color:var(--soft);margin-top:14px;line-height:1.6}
+.own-toggle{margin-top:14px}
+
+/* ---------- process flow (how the market works) ---------- */
+.flow{display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;max-width:920px;margin:26px auto 0}
+.flow-step{flex:1 1 180px;min-width:168px;max-width:220px;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-lg);padding:20px 16px 18px;text-align:center;box-shadow:var(--shadow-soft);
+  opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.flow-step.lit{opacity:1;transform:none}
+.flow-step .fi{width:46px;height:46px;border-radius:13px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;
+  background:var(--gold-bg);color:var(--gold-700);font:900 20px var(--font-display)}
+.flow-step.f-you .fi{background:var(--green-bg);color:var(--green)}
+.flow-step h4{font-size:16px;margin-bottom:4px}
+.flow-step p{font-size:12.5px;color:var(--soft);line-height:1.5}
+.flow-arw{display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:24px;padding:0 4px;
+  opacity:0;transition:opacity .4s ease}
+.flow-arw.lit{opacity:1}
+@media(max-width:760px){.flow{flex-direction:column;align-items:center}.flow-step{max-width:320px;width:100%}.flow-arw{transform:rotate(90deg);padding:6px 0}}
+
+/* ---------- cinematic video: coach intro / outro ---------- */
+.cv{max-width:900px;margin:34px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{flex-direction:column;gap:14px;border:none;
+  background:linear-gradient(180deg,rgba(11,18,32,.26),rgba(11,18,32,.55))}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ{transition:transform .2s ease}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* ---------- supply & demand price engine ---------- */
+.sd-wrap{max-width:780px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px 26px 24px;box-shadow:var(--shadow-lift)}
+.sd-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.sd-price{font:900 clamp(30px,5vw,46px)/1 var(--font-display);color:var(--gold-700);font-variant-numeric:tabular-nums;transition:color .3s ease}
+.sd-price.up{color:var(--green)}.sd-price.down{color:var(--red)}.sd-price.flat{color:var(--gold-700)}
+.sd-stage{position:relative;height:250px;border-radius:var(--r-lg);border:1px solid var(--sand);overflow:hidden;
+  background:linear-gradient(180deg,var(--green-bg),var(--paper-2) 48%,var(--paper-2) 52%,var(--red-bg))}
+.sd-tick{position:absolute;left:16px;font-family:var(--font-display);font-weight:700;font-size:11.5px;letter-spacing:1px;text-transform:uppercase}
+.sd-tick.hi{top:12px;color:var(--green)}
+.sd-tick.mid{top:50%;transform:translateY(-50%);color:var(--soft)}
+.sd-tick.lo{bottom:12px;color:var(--red)}
+.sd-token{position:absolute;left:50%;transform:translateX(-50%);top:88px;width:76px;height:76px;border-radius:50%;
+  background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-lift);
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:34px;color:var(--ink);
+  transition:top .4s cubic-bezier(.34,1.56,.64,1),background .3s ease}
+.sd-token.floaty{animation:sdfloat 3.4s ease-in-out infinite}
+@keyframes sdfloat{0%,100%{margin-top:0}50%{margin-top:-7px}}
+.sd-token.up{background:var(--green-2)}
+.sd-token.down{background:var(--red)}
+.sd-token.flat{background:var(--gold)}
+.sd-ends{display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--soft);margin:22px 0 6px}
+.sd-ends .sell{color:var(--red)}.sd-ends .buy{color:var(--green)}
+#sdRange{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;cursor:pointer;
+  background:linear-gradient(90deg,var(--red-bg),var(--sand),var(--green-bg))}
+#sdRange::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+#sdRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
+.sd-verdict{margin-top:22px;text-align:center;font-family:var(--font-display);font-weight:800;font-size:clamp(16px,2.3vw,20px);
+  padding:15px 18px;border-radius:var(--r-lg);border:1px solid var(--sand);background:var(--paper-2);color:var(--ink);transition:all .3s ease}
+.sd-verdict.up{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.sd-verdict.down{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+.sd-verdict.flat{background:var(--gold-bg);border-color:#FDE68A;color:var(--gold-700)}
+
+/* ---------- index chips ---------- */
+.idx-chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px;justify-content:center}
+.idx-chip{display:flex;flex-direction:column;gap:2px;padding:12px 18px;border-radius:var(--r-lg);
+  border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);min-width:158px}
+.idx-chip .nm{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
+.idx-chip .ds{font-size:12.5px;color:var(--soft)}
+.idx-chip.dow{border-color:var(--gold);background:linear-gradient(160deg,var(--gold-bg),var(--card))}
+.idx-chip.sp{border-color:var(--green-border);background:linear-gradient(160deg,var(--green-bg),var(--card))}
+.idx-chip.nasdaq{border-color:#BAE6FD;background:linear-gradient(160deg,var(--sky-bg),var(--card))}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .tkr{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .sd-token.floaty{animation:none}
+  .donut-arc{transition:none}
+  .anim{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="tickers" id="tickers" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Adults &middot; Module 1 &middot; Lesson 1.2</div>
-      <h1 style="font-size:clamp(38px,7vw,68px);font-weight:900;line-height:1;margin:12px 0 12px">What a Stock Is</h1>
-      <p class="lead">Buy a stock and you own a real slice of a real business. In the next few minutes you'll see exactly what a share is, and how the market that trades it actually works.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">What</span>
+        <span class="w" style="animation-delay:.13s">a</span>
+        <span class="w gold" style="animation-delay:.21s">Stock</span>
+        <span class="w" style="animation-delay:.29s">Really</span>
+        <span class="w" style="animation-delay:.37s">Is</span>
+      </h1>
+      <p class="lead">Buy a share and you own a real slice of a real business. In the next few minutes you'll see exactly what a share is, and how the market that trades it actually works.</p>
       <div class="badges">
-        <span class="badge"><b>8</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">SI-100 &middot; <b>Adults</b></span>
         <span class="badge">~<b>3.5</b> min</span>
+        <span class="badge">Level &middot; <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A bustling abstract stock exchange marketplace where people trade glowing slices of companies" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · WHAT IS A STOCK -->
+<!-- ============ 2 · WHAT IS A STOCK (anchor: what-is-a-stock) — ownership donut + toggle ============ -->
 <section id="what-is-a-stock">
   <div class="inner">
-    <div class="anim"><div class="label">The Definition</div><h2 class="title">You own a slice</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/ownership.jpg" alt="A company drawn as a pie with one slice lifted out and held by a small investor" /></div>
-      <div>
-        <p class="bigdef">A stock is a security that represents <span class="hi">proportionate ownership</span> in a company.</p>
-        <p class="lead" style="margin-top:12px">Buy a single share and you become a <b>shareholder</b>, with a real claim on that company's assets and its earnings. Own more shares, own more of the pie.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Dividends</span>
-            <h3>A share of the profits</h3>
-            <p>Some companies return part of their profits to shareholders as dividends, cash paid out on a regular schedule.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">No minimum</span>
-            <h3>One share is enough</h3>
-            <p>There's no hundred-share minimum. A single share already makes you a part-owner of the business.</p>
-          </div>
+    <div class="anim center-narrow"><div class="label">The Definition</div>
+      <h2 class="title">A stock is a slice of ownership</h2>
+      <p class="lead center">A stock is a security that represents proportionate ownership in a company. Buy a share and you become a part-owner, with a real claim on its assets and earnings. Own more shares, own more of the pie.</p>
+    </div>
+
+    <div class="chartcard anim d1" id="ownCard">
+      <div class="own-grid">
+        <div class="donut-wrap" role="img" aria-label="Donut chart showing your ownership stake in an illustrative company">
+          <svg viewBox="0 0 192 192" class="donut-svg">
+            <circle cx="96" cy="96" r="72" class="donut-bg"></circle>
+            <circle cx="96" cy="96" r="72" id="ownArc" class="donut-arc" transform="rotate(-90 96 96)"></circle>
+          </svg>
+          <div class="donut-center"><span class="dc-pct" id="ownPct">25%</span><span class="dc-sub">of the company</span></div>
         </div>
-        <div class="insight">Ownership, not a loan. That distinction is the foundation of everything else in this course.</div>
+        <div class="own-right">
+          <div class="chart-kicker">Illustrative company &middot; 1,000 shares &middot; $50 each</div>
+          <div class="chart-big" id="ownHeadline">You own $12,500 &mdash; a 25% stake</div>
+          <div class="yr-toggle own-toggle" role="group" aria-label="Number of shares owned">
+            <button data-sh="100" type="button">100 shares</button>
+            <button data-sh="250" class="on" type="button">250 shares</button>
+            <button data-sh="500" type="button">500 shares</button>
+          </div>
+          <p class="own-note">Own more shares, own more of the pie. Real companies split into millions of shares, so a single share is a tiny &mdash; but real &mdash; slice of the whole business.</p>
+        </div>
       </div>
+    </div>
+
+    <div class="two anim d2" style="max-width:840px;margin:26px auto 0">
+      <div class="cmp grow"><span class="tag">Dividends</span><h3>A share of the profits</h3><p>Some companies return part of their profits to shareholders as dividends, cash paid out on a regular schedule.</p></div>
+      <div class="cmp safe"><span class="tag">No minimum</span><h3>One share is enough</h3><p>There's no hundred-share minimum. A single share already makes you a part-owner &mdash; ownership, not a loan.</p></div>
     </div>
   </div>
 </section>
 
-<!-- 3 · HOW THE MARKET WORKS -->
+<!-- ============ 3 · HOW THE MARKET WORKS (anchor: how-market-works) — process flow + cinematic ============ -->
 <section id="how-market-works">
   <div class="inner">
-    <div class="anim"><div class="label">The Marketplace</div><h2 class="title">How the market works</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div>
-        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">The stock market isn't one building. It's a <span class="hi">network</span> of exchanges and brokers connecting buyers and sellers.</p>
-        <div class="two">
-          <div class="cmp safe">
-            <span class="tag">Going public</span>
-            <h3>The IPO</h3>
-            <p>A private company first sells shares to the public through an Initial Public Offering, or IPO, to raise money.</p>
-          </div>
-          <div class="cmp grow">
-            <span class="tag">After the IPO</span>
-            <h3>Trading on the exchange</h3>
-            <p>Once shares are public, they trade freely between investors on an exchange, day after day.</p>
-          </div>
-        </div>
-        <div class="insight">Buyers and sellers rarely meet. Exchanges and brokers route the orders that connect them.</div>
+    <div class="anim center-narrow"><div class="label">The Marketplace</div>
+      <h2 class="title">The market is a network, not a building</h2>
+      <p class="lead center">Buyers and sellers rarely meet in person. A short chain of steps and middlemen quietly connects them, millions of times a day. Here's the path a company takes to reach you.</p>
+    </div>
+
+    <div class="flow anim d1" id="mktFlow">
+      <div class="flow-step" data-step="0"><div class="fi">1</div><h4>Private company</h4><p>Owned by founders and early backers. No public shares yet.</p></div>
+      <div class="flow-arw" data-arw="0">&rarr;</div>
+      <div class="flow-step" data-step="1"><div class="fi">2</div><h4>The IPO</h4><p>It first sells shares to the public to raise money and go public.</p></div>
+      <div class="flow-arw" data-arw="1">&rarr;</div>
+      <div class="flow-step" data-step="2"><div class="fi">3</div><h4>The exchange</h4><p>Once public, shares trade freely between investors, day after day.</p></div>
+      <div class="flow-arw" data-arw="2">&rarr;</div>
+      <div class="flow-step f-you" data-step="3"><div class="fi">&#9733;</div><h4>You</h4><p>Your broker routes the order and you become a part-owner.</p></div>
+    </div>
+
+    <div class="cv anim d3" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before we go on, step inside the marketplace for a moment. I'll pause the narration the instant you press play.</p>
       </div>
-      <div class="define-art"><img src="./assets/market-network.jpg" alt="A network diagram of buyers and sellers connected through one central exchange hub" /></div>
+      <div class="video-wrap">
+        <video id="mktVid" preload="metadata" playsinline poster="./assets/market-network.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="mktOv" aria-label="Play the marketplace clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Step into the market</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">That constant motion is millions of buyers and sellers meeting through exchanges and brokers. Hit Continue whenever you're ready.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 4 · PRICE DISCOVERY (bespoke supply/demand slider) -->
+<!-- ============ 4 · PRICE DISCOVERY (anchor: price-discovery) — supply/demand slider ============ -->
 <section id="price-discovery">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Your Turn &middot; The Price Engine</div>
-      <h2 class="title">Supply &amp; demand</h2>
-      <p class="lead" style="margin:0 auto">Slide between more sellers and more buyers, and watch the price token rise or fall. This tug-of-war is what moves a price up and down every day.</p>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; The Price Engine</div>
+      <h2 class="title">Supply &amp; demand set the price</h2>
+      <p class="lead center">Slide between more sellers and more buyers and watch the share price rise or fall. This tug-of-war is what moves a price up and down every single day. Try both ends to continue.</p>
     </div>
     <div class="sd-wrap anim d1" id="sdCalc">
+      <div class="sd-head">
+        <div class="chart-kicker">Live share price &middot; illustrative</div>
+        <div class="sd-price flat" id="sdPrice">$50.00</div>
+      </div>
       <div class="sd-stage">
         <div class="sd-tick hi">Higher price</div>
         <div class="sd-tick mid">Steady</div>
         <div class="sd-tick lo">Lower price</div>
-        <div class="sd-token flat" id="sdToken">&rarr;</div>
+        <div class="sd-token flat floaty" id="sdToken">&rarr;</div>
       </div>
       <div class="sd-ends"><span class="sell">&larr; More sellers</span><span class="buy">More buyers &rarr;</span></div>
       <input type="range" id="sdRange" min="0" max="100" value="50" aria-label="Balance of buyers and sellers" />
       <div class="sd-verdict flat" id="sdVerdict">Balanced &rarr; price holds steady</div>
-      <div class="disclaim" style="margin-top:16px">This is an illustrative model of supply and demand, not a forecast or a promise. Real prices react to many forces at once.</div>
+      <div class="disclaim" style="margin-top:18px">This is an illustrative model of supply and demand, not a forecast or a promise. Real prices react to many forces at once.</div>
     </div>
   </div>
 </section>
 
-<!-- 5 · INDICES -->
+<!-- ============ 5 · INDICES (anchor: indices) — animated breadth bar chart ============ -->
 <section id="indices">
   <div class="inner">
-    <div class="anim"><div class="label">The Scoreboard</div><h2 class="title">Reading the indexes</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/indices.jpg" alt="Three baskets of different sizes filled with abstract company shapes, representing three market indexes" /></div>
-      <div>
-        <p class="bigdef">An index is a <span class="hi">snapshot</span> of one part of the market.</p>
-        <p class="lead" style="margin-top:12px">No one tracks every stock at once. Instead we watch indexes, each a basket that tells you how its slice of the market is doing.</p>
-        <div class="idx-chips">
-          <div class="idx-chip dow"><span class="nm">Dow Jones (DJIA)</span><span class="ds">30 large U.S. companies</span></div>
-          <div class="idx-chip sp"><span class="nm">S&amp;P 500</span><span class="ds">500 largest U.S. companies</span></div>
-          <div class="idx-chip nasdaq"><span class="nm">Nasdaq Composite</span><span class="ds">Tech-heavy</span></div>
-        </div>
-        <div class="insight">When the news says "the market" rose or fell, it usually means one of these indexes moved.</div>
-      </div>
+    <div class="anim center-narrow"><div class="label">The Scoreboard</div>
+      <h2 class="title">Reading the market's indexes</h2>
+      <p class="lead center">No one tracks every stock at once. Instead we watch indexes, each a basket of companies that tells you how its slice of the market is doing. They vary hugely in how many companies they hold.</p>
     </div>
+
+    <div class="chartcard anim d1">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Companies tracked by each index &middot; approximate</div>
+          <div class="chart-big">From 30 blue chips to thousands of names.</div>
+        </div>
+      </div>
+      <div id="idxChart" class="chart-svg" role="img" aria-label="Bar chart comparing how many companies the Dow, S and P 500, and Nasdaq Composite each track"></div>
+      <div class="chart-foot">Bigger basket, broader snapshot &mdash; but no single index is &ldquo;the market&rdquo; on its own.</div>
+    </div>
+
+    <div class="idx-chips anim d2">
+      <div class="idx-chip dow"><span class="nm">Dow Jones (DJIA)</span><span class="ds">30 large U.S. companies</span></div>
+      <div class="idx-chip sp"><span class="nm">S&amp;P 500</span><span class="ds">500 largest U.S. companies</span></div>
+      <div class="idx-chip nasdaq"><span class="nm">Nasdaq Composite</span><span class="ds">~3,000 names, tech-heavy</span></div>
+    </div>
+    <div class="insight anim d3" style="max-width:760px;margin:22px auto 0">When the news says &ldquo;the market&rdquo; rose or fell, it usually means one of these indexes moved &mdash; most often the S&amp;P 500.</div>
   </div>
 </section>
 
-<!-- 6 · FACT OR MYTH (sorter) -->
+<!-- ============ 6 · FACT OR MYTH (anchor: fact-or-myth) — mini-game ============ -->
 <section id="fact-or-myth">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn</div>
+    <div class="anim center-narrow"><div class="label">Sort It Yourself</div>
       <h2 class="title">Fact or myth?</h2>
-      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Some of these sound true only because they get repeated so often.</p>
+      <p class="lead center">Tap a card to pick it up, then tap the column where it belongs. Some of these sound true only because they get repeated so often.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
@@ -206,13 +370,12 @@
   </div>
 </section>
 
-<!-- 7 · QUIZ -->
+<!-- ============ 7 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+      <p class="lead center">Five questions. Answer them to earn your points and prove you've got the what.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="1">
@@ -221,7 +384,7 @@
         <button class="opt" data-idx="1">Ownership in a company and a claim on its assets and earnings</button>
         <button class="opt" data-idx="2">A fixed-interest savings product</button>
         <button class="opt" data-idx="3">A short-term deposit at a bank</button>
-        <div class="exp">A stock is ownership in the issuing company plus a proportionate claim on its assets and earnings.</div>
+        <div class="exp">A stock is ownership in the issuing company plus a proportionate claim on its assets and earnings. That's the opposite of a loan.</div>
       </div>
       <div class="q" data-correct="1">
         <h4>2. A company pays you every quarter for being a shareholder. What are those payments called?</h4>
@@ -229,7 +392,7 @@
         <button class="opt" data-idx="1">Dividends</button>
         <button class="opt" data-idx="2">Capital gains</button>
         <button class="opt" data-idx="3">Interest</button>
-        <div class="exp">Regular payments to shareholders are dividends. Capital gains come from selling at a higher price; bonds are loans.</div>
+        <div class="exp">Regular payments to shareholders are dividends. Capital gains come from selling at a higher price; bonds and interest belong to lending, not owning.</div>
       </div>
       <div class="q" data-correct="2">
         <h4>3. How does a private company first become available to trade on an exchange?</h4>
@@ -237,7 +400,7 @@
         <button class="opt" data-idx="1">Through a private placement with a few investors</button>
         <button class="opt" data-idx="2">Through an Initial Public Offering (IPO)</button>
         <button class="opt" data-idx="3">By registering with a local bank</button>
-        <div class="exp">An IPO is the process by which a company first issues stock to the public to raise funds.</div>
+        <div class="exp">An IPO is the process by which a company first issues stock to the public to raise funds. After that, shares trade freely on the exchange.</div>
       </div>
       <div class="q" data-correct="1">
         <h4>4. Which index tracks 30 large U.S. companies across various sectors?</h4>
@@ -245,15 +408,15 @@
         <button class="opt" data-idx="1">Dow Jones Industrial Average (DJIA)</button>
         <button class="opt" data-idx="2">Nasdaq Composite</button>
         <button class="opt" data-idx="3">Russell 2000</button>
-        <div class="exp">The DJIA tracks 30 large U.S. companies. The S&amp;P 500 tracks 500; the Nasdaq Composite is tech-heavy.</div>
+        <div class="exp">The DJIA tracks 30 large U.S. companies. The S&amp;P 500 tracks 500; the Nasdaq Composite holds around 3,000 and skews tech-heavy.</div>
       </div>
       <div class="q" data-correct="1">
         <h4>5. What primarily moves a stock's price up or down day to day?</h4>
         <button class="opt" data-idx="0">The company's founding year</button>
-        <button class="opt" data-idx="1">Supply and demand — the balance of buyers and sellers</button>
+        <button class="opt" data-idx="1">Supply and demand &mdash; the balance of buyers and sellers</button>
         <button class="opt" data-idx="2">The number of employees</button>
         <button class="opt" data-idx="3">The color of its logo</button>
-        <div class="exp">When more people want to buy than sell, price rises; when sellers outnumber buyers, it falls.</div>
+        <div class="exp">When more people want to buy than sell, the price rises; when sellers outnumber buyers, it falls. That's supply and demand at work.</div>
       </div>
       <div class="quiz-result" id="quizResult">
         <div class="score" id="quizScore">0 / 5</div>
@@ -266,14 +429,14 @@
   </div>
 </section>
 
-<!-- 8 · BRIDGE / SUMMARY -->
+<!-- ============ 8 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You've Got The What</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You've Got The What</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
-      <div class="take"><span class="ck">&#10003;</span><p>A stock is real ownership, a slice of a business with a claim on its assets and earnings.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>A stock is real ownership &mdash; a slice of a business with a claim on its assets and earnings.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>Companies go public through an IPO, then their shares trade on exchanges.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Supply and demand, the balance of buyers and sellers, moves the price.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Supply and demand &mdash; the balance of buyers and sellers &mdash; moves the price.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>Indexes like the Dow, S&amp;P 500, and Nasdaq are snapshots of the market.</p></div>
     </div>
     <div class="nextcard anim d2">
@@ -309,35 +472,437 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 28.608, "interactive": false, "label": "What a Stock Is"}, {"id": "what-is-a-stock", "start": 29.108, "end": 62.156, "interactive": false, "label": "You Own a Slice"}, {"id": "how-market-works", "start": 62.656, "end": 92.656, "interactive": false, "label": "How the Market Works"}, {"id": "price-discovery", "start": 93.156, "end": 126.516, "interactive": true, "label": "Supply and Demand"}, {"id": "indices", "start": 127.016, "end": 156.536, "interactive": false, "label": "Reading the Indexes"}, {"id": "fact-or-myth", "start": 157.036, "end": 179.692, "interactive": true, "label": "Fact or Myth"}, {"id": "quiz", "start": 180.192, "end": 187.944, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 188.444, "end": 219.956, "interactive": false, "label": "Up Next: Candlesticks"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":28.608,"interactive":false,"label":"What a Stock Is"},
+  {"id":"what-is-a-stock","start":29.108,"end":62.156,"interactive":false,"label":"You Own a Slice"},
+  {"id":"how-market-works","start":62.656,"end":92.656,"interactive":true,"label":"How the Market Works"},
+  {"id":"price-discovery","start":93.156,"end":126.516,"interactive":true,"label":"Supply & Demand"},
+  {"id":"indices","start":127.016,"end":156.536,"interactive":false,"label":"Reading the Indexes"},
+  {"id":"fact-or-myth","start":157.036,"end":179.692,"interactive":true,"label":"Fact or Myth"},
+  {"id":"quiz","start":180.192,"end":187.944,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":188.444,"end":219.956,"interactive":false,"label":"Up Next: Candlesticks"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: supply & demand price slider (isolated) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic video, charts, sorter, quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var r=document.getElementById('sdRange'); if(!r) return;
-  var token=document.getElementById('sdToken'), verdict=document.getElementById('sdVerdict');
-  // token vertical travel inside the 250px stage (token is 76px tall)
-  var TOP_HI=12, TOP_LO=162; // px from top: high price near top, low price near bottom
-  function upd(){
-    var v=+r.value;
-    var topPx=TOP_LO-(v/100)*(TOP_LO-TOP_HI);
-    token.style.top=topPx+'px';
-    token.classList.remove('up','down','flat');
-    verdict.classList.remove('up','down','flat');
-    if(v<=40){
-      token.classList.add('down'); verdict.classList.add('down');
-      token.innerHTML='&darr;'; verdict.innerHTML='More sellers than buyers &rarr; price falls';
-    } else if(v<=59){
-      token.classList.add('flat'); verdict.classList.add('flat');
-      token.innerHTML='&rarr;'; verdict.innerHTML='Balanced &rarr; price holds steady';
-    } else {
-      token.classList.add('up'); verdict.classList.add('up');
-      token.innerHTML='&uarr;'; verdict.innerHTML='More buyers than sellers &rarr; price rises';
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'how-market-works':false, 'price-discovery':false, 'fact-or-myth':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
+  });
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
     }
   }
-  r.addEventListener('input',upd); upd();
+
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){
+      contBtn.disabled=true;
+      contBtn.textContent = gateHint(s.id);
+    } else {
+      contBtn.disabled=false;
+      contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →';
+    }
+  }
+  function gateHint(id){
+    if(id==='how-market-works') return 'Play the clip to continue';
+    if(id==='price-discovery') return 'Slide both ways to continue';
+    if(id==='fact-or-myth') return 'Sort all the cards to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- drifting tickers (hero) ---- */
+  (function(){
+    var wrap=document.getElementById('tickers'); if(!wrap||reduce) return;
+    var syms=['AAPL','MSFT','KO','JNJ','NVDA','V','PG','DIS','COST','HD','SPY','JPM','MCD','WMT'];
+    var N=13;
+    for(var i=0;i<N;i++){
+      var c=document.createElement('span'); c.className='tkr';
+      c.textContent=syms[i%syms.length];
+      var dur=9+Math.random()*7, delay=-Math.random()*12;
+      c.style.left=(Math.random()*92)+'%';
+      c.style.animationDuration=dur+'s';
+      c.style.animationDelay=delay+'s';
+      c.style.opacity=(.55+Math.random()*.4);
+      c.style.fontSize=(11+Math.random()*3).toFixed(1)+'px';
+      wrap.appendChild(c);
+    }
+  })();
+
+  /* ---- number helper ---- */
+  function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+  function animateNum(to, dur, animate, cb){
+    if(!animate||reduce){ cb(to); return; }
+    var start=null;
+    function step(now){
+      if(start===null) start=now;
+      var p=Math.min(1,(now-start)/dur); var e=1-Math.pow(1-p,3);
+      cb(to*e); if(p<1) requestAnimationFrame(step); else cb(to);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---- ownership donut + share toggle (data component #1) ---- */
+  (function(){
+    var card=document.getElementById('ownCard'); if(!card) return;
+    var arc=document.getElementById('ownArc'), C=452.39, TOTAL_SH=1000, PRICE=50;
+    var cur=250, drawnOnce=false;
+    var headline=document.getElementById('ownHeadline'), pctEl=document.getElementById('ownPct');
+    function setOwn(sh, animate){
+      cur=sh;
+      var frac=sh/TOTAL_SH, pctVal=frac*100, val=sh*PRICE;
+      arc.style.strokeDashoffset=(C - frac*C).toFixed(2);
+      animateNum(pctVal, 850, animate, function(v){ pctEl.textContent=Math.round(v)+'%'; });
+      animateNum(val, 850, animate, function(v){
+        headline.textContent='You own '+money(v)+' — a '+Math.round(pctVal)+'% stake';
+      });
+    }
+    // toggle
+    var btns=card.querySelectorAll('.own-toggle button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        setOwn(parseInt(b.dataset.sh,10), true);
+      });
+    });
+    // draw when scrolled in
+    var oio=new IntersectionObserver(function(en){
+      en.forEach(function(e){
+        if(e.isIntersecting && !drawnOnce){ drawnOnce=true; setOwn(cur, true); }
+      });
+    },{threshold:.3});
+    oio.observe(card);
+    if(reduce) setOwn(cur, false);
+  })();
+
+  /* ---- market process flow reveal ---- */
+  (function(){
+    var flow=document.getElementById('mktFlow'); if(!flow) return;
+    var steps=flow.querySelectorAll('.flow-step'), arws=flow.querySelectorAll('.flow-arw');
+    var done=false;
+    function reveal(){
+      if(done) return; done=true;
+      if(reduce){
+        steps.forEach(function(s){ s.classList.add('lit'); });
+        arws.forEach(function(a){ a.classList.add('lit'); });
+        return;
+      }
+      var seq=[];
+      steps.forEach(function(s,i){ seq.push({el:s,d:i*360}); });
+      arws.forEach(function(a,i){ seq.push({el:a,d:i*360+220}); });
+      seq.forEach(function(o){ setTimeout(function(){ o.el.classList.add('lit'); }, o.d); });
+    }
+    var fio=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting) reveal(); });
+    },{threshold:.35});
+    fio.observe(flow);
+  })();
+
+  /* ---- indices breadth bar chart (data component #2, animate on scroll-in) ---- */
+  (function(){
+    var box=document.getElementById('idxChart'); if(!box) return;
+    var rows=[
+      {name:'Dow Jones', val:30,   pre:'',  color:'#FBBF24', tcol:'#8a6b12'},
+      {name:'S&P 500',   val:500,  pre:'',  color:'#22C55E', tcol:'#15803d'},
+      {name:'Nasdaq Composite', val:3000, pre:'~', color:'#38BDF8', tcol:'#0369A1'}
+    ];
+    var drawn=false;
+    function draw(){
+      var W=720,H=232,padL=18,padR=96,padT=14,padB=14;
+      var maxV=3000, plotW=W-padL-padR, plotH=H-padT-padB;
+      var rowH=plotH/rows.length;
+      var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+      rows.forEach(function(r,i){
+        var rowTop=padT+i*rowH;
+        var barY=rowTop+24, barH=20;
+        var w=Math.max(6,(r.val/maxV)*plotW);
+        var dur=reduce?'0s':'0.95s', bg=reduce?'0s':(0.12+i*0.16)+'s';
+        // name
+        s+='<text x="'+padL+'" y="'+(rowTop+14)+'" font-family="Poppins,sans-serif" font-weight="700" font-size="14" fill="#101828">'+r.name+'</text>';
+        // track
+        s+='<rect x="'+padL+'" y="'+barY+'" width="'+plotW+'" height="'+barH+'" rx="6" fill="#F3EDE1"/>';
+        // bar (animated width)
+        s+='<rect x="'+padL+'" y="'+barY+'" width="'+(reduce?w:0)+'" height="'+barH+'" rx="6" fill="'+r.color+'">';
+        if(!reduce){ s+='<animate attributeName="width" from="0" to="'+w+'" dur="'+dur+'" begin="'+bg+'" fill="freeze" calcMode="spline" keySplines="0.2 0.7 0.2 1" keyTimes="0;1"/>'; }
+        s+='</rect>';
+        // count-up number
+        s+='<text id="idxN'+i+'" x="'+(W-padR+12)+'" y="'+(barY+barH-4)+'" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="'+r.tcol+'">'+(reduce?(r.pre+r.val.toLocaleString()):r.pre+'0')+'</text>';
+      });
+      s+='</svg>';
+      box.innerHTML=s;
+      if(!reduce){
+        rows.forEach(function(r,i){
+          var el=document.getElementById('idxN'+i);
+          animateNum(r.val, 1100, true, function(v){ el.textContent=r.pre+Math.round(v).toLocaleString('en-US'); });
+        });
+      }
+    }
+    var cio=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting && !drawn){ drawn=true; draw(); } });
+    },{threshold:.3});
+    cio.observe(box);
+    if(reduce) draw();
+  })();
+
+  /* ---- cinematic video: pause narration, coach outro, satisfy gate ---- */
+  (function(){
+    var vid=document.getElementById('mktVid'), ov=document.getElementById('mktOv'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var wasPlaying=false, mktIdx=idxOf('how-market-works');
+    function finishClip(){
+      if(outro) outro.style.display='block';
+      satisfyGate('how-market-works');
+      if(wasPlaying && audio.currentTime < ST[mktIdx].end-0.3){
+        audio.play(); playBtn.textContent=PAUSE;
+      }
+    }
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      var p=vid.play(); if(p&&p.catch) p.catch(function(){ finishClip(); });
+    });
+    vid.addEventListener('ended', finishClip);
+    // safety: if the clip can't load a duration, don't trap the learner
+    vid.addEventListener('error', function(){ satisfyGate('how-market-works'); });
+  })();
+
+  /* ---- supply & demand price engine (interactive practice) ---- */
+  (function(){
+    var r=document.getElementById('sdRange'); if(!r) return;
+    var token=document.getElementById('sdToken'), verdict=document.getElementById('sdVerdict'), priceEl=document.getElementById('sdPrice');
+    var TOP_HI=12, TOP_LO=162, BASE=50;
+    var seenUp=false, seenDown=false;
+    function upd(){
+      var v=+r.value;
+      var topPx=TOP_LO-(v/100)*(TOP_LO-TOP_HI);
+      token.style.top=topPx+'px';
+      var price=BASE+(v-50)*0.4; // 30.00 … 70.00
+      priceEl.textContent='$'+price.toFixed(2);
+      token.classList.remove('up','down','flat'); verdict.classList.remove('up','down','flat'); priceEl.classList.remove('up','down','flat');
+      if(v<=40){
+        token.classList.add('down'); verdict.classList.add('down'); priceEl.classList.add('down');
+        token.innerHTML='&darr;'; verdict.innerHTML='More sellers than buyers &rarr; price falls';
+        seenDown=true;
+      } else if(v<=59){
+        token.classList.add('flat'); verdict.classList.add('flat'); priceEl.classList.add('flat');
+        token.innerHTML='&rarr;'; verdict.innerHTML='Balanced &rarr; price holds steady';
+      } else {
+        token.classList.add('up'); verdict.classList.add('up'); priceEl.classList.add('up');
+        token.innerHTML='&uarr;'; verdict.innerHTML='More buyers than sellers &rarr; price rises';
+        seenUp=true;
+      }
+      if(seenUp && seenDown) satisfyGate('price-discovery');
+    }
+    r.addEventListener('input',upd); upd();
+  })();
+
+  /* ---- fact-or-myth sorter (click to pick, click a column to place) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('.col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty');
+          fb.classList.add('done');
+          fb.textContent='All sorted — you got '+correct+' of '+N+' right. Knowing fact from myth is half the edge in this game.';
+          satisfyGate('fact-or-myth');
+        }
+      });
+    });
+  })();
+
+  /* ---- quiz grading + bridge emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){
+          o.disabled=true;
+          if(i===corr) o.classList.add('correct');
+          if(i===s && i!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you’ve got the what nailed down.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
 </body>
