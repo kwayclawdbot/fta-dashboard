@@ -14,124 +14,296 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* image strip + define art helpers */
-  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/7}
-  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
-  .disclaim-wrap{max-width:760px;margin:20px auto 0}
-  /* bespoke: call-or-put tap game (isolated, own ids/classes) */
-  .cpg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
-  .cpg-desc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:74px}
-  .cpg-btns{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
-  .cpg-btn{flex:1;min-width:190px;font-family:var(--font-display);font-weight:700;font-size:16px;padding:16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
-  .cpg-btn[data-pick="CALL"]:hover{border-color:var(--green-2);background:var(--green-bg)}
-  .cpg-btn[data-pick="PUT"]:hover{border-color:var(--red-2);background:var(--red-bg)}
-  .cpg-btn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
-  .cpg-btn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
-  .cpg-btn:disabled{cursor:default}
-  .cpg-why{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
-  .cpg-why.show{display:block}
-  .cpg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
-  #cpgNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
-  #cpgNext.show{display:inline-block}
+/* ============================================================
+   BESPOKE COMPONENTS for w4l1 — layered on the warm-paper skin.
+   ============================================================ */
+
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + floating arrows ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.02)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 26s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.02)}to{transform:scale(1.14)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.94) 0%,rgba(251,247,239,.86) 42%,rgba(251,247,239,.42) 72%,rgba(251,247,239,.12) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.9),rgba(251,247,239,.82) 55%,rgba(251,247,239,.72))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:640px}
+.kinetic{font-size:clamp(38px,8vw,74px);font-weight:900;line-height:1.0;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.arrows{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.arrow{position:absolute;top:-8%;font:800 22px/1 var(--font-display);opacity:0;animation:arrFall linear infinite;user-select:none}
+.arrow.up{color:var(--green-2);text-shadow:0 2px 6px rgba(34,197,94,.35)}
+.arrow.down{color:#ef4444;text-shadow:0 2px 6px rgba(220,38,38,.3)}
+@keyframes arrFall{0%{transform:translateY(0) rotate(0);opacity:0}
+  10%{opacity:.9}88%{opacity:.9}100%{transform:translateY(116vh);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- process-flow: contract anatomy ---------- */
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:stretch;max-width:900px;margin:26px auto 0}
+@media(max-width:760px){.flow{grid-template-columns:1fr;gap:10px}}
+.flow-step{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-lg);padding:20px 18px;text-align:center;
+  box-shadow:var(--shadow-soft);opacity:0;transform:translateY(16px) scale(.97);transition:opacity .5s ease,transform .5s ease}
+.flow-step.lit{opacity:1;transform:none}
+.fs-ic{font-size:30px;display:block;margin-bottom:8px}
+.fs-t{font:800 18px var(--font-display);color:var(--ink)}
+.fs-d{font-size:13.5px;color:var(--soft);margin-top:5px;line-height:1.5}
+.flow-arrow{display:flex;align-items:center;justify-content:center;font:800 22px var(--font-display);color:var(--gold-600);opacity:0;transition:opacity .5s ease}
+.flow-arrow.lit{opacity:1}
+@media(max-width:760px){.flow-arrow{transform:rotate(90deg);height:22px}}
+
+/* ---------- data chart cards ---------- */
+.chartcard{max-width:820px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(18px,2.5vw,25px)/1.14 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-big.pos{color:var(--green)}.chart-big.neg{color:var(--red)}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-cash,.dot-grow,.dot-in{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:2px}
+.dot-cash{background:#b9a06a}.dot-grow{background:var(--green-2)}.dot-in{background:var(--gold)}
+.yr-toggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.yr-toggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 15px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.yr-toggle button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+.pf-slide{margin:14px auto 2px;max-width:640px;text-align:center}
+.pf-slide label{font:600 14px var(--font-display);color:var(--soft)}
+.pf-slide label b{color:var(--ink)}
+.pf-slide input[type=range]{width:100%;margin-top:10px;height:6px;-webkit-appearance:none;appearance:none;
+  border-radius:99px;background:linear-gradient(90deg,var(--red-bg),var(--sand),var(--green-bg));cursor:pointer}
+.pf-slide input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--gold);border:2px solid #fff;box-shadow:0 2px 8px rgba(251,191,36,.5)}
+.pf-slide input[type=range]::-moz-range-thumb{width:20px;height:20px;border:2px solid #fff;border-radius:50%;background:var(--gold)}
+
+/* ---------- cinematic video: coach intro / outro ---------- */
+.cv{max-width:900px;margin:30px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.28),rgba(11,18,32,.55));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* ---------- JS cinematic fallback scene (used only if no b-roll) ---------- */
+.cine-scene{position:relative;width:100%;aspect-ratio:16/9;background:linear-gradient(180deg,#0b1220,#101a2e);overflow:hidden}
+.cine-scene svg{position:absolute;inset:0;width:100%;height:100%}
+
+/* ---------- call vs put comparison ---------- */
+.cmp.bear{background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)}
+.cmp.bear .tag{color:var(--red)}
+.cmp .big-arrow{font-size:34px;line-height:1;margin-bottom:6px}
+
+/* ---------- call-or-put tap game (isolated) ---------- */
+.cpg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift)}
+.cpg-desc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:74px}
+.cpg-btns{display:flex;gap:14px;margin-top:18px;flex-wrap:wrap}
+.cpg-btn{flex:1;min-width:190px;font-family:var(--font-display);font-weight:700;font-size:16px;padding:16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+.cpg-btn[data-pick="CALL"]:hover{border-color:var(--green-2);background:var(--green-bg)}
+.cpg-btn[data-pick="PUT"]:hover{border-color:var(--red-2);background:var(--red-bg)}
+.cpg-btn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+.cpg-btn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+.cpg-btn:disabled{cursor:default}
+.cpg-why{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+.cpg-why.show{display:block}
+.cpg-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft);gap:10px;flex-wrap:wrap}
+#cpgNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+#cpgNext.show{display:inline-block}
+
+.disclaim-wrap{max-width:760px;margin:20px auto 0}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .arrow{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .flow-step,.flow-arrow{transition:none;opacity:1;transform:none}
+  .anim{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="arrows" id="arrows" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Teens · Module 4 · Lesson 4.1</div>
-      <h1 style="font-size:clamp(36px,7vw,62px);font-weight:900;line-height:1.02;margin:12px 0 12px">Calls &amp; puts, explained</h1>
-      <p class="lead">An option is a ticket that gives you a right, not a promise. Learn the two kinds, calls and puts, and you can bet on a stock going up or down without owning a single share.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Meet</span>
+        <span class="w" style="animation-delay:.13s">the</span>
+        <span class="w" style="animation-delay:.21s">two</span>
+        <span class="w" style="animation-delay:.29s">option</span>
+        <span class="w gold" style="animation-delay:.37s">tickets</span>
+      </h1>
+      <p class="lead">An option is a ticket that gives you a right, not a promise. Learn the two kinds — calls and puts — and you can bet on a stock going up or down without owning a single share.</p>
       <div class="badges">
         <span class="badge"><b>7</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
+        <span class="badge">Level · <b>Beginner</b></span>
         <span class="badge">~<b>3</b> min</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager at a fork weighing a green upward path against a red downward path" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · AN OPTION IS A CONTRACT -->
+<!-- ============ 2 · OPTION-BASICS (anchor: option-basics) — flow + leverage chart ============ -->
 <section id="option-basics">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">The Big Idea</div>
+    <div class="anim center-narrow"><div class="label">The Big Idea</div>
       <h2 class="title">An option is a contract</h2>
-      <p class="lead" style="margin:0 auto">It gives you the right, but not the obligation, to buy or sell 100 shares of a stock at a set price before a set date. You own the right. You never have to use it.</p>
+      <p class="lead center">It gives you the right, but not the obligation, to buy or sell 100 shares at a set price before a set date. You own the right. You never have to use it.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/contract-anatomy.jpg" alt="A contract scroll with three highlighted parts and small lock, calendar, and coin icons" /></div>
-      <div>
-        <p class="bigdef">Every contract carries the <span class="hi">same three parts</span>.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Strike</span>
-            <h3>The locked-in price</h3>
-            <p>The set price where you can buy or sell, no matter where the market goes.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Expiration</span>
-            <h3>The deadline</h3>
-            <p>Your window to act. After this date the contract is done.</p>
-          </div>
+
+    <div class="flow anim d1" id="anatomyFlow">
+      <div class="flow-step" data-i="0"><span class="fs-ic">&#128274;</span><div class="fs-t">Strike</div><div class="fs-d">The locked-in price you get to buy or sell at, no matter where the market goes.</div></div>
+      <div class="flow-arrow" data-i="0">&rarr;</div>
+      <div class="flow-step" data-i="1"><span class="fs-ic">&#128197;</span><div class="fs-t">Expiration</div><div class="fs-d">The deadline. Your window to act. After this date the contract is done.</div></div>
+      <div class="flow-arrow" data-i="1">&rarr;</div>
+      <div class="flow-step" data-i="2"><span class="fs-ic">&#127915;</span><div class="fs-t">Premium</div><div class="fs-d">What you pay to own the ticket — and, if you bought it, the most you can lose.</div></div>
+    </div>
+
+    <div class="chartcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">One contract = 100 shares &middot; illustrative</div>
+          <div class="chart-big" id="levHeadline">Control $9,000 of stock for about $540</div>
         </div>
-        <div class="insight">The <b>premium</b> is what you pay to own the ticket in the first place. If you bought the option, that premium is the most you can lose.</div>
+        <div class="yr-toggle" role="group" aria-label="Stock price">
+          <button data-px="30" type="button">$30</button>
+          <button data-px="90" class="on" type="button">$90</button>
+          <button data-px="180" type="button">$180</button>
+        </div>
       </div>
+      <div id="levChart" class="chart-svg" role="img" aria-label="Horizontal bar chart comparing the value of stock controlled by one option contract versus the small premium paid"></div>
+      <div class="chart-foot"><span class="dot-grow"></span> Stock you control <b id="levCtrl">$9,000</b> &nbsp;&middot;&nbsp; <span class="dot-in"></span> Premium you pay <b id="levPrem">$540</b></div>
     </div>
   </div>
 </section>
 
-<!-- 3 · CALL VS PUT -->
+<!-- ============ 3 · CALL-VS-PUT (anchor: call-vs-put) — compare + payoff chart + cinematic ============ -->
 <section id="call-vs-put">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Two Flavors</div>
+    <div class="anim center-narrow"><div class="label">Two Flavors</div>
       <h2 class="title">Call or put?</h2>
-      <p class="lead" style="margin:0 auto">Your outlook picks the tool. Think the price goes up, or down?</p>
+      <p class="lead center">Your outlook picks the tool. Think the price goes up, or down? One little word decides which ticket you want.</p>
     </div>
+
     <div class="two anim d1" style="max-width:900px;margin:22px auto 0">
       <div class="cmp grow">
-        <span class="tag">Call · bet UP</span>
+        <span class="tag">Call &middot; bet UP</span>
+        <div class="big-arrow" aria-hidden="true">&#9650;</div>
         <h3>The right to BUY</h3>
         <p>Grab a call when you think the price is climbing. It's like a coupon that locks in today's price before the stock rises, so you win if it goes up.</p>
-        <div class="define-art" style="margin-top:14px"><img src="./assets/call-coupon.jpg" alt="A coupon ticket with an upward arrow and a lock, illustrating a call option" /></div>
       </div>
-      <div class="cmp gamble">
-        <span class="tag">Put · bet DOWN</span>
+      <div class="cmp bear">
+        <span class="tag">Put &middot; bet DOWN</span>
+        <div class="big-arrow" aria-hidden="true">&#9660;</div>
         <h3>The right to SELL</h3>
         <p>Grab a put when you think the price is falling. It's like insurance that pays off when the stock drops, cushioning the move down.</p>
-        <div class="define-art" style="margin-top:14px"><img src="./assets/put-insurance.jpg" alt="An open umbrella shielding a downward arrow, illustrating a put option" /></div>
       </div>
     </div>
-    <div class="insight anim d2" style="max-width:760px;margin:20px auto 0">Bullish, expecting up? That points to a <b>call</b>. Bearish, expecting down? That points to a <b>put</b>. Real companies like Nike, Apple, Roblox, or Spotify can go either way. Your read on the direction is what picks the contract.</div>
-    <div class="disclaim-wrap anim d3">
+
+    <div class="chartcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Strike $100 &middot; premium $5/share &middot; one contract &middot; illustrative</div>
+          <div class="chart-big pos" id="pfHeadline">At $120, this CALL is worth +$1,500</div>
+        </div>
+        <div class="yr-toggle" role="group" aria-label="Contract type">
+          <button data-type="call" class="on" type="button">Call</button>
+          <button data-type="put" type="button">Put</button>
+        </div>
+      </div>
+      <div id="pfChart" class="chart-svg" role="img" aria-label="Payoff diagram showing an option's profit or loss at expiration across different stock prices"></div>
+      <div class="pf-slide">
+        <label for="pfSlide">Stock price at expiration: <b id="pfPx">$120</b></label>
+        <input id="pfSlide" type="range" min="60" max="140" step="1" value="120" />
+      </div>
+      <div class="chart-foot" id="pfFoot">A bought option's max loss is the premium &mdash; here <b>$500</b>. Breakeven at <b id="pfBE">$105</b>.</div>
+    </div>
+
+    <div class="insight anim d3" style="max-width:760px;margin:20px auto 0">Bullish, expecting up? That points to a <b>call</b>. Bearish, expecting down? That points to a <b>put</b>. Real companies like Nike, Apple, Roblox, or Spotify can go either way. Your read on the direction is what picks the contract.</div>
+
+    <div class="cv anim d3" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before the drills, watch one outlook pick the ticket. I'll pause the narration the moment you press play.</p>
+      </div>
+      <div class="video-wrap" id="cineWrap">
+        <video id="cineVid" preload="metadata" playsinline poster="./assets/up-vs-down.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="cineOv" aria-label="Play the clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Watch the outlook pick the ticket</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">See it? Price up points to a call, price down points to a put. Your read on direction is the whole decision. Hit Continue when you're ready.</p>
+      </div>
+    </div>
+
+    <div class="disclaim-wrap anim d4">
       <div class="disclaim">Options are an advanced, higher-risk tool. This lesson is conceptual and paper-trade practice only. No prices or returns here are real, and none are a forecast or a promise.</div>
     </div>
   </div>
 </section>
 
-<!-- 4 · CALL OR PUT? GAME (bespoke interactive) -->
+<!-- ============ 4 · CALL-OR-PUT GAME (anchor: call-or-put-game) — practice ============ -->
 <section id="call-or-put-game">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn · Call or Put?</div>
+    <div class="anim center-narrow" style="max-width:720px"><div class="label">Your Turn &middot; Call or Put?</div>
       <h2 class="title">Read the situation, make the call</h2>
-      <p class="lead" style="margin:0 auto">I'll describe a setup. You decide: does this outlook fit a call or a put? Tap your pick and see why.</p>
+      <p class="lead center">I'll describe a setup. You decide: does this outlook fit a call or a put? Tap your pick and see why. Clear all six to continue.</p>
     </div>
-    <div class="imgstrip anim d1" style="max-width:720px;aspect-ratio:16/6"><img src="./assets/up-vs-down.jpg" alt="A green up arrow with a coupon icon beside a red down arrow with an umbrella icon" /></div>
-    <div class="cpg anim d2" id="cpgGame">
-      <div class="cpg-desc" id="cpgDesc">Loading round…</div>
+    <div class="cpg anim d1" id="cpgGame">
+      <div class="cpg-desc" id="cpgDesc">Loading round&hellip;</div>
       <div class="cpg-btns">
-        <button class="cpg-btn" data-pick="CALL" id="cpgCall">&#128994; Call (bet the price goes up)</button>
-        <button class="cpg-btn" data-pick="PUT" id="cpgPut">&#128308; Put (bet the price goes down)</button>
+        <button class="cpg-btn" data-pick="CALL" id="cpgCall">&#128994; Call &middot; bet the price goes UP</button>
+        <button class="cpg-btn" data-pick="PUT" id="cpgPut">&#128308; Put &middot; bet the price goes DOWN</button>
       </div>
       <div class="cpg-why" id="cpgWhy"></div>
       <div class="cpg-foot">
@@ -143,13 +315,12 @@
   </div>
 </section>
 
-<!-- 5 · CALL/PUT SORTER (interactive) -->
+<!-- ============ 5 · BET-SORTER (anchor: bet-sorter) — mini-game ============ -->
 <section id="bet-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Sort It Yourself</div>
+    <div class="anim center-narrow" style="max-width:720px"><div class="label">Sort It Yourself</div>
       <h2 class="title">Which side does each clue describe?</h2>
-      <p class="lead" style="margin:0 auto">Tap a clue, then tap the side it belongs to. Some describe a call (betting up), some describe a put (betting down).</p>
+      <p class="lead center">Tap a clue to pick it up, then tap the side it belongs to. Some describe a call (betting up), some describe a put (betting down).</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
@@ -175,13 +346,12 @@
   </div>
 </section>
 
-<!-- 6 · QUIZ -->
+<!-- ============ 6 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow" style="max-width:680px"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions on calls, puts, and the contract. Show me it clicked.</p>
+      <p class="lead center">Five questions on calls, puts, and the contract. Show me it clicked.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="0">
@@ -235,10 +405,10 @@
   </div>
 </section>
 
-<!-- 7 · BRIDGE / SUMMARY -->
+<!-- ============ 7 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You Get Options Now</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You Get Options Now</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>An option is a right, not an obligation, to buy or sell at a set price.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>A call bets the price goes UP; a put bets it goes DOWN.</p></div>
@@ -246,7 +416,7 @@
       <div class="take"><span class="ck">&#10003;</span><p>Options are higher-risk. Keep it paper-trade practice for now.</p></div>
     </div>
     <div class="nextcard anim d2">
-      <div><div class="up">Up next · Lesson 4.2</div><h3>Why Options Can Grow (or Vaporize) Fast</h3></div>
+      <div><div class="up">Up next &middot; Lesson 4.2</div><h3>Why Options Can Grow (or Vaporize) Fast</h3></div>
       <span class="badge">See what that deadline really costs &rarr;</span>
     </div>
     <div class="finish-row anim d3">
@@ -278,73 +448,503 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id":"hero","start":0.0,"end":23.304,"interactive":false,"label":"Calls and Puts Explained"},{"id":"option-basics","start":23.804,"end":56.156,"interactive":false,"label":"An Option Is a Contract"},{"id":"call-vs-put","start":56.656,"end":101.824,"interactive":false,"label":"Call or Put"},{"id":"call-or-put-game","start":102.324,"end":118.644,"interactive":true,"label":"Call or Put? Your Turn"},{"id":"bet-sorter","start":119.144,"end":138.344,"interactive":true,"label":"Sort the Clues"},{"id":"quiz","start":138.844,"end":149.5,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":150.0,"end":174.504,"interactive":false,"label":"You Get Options Now"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":23.304,"interactive":false,"label":"Calls and Puts Explained"},
+  {"id":"option-basics","start":23.804,"end":56.156,"interactive":false,"label":"An Option Is a Contract"},
+  {"id":"call-vs-put","start":56.656,"end":101.824,"interactive":true,"label":"Call or Put?"},
+  {"id":"call-or-put-game","start":102.324,"end":118.644,"interactive":true,"label":"Call or Put? Your Turn"},
+  {"id":"bet-sorter","start":119.144,"end":138.344,"interactive":true,"label":"Sort the Clues"},
+  {"id":"quiz","start":138.844,"end":149.5,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":150.0,"end":174.504,"interactive":false,"label":"You Get Options Now"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: call-or-put tap game (isolated) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic video, charts, game, sorter, quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var game=document.getElementById('cpgGame'); if(!game) return;
-  var rounds=[
-    {desc:"You think Nike jumps after it reveals a big new product everyone's hyped about.",ans:"CALL",
-     why:"You expect the price UP, so a call fits. A call is the right to buy before it climbs."},
-    {desc:"You think a stock is about to fall hard after some rough news.",ans:"PUT",
-     why:"You expect the price DOWN, so a put fits. A put profits when the stock drops."},
-    {desc:"You want to profit if a stock drops.",ans:"PUT",
-     why:"Wanting to win on a fall points straight to a put, the right to sell."},
-    {desc:"You're bullish on Apple before a huge launch event and expect the price to climb.",ans:"CALL",
-     why:"Bullish means expecting up, and a call is the up bet."},
-    {desc:"You think Roblox will slide after a weak earnings report.",ans:"PUT",
-     why:"Expecting a slide is a down bet, so it's a put."},
-    {desc:"You're convinced Spotify will run higher into a big update and want to bet on the rise.",ans:"CALL",
-     why:"Betting on a rise is a call, the right to buy at the locked-in strike."}
-  ];
-  var i=0, score=0;
-  var desc=document.getElementById('cpgDesc'), why=document.getElementById('cpgWhy');
-  var callBtn=document.getElementById('cpgCall'), putBtn=document.getElementById('cpgPut');
-  var prog=document.getElementById('cpgProg'), sc=document.getElementById('cpgScore'), next=document.getElementById('cpgNext');
-  function render(){
-    var r=rounds[i];
-    desc.textContent=r.desc;
-    why.className='cpg-why'; why.textContent='';
-    callBtn.disabled=false; putBtn.disabled=false;
-    callBtn.className='cpg-btn'; putBtn.className='cpg-btn';
-    callBtn.setAttribute('data-pick','CALL'); putBtn.setAttribute('data-pick','PUT');
-    prog.textContent='Round '+(i+1)+' of '+rounds.length;
-    sc.textContent='Score '+score;
-    next.className='';
-  }
-  function answer(pick){
-    if(callBtn.disabled) return;
-    var r=rounds[i]; var correct=(pick===r.ans);
-    if(correct) score++;
-    callBtn.disabled=true; putBtn.disabled=true;
-    var chosen=pick==='CALL'?callBtn:putBtn;
-    var rightBtn=r.ans==='CALL'?callBtn:putBtn;
-    rightBtn.classList.add('right');
-    if(!correct) chosen.classList.add('wrong');
-    why.textContent=(correct?'Correct! ':'Not quite. ')+r.why;
-    why.classList.add('show');
-    sc.textContent='Score '+score;
-    if(i<rounds.length-1){ next.classList.add('show'); }
-    else { next.textContent='Done · '+score+'/'+rounds.length+' ✓'; next.classList.add('show'); }
-  }
-  callBtn.addEventListener('click',function(){answer('CALL');});
-  putBtn.addEventListener('click',function(){answer('PUT');});
-  next.addEventListener('click',function(){
-    if(i<rounds.length-1){ i++; render(); }
-    else { next.classList.remove('show'); why.textContent='Nice — you matched every outlook to the right contract. That is the whole idea.'; why.classList.add('show'); }
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'call-vs-put':false, 'call-or-put-game':false, 'bet-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
   });
-  render();
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
+    }
+  }
+
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){
+      contBtn.disabled=true;
+      contBtn.textContent = gateHint(s.id);
+    } else {
+      contBtn.disabled=false;
+      contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →';
+    }
+  }
+  function gateHint(id){
+    if(id==='call-vs-put') return 'Play the clip to continue';
+    if(id==='call-or-put-game') return 'Finish all rounds to continue';
+    if(id==='bet-sorter') return 'Sort all the clues to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- floating up/down arrows (hero) ---- */
+  (function(){
+    var wrap=document.getElementById('arrows'); if(!wrap||reduce) return;
+    var N=14;
+    for(var i=0;i<N;i++){
+      var up=Math.random()>0.5;
+      var a=document.createElement('span'); a.className='arrow '+(up?'up':'down');
+      a.textContent = up?'▲':'▼';
+      var dur=7+Math.random()*7, delay=-Math.random()*12, sz=16+Math.random()*18;
+      a.style.left=(Math.random()*95)+'%';
+      a.style.fontSize=sz+'px';
+      a.style.animationDuration=dur+'s';
+      a.style.animationDelay=delay+'s';
+      wrap.appendChild(a);
+    }
+  })();
+
+  /* ---- contract anatomy: staggered reveal ---- */
+  (function(){
+    var flow=document.getElementById('anatomyFlow'); if(!flow) return;
+    var steps=Array.prototype.slice.call(flow.querySelectorAll('.flow-step,.flow-arrow'));
+    if(reduce){ steps.forEach(function(s){ s.classList.add('lit'); }); return; }
+    var order=Array.prototype.slice.call(flow.children); // in DOM order: step,arrow,step,arrow,step
+    var fio=new IntersectionObserver(function(en){
+      en.forEach(function(e){
+        if(!e.isIntersecting) return;
+        fio.unobserve(e.target);
+        order.forEach(function(el,i){ setTimeout(function(){ el.classList.add('lit'); }, 180*i); });
+      });
+    },{threshold:.3});
+    fio.observe(flow);
+  })();
+
+  function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+  /* ---- lazy-drawn charts (leverage + payoff) ---- */
+  var chartIO=new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if(!e.isIntersecting) return;
+      if(e.target.id==='levChart' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawLev(e.target, curPx, true); }
+      if(e.target.id==='pfChart' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawPayoff(e.target, curType, true); }
+    });
+  },{threshold:.25});
+  var levEl=document.getElementById('levChart'), pfEl=document.getElementById('pfChart');
+  if(levEl) chartIO.observe(levEl);
+  if(pfEl) chartIO.observe(pfEl);
+
+  /* ---- DATA COMPONENT 1: leverage bars (what one contract controls) ---- */
+  var curPx=90;
+  function premAt(px){ return Math.round((px*100*0.06)/10)*10; } // ~6% of notional, illustrative
+  function drawLev(box, px, animate){
+    var control=px*100, premium=premAt(px);
+    var W=700,H=170,padL=14,padR=120,padT=20;
+    var rowH=44, gap=30, barMaxW=W-padL-padR;
+    var maxRef=control;
+    var wC=barMaxW, wP=Math.max(6,(premium/maxRef)*barMaxW);
+    var yC=padT, yP=padT+rowH+gap;
+    var dur=(reduce||!animate)?'0s':'1s';
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    // row labels
+    s+='<text x="'+padL+'" y="'+(yC-6)+'" font-family="Poppins,sans-serif" font-weight="700" font-size="12.5" fill="#5B6472">STOCK YOU CONTROL</text>';
+    s+='<text x="'+padL+'" y="'+(yP-6)+'" font-family="Poppins,sans-serif" font-weight="700" font-size="12.5" fill="#5B6472">PREMIUM YOU PAY</text>';
+    // control bar
+    s+='<rect x="'+padL+'" y="'+yC+'" width="'+wC+'" height="'+rowH+'" rx="8" fill="#22C55E">';
+    if(!reduce&&animate){ s+='<animate attributeName="width" from="0" to="'+wC+'" dur="'+dur+'" fill="freeze"/>'; }
+    s+='</rect>';
+    s+='<text x="'+(padL+wC+10)+'" y="'+(yC+rowH/2+5)+'" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="#15803d">'+money(control)+'</text>';
+    // premium bar
+    s+='<rect x="'+padL+'" y="'+yP+'" width="'+wP+'" height="'+rowH+'" rx="8" fill="#FBBF24">';
+    if(!reduce&&animate){ s+='<animate attributeName="width" from="0" to="'+wP+'" dur="'+dur+'" fill="freeze"/>'; }
+    s+='</rect>';
+    s+='<text x="'+(padL+wP+10)+'" y="'+(yP+rowH/2+5)+'" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="#B45309">'+money(premium)+'</text>';
+    s+='</svg>';
+    box.innerHTML=s;
+    document.getElementById('levHeadline').textContent='Control '+money(control)+' of stock for about '+money(premium);
+    document.getElementById('levCtrl').textContent=money(control);
+    document.getElementById('levPrem').textContent=money(premium);
+  }
+  (function(){
+    var btns=document.querySelectorAll('#option-basics .yr-toggle button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        curPx=parseInt(b.dataset.px,10);
+        if(levEl){ levEl.dataset.drawn='1'; drawLev(levEl, curPx, true); }
+      });
+    });
+  })();
+
+  /* ---- DATA COMPONENT 2: payoff diagram (call/put toggle + price slider) ---- */
+  var curType='call', STRIKE=100, PREM=5, MULT=100;
+  function plAt(type, S){
+    var intrinsic = type==='call' ? Math.max(S-STRIKE,0) : Math.max(STRIKE-S,0);
+    return (intrinsic-PREM)*MULT;
+  }
+  function drawPayoff(box, type, animate){
+    var W=700,H=300,padL=60,padR=22,padT=22,padB=44;
+    var sMin=60,sMax=140, yMin=-800, yMax=3700;
+    var plotW=W-padL-padR, plotH=H-padT-padB;
+    function xTo(S){ return padL + ((S-sMin)/(sMax-sMin))*plotW; }
+    function yTo(v){ return (H-padB) - ((v-yMin)/(yMax-yMin))*plotH; }
+    var pts=[]; for(var S=sMin;S<=sMax;S+=2){ pts.push([xTo(S), yTo(plAt(type,S))]); }
+    var line=pts.map(function(c){ return c[0].toFixed(1)+','+c[1].toFixed(1); }).join(' ');
+    var y0=yTo(0);
+    var be = type==='call' ? STRIKE+PREM : STRIKE-PREM;
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    s+='<defs><linearGradient id="pf-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22C55E" stop-opacity=".22"/><stop offset="100%" stop-color="#22C55E" stop-opacity="0"/></linearGradient></defs>';
+    // gridlines at P/L values
+    [3000,2000,1000,0,-500].forEach(function(v){
+      var gy=yTo(v);
+      s+='<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" stroke="'+(v===0?'#c9bd9c':'#eee5d2')+'" stroke-width="'+(v===0?'1.5':'1')+'"/>';
+      s+='<text x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end" font-family="Inter,sans-serif" font-size="10.5" fill="#98A2B3">'+(v>=0?'+':'−')+'$'+Math.abs(v).toLocaleString('en-US')+'</text>';
+    });
+    // breakeven vertical
+    var bex=xTo(be);
+    s+='<line x1="'+bex+'" y1="'+padT+'" x2="'+bex+'" y2="'+(H-padB)+'" stroke="#B45309" stroke-width="1.2" stroke-dasharray="4 4" opacity=".7"/>';
+    s+='<text x="'+bex+'" y="'+(padT-6)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="10.5" fill="#B45309">breakeven $'+be+'</text>';
+    // strike marker on axis
+    var stx=xTo(STRIKE);
+    s+='<text x="'+stx+'" y="'+(H-padB+20)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5B6472">$'+STRIKE+' strike</text>';
+    // x labels
+    [60,80,120,140].forEach(function(v){
+      s+='<text x="'+xTo(v)+'" y="'+(H-padB+20)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#5B6472">$'+v+'</text>';
+    });
+    // payoff line (draw-on)
+    var col = type==='call' ? '#16A34A' : '#DC2626';
+    var len=2200;
+    s+='<polyline points="'+line+'" fill="none" stroke="'+col+'" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"';
+    if(!reduce&&animate){ s+=' stroke-dasharray="'+len+'" stroke-dashoffset="'+len+'"><animate attributeName="stroke-dashoffset" from="'+len+'" to="0" dur="1.05s" fill="freeze"/></polyline>'; }
+    else { s+='/>'; }
+    // live marker dot
+    s+='<circle id="pfDot" cx="0" cy="0" r="6.5" fill="'+col+'" stroke="#fff" stroke-width="2.5"/>';
+    s+='</svg>';
+    box.innerHTML=s;
+    document.getElementById('pfBE').textContent='$'+be;
+    updateMarker();
+  }
+  function updateMarker(){
+    if(!pfEl) return;
+    var S=parseInt(document.getElementById('pfSlide').value,10);
+    var pl=plAt(curType,S);
+    // position dot
+    var W=700, padL=60,padR=22,padT=22,padB=44, H=300;
+    var sMin=60,sMax=140,yMin=-800,yMax=3700;
+    var plotW=W-padL-padR, plotH=H-padT-padB;
+    var dx=padL+((S-sMin)/(sMax-sMin))*plotW;
+    var dy=(H-padB)-((pl-yMin)/(yMax-yMin))*plotH;
+    var dot=document.getElementById('pfDot');
+    if(dot){ dot.setAttribute('cx',dx.toFixed(1)); dot.setAttribute('cy',dy.toFixed(1)); }
+    document.getElementById('pfPx').textContent='$'+S;
+    var head=document.getElementById('pfHeadline');
+    var sign = pl>=0 ? '+' : '−';
+    head.textContent='At $'+S+', this '+curType.toUpperCase()+' is worth '+sign+'$'+Math.abs(pl).toLocaleString('en-US');
+    head.classList.toggle('pos', pl>=0);
+    head.classList.toggle('neg', pl<0);
+  }
+  (function(){
+    var slide=document.getElementById('pfSlide');
+    if(slide) slide.addEventListener('input',function(){ if(pfEl && !pfEl.dataset.drawn){ pfEl.dataset.drawn='1'; drawPayoff(pfEl,curType,false); } updateMarker(); });
+    var btns=document.querySelectorAll('#call-vs-put .yr-toggle button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        curType=b.dataset.type;
+        if(pfEl){ pfEl.dataset.drawn='1'; drawPayoff(pfEl, curType, true); }
+      });
+    });
+  })();
+
+  /* ---- CINEMATIC video: pause narration, coach outro, satisfy gate ---- */
+  (function(){
+    var vid=document.getElementById('cineVid'), ov=document.getElementById('cineOv'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var wasPlaying=false, cineIdx=idxOf('call-vs-put'), started=false;
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      started=true;
+      var p=vid.play(); if(p&&p.catch) p.catch(function(){ /* if playback fails, still let them continue */ endCine(); });
+    });
+    function endCine(){
+      if(outro) outro.style.display='block';
+      satisfyGate('call-vs-put');
+      if(wasPlaying && audio.currentTime < ST[cineIdx].end-0.3){
+        audio.play(); playBtn.textContent=PAUSE;
+      }
+    }
+    vid.addEventListener('ended',endCine);
+    // safety: if the clip errors (missing source), unlock so the lesson never traps the user
+    vid.addEventListener('error',function(){ satisfyGate('call-vs-put'); });
+  })();
+
+  /* ---- call-or-put practice game (gates continue) ---- */
+  (function(){
+    var game=document.getElementById('cpgGame'); if(!game) return;
+    var rounds=[
+      {desc:"You think Nike jumps after it reveals a big new product everyone's hyped about.",ans:"CALL",
+       why:"You expect the price UP, so a call fits. A call is the right to buy before it climbs."},
+      {desc:"You think a stock is about to fall hard after some rough news.",ans:"PUT",
+       why:"You expect the price DOWN, so a put fits. A put profits when the stock drops."},
+      {desc:"You want to profit if a stock drops.",ans:"PUT",
+       why:"Wanting to win on a fall points straight to a put, the right to sell."},
+      {desc:"You're bullish on Apple before a huge launch event and expect the price to climb.",ans:"CALL",
+       why:"Bullish means expecting up, and a call is the up bet."},
+      {desc:"You think Roblox will slide after a weak earnings report.",ans:"PUT",
+       why:"Expecting a slide is a down bet, so it's a put."},
+      {desc:"You're convinced Spotify will run higher into a big update and want to bet on the rise.",ans:"CALL",
+       why:"Betting on a rise is a call, the right to buy at the locked-in strike."}
+    ];
+    var i=0, score=0, answeredAll=false;
+    var desc=document.getElementById('cpgDesc'), why=document.getElementById('cpgWhy');
+    var callBtn=document.getElementById('cpgCall'), putBtn=document.getElementById('cpgPut');
+    var prog=document.getElementById('cpgProg'), sc=document.getElementById('cpgScore'), next=document.getElementById('cpgNext');
+    function render(){
+      var r=rounds[i];
+      desc.textContent=r.desc;
+      why.className='cpg-why'; why.textContent='';
+      callBtn.disabled=false; putBtn.disabled=false;
+      callBtn.className='cpg-btn'; putBtn.className='cpg-btn';
+      prog.textContent='Round '+(i+1)+' of '+rounds.length;
+      sc.textContent='Score '+score;
+      next.className=''; next.textContent='Next round →';
+    }
+    function answer(pick){
+      if(callBtn.disabled) return;
+      var r=rounds[i], correct=(pick===r.ans);
+      if(correct) score++;
+      callBtn.disabled=true; putBtn.disabled=true;
+      var chosen=pick==='CALL'?callBtn:putBtn;
+      var rightBtn=r.ans==='CALL'?callBtn:putBtn;
+      rightBtn.classList.add('right');
+      if(!correct) chosen.classList.add('wrong');
+      why.textContent=(correct?'Correct! ':'Not quite. ')+r.why;
+      why.classList.add('show');
+      sc.textContent='Score '+score;
+      if(i<rounds.length-1){ next.classList.add('show'); }
+      else {
+        next.textContent='Done · '+score+'/'+rounds.length+' ✓'; next.classList.add('show');
+        if(!answeredAll){ answeredAll=true; satisfyGate('call-or-put-game'); }
+      }
+    }
+    callBtn.addEventListener('click',function(){answer('CALL');});
+    putBtn.addEventListener('click',function(){answer('PUT');});
+    next.addEventListener('click',function(){
+      if(i<rounds.length-1){ i++; render(); }
+      else { next.classList.remove('show'); why.textContent='Nice — you matched every outlook to the right contract. That is the whole idea.'; why.classList.add('show'); }
+    });
+    render();
+  })();
+
+  /* ---- bet sorter mini-game (click clue, click column) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('#bet-sorter .col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the side where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty');
+          fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Up-clues are calls; down-clues are puts.';
+          satisfyGate('bet-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- quiz grading + bridge emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){
+          o.disabled=true;
+          if(i===corr) o.classList.add('correct');
+          if(i===s && i!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you’ve got calls and puts nailed down.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
-<style id="fta-anim">
-@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
-@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
-.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
-</style>
-<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
 </body>
 </html>

@@ -14,143 +14,349 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  .svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
-  .svgcard svg{width:100%;height:auto;display:block}
-  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
-  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
-  /* animated expectations-vs-result bars */
-  .bar{transform-box:fill-box;transform-origin:bottom center;transform:scaleY(0)}
-  .svgcard.play .bar{animation:grow .9s cubic-bezier(.2,.8,.2,1) forwards}
-  .svgcard.play .bar.b2{animation-delay:.25s}
-  @keyframes grow{to{transform:scaleY(1)}}
-  .surprise{opacity:0}
-  .svgcard.play .surprise{animation:fadein .5s ease .95s forwards}
-  @keyframes fadein{to{opacity:1}}
-  .pulse{transform-box:fill-box;transform-origin:center;animation:pl 1.6s ease-in-out infinite}
-  @keyframes pl{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-  /* bespoke: reaction tap game (3 outcomes) */
-  .rg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-soft)}
-  .rgdesc{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1.35;color:var(--ink);min-height:74px}
-  .rgbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
-  .rgbtn{font-family:var(--font-display);font-weight:700;font-size:15px;padding:15px 10px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
-  .rgbtn[data-a="POP"]:hover{border-color:var(--green-2);background:var(--green-bg)}
-  .rgbtn[data-a="DUMP"]:hover{border-color:var(--red-2);background:var(--red-bg)}
-  .rgbtn[data-a="FLAT"]:hover{border-color:#CBB994;background:var(--gold-bg)}
-  .rgbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
-  .rgbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
-  .rgbtn:disabled{cursor:default}
-  .rgwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
-  .rgwhy.show{display:block}
-  .rgfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
-  #rgNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
-  #rgNext.show{display:inline-block}
-  @media(max-width:520px){.rgbtns{grid-template-columns:1fr}}
+/* ============================================================
+   BESPOKE COMPONENTS for w3l2 — layered on the warm-paper skin.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + rising ticks ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.03)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 26s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.45) 72%,rgba(251,247,239,.12) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(38px,8vw,76px);font-weight:900;line-height:.99;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .55s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .7s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .86s forwards}
+.badge b{color:var(--gold-700)}
+.ticks{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.tick{position:absolute;bottom:-8%;font:800 18px/1 var(--font-display);opacity:0;animation:tickRise linear infinite}
+@keyframes tickRise{0%{transform:translateY(0);opacity:0}10%{opacity:.72}88%{opacity:.72}100%{transform:translateY(-120vh);opacity:0}}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+/* ---------- process flow (catalysts) ---------- */
+.flow{display:flex;align-items:stretch;gap:8px;justify-content:center;flex-wrap:wrap;max-width:900px;margin:26px auto 0}
+.flow-node{flex:1 1 210px;min-width:180px;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-lg);
+  padding:20px 18px;text-align:center;box-shadow:var(--shadow-soft);opacity:0;transform:translateY(16px);
+  transition:opacity .5s ease,transform .5s ease}
+.flow.vis .flow-node{opacity:1;transform:none}
+.flow.vis .flow-node.n2{transition-delay:.18s}
+.flow.vis .flow-node.n3{transition-delay:.36s}
+.flow-arrow{display:flex;align-items:center;justify-content:center;font:800 26px/1 var(--font-display);color:var(--gold-600);
+  opacity:0;transition:opacity .4s ease}
+.flow.vis .flow-arrow{opacity:1}
+.flow.vis .flow-arrow.a1{transition-delay:.12s}.flow.vis .flow-arrow.a2{transition-delay:.3s}
+@media(max-width:640px){.flow{flex-direction:column;align-items:stretch}.flow-arrow{transform:rotate(90deg)}}
+.fn-ico{font-size:30px;display:block;margin-bottom:6px}
+.flow-node h4{font-size:16px;margin-bottom:4px}
+.flow-node p{font-size:13px;color:var(--soft)}
+.flow-stat{max-width:640px;margin:24px auto 0;text-align:center}
+.fs-num{font:900 clamp(42px,9vw,68px)/1 var(--font-display);color:var(--gold-600);font-variant-numeric:tabular-nums;
+  background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 60%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.fs-cap{font-size:13px;color:var(--soft);margin-top:4px}
+.fs-cap b{color:var(--ink)}
+.cat-pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:820px;margin:26px auto 0}
+.cat-pill{font:600 14px var(--font-display);padding:10px 16px;border-radius:var(--r-full);
+  border:1px solid var(--sand);background:var(--card);color:var(--ink);box-shadow:var(--shadow-soft)}
+
+/* ---------- data chart cards (expected/actual + surprise) ---------- */
+.svgcard{max-width:760px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-lift)}
+.svgcard svg{width:100%;height:auto;display:block}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(18px,2.5vw,25px)/1.12 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-exp,.dot-act{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:2px}
+.dot-exp{background:#B7AE9A}.dot-act{background:var(--green-2)}
+/* animated expected-vs-result bars */
+.bar{transform-box:fill-box;transform-origin:bottom center;transform:scaleY(0)}
+.svgcard.play .bar{animation:grow .9s cubic-bezier(.2,.8,.2,1) forwards}
+.svgcard.play .bar.b2{animation-delay:.28s}
+@keyframes grow{to{transform:scaleY(1)}}
+.surprise{opacity:0}
+.svgcard.play .surprise{animation:fadein .5s ease 1s forwards}
+@keyframes fadein{to{opacity:1}}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pl 1.7s ease-in-out infinite}
+@keyframes pl{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.disclaim{margin:16px auto 0;max-width:760px;font-size:13.5px;color:var(--soft);text-align:center;
+  background:var(--gold-bg);border:1px solid #FDE68A;border-radius:var(--r-md);padding:11px 16px}
+
+/* ---------- surprise-o-meter (slider + live headline) ---------- */
+.som{max-width:760px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-lift)}
+.som-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.som-headline{font:800 clamp(17px,2.4vw,23px)/1.2 var(--font-display);color:var(--ink)}
+.som-headline b{font-variant-numeric:tabular-nums}
+.som-headline .up{color:var(--green)}.som-headline .down{color:var(--red)}.som-headline .mid{color:var(--gold-600)}
+.som-badge{font:800 12.5px var(--font-display);padding:7px 14px;border-radius:var(--r-full);letter-spacing:.5px;white-space:nowrap}
+.som-badge.pop{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.som-badge.dump{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.som-badge.flat{background:var(--gold-bg);color:#7a4d06;border:1px solid #FDE68A}
+.som-body{display:grid;grid-template-columns:1fr 190px;gap:26px;align-items:center;margin-top:18px}
+@media(max-width:600px){.som-body{grid-template-columns:1fr;gap:18px}}
+.som-svg svg{width:100%;height:auto;display:block}
+.react-rect{transition:y .5s cubic-bezier(.2,.8,.2,1),height .5s cubic-bezier(.2,.8,.2,1),fill .3s ease}
+.sc-label{font:700 12px var(--font-display);letter-spacing:1px;text-transform:uppercase;color:var(--soft);
+  display:flex;justify-content:space-between}
+.som-slider{width:100%;-webkit-appearance:none;appearance:none;height:7px;border-radius:99px;
+  background:linear-gradient(90deg,var(--red-2),var(--sand-2) 50%,var(--green-2));cursor:pointer;margin-top:12px}
+.som-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;
+  border:3px solid var(--gold-600);box-shadow:var(--shadow-soft);cursor:pointer}
+.som-slider::-moz-range-thumb{width:24px;height:24px;border:3px solid var(--gold-600);border-radius:50%;background:#fff;cursor:pointer}
+.som-read{margin-top:14px;font-size:13px;color:var(--soft);text-align:center}
+.som-read b{color:var(--ink)}
+
+/* ---------- cinematic video: coach intro / outro ---------- */
+.cv{max-width:900px;margin:30px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.28),rgba(11,18,32,.55));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* ---------- reaction game (react-game) ---------- */
+.rg{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);
+  padding:26px;box-shadow:var(--shadow-lift)}
+.rgdesc{font-family:var(--font-display);font-weight:700;font-size:clamp(18px,2.6vw,22px);line-height:1.35;color:var(--ink);min-height:78px}
+.rgbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.rgbtn{font-family:var(--font-display);font-weight:700;font-size:15px;padding:15px 10px;border-radius:var(--r-lg);cursor:pointer;
+  border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+.rgbtn[data-a="POP"]:hover:not(:disabled){border-color:var(--green-2);background:var(--green-bg)}
+.rgbtn[data-a="DUMP"]:hover:not(:disabled){border-color:var(--red-2);background:var(--red-bg)}
+.rgbtn[data-a="FLAT"]:hover:not(:disabled){border-color:#CBB994;background:var(--gold-bg)}
+.rgbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+.rgbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+.rgbtn:disabled{cursor:default}
+.rgwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);
+  border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.5}
+.rgwhy.show{display:block}
+.rgfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);
+  font-weight:600;font-size:13px;color:var(--soft);gap:10px;flex-wrap:wrap}
+#rgNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);
+  background:var(--ink);color:#fff;cursor:pointer;display:none}
+#rgNext.show{display:inline-block}
+.imgstrip{max-width:720px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);
+  box-shadow:var(--shadow-soft);aspect-ratio:16/5}
+.imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
+@media(max-width:520px){.rgbtns{grid-template-columns:1fr}}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .tick{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .flow-node,.flow-arrow{transition:none;opacity:1;transform:none}
+  .bar{transform:scaleY(1)}.surprise{opacity:1}.pulse{animation:none}
+  .react-rect{transition:none}
+  .anim{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Teens &middot; Module 3 &middot; Lesson 3.2</div>
-      <h1 style="font-size:clamp(34px,7vw,60px);font-weight:900;line-height:1.03;margin:12px 0 12px">Why stocks suddenly move</h1>
-      <p class="lead">A stock rips ten percent overnight, or tanks, and everyone asks the same thing: why? The answer is almost always news. Learn how a headline becomes a price.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Why</span>
+        <span class="w" style="animation-delay:.13s">Stocks</span>
+        <span class="w" style="animation-delay:.21s">Suddenly</span>
+        <span class="w gold" style="animation-delay:.29s">Move</span>
+      </h1>
+      <p class="lead">A stock rips ten percent overnight, or tanks, and everyone asks the same thing: why? The answer is almost always news. Let me show you how a headline turns into a price.</p>
       <div class="badges">
-        <span class="badge"><b>7</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">SI-100 &middot; <b>Teens</b></span>
         <span class="badge">~<b>2.5</b> min</span>
+        <span class="badge">Level &middot; <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A teenager reacting with excitement to a phone showing a stock chart spiking on breaking news" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · CATALYSTS -->
+<!-- ============ 2 · CATALYSTS (anchor: catalysts) — define + animated process flow ============ -->
 <section id="catalysts">
   <div class="inner">
-    <div class="anim"><div class="label">The Spark</div><h2 class="title">Meet the catalyst</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/earnings-report.jpg" alt="A phone showing a company earnings report next to a jumping stock chart" /></div>
-      <div>
-        <p class="bigdef">A <span class="hi">catalyst</span> is news or an event big enough to shake a price loose.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Common catalysts</span>
-            <h3>These move stocks</h3>
-            <p>Earnings reports, a new product launch, a big partnership, a lawsuit, a surprise from the CEO.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Why it matters</span>
-            <h3>Action lives here</h3>
-            <p>Traders circle these dates on the calendar. No catalyst, and a stock usually just drifts sideways.</p>
-          </div>
-        </div>
-        <div class="insight">Think of companies you already know. When a phone maker, a sneaker brand, or a streaming service drops a report, the chart reacts almost instantly.</div>
-      </div>
+    <div class="anim center-narrow"><div class="label">The Spark</div>
+      <h2 class="title">Meet the catalyst</h2>
+      <p class="lead center">A <b>catalyst</b> is news or an event big enough to shake a price loose. No catalyst, and a stock usually just drifts sideways. So how does a headline actually become a price move?</p>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/news-cycle.jpg" alt="A loop from breaking news to traders to a moving stock chart and back" /></div>
+
+    <div class="flow anim d1" id="newsFlow">
+      <div class="flow-node n1"><span class="fn-ico">&#128240;</span><h4>Headline drops</h4><p>Earnings, a launch, a lawsuit, a recall.</p></div>
+      <div class="flow-arrow a1" aria-hidden="true">&rarr;</div>
+      <div class="flow-node n2"><span class="fn-ico">&#9889;</span><h4>Traders react</h4><p>Everyone reprices it within seconds.</p></div>
+      <div class="flow-arrow a2" aria-hidden="true">&rarr;</div>
+      <div class="flow-node n3"><span class="fn-ico">&#128200;</span><h4>Price moves</h4><p>The chart jumps or dumps, fast.</p></div>
+    </div>
+
+    <div class="flow-stat anim d2" id="flowStatWrap">
+      <div class="fs-num"><span id="flowStat">0</span>%</div>
+      <div class="fs-cap">A fresh surprise can swing a stock this much in a single day &middot; <b>illustrative</b></div>
+    </div>
+
+    <div class="cat-pills anim d3">
+      <span class="cat-pill">&#128202; Earnings report</span>
+      <span class="cat-pill">&#128640; Product launch</span>
+      <span class="cat-pill">&#129309; Big partnership</span>
+      <span class="cat-pill">&#9878;&#65039; Lawsuit</span>
+      <span class="cat-pill">&#127908; CEO surprise</span>
+      <span class="cat-pill">&#128721; Product recall</span>
+    </div>
+
+    <div class="insight anim d4" style="max-width:760px;margin:24px auto 0">Think of companies you already know. When a phone maker, a sneaker brand, or a streaming service drops a report, the chart reacts almost instantly. Traders circle those dates on the calendar.</div>
   </div>
 </section>
 
-<!-- 3 · EARNINGS MOVE (animated SVG) -->
+<!-- ============ 3 · EARNINGS-MOVE (anchor: earnings-move) — 2 data components + cinematic ============ -->
 <section id="earnings-move">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Beat, Miss or Priced In</div>
+    <div class="anim center-narrow"><div class="label">Beat, Miss or Priced In</div>
       <h2 class="title">Price moves on the surprise</h2>
-      <p class="lead" style="margin:0 auto">A company can post great numbers and still drop. The secret is expectations. Watch the gap between what the crowd expected and what actually happened.</p>
+      <p class="lead center">A company can post great numbers and still drop. The secret is expectations. Watch the gap between what the crowd expected and what actually happened — that gap is the surprise.</p>
     </div>
+
+    <!-- DATA COMPONENT A: expected vs actual + surprise (animate on scroll-in) -->
     <div class="svgcard anim d1" id="svgEarn">
-      <svg viewBox="0 0 680 320" role="img" aria-label="Illustrative bar chart comparing what investors expected versus the actual result, with the surprise gap driving the price move">
-        <line x1="60" y1="40" x2="60" y2="250" stroke="#EAE2D0" stroke-width="2"/>
-        <line x1="60" y1="250" x2="640" y2="250" stroke="#EAE2D0" stroke-width="2"/>
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Earnings per share &middot; one quarter &middot; illustrative</div>
+          <div class="chart-big">Actual $1.45 vs expected $1.20 — a beat.</div>
+        </div>
+      </div>
+      <svg viewBox="0 0 680 320" role="img" aria-label="Bar chart comparing expected earnings per share of 1.20 dollars against an actual result of 1.45 dollars, with the gap between them labelled the surprise that drives the price move">
+        <line x1="70" y1="40" x2="70" y2="250" stroke="#EAE2D0" stroke-width="2"/>
+        <line x1="70" y1="250" x2="640" y2="250" stroke="#EAE2D0" stroke-width="2"/>
         <!-- expected bar (gray, shorter) -->
-        <rect class="bar" x="140" y="150" width="120" height="100" rx="6" fill="#B7AE9A"/>
-        <text x="200" y="272" font-family="Poppins,sans-serif" font-size="15" font-weight="700" fill="#5B6472" text-anchor="middle">Expected</text>
+        <rect class="bar" x="150" y="150" width="120" height="100" rx="6" fill="#B7AE9A"/>
+        <text x="210" y="140" font-family="Poppins,sans-serif" font-size="14" font-weight="800" fill="#5B6472" text-anchor="middle">$1.20</text>
+        <text x="210" y="272" font-family="Poppins,sans-serif" font-size="15" font-weight="700" fill="#5B6472" text-anchor="middle">Expected</text>
         <!-- actual bar (green, taller = a beat) -->
-        <rect class="bar b2" x="420" y="80" width="120" height="170" rx="6" fill="#22C55E"/>
-        <text x="480" y="272" font-family="Poppins,sans-serif" font-size="15" font-weight="700" fill="#16A34A" text-anchor="middle">Actual result</text>
+        <rect class="bar b2" x="430" y="80" width="120" height="170" rx="6" fill="#22C55E"/>
+        <text x="490" y="70" font-family="Poppins,sans-serif" font-size="14" font-weight="800" fill="#16A34A" text-anchor="middle">$1.45</text>
+        <text x="490" y="272" font-family="Poppins,sans-serif" font-size="15" font-weight="700" fill="#16A34A" text-anchor="middle">Actual result</text>
         <!-- surprise bracket -->
         <g class="surprise">
-          <line x1="300" y1="150" x2="380" y2="150" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
-          <line x1="300" y1="80" x2="380" y2="80" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="310" y1="150" x2="390" y2="150" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <line x1="310" y1="80" x2="390" y2="80" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
           <g class="pulse">
-            <rect x="292" y="96" width="96" height="38" rx="10" fill="#FEF3C7" stroke="#FDE68A"/>
-            <text x="340" y="120" font-family="Poppins,sans-serif" font-size="14" font-weight="800" fill="#7a4d06" text-anchor="middle">SURPRISE</text>
+            <rect x="292" y="96" width="116" height="40" rx="10" fill="#FEF3C7" stroke="#FDE68A"/>
+            <text x="350" y="115" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#7a4d06" text-anchor="middle">SURPRISE</text>
+            <text x="350" y="130" font-family="Poppins,sans-serif" font-size="11.5" font-weight="700" fill="#7a4d06" text-anchor="middle">+$0.25 beat</text>
           </g>
         </g>
-        <text x="340" y="300" font-family="Inter,sans-serif" font-size="12.5" font-weight="600" fill="#98A2B3" text-anchor="middle">Illustrative — not a forecast or a promise.</text>
+        <text x="355" y="300" font-family="Inter,sans-serif" font-size="12.5" font-weight="600" fill="#98A2B3" text-anchor="middle">Illustrative — numbers show the idea, not a forecast.</text>
       </svg>
+      <div class="chart-foot"><span class="dot-exp"></span> What the crowd expected &nbsp;&middot;&nbsp; <span class="dot-act"></span> What actually happened</div>
     </div>
-    <div class="disclaim anim d1">Illustrative example. Bar heights are made up to show the idea, not real numbers.</div>
-    <div class="define anim d2" style="margin-top:22px">
-      <div>
-        <div class="two">
-          <div class="cmp grow"><span class="tag">Beat</span><h3>Actual &gt; expected</h3><p>A positive surprise. The stock usually pops.</p></div>
-          <div class="cmp gamble"><span class="tag">Miss</span><h3>Actual &lt; expected</h3><p>A letdown. The stock usually dumps, even if profit still grew.</p></div>
-        </div>
-        <div class="insight">When people say a result was <span class="hi">already priced in</span>, they mean the good news was expected, so it was baked into the price before the report even landed.</div>
+
+    <div class="two anim d2" style="max-width:760px;margin:24px auto 0">
+      <div class="cmp grow"><span class="tag">Beat</span><h3>Actual &gt; expected</h3><p>A positive surprise. The stock usually pops, sometimes hard.</p></div>
+      <div class="cmp safe"><span class="tag">Miss</span><h3>Actual &lt; expected</h3><p>A letdown. The stock usually dumps — even if profit still grew.</p></div>
+    </div>
+    <div class="insight anim d2" style="max-width:760px;margin:20px auto 0">When people say a result was <b>already priced in</b>, they mean the good news was expected, so it was baked into the price before the report even landed.</div>
+
+    <!-- DATA COMPONENT B: surprise-o-meter (slider + live headline) -->
+    <div class="som anim d3" id="som">
+      <div class="som-head">
+        <div class="som-headline">Surprise <b id="somSurp" class="up">+10%</b> &rarr; predicted move <b id="somMove" class="up">+8%</b></div>
+        <span class="som-badge pop" id="somBadge">&#128640; POP</span>
       </div>
-      <div class="define-art"><img src="./assets/hype-to-price.jpg" alt="A megaphone and hype turning into a stock price spike" /></div>
+      <div class="som-body">
+        <div class="som-controls">
+          <div class="sc-label"><span>Big miss</span><span>Priced in</span><span>Big beat</span></div>
+          <input class="som-slider" id="somSlider" type="range" min="-25" max="25" step="1" value="10" aria-label="Earnings surprise size, from a big miss to a big beat" />
+          <div class="som-read">Drag the surprise. A move barely wiggles near <b>priced in</b>, then pops or dumps as the gap widens.</div>
+        </div>
+        <div class="som-svg" aria-hidden="true">
+          <svg viewBox="0 0 190 240" role="img">
+            <line x1="20" y1="120" x2="170" y2="120" stroke="#98A2B3" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <text x="14" y="124" font-family="Inter,sans-serif" font-size="10" fill="#98A2B3" text-anchor="end">0%</text>
+            <rect id="reactBar" class="react-rect" x="60" y="120" width="80" height="0" rx="6" fill="#22C55E"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- CINEMATIC MOMENT: pauses narration + gates Continue -->
+    <div class="cv anim d4" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before we practice, watch this — the exact moment a headline turns into a price. I'll pause the narration the second you press play.</p>
+      </div>
+      <div class="video-wrap">
+        <video id="cineVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="cineOv" aria-label="Play the catalyst clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Watch a headline hit</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">That jump is a surprise being priced in, in real time — thousands of traders reacting at once. Hit Continue whenever you're ready.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 4 · REACTION GAME (bespoke) -->
+<!-- ============ 4 · REACT-GAME (anchor: react-game) — reaction game, gates ============ -->
 <section id="react-game">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn &middot; Read the Reaction</div>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; Read the Reaction</div>
       <h2 class="title">Pop, dump, or barely move?</h2>
-      <p class="lead" style="margin:0 auto">I describe a scenario. You predict the reaction. Focus on the surprise versus what was expected, not just whether the news sounds good.</p>
+      <p class="lead center">I describe a scenario. You predict the reaction. Focus on the surprise versus what was expected, not just whether the news sounds good.</p>
     </div>
-    <div class="imgstrip anim d1" style="max-width:720px;aspect-ratio:16/5"><img src="./assets/catalyst-vs-noise.jpg" alt="A rocket as a big market mover beside faint static as market noise" /></div>
+    <div class="imgstrip anim d1"><img src="./assets/catalyst-vs-noise.jpg" alt="A rocket as a big market mover beside faint static as market noise" /></div>
     <div class="rg anim d2" id="rgGame">
       <div class="rgdesc" id="rgDesc">Loading round&hellip;</div>
       <div class="rgbtns">
@@ -168,13 +374,12 @@
   </div>
 </section>
 
-<!-- 5 · SORTER -->
+<!-- ============ 5 · HEADLINE-SORTER (anchor: headline-sorter) — mini-game, gates ============ -->
 <section id="headline-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Sort It Yourself</div>
+    <div class="anim center-narrow"><div class="label">Sort It Yourself</div>
       <h2 class="title">Catalyst or just noise?</h2>
-      <p class="lead" style="margin:0 auto">Tap a headline, then tap the bucket it belongs in. Some can really move a price. Some are background chatter.</p>
+      <p class="lead center">Tap a headline to pick it up, then tap the bucket it belongs in. Some can really move a price. Some are just background chatter.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
@@ -200,13 +405,12 @@
   </div>
 </section>
 
-<!-- 6 · QUIZ -->
+<!-- ============ 6 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Prove you can read what moves a stock.</p>
+      <p class="lead center">Five questions. Prove you can read what moves a stock.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="1">
@@ -260,10 +464,10 @@
   </div>
 </section>
 
-<!-- 7 · BRIDGE -->
+<!-- ============ 7 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">The News Cycle</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">The News Cycle</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
       <div class="take"><span class="ck">&#10003;</span><p>A catalyst is the news or event that moves a stock fast.</p></div>
       <div class="take"><span class="ck">&#10003;</span><p>Price moves on the surprise, not just the result.</p></div>
@@ -295,79 +499,411 @@
   <button id="spd">1x</button>
 </div>
 
+<!-- nav dots -->
 <nav id="dots"></nav>
+
+<!-- continue -->
 <div id="contWrap"><button id="contBtn">Continue</button></div>
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 19.008, "interactive": false, "label": "Why Stocks Move"}, {"id": "catalysts", "start": 19.508, "end": 50.012, "interactive": false, "label": "Catalysts"}, {"id": "earnings-move", "start": 50.512, "end": 89.224, "interactive": false, "label": "Beat, Miss or Priced In"}, {"id": "react-game", "start": 89.724, "end": 103.092, "interactive": true, "label": "Read the Reaction"}, {"id": "headline-sorter", "start": 103.592, "end": 120.944, "interactive": true, "label": "Catalyst or Noise"}, {"id": "quiz", "start": 121.444, "end": 127.66, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 128.16, "end": 148.512, "interactive": false, "label": "The News Cycle"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":19.008,"interactive":false,"label":"Why Stocks Move"},
+  {"id":"catalysts","start":19.508,"end":50.012,"interactive":false,"label":"Meet the Catalyst"},
+  {"id":"earnings-move","start":50.512,"end":89.224,"interactive":true,"label":"Beat, Miss or Priced In"},
+  {"id":"react-game","start":89.724,"end":103.092,"interactive":true,"label":"Read the Reaction"},
+  {"id":"headline-sorter","start":103.592,"end":120.944,"interactive":true,"label":"Catalyst or Noise"},
+  {"id":"quiz","start":121.444,"end":127.66,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":128.16,"end":148.512,"interactive":false,"label":"The News Cycle"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- animated earnings SVG: play on section enter ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, animated data components, cinematic video,
+   reaction game, sorter, quiz, complete.
+   Self-contained; every ftaBridge emit is a harmless no-op standalone.
+   ============================================================ */
 (function(){
-  var card=document.getElementById('svgEarn'); if(!card) return;
-  function play(){ card.classList.add('play'); }
-  document.addEventListener('fta:section',function(e){
-    var id=(e&&e.detail&&(e.detail.id||e.detail.section))||'';
-    if(id==='earnings-move') play();
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'earnings-move':false, 'react-game':false, 'headline-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
   });
-  // safety: also play if it is already on screen for a moment
-  setTimeout(function(){ var r=card.getBoundingClientRect(); if(r.top<window.innerHeight&&r.bottom>0) play(); },1200);
-})();
-/* ---------- bespoke: reaction tap game (isolated) ---------- */
-(function(){
-  var game=document.getElementById('rgGame'); if(!game) return;
-  var rounds=[
-    {desc:"A phone company crushes it, selling way more phones than Wall Street expected.",ans:"POP",
-     why:"Actual beat expectations by a lot. That positive surprise pops the stock."},
-    {desc:"A streaming service adds new subscribers, but fewer than the huge number analysts predicted.",ans:"DUMP",
-     why:"It grew, but it missed high expectations. The letdown sinks it. That is priced in in action."},
-    {desc:"A sneaker brand reports earnings exactly in line with what everyone expected. No surprises.",ans:"FLAT",
-     why:"No surprise, no fuel. When reality matches expectations, price barely budges."},
-    {desc:"A car company announces a surprise recall of millions of vehicles that nobody saw coming.",ans:"DUMP",
-     why:"A nasty surprise out of nowhere. Bad catalyst, price drops."},
-    {desc:"A game company beats earnings AND raises its forecast for next year.",ans:"POP",
-     why:"A beat now plus a brighter outlook. Double good surprise, strong pop."}
-  ];
-  var i=0, score=0;
-  var desc=document.getElementById('rgDesc'), why=document.getElementById('rgWhy');
-  var pop=document.getElementById('rgPop'), dump=document.getElementById('rgDump'), flat=document.getElementById('rgFlat');
-  var prog=document.getElementById('rgProg'), sc=document.getElementById('rgScore'), next=document.getElementById('rgNext');
-  var btns=[pop,dump,flat];
-  function render(){
-    var r=rounds[i];
-    desc.textContent=r.desc;
-    why.className='rgwhy'; why.textContent='';
-    btns.forEach(function(b){b.disabled=false;b.className='rgbtn';});
-    prog.textContent='Round '+(i+1)+' of '+rounds.length;
-    sc.textContent='Score '+score;
-    next.className='';
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
+    }
   }
-  function answer(a){
-    if(pop.disabled) return;
-    var r=rounds[i]; var correct=(a===r.ans);
-    if(correct) score++;
-    btns.forEach(function(b){b.disabled=true;});
-    var chosen=btns.filter(function(b){return b.getAttribute('data-a')===a;})[0];
-    var rightBtn=btns.filter(function(b){return b.getAttribute('data-a')===r.ans;})[0];
-    rightBtn.classList.add('right');
-    if(!correct&&chosen) chosen.classList.add('wrong');
-    why.textContent=(correct?'Nailed it. ':'Not quite. ')+r.why;
-    why.classList.add('show');
-    sc.textContent='Score '+score;
-    next.classList.add('show');
-    if(i===rounds.length-1) next.textContent='Done · '+score+'/'+rounds.length+' ✓';
+
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){
+      contBtn.disabled=true;
+      contBtn.textContent = gateHint(s.id);
+    } else {
+      contBtn.disabled=false;
+      contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →';
+    }
   }
-  pop.addEventListener('click',function(){answer('POP');});
-  dump.addEventListener('click',function(){answer('DUMP');});
-  flat.addEventListener('click',function(){answer('FLAT');});
-  next.addEventListener('click',function(){
-    if(i<rounds.length-1){ i++; render(); }
-    else { next.classList.remove('show'); why.textContent='That is the whole skill. React to the surprise, not just the headline.'; why.classList.add('show'); }
+  function gateHint(id){
+    if(id==='earnings-move') return 'Play the clip to continue';
+    if(id==='react-game') return 'Finish all 5 rounds to continue';
+    if(id==='headline-sorter') return 'Sort every headline to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
   });
-  render();
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  // fire-once-on-scroll-in helper
+  function once(el,cb){
+    if(!el) return;
+    var o=new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting){ o.unobserve(e.target); cb(e.target); } });
+    },{threshold:.35});
+    o.observe(el);
+  }
+
+  /* ---- hero rising ticks ---- */
+  (function(){
+    var wrap=document.getElementById('ticks'); if(!wrap||reduce) return;
+    var glyphs=['▲','▼','▲','$'], cols=['#22C55E','#DC2626','#16A34A','#D97706'];
+    for(var i=0;i<16;i++){
+      var t=document.createElement('span'); t.className='tick';
+      var k=Math.floor(Math.random()*glyphs.length);
+      t.textContent=glyphs[k]; t.style.color=cols[k];
+      t.style.left=(Math.random()*96)+'%';
+      t.style.fontSize=(13+Math.random()*16)+'px';
+      t.style.animationDuration=(7+Math.random()*7)+'s';
+      t.style.animationDelay=(-Math.random()*12)+'s';
+      wrap.appendChild(t);
+    }
+  })();
+
+  /* ---- count-up helper ---- */
+  function countUp(el,to,dur){
+    if(!el) return;
+    if(reduce){ el.textContent=to; return; }
+    var start=performance.now();
+    (function step(now){
+      var p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(to*e);
+      if(p<1) requestAnimationFrame(step); else el.textContent=to;
+    })(performance.now());
+  }
+
+  /* ---- catalysts: process-flow count-up (data reveal) ---- */
+  once(document.getElementById('flowStatWrap'), function(){
+    countUp(document.getElementById('flowStat'), 10, 1400);
+  });
+
+  /* ---- DATA A: expected/actual bars animate on scroll-in ---- */
+  once(document.getElementById('svgEarn'), function(el){ el.classList.add('play'); });
+
+  /* ---- DATA B: surprise-o-meter (slider + live headline) ---- */
+  (function(){
+    var slider=document.getElementById('somSlider');
+    var surp=document.getElementById('somSurp'), move=document.getElementById('somMove');
+    var badge=document.getElementById('somBadge'), bar=document.getElementById('reactBar');
+    var som=document.getElementById('som');
+    if(!slider) return;
+    var BASE=120, K=4.2; // px per reaction-percent
+    function reactionFor(s){ return Math.abs(s)<=4 ? Math.round(s*0.25) : Math.round(s*0.8); }
+    function sgn(n){ return (n>0?'+':'')+n+'%'; }
+    function update(){
+      var s=parseInt(slider.value,10), r=reactionFor(s);
+      surp.textContent=sgn(s);
+      move.textContent=(r>0?'▲ ':(r<0?'▼ ':''))+sgn(r);
+      var h=Math.abs(r)*K, up=r>=0;
+      var cls = Math.abs(s)<=4 ? 'mid' : (up?'up':'down');
+      surp.className=cls; move.className=cls;
+      if(Math.abs(s)<=4){ badge.className='som-badge flat'; badge.innerHTML='&#10132; PRICED IN'; bar.setAttribute('fill','#F59E0B'); }
+      else if(up){ badge.className='som-badge pop'; badge.innerHTML='&#128640; POP'; bar.setAttribute('fill','#22C55E'); }
+      else { badge.className='som-badge dump'; badge.innerHTML='&#128201; DUMP'; bar.setAttribute('fill','#DC2626'); }
+      if(up){ bar.setAttribute('y', BASE-h); bar.setAttribute('height', h); }
+      else { bar.setAttribute('y', BASE); bar.setAttribute('height', h); }
+    }
+    slider.addEventListener('input',update);
+    // initial state: bar starts flat, animates to default (+10 beat) when scrolled in
+    once(som, function(){ update(); });
+    // set text immediately (bar animates on reveal)
+    var s0=parseInt(slider.value,10), r0=reactionFor(s0);
+    surp.textContent=sgn(s0); move.textContent='▲ '+sgn(r0);
+  })();
+
+  /* ---- CINEMATIC: pause narration, coach outro, satisfy gate ---- */
+  (function(){
+    var vid=document.getElementById('cineVid'), ov=document.getElementById('cineOv'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var wasPlaying=false, cIdx=idxOf('earnings-move');
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      var p=vid.play(); if(p&&p.catch) p.catch(function(){});
+    });
+    vid.addEventListener('ended',function(){
+      if(outro) outro.style.display='block';
+      satisfyGate('earnings-move');
+      // if narration hadn't reached the gate yet, resume it; otherwise leave Continue unlocked
+      if(wasPlaying && audio.currentTime < ST[cIdx].end-0.3){
+        audio.play(); playBtn.textContent=PAUSE;
+      }
+    });
+  })();
+
+  /* ---- REACT GAME: predict the reaction (gates react-game) ---- */
+  (function(){
+    var game=document.getElementById('rgGame'); if(!game) return;
+    var rounds=[
+      {desc:"A phone company crushes it — selling way more phones than Wall Street expected.",ans:"POP",
+       why:"Actual beat expectations by a lot. That positive surprise pops the stock."},
+      {desc:"A streaming service adds new subscribers, but far fewer than the huge number analysts predicted.",ans:"DUMP",
+       why:"It grew, but it missed sky-high expectations. The letdown sinks it — priced in, in action."},
+      {desc:"A sneaker brand reports earnings exactly in line with what everyone expected. No surprises.",ans:"FLAT",
+       why:"No surprise, no fuel. When reality matches expectations, price barely budges."},
+      {desc:"A car company announces a surprise recall of millions of vehicles that nobody saw coming.",ans:"DUMP",
+       why:"A nasty surprise out of nowhere. Bad catalyst, price drops."},
+      {desc:"A game studio beats earnings AND raises its forecast for next year.",ans:"POP",
+       why:"A beat now plus a brighter outlook — a double positive surprise, strong pop."}
+    ];
+    var i=0, score=0, answered=0;
+    var desc=document.getElementById('rgDesc'), why=document.getElementById('rgWhy');
+    var pop=document.getElementById('rgPop'), dump=document.getElementById('rgDump'), flat=document.getElementById('rgFlat');
+    var prog=document.getElementById('rgProg'), sc=document.getElementById('rgScore'), next=document.getElementById('rgNext');
+    var btns=[pop,dump,flat];
+    function render(){
+      var r=rounds[i];
+      desc.textContent=r.desc;
+      why.className='rgwhy'; why.textContent='';
+      btns.forEach(function(b){b.disabled=false;b.className='rgbtn';});
+      prog.textContent='Round '+(i+1)+' of '+rounds.length;
+      sc.textContent='Score '+score;
+      next.className='';
+    }
+    function answer(a){
+      if(pop.disabled) return;
+      var r=rounds[i], correct=(a===r.ans);
+      if(correct) score++;
+      answered++;
+      btns.forEach(function(b){b.disabled=true;});
+      var chosen=btns.filter(function(b){return b.getAttribute('data-a')===a;})[0];
+      var rightBtn=btns.filter(function(b){return b.getAttribute('data-a')===r.ans;})[0];
+      rightBtn.classList.add('right');
+      if(!correct&&chosen) chosen.classList.add('wrong');
+      why.textContent=(correct?'Nailed it. ':'Not quite. ')+r.why;
+      why.classList.add('show');
+      sc.textContent='Score '+score;
+      next.classList.add('show');
+      if(i===rounds.length-1){ next.textContent='Done · '+score+'/'+rounds.length+' ✓'; }
+      if(answered>=rounds.length){ satisfyGate('react-game'); }
+    }
+    pop.addEventListener('click',function(){answer('POP');});
+    dump.addEventListener('click',function(){answer('DUMP');});
+    flat.addEventListener('click',function(){answer('FLAT');});
+    next.addEventListener('click',function(){
+      if(i<rounds.length-1){ i++; render(); }
+      else { next.classList.remove('show'); why.textContent='That is the whole skill — react to the surprise, not just the headline.'; why.classList.add('show'); }
+    });
+    render();
+  })();
+
+  /* ---- HEADLINE SORTER (click to pick, click a column to place; gates) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('.col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the bucket where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty');
+          fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. A real catalyst can move a price; the rest is just chatter.';
+          satisfyGate('headline-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- QUIZ grading + bridge emit (gates) ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){
+          o.disabled=true;
+          if(i===corr) o.classList.add('correct');
+          if(i===s && i!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you can read what moves a stock.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
 </body>
