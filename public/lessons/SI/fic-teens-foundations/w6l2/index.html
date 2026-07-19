@@ -14,279 +14,370 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* shared image strip idiom */
-  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
-  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
-  .svgcard{max-width:720px;margin:22px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
-  .svgcard svg{width:100%;height:auto;display:block}
-  /* animated six-box checklist reveal */
-  .cklist{max-width:760px;margin:22px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  @media(max-width:640px){.cklist{grid-template-columns:repeat(2,1fr)}}
-  .ckbox{background:var(--card);border:1.5px solid var(--sand);border-radius:var(--r-lg);padding:16px 15px;box-shadow:var(--shadow-soft);opacity:0;transform:translateY(14px)}
-  .cklist.play .ckbox{animation:ckin .5s cubic-bezier(.2,.7,.3,1) forwards}
-  .cklist.play .ckbox:nth-child(1){animation-delay:.05s}
-  .cklist.play .ckbox:nth-child(2){animation-delay:.20s}
-  .cklist.play .ckbox:nth-child(3){animation-delay:.35s}
-  .cklist.play .ckbox:nth-child(4){animation-delay:.50s}
-  .cklist.play .ckbox:nth-child(5){animation-delay:.65s}
-  .cklist.play .ckbox:nth-child(6){animation-delay:.80s}
-  @keyframes ckin{to{opacity:1;transform:translateY(0)}}
-  .ckn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--green-bg);color:var(--green);font-family:var(--font-display);font-weight:800;font-size:14px;border:1px solid var(--green-border)}
-  .ckt{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--ink);margin:9px 0 3px}
-  .ckd{font-family:var(--font-body);font-size:13.5px;line-height:1.45;color:var(--soft)}
-  /* animated stop/target SVG */
-  .eline{stroke-dasharray:1;stroke-dashoffset:1;fill:none;stroke-linecap:round}
-  .svgcard.play .eline{animation:draw 1.2s ease forwards}
-  .svgcard.play .eline.d2{animation-delay:.5s}
-  @keyframes draw{to{stroke-dashoffset:0}}
-  .lvl{opacity:0}
-  .svgcard.play .lvl{animation:fadein .5s ease forwards}
-  .svgcard.play .lvl.l1{animation-delay:.6s}
-  .svgcard.play .lvl.l2{animation-delay:.9s}
-  .svgcard.play .lvl.l3{animation-delay:1.2s}
-  @keyframes fadein{to{opacity:1}}
-  /* bespoke: plan builder (isolated ids/classes) */
-  .plb{max-width:780px;margin:22px auto 0;display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
-  @media(max-width:700px){.plb{grid-template-columns:1fr}}
-  .plb-play{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
-  .plb-q{font-family:var(--font-display);font-weight:700;font-size:17.5px;line-height:1.35;color:var(--ink);min-height:64px}
-  .plb-opts{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-  .plb-opt{font-family:var(--font-display);font-weight:600;font-size:15px;text-align:left;padding:13px 16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
-  .plb-opt:hover{border-color:var(--green-2);background:var(--green-bg)}
-  .plb-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
-  #plbReset{font-family:var(--font-display);font-weight:700;font-size:13px;padding:9px 18px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
-  #plbReset.show{display:inline-block}
-  .plb-card{background:var(--paper);border:1.5px dashed var(--sand);border-radius:var(--r-xl);padding:20px}
-  .plb-tt{font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
-  .plb-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--sand)}
-  .plb-row:last-of-type{border-bottom:none}
-  .plb-k{font-family:var(--font-body);font-size:13.5px;color:var(--soft);flex:0 0 auto}
-  .plb-v{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--soft);opacity:.5;text-align:right}
-  .plb-v.set{color:var(--green);opacity:1}
-  .plb-fin{display:none;margin-top:14px;padding:13px 15px;border-radius:var(--r-md);background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);font-size:13.5px;line-height:1.5;font-family:var(--font-body)}
-  .plb-fin.show{display:block}
+/* ===== BESPOKE for w6l2 — layered on warm-paper skin ===== */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* HERO */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.06);filter:saturate(1.02)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;background:linear-gradient(105deg,rgba(251,247,239,.94) 0%,rgba(251,247,239,.86) 42%,rgba(251,247,239,.42) 72%,rgba(251,247,239,.12) 100%),radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.9),rgba(251,247,239,.82) 55%,rgba(251,247,239,.72))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(38px,7.6vw,72px);font-weight:900;line-height:1;margin:14px 0 14px;letter-spacing:-.02em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .6s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;background-size:220% 100%;animation:wordUp .6s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease forwards}
+.hero-inner .lead{animation-delay:.5s}.hero-inner .badges{animation-delay:.66s}.hero-inner .startwrap{animation-delay:.82s}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+.checks{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.tick{position:absolute;top:-6%;font:800 20px/1 var(--font-display);color:var(--green);opacity:0;animation:tickFall linear infinite}
+@keyframes tickFall{0%{transform:translateY(0) rotate(0);opacity:0}8%{opacity:.7}90%{opacity:.7}100%{transform:translateY(116vh) rotate(30deg);opacity:0}}
+
+/* chart card */
+.chartcard{max-width:820px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(19px,2.6vw,26px)/1.12 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg{width:100%}.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-plan{width:11px;height:11px;border-radius:3px;display:inline-block;background:var(--green-2)}
+.dot-hope{width:11px;height:11px;border-radius:3px;display:inline-block;background:#b9a06a}
+.seg-toggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.seg-toggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);padding:8px 15px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.seg-toggle button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+
+/* six-box checklist */
+.sixgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:900px;margin:26px auto 0}
+@media(max-width:760px){.sixgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.sixgrid{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-lg);padding:18px 16px;box-shadow:var(--shadow-soft);opacity:0;transform:translateY(14px);transition:all .5s cubic-bezier(.2,.7,.2,1)}
+.sixgrid.go .box{opacity:1;transform:none}
+.sixgrid.go .box:nth-child(1){transition-delay:.05s}.sixgrid.go .box:nth-child(2){transition-delay:.16s}.sixgrid.go .box:nth-child(3){transition-delay:.27s}.sixgrid.go .box:nth-child(4){transition-delay:.38s}.sixgrid.go .box:nth-child(5){transition-delay:.49s}.sixgrid.go .box:nth-child(6){transition-delay:.6s}
+.box .bx-ck{width:26px;height:26px;border-radius:7px;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;border:1px solid var(--green-border)}
+.box h4{margin:12px 0 5px;font:800 16px var(--font-display);color:var(--ink)}
+.box p{margin:0;font-size:14px;color:var(--soft);line-height:1.5}
+
+/* cinematic */
+.cv{max-width:900px;margin:30px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,rgba(11,18,32,.28),rgba(11,18,32,.55));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* position/size calculator */
+.calc{max-width:820px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-lift)}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 22px;align-items:end}
+@media(max-width:640px){.calc-grid{grid-template-columns:1fr}}
+.field label{display:block;font:700 12px var(--font-display);letter-spacing:.6px;text-transform:uppercase;color:var(--soft);margin-bottom:6px}
+.field input[type=range]{width:100%}
+.field .val{font:800 20px var(--font-display);color:var(--ink);font-variant-numeric:tabular-nums}
+.calc-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.risk-head{font:800 clamp(18px,2.4vw,24px) var(--font-display);color:var(--green)}
+.riskbar-wrap{margin-top:18px;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);height:26px;overflow:hidden;position:relative}
+.riskbar{height:100%;width:2%;background:linear-gradient(90deg,var(--gold),var(--gold-600));border-radius:var(--r-full);transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.riskbar-lab{margin-top:8px;font-size:13px;color:var(--soft);text-align:center}
+.riskbar-lab b{color:var(--ink)}
+
+/* builder */
+.builder{max-width:860px;margin:24px auto 0;display:grid;grid-template-columns:1.15fr .85fr;gap:22px}
+@media(max-width:760px){.builder{grid-template-columns:1fr}}
+.pick-group{margin-bottom:16px}
+.pick-group .pg-lab{font:700 12px var(--font-display);letter-spacing:.6px;text-transform:uppercase;color:var(--soft);margin-bottom:8px}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font:700 14px var(--font-display);border:1px solid var(--sand);background:var(--paper-2);color:var(--ink);padding:9px 14px;border-radius:var(--r-full);cursor:pointer;transition:all .16s ease}
+.pill:hover{border-color:var(--gold)}
+.pill.on{background:var(--gold);border-color:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+.plancard{background:linear-gradient(165deg,var(--green-bg),var(--card));border:1px solid var(--green-border);border-radius:var(--r-xl);padding:22px;box-shadow:var(--shadow-soft)}
+.plancard h4{margin:0 0 14px;font:800 16px var(--font-display);color:var(--ink)}
+.plan-line{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--sand);font-size:15px}
+.plan-line:last-child{border-bottom:none}
+.plan-line span{color:var(--soft)}.plan-line b{color:var(--ink);font-variant-numeric:tabular-nums}
+.plan-line b.set{color:var(--green)}
+.builder-fb{max-width:860px;margin:14px auto 0;text-align:center;font-size:14px;color:var(--soft);font-weight:600}
+.builder-fb.done{color:var(--green)}
+
+@media (prefers-reduced-motion: reduce){
+  .tick{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .box{transition:none;opacity:1;transform:none}
+  .riskbar{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- 1 HERO -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="checks" id="checks" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Teens &middot; Module 6 &middot; Lesson 6.2</div>
-      <h1 style="font-size:clamp(34px,7vw,60px);font-weight:900;line-height:1.03;margin:12px 0 12px">Never trade without a plan</h1>
-      <p class="lead">This is the last piece before you go from learning to doing. The pros never break one rule: no trade without a written plan. Today you build your own first-trade checklist.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Never</span>
+        <span class="w" style="animation-delay:.13s">Trade</span>
+        <span class="w" style="animation-delay:.21s">Without</span>
+        <span class="w" style="animation-delay:.29s">a</span>
+        <span class="w gold" style="animation-delay:.37s">Plan</span>
+      </h1>
+      <p class="lead">A pro never risks a dollar without knowing three things first: where they get in, where they get out, and where they bail if they're wrong. Today you build that checklist &mdash; and it becomes a habit for life.</p>
       <div class="badges">
-        <span class="badge"><b>8</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">SI-100 &middot; <b>Teens</b></span>
         <span class="badge">~<b>3</b> min</span>
+        <span class="badge">Level &middot; <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A focused teenager writing a stock trade plan on a paper checklist at a tidy desk with a calm chart nearby" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play &mdash; I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · PLAN VS GAMBLE -->
+<!-- 2 PLAN VS GAMBLE -->
 <section id="plan-vs-gamble">
   <div class="inner">
-    <div class="anim"><div class="label">Trader or Gambler</div><h2 class="title">A plan, not a hope</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/plan-vs-gamble.jpg" alt="Split image: a calm person following a checklist with a rising arrow on one side, a chaotic gambler tossing dice on the other" /></div>
-      <div>
-        <p class="bigdef">Same stock, same chart, two totally different moves.</p>
-        <div class="two">
-          <div class="cmp reasonable">
-            <span class="tag">Plan</span>
-            <h3>Decided in advance</h3>
-            <p>Why, entry, exit, stop, and size are all set before you click buy.</p>
-          </div>
-          <div class="cmp gamble">
-            <span class="tag">Gamble</span>
-            <h3>Pure hope</h3>
-            <p>You buy because it's hyped and just hope. No exit, no stop, no plan.</p>
-          </div>
+    <div class="anim center-narrow"><div class="label">A Plan, Not a Hope</div>
+      <h2 class="title">Deciding in advance beats reacting</h2>
+      <p class="lead center">A plan move is decided before you buy, when you're calm. A gamble move is decided mid-trade, when you're excited or scared. Watch how often each one actually sticks to its exit.</p>
+    </div>
+    <div class="chartcard anim d1">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Traders who stick to their exit &middot; illustrative</div>
+          <div class="chart-big" id="pgHeadline">A written plan: about 8 in 10 hold the line</div>
         </div>
-        <div class="insight">A plan doesn't make you right every time. It makes you disciplined every time. Discipline is what actually wins.</div>
+        <div class="seg-toggle" role="group" aria-label="Market mood">
+          <button data-mood="calm" class="on" type="button">Calm day</button>
+          <button data-mood="wild" type="button">Wild day</button>
+        </div>
       </div>
+      <div id="pgChart" class="chart-svg" role="img" aria-label="Bar chart comparing how often planned trades vs unplanned trades stick to their exit"></div>
+      <div class="chart-foot"><span class="dot-plan"></span> Written plan &nbsp;&middot;&nbsp; <span class="dot-hope"></span> No plan (pure hope)</div>
+    </div>
+    <div class="two anim d2" style="max-width:820px;margin:26px auto 0">
+      <div class="cmp grow"><span class="tag">Decided in advance</span><h3>A plan</h3><p>Entry, exit, and stop are written down before a dollar moves. When the trade gets loud, you just follow the paper.</p></div>
+      <div class="cmp safe"><span class="tag">Decided mid-trade</span><h3>Pure hope</h3><p>You buy on a feeling and figure out the exit later. Fear and excitement make that call for you, and they're terrible traders.</p></div>
     </div>
   </div>
 </section>
 
-<!-- 3 · THE CHECKLIST (animated six-box reveal) -->
+<!-- 3 THE CHECKLIST -->
 <section id="the-checklist">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">The Six Boxes</div>
+    <div class="anim center-narrow"><div class="label">The Six Boxes</div>
       <h2 class="title">Fill all six before a dollar moves</h2>
-      <p class="lead" style="margin:0 auto">Watch the boxes drop in. Every trade you ever make gets these six answered, in writing, first.</p>
+      <p class="lead center">Every first trade gets the same six boxes. If you can't fill one honestly, that's your signal to skip the trade &mdash; no shame, no FOMO.</p>
     </div>
-    <div class="cklist anim d1" id="ckList">
-      <div class="ckbox"><span class="ckn">1</span><div class="ckt">Why</div><div class="ckd">Your actual reason for buying this company.</div></div>
-      <div class="ckbox"><span class="ckn">2</span><div class="ckt">Entry</div><div class="ckd">The price or order type you'll get in with.</div></div>
-      <div class="ckbox"><span class="ckn">3</span><div class="ckt">Exit</div><div class="ckd">Where you take your profit if it works.</div></div>
-      <div class="ckbox"><span class="ckn">4</span><div class="ckt">Stop</div><div class="ckd">Where you cut the loss if it doesn't.</div></div>
-      <div class="ckbox"><span class="ckn">5</span><div class="ckt">Size</div><div class="ckd">Small enough that one bad trade can't hurt you.</div></div>
-      <div class="ckbox"><span class="ckn">6</span><div class="ckt">Log</div><div class="ckd">Write it down so you can learn from it later.</div></div>
+    <div class="sixgrid anim d1" id="sixgrid">
+      <div class="box"><div class="bx-ck">1</div><h4>The name</h4><p>What are you buying, and why this one? One clear reason.</p></div>
+      <div class="box"><div class="bx-ck">2</div><h4>Entry</h4><p>The price you're willing to pay to get in.</p></div>
+      <div class="box"><div class="bx-ck">3</div><h4>Exit (target)</h4><p>Where you'll take your win and walk away happy.</p></div>
+      <div class="box"><div class="bx-ck">4</div><h4>Stop</h4><p>The price where you admit you're wrong and get out.</p></div>
+      <div class="box"><div class="bx-ck">5</div><h4>Size</h4><p>How many shares, so one loss stays small.</p></div>
+      <div class="box"><div class="bx-ck">6</div><h4>The reason</h4><p>One sentence: why this trade, right now.</p></div>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/checklist.jpg" alt="A clipboard holding a tidy checklist with green checkmarks and a pen resting beside it" /></div>
+    <div class="insight anim d2" style="max-width:760px;margin:24px auto 0">Six boxes, every time. The checklist isn't there to slow you down &mdash; it's there so a bad day can't talk you into a bad trade.</div>
   </div>
 </section>
 
-<!-- 4 · STOP AND SIZE (inline animated SVG + image) -->
+<!-- 4 STOP AND SIZE (cinematic + calculator) -->
 <section id="stop-and-size">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">Your Two Safety Boxes</div>
+    <div class="anim center-narrow"><div class="label">Stop &amp; Size</div>
       <h2 class="title">The stop and the size protect you</h2>
-      <p class="lead" style="margin:0 auto">Two boxes on the checklist keep one bad trade from wrecking your account. Set both before you buy.</p>
+      <p class="lead center">Two boxes do the heavy lifting. Your stop caps how far a trade can fall. Your size makes sure that fall stays small. Slide the numbers and watch your money-at-risk stay tiny.</p>
     </div>
-    <div class="svgcard anim d1" id="svgStop">
-      <svg viewBox="0 0 680 300" role="img" aria-label="Illustrative chart: a buy level with a profit target above it and a stop level below it">
-        <line x1="60" y1="24" x2="60" y2="250" stroke="#EAE2D0" stroke-width="2"/>
-        <line x1="60" y1="250" x2="644" y2="250" stroke="#EAE2D0" stroke-width="2"/>
-        <!-- target line (green, top) -->
-        <line class="lvl l1" x1="60" y1="70" x2="644" y2="70" stroke="#22C55E" stroke-width="2" stroke-dasharray="7 7"/>
-        <text class="lvl l1" x="66" y="60" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#16A34A">Exit / take profit (up top)</text>
-        <!-- entry line (ink, middle) -->
-        <line class="lvl l2" x1="60" y1="150" x2="644" y2="150" stroke="#3A2E22" stroke-width="2.5"/>
-        <text class="lvl l2" x="66" y="141" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#3A2E22">Entry &middot; buy around two-fifty</text>
-        <!-- stop line (red, bottom) -->
-        <line class="lvl l3" x1="60" y1="212" x2="644" y2="212" stroke="#EF4444" stroke-width="2" stroke-dasharray="7 7"/>
-        <text class="lvl l3" x="66" y="232" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#DC2626">Stop &middot; about ten percent lower, near two-twenty-five</text>
-        <!-- illustrative price path -->
-        <path class="eline" pathLength="1" d="M60,150 C 160,140 220,120 300,120 C 380,120 430,95 520,86 C 580,80 620,74 640,72" stroke="#22C55E" stroke-width="4"/>
-      </svg>
-    </div>
-    <div class="disclaim anim d1">Illustrative example, not a real price, a forecast, or a promise. The numbers just show how a stop sits below your entry.</div>
-    <div class="define anim d2" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/stop-safety-net.jpg" alt="A falling coin caught safely by a green safety net, a metaphor for a stop-loss" /></div>
-      <div>
-        <p class="bigdef">Your stop is a safety net you set on purpose.</p>
-        <div class="insight">Decide your stop before you buy, and fear never gets a vote later. Then keep your position small enough that a loss stings but never wrecks you. Small size is how you stay in the game long enough to get good.</div>
+
+    <div class="cv anim d1" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before you touch the sliders, take ten seconds to watch a calm trader run the checklist. I'll pause the narration for you the moment you press play.</p>
       </div>
+      <div class="video-wrap">
+        <video id="cineVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="cineOv" aria-label="Play the coach clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Watch the checklist in action</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">Notice how boring it looks? That's the point. Now try it yourself &mdash; hit Continue whenever you're ready.</p>
+      </div>
+    </div>
+
+    <div class="calc anim d2">
+      <div class="calc-head">
+        <div class="chart-kicker">Position-size calculator &middot; illustrative</div>
+        <div class="risk-head" id="riskHead">At risk: $20</div>
+      </div>
+      <div class="calc-grid">
+        <div class="field"><label>Account size</label><input id="acct" type="range" min="200" max="2000" step="50" value="1000" /><div class="val" id="acctVal">$1,000</div></div>
+        <div class="field"><label>Risk per trade</label>
+          <div class="seg-toggle" role="group" aria-label="Risk per trade" style="margin-top:2px">
+            <button data-risk="1" class="on" type="button">1%</button>
+            <button data-risk="2" type="button">2%</button>
+          </div>
+          <div class="val" id="riskPctVal" style="margin-top:8px">1% of account</div>
+        </div>
+        <div class="field"><label>Entry price</label><input id="entry" type="range" min="10" max="100" step="1" value="50" /><div class="val" id="entryVal">$50</div></div>
+        <div class="field"><label>Stop price</label><input id="stop" type="range" min="5" max="99" step="1" value="45" /><div class="val" id="stopVal">$45</div></div>
+      </div>
+      <div class="riskbar-wrap"><div class="riskbar" id="riskbar"></div></div>
+      <div class="riskbar-lab">Risk per share <b id="rps">$5</b> &middot; you can buy <b id="shares">2 shares</b> &middot; total at risk <b id="totrisk">$10</b> (that's <b id="riskpctline">1.0%</b> of your account)</div>
     </div>
   </div>
 </section>
 
-<!-- 5 · PLAN BUILDER (bespoke interactive) -->
+<!-- 5 CHECKLIST BUILDER (interactive) -->
 <section id="checklist-builder">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn &middot; Build It</div>
+    <div class="anim center-narrow"><div class="label">Build Your Plan</div>
       <h2 class="title">Build your first-trade plan</h2>
-      <p class="lead" style="margin:0 auto">Tap through the six steps. Watch your plan card fill in on the right. Pretend ticket, no real money moves.</p>
+      <p class="lead center">Tap one choice in each row. When entry, exit, and stop are all set, your plan card locks in and Continue unlocks.</p>
     </div>
-    <div class="plb anim d1" id="plbGame">
-      <div class="plb-play">
-        <div class="plb-q" id="plbQ">Loading&hellip;</div>
-        <div class="plb-opts" id="plbOpts"></div>
-        <div class="plb-foot">
-          <span id="plbProg">Step 1 of 6</span>
-          <button id="plbReset">Build another &rarr;</button>
+    <div class="builder anim d1">
+      <div>
+        <div class="pick-group" data-slot="entry">
+          <div class="pg-lab">1 &middot; Your entry</div>
+          <div class="pills">
+            <button class="pill" data-val="$48">Buy at $48</button>
+            <button class="pill" data-val="$50">Buy at $50</button>
+            <button class="pill" data-val="$52">Buy at $52</button>
+          </div>
+        </div>
+        <div class="pick-group" data-slot="exit">
+          <div class="pg-lab">2 &middot; Your exit (target)</div>
+          <div class="pills">
+            <button class="pill" data-val="$56">Sell at $56</button>
+            <button class="pill" data-val="$60">Sell at $60</button>
+            <button class="pill" data-val="$64">Sell at $64</button>
+          </div>
+        </div>
+        <div class="pick-group" data-slot="stop">
+          <div class="pg-lab">3 &middot; Your stop</div>
+          <div class="pills">
+            <button class="pill" data-val="$46">Stop at $46</button>
+            <button class="pill" data-val="$44">Stop at $44</button>
+            <button class="pill" data-val="$42">Stop at $42</button>
+          </div>
         </div>
       </div>
-      <div class="plb-card">
-        <div class="plb-tt">Your Trade Plan</div>
-        <div class="plb-row"><span class="plb-k">Why</span><span class="plb-v" id="plbWhy">&mdash;</span></div>
-        <div class="plb-row"><span class="plb-k">Entry</span><span class="plb-v" id="plbEntry">&mdash;</span></div>
-        <div class="plb-row"><span class="plb-k">Exit</span><span class="plb-v" id="plbExit">&mdash;</span></div>
-        <div class="plb-row"><span class="plb-k">Stop</span><span class="plb-v" id="plbStop">&mdash;</span></div>
-        <div class="plb-row"><span class="plb-k">Size</span><span class="plb-v" id="plbSize">&mdash;</span></div>
-        <div class="plb-row"><span class="plb-k">Log</span><span class="plb-v" id="plbLog">&mdash;</span></div>
-        <div class="plb-fin" id="plbFin"></div>
+      <div class="plancard">
+        <h4>&#128203; My first-trade plan</h4>
+        <div class="plan-line"><span>Entry</span><b id="pbEntry">&mdash;</b></div>
+        <div class="plan-line"><span>Exit (target)</span><b id="pbExit">&mdash;</b></div>
+        <div class="plan-line"><span>Stop</span><b id="pbStop">&mdash;</b></div>
+        <div class="plan-line"><span>Plan status</span><b id="pbStatus">3 boxes left</b></div>
       </div>
     </div>
+    <div class="builder-fb" id="builderFb">Pick an entry, an exit, and a stop.</div>
   </div>
 </section>
 
-<!-- 6 · SORTER -->
+<!-- 6 PLAN SORTER (mini-game) -->
 <section id="plan-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Sort It Yourself</div>
+    <div class="anim center-narrow"><div class="label">Plan or Gamble</div>
       <h2 class="title">Plan move or gamble move?</h2>
-      <p class="lead" style="margin:0 auto">Tap a card, then drop it in the right column. One side is calm and on the checklist. The other is fear and greed talking.</p>
+      <p class="lead center">Tap a move to pick it up, then tap the column where it belongs. Plan moves are decided in advance. Gamble moves are decided by feelings.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
-        <button class="chip" data-bucket="plan">Write your entry, exit, and stop before you buy</button>
-        <button class="chip" data-bucket="plan">Size the position small so one loss won't hurt</button>
-        <button class="chip" data-bucket="plan">Log the trade in your journal after it fills</button>
-        <button class="chip" data-bucket="gamble">Ape in because it's trending and you fear missing out</button>
-        <button class="chip" data-bucket="gamble">Skip the stop and just hope it keeps going up</button>
-        <button class="chip" data-bucket="gamble">Bet your whole account on one hot tip</button>
+        <button class="chip" data-bucket="plan">Set a stop before buying</button>
+        <button class="chip" data-bucket="plan">Write your exit target down</button>
+        <button class="chip" data-bucket="plan">Size so one loss stays small</button>
+        <button class="chip" data-bucket="plan">Skip a trade you can't explain</button>
+        <button class="chip" data-bucket="gamble">Buy because it's flying up</button>
+        <button class="chip" data-bucket="gamble">Move your stop down to hope</button>
+        <button class="chip" data-bucket="gamble">Bet your whole account on one</button>
       </div>
       <div class="cols">
         <div class="col reasonable" data-bucket="plan">
-          <h4>&#128203; Plan move</h4><div class="sub">On the checklist</div>
+          <h4>&#9989; Plan move</h4><div class="sub">Decided in advance, when calm</div>
           <div class="drop" id="dropPlan"></div>
         </div>
         <div class="col gamble" data-bucket="gamble">
-          <h4>&#127922; Gamble move</h4><div class="sub">Fear or greed talking</div>
+          <h4>&#127922; Gamble move</h4><div class="sub">Decided by feelings, mid-trade</div>
           <div class="drop" id="dropGamble"></div>
         </div>
       </div>
-      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+      <div class="sorter-fb" id="sorterFb">Pick a move to begin.</div>
     </div>
   </div>
 </section>
 
-<!-- 7 · QUIZ -->
+<!-- 7 QUIZ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Show me you can think like someone with a plan, not someone with a hunch.</p>
+      <p class="lead center">Four questions. Nail them and you've earned your first-trade checklist.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="2">
-        <h4>1. The first-trade checklist has you decide four things before you buy. Which four?</h4>
-        <button class="opt" data-idx="0">Which stock has the best logo, most volume, and newest app</button>
-        <button class="opt" data-idx="1">Your username, password, phone, and email</button>
-        <button class="opt" data-idx="2">Why you're buying, your entry, your exit, and your stop</button>
-        <button class="opt" data-idx="3">The CEO's name, the office address, and the founding year</button>
-        <div class="exp">A real plan answers why you're in, where you enter, where you take profit (exit), and where you cut the loss (stop).</div>
+        <h4>1. Why does every trade need a written plan?</h4>
+        <button class="opt" data-idx="0">Because brokers require one before you buy</button>
+        <button class="opt" data-idx="1">So you can show it off to friends</button>
+        <button class="opt" data-idx="2">So a calm decision, not fear or excitement, runs the trade</button>
+        <button class="opt" data-idx="3">Because it guarantees the trade will win</button>
+        <div class="exp">A plan is decided in advance, when you're calm. In the trade, fear and excitement are loud &mdash; the written plan keeps them from making your calls.</div>
       </div>
       <div class="q" data-correct="1">
-        <h4>2. Why does "set your stop before you buy" make the checklist?</h4>
-        <button class="opt" data-idx="0">A stop guarantees you a profit</button>
-        <button class="opt" data-idx="1">A stop is an automatic sell that caps your loss if the price falls to a level you set</button>
-        <button class="opt" data-idx="2">A stop makes the price go back up</button>
-        <button class="opt" data-idx="3">A stop lets you skip doing any research</button>
-        <div class="exp">A stop-loss is your safety net. Decide it up front so fear doesn't decide it for you later.</div>
-      </div>
-      <div class="q" data-correct="3">
-        <h4>3. Position sizing means:</h4>
-        <button class="opt" data-idx="0">Always buying the most expensive stock you can</button>
-        <button class="opt" data-idx="1">Putting your whole account into one hot pick</button>
-        <button class="opt" data-idx="2">Only trading when the market is closed</button>
-        <button class="opt" data-idx="3">Choosing an amount small enough that one loss can't hurt the whole account</button>
-        <div class="exp">Keep every position small enough to survive a loss. Small size keeps you in the game to trade another day.</div>
+        <h4>2. Which of these belongs in your first-trade checklist?</h4>
+        <button class="opt" data-idx="0">A prediction of tomorrow's exact price</button>
+        <button class="opt" data-idx="1">Entry, exit, and stop prices</button>
+        <button class="opt" data-idx="2">The names of everyone else buying it</button>
+        <button class="opt" data-idx="3">A promise never to sell</button>
+        <div class="exp">The six boxes include the name, entry, exit (target), stop, size, and your one-sentence reason. Entry, exit, and stop are the core three.</div>
       </div>
       <div class="q" data-correct="0">
-        <h4>4. A stock is "mooning" and everyone says buy NOW or miss out. You have no entry, exit, or stop written down. The checklist says:</h4>
-        <button class="opt" data-idx="0">Skip it. No written plan means it's a gamble, not a trade</button>
-        <button class="opt" data-idx="1">Go all in before it runs away</button>
-        <button class="opt" data-idx="2">Borrow money so you can buy even more</button>
-        <button class="opt" data-idx="3">Buy and just hope it keeps going</button>
-        <div class="exp">If you can't state your entry, exit, and stop, you don't have a plan. No plan, no trade.</div>
+        <h4>3. What is the job of your stop price?</h4>
+        <button class="opt" data-idx="0">To cap how far the trade can fall if you're wrong</button>
+        <button class="opt" data-idx="1">To lock in the biggest possible win</button>
+        <button class="opt" data-idx="2">To tell you when to buy more</button>
+        <button class="opt" data-idx="3">To hide the trade from your broker</button>
+        <div class="exp">The stop is the price where you admit you're wrong and get out. It caps the loss so one bad trade can't wreck your account.</div>
       </div>
-      <div class="q" data-correct="2">
-        <h4>5. After you place the order, the final box on the checklist is to:</h4>
-        <button class="opt" data-idx="0">Delete your trading app</button>
-        <button class="opt" data-idx="1">Immediately buy three more stocks</button>
-        <button class="opt" data-idx="2">Log the trade in your journal so you can review it later</button>
-        <button class="opt" data-idx="3">Post it online to look smart</button>
-        <div class="exp">Logging why you entered and what happened turns each trade into a lesson. Your journal is a free coach.</div>
+      <div class="q" data-correct="3">
+        <h4>4. You can't honestly fill one of the six boxes. What's the smart move?</h4>
+        <button class="opt" data-idx="0">Buy anyway and figure it out later</button>
+        <button class="opt" data-idx="1">Double your size to make up for it</button>
+        <button class="opt" data-idx="2">Ask a stranger online what to do</button>
+        <button class="opt" data-idx="3">Skip the trade &mdash; no plan, no trade</button>
+        <div class="exp">If a box won't fill honestly, that's your signal to pass. Skipping a trade is always free. No plan, no trade.</div>
       </div>
       <div class="quiz-result" id="quizResult">
-        <div class="score" id="quizScore">0 / 5</div>
+        <div class="score" id="quizScore">0 / 4</div>
         <p id="quizMsg"></p>
       </div>
       <div style="text-align:center;margin-top:8px">
@@ -296,20 +387,19 @@
   </div>
 </section>
 
-<!-- 8 · BRIDGE / SUMMARY -->
+<!-- 8 BRIDGE / SUMMARY -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You're Ready</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You're Ready</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
-      <div class="take"><span class="ck">&#10003;</span><p>No trade without a written plan. A plan beats a hope every time.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>The six boxes: why, entry, exit, stop, size, log.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Set your stop and size before you buy, so fear never gets a vote.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>A plan move is on the checklist. A gamble move is pure feelings.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>No plan, no trade &mdash; every trade gets six boxes.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Set your entry, exit, and stop before you buy.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The stop and the size keep every loss small.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>A plan move is decided in advance; a gamble move is decided by feelings.</p></div>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/first-trade.jpg" alt="A teenager and a parent at a kitchen table calmly reviewing a stock chart and a written plan together" /></div>
-    <div class="nextcard anim d3">
-      <div><div class="up">Your send-off</div><h3>Make it a habit</h3></div>
-      <span class="badge">Ready for a real one? Plan it with a parent and start tiny &rarr;</span>
+    <div class="nextcard anim d2">
+      <div><div class="up">Course complete &middot; SI-100 Teens</div><h3>You've built your first-trade checklist</h3></div>
+      <span class="badge">Make it a habit &mdash; run all six, every time &rarr;</span>
     </div>
     <div class="finish-row anim d3">
       <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
@@ -319,10 +409,8 @@
   </div>
 </section>
 
-<!-- narration -->
 <audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
 
-<!-- audio player bar -->
 <div id="bar">
   <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
   <span class="t" id="curTime">0:00</span>
@@ -331,110 +419,302 @@
   <span id="secLabel">Introduction</span>
   <button id="spd">1x</button>
 </div>
-
-<!-- nav dots -->
 <nav id="dots"></nav>
-
-<!-- continue -->
 <div id="contWrap"><button id="contBtn">Continue</button></div>
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id":"hero","start":0.0,"end":21.36,"interactive":false,"label":"The First-Trade Checklist"},{"id":"plan-vs-gamble","start":21.86,"end":49.364,"interactive":false,"label":"Plan vs Gamble"},{"id":"the-checklist","start":49.864,"end":79.384,"interactive":false,"label":"The Six Boxes"},{"id":"stop-and-size","start":79.884,"end":119.004,"interactive":false,"label":"Stop and Size"},{"id":"checklist-builder","start":119.504,"end":136.76,"interactive":true,"label":"Build Your Plan"},{"id":"plan-sorter","start":137.26,"end":152.068,"interactive":true,"label":"Plan or Gamble"},{"id":"quiz","start":152.568,"end":160.92,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":161.42,"end":189.284,"interactive":false,"label":"You're Ready"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":21.36,"interactive":false,"label":"The First-Trade Checklist"},
+  {"id":"plan-vs-gamble","start":21.86,"end":49.364,"interactive":false,"label":"Plan vs Gamble"},
+  {"id":"the-checklist","start":49.864,"end":79.384,"interactive":false,"label":"The Six Boxes"},
+  {"id":"stop-and-size","start":79.884,"end":119.004,"interactive":true,"label":"Stop and Size"},
+  {"id":"checklist-builder","start":119.504,"end":136.76,"interactive":true,"label":"Build Your Plan"},
+  {"id":"plan-sorter","start":137.26,"end":152.068,"interactive":true,"label":"Plan or Gamble"},
+  {"id":"quiz","start":152.568,"end":160.92,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":161.42,"end":189.284,"interactive":false,"label":"You're Ready"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- animated six-box checklist reveal ---------- */
 (function(){
-  var el=document.getElementById('ckList'); if(!el) return;
-  function play(){ el.classList.add('play'); }
-  document.addEventListener('fta:section',function(e){
-    var id=(e&&e.detail&&(e.detail.id||e.detail.section))||'';
-    if(id==='the-checklist') play();
+  'use strict';
+  var ST=window.sectionTimestamps, TOTAL=ST.length;
+  var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var audio=document.getElementById('lessonAudio');
+  var playBtn=document.getElementById('playBtn'), spd=document.getElementById('spd');
+  var seek=document.getElementById('seek'), curT=document.getElementById('curTime'), durT=document.getElementById('durTime');
+  var secLabel=document.getElementById('secLabel'), progressBar=document.getElementById('progressBar');
+  var contWrap=document.getElementById('contWrap'), contBtn=document.getElementById('contBtn');
+  var dots=document.getElementById('dots');
+  var PLAY='▶', PAUSE='⏸', speeds=[0.75,1,1.25], sIdx=1;
+  var curIdx=-1, waiting=false, emitted={};
+  var gates={'stop-and-size':false,'checklist-builder':false,'plan-sorter':false,'quiz':false};
+
+  function fmt(s){s=s||0;var m=Math.floor(s/60),x=Math.floor(s%60);return m+':'+(x<10?'0':'')+x;}
+  function pct(i){return Math.round(((i+1)/TOTAL)*100);}
+
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){goTo(i,true);});
+    dots.appendChild(d);
   });
-  setTimeout(function(){ var r=el.getBoundingClientRect(); if(r.top<window.innerHeight&&r.bottom>0) play(); },1200);
-})();
-/* ---------- animated stop/target SVG ---------- */
-(function(){
-  var card=document.getElementById('svgStop'); if(!card) return;
-  function play(){ card.classList.add('play'); }
-  document.addEventListener('fta:section',function(e){
-    var id=(e&&e.detail&&(e.detail.id||e.detail.section))||'';
-    if(id==='stop-and-size') play();
+  var dotEls=dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return; curIdx=idx; var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){d.classList.toggle('active',i===idx);d.classList.toggle('done',i<idx);});
+    var el=document.getElementById(s.id); if(el) el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){emitted[idx]=true; if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});}
+  }
+  function gateHint(id){
+    if(id==='stop-and-size') return 'Play the coach clip to continue';
+    if(id==='checklist-builder') return 'Finish your plan to continue';
+    if(id==='plan-sorter') return 'Sort all the moves to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function showCont(idx){
+    waiting=true; var s=ST[idx];
+    var gated=s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){contBtn.disabled=true; contBtn.textContent=gateHint(s.id);}
+    else{contBtn.disabled=false; contBtn.textContent=s.interactive?'Done — Continue →':'Continue →';}
+  }
+  function hideCont(){waiting=false; contWrap.style.display='none';}
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){contBtn.disabled=false; contBtn.textContent='Done — Continue →';}
+  }
+  function goTo(idx,fromClick){hideCont(); setActive(idx); audio.currentTime=ST[idx].start; if(fromClick){audio.play(); playBtn.textContent=PAUSE;}}
+
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE;}
+    else{audio.pause(); playBtn.textContent=PLAY;}
   });
-  setTimeout(function(){ var r=card.getBoundingClientRect(); if(r.top<window.innerHeight&&r.bottom>0) play(); },1200);
-})();
-/* ---------- bespoke: first-trade plan builder (isolated) ---------- */
-(function(){
-  var game=document.getElementById('plbGame'); if(!game) return;
-  var steps=[
-    {tid:'plbWhy', prog:'Why',
-     q:'Step 1 &middot; Why are you buying? Pick your reason. (Pretend plan &mdash; no real money moves.)',
-     opts:[{t:'A brand I know that dipped near support',v:'Know it · near support'},
-           {t:'A company I researched with steady growth',v:'Researched · steady growth'},
-           {t:'One share just to learn the process',v:'Learning trade'}]},
-    {tid:'plbEntry', prog:'Entry',
-     q:'Step 2 &middot; How do you get in?',
-     opts:[{t:'Market order &mdash; buy at the current price now',v:'Market, now'},
-           {t:'Limit order &mdash; only at my price or better',v:'Limit, my price'}]},
-    {tid:'plbExit', prog:'Exit',
-     q:'Step 3 &middot; Where do you take profit if it works?',
-     opts:[{t:'Take profit if it&rsquo;s up about ten percent',v:'+10% target'},
-           {t:'Take profit if it&rsquo;s up about twenty percent',v:'+20% target'},
-           {t:'Hold long term, review each quarter',v:'Long-term hold'}]},
-    {tid:'plbStop', prog:'Stop',
-     q:'Step 4 &middot; Where do you cut the loss?',
-     opts:[{t:'Stop about ten percent below my buy',v:'-10% stop'},
-           {t:'Stop about fifteen percent below my buy',v:'-15% stop'}]},
-    {tid:'plbSize', prog:'Size',
-     q:'Step 5 &middot; How big is the position?',
-     opts:[{t:'Small &mdash; a slice I won&rsquo;t miss if it drops',v:'Small slice'},
-           {t:'Just one share to keep it tiny',v:'1 share'}]},
-    {tid:'plbLog', prog:'Log',
-     q:'Step 6 &middot; Do you write it down?',
-     opts:[{t:'Yes &mdash; journal my reason and my plan',v:'Logged ✓'},
-           {t:'Yes &mdash; screenshot the ticket and note it',v:'Logged ✓'}]}
-  ];
-  var q=document.getElementById('plbQ'), opts=document.getElementById('plbOpts');
-  var prog=document.getElementById('plbProg'), reset=document.getElementById('plbReset'), fin=document.getElementById('plbFin');
-  var step=0;
-  function reboot(){
-    step=0;
-    steps.forEach(function(s){ var el=document.getElementById(s.tid); el.innerHTML='&mdash;'; el.className='plb-v'; });
-    fin.className='plb-fin'; fin.textContent='';
-    reset.className='';
-    render();
-  }
-  function render(){
-    var s=steps[step];
-    q.innerHTML=s.q;
-    prog.textContent='Step '+(step+1)+' of '+steps.length;
-    opts.innerHTML='';
-    s.opts.forEach(function(o){
-      var b=document.createElement('button');
-      b.className='plb-opt'; b.innerHTML=o.t;
-      b.addEventListener('click',function(){ choose(o.v); });
-      opts.appendChild(b);
-    });
-  }
-  function choose(v){
-    var s=steps[step];
-    var cell=document.getElementById(s.tid);
-    cell.textContent=v; cell.className='plb-v set';
-    step++;
-    if(step<steps.length){ render(); }
-    else{
-      q.innerHTML='Plan complete. &#127881;';
-      opts.innerHTML='';
-      prog.textContent='All 6 boxes filled';
-      fin.textContent='Every box filled before a single dollar moved. That is the whole game: you decided, not your feelings. That is a plan, not a gamble.';
-      fin.className='plb-fin show';
-      reset.className='show';
+  spd.addEventListener('click',function(){sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';});
+  audio.addEventListener('loadedmetadata',function(){durT.textContent=fmt(audio.duration); seek.max=audio.duration;});
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime); seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){if(t>=ST[i].start){cur=i; break;}}
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    if(s.interactive && t>=s.end-0.12){audio.pause(); playBtn.textContent=PLAY; showCont(cur);}
+  });
+  seek.addEventListener('input',function(){audio.currentTime=parseFloat(seek.value);});
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return; hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE;}
+    else{finishLesson();}
+  });
+  audio.addEventListener('ended',function(){playBtn.textContent=PLAY; finishLesson();});
+  document.getElementById('startBtn').addEventListener('click',function(){setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;});
+
+  var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting) e.target.classList.add('vis');});},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){io.observe(el);});
+
+  /* falling ticks */
+  (function(){
+    var wrap=document.getElementById('checks'); if(!wrap||reduce) return;
+    for(var i=0;i<12;i++){
+      var c=document.createElement('span'); c.className='tick'; c.textContent='✓';
+      c.style.left=(Math.random()*96)+'%';
+      c.style.fontSize=(15+Math.random()*16)+'px';
+      c.style.animationDuration=(7+Math.random()*6)+'s';
+      c.style.animationDelay=(-Math.random()*10)+'s';
+      wrap.appendChild(c);
     }
+  })();
+
+  /* six-box reveal */
+  (function(){
+    var grid=document.getElementById('sixgrid'); if(!grid) return;
+    var o=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){grid.classList.add('go'); o.disconnect();}});},{threshold:.2});
+    o.observe(grid);
+  })();
+
+  /* plan-vs-gamble chart */
+  var pgMood='calm';
+  var pgData={calm:{plan:82,hope:54},wild:{plan:78,hope:23}};
+  function drawPG(box){
+    var d=pgData[pgMood];
+    var W=700,H=300,padL=44,padR=14,padT=24,padB=44, plotH=H-padT-padB, plotW=W-padL-padR;
+    var cats=[['Written plan',d.plan,'#22C55E'],['No plan',d.hope,'#b9a06a']];
+    var gW=plotW/cats.length, bW=Math.min(120,gW*0.5);
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    for(var g=1;g<=4;g++){var gy=padT+(plotH/4)*g; s+='<line x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'" stroke="#eee5d2" stroke-width="1"/>'; s+='<text x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end" font-family="Inter,sans-serif" font-size="10.5" fill="#98A2B3">'+(100-g*25)+'%</text>';}
+    s+='<line x1="'+padL+'" y1="'+(H-padB)+'" x2="'+(W-padR)+'" y2="'+(H-padB)+'" stroke="#e4dbc6" stroke-width="1.5"/>';
+    cats.forEach(function(c,i){
+      var gx=padL+i*gW+gW/2, x=gx-bW/2, h=(c[1]/100)*plotH, y=H-padB-h;
+      s+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+h+'" rx="7" fill="'+c[2]+'">';
+      if(!reduce) s+='<animate attributeName="height" from="0" to="'+h+'" dur="0.8s" begin="'+(0.1+i*0.12)+'s" fill="freeze"/><animate attributeName="y" from="'+(H-padB)+'" to="'+y+'" dur="0.8s" begin="'+(0.1+i*0.12)+'s" fill="freeze"/>';
+      s+='</rect>';
+      s+='<text x="'+gx+'" y="'+(y-10)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="17" fill="'+(i===0?'#15803d':'#8a6b12')+'" opacity="'+(reduce?'1':'0')+'">'+c[1]+'%'+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="0.9s" fill="freeze"/>')+'</text>';
+      s+='<text x="'+gx+'" y="'+(H-padB+22)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="12.5" fill="#5B6472">'+c[0]+'</text>';
+    });
+    s+='</svg>'; box.innerHTML=s;
+    document.getElementById('pgHeadline').textContent = pgMood==='calm'
+      ? 'A written plan: about 8 in 10 hold the line'
+      : 'On a wild day the gap explodes — plans hold, hope folds';
   }
-  reset.addEventListener('click',reboot);
-  reboot();
+  var pgEl=document.getElementById('pgChart');
+  var pgIO=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting && !e.target.dataset.drawn){e.target.dataset.drawn='1'; drawPG(e.target);}});},{threshold:.25});
+  if(pgEl) pgIO.observe(pgEl);
+  (function(){var b=document.querySelectorAll('#plan-vs-gamble .seg-toggle button'); b.forEach(function(x){x.addEventListener('click',function(){b.forEach(function(y){y.classList.remove('on');}); x.classList.add('on'); pgMood=x.dataset.mood; if(pgEl) drawPG(pgEl);});});})();
+
+  /* cinematic */
+  (function(){
+    var vid=document.getElementById('cineVid'), ov=document.getElementById('cineOv'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var wasPlaying=false;
+    function idxOf(id){for(var i=0;i<ST.length;i++){if(ST[i].id===id) return i;}return -1;}
+    var ssIdx=idxOf('stop-and-size');
+    function done(){if(outro) outro.style.display='block'; satisfyGate('stop-and-size'); if(wasPlaying && audio.currentTime<ST[ssIdx].end-0.3){audio.play(); playBtn.textContent=PAUSE;}}
+    ov.addEventListener('click',function(){
+      wasPlaying=!audio.paused;
+      if(!audio.paused){audio.pause(); playBtn.textContent=PLAY;}
+      ov.classList.add('hide');
+      var p=vid.play(); if(p&&p.catch) p.catch(function(){});
+    });
+    vid.addEventListener('ended',done);
+    vid.addEventListener('error',function(){ov.classList.add('hide'); done();});
+  })();
+
+  /* position-size calculator */
+  (function(){
+    var acct=document.getElementById('acct'), entry=document.getElementById('entry'), stop=document.getElementById('stop');
+    var riskPct=1;
+    function money(n){return '$'+Math.round(n).toLocaleString('en-US');}
+    function upd(){
+      var A=+acct.value, E=+entry.value, S=+stop.value;
+      if(S>=E){S=E-1; stop.value=S;}
+      var rps=Math.max(1,E-S);
+      var budget=A*(riskPct/100);
+      var sh=Math.max(0,Math.floor(budget/rps));
+      var atrisk=sh*rps;
+      document.getElementById('acctVal').textContent=money(A);
+      document.getElementById('entryVal').textContent=money(E);
+      document.getElementById('stopVal').textContent=money(S);
+      document.getElementById('riskPctVal').textContent=riskPct+'% of account';
+      document.getElementById('rps').textContent=money(rps);
+      document.getElementById('shares').textContent=sh+(sh===1?' share':' shares');
+      document.getElementById('totrisk').textContent=money(atrisk);
+      var actualPct=A?((atrisk/A)*100):0;
+      document.getElementById('riskpctline').textContent=actualPct.toFixed(1)+'%';
+      document.getElementById('riskHead').textContent='At risk: '+money(atrisk);
+      document.getElementById('riskbar').style.width=Math.min(100,actualPct*12)+'%';
+    }
+    [acct,entry,stop].forEach(function(el){el.addEventListener('input',upd);});
+    var b=document.querySelectorAll('#stop-and-size .seg-toggle button');
+    b.forEach(function(x){x.addEventListener('click',function(){b.forEach(function(y){y.classList.remove('on');}); x.classList.add('on'); riskPct=+x.dataset.risk; upd();});});
+    upd();
+  })();
+
+  /* checklist builder */
+  (function(){
+    var groups=document.querySelectorAll('#checklist-builder .pick-group');
+    var fb=document.getElementById('builderFb');
+    var chosen={entry:null,exit:null,stop:null};
+    var mapLbl={entry:'pbEntry',exit:'pbExit',stop:'pbStop'};
+    groups.forEach(function(g){
+      var slot=g.dataset.slot;
+      g.querySelectorAll('.pill').forEach(function(p){
+        p.addEventListener('click',function(){
+          g.querySelectorAll('.pill').forEach(function(q){q.classList.remove('on');});
+          p.classList.add('on'); chosen[slot]=p.dataset.val;
+          var lbl=document.getElementById(mapLbl[slot]); lbl.textContent=p.dataset.val; lbl.classList.add('set');
+          var left=0; for(var k in chosen){if(!chosen[k]) left++;}
+          if(left>0){document.getElementById('pbStatus').textContent=left+' box'+(left>1?'es':'')+' left'; fb.textContent='Pick '+left+' more.';}
+          else{
+            var st=document.getElementById('pbStatus'); st.textContent='Ready to trade'; st.classList.add('set');
+            fb.textContent='Nice — entry, exit, and stop are all set. That is a real plan. Hit Continue.'; fb.classList.add('done');
+            satisfyGate('checklist-builder');
+          }
+        });
+      });
+    });
+  })();
+
+  /* plan sorter */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('#plan-sorter .col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){cols.forEach(function(c){c.classList.toggle('armed',on);});}
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){chip.classList.remove('sel'); selected=null; arm(false); return;}
+        chips.forEach(function(c){c.classList.remove('sel');});
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the column where "'+chip.textContent+'" belongs.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++; selected=null; arm(false);
+        if(placed<N){fb.textContent='Sorted '+placed+' of '+N+'.';}
+        else{pool.classList.add('empty'); fb.classList.add('done'); fb.textContent='All sorted — you matched '+correct+' of '+N+'. Plan moves are decided before you buy.'; satisfyGate('plan-sorter');}
+      });
+    });
+  })();
+
+  /* quiz */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){opt.addEventListener('click',function(){if(graded) return; opts.forEach(function(o){o.classList.remove('sel');}); opt.classList.add('sel'); sel[qi]=parseInt(opt.dataset.idx,10);});});
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null, isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,i){o.disabled=true; if(i===corr) o.classList.add('correct'); if(i===s&&i!==corr) o.classList.add('wrong');});
+        q.querySelector('.exp').style.display='block';
+        answers.push({question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''),selected:s,correct_index:corr,is_correct:isC});
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      document.getElementById('quizResult').style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed ? (correct===total?'Perfect — your checklist is locked in.':'Nice work. Review anything you missed above.') : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+    });
+  })();
+
+  /* complete */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip'), completed=false;
+  function finishLesson(){
+    if(completed) return; completed=true;
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
 })();
 </script>
 </body>

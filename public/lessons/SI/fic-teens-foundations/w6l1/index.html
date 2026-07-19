@@ -14,121 +14,320 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="./assets/lesson-theme.css" />
 <style>
-  /* strip images shared with template idiom */
-  .imgstrip{max-width:820px;margin:22px auto 0;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft);aspect-ratio:16/6}
-  .imgstrip img{width:100%;height:100%;object-fit:cover;display:block}
-  /* bespoke: order-ticket builder (isolated, own ids/classes) */
-  .otb{max-width:760px;margin:22px auto 0;display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
-  @media(max-width:680px){.otb{grid-template-columns:1fr}}
-  .otb-play{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
-  .otb-q{font-family:var(--font-display);font-weight:700;font-size:18px;line-height:1.35;color:var(--ink);min-height:70px}
-  .otb-opts{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-  .otb-opt{font-family:var(--font-display);font-weight:600;font-size:15px;text-align:left;padding:13px 16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
-  .otb-opt:hover{border-color:var(--green-2);background:var(--green-bg)}
-  .otb-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
-  #otbReset{font-family:var(--font-display);font-weight:700;font-size:13px;padding:9px 18px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
-  #otbReset.show{display:inline-block}
-  .otb-ticket{background:var(--paper);border:1.5px dashed var(--sand);border-radius:var(--r-xl);padding:20px}
-  .otb-tt{font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin-bottom:12px}
-  .otb-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--sand)}
-  .otb-row:last-of-type{border-bottom:none}
-  .otb-k{font-family:var(--font-body);font-size:13.5px;color:var(--soft)}
-  .otb-v{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--soft);opacity:.5}
-  .otb-v.set{color:var(--green);opacity:1}
-  .otb-fin{display:none;margin-top:14px;padding:13px 15px;border-radius:var(--r-md);background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);font-size:13.5px;line-height:1.5;font-family:var(--font-body)}
-  .otb-fin.show{display:block}
+/* ============================================================
+   BESPOKE COMPONENTS for w6l1 (Paper Trading Setup) — layered
+   on the warm-paper skin. Own ids/classes, no template collisions.
+   ============================================================ */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+
+/* ---------- HERO: kinetic title + b-roll backdrop + drifting candles ---------- */
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(1.06);filter:saturate(1.03)}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;
+  animation:kenburns 26s ease-in-out infinite alternate;z-index:-1}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 40%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:660px}
+.kinetic{font-size:clamp(38px,8vw,74px);font-weight:900;line-height:.99;margin:14px 0 14px;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{background:linear-gradient(96deg,var(--gold-700),var(--gold-500) 45%,var(--gold) 70%,var(--green-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:220% 100%;animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards,shimmer 5.5s ease-in-out 1s infinite}
+@keyframes wordUp{to{opacity:1;transform:none}}
+@keyframes shimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+.candles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.candle{position:absolute;bottom:-8%;width:9px;border-radius:4px;opacity:0;
+  animation:candleRise linear infinite}
+.candle.up{background:linear-gradient(180deg,#4ade80,#16a34a)}
+.candle.down{background:linear-gradient(180deg,#f87171,#dc2626)}
+.candle::before,.candle::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:2px;background:inherit;border-radius:2px}
+.candle::before{top:-10px;height:10px}.candle::after{bottom:-10px;height:10px}
+@keyframes candleRise{0%{transform:translateY(0) scaleY(.7);opacity:0}
+  10%{opacity:.7}90%{opacity:.7}100%{transform:translateY(-122vh) scaleY(1.1);opacity:0}}
+
+/* ---------- generic data card (reused shell) ---------- */
+.dcard{max-width:840px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(18px,2.5vw,25px)/1.14 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg{width:100%}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;text-align:center}
+.chart-foot b{color:var(--ink)}
+.dot-cost,.dot-free{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:2px}
+.dot-cost{background:#dc2626}.dot-free{background:var(--green-2)}
+.mini-disc{display:block;margin-top:10px;font-size:12px;color:var(--soft);text-align:center}
+
+/* ---------- market-vs-limit interactive (toggle + slider + live headline) ---------- */
+.mlm-toggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.mlm-toggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 16px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.mlm-toggle button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+.mlm-viz{width:100%}
+.mlm-slider-wrap{max-width:560px;margin:16px auto 0;background:var(--paper-2);border:1px solid var(--sand);
+  border-radius:var(--r-lg);padding:16px 18px}
+.mlm-slabel{display:flex;justify-content:space-between;align-items:baseline;font:600 13.5px var(--font-body);color:var(--soft)}
+.mlm-slabel b{font:800 18px var(--font-display);color:var(--gold-600)}
+.mlm-range{width:100%;margin:12px 0 6px;height:5px;-webkit-appearance:none;appearance:none;border-radius:99px;
+  background:linear-gradient(90deg,var(--red-2),var(--gold),var(--green-2));cursor:pointer}
+.mlm-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;
+  border:3px solid var(--gold-600);box-shadow:var(--shadow-soft);cursor:pointer}
+.mlm-range::-moz-range-thumb{width:20px;height:20px;border:3px solid var(--gold-600);border-radius:50%;background:#fff;cursor:pointer}
+.mlm-meter{height:12px;border-radius:99px;background:var(--sand);overflow:hidden;margin-top:12px}
+.mlm-meter-fill{height:100%;width:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--green),var(--green-2));transition:width .55s cubic-bezier(.4,0,.2,1)}
+.mlm-readout{display:flex;justify-content:space-between;margin-top:9px;font:600 13px var(--font-body);color:var(--soft)}
+.mlm-readout b{color:var(--ink);font-family:var(--font-display)}
+#mlmLimitG,#mlmProbeG{transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.mlm-note{text-align:center;font-size:12.5px;color:var(--soft);margin-top:10px}
+
+/* ---------- market/limit teaching compare cards (speed vs price) ---------- */
+.spcards{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:840px;margin:26px auto 0}
+@media(max-width:700px){.spcards{grid-template-columns:1fr}}
+.spcard{border-radius:var(--r-xl);padding:24px 22px;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);position:relative;overflow:hidden}
+.spcard.market{background:linear-gradient(165deg,#FEF3C7,var(--card))}
+.spcard.limit{background:linear-gradient(165deg,var(--sky-bg),var(--card))}
+.sp-ic{font-size:26px;line-height:1}
+.sp-tag{font:800 13px var(--font-display);letter-spacing:1.4px;text-transform:uppercase;margin-top:8px}
+.spcard.market .sp-tag{color:var(--gold-700)}.spcard.limit .sp-tag{color:#0369A1}
+.sp-h{font:800 20px var(--font-display);color:var(--ink);margin:4px 0 6px}
+.spcard p{color:var(--soft);font-size:14.5px}
+
+/* ---------- cinematic video block ---------- */
+.cv{max-width:900px;margin:32px auto 0}
+.cv-intro,.cv-outro{max-width:760px;margin:0 auto}
+.cv-badge{display:inline-flex;align-items:center;gap:7px;font:700 12px var(--font-display);letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold-700)}
+.cv-text{font-size:16px;color:var(--ink);line-height:1.65;font-style:italic;margin-top:8px;
+  padding-left:16px;border-left:3px solid var(--gold)}
+.cv .video-wrap{margin:18px auto}
+.video-ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,rgba(11,18,32,.30),rgba(11,18,32,.56));cursor:pointer;border:none;transition:opacity .3s}
+.video-ov.hide{opacity:0;pointer-events:none}
+.play-circ{width:78px;height:78px;border-radius:50%;background:rgba(251,191,36,.96);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 42px rgba(251,191,36,.5);transition:transform .2s}
+.video-ov:hover .play-circ{transform:scale(1.08)}
+.play-circ svg{width:30px;height:30px;fill:var(--ink);margin-left:4px}
+.ov-label{font:700 15px var(--font-display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.cv-outro{margin-top:16px;text-align:center;display:none}
+.cv-outro .cv-text{border-left:none;padding-left:0;font-style:normal;color:var(--soft)}
+
+/* ---------- order-ticket builder (bespoke) ---------- */
+.otb{max-width:840px;margin:26px auto 0;display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:start}
+@media(max-width:720px){.otb{grid-template-columns:1fr}}
+.otb-play{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
+.otb-q{font-family:var(--font-display);font-weight:700;font-size:17px;line-height:1.4;color:var(--ink);min-height:66px}
+.otb-opts{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.otb-opt{font-family:var(--font-display);font-weight:600;font-size:15px;text-align:left;padding:13px 16px;border-radius:var(--r-lg);
+  cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+.otb-opt:hover{border-color:var(--green-2);background:var(--green-bg);transform:translateY(-1px)}
+.otb-foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--soft)}
+#otbReset{font-family:var(--font-display);font-weight:700;font-size:13px;padding:9px 18px;border:none;border-radius:var(--r-full);
+  background:var(--ink);color:#fff;cursor:pointer;display:none}
+#otbReset.show{display:inline-block}
+.otb-ticket{background:var(--paper);border:1.5px dashed var(--sand-2);border-radius:var(--r-xl);padding:22px}
+.otb-tt{font-family:var(--font-display);font-weight:800;font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--soft);margin-bottom:6px;display:flex;justify-content:space-between}
+.otb-tt .live{color:var(--green);font-size:11px;letter-spacing:.06em}
+.otb-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--sand)}
+.otb-row:last-of-type{border-bottom:none}
+.otb-k{font-family:var(--font-body);font-size:13.5px;color:var(--soft)}
+.otb-v{font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--soft);opacity:.5;transition:all .25s ease}
+.otb-v.set{color:var(--green);opacity:1;transform:translateX(0)}
+.otb-v.pop{animation:vpop .4s ease}
+@keyframes vpop{0%{transform:scale(.8);opacity:.3}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.otb-val{display:none;margin-top:14px;padding:12px 15px;border-radius:var(--r-md);background:#fff;border:1px solid var(--sand);text-align:center}
+.otb-val.show{display:block}
+.otb-val .k{font:700 11px var(--font-display);letter-spacing:1px;text-transform:uppercase;color:var(--soft)}
+.otb-val .n{font:900 26px var(--font-display);color:var(--gold-600);font-variant-numeric:tabular-nums}
+.otb-fin{display:none;margin-top:14px;padding:13px 15px;border-radius:var(--r-md);background:var(--green-bg);
+  border:1px solid var(--green-border);color:#166534;font-size:13.5px;line-height:1.55;font-family:var(--font-body)}
+.otb-fin.show{display:block}
+
+/* ---------- what-paper accent split ---------- */
+.wp-split{display:grid;grid-template-columns:.8fr 1.2fr;gap:28px;align-items:center;max-width:900px;margin:8px auto 0}
+@media(max-width:820px){.wp-split{grid-template-columns:1fr}}
+.wp-art{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);box-shadow:var(--shadow-soft)}
+.wp-art img{width:100%;display:block}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  .candle{animation:none;display:none}
+  .kinetic .w,.kinetic .gold,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none;-webkit-text-fill-color:initial}
+  .kinetic .gold{background:none;color:var(--gold-700);-webkit-text-fill-color:currentColor}
+  .hero-fallback{animation:none}
+  .anim{transition:none}
+  #mlmLimitG,#mlmProbeG,.mlm-meter-fill,.otb-v{transition:none}
+}
 </style>
 </head>
 <body>
 <div id="progressBar"></div>
 
-<!-- 1 · HERO -->
+<!-- ============ 1 · HERO (anchor: hero) — kinetic + cinematic b-roll ============ -->
 <section id="hero">
-  <div class="inner hero-grid">
-    <div class="anim">
+  <div class="hero-bg">
+    <div class="hero-fallback"></div>
+    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
+      <source src="./assets/hero-broll.mp4" type="video/mp4" />
+    </video>
+    <div class="hero-scrim"></div>
+    <div class="candles" id="candles" aria-hidden="true"></div>
+  </div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
       <div class="label">SI-100 Teens · Module 6 · Lesson 6.1</div>
-      <h1 style="font-size:clamp(36px,7vw,62px);font-weight:900;line-height:1.02;margin:12px 0 12px">Practice with pretend money first</h1>
-      <p class="lead">Before you risk one real dollar, you get to run the whole thing for free. Paper trading is your safe on-ramp between learning and real investing. Let's set it up.</p>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">Practice</span>
+        <span class="w" style="animation-delay:.13s">with</span>
+        <span class="w gold" style="animation-delay:.21s">pretend</span>
+        <span class="w gold" style="animation-delay:.29s">money</span>
+        <span class="w" style="animation-delay:.37s">first</span>
+      </h1>
+      <p class="lead">Before you risk one real dollar, you get to run the whole thing for free. Paper trading is your safe on-ramp between learning and real investing. Let's set it up together.</p>
       <div class="badges">
-        <span class="badge"><b>7</b> sections</span>
-        <span class="badge"><b>3</b> hands-on</span>
-        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">SI-100 · <b>Teens</b></span>
         <span class="badge">~<b>3</b> min</span>
+        <span class="badge">Level · <b>Beginner</b></span>
+        <span class="badge"><b>3</b> hands-on + quiz</span>
       </div>
-      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
-    </div>
-    <div class="anim d2">
-      <div class="hero-art"><img src="./assets/hero.jpg" alt="A confident teenager at a laptop running a practice stock-trading simulator on a phone" /></div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — I'll narrate the whole way.</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- 2 · WHAT PAPER TRADING IS -->
+<!-- ============ 2 · WHAT PAPER TRADING IS (anchor: what-is-paper) — data component #1 ============ -->
 <section id="what-is-paper">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
-      <div class="label">The Safe On-Ramp</div>
+    <div class="anim center-narrow"><div class="label">The Safe On-Ramp</div>
       <h2 class="title">Real trades, fake cash</h2>
-      <p class="lead" style="margin:0 auto">Paper trading means placing real trades with pretend money inside a simulator. Everything feels real except the cash, so every mistake is free.</p>
+      <p class="lead center">Paper trading means placing real trades with pretend money inside a simulator. Everything feels real except the cash — so every mistake is a free lesson instead of a real loss.</p>
     </div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/practice-reps.jpg" alt="A figure doing repeated practice reps, motion copies stacking up to show skill building" /></div>
+
+    <div class="wp-split anim d1">
+      <div class="wp-art"><img src="./assets/practice-reps.jpg" alt="A figure doing repeated practice reps, motion copies stacking up to show skill building" /></div>
       <div>
         <p class="bigdef">You build <span class="hi">real skill</span> and test your <span class="hi">plan</span> with zero real risk.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Build skill</span>
-            <h3>Reps, not luck</h3>
-            <p>Placing orders and reading your results becomes muscle memory before real money is on the line.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Test the plan</span>
-            <h3>Mistakes for free</h3>
-            <p>Find the holes in your plan when a bad call costs you nothing but a lesson.</p>
-          </div>
+        <div class="two" style="margin-top:18px">
+          <div class="cmp grow"><span class="tag">Build skill</span><h3>Reps, not luck</h3><p>Placing orders and reading your results turns into muscle memory before real money is ever on the line.</p></div>
+          <div class="cmp safe"><span class="tag">Test the plan</span><h3>Mistakes for free</h3><p>Find the holes in your plan when a bad call costs you nothing but a lesson worth keeping.</p></div>
         </div>
-        <div class="insight">Nobody drops thirty their first game. They practice first. Paper trading is your practice court, and the reps are free.</div>
       </div>
     </div>
-    <div class="imgstrip anim d2"><img src="./assets/simulator.jpg" alt="A phone screen showing a generic practice trading app with a simple chart and buy and sell buttons" /></div>
+
+    <!-- DATA COMPONENT #1: what a rookie mistake costs (animated bars) -->
+    <div class="dcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Common first-timer mistakes &middot; illustrative</div>
+          <div class="chart-big" id="mistHeadline">Rookie tuition: <span style="color:var(--red)">$1,120</span> — or $0 on paper</div>
+        </div>
+      </div>
+      <div id="mistChart" class="chart-svg" role="img" aria-label="Bar chart of what four common beginner mistakes cost on a real account versus zero on a paper account"></div>
+      <div class="chart-foot"><span class="dot-cost"></span> What it costs with <b>real money</b> &nbsp;&middot;&nbsp; <span class="dot-free"></span> Same mistakes on <b>paper</b> = <b>$0</b></div>
+      <span class="mini-disc">Dollar figures are illustrative examples of typical beginner slip-ups, not a forecast. The point is simple: on paper, every one of these costs you nothing but a lesson.</span>
+    </div>
+
+    <div class="insight anim d3" style="max-width:840px;margin:22px auto 0">Nobody drops thirty points their first game. They practice first. Paper trading is your practice court — and the reps are free.</div>
   </div>
 </section>
 
-<!-- 3 · SETUP + ORDER TYPES -->
+<!-- ============ 3 · SETUP + ORDER TYPES (anchor: setup-orders) — data component #2 + cinematic ============ -->
 <section id="setup-orders">
   <div class="inner">
-    <div class="anim"><div class="label">Set It Up, Place an Order</div><h2 class="title">One minute to set up</h2></div>
-    <div class="define anim d1" style="margin-top:22px">
-      <div class="define-art"><img src="./assets/order-ticket.jpg" alt="A simple order ticket card with a few blank rounded fields waiting to be filled in" /></div>
-      <div>
-        <p class="bigdef">Set a starting balance, then treat that pretend money <span class="hi">exactly like it is real</span>.</p>
-        <p style="font-family:var(--font-body);font-size:15.5px;line-height:1.6;color:var(--ink);margin:4px 0 0">Same position sizing, same rules, same stop. No cheating and no all-in hero bets just because it is fake, or you learn nothing worth keeping. Then you place practice orders. Every order ticket asks for the same handful of things: the <b>symbol</b>, <b>buy or sell</b>, the <b>quantity</b>, the <b>order type</b>, and often a <b>stop</b>.</p>
-        <div class="two">
-          <div class="cmp grow">
-            <span class="tag">Market order</span>
-            <h3>Speed</h3>
-            <p>Fills right now at whatever the current price is. Fast, but the exact price can shift a little.</p>
-          </div>
-          <div class="cmp safe">
-            <span class="tag">Limit order</span>
-            <h3>Price</h3>
-            <p>Fills only at your chosen price or better. You control the price, but it only happens if the market reaches it.</p>
-          </div>
-        </div>
-        <div class="insight">Speed versus price. Then track every single result, win or lose, so you can actually get better.</div>
+    <div class="anim center-narrow"><div class="label">Set It Up &middot; Place an Order</div>
+      <h2 class="title">One minute to set up, then place an order</h2>
+      <p class="lead center">Set a starting balance, then treat that pretend money exactly like it's real — same sizing, same rules, same stop. Then you place practice orders. Every order ticket asks for the same handful of things.</p>
+    </div>
+
+    <!-- market vs limit teaching cards -->
+    <div class="spcards anim d1">
+      <div class="spcard market">
+        <div class="sp-ic">&#9889;</div>
+        <div class="sp-tag">Market order</div>
+        <div class="sp-h">Speed</div>
+        <p>Fills right now at whatever the current price is. Fast and certain to fill, but the exact price can shift a little as it goes through.</p>
+      </div>
+      <div class="spcard limit">
+        <div class="sp-ic">&#127919;</div>
+        <div class="sp-tag">Limit order</div>
+        <div class="sp-h">Price</div>
+        <p>Fills only at your chosen price or better. You control the price you pay — but it only happens if the market actually reaches your number.</p>
       </div>
     </div>
-    <div class="imgstrip anim d2" style="aspect-ratio:16/6"><img src="./assets/market-vs-limit.jpg" alt="A fast lightning bolt for speed beside a precise target bullseye for price" /></div>
+
+    <!-- DATA COMPONENT #2: interactive market-vs-limit fill (toggle + slider + live headline) -->
+    <div class="dcard anim d2">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Buy 10 shares &middot; stock at $50.00 now &middot; illustrative</div>
+          <div class="chart-big" id="mlmHeadline">Market order &rarr; fills now at $50.00</div>
+        </div>
+        <div class="mlm-toggle" role="group" aria-label="Order type">
+          <button data-mode="market" class="on" type="button">Market</button>
+          <button data-mode="limit" type="button">Limit</button>
+        </div>
+      </div>
+
+      <div class="mlm-viz">
+        <svg id="mlmSvg" viewBox="0 0 680 280" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Price ladder showing where a market order and a limit order fill">
+          <!-- axis + gridlines drawn by JS on scroll-in -->
+        </svg>
+      </div>
+
+      <div class="mlm-slider-wrap" id="mlmSliderWrap" style="display:none">
+        <div class="mlm-slabel"><span>Your limit buy price</span><b id="mlmLimitVal">$49.50</b></div>
+        <input class="mlm-range" id="mlmSlider" type="range" min="4800" max="5020" value="4950" step="5" aria-label="Limit price in cents" />
+        <div class="mlm-meter"><div class="mlm-meter-fill" id="mlmMeter" style="width:100%"></div></div>
+        <div class="mlm-readout"><span>Fill chance <b id="mlmChance">100%</b></span><span>Save if it fills <b id="mlmSave">$5.00</b></span></div>
+      </div>
+      <div class="mlm-note" id="mlmNote">Toggle to <b>Limit</b> and drag the slider — the lower you aim, the more you'd save, but the less likely it fills.</div>
+    </div>
+
+    <!-- CINEMATIC MOMENT: coach clip that pauses narration + gates Continue -->
+    <div class="cv anim d3" id="cvBlock">
+      <div class="cv-intro">
+        <span class="cv-badge">&#9670; Coach note</span>
+        <p class="cv-text">Before you build your own ticket, watch a single paper trade run start to finish. I'll pause the narration for you the moment you press play.</p>
+      </div>
+      <div class="video-wrap">
+        <video id="cineVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
+          <source src="./assets/hero-broll.mp4" type="video/mp4" />
+        </video>
+        <button class="video-ov" id="cineOv" aria-label="Play the paper-trade clip">
+          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
+          <span class="ov-label">Watch a paper trade fill</span>
+        </button>
+      </div>
+      <div class="cv-outro" id="cvOutro">
+        <p class="cv-text">Pick it, size it, choose the order type, set a stop — that whole rep cost nothing but a lesson. Hit Continue whenever you're ready to build your own.</p>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- 4 · ORDER-TICKET BUILDER (bespoke interactive) -->
+<!-- ============ 4 · ORDER-TICKET BUILDER (anchor: ticket-builder) — process-flow + count-up ============ -->
 <section id="ticket-builder">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Your Turn · Build a Ticket</div>
+    <div class="anim center-narrow"><div class="label">Your Turn &middot; Build a Ticket</div>
       <h2 class="title">Fill it in, one field at a time</h2>
-      <p class="lead" style="margin:0 auto">Pick a stock, buy or sell, quantity, order type, and a stop. Watch the ticket fill in as you tap. This is practice, so nothing real moves.</p>
+      <p class="lead center">Pick a stock, buy or sell, quantity, order type, and a stop. Watch the practice ticket fill in as you tap, and the order value count up. Nothing real moves.</p>
     </div>
     <div class="otb anim d1" id="otbGame">
       <div class="otb-play">
@@ -140,34 +339,34 @@
         </div>
       </div>
       <div class="otb-ticket">
-        <div class="otb-tt">Practice Order Ticket</div>
+        <div class="otb-tt"><span>Practice Order Ticket</span><span class="live">SIMULATED</span></div>
         <div class="otb-row"><span class="otb-k">Symbol</span><span class="otb-v" id="otbSym">&mdash;</span></div>
         <div class="otb-row"><span class="otb-k">Buy / Sell</span><span class="otb-v" id="otbSide">&mdash;</span></div>
         <div class="otb-row"><span class="otb-k">Quantity</span><span class="otb-v" id="otbQty">&mdash;</span></div>
         <div class="otb-row"><span class="otb-k">Order type</span><span class="otb-v" id="otbType">&mdash;</span></div>
         <div class="otb-row"><span class="otb-k">Stop</span><span class="otb-v" id="otbStop">&mdash;</span></div>
+        <div class="otb-val" id="otbVal"><div class="k">Estimated order value</div><div class="n" id="otbValN">$0</div></div>
         <div class="otb-fin" id="otbFin"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 5 · MARKET/LIMIT SORTER (interactive) -->
+<!-- ============ 5 · MARKET/LIMIT SORTER (anchor: market-limit-sorter) — mini-game ============ -->
 <section id="market-limit-sorter">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
-      <div class="label">Sort It Yourself</div>
+    <div class="anim center-narrow"><div class="label">Sort It Yourself</div>
       <h2 class="title">Market or limit?</h2>
-      <p class="lead" style="margin:0 auto">Tap a clue, then tap the order it describes. Think speed versus price and you have got it.</p>
+      <p class="lead center">Tap a clue to pick it up, then tap the order it describes. Think speed versus price and you've got it.</p>
     </div>
     <div class="sorter anim d1">
       <div class="pool" id="pool">
         <button class="chip" data-bucket="market">Fills right now at the current price</button>
-        <button class="chip" data-bucket="market">Priority is speed, get in now</button>
-        <button class="chip" data-bucket="market">You accept whatever the current price is</button>
-        <button class="chip" data-bucket="limit">Only fills at your chosen price or better</button>
+        <button class="chip" data-bucket="market">Priority is speed — get in now</button>
+        <button class="chip" data-bucket="market">You accept whatever price it's at</button>
+        <button class="chip" data-bucket="limit">Only fills at your price or better</button>
         <button class="chip" data-bucket="limit">Priority is price, not speed</button>
-        <button class="chip" data-bucket="limit">Set the exact price you will pay</button>
+        <button class="chip" data-bucket="limit">You set the exact price you'll pay</button>
       </div>
       <div class="cols">
         <div class="col reasonable" data-bucket="market">
@@ -184,17 +383,16 @@
   </div>
 </section>
 
-<!-- 6 · QUIZ -->
+<!-- ============ 6 · QUIZ (anchor: quiz) ============ -->
 <section id="quiz">
   <div class="inner">
-    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
-      <div class="label">Lock It In</div>
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
       <h2 class="title">Quick check</h2>
-      <p class="lead" style="margin:0 auto">Five questions. Show me the setup stuck.</p>
+      <p class="lead center">Five questions. Show me the setup stuck and earn your points.</p>
     </div>
     <div class="quiz anim d1" id="quizBox">
       <div class="q" data-correct="1">
-        <h4>1. Your friend says they have been trading all week in an app, but never added any real money. What are they actually doing?</h4>
+        <h4>1. Your friend says they've been trading all week in an app, but never added any real money. What are they actually doing?</h4>
         <button class="opt" data-idx="0">Real investing with real profits</button>
         <button class="opt" data-idx="1">Paper trading &mdash; practicing with pretend money</button>
         <button class="opt" data-idx="2">Buying paper stock certificates</button>
@@ -202,23 +400,23 @@
         <div class="exp">Paper trading rehearses real decisions with pretend money, so you can learn and make mistakes for free before risking real cash.</div>
       </div>
       <div class="q" data-correct="1">
-        <h4>2. You open a paper account with a pretend balance. What is the smartest way to use it?</h4>
-        <button class="opt" data-idx="0">Bet the whole balance on one wild guess since it is fake</button>
-        <button class="opt" data-idx="1">Use the same rules and position sizing you would use with real money</button>
+        <h4>2. You open a paper account with a pretend balance. What's the smartest way to use it?</h4>
+        <button class="opt" data-idx="0">Bet the whole balance on one wild guess, since it's fake</button>
+        <button class="opt" data-idx="1">Use the same rules and position sizing you'd use with real money</button>
         <button class="opt" data-idx="2">Skip your stop because nothing is at risk</button>
         <button class="opt" data-idx="3">Only place trades you already know will win</button>
-        <div class="exp">Treating pretend money like real money is the whole point. Cheating on a simulator teaches you habits that lose real cash later.</div>
+        <div class="exp">Treating pretend money like real money is the whole point. Cheating on a simulator just teaches you habits that lose real cash later.</div>
       </div>
       <div class="q" data-correct="1">
-        <h4>3. The market is moving fast and you want in right now, at whatever the current price is. Which order type fits?</h4>
+        <h4>3. The market's moving fast and you want in right now, at whatever the current price is. Which order type fits?</h4>
         <button class="opt" data-idx="0">A limit order</button>
         <button class="opt" data-idx="1">A market order</button>
         <button class="opt" data-idx="2">No order is needed</button>
         <button class="opt" data-idx="3">A dividend order</button>
-        <div class="exp">A market order fills immediately at the current price. It is fast, though the exact fill price can shift a little.</div>
+        <div class="exp">A market order fills immediately at the current price. It's fast, though the exact fill price can shift a little.</div>
       </div>
       <div class="q" data-correct="1">
-        <h4>4. You will only buy at your target price or better, and you are fine waiting. Which order gives you that control?</h4>
+        <h4>4. You'll only buy at your target price or better, and you're fine waiting. Which order gives you that control?</h4>
         <button class="opt" data-idx="0">A market order that fills instantly at any price</button>
         <button class="opt" data-idx="1">A limit order &mdash; fills only at your price or better</button>
         <button class="opt" data-idx="2">An order that always fills no matter the price</button>
@@ -226,9 +424,9 @@
         <div class="exp">A limit order lets you control the price, but the trade only happens if the market actually reaches your number.</div>
       </div>
       <div class="q" data-correct="1">
-        <h4>5. You are filling out a practice order ticket. Which set of details does it ask for?</h4>
+        <h4>5. You're filling out a practice order ticket. Which set of details does it ask for?</h4>
         <button class="opt" data-idx="0">Just the company logo</button>
-        <button class="opt" data-idx="1">The symbol, buy or sell, the quantity, and the order type</button>
+        <button class="opt" data-idx="1">The symbol, buy or sell, the quantity, the order type, and often a stop</button>
         <button class="opt" data-idx="2">Your home address and phone number</button>
         <button class="opt" data-idx="3">The company CEO's name</button>
         <div class="exp">Every order ticket asks for the symbol, buy or sell, the quantity, the order type, and often a stop.</div>
@@ -244,18 +442,18 @@
   </div>
 </section>
 
-<!-- 7 · BRIDGE / SUMMARY -->
+<!-- ============ 7 · BRIDGE / SUMMARY (anchor: bridge) ============ -->
 <section id="bridge">
   <div class="inner">
-    <div class="anim" style="max-width:760px"><div class="label">You Are Set Up</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You Are Set Up</div><h2 class="title">Carry these four with you</h2></div>
     <div class="takeaways anim d1">
-      <div class="take"><span class="ck">&#10003;</span><p>Paper trading = practicing with pretend money in a simulator.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Set a balance and treat it exactly like real money.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>An order ticket: symbol, buy or sell, quantity, order type, stop.</p></div>
-      <div class="take"><span class="ck">&#10003;</span><p>Market = fill now; limit = your price or better.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Paper trading = practicing real trades with pretend money in a simulator.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Set a balance and treat it exactly like real money — no all-in hero bets.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>An order ticket: symbol, buy or sell, quantity, order type, and a stop.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Market = fill now for speed; limit = your price or better.</p></div>
     </div>
     <div class="nextcard anim d2">
-      <div><div class="up">Up next · Lesson 6.2</div><h3>The First-Trade Checklist</h3></div>
+      <div><div class="up">Up next &middot; Lesson 6.2</div><h3>The First-Trade Checklist</h3></div>
       <span class="badge">The exact steps before any trade &rarr;</span>
     </div>
     <div class="finish-row anim d3">
@@ -287,80 +485,495 @@
 
 <script src="./ftaBridge.js"></script>
 <script>
-window.sectionTimestamps = [{"id":"hero","start":0.0,"end":16.752,"interactive":false,"label":"Paper Trading Setup"},{"id":"what-is-paper","start":17.252,"end":59.972,"interactive":false,"label":"What Paper Trading Is"},{"id":"setup-orders","start":60.472,"end":122.128,"interactive":false,"label":"Setup and Order Types"},{"id":"ticket-builder","start":122.628,"end":141.684,"interactive":true,"label":"Build an Order Ticket"},{"id":"market-limit-sorter","start":142.184,"end":154.184,"interactive":true,"label":"Market or Limit"},{"id":"quiz","start":154.684,"end":159.94,"interactive":true,"label":"Quick Check"},{"id":"bridge","start":160.44,"end":182.952,"interactive":false,"label":"You Are Set Up"}];
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":16.752,"interactive":false,"label":"Paper Trading Setup"},
+  {"id":"what-is-paper","start":17.252,"end":59.972,"interactive":false,"label":"What Paper Trading Is"},
+  {"id":"setup-orders","start":60.472,"end":122.128,"interactive":true,"label":"Setup & Order Types"},
+  {"id":"ticket-builder","start":122.628,"end":141.684,"interactive":true,"label":"Build an Order Ticket"},
+  {"id":"market-limit-sorter","start":142.184,"end":154.184,"interactive":true,"label":"Market or Limit"},
+  {"id":"quiz","start":154.684,"end":159.94,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":160.44,"end":182.952,"interactive":false,"label":"You Are Set Up"}
+];
 </script>
 
-<script src="./assets/lesson-runtime.js"></script>
 <script>
-/* ---------- bespoke: order-ticket builder (isolated) ---------- */
+/* ============================================================
+   INLINE RUNTIME — audio controller + section bridge, nav dots,
+   interactive gating, cinematic video, animated data components,
+   ticket builder, sorter, quiz, complete. Self-contained; every
+   ftaBridge emit is a harmless no-op when opened standalone.
+   ============================================================ */
 (function(){
-  var game=document.getElementById('otbGame'); if(!game) return;
-  var steps=[
-    {key:'sym', tid:'otbSym', prog:'Symbol',
-     q:'Step 1 &middot; Pick a stock to practice on. (Pretend ticket &mdash; no real money moves.)',
-     opts:[{t:'A sneaker brand (SHOE)',v:'SHOE'},{t:'A streaming app (STREAM)',v:'STREAM'},{t:'A game studio (ARCADE)',v:'ARCADE'}]},
-    {key:'side', tid:'otbSide', prog:'Buy or sell',
-     q:'Step 2 &middot; Are you buying or selling?',
-     opts:[{t:'Buy',v:'BUY'},{t:'Sell',v:'SELL'}]},
-    {key:'qty', tid:'otbQty', prog:'Quantity',
-     q:'Step 3 &middot; How many shares? Keep a first practice order small.',
-     opts:[{t:'1 share',v:'1 share'},{t:'5 shares',v:'5 shares'},{t:'10 shares',v:'10 shares'}]},
-    {key:'type', tid:'otbType', prog:'Order type',
-     q:'Step 4 &middot; Which order type? Market fills now; limit fills at your price or better.',
-     opts:[{t:'Market (fill now)',v:'Market'},{t:'Limit (my price or better)',v:'Limit'}]},
-    {key:'stop', tid:'otbStop', prog:'Stop',
-     q:'Step 5 &middot; Set a stop so a bad trade cuts itself off automatically.',
-     opts:[{t:'Stop just under my entry',v:'Just under entry'},{t:'No stop (riskier)',v:'None'}]}
-  ];
-  var i=0, picks={};
-  var q=document.getElementById('otbQ'), opts=document.getElementById('otbOpts');
-  var prog=document.getElementById('otbProg'), reset=document.getElementById('otbReset'), fin=document.getElementById('otbFin');
-  function clearTicket(){
-    steps.forEach(function(s){ var el=document.getElementById(s.tid); el.innerHTML='&mdash;'; el.className='otb-v'; });
-    fin.className='otb-fin'; fin.textContent='';
-  }
-  function render(){
-    var s=steps[i];
-    q.innerHTML=s.q;
-    opts.innerHTML='';
-    s.opts.forEach(function(o){
-      var b=document.createElement('button');
-      b.className='otb-opt'; b.innerHTML=o.t;
-      b.addEventListener('click',function(){ choose(o.v); });
-      opts.appendChild(b);
-    });
-    prog.textContent='Step '+(i+1)+' of '+steps.length;
-  }
-  function choose(v){
-    var s=steps[i];
-    picks[s.key]=v;
-    var el=document.getElementById(s.tid);
-    el.textContent=v; el.classList.add('set');
-    i++;
-    if(i<steps.length){ render(); }
-    else{ done(); }
-  }
-  function done(){
-    q.innerHTML='Ticket complete. &#9989;';
-    opts.innerHTML='';
-    prog.textContent='Done &middot; 5 of 5';
-    reset.classList.add('show');
-    var stopTxt = picks.stop==='None' ? 'no stop set' : 'a stop '+picks.stop.toLowerCase();
-    fin.innerHTML='Practice ticket ready: <b>'+picks.side+' '+picks.qty+' of '+picks.sym+'</b>, '+picks.type+' order, '+stopTxt+'. On a paper account you would hit confirm and watch it fill. No real cash at risk.';
-    fin.classList.add('show');
-  }
-  reset.addEventListener('click',function(){
-    i=0; picks={}; reset.classList.remove('show'); clearTicket(); render();
+  'use strict';
+  var ST = window.sectionTimestamps, TOTAL = ST.length;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var audio = document.getElementById('lessonAudio');
+  var playBtn = document.getElementById('playBtn'), spd = document.getElementById('spd');
+  var seek = document.getElementById('seek'), curT = document.getElementById('curTime'), durT = document.getElementById('durTime');
+  var secLabel = document.getElementById('secLabel'), progressBar = document.getElementById('progressBar');
+  var contWrap = document.getElementById('contWrap'), contBtn = document.getElementById('contBtn');
+  var dots = document.getElementById('dots');
+  var PLAY = '▶', PAUSE = '⏸';
+  var speeds = [0.75, 1, 1.25], sIdx = 1;
+  var curIdx = -1, waiting = false, emitted = {};
+
+  // sections that must be completed before Continue unlocks
+  var gates = { 'setup-orders':false, 'ticket-builder':false, 'market-limit-sorter':false, 'quiz':false };
+  function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
+
+  function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
+  function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }
+
+  /* ---- nav dots ---- */
+  ST.forEach(function(s,i){
+    var d=document.createElement('div'); d.className='dot'; d.dataset.i=i;
+    d.innerHTML='<span class="dl">'+s.label+'</span>';
+    d.addEventListener('click',function(){ goTo(i,true); });
+    dots.appendChild(d);
   });
-  clearTicket(); render();
+  var dotEls = dots.querySelectorAll('.dot');
+
+  function setActive(idx){
+    if(idx===curIdx) return;
+    curIdx=idx;
+    var s=ST[idx];
+    secLabel.textContent=s.label;
+    dotEls.forEach(function(d,i){
+      d.classList.toggle('active', i===idx);
+      d.classList.toggle('done', i<idx);
+    });
+    var el=document.getElementById(s.id);
+    if(el) el.scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
+    document.dispatchEvent(new CustomEvent('fta:section',{detail:{id:s.id,index:idx}}));
+    if(!emitted[idx]){
+      emitted[idx]=true;
+      if(window.ftaBridge) window.ftaBridge.section({id:s.id,index:idx,total:TOTAL,progress_pct:pct(idx)});
+    }
+  }
+
+  function gateHint(id){
+    if(id==='setup-orders') return 'Play the clip to continue';
+    if(id==='ticket-builder') return 'Build the full ticket to continue';
+    if(id==='market-limit-sorter') return 'Sort all the clues to continue';
+    if(id==='quiz') return 'Submit the quiz to continue';
+    return 'Continue →';
+  }
+  function showCont(idx){
+    waiting=true;
+    var s=ST[idx];
+    var gated = s.interactive && (s.id in gates) && !gates[s.id];
+    contWrap.style.display='block';
+    if(gated){ contBtn.disabled=true; contBtn.textContent=gateHint(s.id); }
+    else { contBtn.disabled=false; contBtn.textContent = s.interactive ? 'Done — Continue →' : 'Continue →'; }
+  }
+  function hideCont(){ waiting=false; contWrap.style.display='none'; }
+
+  // called when an interaction finishes; unlock Continue if we're parked on it
+  function satisfyGate(id){
+    gates[id]=true;
+    if(waiting && curIdx>=0 && ST[curIdx].id===id){
+      contBtn.disabled=false;
+      contBtn.textContent='Done — Continue →';
+    }
+  }
+  window.__ftaSatisfy = satisfyGate;
+
+  function goTo(idx,fromClick){
+    hideCont();
+    setActive(idx);
+    audio.currentTime = ST[idx].start;
+    if(fromClick){ audio.play(); playBtn.textContent=PAUSE; }
+  }
+  window.__ftaGoTo = goTo;
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click',function(){
+    if(audio.paused){ if(curIdx<0) setActive(0); audio.play(); playBtn.textContent=PAUSE; }
+    else { audio.pause(); playBtn.textContent=PLAY; }
+  });
+  spd.addEventListener('click',function(){
+    sIdx=(sIdx+1)%speeds.length; audio.playbackRate=speeds[sIdx]; spd.textContent=speeds[sIdx]+'x';
+  });
+  audio.addEventListener('loadedmetadata',function(){ durT.textContent=fmt(audio.duration); seek.max=audio.duration; });
+  audio.addEventListener('timeupdate',function(){
+    curT.textContent=fmt(audio.currentTime);
+    seek.value=audio.currentTime;
+    if(audio.duration) progressBar.style.width=(audio.currentTime/audio.duration*100)+'%';
+    if(waiting) return;
+    var t=audio.currentTime, cur=0;
+    for(var i=ST.length-1;i>=0;i--){ if(t>=ST[i].start){ cur=i; break; } }
+    if(cur!==curIdx) setActive(cur);
+    var s=ST[cur];
+    // pause + gate only at interactive anchor ends; non-interactive flow through
+    if(s.interactive && t>=s.end-0.12){
+      audio.pause(); playBtn.textContent=PLAY; showCont(cur);
+    }
+  });
+  seek.addEventListener('input',function(){ audio.currentTime=parseFloat(seek.value); });
+  contBtn.addEventListener('click',function(){
+    if(contBtn.disabled) return;
+    hideCont();
+    var n=curIdx+1;
+    if(n<TOTAL){ setActive(n); audio.currentTime=ST[n].start; audio.play(); playBtn.textContent=PAUSE; }
+    else { finishLesson(); }
+  });
+  audio.addEventListener('ended',function(){ playBtn.textContent=PLAY; finishLesson(); });
+
+  document.getElementById('startBtn').addEventListener('click',function(){
+    setActive(0); audio.currentTime=0; audio.play(); playBtn.textContent=PAUSE;
+  });
+
+  /* ---- reveal-in animations ---- */
+  var io=new IntersectionObserver(function(en){
+    en.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); } });
+  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.anim').forEach(function(el){ io.observe(el); });
+
+  /* ---- drifting candles (hero) ---- */
+  (function(){
+    var wrap=document.getElementById('candles'); if(!wrap||reduce) return;
+    var N=16;
+    for(var i=0;i<N;i++){
+      var c=document.createElement('span'); c.className='candle '+(Math.random()>.5?'up':'down');
+      var dur=7+Math.random()*7, delay=-Math.random()*12, h=22+Math.random()*40;
+      c.style.left=(Math.random()*96)+'%';
+      c.style.height=h+'px';
+      c.style.animationDuration=dur+'s';
+      c.style.animationDelay=delay+'s';
+      c.style.opacity=(.4+Math.random()*.4);
+      wrap.appendChild(c);
+    }
+  })();
+
+  function money(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+  function money2(n){ return '$'+(Math.round(n*100)/100).toFixed(2); }
+
+  /* ---- lazy-drawn data components ---- */
+  var chartIO=new IntersectionObserver(function(en){
+    en.forEach(function(e){
+      if(!e.isIntersecting) return;
+      if(e.target.id==='mistChart' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; drawMistakes(e.target); }
+      if(e.target.id==='mlmSvg' && !e.target.dataset.drawn){ e.target.dataset.drawn='1'; buildMlm(e.target); }
+    });
+  },{threshold:.25});
+  var mistEl=document.getElementById('mistChart'), mlmEl=document.getElementById('mlmSvg');
+  if(mistEl) chartIO.observe(mistEl);
+  if(mlmEl) chartIO.observe(mlmEl);
+
+  /* ---- DATA COMPONENT #1: what a rookie mistake costs (animated bars) ---- */
+  function drawMistakes(box){
+    var W=680,H=300,padL=20,padR=16,padT=30,padB=52;
+    var labels=['Wrong size','No stop','Chasing','Panic sell'];
+    var costs=[450,280,190,200];
+    var total=costs.reduce(function(a,b){return a+b;},0);
+    var maxV=Math.max.apply(null,costs)*1.22;
+    var plotH=H-padT-padB, plotW=W-padL-padR;
+    var gW=plotW/labels.length, bW=Math.min(64,gW*0.5);
+    var s='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">';
+    // baseline (paper = $0 line)
+    var baseY=H-padB;
+    s+='<line x1="'+padL+'" y1="'+baseY+'" x2="'+(W-padR)+'" y2="'+baseY+'" stroke="#22C55E" stroke-width="2" stroke-dasharray="5 5"/>';
+    s+='<text x="'+(W-padR)+'" y="'+(baseY+18)+'" text-anchor="end" font-family="Poppins,sans-serif" font-weight="700" font-size="11.5" fill="#16A34A">On paper = $0</text>';
+    labels.forEach(function(lab,i){
+      var gx=padL+i*gW+gW/2;
+      var x=gx-bW/2;
+      var h=(costs[i]/maxV)*plotH;
+      var y=baseY-h;
+      var dc=reduce?'0s':'0.8s', bg=reduce?'0s':(0.15+i*0.13)+'s';
+      s+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bW.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="6" fill="#DC2626">';
+      if(!reduce){ s+='<animate attributeName="height" from="0" to="'+h.toFixed(1)+'" dur="'+dc+'" begin="'+bg+'" fill="freeze"/><animate attributeName="y" from="'+baseY+'" to="'+y.toFixed(1)+'" dur="'+dc+'" begin="'+bg+'" fill="freeze"/>'; }
+      s+='</rect>';
+      // cost label above bar
+      var op=reduce?'1':'0', ab=reduce?'0s':(0.15+i*0.13+0.7)+'s';
+      s+='<text x="'+gx.toFixed(1)+'" y="'+(y-9).toFixed(1)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#B91C1C" opacity="'+op+'">-'+money(costs[i])+(reduce?'':'<animate attributeName="opacity" from="0" to="1" dur="0.3s" begin="'+ab+'" fill="freeze"/>')+'</text>';
+      // x label
+      s+='<text x="'+gx.toFixed(1)+'" y="'+(baseY+36)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="12.5" fill="#5B6472">'+lab+'</text>';
+    });
+    s+='</svg>';
+    box.innerHTML=s;
+  }
+
+  /* ---- DATA COMPONENT #2: interactive market-vs-limit fill ---- */
+  var mlmMode='market';
+  var MLM = { cur:50.00, qty:10, pmin:48.00, pmax:52.00,
+    W:680,H:280,axisX:66,padT:24,padB:26,rightX:664 };
+  function mlmY(p){ return MLM.padT + (MLM.pmax - p)/(MLM.pmax - MLM.pmin) * (MLM.H - MLM.padT - MLM.padB); }
+  function buildMlm(svg){
+    var m=MLM, s='';
+    var curY=mlmY(m.cur), botY=m.H-m.padB, topY=m.padT;
+    // gridlines + price ticks
+    for(var p=m.pmin; p<=m.pmax+0.001; p+=1){
+      var y=mlmY(p);
+      s+='<line x1="'+m.axisX+'" y1="'+y.toFixed(1)+'" x2="'+m.rightX+'" y2="'+y.toFixed(1)+'" stroke="#eee5d2" stroke-width="1"/>';
+      s+='<text x="'+(m.axisX-8)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end" font-family="Inter,sans-serif" font-size="11" fill="#98A2B3">$'+p.toFixed(0)+'</text>';
+    }
+    // fill zone (buy limit fills at/below limit) — updated by JS
+    s+='<rect id="mlmZone" x="'+m.axisX+'" y="'+curY.toFixed(1)+'" width="'+(m.rightX-m.axisX)+'" height="'+(botY-curY).toFixed(1)+'" fill="#22C55E" opacity="0.08"/>';
+    // current price line
+    s+='<line x1="'+m.axisX+'" y1="'+curY.toFixed(1)+'" x2="'+m.rightX+'" y2="'+curY.toFixed(1)+'" stroke="#16A34A" stroke-width="2.5"/>';
+    s+='<text x="'+(m.rightX)+'" y="'+(curY-9).toFixed(1)+'" text-anchor="end" font-family="Poppins,sans-serif" font-weight="700" font-size="12" fill="#16A34A">Now $50.00</text>';
+    // market marker (always at current)
+    s+='<g id="mlmMarketG"><circle cx="'+((m.axisX+m.rightX)/2).toFixed(1)+'" cy="'+curY.toFixed(1)+'" r="8" fill="#F59E0B" stroke="#fff" stroke-width="2.5"/>';
+    s+='<text x="'+((m.axisX+m.rightX)/2).toFixed(1)+'" y="'+(curY+26).toFixed(1)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="12" fill="#B45309">Market fills here</text></g>';
+    // limit marker group (baseline drawn at current line; translated via JS)
+    s+='<g id="mlmLimitG" style="opacity:0">';
+    s+='<line x1="'+m.axisX+'" y1="'+curY.toFixed(1)+'" x2="'+m.rightX+'" y2="'+curY.toFixed(1)+'" stroke="#0369A1" stroke-width="2.5" stroke-dasharray="7 5"/>';
+    s+='<polygon points="'+(m.axisX-2)+','+(curY-7).toFixed(1)+' '+(m.axisX-2)+','+(curY+7).toFixed(1)+' '+(m.axisX+9)+','+curY.toFixed(1)+'" fill="#0369A1"/>';
+    s+='<text id="mlmLimitLbl" x="'+(m.axisX+16)+'" y="'+(curY-8).toFixed(1)+'" font-family="Poppins,sans-serif" font-weight="700" font-size="12" fill="#0369A1">Your limit $49.50</text>';
+    s+='</g>';
+    svg.innerHTML=s;
+    updateMlm();
+  }
+  function mlmChanceFor(L){
+    if(L>=MLM.cur) return 100;
+    return Math.max(6, Math.round(100 - (MLM.cur - L)*45));
+  }
+  function updateMlm(){
+    var svg=document.getElementById('mlmSvg'); if(!svg||!svg.dataset.drawn) return;
+    var head=document.getElementById('mlmHeadline');
+    var limitG=document.getElementById('mlmLimitG'), marketG=document.getElementById('mlmMarketG');
+    var zone=document.getElementById('mlmZone'), lbl=document.getElementById('mlmLimitLbl');
+    var slWrap=document.getElementById('mlmSliderWrap'), note=document.getElementById('mlmNote');
+    var curY=mlmY(MLM.cur), botY=MLM.H-MLM.padB;
+    if(mlmMode==='market'){
+      if(slWrap) slWrap.style.display='none';
+      if(limitG) limitG.style.opacity='0';
+      if(marketG) marketG.style.opacity='1';
+      if(zone){ zone.setAttribute('y', curY.toFixed(1)); zone.setAttribute('height', (botY-curY).toFixed(1)); zone.setAttribute('opacity','0'); }
+      if(head) head.innerHTML='Market order &rarr; fills instantly at <b style="color:#16A34A">$50.00</b> &middot; 100% fill';
+      if(note) note.innerHTML='Fast and certain to fill. Toggle to <b>Limit</b> to trade speed for price control.';
+    } else {
+      if(slWrap) slWrap.style.display='block';
+      if(marketG) marketG.style.opacity='0.28';
+      if(limitG) limitG.style.opacity='1';
+      var L=parseInt(document.getElementById('mlmSlider').value,10)/100;
+      var limY=mlmY(L);
+      if(limitG) limitG.style.transform='translateY('+(limY-curY).toFixed(1)+'px)';
+      if(lbl) lbl.textContent='Your limit $'+L.toFixed(2);
+      var chance=mlmChanceFor(L);
+      var save=(L>=MLM.cur)?0:(MLM.cur-L)*MLM.qty;
+      // zone: prices at/below limit (buy fills there) -> from limit line down
+      if(zone){ zone.setAttribute('y', limY.toFixed(1)); zone.setAttribute('height', Math.max(0,botY-limY).toFixed(1)); zone.setAttribute('opacity','0.12'); }
+      document.getElementById('mlmLimitVal').textContent='$'+L.toFixed(2);
+      document.getElementById('mlmChance').textContent=chance+'%';
+      document.getElementById('mlmSave').textContent=money2(save);
+      document.getElementById('mlmMeter').style.width=chance+'%';
+      if(L>=MLM.cur){
+        if(head) head.innerHTML='Limit at <b style="color:#0369A1">$'+L.toFixed(2)+'</b> &rarr; at or above market, so it fills now at $50.00';
+        if(note) note.innerHTML='Setting a buy limit above the price just fills now &mdash; drag <b>below $50</b> to actually trade price for a discount.';
+      } else {
+        if(head) head.innerHTML='Limit buy at <b style="color:#0369A1">$'+L.toFixed(2)+'</b> &rarr; fills only if it dips to $'+L.toFixed(2)+' &middot; ~'+chance+'% likely';
+        if(note) note.innerHTML='The lower you aim, the more you save if it fills &mdash; but the less likely the market ever reaches you.';
+      }
+    }
+  }
+  (function(){
+    var btns=document.querySelectorAll('.mlm-toggle button');
+    btns.forEach(function(b){
+      b.addEventListener('click',function(){
+        btns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        mlmMode=b.dataset.mode;
+        updateMlm();
+      });
+    });
+    var sl=document.getElementById('mlmSlider');
+    if(sl) sl.addEventListener('input',updateMlm);
+  })();
+
+  /* ---- CINEMATIC video: pause narration, coach outro, satisfy gate ---- */
+  (function(){
+    var vid=document.getElementById('cineVid'), ov=document.getElementById('cineOv'), outro=document.getElementById('cvOutro');
+    if(!vid||!ov) return;
+    var wasPlaying=false, secIdx=idxOf('setup-orders');
+    ov.addEventListener('click',function(){
+      wasPlaying = !audio.paused;
+      if(!audio.paused){ audio.pause(); playBtn.textContent=PLAY; }
+      ov.classList.add('hide');
+      var p=vid.play(); if(p&&p.catch) p.catch(function(){});
+    });
+    vid.addEventListener('ended',function(){
+      if(outro) outro.style.display='block';
+      satisfyGate('setup-orders');
+      // if narration hadn't reached the gate yet, resume it; otherwise leave Continue unlocked
+      if(wasPlaying && audio.currentTime < ST[secIdx].end-0.3){
+        audio.play(); playBtn.textContent=PAUSE;
+      }
+    });
+  })();
+
+  /* ---- ORDER-TICKET builder (process-flow + count-up) ---- */
+  (function(){
+    var game=document.getElementById('otbGame'); if(!game) return;
+    var steps=[
+      {key:'sym', tid:'otbSym', q:'Step 1 &middot; Pick a stock to practice on. <span style="color:var(--soft)">(Pretend ticket &mdash; no real money moves.)</span>',
+       opts:[{t:'A sneaker brand &mdash; SHOE ($40)',v:'SHOE',px:40},{t:'A streaming app &mdash; STREAM ($65)',v:'STREAM',px:65},{t:'A game studio &mdash; ARCADE ($28)',v:'ARCADE',px:28}]},
+      {key:'side', tid:'otbSide', q:'Step 2 &middot; Are you buying or selling?',
+       opts:[{t:'Buy',v:'BUY'},{t:'Sell',v:'SELL'}]},
+      {key:'qty', tid:'otbQty', q:'Step 3 &middot; How many shares? Keep a first practice order small.',
+       opts:[{t:'1 share',v:'1 share',qn:1},{t:'5 shares',v:'5 shares',qn:5},{t:'10 shares',v:'10 shares',qn:10}]},
+      {key:'type', tid:'otbType', q:'Step 4 &middot; Which order type? Market fills now; limit fills at your price or better.',
+       opts:[{t:'Market (fill now)',v:'Market'},{t:'Limit (my price or better)',v:'Limit'}]},
+      {key:'stop', tid:'otbStop', q:'Step 5 &middot; Set a stop so a bad trade cuts itself off automatically.',
+       opts:[{t:'Stop just under my entry',v:'Just under entry'},{t:'No stop (riskier)',v:'None'}]}
+    ];
+    var i=0, picks={}, px=0, qn=0;
+    var q=document.getElementById('otbQ'), opts=document.getElementById('otbOpts');
+    var prog=document.getElementById('otbProg'), reset=document.getElementById('otbReset');
+    var fin=document.getElementById('otbFin'), val=document.getElementById('otbVal'), valN=document.getElementById('otbValN');
+    function clearTicket(){
+      steps.forEach(function(s){ var el=document.getElementById(s.tid); el.innerHTML='&mdash;'; el.className='otb-v'; });
+      fin.className='otb-fin'; fin.textContent=''; val.className='otb-val'; valN.textContent='$0';
+      px=0; qn=0;
+    }
+    function render(){
+      var s=steps[i];
+      q.innerHTML=s.q;
+      opts.innerHTML='';
+      s.opts.forEach(function(o){
+        var b=document.createElement('button');
+        b.className='otb-opt'; b.innerHTML=o.t;
+        b.addEventListener('click',function(){ choose(o); });
+        opts.appendChild(b);
+      });
+      prog.textContent='Step '+(i+1)+' of '+steps.length;
+    }
+    function choose(o){
+      var s=steps[i];
+      picks[s.key]=o.v;
+      if(o.px!=null) px=o.px;
+      if(o.qn!=null) qn=o.qn;
+      var el=document.getElementById(s.tid);
+      el.textContent=o.v; el.classList.add('set','pop');
+      setTimeout(function(){ el.classList.remove('pop'); },420);
+      i++;
+      if(i<steps.length){ render(); } else { done(); }
+    }
+    function countUp(to){
+      val.classList.add('show');
+      if(reduce){ valN.textContent=money(to); return; }
+      var start=performance.now(), dur=900;
+      function step(now){
+        var p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3);
+        valN.textContent=money(to*e);
+        if(p<1) requestAnimationFrame(step); else valN.textContent=money(to);
+      }
+      requestAnimationFrame(step);
+    }
+    function done(){
+      q.innerHTML='Ticket complete. &#9989;';
+      opts.innerHTML='';
+      prog.textContent='Done &middot; 5 of 5';
+      reset.classList.add('show');
+      var orderVal=px*qn;
+      countUp(orderVal);
+      var stopTxt = picks.stop==='None' ? 'no stop set' : 'a stop just under entry';
+      fin.innerHTML='Practice ticket ready: <b>'+picks.side+' '+picks.qty+' of '+picks.sym+'</b> as a '+picks.type+' order, '+stopTxt+'. On a paper account you would hit confirm and watch it fill &mdash; no real cash at risk.';
+      fin.classList.add('show');
+      satisfyGate('ticket-builder');
+    }
+    reset.addEventListener('click',function(){
+      i=0; picks={}; reset.classList.remove('show'); clearTicket(); render();
+    });
+    clearTicket(); render();
+  })();
+
+  /* ---- MARKET/LIMIT sorter (mini-game) ---- */
+  (function(){
+    var pool=document.getElementById('pool'), fb=document.getElementById('sorterFb');
+    if(!pool) return;
+    var cols=document.querySelectorAll('#market-limit-sorter .col');
+    var chips=Array.prototype.slice.call(pool.querySelectorAll('.chip'));
+    var N=chips.length, placed=0, correct=0, selected=null;
+    function arm(on){ cols.forEach(function(c){ c.classList.toggle('armed', on); }); }
+    chips.forEach(function(chip){
+      chip.addEventListener('click',function(){
+        if(chip.classList.contains('ok')||chip.classList.contains('no')) return;
+        if(selected===chip){ chip.classList.remove('sel'); selected=null; arm(false); return; }
+        chips.forEach(function(c){ c.classList.remove('sel'); });
+        chip.classList.add('sel'); selected=chip; arm(true);
+        fb.textContent='Now tap the order that "'+chip.textContent+'" describes.';
+      });
+    });
+    cols.forEach(function(col){
+      col.addEventListener('click',function(){
+        if(!selected) return;
+        var right=selected.dataset.bucket===col.dataset.bucket;
+        var drop=col.querySelector('.drop');
+        selected.classList.remove('sel'); selected.disabled=true;
+        selected.classList.add(right?'ok':'no');
+        drop.appendChild(selected);
+        placed++; if(right) correct++;
+        selected=null; arm(false);
+        if(placed<N){ fb.textContent='Sorted '+placed+' of '+N+'.'; }
+        else {
+          pool.classList.add('empty');
+          fb.classList.add('done');
+          fb.textContent='All sorted — you matched '+correct+' of '+N+'. Speed lives in Market, price control lives in Limit.';
+          satisfyGate('market-limit-sorter');
+        }
+      });
+    });
+  })();
+
+  /* ---- QUIZ grading + bridge emit ---- */
+  (function(){
+    var box=document.getElementById('quizBox'); if(!box) return;
+    var qs=Array.prototype.slice.call(box.querySelectorAll('.q'));
+    var submit=document.getElementById('quizSubmit');
+    var sel={}, graded=false;
+    qs.forEach(function(q,qi){
+      var opts=q.querySelectorAll('.opt');
+      opts.forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(graded) return;
+          opts.forEach(function(o){ o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          sel[qi]=parseInt(opt.dataset.idx,10);
+        });
+      });
+    });
+    submit.addEventListener('click',function(){
+      if(graded) return; graded=true;
+      var total=qs.length, correct=0, answers=[];
+      qs.forEach(function(q,qi){
+        var corr=parseInt(q.getAttribute('data-correct'),10);
+        var s=(qi in sel)?sel[qi]:null;
+        var isC=s===corr; if(isC) correct++;
+        var opts=q.querySelectorAll('.opt');
+        opts.forEach(function(o,idx){
+          o.disabled=true;
+          if(idx===corr) o.classList.add('correct');
+          if(idx===s && idx!==corr) o.classList.add('wrong');
+        });
+        q.querySelector('.exp').style.display='block';
+        answers.push({ question:q.querySelector('h4').textContent.replace(/^\d+\.\s*/,''), selected:s, correct_index:corr, is_correct:isC });
+      });
+      var score=Math.round((correct/total)*100), passed=score>=60;
+      var res=document.getElementById('quizResult'); res.style.display='block';
+      document.getElementById('quizScore').textContent=correct+' / '+total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct===total?'Perfect — you’ve got the setup nailed down.':'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the sections and give it another look.';
+      submit.style.display='none';
+      if(window.ftaBridge) window.ftaBridge.quizAnswer({score:score,passed:passed,total:total,correct:correct,answers:answers});
+      satisfyGate('quiz');
+      document.dispatchEvent(new CustomEvent('fta:quizDone',{detail:{score:score,passed:passed}}));
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn=document.getElementById('finishBtn'), doneChip=document.getElementById('doneChip');
+  function finishLesson(){
+    if(window.ftaBridge) window.ftaBridge.complete({});
+    if(finishBtn) finishBtn.style.display='none';
+    if(doneChip) doneChip.style.display='inline-flex';
+    if(progressBar) progressBar.style.width='100%';
+  }
+  if(finishBtn) finishBtn.addEventListener('click',finishLesson);
+  window.__ftaComplete = finishLesson;
 })();
 </script>
-<style id="fta-anim">
-@keyframes ftaWipeIn{from{clip-path:inset(0 100% 0 0);opacity:.25}to{clip-path:inset(0 0 0 0);opacity:1}}
-@keyframes ftaFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.fta-anim-diagram.fta-play{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both}
-.fta-anim-diagram.fta-play.fta-float{animation:ftaWipeIn 1.05s cubic-bezier(.4,0,.2,1) both, ftaFloat 6s ease-in-out 1.2s infinite}
-</style>
-<script id="fta-anim-js">(function(){try{var imgs=document.querySelectorAll('section:not(#hero) img');var t=null;for(var i=0;i<imgs.length;i++){var s=(imgs[i].getAttribute("src")||"");if(!/hero|poster/i.test(s)){t=imgs[i];break;}}if(!t)return;t.classList.add("fta-anim-diagram");var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("fta-play");io.unobserve(e.target);}});},{threshold:.25});io.observe(t);}catch(e){}})();</script>
 </body>
 </html>
