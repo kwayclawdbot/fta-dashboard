@@ -20,14 +20,37 @@ import {
   X,
   Film,
   Loader2,
+  Hash,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
-import { getFamilyTierMap, type FamilyTier } from "@/lib/tier";
-import TierBadge, { tierRingClass } from "@/components/TierBadge";
+import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
+import { evaluateBadges } from "@/lib/badges";
+import TierBadge from "@/components/TierBadge";
+import Avatar from "@/components/Avatar";
 
-// The single global community room (seeded in migration 016)
-const COMMUNITY_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
+// Community rooms (migration 016 seeded room 1, renamed to "FIC Club" in 033;
+// room 2 "FTA Traders" added in 033). Both are type 'general'.
+const FIC_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
+const FTA_ROOM_ID = "c0000000-0000-4000-a000-000000000002";
+
+interface Room {
+  id: string;
+  name: string;
+}
+const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "FIC Club" };
+const FTA_ROOM: Room = { id: FTA_ROOM_ID, name: "FTA Traders" };
+
+/**
+ * Which rooms a member may OPEN is decided HERE, at the app layer: FIC families
+ * see FIC Club only; FTA families (a superset) see both. This matches the
+ * platform's existing posture — the chat_messages SELECT policy stays a simple
+ * realtime-safe room-id comparison (migrations 018/019 scars), so room access
+ * is enforced by which rooms this page lets you switch to, not by RLS.
+ */
+function roomsForTier(tier: FamilyTier): Room[] {
+  return tier === "fta" ? [FIC_ROOM, FTA_ROOM] : [FIC_ROOM];
+}
 
 type Category = "win" | "question" | "announcement" | "discussion";
 type FilterType = "all" | Category;
@@ -38,6 +61,7 @@ interface Author {
   role: Role | null;
   age_group: string | null;
   family_id: string | null;
+  avatar_url: string | null;
 }
 
 interface AttachmentMeta {
@@ -90,6 +114,7 @@ interface CurrentUser {
   role: Role;
   age_group: string | null;
   family_id: string | null;
+  avatar_url: string | null;
 }
 
 // ── Style maps (warm-paper light theme) ──
@@ -113,15 +138,6 @@ const CATEGORY_CONFIG: Record<
 
 const POSTABLE: Category[] = ["discussion", "win", "question"];
 
-function initialsOf(name?: string | null) {
-  return (name || "U")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
 function timeAgo(iso: string) {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (s < 60) return "just now";
@@ -131,36 +147,6 @@ function timeAgo(iso: string) {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   return `${d}d ago`;
-}
-
-function Avatar({
-  name,
-  role,
-  tier,
-  size = "md",
-}: {
-  name?: string | null;
-  role?: string | null;
-  tier?: FamilyTier;
-  size?: "sm" | "md";
-}) {
-  const sizes = { sm: "w-8 h-8 text-[11px]", md: "w-10 h-10 text-xs" };
-  const bg =
-    role === "coach" || role === "admin"
-      ? "bg-chip-amber text-gold-800"
-      : role === "child"
-        ? "bg-chip-green text-green-700"
-        : role === "parent"
-          ? "bg-chip-sky text-sky-800"
-          : "bg-sand text-soft";
-  // Premium presence: FTA members get the gold avatar ring.
-  return (
-    <div
-      className={`${sizes[size]} ${bg} ${tierRingClass(tier)} rounded-full flex items-center justify-center font-display font-bold shrink-0`}
-    >
-      {initialsOf(name)}
-    </div>
-  );
 }
 
 function MessageAttachment({ msg }: { msg: Message }) {
@@ -243,7 +229,13 @@ function MessageCard({ msg, tier }: { msg: Message; tier: FamilyTier }) {
   return (
     <div className="paper-card p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={msg.author?.display_name} role={role} tier={tier} />
+        <Avatar
+          name={msg.author?.display_name}
+          avatarUrl={msg.author?.avatar_url}
+          role={role}
+          tier={tier}
+          size="lg"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display text-sm font-semibold text-ink">
@@ -275,6 +267,8 @@ export default function CommunityPage() {
   const supabase = createClient();
 
   const [me, setMe] = useState<CurrentUser | null>(null);
+  const [myTier, setMyTier] = useState<FamilyTier>("fic");
+  const [activeRoomId, setActiveRoomId] = useState<string>(FIC_ROOM_ID);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -289,6 +283,9 @@ export default function CommunityPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const rooms = useMemo(() => roomsForTier(myTier), [myTier]);
+  const activeRoom = rooms.find((r) => r.id === activeRoomId) || FIC_ROOM;
+
   // ── @mention autocomplete ─────────────────────────────────────────────
   // Insert format MUST match the notification trigger rule (migration 028):
   // "@" + display name with all spaces stripped (e.g. "Kway Jr" → "@KwayJr"),
@@ -298,7 +295,9 @@ export default function CommunityPage() {
     null
   );
   const [mentionIdx, setMentionIdx] = useState(0);
-  const [roster, setRoster] = useState<{ id: string; name: string; stripped: string }[]>([]);
+  const [roster, setRoster] = useState<
+    { id: string; name: string; stripped: string; avatar_url: string | null }[]
+  >([]);
   const rosterLoaded = useRef(false);
 
   // Membership tier per family (family_tiers view) — fetched in ONE batched
@@ -328,7 +327,7 @@ export default function CommunityPage() {
       if (authorCache.current[userId]) return authorCache.current[userId];
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, role, age_group, family_id")
+        .select("display_name, role, age_group, family_id, avatar_url")
         .eq("id", userId)
         .single();
       const author: Author = {
@@ -336,6 +335,7 @@ export default function CommunityPage() {
         role: (data?.role as Role) ?? "parent",
         age_group: data?.age_group ?? null,
         family_id: data?.family_id ?? null,
+        avatar_url: data?.avatar_url ?? null,
       };
       authorCache.current[userId] = author;
       await loadTiers([author.family_id]);
@@ -348,7 +348,7 @@ export default function CommunityPage() {
   const tierOf = (author: Author | null): FamilyTier =>
     (author?.family_id && tiers[author.family_id]) || "fic";
 
-  // Initial load: user, messages, stats
+  // Initial load: current user, tier (→ rooms), sidebar counts, welcome.
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -359,7 +359,7 @@ export default function CommunityPage() {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("display_name, role, age_group, family_id")
+          .select("display_name, role, age_group, family_id, avatar_url")
           .eq("id", user.id)
           .single();
         if (profile) {
@@ -369,14 +369,23 @@ export default function CommunityPage() {
             role: (profile.role as Role) || "parent",
             age_group: profile.age_group,
             family_id: profile.family_id ?? null,
+            avatar_url: profile.avatar_url ?? null,
           };
           authorCache.current[user.id] = {
             display_name: cu.display_name,
             role: cu.role,
             age_group: cu.age_group,
             family_id: cu.family_id,
+            avatar_url: cu.avatar_url,
           };
           if (mounted) setMe(cu);
+
+          // Family tier decides which rooms are available.
+          const tier = await getFamilyTier(supabase, profile.family_id);
+          if (mounted) setMyTier(tier);
+
+          // Data-driven professional-title badges — cheap + idempotent.
+          evaluateBadges(supabase, user.id);
 
           // First-post welcome: show when this family has no posts yet.
           if (profile.family_id) {
@@ -396,12 +405,34 @@ export default function CommunityPage() {
         }
       }
 
+      // Real sidebar stats (families/members are global)
+      const [{ count: families }, { count: members }] = await Promise.all([
+        supabase.from("families").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+      ]);
+      if (mounted) {
+        setStats((s) => ({ ...s, families: families || 0, members: members || 0 }));
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load messages + post count whenever the active room changes.
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setMessages([]);
+    (async () => {
       const { data: msgs } = await supabase
         .from("chat_messages")
         .select(
-          "id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id)"
+          "id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id, avatar_url)"
         )
-        .eq("room_id", COMMUNITY_ROOM_ID)
+        .eq("room_id", activeRoomId)
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -433,34 +464,25 @@ export default function CommunityPage() {
         });
         setMessages(normalized);
         // One batched tier lookup for every family in the feed (+ mine).
-        await loadTiers([
-          user ? authorCache.current[user.id]?.family_id : null,
-          ...normalized.map((m) => m.author?.family_id),
-        ]);
+        await loadTiers([me?.family_id, ...normalized.map((m) => m.author?.family_id)]);
       }
 
-      // Real sidebar stats
-      const [{ count: families }, { count: members }, { count: posts }] = await Promise.all([
-        supabase.from("families").select("id", { count: "exact", head: true }),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase
-          .from("chat_messages")
-          .select("id", { count: "exact", head: true })
-          .eq("room_id", COMMUNITY_ROOM_ID),
-      ]);
+      const { count: posts } = await supabase
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("room_id", activeRoomId);
       if (mounted) {
-        setStats({ families: families || 0, members: members || 0, posts: posts || 0 });
+        setStats((s) => ({ ...s, posts: posts || 0 }));
         setLoading(false);
       }
-    }
-    load();
+    })();
     return () => {
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeRoomId, me?.id]);
 
-  // Realtime: stream new messages live
+  // Realtime: stream new messages live for the active room.
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
@@ -473,14 +495,14 @@ export default function CommunityPage() {
       }
       if (cancelled) return;
       channel = supabase
-      .channel("community-room")
+      .channel(`community-room-${activeRoomId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "chat_messages",
-          filter: `room_id=eq.${COMMUNITY_ROOM_ID}`,
+          filter: `room_id=eq.${activeRoomId}`,
         },
         async (payload) => {
           const row = payload.new as {
@@ -522,7 +544,7 @@ export default function CommunityPage() {
       if (channel) supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeRoomId]);
 
   function handleFileSelect(file: File | null) {
     if (!file) return;
@@ -589,7 +611,10 @@ export default function CommunityPage() {
   const loadRoster = useCallback(async () => {
     if (rosterLoaded.current) return;
     rosterLoaded.current = true;
-    const { data } = await supabase.from("profiles").select("id, display_name").limit(300);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url")
+      .limit(300);
     setRoster(
       (data ?? [])
         .filter((p) => p.display_name)
@@ -597,6 +622,7 @@ export default function CommunityPage() {
           id: p.id as string,
           name: p.display_name as string,
           stripped: (p.display_name as string).replace(/\s+/g, ""),
+          avatar_url: (p.avatar_url as string) ?? null,
         }))
         .filter((p) => p.stripped.length > 0)
     );
@@ -704,7 +730,7 @@ export default function CommunityPage() {
     const { data, error } = await supabase
       .from("chat_messages")
       .insert({
-        room_id: COMMUNITY_ROOM_ID,
+        room_id: activeRoomId,
         user_id: me.id,
         content: text,
         category: newCategory,
@@ -729,6 +755,7 @@ export default function CommunityPage() {
               role: me.role,
               age_group: me.age_group,
               family_id: me.family_id,
+              avatar_url: me.avatar_url,
             },
             attachment_url: data.attachment_url ?? null,
             attachment_type: (data.attachment_type as "image" | "video" | null) ?? null,
@@ -756,7 +783,7 @@ export default function CommunityPage() {
   function prefillWelcome() {
     setNewCategory("discussion");
     setNewPostText(
-      "Hi everyone! We just joined FTA. Here are the 5 companies our family picked: "
+      "Hi everyone! We just joined the club. Here are the companies our family picked: "
     );
     setShowWelcome(false);
     document
@@ -783,6 +810,30 @@ export default function CommunityPage() {
         <p className="text-soft text-sm mt-1 font-body">Learn out loud, grow together</p>
       </motion.div>
 
+      {/* Room tabs — FIC families see FIC Club only; FTA families see both. */}
+      {rooms.length > 1 && (
+        <div className="flex items-center gap-2 mb-5">
+          {rooms.map((r) => {
+            const active = r.id === activeRoomId;
+            return (
+              <button
+                key={r.id}
+                onClick={() => setActiveRoomId(r.id)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border transition-colors ${
+                  active
+                    ? "bg-chip-amber border-gold-300 text-gold-800"
+                    : "bg-white border-sand text-soft hover:border-gold-300 hover:text-ink"
+                }`}
+              >
+                <Hash className={`w-3.5 h-3.5 ${active ? "text-gold-700" : "text-midnight-500"}`} />
+                <span className="font-display text-sm font-semibold">{r.name}</span>
+                {r.id === FTA_ROOM_ID && <TierBadge tier="fta" size="xs" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main feed */}
         <div className="flex-1 min-w-0 space-y-4">
@@ -804,7 +855,7 @@ export default function CommunityPage() {
                       New here? Say hello
                     </h3>
                     <p className="text-sm text-soft mt-0.5">
-                      Introduce your family and post the 5 companies you picked.
+                      Introduce your family and post the companies you picked.
                       It is the best way to meet everyone.
                     </p>
                     <button
@@ -825,8 +876,10 @@ export default function CommunityPage() {
             <div className="flex gap-3">
               <Avatar
                 name={me?.display_name}
+                avatarUrl={me?.avatar_url}
                 role={me?.role}
-                tier={(me?.family_id && tiers[me.family_id]) || "fic"}
+                tier={(me?.family_id && tiers[me.family_id]) || myTier}
+                size="lg"
               />
               <div className="flex-1 min-w-0">
                 <div className="relative">
@@ -844,8 +897,8 @@ export default function CommunityPage() {
                     onBlur={() => setTimeout(() => setMention(null), 150)}
                     placeholder={
                       me?.role === "child"
-                        ? "Share what you learned today..."
-                        : "Share a win, ask a question, or start a discussion..."
+                        ? `Share what you learned today...`
+                        : `Post to ${activeRoom.name} — share a win, ask a question, start a discussion...`
                     }
                     rows={3}
                     className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
@@ -870,9 +923,7 @@ export default function CommunityPage() {
                             i === mentionIdx ? "bg-paper" : "bg-white"
                           }`}
                         >
-                          <span className="w-6 h-6 rounded-full bg-gold-400/20 text-gold-700 text-[10px] font-bold font-display flex items-center justify-center shrink-0">
-                            {initialsOf(c.name)}
-                          </span>
+                          <Avatar name={c.name} avatarUrl={c.avatar_url} size="xs" />
                           <span className="min-w-0">
                             <span className="block text-xs font-medium text-ink truncate">
                               {c.name}
@@ -1042,7 +1093,7 @@ export default function CommunityPage() {
               </p>
               <p className="text-sm text-soft font-body max-w-sm mx-auto">
                 {messages.length === 0
-                  ? "Share a win, ask a question, or say hi to the FTA community."
+                  ? `Share a win, ask a question, or say hi in ${activeRoom.name}.`
                   : "No posts in this category yet."}
               </p>
             </div>
@@ -1071,7 +1122,7 @@ export default function CommunityPage() {
         >
           <div className="paper-card p-4">
             <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-3">
-              Community
+              {activeRoom.name}
             </h3>
             <div className="grid grid-cols-3 gap-3">
               <Stat icon={Home} value={stats.families} label="Families" />

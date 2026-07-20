@@ -21,7 +21,7 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, age_group, track, display_name, onboarding_complete, family_id")
+    .select("role, age_group, track, display_name, avatar_url, onboarding_complete, family_id")
     .eq("id", user.id)
     .single();
 
@@ -41,6 +41,7 @@ export default async function DashboardLayout({
     role: profile?.role ?? undefined,
     age_group: profile?.age_group ?? undefined,
     track: profile?.track ?? undefined,
+    avatar_url: profile?.avatar_url ?? undefined,
     tier,
   };
 

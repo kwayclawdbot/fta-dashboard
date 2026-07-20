@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, GraduationCap, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { Users, GraduationCap, ArrowRight, ArrowLeft, Check, Sparkles, AtSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import AvatarPicker from "@/components/AvatarPicker";
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 200 : -200, opacity: 0 }),
@@ -27,8 +28,13 @@ export default function OnboardingPage() {
   // Parent flow state
   const [familyName, setFamilyName] = useState("");
 
-  // Child flow state
+  // Shared: username (= display_name; @mentions match it spaces-stripped) + avatar
   const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [nameWarning, setNameWarning] = useState("");
+  const nameCheckSeq = useRef(0);
+
+  // Child flow state
   const [ageBand, setAgeBand] = useState<"kids" | "teens" | "">("");
 
   // Detect whether this is a family owner (parent) or an invited child.
@@ -43,12 +49,16 @@ export default function OnboardingPage() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("family_id, role, display_name")
+        .select("family_id, role, display_name, avatar_url")
         .eq("id", user.id)
         .single();
 
+      setDisplayName(
+        profile?.display_name || user.user_metadata?.display_name || ""
+      );
+      setAvatarUrl(profile?.avatar_url ?? null);
+
       if (profile?.family_id && profile.role === "child") {
-        setDisplayName(profile.display_name || "");
         setMode("child");
       } else {
         setMode("parent");
@@ -57,6 +67,27 @@ export default function OnboardingPage() {
     detect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Soft uniqueness check — @mentions resolve on display_name spaces-stripped
+  // (migration 028), so a collision just makes mentions ambiguous. We warn,
+  // never block (there is no global unique constraint on display_name).
+  async function checkUsername(name: string) {
+    const stripped = name.replace(/\s+/g, "").toLowerCase();
+    setNameWarning("");
+    if (stripped.length < 2) return;
+    const seq = ++nameCheckSeq.current;
+    const { data: user } = await supabase.auth.getUser();
+    const { data } = await supabase.from("profiles").select("id, display_name").limit(1000);
+    if (seq !== nameCheckSeq.current) return;
+    const clash = (data ?? []).some(
+      (p) =>
+        p.id !== user.user?.id &&
+        (p.display_name as string | null)?.replace(/\s+/g, "").toLowerCase() === stripped
+    );
+    if (clash) {
+      setNameWarning("Someone already goes by that. Add a last name or number so @mentions find you.");
+    }
+  }
 
   function goNext() {
     setDirection(1);
@@ -91,6 +122,8 @@ export default function OnboardingPage() {
           role: "parent",
           age_group: "adults",
           track: "adults",
+          display_name: displayName.trim() || "Parent",
+          avatar_url: avatarUrl,
           onboarding_complete: true,
         })
         .eq("id", user.id);
@@ -105,7 +138,7 @@ export default function OnboardingPage() {
     }
   }
 
-  // ── Child: short join — confirm name + age band ──
+  // ── Child: confirm name + age band + avatar ──
   async function completeChild() {
     setError("");
     setLoading(true);
@@ -121,6 +154,7 @@ export default function OnboardingPage() {
           display_name: displayName.trim() || "Explorer",
           age_group: ageBand, // kids | teens
           track: ageBand, // matches age band
+          avatar_url: avatarUrl,
           onboarding_complete: true,
         })
         .eq("id", user.id);
@@ -143,15 +177,20 @@ export default function OnboardingPage() {
     );
   }
 
-  const steps = mode === "parent" ? ["Family", "All set"] : ["Your name", "Your age"];
+  const steps =
+    mode === "parent" ? ["Family", "You", "All set"] : ["Your name", "Your age", "Your look"];
   const canProceed =
     mode === "parent"
       ? step === 0
         ? familyName.trim().length > 0
-        : true
+        : step === 1
+          ? displayName.trim().length > 0
+          : true
       : step === 0
         ? displayName.trim().length > 0
-        : ageBand !== "";
+        : step === 1
+          ? ageBand !== ""
+          : true;
   const isLast = step === steps.length - 1;
 
   return (
@@ -187,7 +226,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Step content */}
-      <div className="relative overflow-hidden min-h-[280px]">
+      <div className="relative overflow-hidden min-h-[320px]">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={`${mode}-${step}`}
@@ -222,15 +261,33 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* PARENT — step 1: confirm */}
+            {/* PARENT — step 1: username + avatar */}
             {mode === "parent" && step === 1 && (
+              <UsernameAvatarStep
+                heading="Set up your profile"
+                sub="Pick a display name and a look. Your name is how family members @mention you."
+                displayName={displayName}
+                onNameChange={(v) => {
+                  setDisplayName(v);
+                  checkUsername(v);
+                }}
+                nameWarning={nameWarning}
+                avatarUrl={avatarUrl}
+                onAvatar={setAvatarUrl}
+                role="parent"
+                ageGroup="adults"
+              />
+            )}
+
+            {/* PARENT — step 2: confirm */}
+            {mode === "parent" && step === 2 && (
               <div className="space-y-6 text-center">
                 <div className="w-14 h-14 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center">
                   <Sparkles className="w-7 h-7 text-gold-500" />
                 </div>
                 <div>
                   <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-                    You&apos;re all set, {familyName.trim() || "friend"}
+                    You&apos;re all set, {displayName.trim() || familyName.trim() || "friend"}
                   </h2>
                   <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">
                     We&apos;ll create your family and set you up as the owner. You can invite your kids anytime from the
@@ -252,12 +309,21 @@ export default function OnboardingPage() {
                   <input
                     type="text"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={(e) => {
+                      setDisplayName(e.target.value);
+                      checkUsername(e.target.value);
+                    }}
                     placeholder="Your name"
                     autoFocus
                     className="w-full pl-11 pr-4 py-3.5 rounded-lg bg-midnight-900 border border-sand text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-base font-body"
                   />
                 </div>
+                {nameWarning && (
+                  <p className="flex items-start gap-1.5 text-xs text-gold-700 font-body">
+                    <AtSign className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    {nameWarning}
+                  </p>
+                )}
               </div>
             )}
 
@@ -288,6 +354,22 @@ export default function OnboardingPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* CHILD — step 2: pick avatar */}
+            {mode === "child" && step === 2 && (
+              <div className="space-y-5">
+                <div className="text-center">
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">Pick your look</h2>
+                  <p className="text-midnight-400 text-sm font-body">Choose an avatar — you can change it anytime in Settings.</p>
+                </div>
+                <AvatarPicker
+                  value={avatarUrl}
+                  onChange={setAvatarUrl}
+                  role="child"
+                  ageGroup={ageBand || "teens"}
+                />
               </div>
             )}
           </motion.div>
@@ -334,6 +416,60 @@ export default function OnboardingPage() {
             {!loading && <Check className="w-4 h-4" />}
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function UsernameAvatarStep({
+  heading,
+  sub,
+  displayName,
+  onNameChange,
+  nameWarning,
+  avatarUrl,
+  onAvatar,
+  role,
+  ageGroup,
+}: {
+  heading: string;
+  sub: string;
+  displayName: string;
+  onNameChange: (v: string) => void;
+  nameWarning: string;
+  avatarUrl: string | null;
+  onAvatar: (v: string) => void;
+  role: string;
+  ageGroup: string;
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="text-center">
+        <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">{heading}</h2>
+        <p className="text-midnight-400 text-sm font-body">{sub}</p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-midnight-200 mb-1.5">Display name</label>
+        <div className="relative">
+          <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-midnight-400" />
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => onNameChange(e.target.value)}
+            placeholder="e.g. Marcus J"
+            className="w-full pl-11 pr-4 py-3 rounded-lg bg-midnight-900 border border-sand text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-base font-body"
+          />
+        </div>
+        {nameWarning && (
+          <p className="flex items-start gap-1.5 text-xs text-gold-700 font-body mt-1.5">
+            <AtSign className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            {nameWarning}
+          </p>
+        )}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-midnight-200 mb-2">Pick an avatar</label>
+        <AvatarPicker value={avatarUrl} onChange={onAvatar} role={role} ageGroup={ageGroup} />
       </div>
     </div>
   );

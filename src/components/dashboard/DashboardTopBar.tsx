@@ -8,7 +8,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import type { FamilyTier } from "@/lib/tier";
-import TierBadge, { tierRingClass } from "@/components/TierBadge";
+import TierBadge from "@/components/TierBadge";
+import Avatar from "@/components/Avatar";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Home",
@@ -31,6 +32,7 @@ interface DashboardTopBarProps {
   user: {
     email?: string;
     display_name?: string;
+    avatar_url?: string;
     tier?: FamilyTier;
   };
   onMenuClick: () => void;
@@ -44,13 +46,6 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const pageTitle = routeTitles[pathname] || "Home";
-
-  const initials = (user.display_name || user.email || "U")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -95,13 +90,12 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div
-                className={`w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 text-[11px] font-bold font-display ${
-                  user.tier ? tierRingClass(user.tier) : ""
-                }`}
-              >
-                {initials}
-              </div>
+              <Avatar
+                name={user.display_name || user.email}
+                avatarUrl={user.avatar_url}
+                tier={user.tier}
+                size="sm"
+              />
               <ChevronDown className="w-3 h-3 text-midnight-400 hidden sm:block" />
             </button>
 

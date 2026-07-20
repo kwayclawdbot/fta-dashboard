@@ -13,6 +13,7 @@ interface DashboardShellProps {
     role?: string;
     age_group?: string;
     track?: string;
+    avatar_url?: string;
     tier?: FamilyTier;
   };
   children: React.ReactNode;

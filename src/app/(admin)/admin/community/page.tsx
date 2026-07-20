@@ -1,12 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle, Trash2, Loader2, Film, ImageIcon, RefreshCw } from "lucide-react";
+import { MessageCircle, Trash2, Loader2, Film, ImageIcon, RefreshCw, Hash } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-// The single global community room (seeded in migration 016)
-const COMMUNITY_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
+// Community rooms (migration 033: room 1 = "FIC Club", room 2 = "FTA Traders").
+const FIC_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
+const FTA_ROOM_ID = "c0000000-0000-4000-a000-000000000002";
+const ROOM_IDS = [FIC_ROOM_ID, FTA_ROOM_ID];
+const ROOM_NAMES: Record<string, string> = {
+  [FIC_ROOM_ID]: "FIC Club",
+  [FTA_ROOM_ID]: "FTA Traders",
+};
 const MEDIA_BUCKET = "community-media";
+
+type RoomFilter = "all" | typeof FIC_ROOM_ID | typeof FTA_ROOM_ID;
 
 interface AdminMessage {
   id: string;
@@ -14,6 +22,7 @@ interface AdminMessage {
   category: string | null;
   created_at: string;
   user_id: string;
+  room_id: string;
   attachment_url: string | null;
   attachment_type: "image" | "video" | null;
   author: { display_name: string | null; role: string | null } | null;
@@ -38,17 +47,19 @@ export default function AdminCommunityPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [roomFilter, setRoomFilter] = useState<RoomFilter>("all");
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from("chat_messages")
       .select(
-        "id, content, category, created_at, user_id, attachment_url, attachment_type, author:profiles!chat_messages_user_id_fkey(display_name, role)"
+        "id, content, category, created_at, user_id, room_id, attachment_url, attachment_type, author:profiles!chat_messages_user_id_fkey(display_name, role)"
       )
-      .eq("room_id", COMMUNITY_ROOM_ID)
       .order("created_at", { ascending: false })
       .limit(200);
+    query = roomFilter === "all" ? query.in("room_id", ROOM_IDS) : query.eq("room_id", roomFilter);
+    const { data } = await query;
     const normalized: AdminMessage[] = (data || []).map((m) => {
       const raw = m as unknown as AdminMessage & {
         author: AdminMessage["author"] | NonNullable<AdminMessage["author"]>[];
@@ -60,7 +71,7 @@ export default function AdminCommunityPage() {
     });
     setMessages(normalized);
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, roomFilter]);
 
   useEffect(() => {
     load();
@@ -97,13 +108,19 @@ export default function AdminCommunityPage() {
     setDeletingId(null);
   }
 
+  const roomTabs: { id: RoomFilter; label: string }[] = [
+    { id: "all", label: "All rooms" },
+    { id: FIC_ROOM_ID, label: "FIC Club" },
+    { id: FTA_ROOM_ID, label: "FTA Traders" },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-8 flex items-end justify-between gap-4">
+      <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Community</h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Moderate the community feed — deleting a post also removes its photo or video.
+            Moderate both rooms — deleting a post also removes its photo or video.
           </p>
         </div>
         <button
@@ -114,6 +131,24 @@ export default function AdminCommunityPage() {
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
+      </div>
+
+      {/* Room filter */}
+      <div className="flex items-center gap-1.5 mb-6">
+        {roomTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setRoomFilter(t.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+              roomFilter === t.id
+                ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+            }`}
+          >
+            <Hash className="w-3 h-3" />
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -149,6 +184,10 @@ export default function AdminCommunityPage() {
                   </span>
                   <span className="text-zinc-500 uppercase tracking-wider text-[10px]">
                     {msg.author?.role || "member"}
+                  </span>
+                  <span className="flex items-center gap-1 text-sky-400/80 border border-sky-500/20 rounded px-1.5 py-0.5 text-[10px]">
+                    <Hash className="w-2.5 h-2.5" />
+                    {ROOM_NAMES[msg.room_id] || "room"}
                   </span>
                   <span className="text-zinc-600">
                     {new Date(msg.created_at).toLocaleString()}

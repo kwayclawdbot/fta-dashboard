@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { LogOut, Save, CreditCard } from "lucide-react";
+import { LogOut, Save, CreditCard, AtSign, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EnablePushButton from "@/components/notifications/EnablePushButton";
+import Avatar from "@/components/Avatar";
+import AvatarPicker from "@/components/AvatarPicker";
+import BadgeCase from "@/components/BadgeCase";
 
 interface NotificationPrefs {
   email_notifs: boolean;
@@ -26,11 +29,16 @@ export default function SettingsPage() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string>("");
+  const [ageGroup, setAgeGroup] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [nameWarning, setNameWarning] = useState("");
+  const nameCheckSeq = useRef(0);
 
   // Notification prefs — persisted to profiles.notification_prefs
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
@@ -46,7 +54,7 @@ export default function SettingsPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, role, notification_prefs")
+        .select("display_name, role, age_group, avatar_url, notification_prefs")
         .eq("id", user.id)
         .single();
 
@@ -57,12 +65,32 @@ export default function SettingsPage() {
           ""
       );
       setRole(profile?.role || "");
+      setAgeGroup(profile?.age_group ?? null);
+      setAvatarUrl(profile?.avatar_url ?? null);
       if (profile?.notification_prefs) {
         setPrefs({ ...DEFAULT_PREFS, ...(profile.notification_prefs as Partial<NotificationPrefs>) });
       }
     }
     load();
   }, [supabase]);
+
+  // Soft uniqueness check — @mentions match display_name spaces-stripped (028).
+  async function checkUsername(name: string) {
+    const stripped = name.replace(/\s+/g, "").toLowerCase();
+    setNameWarning("");
+    if (stripped.length < 2 || !userId) return;
+    const seq = ++nameCheckSeq.current;
+    const { data } = await supabase.from("profiles").select("id, display_name").limit(1000);
+    if (seq !== nameCheckSeq.current) return;
+    const clash = (data ?? []).some(
+      (p) =>
+        p.id !== userId &&
+        (p.display_name as string | null)?.replace(/\s+/g, "").toLowerCase() === stripped
+    );
+    if (clash) {
+      setNameWarning("Someone already goes by that. Add a last name or number so @mentions find you.");
+    }
+  }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -71,7 +99,10 @@ export default function SettingsPage() {
 
     await supabase.auth.updateUser({ data: { display_name: displayName } });
     if (userId) {
-      await supabase.from("profiles").update({ display_name: displayName }).eq("id", userId);
+      await supabase
+        .from("profiles")
+        .update({ display_name: displayName, avatar_url: avatarUrl })
+        .eq("id", userId);
     }
 
     setSaving(false);
@@ -94,13 +125,6 @@ export default function SettingsPage() {
     router.refresh();
   }
 
-  const initials = (displayName || email || "U")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   const isChild = role === "child";
 
   const toggles: { key: keyof NotificationPrefs; label: string; desc: string }[] = [
@@ -122,20 +146,53 @@ export default function SettingsPage() {
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
           <div className="flex items-center gap-4 mb-2">
-            <div className="w-14 h-14 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 text-lg font-bold font-display">
-              {initials}
+            <Avatar name={displayName || email} avatarUrl={avatarUrl} role={role} size="xl" />
+            <div>
+              <button
+                type="button"
+                onClick={() => setPickerOpen((v) => !v)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sand text-midnight-200 text-sm font-medium hover:bg-paper transition-colors"
+              >
+                <ImagePlus className="w-4 h-4" />
+                {pickerOpen ? "Close" : "Change avatar"}
+              </button>
+              <p className="text-xs text-midnight-500 font-body mt-1.5">
+                {avatarUrl ? "Pick a new look below" : "Choose an avatar or keep your initials"}
+              </p>
             </div>
-            <p className="text-sm text-midnight-400 font-body">Avatar is based on your initials</p>
           </div>
+
+          {pickerOpen && (
+            <div className="rounded-xl border border-sand bg-paper/50 p-4">
+              <AvatarPicker
+                value={avatarUrl}
+                onChange={setAvatarUrl}
+                role={role}
+                ageGroup={ageGroup}
+              />
+              <p className="text-[11px] text-midnight-500 font-body mt-3">
+                Selection saves when you press Save Changes.
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-midnight-200 mb-1.5">Display Name</label>
             <input
               type="text"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => {
+                setDisplayName(e.target.value);
+                checkUsername(e.target.value);
+              }}
               className="w-full px-4 py-2.5 rounded-lg bg-midnight-900 border border-sand text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
             />
+            {nameWarning && (
+              <p className="flex items-start gap-1.5 text-xs text-gold-700 font-body mt-1.5">
+                <AtSign className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                {nameWarning}
+              </p>
+            )}
           </div>
 
           <div>
@@ -161,6 +218,15 @@ export default function SettingsPage() {
           </div>
         </form>
       </motion.div>
+
+      <div className="border-t border-sand mb-8" />
+
+      {/* Credentials — professional-title badge case */}
+      {userId && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08, duration: 0.3 }} className="mb-10">
+          <BadgeCase userId={userId} title="Your Credentials" evaluateSelf />
+        </motion.div>
+      )}
 
       <div className="border-t border-sand mb-8" />
 

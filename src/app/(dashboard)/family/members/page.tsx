@@ -10,11 +10,15 @@ import {
   X,
   Copy,
   Check,
+  Award,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
-import TierBadge, { tierRingClass } from "@/components/TierBadge";
+import TierBadge from "@/components/TierBadge";
+import Avatar from "@/components/Avatar";
+import BadgeCase from "@/components/BadgeCase";
+import { getBadgeSummaries, type BadgeSummary } from "@/lib/badges";
 
 interface FamilyMember {
   id: string;
@@ -31,6 +35,7 @@ export default function FamilyMembersPage() {
   const router = useRouter();
   const supabase = createClient();
   const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [summaries, setSummaries] = useState<Record<string, BadgeSummary>>({});
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -80,8 +85,14 @@ export default function FamilyMembersPage() {
       .select("id, display_name, role, track, age_group, avatar_url, email, onboarding_complete")
       .eq("family_id", profile.family_id);
 
-    setMembers((memberData as FamilyMember[]) || []);
+    const list = (memberData as FamilyMember[]) || [];
+    setMembers(list);
     setLoading(false);
+
+    // Earned-badge summaries (count + top credential) for every member.
+    if (list.length) {
+      setSummaries(await getBadgeSummaries(supabase, list.map((m) => m.id)));
+    }
   }, [supabase, router]);
 
   useEffect(() => {
@@ -183,13 +194,8 @@ export default function FamilyMembersPage() {
         transition={{ delay: 0.05, duration: 0.3 }}
       >
         {members.map((member) => {
-          const initials = (member.display_name || "U")
-            .split(" ")
-            .map((w) => w[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
           const isCurrentUser = member.id === currentUserId;
+          const summary = summaries[member.id];
 
           return (
             <div
@@ -197,19 +203,13 @@ export default function FamilyMembersPage() {
               className="flex items-center gap-4 py-4 border-b border-midnight-800/50 last:border-0"
             >
               {/* Avatar */}
-              {member.avatar_url ? (
-                <img
-                  src={member.avatar_url}
-                  alt={member.display_name || "Member"}
-                  className={`w-9 h-9 rounded-full object-cover shrink-0 ${tierRingClass(tier)}`}
-                />
-              ) : (
-                <div
-                  className={`w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0 ${tierRingClass(tier)}`}
-                >
-                  {initials}
-                </div>
-              )}
+              <Avatar
+                name={member.display_name}
+                avatarUrl={member.avatar_url}
+                role={member.role}
+                tier={tier}
+                size="md"
+              />
 
               {/* Info */}
               <div className="flex-1 min-w-0">
@@ -224,6 +224,16 @@ export default function FamilyMembersPage() {
                   </p>
                   {member.role === "parent" && (
                     <Crown className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+                  )}
+                  {summary && summary.count > 0 && (
+                    <span
+                      title={`${summary.count} credential${summary.count !== 1 ? "s" : ""} earned`}
+                      className="inline-flex items-center gap-1 rounded-md bg-chip-amber text-gold-800 px-1.5 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider shrink-0"
+                    >
+                      <Award className="w-2.5 h-2.5" />
+                      {summary.topTitle}
+                      {summary.count > 1 && <span className="opacity-70">+{summary.count - 1}</span>}
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-midnight-400 font-body mt-0.5">
@@ -286,6 +296,18 @@ export default function FamilyMembersPage() {
           );
         })}
       </motion.div>
+
+      {/* Your credential shelf */}
+      {currentUserId && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+          className="mt-10 pt-8 border-t border-midnight-800/50"
+        >
+          <BadgeCase userId={currentUserId} title="Your Credentials" evaluateSelf />
+        </motion.div>
+      )}
 
       {/* Invite Modal */}
       <AnimatePresence>

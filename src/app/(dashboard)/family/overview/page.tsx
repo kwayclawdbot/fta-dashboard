@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
+import Avatar from "@/components/Avatar";
 import ReportCard from "@/components/dashboard/ReportCard";
 
 interface MemberSummary {
@@ -348,29 +349,18 @@ export default function FamilyOverviewPage() {
         ) : (
           <div>
             {overview.members.map((member) => {
-              const initials = (member.display_name || "U")
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2);
-
               return (
                 <div
                   key={member.id}
                   className="flex items-center gap-4 py-4 border-b border-midnight-800/50 last:border-0"
                 >
-                  {member.avatar_url ? (
-                    <img
-                      src={member.avatar_url}
-                      alt={member.display_name || "Member"}
-                      className="w-9 h-9 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
-                      {initials}
-                    </div>
-                  )}
+                  <Avatar
+                    name={member.display_name}
+                    avatarUrl={member.avatar_url}
+                    role={member.role}
+                    tier={overview.tier}
+                    size="md"
+                  />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
