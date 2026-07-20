@@ -35,6 +35,9 @@ interface SessionRow {
   status: string;
   track: string | null;
   min_tier: string | null;
+  class_type: string | null;
+  worksheet_url: string | null;
+  assignment: string | null;
 }
 
 // Must match the live_sessions_status_check constraint.
@@ -46,6 +49,17 @@ const TRACK_OPTIONS = [
   { value: "kids", label: "Kids Corner" },
   { value: "teens", label: "Teens" },
   { value: "adults", label: "Parents & Adults" },
+];
+
+// Must match the live_sessions_class_type_check constraint (031).
+const CLASS_TYPE_OPTIONS = [
+  { value: "", label: "— none —" },
+  { value: "weekly_class", label: "Weekly Family Stock Class" },
+  { value: "guest_speaker", label: "Guest Speaker" },
+  { value: "orientation", label: "Orientation" },
+  { value: "parent_qa", label: "Parent Q&A" },
+  { value: "kids_money_lab", label: "Kids Money Lab" },
+  { value: "market_recap", label: "Market Recap" },
 ];
 
 const ACCEPT_EXTENSIONS = [".mp4", ".m4a", ".webm"];
@@ -118,6 +132,9 @@ export default function AdminLiveSessionsPage() {
   const [formStatus, setFormStatus] = useState("scheduled");
   const [formTrack, setFormTrack] = useState("all");
   const [formTier, setFormTier] = useState("challenge");
+  const [formClassType, setFormClassType] = useState("");
+  const [formWorksheetUrl, setFormWorksheetUrl] = useState("");
+  const [formAssignment, setFormAssignment] = useState("");
 
   // Recording modal state
   const [recordingFor, setRecordingFor] = useState<SessionRow | null>(null);
@@ -150,6 +167,9 @@ export default function AdminLiveSessionsPage() {
     setFormStatus("scheduled");
     setFormTrack("all");
     setFormTier("challenge");
+    setFormClassType("");
+    setFormWorksheetUrl("");
+    setFormAssignment("");
     setEditingId(null);
     setShowForm(false);
   }
@@ -174,6 +194,9 @@ export default function AdminLiveSessionsPage() {
     setFormStatus(session.status);
     setFormTrack(session.track || "all");
     setFormTier(session.min_tier || "challenge");
+    setFormClassType(session.class_type || "");
+    setFormWorksheetUrl(session.worksheet_url || "");
+    setFormAssignment(session.assignment || "");
     setShowForm(true);
   }
 
@@ -202,6 +225,9 @@ export default function AdminLiveSessionsPage() {
       status: formStatus,
       track: formTrack,
       min_tier: formTier,
+      class_type: formClassType || null,
+      worksheet_url: formWorksheetUrl || null,
+      assignment: formAssignment || null,
     };
 
     const { error } = editingId
@@ -550,6 +576,46 @@ export default function AdminLiveSessionsPage() {
                     <option value="academy">Academy (FTA)</option>
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Class type (FIC grouping)
+                </label>
+                <select
+                  value={formClassType}
+                  onChange={(e) => setFormClassType(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                >
+                  {CLASS_TYPE_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Worksheet URL (optional)
+                </label>
+                <input
+                  type="text"
+                  value={formWorksheetUrl}
+                  onChange={(e) => setFormWorksheetUrl(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                  placeholder="https://... (PDF, Google Doc, etc.)"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Assignment (optional)
+                </label>
+                <textarea
+                  value={formAssignment}
+                  onChange={(e) => setFormAssignment(e.target.value)}
+                  rows={2}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 resize-none"
+                  placeholder="What families do after this class"
+                />
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">

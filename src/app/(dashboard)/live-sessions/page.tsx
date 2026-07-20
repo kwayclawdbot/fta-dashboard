@@ -55,7 +55,37 @@ interface LiveSession {
   recordingUrl?: string;
   recordingPath?: string;
   recordingKind: RecordingKind | null;
+  classType: ClassType | null;
+  worksheetUrl?: string;
+  assignment?: string;
 }
+
+type ClassType =
+  | "weekly_class"
+  | "guest_speaker"
+  | "orientation"
+  | "parent_qa"
+  | "kids_money_lab"
+  | "market_recap";
+
+// FIC class-type grouping/labels. Order here drives the grouped UI order.
+const CLASS_TYPE_CONFIG: Record<ClassType, { label: string }> = {
+  weekly_class: { label: "Weekly Family Stock Class" },
+  kids_money_lab: { label: "Kids Money Lab" },
+  parent_qa: { label: "Parent Q&A" },
+  guest_speaker: { label: "Guest Speaker" },
+  market_recap: { label: "Market Recap" },
+  orientation: { label: "Orientation" },
+};
+
+const CLASS_TYPE_ORDER: ClassType[] = [
+  "weekly_class",
+  "kids_money_lab",
+  "parent_qa",
+  "guest_speaker",
+  "market_recap",
+  "orientation",
+];
 
 interface Access {
   isChild: boolean;
@@ -363,6 +393,11 @@ function SessionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <TrackBadge track={session.track} />
+            {session.classType && (
+              <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-gold-400/10 text-gold-700 border border-gold-400/20">
+                {CLASS_TYPE_CONFIG[session.classType].label}
+              </span>
+            )}
             {session.minTier === "academy" && <TierBadge tier="fta" />}
           </div>
           <h4 className="font-display text-sm font-semibold text-midnight-100 mb-0.5">
@@ -392,6 +427,30 @@ function SessionCard({
             ) : null}
             <span>{session.host}</span>
           </div>
+          {(session.worksheetUrl || session.assignment) && (
+            <div className="mt-2 space-y-1">
+              {session.worksheetUrl && (
+                <a
+                  href={session.worksheetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-gold-700 hover:text-gold-800"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  Worksheet
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+              {session.assignment && (
+                <p className="text-[11px] text-midnight-500 leading-relaxed">
+                  <span className="font-semibold text-midnight-400">
+                    Assignment:
+                  </span>{" "}
+                  {session.assignment}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <div className="shrink-0">
           {locked ? (
@@ -561,6 +620,9 @@ export default function LiveSessionsPage() {
           status: string;
           track: string | null;
           min_tier: string | null;
+          class_type: string | null;
+          worksheet_url: string | null;
+          assignment: string | null;
         }) => ({
           id: s.id,
           title: s.title,
@@ -580,6 +642,9 @@ export default function LiveSessionsPage() {
           recordingUrl: s.recording_url || undefined,
           recordingPath: s.recording_path || undefined,
           recordingKind: resolveRecordingKind(s),
+          classType: (s.class_type as ClassType) || null,
+          worksheetUrl: s.worksheet_url || undefined,
+          assignment: s.assignment || undefined,
         })
       );
       setSessions(mapped);
@@ -659,6 +724,25 @@ export default function LiveSessionsPage() {
 
   const filterByTrack = (list: LiveSession[]) =>
     trackFilter === "all" ? list : list.filter((s) => s.track === trackFilter);
+
+  // Group a list by FIC class type (with a labeled header per group). Legacy
+  // rows without a class type render flat, so nothing breaks pre-tagging.
+  const groupSessions = (list: LiveSession[]) => {
+    const hasTypes = list.some((s) => s.classType);
+    if (!hasTypes)
+      return [{ key: "all", label: null as string | null, items: list }];
+    const groups: { key: string; label: string | null; items: LiveSession[] }[] =
+      [];
+    for (const t of CLASS_TYPE_ORDER) {
+      const items = list.filter((s) => s.classType === t);
+      if (items.length)
+        groups.push({ key: t, label: CLASS_TYPE_CONFIG[t].label, items });
+    }
+    const other = list.filter((s) => !s.classType);
+    if (other.length)
+      groups.push({ key: "other", label: "Other classes", items: other });
+    return groups;
+  };
 
   const tabs: { id: TabType; label: string; count: number }[] = [
     { id: "live", label: "Live Now", count: liveSession ? 1 : 0 },
@@ -867,27 +951,36 @@ export default function LiveSessionsPage() {
               </p>
             </div>
           ) : (
-            filterByTrack(upcoming).map((session, i) => {
-              const lock = sessionLock(session);
-              return (
-                <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <SessionCard
-                    session={session}
-                    locked={lock.locked}
-                    lockReason={lock.reason}
-                    rsvp={rsvpInfo[session.id]}
-                    onRsvp={
-                      lock.locked ? undefined : () => toggleRsvp(session.id)
-                    }
-                  />
-                </motion.div>
-              );
-            })
+            groupSessions(filterByTrack(upcoming)).map((group) => (
+              <div key={group.key} className="space-y-3">
+                {group.label && (
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-midnight-500 mt-5 mb-1">
+                    {group.label}
+                  </h3>
+                )}
+                {group.items.map((session, i) => {
+                  const lock = sessionLock(session);
+                  return (
+                    <motion.div
+                      key={session.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <SessionCard
+                        session={session}
+                        locked={lock.locked}
+                        lockReason={lock.reason}
+                        rsvp={rsvpInfo[session.id]}
+                        onRsvp={
+                          lock.locked ? undefined : () => toggleRsvp(session.id)
+                        }
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
       )}
@@ -903,26 +996,35 @@ export default function LiveSessionsPage() {
               </p>
             </div>
           ) : (
-            filterByTrack(recordings).map((session, i) => {
-              const lock = sessionLock(session);
-              return (
-                <motion.div
-                  key={session.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <SessionCard
-                    session={session}
-                    locked={lock.locked}
-                    lockReason={lock.reason}
-                    onWatch={
-                      lock.locked ? undefined : () => setWatching(session)
-                    }
-                  />
-                </motion.div>
-              );
-            })
+            groupSessions(filterByTrack(recordings)).map((group) => (
+              <div key={group.key} className="space-y-3">
+                {group.label && (
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-midnight-500 mt-5 mb-1">
+                    {group.label}
+                  </h3>
+                )}
+                {group.items.map((session, i) => {
+                  const lock = sessionLock(session);
+                  return (
+                    <motion.div
+                      key={session.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      <SessionCard
+                        session={session}
+                        locked={lock.locked}
+                        lockReason={lock.reason}
+                        onWatch={
+                          lock.locked ? undefined : () => setWatching(session)
+                        }
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -10,6 +11,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Circle,
+  Compass,
   Flame,
   PlayCircle,
   Shield,
@@ -24,6 +26,13 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelForXp } from "@/lib/xp";
 import { dailyFiveCount } from "@/lib/flashcards";
+import {
+  getCurrentFicWeek,
+  getOrientationState,
+  ORIENTATION_TOTAL,
+  type FicWeek,
+} from "@/lib/fic";
+import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
 
 /* ---------- types ---------- */
 
@@ -110,12 +119,21 @@ function greeting() {
 
 export default function DashboardHome() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
   const [home, setHome] = useState<HomeState | null>(null);
   const [firstName, setFirstName] = useState("");
   const [family, setFamily] = useState<FamilyMember[]>([]);
   const [xp, setXp] = useState(0);
   const [dueCount, setDueCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"home" | "week">("home");
+  const [ficWeek, setFicWeek] = useState<FicWeek | null>(null);
+  const [orientationDone, setOrientationDone] = useState(0);
+  const [hasFamily, setHasFamily] = useState(false);
+
+  useEffect(() => {
+    setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
+  }, [searchParams]);
 
   useEffect(() => {
     async function load() {
@@ -136,6 +154,21 @@ export default function DashboardHome() {
       const hs = state as HomeState;
       setHome(hs);
       setFirstName(profile?.display_name?.split(" ")[0] || "");
+
+      // FIC: current published week + family orientation checklist state.
+      const famId = profile?.family_id ?? null;
+      setHasFamily(!!famId);
+      const week = await getCurrentFicWeek(supabase);
+      setFicWeek(week);
+      if (famId) {
+        const { data: fam } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("family_id", famId);
+        const memberIds = fam?.length ? fam.map((m) => m.id) : [user.id];
+        const orient = await getOrientationState(supabase, famId, memberIds);
+        setOrientationDone(orient.completed.size);
+      }
 
       // Own XP + Daily 5 due count
       const track = hs?.track || "adults";
@@ -203,6 +236,8 @@ export default function DashboardHome() {
   const isTeen = home?.role === "child" && home?.track === "teens";
   const isParent = !isKid && !isTeen;
   const level = levelForXp(xp);
+  const orientationComplete = orientationDone >= ORIENTATION_TOTAL;
+  const showStartHere = hasFamily && !orientationComplete;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -257,6 +292,71 @@ export default function DashboardHome() {
           )}
         </div>
       </div>
+
+      {/* Start Here — persistent until the family finishes orientation */}
+      {showStartHere && (
+        <Link href="/start-here" className="block">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
+          >
+            <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+              <Compass className="w-6 h-6 text-gold-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-semibold text-ink">
+                Finish setting up your family
+              </p>
+              <p className="text-sm text-soft">
+                {orientationDone} of {ORIENTATION_TOTAL} Start Here steps done —
+                pick up where you left off.
+              </p>
+              <div className="w-full max-w-xs h-2 rounded-full bg-sand overflow-hidden mt-2">
+                <div
+                  className="h-full rounded-full bg-gold-500 transition-all"
+                  style={{
+                    width: `${Math.round((orientationDone / ORIENTATION_TOTAL) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
+          </motion.div>
+        </Link>
+      )}
+
+      {/* Home tabs: everyday home vs This Week in FIC */}
+      <div className="flex items-center gap-1 border-b border-sand">
+        {[
+          { id: "home" as const, label: isKid ? "Home" : "Home" },
+          { id: "week" as const, label: "This Week in FIC" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              tab === t.id
+                ? "text-gold-700 border-gold-500"
+                : "text-soft border-transparent hover:text-ink"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "week" && (
+        <ThisWeekPanel
+          week={ficWeek}
+          isKid={isKid}
+          isTeen={isTeen}
+          isParent={isParent}
+        />
+      )}
+
+      {tab === "home" && (
+        <>
 
       {/* No program yet */}
       {!home?.program && (
@@ -560,6 +660,8 @@ export default function DashboardHome() {
               </div>
             </motion.div>
           </div>
+        </>
+      )}
         </>
       )}
     </div>
