@@ -20,8 +20,24 @@ import {
   BookMarked,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { awardXp, hasXpForRef } from "@/lib/xp";
-import TradingViewMini from "@/components/fic/TradingViewMini";
+import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
+import Sparkline from "@/components/fic/Sparkline";
+import CompanyLogo from "@/components/fic/CompanyLogo";
+import LivePrice from "@/components/fic/LivePrice";
+import ResearchLadder from "@/components/fic/ResearchLadder";
+import TrendGlyph from "@/components/fic/glyphs/TrendGlyph";
+import { EmptyWatchlist } from "@/components/fic/EmptyState";
+import Celebrate, {
+  crossedLevel,
+  type CelebrateOptions,
+  type Register,
+} from "@/components/fic/Celebrate";
+import {
+  fetchQuotes,
+  searchTickers as searchPolygonTickers,
+  type MarketQuote,
+  type TickerHit,
+} from "@/lib/market/client";
 import {
   STATUS_ORDER,
   STATUS_META,
@@ -119,6 +135,20 @@ export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [members, setMembers] = useState<Record<string, Member>>({});
   const [notes, setNotes] = useState<Record<string, WatchlistNote[]>>({});
+  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  const [register, setRegister] = useState<Register>("parent");
+  const [xp, setXp] = useState(0);
+  const [queue, setQueue] = useState<CelebrateOptions[]>([]);
+  const [unlockedId, setUnlockedId] = useState<string | null>(null);
+  const enqueue = useCallback(
+    (o: CelebrateOptions) => setQueue((q) => [...q, o]),
+    []
+  );
+
+  // add-flow ticker lookup (Polygon reference search)
+  const [tickerQuery, setTickerQuery] = useState("");
+  const [tickerHits, setTickerHits] = useState<TickerHit[]>([]);
+  const [searching, setSearching] = useState(false);
 
   // filters
   const [fTrend, setFTrend] = useState<string | null>(null);
@@ -160,7 +190,10 @@ export default function WatchlistPage() {
       .single();
     setFamilyId(profile?.family_id ?? null);
     setRole(profile?.role ?? "parent");
-    setIsKid(profile?.age_group === "kids" || profile?.role === "child");
+    const kid = profile?.age_group === "kids" || profile?.role === "child";
+    setIsKid(kid);
+    setRegister(kid ? "kid" : profile?.age_group === "teens" ? "teen" : "parent");
+    getUserXp(supabase, user.id).then(setXp);
 
     if (!profile?.family_id) {
       setLoading(false);
@@ -185,6 +218,13 @@ export default function WatchlistPage() {
 
     const list = (itemRows as WatchlistItem[]) || [];
     setItems(list);
+
+    // Batch live quotes for the whole board in ONE Polygon call (via our cached
+    // proxy). Fails soft to no-price so cards degrade to static content.
+    const tickers = Array.from(new Set(list.map((i) => i.ticker).filter(Boolean)));
+    if (tickers.length > 0) {
+      fetchQuotes(tickers).then((q) => setQuotes((prev) => ({ ...prev, ...q })));
+    }
 
     if (list.length > 0) {
       const { data: noteRows } = await supabase
@@ -211,6 +251,36 @@ export default function WatchlistPage() {
     load();
   }, [load]);
 
+  // Debounced Polygon ticker lookup for the add-flow (validate > free-text).
+  useEffect(() => {
+    const q = tickerQuery.trim();
+    if (q.length < 2) {
+      setTickerHits([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      const hits = await searchPolygonTickers(q, ctrl.signal);
+      if (!ctrl.signal.aborted) {
+        setTickerHits(hits);
+        setSearching(false);
+      }
+    }, 300);
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [tickerQuery]);
+
+  function pickTicker(hit: TickerHit) {
+    setAddName(hit.name);
+    setAddTicker(hit.ticker);
+    setTickerQuery("");
+    setTickerHits([]);
+  }
+
   // ── Add ──────────────────────────────────────────────────────────────────
   function openAdd(bigBook: boolean) {
     setAddBigBook(bigBook);
@@ -218,6 +288,8 @@ export default function WatchlistPage() {
     setAddTicker("");
     setAddSell("");
     setAddWhy("");
+    setTickerQuery("");
+    setTickerHits([]);
     setAddOpen(true);
   }
 
@@ -321,6 +393,7 @@ export default function WatchlistPage() {
         "bonus",
         `research:${updated.id}`
       );
+      let newXp = xp;
       if (!already) {
         await awardXp(
           supabase,
@@ -329,6 +402,27 @@ export default function WatchlistPage() {
           WATCHLIST_XP.RESEARCH,
           `research:${updated.id}`
         );
+        newXp = xp + WATCHLIST_XP.RESEARCH;
+        setXp(newXp);
+      }
+      // The unlock is a MOMENT — the reward for doing the homework.
+      setUnlockedId(updated.id);
+      setTimeout(() => setUnlockedId((v) => (v === updated.id ? null : v)), 1600);
+      enqueue({
+        variant: "verdict",
+        register,
+        title: isKid ? "Research done!" : "Research complete",
+        subtitle: `${updated.company_name} — Favorite or Avoid is unlocked.`,
+        xp: already ? undefined : WATCHLIST_XP.RESEARCH,
+      });
+      const lvl = crossedLevel(xp, newXp);
+      if (lvl) {
+        enqueue({
+          variant: "levelup",
+          register,
+          title: `Level ${lvl.level}: ${lvl.name}`,
+          subtitle: isKid ? "You leveled up!" : "New level reached",
+        });
       }
     }
     setRBusy(false);
@@ -412,6 +506,8 @@ export default function WatchlistPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <Celebrate opts={queue[0] ?? null} onDone={() => setQueue((q) => q.slice(1))} />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
@@ -512,28 +608,7 @@ export default function WatchlistPage() {
       )}
 
       {/* Empty state */}
-      {items.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-sand bg-white p-10 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-chip-amber text-gold-700">
-            <Search className="h-6 w-6" />
-          </div>
-          <h2 className="font-display text-lg font-bold text-ink">
-            Start your research board
-          </h2>
-          <p className="mx-auto mt-1 max-w-md text-sm text-soft">
-            Add the first company your family already knows and loves — the
-            snack, the sneakers, the game, the phone. Everything starts in
-            Watching.
-          </p>
-          <button
-            onClick={() => openAdd(false)}
-            className="cta-button mt-4 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add your first company
-          </button>
-        </div>
-      )}
+      {items.length === 0 && <EmptyWatchlist onAdd={() => openAdd(false)} />}
 
       {/* Board — columns by status */}
       {items.length > 0 && (
@@ -579,26 +654,52 @@ export default function WatchlistPage() {
                         layout
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="overflow-hidden rounded-2xl border border-sand bg-white shadow-soft"
+                        className={`relative overflow-hidden rounded-2xl border bg-white shadow-soft transition-colors ${
+                          unlockedId === item.id
+                            ? "border-gold-400"
+                            : "border-sand"
+                        }`}
                       >
+                        {unlockedId === item.id && (
+                          <motion.span
+                            className="pointer-events-none absolute inset-0 z-10"
+                            style={{
+                              background:
+                                "linear-gradient(120deg, transparent 35%, rgba(251,191,36,0.35) 50%, transparent 65%)",
+                            }}
+                            initial={{ x: "-100%" }}
+                            animate={{ x: "100%" }}
+                            transition={{ duration: 1.1, ease: "easeInOut" }}
+                          />
+                        )}
                         <div className="p-4">
-                          {/* Top row */}
+                          {/* Top row: real logo + name + live price */}
                           <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <h4 className="truncate font-display text-base font-bold text-ink">
-                                  {item.company_name}
-                                </h4>
-                                {item.in_big_book && (
-                                  <BookMarked
-                                    className="h-3.5 w-3.5 shrink-0 text-gold-500"
-                                    aria-label="From the Big Book"
-                                  />
-                                )}
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <CompanyLogo
+                                symbol={item.ticker}
+                                name={item.company_name}
+                                size={38}
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className="truncate font-display text-base font-bold text-ink">
+                                    {item.company_name}
+                                  </h4>
+                                  {item.in_big_book && (
+                                    <BookMarked
+                                      className="h-3.5 w-3.5 shrink-0 text-gold-500"
+                                      aria-label="From the Big Book"
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs font-medium text-midnight-500">
+                                    {item.ticker}
+                                  </p>
+                                  <LivePrice quote={quotes[item.ticker]} />
+                                </div>
                               </div>
-                              <p className="text-xs font-medium text-midnight-500">
-                                {item.ticker}
-                              </p>
                             </div>
                             <span
                               className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.chip}`}
@@ -607,12 +708,20 @@ export default function WatchlistPage() {
                             </span>
                           </div>
 
-                          {/* trend + champion */}
-                          <div className="mt-2 flex items-center justify-between gap-2">
+                          {/* research ladder — glanceable progression */}
+                          <div className="mt-3">
+                            <ResearchLadder
+                              status={item.status}
+                              filled={researchFilledCount(item)}
+                              total={RESEARCH_FIELDS.length}
+                              researchDone={complete}
+                            />
+                          </div>
+
+                          {/* trend glyph + champion */}
+                          <div className="mt-3 flex items-center justify-between gap-2">
                             {item.trend ? (
-                              <span className="rounded-full bg-paper px-2 py-0.5 text-[11px] font-medium text-soft">
-                                {item.trend}
-                              </span>
+                              <TrendGlyph trend={item.trend} kid={isKid} />
                             ) : (
                               <span className="text-[11px] text-midnight-500">
                                 No trend yet
@@ -635,9 +744,9 @@ export default function WatchlistPage() {
                             </p>
                           )}
 
-                          {/* sparkline (lazy) */}
+                          {/* local price sparkline (Polygon daily closes, lazy) */}
                           <div className="mt-3">
-                            <TradingViewMini symbol={item.ticker} height={80} />
+                            <Sparkline symbol={item.ticker} height={56} />
                           </div>
 
                           {/* research summary chips when studying/verdict */}
@@ -929,6 +1038,41 @@ export default function WatchlistPage() {
               )}
 
               <form onSubmit={submitAdd} className="space-y-3">
+                {/* Ticker lookup (Polygon reference search) */}
+                <div className="relative">
+                  <label className="text-xs font-medium text-soft">
+                    {isKid ? "Find a company" : "Search company or ticker"}
+                  </label>
+                  <div className="relative mt-1">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-midnight-500" />
+                    <input
+                      value={tickerQuery}
+                      onChange={(e) => setTickerQuery(e.target.value)}
+                      placeholder={isKid ? "Type a name, like Nike" : "e.g. Nike or NKE"}
+                      className="w-full rounded-lg border border-sand bg-white py-2 pl-8 pr-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                    />
+                    {searching && (
+                      <div className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />
+                    )}
+                  </div>
+                  {tickerHits.length > 0 && (
+                    <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-sand bg-white shadow-lift">
+                      {tickerHits.map((hit) => (
+                        <button
+                          key={hit.ticker}
+                          type="button"
+                          onClick={() => pickTicker(hit)}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-chip-amber"
+                        >
+                          <span className="min-w-0 truncate text-ink">{hit.name}</span>
+                          <span className="shrink-0 font-mono text-xs font-semibold text-gold-700">
+                            {hit.ticker}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="col-span-2">
                     <label className="text-xs font-medium text-soft">

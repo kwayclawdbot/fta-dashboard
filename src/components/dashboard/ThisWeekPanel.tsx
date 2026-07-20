@@ -3,52 +3,23 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Building2,
   CalendarDays,
   HeartHandshake,
   LineChart,
   ListChecks,
   MessageCircleQuestion,
-  ShieldAlert,
   Sparkles,
   Target,
-  TrendingUp,
   Users,
 } from "lucide-react";
 import type { FicWeek } from "@/lib/fic";
+import MoneyMachine from "@/components/fic/MoneyMachine";
 
 interface Props {
   week: FicWeek | null;
   isKid: boolean;
   isTeen: boolean;
   isParent: boolean;
-}
-
-function Section({
-  icon: Icon,
-  label,
-  body,
-}: {
-  icon: React.ElementType;
-  label: string;
-  body: string | null;
-}) {
-  if (!body) return null;
-  return (
-    <div className="flex gap-3">
-      <div className="w-8 h-8 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
-        <Icon className="w-[18px] h-[18px] text-gold-700" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-wider text-soft mb-0.5">
-          {label}
-        </p>
-        <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
-          {body}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) {
@@ -104,71 +75,34 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
         </div>
       </motion.div>
 
-      {/* Company of the Week */}
+      {/* Company of the Week — the MoneyMachine teaching visual */}
       {(week.company_name || week.cotw_what_they_do) && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.06 }}
-          className="paper-card p-6 lg:p-7"
+          className="space-y-4"
         >
-          <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-                <Building2 className="w-6 h-6 text-gold-700" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-soft">
-                  Company of the Week
-                </p>
-                <h3 className="font-display text-xl font-bold text-ink">
-                  {week.company_name}
-                  {ticker && (
-                    <span className="ml-2 text-sm font-semibold text-gold-700 align-middle">
-                      {ticker}
-                    </span>
-                  )}
-                </h3>
-              </div>
-            </div>
-            {ticker && (
-              <Link
-                href={`/chart?symbol=${ticker}`}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
-              >
-                <LineChart className="w-4 h-4" />
-                Practice chart
-              </Link>
-            )}
-          </div>
+          <MoneyMachine
+            companyName={week.company_name}
+            ticker={ticker ?? null}
+            whatTheyDo={week.cotw_what_they_do}
+            howTheyMakeMoney={week.cotw_how_they_make_money}
+            whyCustomersLove={week.cotw_why_customers_love}
+            whyInvestorsWatch={week.cotw_why_investors_watch}
+            whatCouldGoWrong={week.cotw_what_could_go_wrong}
+            kid={isKid}
+          />
 
-          <div className="space-y-5">
-            <Section
-              icon={Building2}
-              label="What they do"
-              body={week.cotw_what_they_do}
-            />
-            <Section
-              icon={TrendingUp}
-              label="How they make money"
-              body={week.cotw_how_they_make_money}
-            />
-            <Section
-              icon={HeartHandshake}
-              label="Why customers love them"
-              body={week.cotw_why_customers_love}
-            />
-            <Section
-              icon={Users}
-              label="Why investors watch"
-              body={week.cotw_why_investors_watch}
-            />
-            <Section
-              icon={ShieldAlert}
-              label="What could go wrong"
-              body={week.cotw_what_could_go_wrong}
-            />
-          </div>
+          {ticker && (
+            <Link
+              href={`/chart?symbol=${ticker}`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
+            >
+              <LineChart className="w-4 h-4" />
+              Open {ticker} in the Practice Chart
+            </Link>
+          )}
 
           {week.cotw_discussion_question && (
             <div className="mt-5 p-4 rounded-xl bg-chip-sky border border-sky-200/50">

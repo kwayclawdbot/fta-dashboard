@@ -20,6 +20,11 @@ import {
   markOrientationStep,
   type OrientationStep,
 } from "@/lib/fic";
+import SetupTrail from "@/components/fic/SetupTrail";
+import Celebrate, {
+  type CelebrateOptions,
+  type Register,
+} from "@/components/fic/Celebrate";
 
 const ORIENTATION_DECK_URL = "https://fta-start.vercel.app";
 
@@ -30,6 +35,8 @@ export default function StartHerePage() {
   const [userId, setUserId] = useState("");
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [openPanel, setOpenPanel] = useState<string | null>(null);
+  const [register, setRegister] = useState<Register>("parent");
+  const [celebration, setCelebration] = useState<CelebrateOptions | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -41,11 +48,15 @@ export default function StartHerePage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("family_id")
+        .select("family_id, role, age_group")
         .eq("id", user.id)
         .single();
       const fam = profile?.family_id ?? null;
       setFamilyId(fam);
+      const kid = profile?.age_group === "kids" || profile?.role === "child";
+      setRegister(
+        kid ? "kid" : profile?.age_group === "teens" ? "teen" : "parent"
+      );
 
       let memberIds: string[] = [user.id];
       if (fam) {
@@ -66,14 +77,25 @@ export default function StartHerePage() {
 
   async function attest(step: OrientationStep) {
     if (!familyId) return;
-    setCompleted((prev) => new Set(prev).add(step.key));
+    setCompleted((prev) => {
+      const next = new Set(prev).add(step.key);
+      // Celebrate the moment the family reaches 6/6 (highest-value first action).
+      if (next.size >= ORIENTATION_STEPS.length && prev.size < ORIENTATION_STEPS.length) {
+        setCelebration({
+          variant: "setup",
+          register,
+          title: "Your family is all set!",
+          subtitle: "Orientation complete — welcome to the club.",
+        });
+      }
+      return next;
+    });
     await markOrientationStep(supabase, familyId, userId, step.key);
   }
 
   const doneCount = ORIENTATION_STEPS.filter((s) => completed.has(s.key)).length;
   const total = ORIENTATION_STEPS.length;
   const allDone = doneCount >= total;
-  const pct = Math.round((doneCount / total) * 100);
 
   if (loading) {
     return (
@@ -87,6 +109,8 @@ export default function StartHerePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
+      <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
+
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -105,29 +129,18 @@ export default function StartHerePage() {
         </p>
       </div>
 
-      {/* Progress */}
-      <div className="paper-card p-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-ink">
-            {allDone ? "Your family is all set!" : "Getting started"}
-          </span>
-          <span className="text-sm text-soft">
-            {doneCount}/{total} done
-          </span>
-        </div>
-        <div className="w-full h-2.5 rounded-full bg-sand overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gold-500 transition-all"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        {allDone && (
-          <p className="text-sm text-green-600 mt-3 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4" />
-            Orientation complete. Head to your home page for This Week in FIC.
-          </p>
-        )}
-      </div>
+      {/* Progress — the setup journey */}
+      <SetupTrail
+        steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
+        completed={completed}
+        allDone={allDone}
+      />
+      {allDone && (
+        <p className="text-sm text-green-600 flex items-center gap-1.5">
+          <Sparkles className="w-4 h-4" />
+          Head to your home page for This Week in FIC.
+        </p>
+      )}
 
       {/* Orientation deck */}
       <div className="paper-card overflow-hidden">
