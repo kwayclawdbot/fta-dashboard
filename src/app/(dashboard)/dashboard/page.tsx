@@ -26,6 +26,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelForXp } from "@/lib/xp";
 import { dailyFiveCount } from "@/lib/flashcards";
+import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import {
   getCurrentFicWeek,
   getOrientationState,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/fic";
 import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
 import Avatar from "@/components/Avatar";
+import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 
 /* ---------- types ---------- */
 
@@ -536,6 +538,9 @@ export default function DashboardHome() {
             </motion.div>
           )}
 
+          {/* Clubhouse activity — self-contained; renders null when empty */}
+          <ClubActivityStrip />
+
           {/* Role strips */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Parent: family this week */}
@@ -669,6 +674,8 @@ export default function DashboardHome() {
           </div>
         </>
       )}
+
+      <ClubActivityStrip />
         </>
       )}
     </div>
