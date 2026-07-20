@@ -15,6 +15,10 @@ import {
   Sparkles,
   Hand,
   ArrowRight,
+  Paperclip,
+  X,
+  Film,
+  Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
@@ -32,6 +36,13 @@ interface Author {
   age_group: string | null;
 }
 
+interface AttachmentMeta {
+  width?: number;
+  height?: number;
+  size?: number;
+  name?: string;
+}
+
 interface Message {
   id: string;
   content: string;
@@ -39,6 +50,34 @@ interface Message {
   created_at: string;
   user_id: string;
   author: Author | null;
+  attachment_url: string | null;
+  attachment_type: "image" | "video" | null;
+  attachment_meta: AttachmentMeta | null;
+}
+
+// ── Media attachment rules (bucket allows the same list server-side) ──
+
+const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB (project upload cap)
+
+const EXT_BY_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+  "video/webm": "webm",
+};
+
+interface PendingAttachment {
+  file: File;
+  kind: "image" | "video";
+  previewUrl: string;
+  width?: number;
+  height?: number;
 }
 
 interface CurrentUser {
@@ -107,6 +146,80 @@ function Avatar({ name, role, size = "md" }: { name?: string | null; role?: stri
   );
 }
 
+function MessageAttachment({ msg }: { msg: Message }) {
+  const [lightbox, setLightbox] = useState(false);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
+
+  if (!msg.attachment_url) return null;
+
+  if (msg.attachment_type === "video") {
+    return (
+      <video
+        src={msg.attachment_url}
+        controls
+        preload="metadata"
+        playsInline
+        className="mt-2 max-h-[360px] w-auto max-w-full rounded-xl border border-sand bg-night-950"
+      />
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setLightbox(true)}
+        className="mt-2 block cursor-zoom-in"
+        aria-label="Open image full size"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={msg.attachment_url}
+          alt={msg.attachment_meta?.name || "Shared image"}
+          loading="lazy"
+          className="max-h-[360px] w-auto max-w-full rounded-xl border border-sand"
+        />
+      </button>
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setLightbox(false)}
+            className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <button
+              type="button"
+              onClick={() => setLightbox(false)}
+              aria-label="Close image"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={msg.attachment_url}
+              alt={msg.attachment_meta?.name || "Shared image"}
+              className="max-h-[90vh] max-w-[92vw] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 function MessageCard({ msg }: { msg: Message }) {
   const cat = CATEGORY_CONFIG[msg.category] || CATEGORY_CONFIG.discussion;
   const role = msg.author?.role || "parent";
@@ -128,9 +241,12 @@ function MessageCard({ msg }: { msg: Message }) {
               {cat.label}
             </span>
           </div>
-          <p className="text-sm text-midnight-200 font-body leading-relaxed mt-2 whitespace-pre-wrap break-words">
-            {msg.content}
-          </p>
+          {msg.content ? (
+            <p className="text-sm text-midnight-200 font-body leading-relaxed mt-2 whitespace-pre-wrap break-words">
+              {msg.content}
+            </p>
+          ) : null}
+          <MessageAttachment msg={msg} />
         </div>
       </div>
     </div>
@@ -150,6 +266,10 @@ export default function CommunityPage() {
   const [posting, setPosting] = useState(false);
   const [stats, setStats] = useState({ families: 0, members: 0, posts: 0 });
   const [showWelcome, setShowWelcome] = useState(false);
+  const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const authorCache = useRef<Record<string, Author>>({});
 
@@ -222,7 +342,7 @@ export default function CommunityPage() {
       const { data: msgs } = await supabase
         .from("chat_messages")
         .select(
-          "id, content, category, created_at, user_id, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group)"
+          "id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group)"
         )
         .eq("room_id", COMMUNITY_ROOM_ID)
         .order("created_at", { ascending: false })
@@ -232,20 +352,26 @@ export default function CommunityPage() {
         const normalized: Message[] = msgs.map((m) => {
           const raw = m as unknown as {
             id: string;
-            content: string;
+            content: string | null;
             category: Category | null;
             created_at: string;
             user_id: string;
+            attachment_url: string | null;
+            attachment_type: "image" | "video" | null;
+            attachment_meta: AttachmentMeta | null;
             author: Author | Author[] | null;
           };
           const author = Array.isArray(raw.author) ? raw.author[0] ?? null : raw.author;
           return {
             id: raw.id,
-            content: raw.content,
+            content: raw.content || "",
             category: raw.category || "discussion",
             created_at: raw.created_at,
             user_id: raw.user_id,
             author,
+            attachment_url: raw.attachment_url ?? null,
+            attachment_type: raw.attachment_type ?? null,
+            attachment_meta: raw.attachment_meta ?? null,
           };
         });
         setMessages(normalized);
@@ -297,10 +423,13 @@ export default function CommunityPage() {
         async (payload) => {
           const row = payload.new as {
             id: string;
-            content: string;
+            content: string | null;
             category: Category | null;
             created_at: string;
             user_id: string;
+            attachment_url: string | null;
+            attachment_type: "image" | "video" | null;
+            attachment_meta: AttachmentMeta | null;
           };
           const author = await getAuthor(row.user_id);
           setMessages((prev) => {
@@ -308,11 +437,14 @@ export default function CommunityPage() {
             return [
               {
                 id: row.id,
-                content: row.content,
+                content: row.content || "",
                 category: row.category || "discussion",
                 created_at: row.created_at,
                 user_id: row.user_id,
                 author,
+                attachment_url: row.attachment_url ?? null,
+                attachment_type: row.attachment_type ?? null,
+                attachment_meta: row.attachment_meta ?? null,
               },
               ...prev,
             ];
@@ -330,10 +462,107 @@ export default function CommunityPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function handleFileSelect(file: File | null) {
+    if (!file) return;
+    setAttachError(null);
+
+    const isImage = IMAGE_MIMES.includes(file.type);
+    const isVideo = VIDEO_MIMES.includes(file.type);
+    if (!isImage && !isVideo) {
+      setAttachError(
+        "That file type isn't supported. Try a photo (JPG, PNG, WebP, GIF) or video (MP4, MOV, WebM)."
+      );
+      return;
+    }
+    if (isImage && file.size > MAX_IMAGE_BYTES) {
+      setAttachError("That photo is too big — images can be up to 10 MB.");
+      return;
+    }
+    if (isVideo && file.size > MAX_VIDEO_BYTES) {
+      setAttachError("That video is too big — videos can be up to 50 MB. Try trimming it down.");
+      return;
+    }
+
+    // Replace any existing pending attachment
+    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+    const previewUrl = URL.createObjectURL(file);
+    const kind: "image" | "video" = isImage ? "image" : "video";
+    const pending: PendingAttachment = { file, kind, previewUrl };
+    setAttachment(pending);
+
+    // Best-effort dimensions for attachment_meta
+    if (isImage) {
+      const probe = new window.Image();
+      probe.onload = () => {
+        setAttachment((cur) =>
+          cur && cur.previewUrl === previewUrl
+            ? { ...cur, width: probe.naturalWidth, height: probe.naturalHeight }
+            : cur
+        );
+      };
+      probe.src = previewUrl;
+    } else {
+      const probe = document.createElement("video");
+      probe.preload = "metadata";
+      probe.onloadedmetadata = () => {
+        setAttachment((cur) =>
+          cur && cur.previewUrl === previewUrl
+            ? { ...cur, width: probe.videoWidth, height: probe.videoHeight }
+            : cur
+        );
+      };
+      probe.src = previewUrl;
+    }
+  }
+
+  function removeAttachment() {
+    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+    setAttachment(null);
+    setAttachError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   async function handlePost() {
     const text = newPostText.trim();
-    if (!text || !me || posting) return;
+    if ((!text && !attachment) || !me || posting) return;
     setPosting(true);
+    setAttachError(null);
+
+    // Upload the attachment first (path = {uid}/{uuid}.{ext} per storage RLS)
+    let attachmentFields: {
+      attachment_url: string;
+      attachment_type: "image" | "video";
+      attachment_meta: AttachmentMeta;
+    } | null = null;
+
+    if (attachment) {
+      setUploading(true);
+      const ext = EXT_BY_MIME[attachment.file.type] || "bin";
+      const path = `${me.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("community-media")
+        .upload(path, attachment.file, {
+          contentType: attachment.file.type,
+          cacheControl: "3600",
+        });
+      setUploading(false);
+      if (upErr) {
+        setAttachError("Upload didn't go through. Check your connection and try again.");
+        setPosting(false);
+        return;
+      }
+      const { data: pub } = supabase.storage.from("community-media").getPublicUrl(path);
+      attachmentFields = {
+        attachment_url: pub.publicUrl,
+        attachment_type: attachment.kind,
+        attachment_meta: {
+          size: attachment.file.size,
+          name: attachment.file.name,
+          ...(attachment.width ? { width: attachment.width } : {}),
+          ...(attachment.height ? { height: attachment.height } : {}),
+        },
+      };
+    }
 
     const { data, error } = await supabase
       .from("chat_messages")
@@ -342,8 +571,9 @@ export default function CommunityPage() {
         user_id: me.id,
         content: text,
         category: newCategory,
+        ...(attachmentFields || {}),
       })
-      .select("id, content, category, created_at, user_id")
+      .select("id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta")
       .single();
 
     if (!error && data) {
@@ -353,7 +583,7 @@ export default function CommunityPage() {
         return [
           {
             id: data.id,
-            content: data.content,
+            content: data.content || "",
             category: (data.category as Category) || "discussion",
             created_at: data.created_at,
             user_id: data.user_id,
@@ -362,12 +592,16 @@ export default function CommunityPage() {
               role: me.role,
               age_group: me.age_group,
             },
+            attachment_url: data.attachment_url ?? null,
+            attachment_type: (data.attachment_type as "image" | "video" | null) ?? null,
+            attachment_meta: (data.attachment_meta as AttachmentMeta | null) ?? null,
           },
           ...prev,
         ];
       });
       setStats((s) => ({ ...s, posts: s.posts + 1 }));
       setNewPostText("");
+      removeAttachment();
       setShowWelcome(false);
 
       // +5 XP per post, capped at the first few posts per day.
@@ -375,6 +609,8 @@ export default function CommunityPage() {
       if (todayPosts < 3) {
         await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
       }
+    } else if (error) {
+      setAttachError("Your post didn't go through. Please try again.");
     }
     setPosting(false);
   }
@@ -462,8 +698,77 @@ export default function CommunityPage() {
                   rows={3}
                   className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
                 />
+                {/* Attachment preview chip */}
+                <AnimatePresence>
+                  {attachment && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="mt-2 inline-flex items-center gap-2.5 bg-paper border border-sand rounded-xl p-2 pr-3 max-w-full"
+                    >
+                      {attachment.kind === "image" ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={attachment.previewUrl}
+                          alt="Attachment preview"
+                          className="w-12 h-12 rounded-lg object-cover border border-sand shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-night-950 flex items-center justify-center shrink-0">
+                          <Film className="w-5 h-5 text-night-50" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-display font-semibold text-ink truncate max-w-[180px]">
+                          {attachment.file.name}
+                        </p>
+                        <p className="text-[11px] text-soft font-body">
+                          {uploading
+                            ? "Uploading..."
+                            : `${attachment.kind === "image" ? "Photo" : "Video"} · ${(attachment.file.size / (1024 * 1024)).toFixed(1)} MB`}
+                        </p>
+                      </div>
+                      {uploading ? (
+                        <Loader2 className="w-4 h-4 text-gold-600 animate-spin shrink-0" />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={removeAttachment}
+                          aria-label="Remove attachment"
+                          className="w-6 h-6 rounded-full bg-sand hover:bg-midnight-700 flex items-center justify-center text-midnight-300 hover:text-ink transition-colors shrink-0"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Attachment validation / upload errors */}
+                {attachError && (
+                  <p className="mt-2 text-xs text-red-600 font-body">{attachError}</p>
+                )}
+
                 <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-                  <div className="relative">
+                  <div className="flex items-center gap-1.5 relative">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={[...IMAGE_MIMES, ...VIDEO_MIMES].join(",")}
+                      className="hidden"
+                      onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={posting}
+                      aria-label="Attach a photo or video"
+                      title="Attach a photo or video"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 transition-colors disabled:opacity-40"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => setShowCatPicker((v) => !v)}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-display font-semibold ${catConf.chip}`}
@@ -502,11 +807,11 @@ export default function CommunityPage() {
                   </div>
                   <button
                     onClick={handlePost}
-                    disabled={!newPostText.trim() || posting || !me}
+                    disabled={(!newPostText.trim() && !attachment) || posting || !me}
                     className="cta-button flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    {posting ? "Posting..." : "Post"}
+                    {uploading ? "Uploading..." : posting ? "Posting..." : "Post"}
                   </button>
                 </div>
               </div>
