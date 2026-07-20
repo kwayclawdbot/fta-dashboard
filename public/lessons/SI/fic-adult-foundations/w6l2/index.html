@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Order Types &amp; the First-Trade Checklist &middot; SI-100 Adults &middot; Module 6 &middot; Lesson 6.2</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="6" />
+<meta name="fta-lesson" content="L6.2" />
+<meta name="fta-lesson-title" content="Order Types &amp; the First-Trade Checklist" />
+<meta name="fta-lesson-objectives" content="Choose between market, limit, and stop orders|Read the bid-ask spread as a liquidity gauge|Scan the key tiles on a stock quote dashboard|Run the six-point checklist and paper-trade before going live" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: three order-type cards */
+  .ot3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+  @media(max-width:860px){.ot3{grid-template-columns:1fr}}
+  .cmp.stopc{background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)}
+  .cmp.stopc .tag{color:var(--red)}
+  .cmp.gold{background:linear-gradient(160deg,var(--gold-bg),var(--card));border-color:#FDE68A}
+  .cmp.gold .tag{color:var(--gold-700)}
+
+  /* bespoke: animated order-type diagram */
+  .ot-wrap{max-width:900px;margin:26px auto 0}
+  .ot-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px 22px 14px;box-shadow:var(--shadow-soft)}
+  .ot-svg{width:100%;height:auto;display:block}
+  .ot-svg .ot-path{stroke-dasharray:560;stroke-dashoffset:560;animation:otDraw 2.4s ease-out forwards}
+  .ot-svg .ot-dot{animation:otPulse 2.2s ease-in-out infinite}
+  .ot-svg .ot-wait{animation:otBlink 1.8s ease-in-out infinite}
+  .ot-svg .ot-fall{animation:otFall 2.2s ease-in infinite}
+  .ot-svg .lvl{animation:otFade .9s ease both}
+  .ot-svg .lvl.l2{animation-delay:.35s}
+  .ot-svg .lvl.l3{animation-delay:.7s}
+  @keyframes otDraw{to{stroke-dashoffset:0}}
+  @keyframes otPulse{0%,100%{r:8}50%{r:12}}
+  @keyframes otBlink{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes otFall{0%{transform:translateY(0);opacity:1}75%{transform:translateY(26px);opacity:0}100%{transform:translateY(26px);opacity:0}}
+  @keyframes otFade{from{opacity:0}to{opacity:1}}
+
+  /* bespoke: dashboard text chips */
+  .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:960px;margin:26px auto 0}
+  @media(max-width:900px){.dash-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:620px){.dash-grid{grid-template-columns:1fr}}
+  .dash-chip{background:var(--card);border:1px solid var(--sand);border-left:4px solid var(--gold);border-radius:var(--r-lg);
+    padding:14px 16px;box-shadow:var(--shadow-soft)}
+  .dash-chip b{display:block;font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink)}
+  .dash-chip span{font-size:13.5px;color:var(--soft);line-height:1.45;display:block;margin-top:3px}
+
+  /* bespoke: first-trade checklist builder */
+  .cb-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:840px;margin:26px auto 0}
+  @media(max-width:700px){.cb-grid{grid-template-columns:1fr}}
+  .cb-item{display:flex;gap:14px;align-items:flex-start;text-align:left;padding:16px 18px;border:1.5px solid var(--sand);
+    border-radius:var(--r-lg);background:var(--card);cursor:pointer;box-shadow:var(--shadow-soft);
+    transition:transform .18s ease,border-color .18s ease,background .18s ease;font-family:var(--font-body)}
+  .cb-item:hover{transform:translateY(-2px)}
+  .cb-item .cb-box{flex:0 0 auto;width:30px;height:30px;border-radius:9px;border:2px solid var(--sand-2);background:var(--paper-2);
+    display:flex;align-items:center;justify-content:center;margin-top:2px;transition:background .18s ease,border-color .18s ease}
+  .cb-item .cb-box::after{content:"\2713";font-family:var(--font-display);font-weight:900;font-size:17px;color:#fff;opacity:0;transition:opacity .18s ease}
+  .cb-item.on{border-color:var(--green-border);background:linear-gradient(160deg,var(--green-bg),var(--card))}
+  .cb-item.on .cb-box{background:var(--green);border-color:var(--green)}
+  .cb-item.on .cb-box::after{opacity:1}
+  .cb-txt b{font-family:var(--font-display);font-weight:800;font-size:15.5px;color:var(--ink);display:block}
+  .cb-txt span{font-size:13.5px;color:var(--soft)}
+  .cb-count{margin:18px auto 0;text-align:center;font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--soft)}
+  .cb-count b{color:var(--gold-700)}
+  #cbReveal{display:none;max-width:640px;margin:20px auto 0;align-items:center;justify-content:center;gap:14px;
+    background:linear-gradient(160deg,var(--green-bg),var(--card));border:1.5px solid var(--green-border);
+    border-radius:var(--r-xl);padding:18px 26px;font-family:var(--font-display);font-weight:800;
+    font-size:clamp(16px,2.4vw,21px);color:var(--green);box-shadow:var(--shadow-soft)}
+  #cbReveal.show{display:flex;animation:cbPop .45s cubic-bezier(.22,1,.36,1) both}
+  #cbReveal svg{flex:0 0 auto;animation:cbLift 2.4s ease-in-out infinite}
+  @keyframes cbPop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes cbLift{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 6 &middot; Lesson 6.2 &middot; Finale</div>
+      <h1 style="font-size:clamp(34px,6.2vw,60px);font-weight:900;line-height:1.05;margin:12px 0 12px">The Finale: Your First Trade</h1>
+      <p class="lead">The account is open and the money is waiting. Today you learn the three order types every investor uses, how to read the gap between buyers and sellers, and the six-point checklist that turns a guess into a plan.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A completed checklist on a clipboard beside a rocket lifting off" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · ORDER TYPES -->
+<section id="order-types">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Three Ways to Fill</div>
+      <h2 class="title">Market, limit, stop</h2>
+      <p class="lead" style="margin:0 auto">Every order starts with one decision: how should this fill? Three tickets, three different promises.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/order-tickets.jpg" alt="Three order tickets side by side: one gold, one green, one red" /></div>
+      <div>
+        <p class="bigdef">An order type decides <span class="hi">what is guaranteed</span> &mdash; the speed of the fill, or the price you pay.</p>
+        <div class="insight">You never get both. Market guarantees the fill. Limit guarantees the price. A stop stands guard and acts only when its price is hit.</div>
+      </div>
+    </div>
+    <div class="ot3 anim d2">
+      <div class="cmp gold">
+        <span class="tag">Market order</span>
+        <h3>Fills now</h3>
+        <p>Executes right away at the best current price. Speed is guaranteed; the exact price is not.</p>
+      </div>
+      <div class="cmp grow">
+        <span class="tag">Limit order</span>
+        <h3>Your price or better</h3>
+        <p>Fills only at your price or better. Price is guaranteed; the fill is not &mdash; it may simply wait.</p>
+      </div>
+      <div class="cmp stopc">
+        <span class="tag">Stop order</span>
+        <h3>Wakes up at your line</h3>
+        <p>Sleeps until the stop price is hit, then becomes a market order. Your automatic exit.</p>
+      </div>
+    </div>
+    <div class="ot-wrap anim d3">
+      <div class="ot-card">
+        <svg class="ot-svg" viewBox="0 0 520 330" role="img" aria-label="Diagram of market, limit, and stop orders on a price line" data-true="illustrative">
+          <!-- current price line + market -->
+          <g class="lvl">
+            <line x1="30" y1="90" x2="490" y2="90" stroke="#101828" stroke-width="3" stroke-dasharray="2 5"/>
+            <text x="30" y="72" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#101828">Now &middot; $50</text>
+            <text x="490" y="112" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="13" fill="#B45309">Market &middot; fills right here, right now</text>
+          </g>
+          <!-- price squiggle arriving at the current price -->
+          <path class="ot-path" d="M30,44 C70,20 105,86 150,58 C195,32 235,74 275,60 C310,48 335,84 360,90" fill="none" stroke="#5B6472" stroke-width="4" stroke-linecap="round"/>
+          <circle class="ot-dot" cx="360" cy="90" r="8" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+          <!-- limit line -->
+          <g class="lvl l2">
+            <line x1="30" y1="185" x2="490" y2="185" stroke="#16A34A" stroke-width="3"/>
+            <text x="30" y="167" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#16A34A">Limit &middot; $49</text>
+            <text x="490" y="207" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="13" fill="#16A34A">your price or better &middot; may not fill</text>
+            <circle class="ot-wait" cx="360" cy="185" r="8" fill="none" stroke="#16A34A" stroke-width="3"/>
+          </g>
+          <!-- stop line -->
+          <g class="lvl l3">
+            <line x1="30" y1="270" x2="490" y2="270" stroke="#DC2626" stroke-width="3"/>
+            <text x="30" y="252" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#DC2626">Stop &middot; $47</text>
+            <text x="490" y="292" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="13" fill="#DC2626">price hits it &rarr; becomes a market order</text>
+            <circle cx="360" cy="270" r="8" fill="#DC2626"/>
+            <circle class="ot-fall" cx="360" cy="278" r="5" fill="#DC2626"/>
+          </g>
+        </svg>
+      </div>
+      <div class="disclaim"><b>Illustrative:</b> the fifty, forty-nine, and forty-seven dollar levels are a worked example &mdash; the shape of the idea, not a forecast or a recommendation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · BID-ASK SPREAD -->
+<section id="bid-ask-spread">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Two Prices, One Gap</div>
+      <h2 class="title">The bid-ask spread</h2>
+      <p class="lead" style="margin:0 auto">Before any order fills, a buyer's best offer and a seller's lowest price stare at each other. The gap between them is the spread.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/bid-ask.jpg" alt="Two hands reaching toward each other with a small gap between them and a coin above" /></div>
+      <div>
+        <p class="bigdef">The <span class="hi">bid</span> is the highest price a buyer offers. The <span class="hi">ask</span> is the lowest a seller accepts.</p>
+        <div class="insight">Bid $49.95, ask $50.05 &mdash; a ten-cent spread. Illustrative numbers, but the reading is real: the smaller that gap, the closer buyers and sellers agree.</div>
+      </div>
+    </div>
+    <div class="two anim d2">
+      <div class="cmp grow">
+        <span class="tag">Narrow spread</span>
+        <h3>Liquid market</h3>
+        <p>Plenty of buyers and sellers packed close together. Your order fills near the price on the screen.</p>
+      </div>
+      <div class="cmp stopc">
+        <span class="tag">Wide spread</span>
+        <h3>Thin market</h3>
+        <p>Fewer players, prices far apart. Fills drift away from what you expected, and that drift costs money.</p>
+      </div>
+    </div>
+    <div class="insight anim d3" style="max-width:820px;margin:22px auto 0">Glance at the spread before you trade. It tells you how crowded the room is before you walk in.</div>
+  </div>
+</section>
+
+<!-- 4 · THE DASHBOARD -->
+<section id="the-dashboard">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">The Quote Page</div>
+      <h2 class="title">Read the dashboard, don't stare at it</h2>
+      <p class="lead" style="margin:0 auto">Every stock's quote page shows the same wall of tiles. You already know most of them from earlier weeks.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">If you can say <span class="hi">one plain sentence</span> about each tile, you're reading it.</p>
+        <div class="insight">Nothing on this screen is new math. It's the course so far, arranged on one page.</div>
+      </div>
+      <div class="define-art"><img src="./assets/dashboard.jpg" alt="An abstract dashboard of data tiles with charts, bars, and gauges" /></div>
+    </div>
+    <div class="dash-grid anim d2">
+      <div class="dash-chip"><b>Price</b><span>What it trades for right now.</span></div>
+      <div class="dash-chip"><b>Open</b><span>Where it started the day.</span></div>
+      <div class="dash-chip"><b>Bid / Ask</b><span>Buyers' best offer vs sellers' lowest &mdash; the spread lives here.</span></div>
+      <div class="dash-chip"><b>Volume</b><span>Shares changing hands today. More volume, easier fills.</span></div>
+      <div class="dash-chip"><b>P/E Ratio</b><span>Price compared to earnings, from the fundamentals week.</span></div>
+      <div class="dash-chip"><b>EPS</b><span>The profit behind each single share.</span></div>
+      <div class="dash-chip"><b>Market Cap</b><span>The whole company's price tag.</span></div>
+      <div class="dash-chip"><b>52-Week Range</b><span>The year's high and low &mdash; where does today sit?</span></div>
+      <div class="dash-chip"><b>Beta</b><span>How sharply it swings compared to the whole market.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · CHECKLIST BUILDER (bespoke interactive) -->
+<section id="checklist-builder">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Pre-Flight</div>
+      <h2 class="title">Check all six before any trade</h2>
+      <p class="lead" style="margin:0 auto">This is the ritual. A first trade earns takeoff only when every box is checked &mdash; tap each one as if you were planning a real trade.</p>
+    </div>
+    <div class="cb-grid anim d1" id="cbGrid">
+      <button class="cb-item" type="button"><span class="cb-box"></span><span class="cb-txt"><b>Thesis</b><span>One sentence: why this company?</span></span></button>
+      <button class="cb-item" type="button"><span class="cb-box"></span><span class="cb-txt"><b>Entry</b><span>The price you're willing to pay.</span></span></button>
+      <button class="cb-item" type="button"><span class="cb-box"></span><span class="cb-txt"><b>Stop</b><span>The exit that caps your loss.</span></span></button>
+      <button class="cb-item" type="button"><span class="cb-box"></span><span class="cb-txt"><b>Size</b><span>Risk only 1-2% of the account.</span></span></button>
+      <button class="cb-item" type="button"><span class="cb-box"></span><span class="cb-txt"><b>Exit</b><span>Where you'll take profits.</span></span></button>
+      <button class="cb-item" type="button"><span class="cb-box"></span><span class="cb-txt"><b>Order type</b><span>Usually a limit, so you control the price.</span></span></button>
+    </div>
+    <div class="cb-count anim d2"><b id="cbCount">0</b> / 6 checked</div>
+    <div id="cbReveal">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <path d="M17 3 Q22 9 22 16 L22 24 L12 24 L12 16 Q12 9 17 3 Z" fill="#16A34A"/>
+        <circle cx="17" cy="15" r="3.4" fill="#DCFCE7"/>
+        <path d="M12 20 L7 27 L12 25 Z" fill="#22C55E"/>
+        <path d="M22 20 L27 27 L22 25 Z" fill="#22C55E"/>
+        <path d="M17 24 L17 31" stroke="#FBBF24" stroke-width="3.4" stroke-linecap="round"/>
+      </svg>
+      <span>Cleared for takeoff &mdash; paper-trade it first</span>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · ORDER SORTER (interactive) -->
+<section id="order-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Smart habit, or rookie mistake?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Every smart habit decides something before the trade. Every mistake skips that decision.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="smart">Write thesis, entry, stop, exit first</button>
+        <button class="chip" data-bucket="smart">Risk only 1-2% of the account</button>
+        <button class="chip" data-bucket="mistake">Buy with no stop and no exit</button>
+        <button class="chip" data-bucket="smart">Use a limit order to control your price</button>
+        <button class="chip" data-bucket="mistake">Put most of the account in one trade</button>
+        <button class="chip" data-bucket="mistake">Chase a fast price with a market order and overpay</button>
+        <button class="chip" data-bucket="smart">Paper-trade the plan before going live</button>
+        <button class="chip" data-bucket="mistake">Skip practice and wing the first real trade</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="smart">
+          <h4>&#10003; Smart first-trade habit</h4><div class="sub">Decided before the trade &mdash; the discipline this course built</div>
+          <div class="drop" id="dropSmart"></div>
+        </div>
+        <div class="col gamble" data-bucket="mistake">
+          <h4>&#10007; Rookie mistake</h4><div class="sub">Skipped decisions &mdash; the shortcuts that cost real money</div>
+          <div class="drop" id="dropMistake"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Last quiz of the course</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="2">
+        <h4>1. You tap buy with a market order. What actually happens?</h4>
+        <button class="opt" data-idx="0">The order waits until the stock hits the exact price you typed</button>
+        <button class="opt" data-idx="1">It only fills at the price the stock opened at this morning</button>
+        <button class="opt" data-idx="2">It executes right away at the best current price</button>
+        <button class="opt" data-idx="3">The broker holds it until the end of the trading day</button>
+        <div class="exp">A market order trades price control for speed. It fills now, at whatever the best available price is at that moment, which may be slightly different from the last price you saw.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>2. What does a limit order guarantee, and what doesn't it?</h4>
+        <button class="opt" data-idx="0">It fills at your price or better, but it may never fill at all</button>
+        <button class="opt" data-idx="1">It guarantees an instant fill at any price</button>
+        <button class="opt" data-idx="2">It always fills by the end of the day at some price</button>
+        <button class="opt" data-idx="3">It guarantees both the price and the fill</button>
+        <div class="exp">A limit order controls price: your price or better, never worse. The tradeoff is certainty. If the stock never reaches your limit, the order simply waits unfilled.</div>
+      </div>
+      <div class="q" data-correct="3">
+        <h4>3. A stop order sits below the current price. What happens when the stock falls to the stop price?</h4>
+        <button class="opt" data-idx="0">The order cancels itself to protect you</button>
+        <button class="opt" data-idx="1">It converts into a limit order at the day's open</button>
+        <button class="opt" data-idx="2">Nothing &mdash; a stop order is only a price alert</button>
+        <button class="opt" data-idx="3">It becomes a market order and sells at the next available price</button>
+        <div class="exp">A stop order sleeps until the stop price trades. The moment it's hit, it wakes up as a market order, the automatic exit that caps a loss before a slide gets worse.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. What is the bid-ask spread?</h4>
+        <button class="opt" data-idx="0">The difference between today's open and close</button>
+        <button class="opt" data-idx="1">The gap between the highest bid and the lowest ask</button>
+        <button class="opt" data-idx="2">The fee your broker charges on every trade</button>
+        <button class="opt" data-idx="3">The distance between the 52-week high and low</button>
+        <div class="exp">The bid is the highest price buyers offer; the ask is the lowest sellers accept. The gap between them is the spread, and a narrow spread signals a liquid market.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>5. Your checklist is complete: thesis, entry, stop, size, exit, order type. What's the smart next step?</h4>
+        <button class="opt" data-idx="0">Go live immediately &mdash; the plan is ready</button>
+        <button class="opt" data-idx="1">Double the position size since you did the homework</button>
+        <button class="opt" data-idx="2">Paper-trade the plan first, then go live once the ritual is routine</button>
+        <button class="opt" data-idx="3">Drop the stop &mdash; a good checklist makes stops unnecessary</button>
+        <div class="exp">Practice with paper trading before the first real trade. Rehearse the full checklist on a simulator until it feels boring, so real money only ever follows a rehearsed plan.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / COURSE COMPLETE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Course Complete</div><h2 class="title">Cleared for takeoff</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Market fills now at the current price. Limit fills at your price or better, or not at all.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>A stop order becomes a market order once the stop price is hit &mdash; your automatic exit.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The bid-ask spread tells you how liquid the market is before you step in.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Six boxes before any trade: thesis, entry, stop, size, exit, order type.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">You finished SI-100 Adults</div><h3>Paper-Trade the Plan Before Going Live</h3></div>
+      <span class="badge">Keep practicing, keep journaling, keep risk small &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 37.92, "interactive": false, "label": "Your First Trade"}, {"id": "order-types", "start": 38.42, "end": 94.34, "interactive": false, "label": "Three Order Types"}, {"id": "bid-ask-spread", "start": 94.84, "end": 136.92, "interactive": false, "label": "The Bid Ask Spread"}, {"id": "the-dashboard", "start": 137.42, "end": 182.7, "interactive": false, "label": "Read the Dashboard"}, {"id": "checklist-builder", "start": 183.2, "end": 224.32, "interactive": true, "label": "The First Trade Checklist"}, {"id": "order-sorter", "start": 224.82, "end": 250.26, "interactive": true, "label": "Habit or Mistake"}, {"id": "quiz", "start": 250.76, "end": 255.48, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 255.98, "end": 306.7, "interactive": false, "label": "Cleared for Takeoff"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: first-trade checklist builder (isolated) ---------- */
+(function(){
+  var grid=document.getElementById('cbGrid'); if(!grid) return;
+  var items=grid.querySelectorAll('.cb-item');
+  var countEl=document.getElementById('cbCount'), reveal=document.getElementById('cbReveal');
+  function upd(){
+    var n=grid.querySelectorAll('.cb-item.on').length;
+    countEl.textContent=n;
+    if(n===items.length){ reveal.classList.add('show'); }
+    else { reveal.classList.remove('show'); }
+  }
+  items.forEach(function(it){
+    it.addEventListener('click',function(){ it.classList.toggle('on'); upd(); });
+  });
+  upd();
+})();
+</script>
+</body>
+</html>

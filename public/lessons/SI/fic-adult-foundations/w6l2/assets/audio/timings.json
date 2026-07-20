@@ -1,0 +1,55 @@
+{
+  "total_seconds": 307.448,
+  "gap": 0.5,
+  "voice": "Voicebox Qwen-TTS 1.7B (local, profile Kway) \u2014 OpenAI TTS billing-blocked this session",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 37.92,
+      "dur": 37.92
+    },
+    {
+      "id": "order-types",
+      "start": 38.42,
+      "end": 94.34,
+      "dur": 55.92
+    },
+    {
+      "id": "bid-ask-spread",
+      "start": 94.84,
+      "end": 136.92,
+      "dur": 42.08
+    },
+    {
+      "id": "the-dashboard",
+      "start": 137.42,
+      "end": 182.7,
+      "dur": 45.28
+    },
+    {
+      "id": "checklist-builder",
+      "start": 183.2,
+      "end": 224.32,
+      "dur": 41.12
+    },
+    {
+      "id": "order-sorter",
+      "start": 224.82,
+      "end": 250.26,
+      "dur": 25.44
+    },
+    {
+      "id": "quiz",
+      "start": 250.76,
+      "end": 255.48,
+      "dur": 4.72
+    },
+    {
+      "id": "bridge",
+      "start": 255.98,
+      "end": 306.7,
+      "dur": 50.72
+    }
+  ]
+}
