@@ -15,8 +15,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Family Trading Academy | Dashboard",
-  description: "Your family trading learning dashboard.",
+  title: "Family Investing Club | Dashboard",
+  description: "Your family's weekly investing club — learn one money concept, study one company, build the habit together.",
   // PWA — required for iOS "Add to Home Screen" (a prerequisite for iOS web push)
   manifest: "/manifest.webmanifest",
   appleWebApp: {
