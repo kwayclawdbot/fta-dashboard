@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
+import { getFamilyTierMap, type FamilyTier } from "@/lib/tier";
+import TierBadge, { tierRingClass } from "@/components/TierBadge";
 
 // The single global community room (seeded in migration 016)
 const COMMUNITY_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
@@ -34,6 +36,7 @@ interface Author {
   display_name: string | null;
   role: Role | null;
   age_group: string | null;
+  family_id: string | null;
 }
 
 interface AttachmentMeta {
@@ -129,7 +132,17 @@ function timeAgo(iso: string) {
   return `${d}d ago`;
 }
 
-function Avatar({ name, role, size = "md" }: { name?: string | null; role?: string | null; size?: "sm" | "md" }) {
+function Avatar({
+  name,
+  role,
+  tier,
+  size = "md",
+}: {
+  name?: string | null;
+  role?: string | null;
+  tier?: FamilyTier;
+  size?: "sm" | "md";
+}) {
   const sizes = { sm: "w-8 h-8 text-[11px]", md: "w-10 h-10 text-xs" };
   const bg =
     role === "coach" || role === "admin"
@@ -139,8 +152,11 @@ function Avatar({ name, role, size = "md" }: { name?: string | null; role?: stri
         : role === "parent"
           ? "bg-chip-sky text-sky-800"
           : "bg-sand text-soft";
+  // Premium presence: FTA members get the gold avatar ring.
   return (
-    <div className={`${sizes[size]} ${bg} rounded-full flex items-center justify-center font-display font-bold shrink-0`}>
+    <div
+      className={`${sizes[size]} ${bg} ${tierRingClass(tier)} rounded-full flex items-center justify-center font-display font-bold shrink-0`}
+    >
       {initialsOf(name)}
     </div>
   );
@@ -220,18 +236,19 @@ function MessageAttachment({ msg }: { msg: Message }) {
   );
 }
 
-function MessageCard({ msg }: { msg: Message }) {
+function MessageCard({ msg, tier }: { msg: Message; tier: FamilyTier }) {
   const cat = CATEGORY_CONFIG[msg.category] || CATEGORY_CONFIG.discussion;
   const role = msg.author?.role || "parent";
   return (
     <div className="paper-card p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={msg.author?.display_name} role={role} />
+        <Avatar name={msg.author?.display_name} role={role} tier={tier} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-display text-sm font-semibold text-ink">
               {msg.author?.display_name || "Member"}
             </span>
+            <TierBadge tier={tier} size="xs" />
             <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role] || "bg-sand text-soft"}`}>
               {role}
             </span>
@@ -271,26 +288,52 @@ export default function CommunityPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Membership tier per family (family_tiers view) — fetched in ONE batched
+  // query for the whole feed, never per message.
+  const [tiers, setTiers] = useState<Record<string, FamilyTier>>({});
+  // Ref mirror so realtime callbacks don't close over stale tier state.
+  const tiersRef = useRef(tiers);
+  tiersRef.current = tiers;
+
   const authorCache = useRef<Record<string, Author>>({});
+
+  /** Merge tiers for any families we haven't resolved yet (single query). */
+  const loadTiers = useCallback(
+    async (familyIds: Array<string | null | undefined>) => {
+      const missing = familyIds.filter(
+        (id): id is string => !!id && !(id in tiersRef.current)
+      );
+      if (missing.length === 0) return;
+      const fetched = await getFamilyTierMap(supabase, missing);
+      setTiers((prev) => ({ ...prev, ...fetched }));
+    },
+    [supabase]
+  );
 
   const getAuthor = useCallback(
     async (userId: string): Promise<Author> => {
       if (authorCache.current[userId]) return authorCache.current[userId];
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, role, age_group")
+        .select("display_name, role, age_group, family_id")
         .eq("id", userId)
         .single();
       const author: Author = {
         display_name: data?.display_name ?? "Member",
         role: (data?.role as Role) ?? "parent",
         age_group: data?.age_group ?? null,
+        family_id: data?.family_id ?? null,
       };
       authorCache.current[userId] = author;
+      await loadTiers([author.family_id]);
       return author;
     },
-    [supabase]
+    [supabase, loadTiers]
   );
+
+  /** Tier for a message author — kids inherit their family's tier. */
+  const tierOf = (author: Author | null): FamilyTier =>
+    (author?.family_id && tiers[author.family_id]) || "fic";
 
   // Initial load: user, messages, stats
   useEffect(() => {
@@ -318,6 +361,7 @@ export default function CommunityPage() {
             display_name: cu.display_name,
             role: cu.role,
             age_group: cu.age_group,
+            family_id: cu.family_id,
           };
           if (mounted) setMe(cu);
 
@@ -342,7 +386,7 @@ export default function CommunityPage() {
       const { data: msgs } = await supabase
         .from("chat_messages")
         .select(
-          "id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group)"
+          "id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id)"
         )
         .eq("room_id", COMMUNITY_ROOM_ID)
         .order("created_at", { ascending: false })
@@ -375,6 +419,11 @@ export default function CommunityPage() {
           };
         });
         setMessages(normalized);
+        // One batched tier lookup for every family in the feed (+ mine).
+        await loadTiers([
+          user ? authorCache.current[user.id]?.family_id : null,
+          ...normalized.map((m) => m.author?.family_id),
+        ]);
       }
 
       // Real sidebar stats
@@ -591,6 +640,7 @@ export default function CommunityPage() {
               display_name: me.display_name,
               role: me.role,
               age_group: me.age_group,
+              family_id: me.family_id,
             },
             attachment_url: data.attachment_url ?? null,
             attachment_type: (data.attachment_type as "image" | "video" | null) ?? null,
@@ -685,7 +735,11 @@ export default function CommunityPage() {
           {/* Compose */}
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="paper-card p-4">
             <div className="flex gap-3">
-              <Avatar name={me?.display_name} role={me?.role} />
+              <Avatar
+                name={me?.display_name}
+                role={me?.role}
+                tier={(me?.family_id && tiers[me.family_id]) || "fic"}
+              />
               <div className="flex-1 min-w-0">
                 <textarea
                   value={newPostText}
@@ -867,7 +921,7 @@ export default function CommunityPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.02, 0.2) }}
                 >
-                  <MessageCard msg={msg} />
+                  <MessageCard msg={msg} tier={tierOf(msg.author)} />
                 </motion.div>
               ))}
             </div>
