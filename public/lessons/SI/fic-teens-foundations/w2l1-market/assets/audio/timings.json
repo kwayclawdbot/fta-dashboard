@@ -1,0 +1,56 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 197.0,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 36.32,
+      "interactive": false,
+      "label": "Where Trades Happen"
+    },
+    {
+      "id": "market-network",
+      "start": 36.82,
+      "end": 76.42,
+      "interactive": false,
+      "label": "A Network, Not a Building"
+    },
+    {
+      "id": "matching",
+      "start": 76.92,
+      "end": 117.48,
+      "interactive": false,
+      "label": "The Matching Engine"
+    },
+    {
+      "id": "tickers",
+      "start": 117.98,
+      "end": 146.94,
+      "interactive": false,
+      "label": "Ticker Symbols"
+    },
+    {
+      "id": "myth-sort",
+      "start": 147.44,
+      "end": 162.24,
+      "interactive": true,
+      "label": "Market Fact or Myth"
+    },
+    {
+      "id": "quiz",
+      "start": 162.74,
+      "end": 169.3,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 169.8,
+      "end": 197.0,
+      "interactive": false,
+      "label": "What Sets the Price?"
+    }
+  ]
+}

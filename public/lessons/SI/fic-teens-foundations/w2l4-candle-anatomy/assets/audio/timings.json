@@ -1,0 +1,63 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 273.26,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 53.28,
+      "interactive": false,
+      "label": "The Scoreboard"
+    },
+    {
+      "id": "the-open",
+      "start": 53.78,
+      "end": 82.5,
+      "interactive": false,
+      "label": "The Open"
+    },
+    {
+      "id": "the-close-and-body",
+      "start": 83.0,
+      "end": 119.48,
+      "interactive": false,
+      "label": "The Close & the Body"
+    },
+    {
+      "id": "the-wicks",
+      "start": 119.98,
+      "end": 159.82,
+      "interactive": false,
+      "label": "The Wicks"
+    },
+    {
+      "id": "one-full-candle",
+      "start": 160.32,
+      "end": 200.32,
+      "interactive": false,
+      "label": "One Full Candle"
+    },
+    {
+      "id": "label-it",
+      "start": 200.82,
+      "end": 231.22,
+      "interactive": true,
+      "label": "Label It"
+    },
+    {
+      "id": "quiz",
+      "start": 231.72,
+      "end": 234.68,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 235.18,
+      "end": 273.26,
+      "interactive": false,
+      "label": "Next: Who Won"
+    }
+  ]
+}

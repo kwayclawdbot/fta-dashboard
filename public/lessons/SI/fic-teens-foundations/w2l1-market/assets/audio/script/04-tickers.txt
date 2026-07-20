@@ -1,0 +1,1 @@
+One more piece and the machine is yours: the name tag. Companies on an exchange go by a ticker symbol, a short code so nothing gets mixed up. Apple is A A P L. Nike is N K E. McDonald's is M C D. When you search a ticker in a trading app, you're telling the matching system exactly whose shares you want. Company, exchange, ticker. That's the whole address system of the market.

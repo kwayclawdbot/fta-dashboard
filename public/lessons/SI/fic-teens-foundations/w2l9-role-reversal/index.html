@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>When Levels Break: Role Reversal &amp; Breakouts · SI-100 Teens · Module 2 · Lesson 2.9</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.9" />
+<meta name="fta-lesson-title" content="When Levels Break: Role Reversal &amp; Breakouts" />
+<meta name="fta-lesson-objectives" content="Define a breakout|Explain support-becomes-resistance (role reversal)|Narrate the break-retest-flip sequence" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* ============ bespoke: L2.9 Role Reversal & Breakouts ============ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:700px}
+.kinetic{font-size:clamp(34px,6.8vw,64px);font-weight:900;line-height:.98;margin:14px 0;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{color:var(--gold-700)}
+@keyframes wordUp{to{opacity:1;transform:none}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+.figrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:26px auto 0}
+@media(max-width:700px){.figrid{grid-template-columns:1fr}}
+.fig{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);margin:0}
+.fig img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.fig figcaption{padding:12px 16px;font-size:13.5px;color:var(--soft)}
+.fig.solo{max-width:640px;margin:26px auto 0}
+
+.chartcard{max-width:860px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-lift)}
+.chartcard svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-kicker{font:700 12px var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft);margin-bottom:8px}
+
+/* 3-step flip stepper */
+.stepper{max-width:880px;margin:24px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift)}
+.stepper .island{background:#0b1220;border-radius:var(--r-lg);padding:14px;border:1px solid #1e293b}
+.stepper svg{width:100%;height:auto;display:block;overflow:visible}
+.step-tabs{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.step-tab{flex:1;min-width:150px;font:700 14px var(--font-display);padding:12px 14px;border-radius:var(--r-lg);cursor:pointer;
+  border:1.5px solid var(--sand);background:var(--paper);color:var(--soft);transition:all .15s ease;text-align:left}
+.step-tab .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--sand-2);color:var(--ink);align-items:center;justify-content:center;font-size:12px;margin-right:8px}
+.step-tab.on{border-color:var(--gold);background:var(--gold-bg);color:var(--ink)}
+.step-tab.on .n{background:var(--gold);color:var(--ink)}
+.step-tab.seen .n{background:var(--green);color:#fff}
+.step-cap{margin-top:14px;padding:14px 18px;border-radius:var(--r-md);background:var(--paper-2);border:1px solid var(--sand);font-size:15px;color:var(--ink);line-height:1.6;min-height:76px}
+.step-cap b{color:var(--gold-700)}
+.step-goal{margin-top:10px;text-align:center;font:600 13.5px var(--font-body);color:var(--soft)}
+.step-goal.done{color:var(--green)}
+
+@media (prefers-reduced-motion: reduce){
+  .kinetic .w,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none}
+  .hero-fallback{animation:none}.anim{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="hero-fallback"></div><div class="hero-scrim"></div></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Teens · Week 2 · Lesson 2.9 · Finale</div>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">When the</span>
+        <span class="w gold" style="animation-delay:.17s">Level&nbsp;Breaks</span>
+      </h1>
+      <p class="lead">You can mark the floor and the ceiling. Now the map's most dramatic moment: the day a level breaks — and the strange thing that happens next, when it <b>switches teams</b>.</p>
+      <div class="badges">
+        <span class="badge">Recalls · <b>2.8 The Floor &amp; Ceiling</b></span>
+        <span class="badge">~<b>3</b> min</span>
+        <span class="badge"><b>1</b> walkthrough + quiz</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — narrate a break like a commentator.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · BREAKOUT -->
+<section id="breakout">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Break</div>
+      <h2 class="title">A breakout: price escapes its cage</h2>
+      <p class="lead center">Four times the stock bonked its head on the $50 ceiling. Then buyers come in heavy — price punches through and keeps going. 51… 52. The old balance is dead; the sellers who owned that ceiling are beaten.</p>
+    </div>
+    <div class="chartcard anim d1">
+      <div class="chart-kicker">Four rejections, then the escape · illustrative</div>
+      <div id="boSvg" role="img" aria-label="Price rejected four times at a fifty dollar ceiling before breaking through and running higher"></div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/breakout.jpg" alt="A price breakout through a resistance level" />
+      <figcaption>The same happens in reverse when a floor gives way: price falls through support, and the slide is on.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3 · ROLE REVERSAL (interactive stepper gate) -->
+<section id="role-reversal">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Beautiful Twist</div>
+      <h2 class="title">Role reversal: the level flips teams</h2>
+      <p class="lead center">Walk the three steps. Old ceiling &rarr; breakout &rarr; new floor. Why? <b>Memory:</b> missed buyers wait at the level; breakout buyers defend their entry.</p>
+    </div>
+    <div class="stepper anim d1">
+      <div class="step-tabs">
+        <button class="step-tab on" data-step="0" type="button"><span class="n">1</span>The ceiling holds</button>
+        <button class="step-tab" data-step="1" type="button"><span class="n">2</span>The breakout</button>
+        <button class="step-tab" data-step="2" type="button"><span class="n">3</span>The flip</button>
+      </div>
+      <div class="island"><div id="rrSvg" role="img" aria-label="Three-step sequence of resistance breaking and flipping into support"></div></div>
+      <div class="step-cap" id="rrCap"></div>
+      <div class="step-goal" id="rrGoal">Click through all three steps to continue.</div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/role-reversal.jpg" alt="An old resistance level acting as new support after a breakout" />
+      <figcaption>It works upside down too: a broken floor becomes the new ceiling.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 4 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Breaks and flips — bring it home.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. A breakout is…</h4>
+        <button class="opt" data-idx="0">Any big green candle</button>
+        <button class="opt" data-idx="1">Price pushing through a level that used to hold it — and keeping going</button>
+        <button class="opt" data-idx="2">The market closing early</button>
+        <div class="exp">Price escapes its cage — through resistance upward, or through support downward. The old balance is dead.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. Price breaks ABOVE $50 resistance, then drifts back down to $50. Traders now expect…</h4>
+        <button class="opt" data-idx="0">Nothing — the level stopped existing</button>
+        <button class="opt" data-idx="1">Price to crash straight through it</button>
+        <button class="opt" data-idx="2">The old ceiling to act as a new FLOOR — a bounce at the retest</button>
+        <div class="exp">Role reversal: missed buyers wait at $50 to buy the retest, and breakout buyers defend their entry.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. When a support FLOOR breaks, that old level often becomes…</h4>
+        <button class="opt" data-idx="0">The new ceiling (resistance) on the way back up</button>
+        <button class="opt" data-idx="1">Stronger support than before</button>
+        <button class="opt" data-idx="2">A guaranteed buy signal</button>
+        <div class="exp">The flip works both directions — a broken floor turns into the new ceiling. (And remember 2.3: it's odds, never guarantees.)</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. WHY does a broken level flip teams?</h4>
+        <button class="opt" data-idx="0">The exchange redraws the chart</button>
+        <button class="opt" data-idx="1">Trader memory — people waiting at the level and defending entries</button>
+        <button class="opt" data-idx="2">It's a coincidence traders ignore</button>
+        <div class="exp">Same force that built the level in 2.8: memory. Missed buyers wait there; breakout buyers defend it.</div>
+      </div>
+      <div class="quiz-result" id="quizResult"><div class="score" id="quizScore">0 / 4</div><p id="quizMsg"></p></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn green" id="quizSubmit">Submit answers</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Week 2 Complete</div><h2 class="title">You can read the whole map</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Breakout = price escaping a level that used to hold it.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Role reversal: old ceilings become floors; old floors become ceilings.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The engine is memory — the same force that builds the levels.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Week 2 done: the machine, the fight, the candles, the trend, the map.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Week 3</div><h3>Volume: The Lie Detector of the Chart</h3></div>
+      <span class="badge">Is the breakout real — or a trap? &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+/* __FTA_TIMINGS_START__ */
+window.sectionTimestamps = [
+  {"id":"hero","start":0.0,"end":32.88,"interactive":false,"label":"The Finale"},
+  {"id":"breakout","start":33.38,"end":69.22,"interactive":false,"label":"The Breakout"},
+  {"id":"role-reversal","start":69.72,"end":122.6,"interactive":true,"label":"The Flip"},
+  {"id":"quiz","start":123.1,"end":127.58,"interactive":true,"label":"Quick Check"},
+  {"id":"bridge","start":128.08,"end":161.76,"interactive":false,"label":"Week 2 Complete"}
+];
+/* __FTA_TIMINGS_END__ */
+</script>
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- L2.9 bespoke: breakout diagram + 3-step role-reversal stepper ---------- */
+(function(){
+  'use strict';
+
+  /* breakout diagram (warm card) */
+  (function(){
+    function y(p){ return 240-(p-46)*(200/9); }
+    var ceil=y(50);
+    var pts=[[30,y(47)],[100,y(49.9)],[160,y(48)],[225,y(50.0)],[285,y(47.8)],[350,y(49.9)],[410,y(48.4)],[470,y(50.1)],[520,y(48.9)],[565,y(51.4)],[625,y(53.2)]];
+    var d=pts.map(function(p,i){return (i===0?'M':'L')+p[0]+' '+p[1];}).join(' ');
+    var s='<svg viewBox="0 0 660 260">';
+    s+='<rect x="20" y="'+(ceil-11)+'" width="620" height="22" rx="8" fill="rgba(239,68,68,.13)"/>'
+      +'<line x1="20" x2="640" y1="'+ceil+'" y2="'+ceil+'" stroke="#DC2626" stroke-width="2" stroke-dasharray="7 5"/>'
+      +'<text x="26" y="'+(ceil-16)+'" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#DC2626">RESISTANCE ~$50</text>'
+      +'<path d="'+d+'" fill="none" stroke="#101828" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>';
+    [[100,1],[225,2],[350,3],[470,4]].forEach(function(t){
+      s+='<circle cx="'+t[0]+'" cy="'+ceil+'" r="8" fill="#EF4444" opacity=".85"/>'
+        +'<text x="'+t[0]+'" y="'+(ceil-20)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12" font-weight="700" fill="#B91C1C">'+t[1]+'</text>';
+    });
+    s+='<circle cx="595" cy="'+y(52.3)+'" r="10" fill="#22C55E" opacity=".9"/>'
+      +'<text x="595" y="'+(y(52.3)-18)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#16A34A">BREAKOUT</text>';
+    s+='</svg>';
+    document.getElementById('boSvg').innerHTML=s;
+  })();
+
+  /* role-reversal stepper */
+  var GATE='role-reversal';
+  if(window.__ftaRegisterGate) window.__ftaRegisterGate(GATE,'View all three steps to continue');
+  function y(p){ return 220-(p-46)*(180/9); }
+  var lvl=y(50);
+  var CAPS=[
+    'Step one — <b>$50 is a ceiling.</b> Price rises to it and gets rejected, again and again. Sellers own the level.',
+    'Step two — <b>the breakout.</b> Buyers come in heavy, smash through $50, and price runs to $54. The old balance is dead.',
+    'Step three — <b>the flip.</b> Price drifts back DOWN to $50… and bounces. The old ceiling catches the fall like a floor. Resistance became support.'
+  ];
+  var PATHS=[
+    [[30,y(47)],[110,y(49.9)],[190,y(48)],[270,y(50.0)],[350,y(47.9)],[430,y(49.9)],[500,y(48.2)]],
+    [[30,y(47)],[110,y(49.9)],[190,y(48)],[270,y(50.0)],[350,y(48.2)],[430,y(50.2)],[520,y(52.4)],[600,y(54)]],
+    [[30,y(50.2)],[120,y(52.4)],[210,y(54)],[300,y(52.6)],[390,y(50.8)],[450,y(50.05)],[540,y(52.2)],[610,y(53.6)]]
+  ];
+  var seen={0:true};
+  var host=document.getElementById('rrSvg'), cap=document.getElementById('rrCap'), goal=document.getElementById('rrGoal');
+  var tabs=Array.prototype.slice.call(document.querySelectorAll('.step-tab'));
+  function draw(step){
+    var isSup=step===2;
+    var col=isSup?'#22C55E':'#EF4444';
+    var s='<svg viewBox="0 0 640 240">';
+    for(var g=1;g<4;g++){ s+='<line x1="16" x2="624" y1="'+(g*56)+'" y2="'+(g*56)+'" stroke="rgba(255,255,255,.06)"/>'; }
+    s+='<rect x="16" y="'+(lvl-10)+'" width="608" height="20" rx="7" fill="'+(isSup?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)')+'"/>'
+      +'<line x1="16" x2="624" y1="'+lvl+'" y2="'+lvl+'" stroke="'+col+'" stroke-width="2" stroke-dasharray="7 5"/>'
+      +'<text x="620" y="'+(lvl-16)+'" text-anchor="end" font-family="Poppins,sans-serif" font-size="12.5" font-weight="800" fill="'+col+'">'
+      +(isSup?'$50 · NEW SUPPORT (old ceiling)':'$50 · RESISTANCE')+'</text>';
+    var pts=PATHS[step];
+    var d=pts.map(function(p,i){return (i===0?'M':'L')+p[0]+' '+p[1];}).join(' ');
+    s+='<path d="'+d+'" fill="none" stroke="#FBBF24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+    if(step===0){ [[110],[270],[430]].forEach(function(x){ s+='<circle cx="'+x[0]+'" cy="'+lvl+'" r="7" fill="#EF4444"/>'; }); }
+    if(step===1){ s+='<circle cx="520" cy="'+y(52.4)+'" r="9" fill="#22C55E"/><text x="520" y="'+(y(52.4)-16)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12.5" font-weight="800" fill="#22C55E">BREAK</text>'; }
+    if(step===2){ s+='<circle cx="450" cy="'+lvl+'" r="9" fill="#22C55E"/><text x="450" y="'+(lvl+28)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12.5" font-weight="800" fill="#22C55E">RETEST · BOUNCE</text>'; }
+    s+='</svg>';
+    host.innerHTML=s;
+    cap.innerHTML=CAPS[step];
+    tabs.forEach(function(t,i){
+      t.classList.toggle('on', i===step);
+      if(seen[i]) t.classList.add('seen');
+    });
+  }
+  tabs.forEach(function(t){
+    t.addEventListener('click',function(){
+      var st=parseInt(t.dataset.step,10);
+      seen[st]=true;
+      draw(st);
+      if(seen[0]&&seen[1]&&seen[2]){
+        goal.textContent='✓ All three steps — you can narrate the flip.';
+        goal.classList.add('done');
+        if(window.__ftaSatisfy) window.__ftaSatisfy(GATE);
+      }
+    });
+  });
+  draw(0);
+})();
+</script>
+</body>
+</html>

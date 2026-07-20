@@ -1,0 +1,56 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 174.12,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 43.36,
+      "interactive": false,
+      "label": "Who Sets the Price?"
+    },
+    {
+      "id": "tug-of-war",
+      "start": 43.86,
+      "end": 79.3,
+      "interactive": false,
+      "label": "The Tug of War"
+    },
+    {
+      "id": "imbalance",
+      "start": 79.8,
+      "end": 109.8,
+      "interactive": false,
+      "label": "The Only Rule"
+    },
+    {
+      "id": "balance-lab",
+      "start": 110.3,
+      "end": 126.06,
+      "interactive": true,
+      "label": "The Balance Lab"
+    },
+    {
+      "id": "updown-sort",
+      "start": 126.56,
+      "end": 140.48,
+      "interactive": true,
+      "label": "Up or Down?"
+    },
+    {
+      "id": "quiz",
+      "start": 140.98,
+      "end": 145.78,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 146.28,
+      "end": 174.12,
+      "interactive": false,
+      "label": "Reading the Fight"
+    }
+  ]
+}

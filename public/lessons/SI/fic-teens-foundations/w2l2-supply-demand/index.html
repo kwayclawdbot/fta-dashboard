@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>What Moves a Price: Supply &amp; Demand · SI-100 Teens · Module 2 · Lesson 2.2</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.2" />
+<meta name="fta-lesson-title" content="What Moves a Price: Supply &amp; Demand" />
+<meta name="fta-lesson-objectives" content="Explain supply and demand as a buyer-seller tug-of-war|Predict price direction from an imbalance|Give a real-world scarcity example" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* ============ bespoke: L2.2 Supply & Demand ============ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:680px}
+.kinetic{font-size:clamp(36px,7vw,66px);font-weight:900;line-height:.98;margin:14px 0;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{color:var(--gold-700)}
+@keyframes wordUp{to{opacity:1;transform:none}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+.figrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:26px auto 0}
+@media(max-width:700px){.figrid{grid-template-columns:1fr}}
+.fig{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);margin:0}
+.fig img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.fig figcaption{padding:12px 16px;font-size:13.5px;color:var(--soft)}
+.fig.solo{max-width:640px;margin:26px auto 0}
+
+/* balance lab */
+.lab{max-width:860px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift)}
+.lab svg{width:100%;height:auto;display:block;overflow:visible}
+.lab-headline{font:800 clamp(19px,2.7vw,26px)/1.2 var(--font-display);text-align:center;min-height:36px;margin-bottom:14px}
+.lab-headline.up{color:var(--green)}
+.lab-headline.down{color:var(--red)}
+.lab-headline.flat{color:var(--soft)}
+.slider-row{display:flex;align-items:center;gap:14px;margin-top:18px}
+.slider-row label{font:700 13px var(--font-display);color:var(--soft);white-space:nowrap}
+.cslider{flex:1;height:6px;-webkit-appearance:none;appearance:none;border:none;outline:none;border-radius:99px;cursor:pointer;
+  background:linear-gradient(90deg,var(--red) 0%,var(--sand) 48%,var(--sand) 52%,var(--green-2) 100%)}
+.cslider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--gold-600);box-shadow:var(--shadow-soft);cursor:pointer}
+.cslider::-moz-range-thumb{width:22px;height:22px;border:3px solid var(--gold-600);border-radius:50%;background:#fff;cursor:pointer}
+.lab-goal{margin-top:14px;text-align:center;font:600 13.5px var(--font-body);color:var(--soft)}
+.lab-goal b.done{color:var(--green)}
+
+@media (prefers-reduced-motion: reduce){
+  .kinetic .w,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none}
+  .hero-fallback{animation:none}.anim{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="hero-fallback"></div><div class="hero-scrim"></div></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Teens · Week 2 · Lesson 2.2</div>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">The</span>
+        <span class="w gold" style="animation-delay:.15s">Tug-of-War</span>
+        <span class="w" style="animation-delay:.29s">Behind</span>
+        <span class="w" style="animation-delay:.39s">Every&nbsp;Price</span>
+      </h1>
+      <p class="lead">Last lesson the machine matched your buy with a sell — but nobody at the exchange picked the price. So who did? One idea explains every rally, crash and boring day: supply and demand.</p>
+      <div class="badges">
+        <span class="badge">Recalls · <b>2.1 The Matching Engine</b></span>
+        <span class="badge">~<b>3</b> min</span>
+        <span class="badge"><b>2</b> games + quiz</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — grab the rope.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · TUG OF WAR -->
+<section id="tug-of-war">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Demand vs. Supply</div>
+      <h2 class="title">Two teams, one rope</h2>
+      <p class="lead center">On one end: everyone who wants to <b>buy</b> — that's <b>demand</b>. On the other: everyone who wants to <b>sell</b> — that's <b>supply</b>. The price is wherever the rope sits.</p>
+    </div>
+    <div class="two anim d1" style="max-width:860px;margin-left:auto;margin-right:auto">
+      <div class="cmp grow"><span class="tag">Demand · buyers</span><h3>They pull the price UP</h3>
+        <p>A sneaker drops in a run of 100 pairs and 10,000 people want one — the resale price rockets. Scarce thing + fighting buyers = higher price. Stocks work the same.</p></div>
+      <div class="cmp safe" style="background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)"><span class="tag" style="color:var(--red)">Supply · sellers</span><h3>They drag the price DOWN</h3>
+        <p>When holders rush for the exit and buyers hang back, each seller must accept a little less to get filled — and the price stair-steps down.</p></div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/candle-tug.jpg" alt="Buyers and sellers in a tug-of-war over price" />
+      <figcaption>Every price you'll ever see is the live position of this rope.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3 · THE ONLY RULE -->
+<section id="imbalance">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Only Rule</div>
+      <h2 class="title">Imbalance moves price</h2>
+      <p class="lead center">Not magic, not luck — an <b>imbalance</b>.</p>
+    </div>
+    <div class="anim d1" style="max-width:760px;margin:26px auto 0">
+      <div class="bigdef" style="text-align:center">More <span class="hi" style="color:var(--green)">buyers</span> than sellers &rarr; price goes <span style="color:var(--green)">up</span>.<br/>More <span class="hi" style="color:var(--red)">sellers</span> than buyers &rarr; price goes <span style="color:var(--red)">down</span>.</div>
+    </div>
+    <div class="figrid anim d2">
+      <figure class="fig">
+        <img src="./assets/hype-to-price.jpg" alt="Crowd excitement translating into a rising price" />
+        <figcaption>Hype is demand you can see: when everyone wants in, buyers outbid each other.</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="./assets/matching-engine.jpg" alt="Orders being matched at the exchange" />
+        <figcaption>Recall 2.1: the engine only matches orders. The <i>imbalance</i> between them sets the price.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · BALANCE LAB (interactive gate) -->
+<section id="balance-lab">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Feel It Move</div>
+      <h2 class="title">The balance lab</h2>
+      <p class="lead center">Drag the crowd toward the buyers, then toward the sellers. Watch what the price does each way — visit <b>both extremes</b> to continue.</p>
+    </div>
+    <div class="lab anim d1">
+      <div class="lab-headline flat" id="labHeadline">Balanced — price drifts sideways.</div>
+      <div id="labSvg" role="img" aria-label="A seesaw balance between buyers and sellers with a price arrow that rises or falls with the imbalance"></div>
+      <div class="slider-row">
+        <label>&#128308; Sellers</label>
+        <input class="cslider" id="labSlider" type="range" min="-100" max="100" step="1" value="0" aria-label="Buyer and seller balance" />
+        <label>&#128994; Buyers</label>
+      </div>
+      <div class="lab-goal">Goal: <b id="gLeft">reach full sellers</b> · <b id="gRight">reach full buyers</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · SORTER -->
+<section id="updown-sort">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Your Turn</div>
+      <h2 class="title">Up or down?</h2>
+      <p class="lead center">Which way does each situation push the price? Think about which side of the rope just got stronger.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="up">Great earnings — way more buyers than sellers</button>
+        <button class="chip" data-bucket="up">A big fund starts buying millions of shares</button>
+        <button class="chip" data-bucket="up">Everyone wants in, hardly anyone is selling</button>
+        <button class="chip" data-bucket="down">Bad news — holders rush to sell</button>
+        <button class="chip" data-bucket="down">Sellers flood in while buyers hang back</button>
+        <button class="chip" data-bucket="down">Far more shares for sale than people want</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="up"><h4>&#11014;&#65039; Price goes UP</h4><div class="sub">Buyers got stronger</div><div class="drop"></div></div>
+        <div class="col gamble" data-bucket="down"><h4>&#11015;&#65039; Price goes DOWN</h4><div class="sub">Sellers got stronger</div><div class="drop"></div></div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a situation to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Four questions on the tug-of-war.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="0">
+        <h4>1. What actually moves a stock's price?</h4>
+        <button class="opt" data-idx="0">The balance between buyers (demand) and sellers (supply)</button>
+        <button class="opt" data-idx="1">The exchange updates it once every morning</button>
+        <button class="opt" data-idx="2">The company's CEO sets it</button>
+        <div class="exp">Supply and demand — more buyers than sellers pushes price up; more sellers than buyers pushes it down. That's it.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. 100 limited sneakers, 10,000 people want a pair. The resale price…</h4>
+        <button class="opt" data-idx="0">Falls — too many people confuse the market</button>
+        <button class="opt" data-idx="1">Stays the same — the price is printed on the box</button>
+        <button class="opt" data-idx="2">Rockets — buyers outbid each other for a scarce thing</button>
+        <div class="exp">Scarcity plus heavy demand means buyers must offer more to win the pair. Stocks behave the same way.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. Bad news hits and holders rush to sell while buyers hang back. Price…</h4>
+        <button class="opt" data-idx="0">Rises, because more shares are trading</button>
+        <button class="opt" data-idx="1">Stair-steps down, as each seller accepts a little less to get filled</button>
+        <button class="opt" data-idx="2">Freezes until the news is deleted</button>
+        <div class="exp">To find a buyer, each seller has to undercut — that's how an imbalance walks a price down.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. A price that isn't moving much tells you:</h4>
+        <button class="opt" data-idx="0">The market is broken</button>
+        <button class="opt" data-idx="1">Buyers and sellers are roughly balanced right now</button>
+        <button class="opt" data-idx="2">Nobody owns the stock</button>
+        <div class="exp">A flat price is a balanced rope — neither team is currently stronger.</div>
+      </div>
+      <div class="quiz-result" id="quizResult"><div class="score" id="quizScore">0 / 4</div><p id="quizMsg"></p></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn green" id="quizSubmit">Submit answers</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Recap</div><h2 class="title">Price is a live score</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Demand = buyers pulling up. Supply = sellers dragging down.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>More buyers than sellers &rarr; up. More sellers than buyers &rarr; down.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Every rally, crash and sideways day is an imbalance — not magic.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>A chart is the fight's full history, written down…</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 2.3</div><h3>Technical Analysis: The Big Idea</h3></div>
+      <span class="badge">Read the fight straight off the price &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+/* __FTA_TIMINGS_START__ */
+window.sectionTimestamps = [
+  {"id": "hero", "start": 0.0, "end": 43.36, "interactive": false, "label": "Who Sets the Price?"},
+  {"id": "tug-of-war", "start": 43.86, "end": 79.3, "interactive": false, "label": "The Tug of War"},
+  {"id": "imbalance", "start": 79.8, "end": 109.8, "interactive": false, "label": "The Only Rule"},
+  {"id": "balance-lab", "start": 110.3, "end": 126.06, "interactive": true, "label": "The Balance Lab"},
+  {"id": "updown-sort", "start": 126.56, "end": 140.48, "interactive": true, "label": "Up or Down?"},
+  {"id": "quiz", "start": 140.98, "end": 145.78, "interactive": true, "label": "Quick Check"},
+  {"id": "bridge", "start": 146.28, "end": 174.12, "interactive": false, "label": "Reading the Fight"}
+];
+/* __FTA_TIMINGS_END__ */
+</script>
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- L2.2 bespoke: buyer/seller balance lab ---------- */
+(function(){
+  'use strict';
+  var GATE='balance-lab';
+  if(window.__ftaRegisterGate) window.__ftaRegisterGate(GATE,'Visit both extremes to continue');
+  var el=document.getElementById('labSvg');
+  el.innerHTML='<svg viewBox="0 0 720 260">'
+    +'<line x1="60" y1="210" x2="660" y2="210" stroke="#EAE2D0" stroke-width="2"/>'
+    // price arrow (center)
+    +'<g id="priceArrow"><line id="paLine" x1="360" y1="190" x2="360" y2="110" stroke="#98A2B3" stroke-width="6" stroke-linecap="round"/>'
+    +'<path id="paHead" d="M360 92 l-14 22 h28 z" fill="#98A2B3"/></g>'
+    +'<text id="paPrice" x="360" y="52" text-anchor="middle" font-family="Poppins,sans-serif" font-size="26" font-weight="900" fill="#101828">$50.00</text>'
+    // buyer crowd (right)
+    +'<g id="buyCrowd"></g><g id="sellCrowd"></g>'
+    +'<text x="640" y="242" text-anchor="end" font-family="Poppins,sans-serif" font-size="13" font-weight="700" fill="#16A34A">BUYERS (demand)</text>'
+    +'<text x="80" y="242" text-anchor="start" font-family="Poppins,sans-serif" font-size="13" font-weight="700" fill="#DC2626">SELLERS (supply)</text>'
+    +'</svg>';
+  function crowd(gid,color,count,side){
+    var g=document.getElementById(gid), s='';
+    for(var i=0;i<count;i++){
+      var col=i%5, row=Math.floor(i/5);
+      var x= side==='r' ? 470+col*36 : 250-col*36;
+      var yy=196-row*30;
+      s+='<circle cx="'+x+'" cy="'+(yy-16)+'" r="8" fill="'+color+'"/><rect x="'+(x-7)+'" y="'+(yy-8)+'" width="14" height="18" rx="5" fill="'+color+'"/>';
+    }
+    g.innerHTML=s;
+  }
+  var slider=document.getElementById('labSlider'), head=document.getElementById('labHeadline');
+  var seenL=false, seenR=false;
+  var gL=document.getElementById('gLeft'), gR=document.getElementById('gRight');
+  function render(){
+    var v=parseInt(slider.value,10); // -100 sellers .. +100 buyers
+    var buyers=Math.round(5+ (v+100)/200*10);   // 5..15
+    var sellers=Math.round(5+ (100-v)/200*10);
+    crowd('buyCrowd','#22C55E',buyers,'r');
+    crowd('sellCrowd','#EF4444',sellers,'l');
+    var line=document.getElementById('paLine'), headP=document.getElementById('paHead'), price=document.getElementById('paPrice');
+    var mag=Math.abs(v)/100;
+    var len=30+mag*80;
+    if(v>8){
+      line.setAttribute('stroke','#16A34A'); headP.setAttribute('fill','#16A34A');
+      line.setAttribute('y2',190-len); headP.setAttribute('d','M360 '+(172-len)+' l-14 22 h28 z');
+      price.textContent='$'+(50+mag*6).toFixed(2); price.setAttribute('fill','#16A34A');
+      head.textContent='More buyers than sellers — price climbs.'; head.className='lab-headline up';
+    } else if(v<-8){
+      line.setAttribute('stroke','#DC2626'); headP.setAttribute('fill','#DC2626');
+      line.setAttribute('y2',190-len); headP.setAttribute('d','M360 '+(226)+' l-14 -22 h28 z');
+      line.setAttribute('y1',190-len); line.setAttribute('y2',204);
+      price.textContent='$'+(50-mag*6).toFixed(2); price.setAttribute('fill','#DC2626');
+      head.textContent='More sellers than buyers — price falls.'; head.className='lab-headline down';
+    } else {
+      line.setAttribute('stroke','#98A2B3'); headP.setAttribute('fill','#98A2B3');
+      line.setAttribute('y1',190); line.setAttribute('y2',130);
+      headP.setAttribute('d','M360 112 l-14 22 h28 z');
+      price.textContent='$50.00'; price.setAttribute('fill','#101828');
+      head.textContent='Balanced — price drifts sideways.'; head.className='lab-headline flat';
+    }
+    if(v<=-92 && !seenL){ seenL=true; gL.classList.add('done'); gL.textContent='✓ full sellers'; }
+    if(v>=92 && !seenR){ seenR=true; gR.classList.add('done'); gR.textContent='✓ full buyers'; }
+    if(seenL&&seenR&&window.__ftaSatisfy) window.__ftaSatisfy(GATE);
+    if(v>8){ line.setAttribute('y1',190); }
+  }
+  slider.addEventListener('input',render);
+  render();
+})();
+</script>
+</body>
+</html>

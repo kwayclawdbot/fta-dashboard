@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Support &amp; Resistance: The Floor and the Ceiling · SI-100 Teens · Module 2 · Lesson 2.8</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.8" />
+<meta name="fta-lesson-title" content="Support &amp; Resistance: The Floor and the Ceiling" />
+<meta name="fta-lesson-objectives" content="Define support and resistance|Explain why levels form (trader memory)|Treat levels as zones, not lines" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* ============ bespoke: L2.8 Support & Resistance ============ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:680px}
+.kinetic{font-size:clamp(34px,6.8vw,64px);font-weight:900;line-height:.98;margin:14px 0;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .green{color:var(--green)}
+.kinetic .red{color:var(--red)}
+@keyframes wordUp{to{opacity:1;transform:none}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+.figrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:26px auto 0}
+@media(max-width:700px){.figrid{grid-template-columns:1fr}}
+.fig{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);margin:0}
+.fig img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.fig figcaption{padding:12px 16px;font-size:13.5px;color:var(--soft)}
+.fig.solo{max-width:640px;margin:26px auto 0}
+
+/* bounce diagram */
+.chartcard{max-width:860px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-lift)}
+.chartcard svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-kicker{font:700 12px var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft);margin-bottom:8px}
+
+@media (prefers-reduced-motion: reduce){
+  .kinetic .w,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none}
+  .hero-fallback{animation:none}.anim{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="hero-fallback"></div><div class="hero-scrim"></div></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Teens · Week 2 · Lesson 2.8</div>
+      <h1 class="kinetic">
+        <span class="w green" style="animation-delay:.05s">The&nbsp;Floor</span>
+        <span class="w" style="animation-delay:.17s">and the</span>
+        <span class="w red" style="animation-delay:.29s">Ceiling</span>
+      </h1>
+      <p class="lead">Last lesson's mystery: in the flat hallway, price kept bouncing off the same floor and bonking the same ceiling. Those levels have names — support and resistance — and they're the closest thing charts have to a map.</p>
+      <div class="badges">
+        <span class="badge">Recalls · <b>2.7 The Sideways Range</b></span>
+        <span class="badge">~<b>3</b> min</span>
+        <span class="badge"><b>1</b> game + quiz</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — know where the fights happen before they start.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · SUPPORT -->
+<section id="support">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Floor</div>
+      <h2 class="title">Support: where buyers keep showing up</h2>
+      <p class="lead center">The stock slides to ~$40 and bounces. Once, twice, three times. Why there? <b>Memory.</b> Some traders missed the last bounce and wait to buy the dip; others bought there and defend it. All that waiting demand is a safety net.</p>
+    </div>
+    <div class="chartcard anim d1">
+      <div class="chart-kicker">Three tests of the same floor · illustrative</div>
+      <div id="supSvg" role="img" aria-label="Price bouncing three times off a support floor at forty dollars"></div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/support-resistance.jpg" alt="Support acting as a floor under price and resistance as a ceiling above it" />
+      <figcaption>The floor holds because real people with real money keep choosing to buy there.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3 · RESISTANCE & ZONES -->
+<section id="resistance-zones">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Ceiling · and a Pro Detail</div>
+      <h2 class="title">Resistance — and why levels are zones</h2>
+      <p class="lead center">Flip the picture: rallies to ~$50 keep stalling — sellers show up, take profits, cash out. And note: levels are <b>zones, not laser lines</b>. Bounces at 40.00, 39.80 and 40.10 are ONE fat floor around 40.</p>
+    </div>
+    <div class="two anim d1" style="max-width:900px;margin-left:auto;margin-right:auto">
+      <div class="cmp grow"><span class="tag">Support · the floor</span><h3>Buyers defend it</h3>
+        <p>Falling price keeps stopping and bouncing here. Waiting demand under the market.</p></div>
+      <div class="cmp safe" style="background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)"><span class="tag" style="color:var(--red)">Resistance · the ceiling</span><h3>Sellers defend it</h3>
+        <p>Rising price keeps stalling and falling back here. Waiting supply above the market.</p></div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/zones.jpg" alt="Support and resistance drawn as painted zones rather than thin lines" />
+      <figcaption>A painted stripe, not a tightrope. And the more times a zone holds, the more traders trust it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 4 · SORTER -->
+<section id="floor-or-ceiling">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Your Turn</div>
+      <h2 class="title">Floor or ceiling?</h2>
+      <p class="lead center">Think like the crowd: which level does each clue describe?</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="sup">A floor where falling price keeps bouncing</button>
+        <button class="chip" data-bucket="sup">Buyers keep showing up in force here</button>
+        <button class="chip" data-bucket="sup">Traders wait here to buy the dip</button>
+        <button class="chip" data-bucket="res">A ceiling where rallies keep stalling</button>
+        <button class="chip" data-bucket="res">Sellers keep showing up here</button>
+        <button class="chip" data-bucket="res">Profit-takers cash out around here</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="sup"><h4>&#129001; Support</h4><div class="sub">The floor · demand waits below</div><div class="drop"></div></div>
+        <div class="col gamble" data-bucket="res"><h4>&#128997; Resistance</h4><div class="sub">The ceiling · supply waits above</div><div class="drop"></div></div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a clue to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Floors and ceilings — four questions.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. Support is best described as…</h4>
+        <button class="opt" data-idx="0">A ceiling where price stops rising</button>
+        <button class="opt" data-idx="1">A floor where a falling stock tends to stop and bounce</button>
+        <button class="opt" data-idx="2">The price the company recommends</button>
+        <div class="exp">Support is where buyers keep showing up in force — a safety net of waiting demand under the price.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>2. WHY do these levels exist at all?</h4>
+        <button class="opt" data-idx="0">Trader memory — people waiting to buy the dip or defend their entries</button>
+        <button class="opt" data-idx="1">The exchange installs them</button>
+        <button class="opt" data-idx="2">Pure coincidence</button>
+        <div class="exp">Thousands of traders remember the level: missed buyers wait there, earlier buyers defend it. Memory makes the map.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. Price bounced at $40.00, $39.80 and $40.10. How many levels is that?</h4>
+        <button class="opt" data-idx="0">Three separate levels</button>
+        <button class="opt" data-idx="1">Zero — bounces are random</button>
+        <button class="opt" data-idx="2">One — a support ZONE around $40</button>
+        <div class="exp">Levels are zones, not laser lines — a painted stripe, not a tightrope.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. Each extra time a zone gets tested and holds, traders…</h4>
+        <button class="opt" data-idx="0">Ignore it — old levels stop mattering</button>
+        <button class="opt" data-idx="1">Trust it more and defend it harder</button>
+        <button class="opt" data-idx="2">Are forced to sell by the exchange</button>
+        <div class="exp">Every successful test adds believers — which is exactly why the eventual BREAK is such a big event. That's next.</div>
+      </div>
+      <div class="quiz-result" id="quizResult"><div class="score" id="quizScore">0 / 4</div><p id="quizMsg"></p></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn green" id="quizSubmit">Submit answers</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Recap</div><h2 class="title">You can mark the map</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Support = the floor where buyers keep showing up.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Resistance = the ceiling where sellers keep showing up.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Levels are zones — painted stripes, not tightropes.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Every held test makes a level stronger… so what happens when it BREAKS?</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 2.9 · Week 2 finale</div><h3>When Levels Break: Role Reversal &amp; Breakouts</h3></div>
+      <span class="badge">The level switches teams &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+/* __FTA_TIMINGS_START__ */
+window.sectionTimestamps = [
+  {"id": "hero", "start": 0.0, "end": 33.36, "interactive": false, "label": "The Map"},
+  {"id": "support", "start": 33.86, "end": 68.26, "interactive": false, "label": "Support: The Floor"},
+  {"id": "resistance-zones", "start": 68.76, "end": 109.8, "interactive": false, "label": "Resistance & Zones"},
+  {"id": "floor-or-ceiling", "start": 110.3, "end": 123.18, "interactive": true, "label": "Floor or Ceiling?"},
+  {"id": "quiz", "start": 123.68, "end": 127.84, "interactive": true, "label": "Quick Check"},
+  {"id": "bridge", "start": 128.34, "end": 158.58, "interactive": false, "label": "When Levels Break"}
+];
+/* __FTA_TIMINGS_END__ */
+</script>
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- L2.8 bespoke: triple-bounce support diagram ---------- */
+(function(){
+  'use strict';
+  function y(p){ return 240-(p-38)*(200/10); }
+  var floor=y(40);
+  // price path bouncing at 40 three times
+  var pts=[[30,y(45)],[110,y(40.2)],[190,y(43.5)],[270,y(39.9)],[350,y(44.2)],[430,y(40.1)],[520,y(46)],[620,y(45)]];
+  var d=pts.map(function(p,i){return (i===0?'M':'L')+p[0]+' '+p[1];}).join(' ');
+  var s='<svg viewBox="0 0 660 260">';
+  // support zone stripe
+  s+='<rect x="20" y="'+(floor-12)+'" width="620" height="24" rx="8" fill="rgba(34,197,94,.14)"/>'
+    +'<line x1="20" x2="640" y1="'+floor+'" y2="'+floor+'" stroke="#16A34A" stroke-width="2" stroke-dasharray="7 5"/>'
+    +'<text x="632" y="'+(floor-18)+'" text-anchor="end" font-family="Poppins,sans-serif" font-size="13" font-weight="800" fill="#16A34A">SUPPORT ZONE ~$40</text>'
+    +'<path d="'+d+'" fill="none" stroke="#101828" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>';
+  [110,270,430].forEach(function(x,i){
+    s+='<circle cx="'+x+'" cy="'+floor+'" r="9" fill="#22C55E" opacity=".9"/>'
+      +'<text x="'+x+'" y="'+(floor+30)+'" text-anchor="middle" font-family="Poppins,sans-serif" font-size="12.5" font-weight="700" fill="#5B6472">Test '+(i+1)+' · held</text>';
+  });
+  s+='</svg>';
+  document.getElementById('supSvg').innerHTML=s;
+})();
+</script>
+</body>
+</html>

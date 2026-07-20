@@ -1,0 +1,49 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 173.38,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 37.12,
+      "interactive": false,
+      "label": "The Zoom Knob"
+    },
+    {
+      "id": "line-vs-candle",
+      "start": 37.62,
+      "end": 79.46,
+      "interactive": false,
+      "label": "Line vs. Candles"
+    },
+    {
+      "id": "timeframes",
+      "start": 79.96,
+      "end": 123.48,
+      "interactive": false,
+      "label": "Timeframes"
+    },
+    {
+      "id": "zoom-lab",
+      "start": 123.98,
+      "end": 142.78,
+      "interactive": true,
+      "label": "The Zoom Lab"
+    },
+    {
+      "id": "quiz",
+      "start": 143.28,
+      "end": 146.32,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 146.82,
+      "end": 173.38,
+      "interactive": false,
+      "label": "A Bigger Shape Appears"
+    }
+  ]
+}

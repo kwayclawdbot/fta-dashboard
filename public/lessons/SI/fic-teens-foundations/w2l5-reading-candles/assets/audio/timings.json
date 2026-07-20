@@ -1,0 +1,63 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 197.98,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 32.96,
+      "interactive": false,
+      "label": "Call the Fight"
+    },
+    {
+      "id": "color",
+      "start": 33.46,
+      "end": 64.82,
+      "interactive": false,
+      "label": "Green or Red"
+    },
+    {
+      "id": "body-strength",
+      "start": 65.32,
+      "end": 97.24,
+      "interactive": false,
+      "label": "Body = How Hard"
+    },
+    {
+      "id": "wick-rejection",
+      "start": 97.74,
+      "end": 131.1,
+      "interactive": false,
+      "label": "Wicks = Rejection"
+    },
+    {
+      "id": "forming",
+      "start": 131.6,
+      "end": 155.44,
+      "interactive": true,
+      "label": "Watch One Form"
+    },
+    {
+      "id": "battle",
+      "start": 155.94,
+      "end": 165.3,
+      "interactive": true,
+      "label": "Candle Battle"
+    },
+    {
+      "id": "quiz",
+      "start": 165.8,
+      "end": 171.08,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 171.58,
+      "end": 197.98,
+      "interactive": false,
+      "label": "From Candles to Charts"
+    }
+  ]
+}

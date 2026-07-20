@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reading a Candle: Who Won? · SI-100 Teens · Module 2 · Lesson 2.5</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.5" />
+<meta name="fta-lesson-title" content="Reading a Candle: Who Won?" />
+<meta name="fta-lesson-objectives" content="Call the winner of any candle from its color|Judge strength from body length|Read rejection from a long wick|Recognize a doji as a stalemate" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* ============ bespoke: L2.5 Reading a Candle ============ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:680px}
+.kinetic{font-size:clamp(38px,7.4vw,70px);font-weight:900;line-height:.98;margin:14px 0;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .green{color:var(--green)}
+.kinetic .red{color:var(--red)}
+@keyframes wordUp{to{opacity:1;transform:none}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+.figrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:26px auto 0}
+@media(max-width:700px){.figrid{grid-template-columns:1fr}}
+.fig{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);margin:0}
+.fig img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.fig figcaption{padding:12px 16px;font-size:13.5px;color:var(--soft)}
+.fig.solo{max-width:640px;margin:26px auto 0}
+
+/* strength meters */
+.meters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;max-width:960px;margin:26px auto 0}
+@media(max-width:820px){.meters{grid-template-columns:1fr}}
+.meter{border-radius:var(--r-xl);padding:22px;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);text-align:center}
+.meter svg{width:64px;height:110px;display:block;margin:0 auto 10px}
+.meter h3{font-size:17px}
+.meter p{color:var(--soft);font-size:13.5px;margin-top:6px}
+.meter .mtag{font:700 11.5px var(--font-display);letter-spacing:1.5px;text-transform:uppercase}
+.meter.strong .mtag{color:var(--green)}
+.meter.weak .mtag{color:var(--gold-700)}
+.meter.doji .mtag{color:var(--soft)}
+
+/* candle forming lab — the "watch it form" interactive (replaces the V2 video) */
+.former{max-width:880px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift);display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:center}
+@media(max-width:780px){.former{grid-template-columns:1fr}}
+.former .island{background:#0b1220;border-radius:var(--r-lg);padding:16px;border:1px solid #1e293b}
+.former svg{width:100%;height:auto;display:block;overflow:visible}
+.fm-head{font:700 12px var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--gold-700)}
+.fm-status{font:800 clamp(18px,2.5vw,24px)/1.25 var(--font-display);color:var(--ink);margin:8px 0 12px;min-height:60px}
+.fm-clock{font:700 13px var(--font-display);color:var(--soft);margin-bottom:12px}
+.fm-btns{display:flex;gap:10px;flex-wrap:wrap}
+.fm-call{display:none;gap:10px;margin-top:14px}
+.fm-call.show{display:flex;flex-wrap:wrap}
+.fm-call button{flex:1;min-width:140px;font:700 15px var(--font-display);padding:13px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper)}
+.fm-call button[data-t="g"]:hover:not(:disabled){border-color:var(--green-2);background:var(--green-bg)}
+.fm-call button[data-t="r"]:hover:not(:disabled){border-color:var(--red);background:var(--red-bg)}
+.fm-call button.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+.fm-call button.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+.fm-fb{margin-top:10px;min-height:22px;font-weight:600;font-size:14px;color:var(--soft)}
+.fm-fb.good{color:var(--green)}
+
+/* candle battle */
+.cbg{max-width:760px;margin:20px auto 0;background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:26px;box-shadow:var(--shadow-lift)}
+.cb-mini{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.cb-mini svg{flex:0 0 78px}
+.cbdesc{font-family:var(--font-display);font-weight:700;font-size:clamp(17px,2.4vw,20px);line-height:1.4;color:var(--ink)}
+.cbbtns{display:flex;gap:14px;margin-top:6px;flex-wrap:wrap}
+.cbbtn{flex:1;min-width:180px;font-family:var(--font-display);font-weight:700;font-size:16px;padding:16px;border-radius:var(--r-lg);cursor:pointer;border:1.5px solid var(--sand);background:var(--paper);color:var(--ink);transition:all .15s ease}
+.cbbtn[data-team="GREEN"]:hover:not(:disabled){border-color:var(--green-2);background:var(--green-bg)}
+.cbbtn[data-team="RED"]:hover:not(:disabled){border-color:var(--red);background:var(--red-bg)}
+.cbbtn.right{border-color:var(--green-border);background:var(--green-bg);color:var(--green)}
+.cbbtn.wrong{border-color:var(--red-border);background:var(--red-bg);color:var(--red)}
+.cbbtn:disabled{cursor:default}
+.cbwhy{display:none;margin-top:16px;padding:14px 16px;border-radius:var(--r-md);background:var(--gold-bg);border:1px solid #FDE68A;color:#7a4d06;font-size:14.5px;line-height:1.55}
+.cbwhy.show{display:block}
+.cbfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft)}
+.cbtrack{display:flex;gap:6px}
+.cbtrack i{width:22px;height:6px;border-radius:99px;background:var(--sand-2)}
+.cbtrack i.hit{background:var(--green-2)}.cbtrack i.miss{background:var(--red)}
+#cbNext{font-family:var(--font-display);font-weight:700;font-size:14px;padding:10px 20px;border:none;border-radius:var(--r-full);background:var(--ink);color:#fff;cursor:pointer;display:none}
+#cbNext.show{display:inline-block}
+
+@media (prefers-reduced-motion: reduce){
+  .kinetic .w,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none}
+  .hero-fallback{animation:none}.anim{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="hero-fallback"></div><div class="hero-scrim"></div></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Teens · Week 2 · Lesson 2.5</div>
+      <h1 class="kinetic">
+        <span class="w green" style="animation-delay:.05s">Green</span>
+        <span class="w" style="animation-delay:.15s">Team or</span>
+        <span class="w red" style="animation-delay:.27s">Red</span>
+        <span class="w" style="animation-delay:.37s">Team?</span>
+      </h1>
+      <p class="lead">Last lesson you labelled the parts — open, close, high, low, body, wicks. But a labelled candle is a scoreboard with no score. Today: call who WON, and by how much, in one glance.</p>
+      <div class="badges">
+        <span class="badge">Recalls · <b>2.4 The Six Parts</b></span>
+        <span class="badge">~<b>3.5</b> min</span>
+        <span class="badge"><b>2</b> games + quiz</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — learn to call the fight.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · COLOR -->
+<section id="color">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Signal 1 · Color</div>
+      <h2 class="title">Green or red: who took the round</h2>
+      <p class="lead center">Opens at 50, closes at 54 — ended <b>higher</b>, prints <b style="color:var(--green)">green</b>, buyers won. Opens at 50, closes at 47 — ended <b>lower</b>, prints <b style="color:var(--red)">red</b>, sellers won. That's the whole rule.</p>
+    </div>
+    <figure class="fig solo anim d1">
+      <img src="./assets/green-red-candles.jpg" alt="A green candle beside a red candle showing winners of each round" />
+      <figcaption>Green: close beat the open. Red: it didn't. One glance = one verdict.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3 · BODY STRENGTH -->
+<section id="body-strength">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Signal 2 · Body</div>
+      <h2 class="title">The body says how hard they won</h2>
+      <p class="lead center">Long body = one side steamrolled, start to finish. Short body = a close fight, almost a draw. Body shrinks to nothing? That's a <b>doji</b> — a stalemate, and often a warning the move is running out of muscle.</p>
+    </div>
+    <div class="meters anim d1">
+      <div class="meter strong"><svg viewBox="0 0 64 110"><line x1="32" y1="6" x2="32" y2="104" stroke="#16A34A" stroke-width="3"/><rect x="16" y="14" width="32" height="82" rx="4" fill="#22C55E" stroke="#16A34A" stroke-width="2"/></svg>
+        <div class="mtag">Long body</div><h3>Blowout win</h3><p>Open and close far apart — high conviction, one-sided pressure.</p></div>
+      <div class="meter weak"><svg viewBox="0 0 64 110"><line x1="32" y1="10" x2="32" y2="100" stroke="#D97706" stroke-width="3"/><rect x="16" y="46" width="32" height="18" rx="4" fill="#FBBF24" stroke="#D97706" stroke-width="2"/></svg>
+        <div class="mtag">Short body</div><h3>Close fight</h3><p>Close barely moved from the open — nobody really dominated.</p></div>
+      <div class="meter doji"><svg viewBox="0 0 64 110"><line x1="32" y1="8" x2="32" y2="102" stroke="#5B6472" stroke-width="3"/><rect x="16" y="52" width="32" height="5" rx="2.5" fill="#98A2B3"/></svg>
+        <div class="mtag">Doji</div><h3>Stalemate</h3><p>Open ≈ close. The rope froze mid-fight — momentum may be fading.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · WICK REJECTION -->
+<section id="wick-rejection">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Signal 3 · Wicks</div>
+      <h2 class="title">Wicks are punches that got rejected</h2>
+      <p class="lead center">A long lower wick: sellers shoved price way down… and buyers slapped it right back before the close. The market tried a price and said <i>no thanks</i>. The wick shows the punch; the close shows who was standing at the bell.</p>
+    </div>
+    <div class="figrid anim d1">
+      <figure class="fig">
+        <img src="./assets/wick-reject.jpg" alt="A candle with a long lower wick showing a rejected push down" />
+        <figcaption>Long lower wick = buyers defending. Long upper wick = sellers smacking a rally back down.</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="./assets/candle-tug.jpg" alt="The buyer-seller tug-of-war behind every candle" />
+        <figcaption>Recall 2.2: every wick is the rope yanked hard one way — then yanked back.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · WATCH ONE FORM (interactive — replaces the "candle forming" video) -->
+<section id="forming">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Watch It Being Born</div>
+      <h2 class="title">A candle, forming tick by tick</h2>
+      <p class="lead center">Reading finished candles is good. Watching one form is better. Run the day: the open locks, price wanders, wicks stretch, the body fills — and at the last tick the color locks. Then call the winner.</p>
+    </div>
+    <div class="former anim d1">
+      <div class="island">
+        <div id="fmSvg" role="img" aria-label="A live candlestick forming tick by tick as the day's price wanders"></div>
+      </div>
+      <div>
+        <div class="fm-head">&#9679; Live · one trading day</div>
+        <div class="fm-clock" id="fmClock">09:30 — market opens</div>
+        <div class="fm-status" id="fmStatus">Press <b>Run the day</b> to set the open.</div>
+        <div class="fm-btns">
+          <button class="btn" id="fmRun" type="button">Run the day &nbsp;&#9654;</button>
+          <button class="btn ghost" id="fmAgain" type="button" style="display:none">Run another day &#8635;</button>
+        </div>
+        <div class="fm-call" id="fmCall">
+          <button data-t="g" type="button">&#128994; Buyers won</button>
+          <button data-t="r" type="button">&#128308; Sellers won</button>
+        </div>
+        <div class="fm-fb" id="fmFb"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · CANDLE BATTLE -->
+<section id="battle">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Your Turn · Candle Battle</div>
+      <h2 class="title">Call five rounds</h2>
+      <p class="lead center">I describe the candle — you read where it opened and closed, and tap who took the round.</p>
+    </div>
+    <div class="cbg anim d1" id="cbGame">
+      <div class="cb-mini">
+        <svg viewBox="0 0 70 90" aria-hidden="true">
+          <line x1="20" y1="8" x2="20" y2="82" stroke="#16A34A" stroke-width="3"/>
+          <rect x="8" y="30" width="24" height="42" rx="3" fill="#22C55E" stroke="#16A34A" stroke-width="2"/>
+          <line x1="52" y1="14" x2="52" y2="80" stroke="#DC2626" stroke-width="3"/>
+          <rect x="40" y="34" width="24" height="34" rx="3" fill="#EF4444" stroke="#DC2626" stroke-width="2"/>
+        </svg>
+        <div class="cbdesc" id="cbDesc">Loading round…</div>
+      </div>
+      <div class="cbbtns">
+        <button class="cbbtn" data-team="GREEN" id="cbGreen">&#128994; Green team (buyers)</button>
+        <button class="cbbtn" data-team="RED" id="cbRed">&#128308; Red team (sellers)</button>
+      </div>
+      <div class="cbwhy" id="cbWhy"></div>
+      <div class="cbfoot">
+        <div class="cbtrack" id="cbTrack" aria-hidden="true"></div>
+        <button id="cbNext">Next round &rarr;</button>
+        <span id="cbScore">Score 0 / 5</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Four questions on calling the fight.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="0">
+        <h4>1. A candle opens at $30 and closes at $33. It prints…</h4>
+        <button class="opt" data-idx="0">Green — the close beat the open, buyers won</button>
+        <button class="opt" data-idx="1">Red — the price moved, so sellers won</button>
+        <button class="opt" data-idx="2">You can't tell from the open and close</button>
+        <div class="exp">Close above open = green = buyers took the round. That's the entire color rule.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. A LONG body tells you the round was…</h4>
+        <button class="opt" data-idx="0">A near tie</button>
+        <button class="opt" data-idx="1">A blowout — one side dominated start to finish</button>
+        <button class="opt" data-idx="2">Cancelled</button>
+        <div class="exp">Open and close far apart = strong one-sided pressure. Short body = close fight.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. A candle with a tiny body and a long LOWER wick usually means…</h4>
+        <button class="opt" data-idx="0">Sellers won easily</button>
+        <button class="opt" data-idx="1">Nothing — wicks are decoration</button>
+        <button class="opt" data-idx="2">Sellers shoved price down but got rejected — buyers defended</button>
+        <div class="exp">The lower wick is the failed punch down; the close snapping back up shows buyers standing at the bell.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. A doji — open and close at nearly the same price — signals…</h4>
+        <button class="opt" data-idx="0">A guaranteed crash tomorrow</button>
+        <button class="opt" data-idx="1">A stalemate — and often a move running out of muscle</button>
+        <button class="opt" data-idx="2">That the exchange was closed</button>
+        <div class="exp">A doji is the rope frozen mid tug-of-war. It warns momentum may be fading — a hint, never a promise.</div>
+      </div>
+      <div class="quiz-result" id="quizResult"><div class="score" id="quizScore">0 / 4</div><p id="quizMsg"></p></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn green" id="quizSubmit">Submit answers</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Recap</div><h2 class="title">Three signals, one glance</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Color = who won. Green: close beat open. Red: it didn't.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Body = how hard. Long = blowout, short = close fight, doji = stalemate.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Wicks = rejection. The punch that didn't hold to the bell.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Nobody trades ONE round — next: candles become charts.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 2.6</div><h3>From Candles to Charts: Chart Types &amp; Timeframes</h3></div>
+      <span class="badge">The zoom knob changes everything &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+/* __FTA_TIMINGS_START__ */
+window.sectionTimestamps = [
+  {"id": "hero", "start": 0.0, "end": 32.96, "interactive": false, "label": "Call the Fight"},
+  {"id": "color", "start": 33.46, "end": 64.82, "interactive": false, "label": "Green or Red"},
+  {"id": "body-strength", "start": 65.32, "end": 97.24, "interactive": false, "label": "Body = How Hard"},
+  {"id": "wick-rejection", "start": 97.74, "end": 131.1, "interactive": false, "label": "Wicks = Rejection"},
+  {"id": "forming", "start": 131.6, "end": 155.44, "interactive": true, "label": "Watch One Form"},
+  {"id": "battle", "start": 155.94, "end": 165.3, "interactive": true, "label": "Candle Battle"},
+  {"id": "quiz", "start": 165.8, "end": 171.08, "interactive": true, "label": "Quick Check"},
+  {"id": "bridge", "start": 171.58, "end": 197.98, "interactive": false, "label": "From Candles to Charts"}
+];
+/* __FTA_TIMINGS_END__ */
+</script>
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- L2.5 bespoke: candle-forming lab + candle battle ---------- */
+(function(){
+  'use strict';
+
+  /* ===== candle forming lab (gates #forming) ===== */
+  var GATE='forming';
+  if(window.__ftaRegisterGate) window.__ftaRegisterGate(GATE,'Run a day and call the winner to continue');
+  // night-island chart: viewBox 0 0 520 340, price domain 44..58
+  function y(p){ return 310 - (p-44)*(280/14); }
+  var svgHost=document.getElementById('fmSvg');
+  svgHost.innerHTML='<svg viewBox="0 0 520 340">'
+    +'<g id="fmGrid"></g>'
+    +'<path id="fmPath" d="" fill="none" stroke="rgba(226,232,240,.65)" stroke-width="2"/>'
+    +'<line id="fmWick" x1="410" x2="410" y1="0" y2="0" stroke="#94A3B8" stroke-width="4" stroke-linecap="round" opacity="0"/>'
+    +'<rect id="fmBody" x="384" width="52" y="0" height="0" rx="4" fill="#94A3B8" opacity="0"/>'
+    +'<line id="fmOpenTick" x1="368" x2="452" y1="0" y2="0" stroke="#FBBF24" stroke-width="2.5" stroke-dasharray="5 4" opacity="0"/>'
+    +'<text id="fmOpenLab" x="360" y="0" text-anchor="end" font-family="Poppins,sans-serif" font-size="12" font-weight="700" fill="#FBBF24" opacity="0">open</text>'
+    +'<circle id="fmDot" r="5" fill="#FBBF24" opacity="0"/>'
+    +'</svg>';
+  var grid=document.getElementById('fmGrid'), gs='';
+  for(var p=46;p<=56;p+=2){ gs+='<line x1="14" x2="506" y1="'+y(p)+'" y2="'+y(p)+'" stroke="rgba(255,255,255,.07)" stroke-width="1"/><text x="16" y="'+(y(p)-4)+'" font-family="Inter,sans-serif" font-size="10" fill="rgba(255,255,255,.35)">$'+p+'</text>'; }
+  grid.innerHTML=gs;
+
+  // three precomputed "days" (open, path of prices, close verdicts vary)
+  var DAYS=[
+    {open:50, path:[50,50.6,51.4,50.9,52.2,53.1,52.4,51.8,52.9,54.2,53.6,54.8,54.1,53.4,54.0], who:'g',
+     why:'Opened at fifty, closed near fifty-four — green body, buyers won the day.'},
+    {open:52, path:[52,51.2,50.4,51.0,49.6,48.8,49.8,48.4,47.6,48.2,47.0,47.8,47.2,46.8,47.4], who:'r',
+     why:'Opened at fifty-two, closed near forty-seven — red body, sellers ran the day.'},
+    {open:50, path:[50,49.2,47.8,46.6,45.8,46.9,48.2,49.4,50.6,51.2,50.4,49.8,50.3,50.1,49.9], who:'r',
+     why:'Sellers shoved it to forty-six, buyers slapped it back — long lower wick, tiny body. A rejection day: the close barely lost the open.'}
+  ];
+  var di=0, ran=false, called=false, running=false;
+  var elPath=document.getElementById('fmPath'), elWick=document.getElementById('fmWick'),
+      elBody=document.getElementById('fmBody'), elDot=document.getElementById('fmDot'),
+      elOT=document.getElementById('fmOpenTick'), elOL=document.getElementById('fmOpenLab'),
+      status=document.getElementById('fmStatus'), clock=document.getElementById('fmClock'),
+      runBtn=document.getElementById('fmRun'), againBtn=document.getElementById('fmAgain'),
+      call=document.getElementById('fmCall'), fb=document.getElementById('fmFb');
+  var TIMES=['09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:20','15:45','16:00'];
+  function xFor(i,n){ return 30 + i*(330/(n-1)); }
+  function runDay(){
+    if(running) return; running=true; called=false;
+    var day=DAYS[di%DAYS.length];
+    var n=day.path.length, i=0;
+    var hi=-1e9, lo=1e9;
+    elPath.setAttribute('d','');
+    elBody.setAttribute('opacity','1'); elWick.setAttribute('opacity','1');
+    elBody.setAttribute('fill','#94A3B8'); elWick.setAttribute('stroke','#94A3B8');
+    elDot.setAttribute('opacity','1');
+    elOT.setAttribute('opacity','1'); elOL.setAttribute('opacity','1');
+    elOT.setAttribute('y1',y(day.open)); elOT.setAttribute('y2',y(day.open));
+    elOL.setAttribute('y',y(day.open)+4);
+    call.classList.remove('show'); fb.textContent=''; fb.className='fm-fb';
+    var d='';
+    function step(){
+      var price=day.path[i];
+      hi=Math.max(hi,price); lo=Math.min(lo,price);
+      var px=xFor(i,n), py=y(price);
+      d+= (i===0?'M':'L')+px+' '+py+' ';
+      elPath.setAttribute('d',d);
+      elDot.setAttribute('cx',px); elDot.setAttribute('cy',py);
+      clock.textContent=TIMES[i]+(i===0?' — the open locks in at $'+day.open.toFixed(0):(i===n-1?' — closing bell':''));
+      // live wick: full range so far
+      elWick.setAttribute('y1',y(hi)); elWick.setAttribute('y2',y(lo));
+      // live body: open->current
+      var bTop=Math.min(y(day.open),y(price)), bH=Math.max(Math.abs(y(price)-y(day.open)),3);
+      elBody.setAttribute('y',bTop); elBody.setAttribute('height',bH);
+      if(i===0){ status.innerHTML='The <b>open</b> locks in at $'+day.open.toFixed(0)+'. Price starts to wander…'; }
+      else if(i===Math.floor(n/2)){ status.innerHTML='Wicks stretch as price probes high and low…'; }
+      i++;
+      if(i<n){ setTimeout(step, 340); }
+      else{
+        var closeP=day.path[n-1];
+        var up=closeP>=day.open;
+        elBody.setAttribute('fill', up?'#22C55E':'#EF4444');
+        elWick.setAttribute('stroke', up?'#16A34A':'#B91C1C');
+        status.innerHTML='The <b>close</b> snaps shut at $'+closeP.toFixed(1)+' — color locks. <b>Who won this day?</b>';
+        call.classList.add('show');
+        running=false; ran=true;
+      }
+    }
+    step();
+  }
+  runBtn.addEventListener('click',function(){ runBtn.style.display='none'; runDay(); });
+  againBtn.addEventListener('click',function(){ di++; runDay(); });
+  call.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(!ran||running||called) return;
+      called=true;
+      var day=DAYS[di%DAYS.length];
+      var closeP=day.path[day.path.length-1];
+      var winner=closeP>=day.open?'g':'r';
+      var right=b.dataset.t===winner;
+      b.classList.add(right?'right':'wrong');
+      fb.textContent=(right?'Called it. ':'Not quite — check the close against the open. ')+day.why;
+      fb.className='fm-fb'+(right?' good':'');
+      againBtn.style.display='inline-block';
+      call.querySelectorAll('button').forEach(function(x){x.disabled=true;});
+      setTimeout(function(){ call.querySelectorAll('button').forEach(function(x){x.disabled=false; x.classList.remove('right','wrong');}); },1400);
+      if(window.__ftaSatisfy) window.__ftaSatisfy(GATE);
+    });
+  });
+
+  /* ===== candle battle: 5 described rounds (gates #battle) ===== */
+  var BGATE='battle';
+  if(window.__ftaRegisterGate) window.__ftaRegisterGate(BGATE,'Play all five rounds to continue');
+  var ROUNDS=[
+    {d:'Opens at $20, closes at $24. Long, full body.', t:'GREEN', why:'Close above open = green. The long body says buyers dominated the whole period.'},
+    {d:'Opens at $58, closes at $51. Barely any wick.', t:'RED', why:'Close well below open = red. Sellers ran it start to finish.'},
+    {d:'Opens at $10.00, closes at $10.10, after touching $9.20.', t:'GREEN', why:'The close still beat the open — green, but that long lower wick shows a hard fight.'},
+    {d:'Opens at $75, spikes to $82, closes at $71.', t:'RED', why:'The rally got smacked back down (long upper wick) and the close lost the open — sellers stood at the bell.'},
+    {d:'Opens at $33, closes at $36, low of the day $32.80.', t:'GREEN', why:'Close above open = green. The shallow low means sellers never really landed a punch.'}
+  ];
+  var ri=0, score=0, answered=false;
+  var desc=document.getElementById('cbDesc'), why=document.getElementById('cbWhy'),
+      g=document.getElementById('cbGreen'), r=document.getElementById('cbRed'),
+      nxt=document.getElementById('cbNext'), sc=document.getElementById('cbScore'),
+      track=document.getElementById('cbTrack');
+  ROUNDS.forEach(function(){ track.innerHTML+='<i></i>'; });
+  var marks=track.querySelectorAll('i');
+  function load(){
+    answered=false;
+    desc.textContent='Round '+(ri+1)+': '+ROUNDS[ri].d;
+    why.className='cbwhy'; why.textContent='';
+    [g,r].forEach(function(b){ b.disabled=false; b.classList.remove('right','wrong'); });
+    nxt.classList.remove('show');
+  }
+  function pick(team){
+    if(answered) return; answered=true;
+    var round=ROUNDS[ri], right=team===round.t;
+    if(right) score++;
+    (team==='GREEN'?g:r).classList.add(right?'right':'wrong');
+    if(!right) (round.t==='GREEN'?g:r).classList.add('right');
+    marks[ri].className=right?'hit':'miss';
+    why.textContent=round.why; why.classList.add('show');
+    sc.textContent='Score '+score+' / 5';
+    [g,r].forEach(function(b){ b.disabled=true; });
+    if(ri<ROUNDS.length-1){ nxt.classList.add('show'); }
+    else{
+      desc.textContent='Battle over — you called '+score+' of 5 rounds.';
+      if(window.__ftaSatisfy) window.__ftaSatisfy(BGATE);
+    }
+  }
+  g.addEventListener('click',function(){pick('GREEN');});
+  r.addEventListener('click',function(){pick('RED');});
+  nxt.addEventListener('click',function(){ ri++; load(); });
+  load();
+})();
+</script>
+</body>
+</html>

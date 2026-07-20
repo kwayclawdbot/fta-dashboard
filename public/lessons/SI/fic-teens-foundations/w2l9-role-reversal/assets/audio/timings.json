@@ -1,0 +1,42 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 161.76,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 32.88,
+      "interactive": false,
+      "label": "The Finale"
+    },
+    {
+      "id": "breakout",
+      "start": 33.38,
+      "end": 69.22,
+      "interactive": false,
+      "label": "The Breakout"
+    },
+    {
+      "id": "role-reversal",
+      "start": 69.72,
+      "end": 122.6,
+      "interactive": true,
+      "label": "The Flip"
+    },
+    {
+      "id": "quiz",
+      "start": 123.1,
+      "end": 127.58,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 128.08,
+      "end": 161.76,
+      "interactive": false,
+      "label": "Week 2 Complete"
+    }
+  ]
+}

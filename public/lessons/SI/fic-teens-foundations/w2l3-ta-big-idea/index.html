@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Technical Analysis: The Big Idea · SI-100 Teens · Module 2 · Lesson 2.3</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.3" />
+<meta name="fta-lesson-title" content="Technical Analysis: The Big Idea" />
+<meta name="fta-lesson-objectives" content="Define technical analysis|Contrast reading the price with reading the company|State what technical analysis does and does not claim" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* ============ bespoke: L2.3 TA Big Idea ============ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:700px}
+.kinetic{font-size:clamp(34px,6.6vw,62px);font-weight:900;line-height:.98;margin:14px 0;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{color:var(--gold-700)}
+@keyframes wordUp{to{opacity:1;transform:none}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+.figrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:26px auto 0}
+@media(max-width:700px){.figrid{grid-template-columns:1fr}}
+.fig{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);margin:0}
+.fig img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.fig figcaption{padding:12px 16px;font-size:13.5px;color:var(--soft)}
+.fig.solo{max-width:640px;margin:26px auto 0}
+
+/* claims card */
+.claims{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:900px;margin:26px auto 0}
+@media(max-width:760px){.claims{grid-template-columns:1fr}}
+.claim{border-radius:var(--r-xl);padding:24px;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft)}
+.claim.yes{background:linear-gradient(160deg,var(--green-bg),var(--card));border-color:var(--green-border)}
+.claim.no{background:linear-gradient(160deg,var(--red-bg),var(--card));border-color:var(--red-border)}
+.claim .tag{font:700 12px var(--font-display);letter-spacing:1.5px;text-transform:uppercase}
+.claim.yes .tag{color:var(--green)}.claim.no .tag{color:var(--red)}
+.claim h3{font-size:19px;margin:5px 0 6px}
+.claim p{color:var(--soft);font-size:14.5px}
+
+@media (prefers-reduced-motion: reduce){
+  .kinetic .w,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none}
+  .hero-fallback{animation:none}.anim{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="hero-fallback"></div><div class="hero-scrim"></div></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Teens · Week 2 · Lesson 2.3</div>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">You Just</span>
+        <span class="w" style="animation-delay:.17s">Invented</span>
+        <span class="w gold" style="animation-delay:.29s">Technical&nbsp;Analysis</span>
+      </h1>
+      <p class="lead">Last lesson: price is a tug-of-war. Sneaky thought — if the chart records that fight, couldn't you <i>read</i> it to see who's winning? Congratulations. That idea has a name.</p>
+      <div class="badges">
+        <span class="badge">Recalls · <b>2.2 The Tug-of-War</b></span>
+        <span class="badge">~<b>2.5</b> min</span>
+        <span class="badge"><b>1</b> game + quiz</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — what chart readers actually believe.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · TWO LENSES -->
+<section id="two-lenses">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Two Ways to Judge a Stock</div>
+      <h2 class="title">Read the company… or read the crowd</h2>
+      <p class="lead center">Same stock, two completely different lenses.</p>
+    </div>
+    <div class="two anim d1" style="max-width:900px;margin-left:auto;margin-right:auto">
+      <div class="cmp safe"><span class="tag">Fundamental analysis</span><h3>The report card</h3>
+        <p>Read the <b>company</b>: its sales, its profits, its plans. Is the business itself strong, and what is it really worth?</p></div>
+      <div class="cmp grow"><span class="tag">Technical analysis</span><h3>The crowd</h3>
+        <p>Read the <b>price</b>: ignore the press releases and study what buyers and sellers are actually <i>doing</i>, right now, on the chart.</p></div>
+    </div>
+    <div class="figrid anim d2">
+      <figure class="fig">
+        <img src="./assets/earnings-report.jpg" alt="A company earnings report — the fundamental lens" />
+        <figcaption>The fundamental lens: revenue, profit, health. The company's report card.</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="./assets/patterns.jpg" alt="Price patterns on a chart — the technical lens" />
+        <figcaption>The technical lens: the fight itself, recorded on the chart.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · WHAT TA CLAIMS -->
+<section id="what-ta-claims">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Core Belief</div>
+      <h2 class="title">"Market behavior tends to repeat"</h2>
+      <p class="lead center">Fear looks like fear on every chart. Greed looks like greed. So the patterns price carved out before can <b>hint</b> at what comes next. Notice the word: <i>hint</i>.</p>
+    </div>
+    <div class="claims anim d1">
+      <div class="claim yes"><span class="tag">What TA claims</span><h3>Probabilities</h3>
+        <p>"This pattern usually leans that way." Chart reading stacks the odds — it tilts your guesses from coin-flips toward educated calls.</p></div>
+      <div class="claim no"><span class="tag">What TA never claims</span><h3>Promises</h3>
+        <p>It is not a crystal ball, and anyone selling it as one is lying to you. No pattern says "this <i>must</i> happen." Ever.</p></div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/news-cycle.jpg" alt="A noisy news cycle around the market" />
+      <figcaption>News screams stories all day. The chart shows what the crowd actually did with its money.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 4 · SORTER -->
+<section id="lens-sort">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Your Turn</div>
+      <h2 class="title">Which lens asks this?</h2>
+      <p class="lead center">Tap a question, then the lens it belongs to. Sort all six to continue.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="tech">Is the price making higher highs?</button>
+        <button class="chip" data-bucket="tech">Did buyers defend the last dip?</button>
+        <button class="chip" data-bucket="tech">Is this candle green or red?</button>
+        <button class="chip" data-bucket="fund">Did profits grow last quarter?</button>
+        <button class="chip" data-bucket="fund">How much debt does the company owe?</button>
+        <button class="chip" data-bucket="fund">Are sales rising year over year?</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="tech"><h4>&#128200; Technical</h4><div class="sub">Reads the price / the crowd</div><div class="drop"></div></div>
+        <div class="col gamble" data-bucket="fund"><h4>&#128203; Fundamental</h4><div class="sub">Reads the company</div><div class="drop"></div></div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a question to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Four questions and this one's yours.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. Technical analysis is the skill of…</h4>
+        <button class="opt" data-idx="0">Reading a company's financial statements</button>
+        <button class="opt" data-idx="1">Reading price charts to spot patterns in market behavior</button>
+        <button class="opt" data-idx="2">Predicting the news before it happens</button>
+        <div class="exp">TA reads what price is doing — the recorded fight between buyers and sellers — not the company's report card.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. The core idea that makes chart reading useful is:</h4>
+        <button class="opt" data-idx="0">Prices move randomly, so anything can happen</button>
+        <button class="opt" data-idx="1">Exchanges publish tomorrow's prices early</button>
+        <button class="opt" data-idx="2">Market behavior tends to repeat — fear and greed leave similar footprints</button>
+        <div class="exp">Crowd emotions repeat, so the patterns they carve into price tend to repeat too. That's the whole bet.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. What does a chart pattern honestly give you?</h4>
+        <button class="opt" data-idx="0">A probability — "this usually leans that way"</button>
+        <button class="opt" data-idx="1">A guarantee — "this must happen next"</button>
+        <button class="opt" data-idx="2">Nothing — charts are decoration</button>
+        <div class="exp">TA deals in probabilities, never promises. It stacks the odds; it doesn't see the future.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. "Did the company's profit grow this year?" is a question for…</h4>
+        <button class="opt" data-idx="0">Technical analysis</button>
+        <button class="opt" data-idx="1">Fundamental analysis</button>
+        <button class="opt" data-idx="2">Neither — profit doesn't matter</button>
+        <div class="exp">Profit, sales and debt are the company's report card — the fundamental lens. The chart is the technical lens.</div>
+      </div>
+      <div class="quiz-result" id="quizResult"><div class="score" id="quizScore">0 / 4</div><p id="quizMsg"></p></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn green" id="quizSubmit">Submit answers</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Recap</div><h2 class="title">The big idea, locked</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Technical analysis = reading the buyer-seller fight straight off the price.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Fundamental analysis = reading the company's report card.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>TA's bet: crowd behavior repeats — as odds, never guarantees.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>To read the fight, you need the shape it's written in…</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 2.4</div><h3>Anatomy of a Candlestick</h3></div>
+      <span class="badge">The alphabet of every chart on earth &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+/* __FTA_TIMINGS_START__ */
+window.sectionTimestamps = [
+  {"id": "hero", "start": 0.0, "end": 37.04, "interactive": false, "label": "You Just Invented It"},
+  {"id": "two-lenses", "start": 37.54, "end": 71.06, "interactive": false, "label": "Two Ways to Judge a Stock"},
+  {"id": "what-ta-claims", "start": 71.56, "end": 110.28, "interactive": false, "label": "What It Claims (and Doesn't)"},
+  {"id": "lens-sort", "start": 110.78, "end": 125.9, "interactive": true, "label": "Which Lens?"},
+  {"id": "quiz", "start": 126.4, "end": 131.52, "interactive": true, "label": "Quick Check"},
+  {"id": "bridge", "start": 132.02, "end": 157.14, "interactive": false, "label": "The Alphabet Awaits"}
+];
+/* __FTA_TIMINGS_END__ */
+</script>
+<script src="./assets/lesson-runtime.js"></script>
+</body>
+</html>

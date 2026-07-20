@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>From Candles to Charts: Chart Types &amp; Timeframes · SI-100 Teens · Module 2 · Lesson 2.6</title>
+<meta name="fta-course" content="SI-100-Teens" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.6" />
+<meta name="fta-lesson-title" content="From Candles to Charts: Chart Types &amp; Timeframes" />
+<meta name="fta-lesson-objectives" content="Contrast a line chart with a candlestick chart|Explain what a timeframe is|Explain why traders check more than one timeframe" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* ============ bespoke: L2.6 Chart Types & Timeframes ============ */
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+.lead.center{margin-left:auto;margin-right:auto}
+#hero{overflow:hidden}
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-fallback{position:absolute;inset:0;background:url('./assets/hero.jpg') center/cover no-repeat;animation:kenburns 26s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.03)}to{transform:scale(1.15)}}
+.hero-scrim{position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.95) 0%,rgba(251,247,239,.88) 42%,rgba(251,247,239,.46) 72%,rgba(251,247,239,.14) 100%),
+             radial-gradient(1000px 560px at 84% -8%,rgba(251,191,36,.20),transparent 60%)}
+@media(max-width:860px){.hero-scrim{background:linear-gradient(180deg,rgba(251,247,239,.92),rgba(251,247,239,.84) 55%,rgba(251,247,239,.74))}}
+.hero-inner{position:relative;z-index:2;max-width:1040px}
+.hero-copy{max-width:680px}
+.kinetic{font-size:clamp(36px,7vw,66px);font-weight:900;line-height:.98;margin:14px 0;letter-spacing:-.03em}
+.kinetic .w{display:inline-block;opacity:0;transform:translateY(22px);animation:wordUp .62s cubic-bezier(.2,.7,.2,1) forwards}
+.kinetic .gold{color:var(--gold-700)}
+@keyframes wordUp{to{opacity:1;transform:none}}
+.hero-inner .lead{opacity:0;animation:wordUp .7s ease .5s forwards}
+.hero-inner .badges{opacity:0;animation:wordUp .7s ease .66s forwards}
+.hero-inner .startwrap{opacity:0;animation:wordUp .7s ease .82s forwards}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+
+.figrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:26px auto 0}
+@media(max-width:700px){.figrid{grid-template-columns:1fr}}
+.fig{border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--sand);background:var(--card);box-shadow:var(--shadow-soft);margin:0}
+.fig img{width:100%;display:block;aspect-ratio:16/10;object-fit:cover}
+.fig figcaption{padding:12px 16px;font-size:13.5px;color:var(--soft)}
+.fig.solo{max-width:640px;margin:26px auto 0}
+
+/* zoom lab chart card */
+.chartcard{max-width:880px;margin:26px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:24px 24px 20px;box-shadow:var(--shadow-lift)}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.chart-kicker{font:700 12px/1.4 var(--font-display);letter-spacing:1.4px;text-transform:uppercase;color:var(--soft)}
+.chart-big{font:800 clamp(17px,2.4vw,24px)/1.15 var(--font-display);color:var(--ink);margin-top:5px}
+.chart-svg svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-foot{margin-top:12px;font-size:13px;color:var(--soft);text-align:center}
+.toggles{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.tf-toggle{display:inline-flex;background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-full);padding:4px;gap:2px}
+.tf-toggle button{font:700 13px var(--font-display);border:none;background:transparent;color:var(--soft);
+  padding:8px 15px;border-radius:var(--r-full);cursor:pointer;transition:all .18s ease}
+.tf-toggle button.on{background:var(--gold);color:var(--ink);box-shadow:0 3px 10px rgba(251,191,36,.35)}
+.lab-goal{margin-top:12px;text-align:center;font:600 13.5px var(--font-body);color:var(--soft)}
+.lab-goal b{color:var(--soft)}
+.lab-goal b.done{color:var(--green)}
+
+@media (prefers-reduced-motion: reduce){
+  .kinetic .w,.hero-inner .lead,.hero-inner .badges,.hero-inner .startwrap{animation:none;opacity:1;transform:none}
+  .hero-fallback{animation:none}.anim{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="hero-bg"><div class="hero-fallback"></div><div class="hero-scrim"></div></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Teens · Week 2 · Lesson 2.6</div>
+      <h1 class="kinetic">
+        <span class="w" style="animation-delay:.05s">The</span>
+        <span class="w gold" style="animation-delay:.15s">Zoom&nbsp;Knob</span>
+      </h1>
+      <p class="lead">You can call one candle. But nobody trades one candle. Today: how charts draw the same prices differently — and why the same day can look calm on one chart and chaotic on another, with neither lying.</p>
+      <div class="badges">
+        <span class="badge">Recalls · <b>2.5 Who Won</b></span>
+        <span class="badge">~<b>3</b> min</span>
+        <span class="badge"><b>1</b> lab + quiz</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Press play — same day, different costumes.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · LINE VS CANDLE -->
+<section id="line-vs-candle">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Chart Types</div>
+      <h2 class="title">The line tells you where price ended.<br/>Candles tell you what it took.</h2>
+      <p class="lead center">A line chart connects each period's <b>close</b> — clean, but it throws away the opens, highs, lows and every fight. Candles keep all four prices for every round.</p>
+    </div>
+    <div class="two anim d1" style="max-width:900px;margin-left:auto;margin-right:auto">
+      <div class="cmp safe"><span class="tag">Line chart</span><h3>The final scores</h3>
+        <p>Dot on each close, connect the dots. Great for a glance — but no bodies, no wicks, no rejections, no battles.</p></div>
+      <div class="cmp grow"><span class="tag">Candlestick chart</span><h3>The whole fight</h3>
+        <p>Open, high, low, close for every period. Who won, how hard, and which punches got rejected — all visible.</p></div>
+    </div>
+    <figure class="fig solo anim d2">
+      <img src="./assets/green-red-candles.jpg" alt="Candlesticks carrying full open-high-low-close information" />
+      <figcaption>Recall 2.5: every candle is a called fight. A line chart erases the fights.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3 · TIMEFRAMES -->
+<section id="timeframes">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">The Zoom Knob</div>
+      <h2 class="title">You choose how much time each candle swallows</h2>
+      <p class="lead center">Daily chart: one candle = one day. One-hour: that day becomes ~7 candles. Fifteen-minute: 26 of them. Nothing about the stock changed — <b>only your zoom did</b>.</p>
+    </div>
+    <div class="figrid anim d1">
+      <figure class="fig">
+        <img src="./assets/timeframe.jpg" alt="The same market drawn at multiple timeframes" />
+        <figcaption>Zoomed in: every wiggle is its own candle. Zoomed out: wiggles fold into one calm bar.</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="./assets/trend-staircase.jpg" alt="A price staircase emerging when you zoom out" />
+        <figcaption>Traders check both: zoom out for the big picture, zoom in for detail — the stories must agree.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · ZOOM LAB (interactive gate) -->
+<section id="zoom-lab">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Your Turn</div>
+      <h2 class="title">The zoom lab</h2>
+      <p class="lead center">One single trading day. Flip the chart type, then walk the timeframes. Try <b>every view</b> to continue.</p>
+    </div>
+    <div class="chartcard anim d1">
+      <div class="chart-head">
+        <div>
+          <div class="chart-kicker">Same day · illustrative</div>
+          <div class="chart-big" id="zlHeadline">Candles · 15-minute: 26 candles — busy and choppy.</div>
+        </div>
+        <div class="toggles">
+          <div class="tf-toggle" role="group" aria-label="Chart type">
+            <button data-type="candle" class="on" type="button">Candles</button>
+            <button data-type="line" type="button">Line</button>
+          </div>
+          <div class="tf-toggle" role="group" aria-label="Timeframe">
+            <button data-tf="15m" class="on" type="button">15-min</button>
+            <button data-tf="1h" type="button">1-hour</button>
+            <button data-tf="day" type="button">Daily</button>
+          </div>
+        </div>
+      </div>
+      <div id="zlChart" class="chart-svg" role="img" aria-label="One trading day drawn as line or candles at three timeframes"></div>
+      <div class="chart-foot" id="zlFoot"><b>26</b> candles for one and the same day</div>
+      <div class="lab-goal" id="zlGoal">Views tried: <b id="zlCount">1</b> / 5 — flip the type and walk all three timeframes.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Four questions on the zoom knob.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What does a LINE chart actually plot?</h4>
+        <button class="opt" data-idx="0">Every price the stock touched all day</button>
+        <button class="opt" data-idx="1">Each period's closing price, connected</button>
+        <button class="opt" data-idx="2">The number of shares traded</button>
+        <div class="exp">A line chart connects the closes — the final score of each round, nothing about how the round went.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. Why do traders default to candlestick charts?</h4>
+        <button class="opt" data-idx="0">They look cooler</button>
+        <button class="opt" data-idx="1">Lines are only for adults</button>
+        <button class="opt" data-idx="2">Candles keep all four prices — the whole fight — per period</button>
+        <div class="exp">Open, high, low, close for every period: who won, how hard, what got rejected.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. On a 1-hour chart, one candle covers…</h4>
+        <button class="opt" data-idx="0">One hour of trading</button>
+        <button class="opt" data-idx="1">One full day</button>
+        <button class="opt" data-idx="2">However long the trend lasts</button>
+        <div class="exp">The timeframe IS the chunk of time each candle swallows. Daily = a day, 1-hour = an hour, 15-min = fifteen minutes.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. The same day looks wild on the 15-minute chart and calm on the daily. Who's lying?</h4>
+        <button class="opt" data-idx="0">The 15-minute chart</button>
+        <button class="opt" data-idx="1">Neither — it's the same data at different zooms</button>
+        <button class="opt" data-idx="2">The daily chart</button>
+        <div class="exp">Zoomed in, every wiggle gets its own candle; zoomed out they fold into one bar. That's why traders check more than one timeframe.</div>
+      </div>
+      <div class="quiz-result" id="quizResult"><div class="score" id="quizScore">0 / 4</div><p id="quizMsg"></p></div>
+      <div style="text-align:center;margin-top:8px"><button class="btn green" id="quizSubmit">Submit answers</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · BRIDGE -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Recap</div><h2 class="title">You own the zoom knob</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Line chart = closes only. Candles = the whole fight, every period.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The timeframe decides how much time each candle swallows.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Same day, different zoom = different story. Neither is lying.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Hundreds of candles at once reveal a new shape: the trend…</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next · Lesson 2.7</div><h3>Trend Structure: Higher Highs &amp; Higher Lows</h3></div>
+      <span class="badge">Learn to read the staircase &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+<nav id="dots"></nav>
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+/* __FTA_TIMINGS_START__ */
+window.sectionTimestamps = [
+  {"id": "hero", "start": 0.0, "end": 37.12, "interactive": false, "label": "The Zoom Knob"},
+  {"id": "line-vs-candle", "start": 37.62, "end": 79.46, "interactive": false, "label": "Line vs. Candles"},
+  {"id": "timeframes", "start": 79.96, "end": 123.48, "interactive": false, "label": "Timeframes"},
+  {"id": "zoom-lab", "start": 123.98, "end": 142.78, "interactive": true, "label": "The Zoom Lab"},
+  {"id": "quiz", "start": 143.28, "end": 146.32, "interactive": true, "label": "Quick Check"},
+  {"id": "bridge", "start": 146.82, "end": 173.38, "interactive": false, "label": "A Bigger Shape Appears"}
+];
+/* __FTA_TIMINGS_END__ */
+</script>
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- L2.6 bespoke: zoom lab (type + timeframe toggles) ---------- */
+(function(){
+  'use strict';
+  var GATE='zoom-lab';
+  if(window.__ftaRegisterGate) window.__ftaRegisterGate(GATE,'Try all five views to continue');
+
+  // one synthetic trading day: 26 fifteen-minute closes (opens chain from prior close)
+  var closes=[50.0,50.3,50.1,50.6,50.9,50.5,51.2,51.6,51.3,51.9,52.3,52.0,52.6,52.2,52.8,53.1,52.7,53.4,53.0,53.6,54.0,53.7,54.3,54.1,54.6,54.4];
+  function bars15(){
+    var out=[], prev=49.8;
+    for(var i=0;i<closes.length;i++){
+      var o=prev, c=closes[i];
+      var h=Math.max(o,c)+0.25, l=Math.min(o,c)-0.25;
+      out.push({o:o,h:h,l:l,c:c}); prev=c;
+    }
+    return out;
+  }
+  function agg(bars,size){
+    var out=[];
+    for(var i=0;i<bars.length;i+=size){
+      var chunk=bars.slice(i,i+size);
+      out.push({
+        o:chunk[0].o,
+        c:chunk[chunk.length-1].c,
+        h:Math.max.apply(null,chunk.map(function(b){return b.h;})),
+        l:Math.min.apply(null,chunk.map(function(b){return b.l;}))
+      });
+    }
+    return out;
+  }
+  var DATA={ '15m':bars15() };
+  DATA['1h']=agg(DATA['15m'],4);
+  DATA['day']=agg(DATA['15m'],26);
+
+  var state={type:'candle', tf:'15m'};
+  var seen={}; seen['candle|15m']=true;
+  var chart=document.getElementById('zlChart'), head=document.getElementById('zlHeadline'),
+      foot=document.getElementById('zlFoot'), cnt=document.getElementById('zlCount'),
+      goal=document.getElementById('zlGoal');
+  var W=760,H=300,PX=40,PT=18,PB=24;
+  function render(){
+    var bars=DATA[state.tf];
+    var min=1e9,max=-1e9;
+    bars.forEach(function(b){ min=Math.min(min,b.l); max=Math.max(max,b.h); });
+    var pad=(max-min)*0.1||1; min-=pad; max+=pad;
+    function y(p){ return PT+(1-(p-min)/(max-min))*(H-PT-PB); }
+    var n=bars.length, slot=(W-2*PX)/n, bw=Math.min(slot*0.55, 46);
+    var s='<svg viewBox="0 0 '+W+' '+H+'">';
+    [0.25,0.5,0.75].forEach(function(g){
+      var gy=PT+g*(H-PT-PB);
+      s+='<line x1="'+PX+'" x2="'+(W-PX)+'" y1="'+gy+'" y2="'+gy+'" stroke="#EFE8D8" stroke-width="1"/>';
+    });
+    if(state.type==='line'){
+      var d='';
+      bars.forEach(function(b,i){
+        var x=PX+i*slot+slot/2;
+        d+=(i===0?'M':'L')+x+' '+y(b.c)+' ';
+      });
+      s+='<path d="'+d+'" fill="none" stroke="#D97706" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+      bars.forEach(function(b,i){
+        var x=PX+i*slot+slot/2;
+        s+='<circle cx="'+x+'" cy="'+y(b.c)+'" r="3.5" fill="#B45309"/>';
+      });
+    } else {
+      bars.forEach(function(b,i){
+        var x=PX+i*slot+slot/2;
+        var up=b.c>=b.o, col=up?'#22C55E':'#EF4444', edge=up?'#16A34A':'#B91C1C';
+        var top=Math.min(y(b.o),y(b.c)), hgt=Math.max(Math.abs(y(b.c)-y(b.o)),2.5);
+        s+='<line x1="'+x+'" x2="'+x+'" y1="'+y(b.h)+'" y2="'+y(b.l)+'" stroke="'+edge+'" stroke-width="2"/>'
+          +'<rect x="'+(x-bw/2)+'" y="'+top+'" width="'+bw+'" height="'+hgt+'" rx="2.5" fill="'+col+'"/>';
+      });
+    }
+    s+='</svg>';
+    chart.innerHTML=s;
+    var tfName={'15m':'15-minute','1h':'1-hour','day':'daily'}[state.tf];
+    var typeName=state.type==='line'?'Line':'Candles';
+    var story={'15m':n+' candles — busy and choppy.','1h':n+' candles — the shape settles.','day':'one single calm bar.'}[state.tf];
+    head.textContent=typeName+' · '+tfName+': '+(state.type==='line'?(n+' closes, connected — the fights are erased.'):story);
+    foot.innerHTML='<b>'+n+'</b> '+(state.type==='line'?'closing prices':'candles')+' for one and the same day';
+    // gate: 5 distinct views = both types + all three TFs (any combos totalling coverage)
+    seen[state.type+'|'+state.tf]=true;
+    var typesSeen={}, tfsSeen={}, views=0;
+    Object.keys(seen).forEach(function(k){ views++; var p=k.split('|'); typesSeen[p[0]]=1; tfsSeen[p[1]]=1; });
+    cnt.textContent=Math.min(views,5);
+    if(Object.keys(typesSeen).length===2 && Object.keys(tfsSeen).length===3){
+      goal.innerHTML='<b class="done">&#10003; All views tried — you felt the zoom knob.</b>';
+      if(window.__ftaSatisfy) window.__ftaSatisfy(GATE);
+    }
+  }
+  document.querySelectorAll('[data-type]').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('[data-type]').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on'); state.type=b.dataset.type; render();
+    });
+  });
+  document.querySelectorAll('[data-tf]').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('[data-tf]').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on'); state.tf=b.dataset.tf; render();
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

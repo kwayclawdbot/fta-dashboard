@@ -1,0 +1,1 @@
+So charts can draw price as a simple line or as candles, candles keep the whole story, and the timeframe decides how much time each candle swallows. Now that you can see hundreds of candles at once, a new kind of shape appears, one that a single candle can never show: the trend. Peaks and valleys, stacking higher or grinding lower. Next lesson, you learn to read the staircase.

@@ -1,0 +1,49 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 167.06,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 39.04,
+      "interactive": false,
+      "label": "Read the Staircase"
+    },
+    {
+      "id": "uptrend",
+      "start": 39.54,
+      "end": 77.3,
+      "interactive": false,
+      "label": "Higher Highs, Higher Lows"
+    },
+    {
+      "id": "downtrend-sideways",
+      "start": 77.8,
+      "end": 118.12,
+      "interactive": false,
+      "label": "Down & Sideways"
+    },
+    {
+      "id": "trend-caller",
+      "start": 118.62,
+      "end": 132.38,
+      "interactive": true,
+      "label": "Call the Trend"
+    },
+    {
+      "id": "quiz",
+      "start": 132.88,
+      "end": 136.16,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 136.66,
+      "end": 167.06,
+      "interactive": false,
+      "label": "The Invisible Floors"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "voice": "Kway (Voicebox/Qwen local, interim)",
+  "duration_sec": 158.58,
+  "gap_sec": 0.5,
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 33.36,
+      "interactive": false,
+      "label": "The Map"
+    },
+    {
+      "id": "support",
+      "start": 33.86,
+      "end": 68.26,
+      "interactive": false,
+      "label": "Support: The Floor"
+    },
+    {
+      "id": "resistance-zones",
+      "start": 68.76,
+      "end": 109.8,
+      "interactive": false,
+      "label": "Resistance & Zones"
+    },
+    {
+      "id": "floor-or-ceiling",
+      "start": 110.3,
+      "end": 123.18,
+      "interactive": true,
+      "label": "Floor or Ceiling?"
+    },
+    {
+      "id": "quiz",
+      "start": 123.68,
+      "end": 127.84,
+      "interactive": true,
+      "label": "Quick Check"
+    },
+    {
+      "id": "bridge",
+      "start": 128.34,
+      "end": 158.58,
+      "interactive": false,
+      "label": "When Levels Break"
+    }
+  ]
+}
