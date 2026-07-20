@@ -24,6 +24,8 @@ import {
   Target,
   Eye,
   Heart,
+  Dumbbell,
+  GraduationCap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -44,13 +46,16 @@ interface NavItem {
 }
 
 // ── Family Investing Club items (owner plan §9) ──────────────────────────────
+// The club experience is the PRIMARY dashboard for EVERY family (FIC + FTA).
+// FTA is an add-on academy that renders as its own labeled subsection below.
 // "This Week" is a subtab on the home page, so it deep-links there.
 const CLUB_START_HERE: NavItem = { label: "Start Here", href: "/start-here", icon: Compass };
 const CLUB_THIS_WEEK: NavItem = { label: "This Week", href: "/dashboard?tab=this-week", icon: Sparkles };
 const CLUB_WATCHLIST: NavItem = { label: "Family Watchlist", href: "/watchlist", icon: Eye };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
-const CLUB_CHART: NavItem = { label: "Practice Chart", href: "/chart", icon: LineChart };
 const CLUB_PARENT_CORNER: NavItem = { label: "Parent Corner", href: "/parent-corner", icon: Heart };
+const CLUB_FLASHCARDS: NavItem = { label: "Flashcards", href: "/flashcards", icon: Layers };
+const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
 
 const FAMILY_ITEM: NavItem = {
   label: "Family",
@@ -64,91 +69,47 @@ const FAMILY_ITEM: NavItem = {
   ],
 };
 
-// The existing FTA program navigation (unchanged), by role.
-function ftaBaseNav(role: string | undefined, isKid: boolean, isChild: boolean): NavItem[] {
-  if (isKid) {
-    return [
-      { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
-      { label: "My Lessons", href: "/courses", icon: BookOpen },
-      { label: "Games", href: "/games", icon: Gamepad2 },
-      { label: "My Cards", href: "/flashcards", icon: Layers },
-      { label: "My Badges", href: "/progress", icon: Trophy },
-      { label: "Settings", href: "/settings", icon: Settings },
-    ];
-  }
-  if (isChild) {
-    return [
-      { label: "Home", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Courses", href: "/courses", icon: BookOpen },
-      { label: "Live Classes", href: "/live-sessions", icon: Video },
-      {
-        label: "Practice",
-        href: "/simulator",
-        icon: LineChart,
-        subItems: [
-          { label: "Trading Floor", href: "/simulator" },
-          { label: "Pattern Practice", href: "/simulator/lessons" },
-          { label: "Leaderboard", href: "/simulator/leaderboard" },
-        ],
-      },
-      { label: "Games", href: "/games", icon: Gamepad2 },
-      { label: "Flashcards", href: "/flashcards", icon: Layers },
-      { label: "Community", href: "/community", icon: MessageCircle },
-      { label: "My Progress", href: "/progress", icon: Trophy },
-      { label: "Settings", href: "/settings", icon: Settings },
-    ];
-  }
-  return [
-    { label: "Home", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Courses", href: "/courses", icon: BookOpen },
-    { label: "Live Classes", href: "/live-sessions", icon: Video },
-    FAMILY_ITEM,
-    { label: "Community", href: "/community", icon: MessageCircle },
-    {
-      label: "Simulator",
-      href: "/simulator",
-      icon: LineChart,
-      subItems: [
-        { label: "Trading Floor", href: "/simulator" },
-        { label: "Pattern Practice", href: "/simulator/lessons" },
-        { label: "Leaderboard", href: "/simulator/leaderboard" },
-      ],
-    },
-    { label: "Games", href: "/games", icon: Gamepad2 },
-    { label: "Flashcards", href: "/flashcards", icon: Layers },
-    { label: "Progress", href: "/progress", icon: Trophy },
-    { label: "Settings", href: "/settings", icon: Settings },
-  ];
+/**
+ * Practice grouping (owner decision): a single "Practice" tab whose subtabs are
+ * the practice/study surfaces. Routes are NOT moved — this is navigation only,
+ * so existing deep links to /chart, /simulator, /games keep working. The group
+ * parent links to the Practice Chart (the primary practice surface, plan §8);
+ * being on ANY child route highlights + expands the group (see childActive in
+ * the render). Young kids skip the Simulator subtab (kept age-appropriate,
+ * matching prior kid nav which showed only chart + games).
+ */
+function practiceGroup(includeSimulator: boolean): NavItem {
+  return {
+    label: "Practice",
+    href: "/chart",
+    icon: Dumbbell,
+    subItems: [
+      { label: "Practice Chart", href: "/chart" },
+      ...(includeSimulator ? [{ label: "Simulator", href: "/simulator" }] : []),
+      { label: "Games", href: "/games" },
+    ],
+  };
 }
 
 /**
- * Tier + role aware navigation.
- * - FIC families get the club nav (plan §9).
- * - FTA families (full access) get the FTA program nav PLUS a "Family
- *   Investing Club" section, since FTA unlocks everything FIC has.
+ * Tier + role aware navigation (owner inversion 2026-07-20).
+ * - EVERY family gets the Family Investing Club nav as the primary structure —
+ *   the club IS the dashboard.
+ * - FTA families additionally get a clearly-labeled "FTA — Trading Academy"
+ *   subsection with their advanced courses + academy live classes. FIC families
+ *   see a tasteful upgrade teaser instead (parents only; /upgrade is
+ *   parent-gated) and never the FTA subsection.
+ * - Role filters (kid / teen / parent) still apply.
  */
 function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier = "fic"): NavItem[] {
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";
   const canParent = role === "parent" || role === "admin";
+  const isFta = tier === "fta";
+  const settings: NavItem = { label: "Settings", href: "/settings", icon: Settings };
 
-  if (tier === "fta") {
-    const base = ftaBaseNav(role, isKid, isChild);
-    // Insert the club section just before Settings so Settings stays last.
-    const settings = base.pop()!; // Settings is always the final base item
-    const club: NavItem[] = [
-      { label: "Family Investing Club", href: "#fic", icon: Sparkles, sectionHeader: true },
-      CLUB_START_HERE,
-      CLUB_THIS_WEEK,
-      CLUB_WATCHLIST,
-      CLUB_MISSIONS,
-      CLUB_CHART,
-      ...(canParent ? [CLUB_PARENT_CORNER] : []),
-    ];
-    return [...base, ...club, settings];
-  }
-
-  // FIC nav (plan §9).
+  // ── Young kids: simple flat club nav (tier-agnostic; the FIC/FTA split is a
+  // parent-facing concept — kids just consume whatever their family unlocks). ──
   if (isKid) {
     return [
       { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
@@ -158,41 +119,58 @@ function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier = "fic")
       { label: "Live Classes", href: "/live-sessions", icon: Video },
       CLUB_MISSIONS,
       CLUB_WATCHLIST,
-      CLUB_CHART,
-      { label: "Games", href: "/games", icon: Gamepad2 },
+      practiceGroup(false), // chart + games only for young kids
       { label: "My Cards", href: "/flashcards", icon: Layers },
       { label: "My Badges", href: "/progress", icon: Trophy },
-      { label: "Settings", href: "/settings", icon: Settings },
+      settings,
     ];
   }
 
-  const ficCommon: NavItem[] = [
+  // Learning surfaces (courses + live classes). For FIC these sit in the primary
+  // club nav (their foundations + weekly class). For FTA they move into the
+  // dedicated academy subsection so they read as the premium add-on.
+  const learning: NavItem[] = [
+    { label: "Courses", href: "/courses", icon: BookOpen },
+    { label: "Live Classes", href: "/live-sessions", icon: Video },
+  ];
+
+  // ── Primary FIC club nav (teens + parents, both tiers). ──
+  const clubPrimary: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     CLUB_START_HERE,
     CLUB_THIS_WEEK,
-    { label: "Courses", href: "/courses", icon: BookOpen },
-    { label: "Live Classes", href: "/live-sessions", icon: Video },
+    CLUB_COMMUNITY,
+    ...(isFta ? [] : learning),
     CLUB_WATCHLIST,
     CLUB_MISSIONS,
-    CLUB_CHART,
-    { label: "Flashcards", href: "/flashcards", icon: Layers },
-    { label: "Games", href: "/games", icon: Gamepad2 },
-    { label: "Community", href: "/community", icon: MessageCircle },
+    practiceGroup(true),
+    CLUB_FLASHCARDS,
     { label: "My Progress", href: "/progress", icon: Trophy },
+    ...(canParent ? [FAMILY_ITEM, CLUB_PARENT_CORNER] : []),
   ];
 
-  if (isChild) {
-    // Teens — no parent-only sections.
-    return [...ficCommon, { label: "Settings", href: "/settings", icon: Settings }];
+  if (isFta) {
+    // FTA is the add-on: a clearly-labeled academy subsection. Courses + live
+    // classes live here for FTA families (their advanced curriculum + academy
+    // sessions render on these tier-aware pages).
+    const ftaSection: NavItem[] = [
+      { label: "FTA — Trading Academy", href: "#fta", icon: GraduationCap, sectionHeader: true },
+      { label: "Courses", href: "/courses", icon: BookOpen },
+      { label: "Live Classes", href: "/live-sessions", icon: Video },
+    ];
+    return [...clubPrimary, ...ftaSection, settings];
   }
 
-  // Parents (and coach/admin).
-  return [
-    ...ficCommon,
-    CLUB_PARENT_CORNER,
-    FAMILY_ITEM,
-    { label: "Settings", href: "/settings", icon: Settings },
-  ];
+  // FIC parents: tasteful upgrade teaser mirroring the courses/upgrade pitch
+  // (Sparkles → /upgrade). Children never see billing, so gate to parents.
+  const upgradeTease: NavItem[] = canParent
+    ? [
+        { label: "Trading Academy", href: "#upgrade", icon: GraduationCap, sectionHeader: true },
+        { label: "Upgrade to FTA", href: "/upgrade", icon: Sparkles },
+      ]
+    : [];
+
+  return [...clubPrimary, ...upgradeTease, settings];
 }
 
 interface DashboardSidebarProps {
@@ -282,11 +260,19 @@ export default function DashboardSidebar({
           }
           const isActive = pathname === item.href;
           const isParentActive = pathname.startsWith(item.href + "/");
+          // Groups whose subItems are sibling top-level routes (e.g. Practice →
+          // /chart, /simulator, /games) also count as active when the current
+          // route matches any child, so the group highlights + expands there.
+          const childActive =
+            item.subItems?.some(
+              (s) => pathname === s.href || pathname.startsWith(s.href + "/")
+            ) ?? false;
+          const active = isActive || isParentActive || childActive;
           const Icon = item.icon;
           const showSubItems =
             !collapsed &&
             item.subItems &&
-            (isActive || isParentActive) &&
+            active &&
             (!item.parentOnly || user.role === "parent");
 
           return (
@@ -296,13 +282,13 @@ export default function DashboardSidebar({
                 onClick={onMobileClose}
                 className={`
                   relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                  ${isActive || isParentActive
+                  ${active
                     ? "text-gold-700 bg-gold-400/15"
                     : "text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800/50"
                   }
                 `}
               >
-                {(isActive || isParentActive) && (
+                {active && (
                   <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-500" />
                 )}
                 <Icon className="w-[18px] h-[18px] shrink-0" />
