@@ -225,9 +225,7 @@
 <section id="hero">
   <div class="hero-bg">
     <div class="hero-fallback"></div>
-    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
-      <source src="./assets/hero-broll.mp4" type="video/mp4" />
-    </video>
+
     <div class="hero-scrim"></div>
     <div class="ticks" id="ticks" aria-hidden="true"></div>
   </div>
@@ -291,40 +289,8 @@
     <div class="insight anim d2" style="max-width:900px;margin:22px auto 0">Both are <b>derivative contracts</b>: their value comes from something else — the stock or asset sitting underneath them.</div>
 
     <!-- cinematic coach moment (gates Continue) -->
-    <div class="cv anim d3" id="cvBlock">
-      <div class="cv-intro">
-        <span class="cv-badge">&#9670; Coach note</span>
-        <p class="cv-text">Before we break a contract apart, watch a price reach a fork. One road rewards the call buyer, the other rewards the put. I'll pause the narration the moment you press play.</p>
-      </div>
-      <div class="video-wrap">
-        <video id="coachVid" preload="metadata" playsinline muted poster="./assets/cinematic-poster.jpg">
-          <source src="./assets/hero-broll.mp4" type="video/mp4" />
-        </video>
-        <div class="cscene" id="coachScene" style="display:none" aria-hidden="true">
-          <svg viewBox="0 0 640 340" preserveAspectRatio="xMidYMid slice">
-            <line x1="70" y1="180" x2="590" y2="180" stroke="rgba(255,255,255,.12)" stroke-width="1.5"/>
-            <text x="300" y="30" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="14" fill="rgba(255,255,255,.6)" letter-spacing="2">A PRICE REACHES A FORK</text>
-            <path class="s-draw" style="--l:270" d="M70 200 C160 190 240 175 300 175" fill="none" stroke="#FBBF24" stroke-width="4.5" stroke-linecap="round"/>
-            <path class="s-draw s-up" style="--l:340" d="M300 175 C400 160 490 110 585 70" fill="none" stroke="#22C55E" stroke-width="5" stroke-linecap="round"/>
-            <path class="s-draw s-dn" style="--l:340" d="M300 175 C400 190 490 245 585 290" fill="none" stroke="#EF4444" stroke-width="5" stroke-linecap="round"/>
-            <circle class="s-dot" cx="300" cy="175" r="8" fill="#fff"/>
-            <g class="s-fade sf-up">
-              <text x="585" y="58" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="#4ade80">Call wins &#9650;</text>
-            </g>
-            <g class="s-fade sf-dn">
-              <text x="585" y="308" text-anchor="end" font-family="Poppins,sans-serif" font-weight="800" font-size="16" fill="#f87171">Put wins &#9660;</text>
-            </g>
-          </svg>
-        </div>
-        <button class="video-ov" id="coachOv" aria-label="Play the fork clip">
-          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
-          <span class="ov-label" id="ovLabel">Watch the fork play out</span>
-        </button>
-      </div>
-      <div class="cv-outro" id="cvOutro">
-        <p class="cv-text">One event, two opposite winners. That's the whole idea of calls versus puts — you choose the direction, then you choose your contract. Hit Continue when you're ready.</p>
-      </div>
-    </div>
+<figure class="anim d1" style="max-width:640px;margin:26px auto 0;border:1px solid var(--sand);border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 2px 4px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.10)"><img src="./assets/call-put.jpg" alt="Call and put option contracts" style="width:100%;display:block" /><figcaption style="padding:12px 16px;font-size:13.5px;color:var(--soft)">Calls and puts: the right — not the obligation — to buy or sell at a set price.</figcaption></figure>
+
   </div>
 </section>
 
@@ -620,7 +586,7 @@ window.sectionTimestamps = [
   var curIdx = -1, waiting = false, emitted = {};
 
   // interactive anchors that must be completed before Continue unlocks
-  var gates = { 'calls-and-puts':false, 'moneyness-slider':false, 'call-put-sorter':false, 'quiz':false };
+  var gates = { 'moneyness-slider':false, 'call-put-sorter':false, 'quiz':false };
   function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
   function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
   function pct(idx){ return Math.round(((idx+1)/TOTAL)*100); }

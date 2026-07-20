@@ -193,9 +193,7 @@
 <section id="hero">
   <div class="hero-bg">
     <div class="hero-fallback"></div>
-    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
-      <source src="./assets/hero-broll.mp4" type="video/mp4" />
-    </video>
+
     <div class="hero-scrim"></div>
     <div class="ticks" id="ticks" aria-hidden="true"></div>
   </div>
@@ -328,24 +326,8 @@
     </div>
 
     <!-- CINEMATIC MOMENT: pauses narration + gates Continue -->
-    <div class="cv anim d4" id="cvBlock">
-      <div class="cv-intro">
-        <span class="cv-badge">&#9670; Coach note</span>
-        <p class="cv-text">Before we practice, watch this — the exact moment a headline turns into a price. I'll pause the narration the second you press play.</p>
-      </div>
-      <div class="video-wrap">
-        <video id="cineVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
-          <source src="./assets/hero-broll.mp4" type="video/mp4" />
-        </video>
-        <button class="video-ov" id="cineOv" aria-label="Play the catalyst clip">
-          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
-          <span class="ov-label">Watch a headline hit</span>
-        </button>
-      </div>
-      <div class="cv-outro" id="cvOutro">
-        <p class="cv-text">That jump is a surprise being priced in, in real time — thousands of traders reacting at once. Hit Continue whenever you're ready.</p>
-      </div>
-    </div>
+<figure class="anim d1" style="max-width:640px;margin:26px auto 0;border:1px solid var(--sand);border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 2px 4px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.10)"><img src="./assets/earnings-report.jpg" alt="A company earnings report" style="width:100%;display:block" /><figcaption style="padding:12px 16px;font-size:13.5px;color:var(--soft)">An earnings report is the market's scheduled catalyst — the chart reacts within minutes.</figcaption></figure>
+
   </div>
 </section>
 
@@ -541,7 +523,7 @@ window.sectionTimestamps = [
   var curIdx = -1, waiting = false, emitted = {};
 
   // sections that must be completed before Continue unlocks
-  var gates = { 'earnings-move':false, 'react-game':false, 'headline-sorter':false, 'quiz':false };
+  var gates = { 'react-game':false, 'headline-sorter':false, 'quiz':false };
   function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
 
   function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }

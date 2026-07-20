@@ -172,9 +172,7 @@
 <section id="hero">
   <div class="hero-bg">
     <div class="hero-fallback"></div>
-    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
-      <source src="./assets/hero-broll.mp4" type="video/mp4" />
-    </video>
+
     <div class="hero-scrim"></div>
     <div class="sparks" id="sparks" aria-hidden="true"></div>
   </div>
@@ -291,27 +289,11 @@
   <div class="inner">
     <div class="anim center-narrow"><div class="label">Your Turn · Candle Battle</div>
       <h2 class="title">Green team or red team?</h2>
-      <p class="lead center">Watch a real chart breathe for a second, then call the winner. I'll describe a candle; you read where it opened and closed and tap who took the round.</p>
+      <p class="lead center">Every finished bar on a chart is a called fight. Now it's your call — I'll describe a candle; you read where it opened and closed and tap who took the round.</p>
     </div>
 
-    <div class="cv anim d1" id="cvBlock">
-      <div class="cv-intro">
-        <span class="cv-badge">&#9670; Coach note</span>
-        <p class="cv-text">Before you start calling rounds, watch how candles glow to life on a live chart. I'll pause the narration the moment you press play.</p>
-      </div>
-      <div class="video-wrap">
-        <video id="brollVid" preload="metadata" playsinline poster="./assets/hero.jpg" muted loop>
-          <source src="./assets/hero-broll.mp4" type="video/mp4" />
-        </video>
-        <button class="video-ov" id="brollOv" aria-label="Play the candlestick clip">
-          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
-          <span class="ov-label">Watch the chart come alive</span>
-        </button>
-      </div>
-      <div class="cv-outro" id="cvOutro">
-        <p class="cv-text">Every one of those bars is a finished battle. Now it's your call — win the five rounds below to continue.</p>
-      </div>
-    </div>
+<figure class="anim d1" style="max-width:640px;margin:26px auto 0;border:1px solid var(--sand);border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 2px 4px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.10)"><img src="./assets/green-red-candles.jpg" alt="Green and red candles on a chart" style="width:100%;display:block" /><figcaption style="padding:12px 16px;font-size:13.5px;color:var(--soft)">Finished battles: green rounds and red rounds, stacked into a chart.</figcaption></figure>
+
 
     <div class="cbg anim d2" id="cbGame">
       <div class="cb-mini">

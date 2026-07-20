@@ -110,9 +110,7 @@
 <section id="hero">
   <div class="hero-bg">
     <div class="hero-fallback"></div>
-    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
-      <source src="./assets/hero-broll.mp4" type="video/mp4" />
-    </video>
+
     <div class="hero-scrim"></div>
     <div class="motes" id="motes" aria-hidden="true"></div>
   </div>
@@ -187,24 +185,8 @@
       <div class="node n3"><div class="ic">&#129309;</div><h4>A seller</h4><p>Ownership of the share changes hands. Done in milliseconds.</p></div>
     </div>
 
-    <div class="cv anim d2" id="cvBlock">
-      <div class="cv-intro">
-        <span class="cv-badge">&#9670; Coach note</span>
-        <p class="cv-text">Watch that network light up for a few seconds. I'll pause the narration for you the moment you press play.</p>
-      </div>
-      <div class="video-wrap">
-        <video id="cineVid" preload="metadata" playsinline poster="./assets/exchanges-network.jpg">
-          <source src="./assets/hero-broll.mp4" type="video/mp4" />
-        </video>
-        <button class="video-ov" id="cineOv" aria-label="Play the coach clip">
-          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
-          <span class="ov-label">See the market as a network</span>
-        </button>
-      </div>
-      <div class="cv-outro" id="cvOutro">
-        <p class="cv-text">Millions of those matches happen every minute, all day. That's the market humming. Hit Continue when you're ready.</p>
-      </div>
-    </div>
+<figure class="anim d1" style="max-width:640px;margin:26px auto 0;border:1px solid var(--sand);border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 2px 4px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.10)"><img src="./assets/exchanges-network.jpg" alt="Orders flowing into an exchange matching engine" style="width:100%;display:block" /><figcaption style="padding:12px 16px;font-size:13.5px;color:var(--soft)">Orders flow into the exchange's matching engine, where every buy is paired with a sell.</figcaption></figure>
+
   </div>
 </section>
 
@@ -379,7 +361,7 @@ window.sectionTimestamps = [
   var dots=document.getElementById('dots');
   var PLAY='▶', PAUSE='⏸', speeds=[0.75,1,1.25], sIdx=1;
   var curIdx=-1, waiting=false, emitted={};
-  var gates={'how-trades-happen':false,'myth-sorter':false,'quiz':false};
+  var gates={'myth-sorter':false,'quiz':false};
 
   function fmt(s){s=s||0;var m=Math.floor(s/60),x=Math.floor(s%60);return m+':'+(x<10?'0':'')+x;}
   function pct(i){return Math.round(((i+1)/TOTAL)*100);}

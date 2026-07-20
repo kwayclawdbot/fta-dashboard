@@ -160,9 +160,7 @@
 <section id="hero">
   <div class="hero-bg">
     <div class="hero-fallback"></div>
-    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
-      <source src="./assets/hero-broll.mp4" type="video/mp4" />
-    </video>
+
     <div class="hero-scrim"></div>
     <div class="coins" id="coins" aria-hidden="true"></div>
   </div>
@@ -254,24 +252,8 @@
       </div>
     </div>
 
-    <div class="cv anim d2" id="cvBlock">
-      <div class="cv-intro">
-        <span class="cv-badge">&#9670; Coach note</span>
-        <p class="cv-text">Before you size a single trade, watch what the 1-2% rule really buys you. I'll pause the narration the moment you press play.</p>
-      </div>
-      <div class="video-wrap" id="cvWrap">
-        <video id="compVid" preload="metadata" playsinline poster="./assets/cinematic-poster.jpg">
-          <source src="./assets/hero-broll.mp4" type="video/mp4" />
-        </video>
-        <button class="video-ov" id="compOv" aria-label="Play the risk clip">
-          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
-          <span class="ov-label">See the sliver at work</span>
-        </button>
-      </div>
-      <div class="cv-outro" id="cvOutro">
-        <p class="cv-text">That calm comes from one thing: knowing a wrong call only costs a sliver. Hit Continue whenever you're ready.</p>
-      </div>
-    </div>
+<figure class="anim d1" style="max-width:640px;margin:26px auto 0;border:1px solid var(--sand);border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 2px 4px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.10)"><img src="./assets/position-scale.jpg" alt="A scale weighing position size" style="width:100%;display:block" /><figcaption style="padding:12px 16px;font-size:13.5px;color:var(--soft)">Sizing on a scale: risk a slice, never the stack.</figcaption></figure>
+
 
     <div class="disclaim anim d3" style="margin-top:20px">The numbers here are illustrative teaching tools built from values you choose. They plan your risk. They are not a forecast or a promise about any real stock.</div>
   </div>
@@ -492,7 +474,7 @@ window.sectionTimestamps = [
   var curIdx = -1, waiting = false, emitted = {}, completed = false;
 
   // sections that must be completed before Continue unlocks
-  var gates = { 'position-sizing':false, 'calculator':false, 'habit-sorter':false, 'quiz':false };
+  var gates = { 'calculator':false, 'habit-sorter':false, 'quiz':false };
   function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
 
   function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }

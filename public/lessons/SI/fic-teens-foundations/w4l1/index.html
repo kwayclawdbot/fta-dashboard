@@ -158,9 +158,7 @@
 <section id="hero">
   <div class="hero-bg">
     <div class="hero-fallback"></div>
-    <video id="heroBroll" class="hero-video" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg">
-      <source src="./assets/hero-broll.mp4" type="video/mp4" />
-    </video>
+
     <div class="hero-scrim"></div>
     <div class="arrows" id="arrows" aria-hidden="true"></div>
   </div>
@@ -267,24 +265,8 @@
 
     <div class="insight anim d3" style="max-width:760px;margin:20px auto 0">Bullish, expecting up? That points to a <b>call</b>. Bearish, expecting down? That points to a <b>put</b>. Real companies like Nike, Apple, Roblox, or Spotify can go either way. Your read on the direction is what picks the contract.</div>
 
-    <div class="cv anim d3" id="cvBlock">
-      <div class="cv-intro">
-        <span class="cv-badge">&#9670; Coach note</span>
-        <p class="cv-text">Before the drills, watch one outlook pick the ticket. I'll pause the narration the moment you press play.</p>
-      </div>
-      <div class="video-wrap" id="cineWrap">
-        <video id="cineVid" preload="metadata" playsinline poster="./assets/up-vs-down.jpg">
-          <source src="./assets/hero-broll.mp4" type="video/mp4" />
-        </video>
-        <button class="video-ov" id="cineOv" aria-label="Play the clip">
-          <span class="play-circ"><svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg></span>
-          <span class="ov-label">Watch the outlook pick the ticket</span>
-        </button>
-      </div>
-      <div class="cv-outro" id="cvOutro">
-        <p class="cv-text">See it? Price up points to a call, price down points to a put. Your read on direction is the whole decision. Hit Continue when you're ready.</p>
-      </div>
-    </div>
+<figure class="anim d1" style="max-width:640px;margin:26px auto 0;border:1px solid var(--sand);border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 2px 4px rgba(16,24,40,.06),0 12px 32px rgba(16,24,40,.10)"><img src="./assets/up-vs-down.jpg" alt="Betting up versus betting down" style="width:100%;display:block" /><figcaption style="padding:12px 16px;font-size:13.5px;color:var(--soft)">Two directions, two tickets: calls bet up, puts bet down.</figcaption></figure>
+
 
     <div class="disclaim-wrap anim d4">
       <div class="disclaim">Options are an advanced, higher-risk tool. This lesson is conceptual and paper-trade practice only. No prices or returns here are real, and none are a forecast or a promise.</div>
@@ -481,7 +463,7 @@ window.sectionTimestamps = [
   var curIdx = -1, waiting = false, emitted = {};
 
   // sections that must be completed before Continue unlocks
-  var gates = { 'call-vs-put':false, 'call-or-put-game':false, 'bet-sorter':false, 'quiz':false };
+  var gates = { 'call-or-put-game':false, 'bet-sorter':false, 'quiz':false };
   function idxOf(id){ for(var i=0;i<ST.length;i++){ if(ST[i].id===id) return i; } return -1; }
 
   function fmt(s){ s=s||0; var m=Math.floor(s/60), x=Math.floor(s%60); return m+':'+(x<10?'0':'')+x; }
