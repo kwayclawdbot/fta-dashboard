@@ -13,11 +13,16 @@ import {
   Target,
   Zap,
   GraduationCap,
+  Compass,
+  CalendarCheck,
+  ClipboardCheck,
+  Eye,
 } from "lucide-react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelProgress } from "@/lib/xp";
+import { researchComplete } from "@/lib/watchlist";
 
 interface Stats {
   totalLessons: number;
@@ -46,6 +51,15 @@ interface Badge {
   icon: React.ElementType;
   earned: boolean;
   earnedAt?: string;
+}
+
+// Family Investing Club contributions (guarded — tables ship in migration 032).
+interface FicStats {
+  missionsDone: number;
+  missionsTotal: number;
+  classesAttended: number;
+  companiesChampioned: number;
+  researchDone: number;
 }
 
 // Badge icon map for DB badges
@@ -85,6 +99,7 @@ export default function ProgressPage() {
   const [recentActivity, setRecentActivity] = useState<RecentItem[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [xp, setXp] = useState(0);
+  const [fic, setFic] = useState<FicStats | null>(null);
 
   const loadProgress = useCallback(async () => {
     const {
@@ -331,6 +346,44 @@ export default function ProgressPage() {
       ]);
     }
 
+    // ── Family Investing Club contributions (guarded) ──────────────────────
+    try {
+      const [missionsTotalRes, missionsDoneRes, rsvpRes, championedRes] =
+        await Promise.all([
+          supabase
+            .from("fic_missions")
+            .select("id", { count: "exact", head: true }),
+          supabase
+            .from("mission_completions")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id),
+          supabase
+            .from("session_rsvps")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id),
+          supabase
+            .from("family_watchlist")
+            .select("how_they_make_money, strength, risk, trend")
+            .eq("champion_id", user.id),
+        ]);
+
+      const championedRows = championedRes.data || [];
+      const researchDone = championedRows.filter((r) =>
+        researchComplete(r as Record<string, string | null>)
+      ).length;
+
+      setFic({
+        missionsDone: missionsDoneRes.count ?? 0,
+        missionsTotal: missionsTotalRes.count ?? 0,
+        classesAttended: rsvpRes.count ?? 0,
+        companiesChampioned: championedRows.length,
+        researchDone,
+      });
+    } catch {
+      // Tables from a sibling migration may not exist yet — fail soft.
+      setFic(null);
+    }
+
     setLoading(false);
   }, [supabase]);
 
@@ -457,6 +510,67 @@ export default function ProgressPage() {
           </p>
         </div>
       </motion.div>
+
+      {/* Family Investing Club contributions */}
+      {fic && (
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.12 }}
+        >
+          <div className="mb-4 flex items-center gap-2">
+            <Compass className="h-5 w-5 text-gold-500" />
+            <h2 className="font-display text-lg font-semibold text-midnight-100">
+              Family Investing Club
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Link
+              href="/missions"
+              className="paper-card group p-4 transition-colors hover:border-gold-300"
+            >
+              <ClipboardCheck className="mb-2 h-4 w-4 text-gold-500" />
+              <p className="font-display text-2xl font-bold text-ink">
+                {fic.missionsDone}
+                <span className="text-base font-normal text-midnight-500">
+                  /{fic.missionsTotal}
+                </span>
+              </p>
+              <p className="mt-0.5 text-xs text-soft">Missions completed</p>
+            </Link>
+            <Link
+              href="/live-sessions"
+              className="paper-card group p-4 transition-colors hover:border-gold-300"
+            >
+              <CalendarCheck className="mb-2 h-4 w-4 text-gold-500" />
+              <p className="font-display text-2xl font-bold text-ink">
+                {fic.classesAttended}
+              </p>
+              <p className="mt-0.5 text-xs text-soft">Classes RSVP&apos;d</p>
+            </Link>
+            <Link
+              href="/watchlist"
+              className="paper-card group p-4 transition-colors hover:border-gold-300"
+            >
+              <Star className="mb-2 h-4 w-4 text-gold-500" />
+              <p className="font-display text-2xl font-bold text-ink">
+                {fic.companiesChampioned}
+              </p>
+              <p className="mt-0.5 text-xs text-soft">Companies championed</p>
+            </Link>
+            <Link
+              href="/watchlist"
+              className="paper-card group p-4 transition-colors hover:border-gold-300"
+            >
+              <Eye className="mb-2 h-4 w-4 text-gold-500" />
+              <p className="font-display text-2xl font-bold text-ink">
+                {fic.researchDone}
+              </p>
+              <p className="mt-0.5 text-xs text-soft">Research cards done</p>
+            </Link>
+          </div>
+        </motion.section>
+      )}
 
       {/* Course progress */}
       <motion.section
