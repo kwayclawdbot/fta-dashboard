@@ -1,0 +1,55 @@
+{
+  "total_seconds": 172.416,
+  "gap": 0.5,
+  "voice": "Voicebox Qwen-TTS 1.7B (local, profile Kway) \u2014 OpenAI TTS billing-blocked this session",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 32.24,
+      "dur": 32.24
+    },
+    {
+      "id": "fear-and-greed",
+      "start": 32.74,
+      "end": 63.892,
+      "dur": 31.152
+    },
+    {
+      "id": "plans-over-feelings",
+      "start": 64.392,
+      "end": 87.272,
+      "dur": 22.88
+    },
+    {
+      "id": "the-journal",
+      "start": 87.772,
+      "end": 112.252,
+      "dur": 24.48
+    },
+    {
+      "id": "fg-dial",
+      "start": 112.752,
+      "end": 130.112,
+      "dur": 17.36
+    },
+    {
+      "id": "plan-sorter",
+      "start": 130.612,
+      "end": 144.452,
+      "dur": 13.84
+    },
+    {
+      "id": "quiz",
+      "start": 144.952,
+      "end": 149.592,
+      "dur": 4.64
+    },
+    {
+      "id": "bridge",
+      "start": 150.092,
+      "end": 171.692,
+      "dur": 21.6
+    }
+  ]
+}

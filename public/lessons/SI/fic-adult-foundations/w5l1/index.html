@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Position Sizing, the 1-2% Rule, Stops &amp; R:R &middot; SI-100 Adults &middot; Module 5 &middot; Lesson 5.1</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="5" />
+<meta name="fta-lesson" content="L5.1" />
+<meta name="fta-lesson-title" content="Position Sizing, the 1-2% Rule, Stops &amp; R:R" />
+<meta name="fta-lesson-objectives" content="Put capital protection first|Apply the 1-2% risk rule|Use stop-losses to cap losses|Judge reward-to-risk before entering" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: R:R diagram (animated SVG) */
+  .rr-wrap{max-width:900px;margin:26px auto 0;display:grid;grid-template-columns:1fr;gap:0}
+  .rr-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px 22px 16px;box-shadow:var(--shadow-soft)}
+  .rr-svg{width:100%;height:auto;display:block}
+  .rr-svg .grow-up{transform-origin:center 150px;animation:rrUp 1.4s cubic-bezier(.22,1,.36,1) both}
+  .rr-svg .grow-dn{transform-origin:center 150px;animation:rrDn 1.4s cubic-bezier(.22,1,.36,1) .15s both}
+  .rr-svg .lvl{animation:rrFade .8s ease both}
+  .rr-svg .dot{animation:rrPulse 2.4s ease-in-out infinite}
+  @keyframes rrUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  @keyframes rrDn{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  @keyframes rrFade{from{opacity:0}to{opacity:1}}
+  @keyframes rrPulse{0%,100%{r:6}50%{r:9}}
+
+  /* bespoke: position sizer */
+  .ps-wrap{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:stretch;max-width:960px;margin:24px auto 0}
+  @media(max-width:820px){.ps-wrap{grid-template-columns:1fr}}
+  .ps-form{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft)}
+  .ps-field{margin-bottom:16px}
+  .ps-field label{display:block;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft);margin-bottom:6px}
+  .ps-field input[type=number]{width:100%;box-sizing:border-box;font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--ink);
+    background:var(--paper-2);border:1px solid var(--sand);border-radius:var(--r-lg);padding:11px 14px}
+  .ps-field input[type=number]:focus{outline:none;border-color:var(--gold-600);background:var(--card)}
+  .ps-risk-top{display:flex;justify-content:space-between;align-items:baseline}
+  .ps-risk-val{font-family:var(--font-display);font-weight:900;font-size:18px;color:var(--gold-700)}
+  #psRisk{width:100%;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;background:var(--sand);cursor:pointer;margin:8px 0 2px}
+  #psRisk::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);box-shadow:var(--shadow-soft);cursor:pointer}
+  #psRisk::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--gold);border:3px solid var(--ink);cursor:pointer}
+  .ps-out{background:linear-gradient(180deg,var(--card),var(--paper-2));border:1px solid var(--sand);border-radius:var(--r-xl);padding:24px;box-shadow:var(--shadow-soft);display:flex;flex-direction:column}
+  .ps-shares{font-family:var(--font-display);font-weight:900;line-height:1;font-size:clamp(44px,7vw,64px);color:var(--green);transition:color .25s ease}
+  .ps-shares.warn{color:var(--red)}
+  .ps-shares-l{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--soft);margin-top:4px}
+  .ps-rows{margin-top:18px;display:grid;gap:10px}
+  .ps-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid var(--sand);border-radius:var(--r-lg);background:var(--card);transition:transform .2s ease}
+  .ps-row .rk{font-family:var(--font-display);font-weight:600;font-size:13.5px;color:var(--soft)}
+  .ps-row .rv{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink);transition:color .25s ease}
+  .ps-row.risk .rv{color:var(--red-2)}
+  .ps-note{margin-top:14px;min-height:20px;font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--gold-700)}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 5 &middot; Lesson 5.1</div>
+      <h1 style="font-size:clamp(34px,6.4vw,62px);font-weight:900;line-height:1;margin:12px 0 12px">Protect the Money First</h1>
+      <p class="lead">The first job of an investor isn't to chase gains, it's to not get wiped out. Get sizing, stops, and reward-to-risk right and you stay in the game long enough for everything else to work.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.png" alt="A sturdy shield protecting a small growing stack of coins" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · PROTECT FIRST -->
+<section id="protect-first">
+  <div class="inner">
+    <div class="anim"><div class="label">Rule One</div><h2 class="title">You can't compound from zero</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef">Risk management is one thing above all: <span class="hi">protecting your capital</span>.</p>
+        <div class="insight">Lose it all on a single bad bet and there is nothing left to grow, no matter how good your next idea is. Survival comes before returns.</div>
+      </div>
+    </div>
+    <div class="two anim d2" style="margin-top:26px">
+      <div class="cmp grow">
+        <span class="tag">More reward</span>
+        <h3>More risk</h3>
+        <p>Higher potential returns almost always come with higher risk. The two move together, that is the risk-return tradeoff.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">Red flag</span>
+        <h3>&ldquo;High return, no risk&rdquo;</h3>
+        <p>When someone promises big returns with no risk, treat it as the loudest warning sign there is. It usually isn't real.</p>
+      </div>
+    </div>
+    <div class="insight anim d3" style="max-width:820px;margin:22px auto 0">Protecting the downside is what keeps you alive to catch the upside. Everything in this lesson is built on that one idea.</div>
+  </div>
+</section>
+
+<!-- 3 · THE 1-2% RULE -->
+<section id="the-rule">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">The 1-2% Rule</div>
+      <h2 class="title">Cap what any one trade can cost you</h2>
+      <p class="lead" style="margin:0 auto">Risk no more than one to two percent of your account on any single trade. Even a brutal losing streak can't ruin you when each loss is that small.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/one-two-percent.png" alt="A pie with only a tiny thin red slice highlighted, representing risking one to two percent" /></div>
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">That thin red slice is <span class="hi">all</span> one trade is allowed to cost.</p>
+        <div class="insight">Ten losses in a row at one percent each still leaves most of your account intact. Small, capped losses are survivable. Big ones aren't.</div>
+      </div>
+    </div>
+    <div class="anim d2" style="max-width:820px;margin:26px auto 0">
+      <div class="label" style="color:var(--gold-700)">Three ways to size a position</div>
+      <div class="two" style="margin-top:14px">
+        <div class="cmp safe">
+          <span class="tag">Fixed dollar</span>
+          <h3>Same amount each time</h3>
+          <p>Put the same set dollar amount into every position. Simple, but it ignores how far your stop sits from entry.</p>
+        </div>
+        <div class="cmp safe">
+          <span class="tag">Percent of portfolio</span>
+          <h3>Same slice each time</h3>
+          <p>Put a fixed percent of the whole portfolio into each position, so size scales with the account.</p>
+        </div>
+      </div>
+      <div class="cmp grow" style="margin-top:14px">
+        <span class="tag">Risk-based</span>
+        <h3>Work backward from the loss you'll accept</h3>
+        <p>Decide the dollars you're willing to lose first, then let the distance to your stop set the share count. This is the professional's method, and it's what the calculator below uses.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · STOPS & REWARD-TO-RISK -->
+<section id="stops-and-rr">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Stops &amp; Reward-to-Risk</div>
+      <h2 class="title">Two tools that turn the rule into action</h2>
+      <p class="lead" style="margin:0 auto">A stop-loss caps the loss. Reward-to-risk tells you whether the setup is even worth taking.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/stop-loss-net.png" alt="A safety net stretched below a falling ball, catching it before it hits the ground" /></div>
+      <div>
+        <p class="bigdef">A <span class="hi">stop-loss</span> sells at a preset price to cap your loss.</p>
+        <div class="insight">It's the safety net that catches a falling trade before it wrecks the account. You decide the exit before emotions get a vote.</div>
+      </div>
+    </div>
+    <div class="define anim d2" style="margin-top:26px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Reward-to-risk compares the <span class="hi">upside</span> to your target against the <span class="hi">downside</span> to your stop.</p>
+        <div class="insight">Favor setups where reward clearly outweighs risk, something like two to one, so your winners more than pay for your losers.</div>
+      </div>
+      <div class="define-art"><img src="./assets/rr-scale.png" alt="A balance scale where the reward side sits clearly heavier than the risk side" /></div>
+    </div>
+
+    <div class="rr-wrap anim d3">
+      <div class="rr-card">
+        <svg class="rr-svg" viewBox="0 0 480 300" role="img" aria-label="Reward to risk diagram: entry in the middle, stop below, target above" data-true="illustrative">
+          <!-- reward zone (entry up to target) -->
+          <rect class="grow-up" x="150" y="50" width="200" height="100" rx="8" fill="#DCFCE7" stroke="#BBF7D0"/>
+          <!-- risk zone (entry down to stop) -->
+          <rect class="grow-dn" x="150" y="150" width="200" height="50" rx="8" fill="#FEE2E2" stroke="#FECACA"/>
+          <!-- target line -->
+          <g class="lvl">
+            <line x1="120" y1="50" x2="360" y2="50" stroke="#16A34A" stroke-width="3"/>
+            <text x="120" y="42" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#16A34A">Target</text>
+            <text x="366" y="55" font-family="Poppins,sans-serif" font-weight="800" font-size="13" fill="#16A34A">+2 units</text>
+          </g>
+          <!-- entry line -->
+          <g class="lvl">
+            <line x1="120" y1="150" x2="360" y2="150" stroke="#101828" stroke-width="3" stroke-dasharray="2 4"/>
+            <text x="120" y="142" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#101828">Entry</text>
+            <circle class="dot" cx="150" cy="150" r="6" fill="#101828"/>
+          </g>
+          <!-- stop line -->
+          <g class="lvl">
+            <line x1="120" y1="200" x2="360" y2="200" stroke="#DC2626" stroke-width="3"/>
+            <text x="120" y="220" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#DC2626">Stop</text>
+            <text x="366" y="205" font-family="Poppins,sans-serif" font-weight="800" font-size="13" fill="#DC2626">-1 unit</text>
+          </g>
+          <!-- labels -->
+          <text x="250" y="104" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="15" fill="#166534">REWARD</text>
+          <text x="250" y="180" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="800" font-size="14" fill="#991B1B">RISK</text>
+          <text x="250" y="270" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="900" font-size="18" fill="#B45309">Reward : Risk = 2 : 1</text>
+        </svg>
+      </div>
+      <div class="disclaim" style="margin-top:14px">Illustrative diagram, the shape of the idea, not a forecast or a promise. Real setups vary trade to trade.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · POSITION SIZER (bespoke interactive) -->
+<section id="position-sizer">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Size the Trade</div>
+      <h2 class="title">Run the math like a professional</h2>
+      <p class="lead" style="margin:0 auto">Set your account, drag the risk percent, and enter a price and a stop. The calculator works backward from the loss you'll accept to the number of shares that keeps you inside the rule.</p>
+    </div>
+    <div class="ps-wrap anim d1">
+      <div class="ps-form">
+        <div class="ps-field">
+          <label for="psAcct">Account size ($)</label>
+          <input type="number" id="psAcct" value="10000" min="0" step="500" inputmode="decimal" />
+        </div>
+        <div class="ps-field">
+          <div class="ps-risk-top"><label for="psRisk" style="margin:0">Risk per trade</label><span class="ps-risk-val"><span id="psRiskVal">1.0</span>%</span></div>
+          <input type="range" id="psRisk" min="0.5" max="3" step="0.1" value="1" aria-label="Risk percent per trade" />
+        </div>
+        <div class="ps-field">
+          <label for="psEntry">Entry price ($)</label>
+          <input type="number" id="psEntry" value="50" min="0" step="0.5" inputmode="decimal" />
+        </div>
+        <div class="ps-field" style="margin-bottom:0">
+          <label for="psStop">Stop price ($)</label>
+          <input type="number" id="psStop" value="47" min="0" step="0.5" inputmode="decimal" />
+        </div>
+      </div>
+      <div class="ps-out">
+        <div class="ps-shares" id="psShares">0</div>
+        <div class="ps-shares-l">shares to buy</div>
+        <div class="ps-rows">
+          <div class="ps-row"><span class="rk">Risk per share</span><span class="rv" id="psRps">$0.00</span></div>
+          <div class="ps-row risk"><span class="rk">Dollars at risk</span><span class="rv" id="psDollar">$0.00</span></div>
+          <div class="ps-row"><span class="rk">Position value</span><span class="rv" id="psValue">$0.00</span></div>
+        </div>
+        <div class="ps-note" id="psNote"></div>
+        <div class="disclaim" style="margin-top:14px">Numbers are illustrative, a tool for practice, not advice.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · SIZING SORTER (interactive) -->
+<section id="sizing-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Protects, or blows up?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. One set of habits keeps you in the game. The other ends it.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="protects">Risk only 1-2% of the account per trade</button>
+        <button class="chip" data-bucket="protects">Set a stop-loss before entering</button>
+        <button class="chip" data-bucket="protects">Take setups where reward outweighs risk</button>
+        <button class="chip" data-bucket="protects">Size each position by its risk</button>
+        <button class="chip" data-bucket="blows">Risk half the account on one trade</button>
+        <button class="chip" data-bucket="blows">No stop-loss, just hope it comes back</button>
+        <button class="chip" data-bucket="blows">Chase a tiny reward against a huge risk</button>
+        <button class="chip" data-bucket="blows">Keep adding to a losing trade blindly</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="protects">
+          <h4>&#10003; Protects capital</h4><div class="sub">Disciplined moves that keep you in the game</div>
+          <div class="drop" id="dropProtects"></div>
+        </div>
+        <div class="col gamble" data-bucket="blows">
+          <h4>&#10007; Blows it up</h4><div class="sub">Reckless moves that end the account</div>
+          <div class="drop" id="dropBlows"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What is diversification in risk management?</h4>
+        <button class="opt" data-idx="0">Concentrating in a single asset</button>
+        <button class="opt" data-idx="1">Spreading investments across different asset classes</button>
+        <button class="opt" data-idx="2">Investing only in high-return assets</button>
+        <button class="opt" data-idx="3">Holding one large-cap stock</button>
+        <div class="exp">Diversification spreads capital across different asset classes so one loss has less impact on the whole portfolio.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. What is the risk-return tradeoff?</h4>
+        <button class="opt" data-idx="0">High returns come with low risk</button>
+        <button class="opt" data-idx="1">Higher potential returns generally come with higher risk</button>
+        <button class="opt" data-idx="2">Risk can be eliminated entirely</button>
+        <button class="opt" data-idx="3">All stocks return the same over time</button>
+        <div class="exp">Higher potential returns generally require accepting higher risk; the two move together.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. What is position sizing?</h4>
+        <button class="opt" data-idx="0">Deciding how much capital to put into each trade to balance risk and reward</button>
+        <button class="opt" data-idx="1">Calculating potential profit</button>
+        <button class="opt" data-idx="2">Measuring your entire portfolio's value</button>
+        <button class="opt" data-idx="3">Choosing which sector to buy</button>
+        <div class="exp">Position sizing decides how much capital goes into each position so no single one dominates the portfolio.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. What does a stop-loss order do?</h4>
+        <button class="opt" data-idx="0">Buys more shares as price rises</button>
+        <button class="opt" data-idx="1">Sells a security once it reaches a preset price to limit losses</button>
+        <button class="opt" data-idx="2">Locks in a guaranteed profit</button>
+        <button class="opt" data-idx="3">Pauses all trading</button>
+        <div class="exp">A stop-loss sells at a preset price to cap the loss if a trade moves against you.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. The 1-2% rule says you should:</h4>
+        <button class="opt" data-idx="0">Put 1-2% of your account in stocks total</button>
+        <button class="opt" data-idx="1">Risk no more than 1-2% of your account on any single trade</button>
+        <button class="opt" data-idx="2">Aim for a 1-2% return per year</button>
+        <button class="opt" data-idx="3">Pay 1-2% in fees</button>
+        <div class="exp">Risking only 1-2% per trade means even a string of losses can't ruin the account.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You've Got the Math of Survival</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Protect capital first, because you can't compound from zero.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Risk no more than 1-2% of the account on any single trade.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Set a stop before you enter, so every loss is capped.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Take setups where reward clearly outweighs risk.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 5.2</div><h3>Trading Psychology &amp; the Trade Journal</h3></div>
+      <span class="badge">The discipline to actually follow the rules &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 34.24, "interactive": false, "label": "Protect the Money First"}, {"id": "protect-first", "start": 34.74, "end": 65.38, "interactive": false, "label": "Rule One"}, {"id": "the-rule", "start": 65.88, "end": 102.84, "interactive": false, "label": "The 1-2% Rule"}, {"id": "stops-and-rr", "start": 103.34, "end": 138.06, "interactive": true, "label": "Stops & Reward-to-Risk"}, {"id": "position-sizer", "start": 138.56, "end": 167.84, "interactive": true, "label": "Size the Trade"}, {"id": "sizing-sorter", "start": 168.34, "end": 188.58, "interactive": true, "label": "Protects or Blows Up"}, {"id": "quiz", "start": 189.08, "end": 193.8, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 194.3, "end": 225.66, "interactive": false, "label": "Up Next: Trading Psychology"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: position sizer (isolated) ---------- */
+(function(){
+  var acct=document.getElementById('psAcct'); if(!acct) return;
+  var risk=document.getElementById('psRisk'), riskVal=document.getElementById('psRiskVal');
+  var entry=document.getElementById('psEntry'), stop=document.getElementById('psStop');
+  var sharesEl=document.getElementById('psShares'), rpsEl=document.getElementById('psRps');
+  var dollarEl=document.getElementById('psDollar'), valueEl=document.getElementById('psValue'), noteEl=document.getElementById('psNote');
+  function money(n){ return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function num(el){ var v=parseFloat(el.value); return isFinite(v)?v:0; }
+  function upd(){
+    var a=num(acct), rp=parseFloat(risk.value), e=num(entry), s=num(stop);
+    riskVal.textContent=rp.toFixed(1);
+    var rps=Math.abs(e-s);
+    var dollarRisk=a*rp/100;
+    if(rps<=0){
+      sharesEl.textContent='0'; sharesEl.classList.add('warn');
+      rpsEl.textContent='$0.00'; dollarEl.textContent=money(dollarRisk); valueEl.textContent='$0.00';
+      noteEl.textContent='Set a stop away from entry.';
+      return;
+    }
+    sharesEl.classList.remove('warn');
+    var shares=Math.floor(dollarRisk/rps);
+    var posValue=shares*e;
+    sharesEl.textContent=shares.toLocaleString('en-US');
+    rpsEl.textContent=money(rps);
+    dollarEl.textContent=money(dollarRisk);
+    valueEl.textContent=money(posValue);
+    noteEl.textContent=shares>0 ? 'A tighter stop lets you hold more shares for the same risk.' : 'Risk is too small for even one share at this stop.';
+  }
+  [acct,entry,stop].forEach(function(el){ el.addEventListener('input',upd); });
+  risk.addEventListener('input',upd);
+  upd();
+})();
+</script>
+</body>
+</html>
