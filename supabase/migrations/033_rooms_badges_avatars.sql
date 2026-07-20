@@ -101,7 +101,7 @@ set search_path = public
 as $$
 declare
   v_badge_id uuid;
-  v_inserted boolean := false;
+  v_count int := 0;
 begin
   if auth.uid() is null then
     return false;
@@ -116,8 +116,8 @@ begin
   values (v_badge_id, auth.uid())
   on conflict (badge_id, user_id) do nothing;
 
-  get diagnostics v_inserted = row_count;
-  return v_inserted > 0;
+  get diagnostics v_count = row_count;  -- row_count is integer; must not be boolean
+  return v_count > 0;
 end;
 $$;
 
