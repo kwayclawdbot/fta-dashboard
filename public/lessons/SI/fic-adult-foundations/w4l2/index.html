@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Buying Options on a Thesis &mdash; Without Blowing Up &middot; SI-100 Adults &middot; Module 4 &middot; Lesson 4.2</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="4" />
+<meta name="fta-lesson" content="L4.2" />
+<meta name="fta-lesson-title" content="Buying Options on a Thesis — Without Blowing Up" />
+<meta name="fta-lesson-objectives" content="Start every options trade with a thesis|Match the play to your market view|Respect time decay and defined risk|Avoid the ways beginners blow up" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: thesis-matcher "build the trade" tap-match game */
+  .tm-wrap{max-width:940px;margin:24px auto 0}
+  .tm-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:720px){.tm-grid{grid-template-columns:1fr;gap:16px}}
+  .tm-colhead{font-family:var(--font-display);font-weight:700;font-size:12.5px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--gold-700);margin-bottom:10px;text-align:center}
+  .tm-col{display:flex;flex-direction:column;gap:12px}
+  .tm-item{font-family:var(--font-display);font-weight:600;font-size:15px;padding:16px 18px;border-radius:var(--r-lg);
+    border:1px solid var(--sand);background:var(--card);color:var(--ink);cursor:pointer;box-shadow:var(--shadow-soft);
+    text-align:center;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+  .tm-item:hover:not(.tm-done){transform:translateY(-2px);border-color:var(--gold)}
+  .tm-item.tm-sel{border-color:var(--gold);background:var(--gold-bg);box-shadow:0 0 0 3px rgba(251,191,36,.28)}
+  .tm-item.tm-done{background:var(--green-bg);border-color:var(--green-border);color:var(--green);
+    cursor:default;animation:tmPop .34s ease}
+  .tm-item.tm-wrong{animation:tmShake .42s ease}
+  @keyframes tmPop{0%{transform:scale(.94)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
+  @keyframes tmShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}80%{transform:translateX(5px)}
+    0%,100%{border-color:var(--sand)}25%,75%{border-color:var(--red);background:var(--red-bg)}}
+  .tm-fb{min-height:30px;margin-top:18px;text-align:center;font-weight:600;color:var(--soft)}
+  .tm-fb.tm-fbdone{color:var(--green)}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 4 &middot; Lesson 4.2</div>
+      <h1 style="font-size:clamp(32px,6vw,60px);font-weight:900;line-height:1;margin:12px 0 12px">A Thesis, Not a Lottery Ticket</h1>
+      <p class="lead">Options can reward you or wreck you, and the difference usually comes down to one thing: did you start with a thesis, or a wish? A lottery ticket has no plan behind it. A good options trade does.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>3.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art"><img src="./assets/hero.jpg" alt="A chess board with a single deliberate move being planned, a thoughtful thesis rather than a gamble" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · THESIS FIRST -->
+<section id="thesis-first">
+  <div class="inner">
+    <div class="anim"><div class="label">Start With a View</div><h2 class="title">Every trade begins with a thesis</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef">A real view has <span class="hi">three parts</span>: direction, magnitude, and timing.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">A thesis</span>
+            <h3>You can say it out loud</h3>
+            <p>Direction: up or down? Magnitude: how far? Timing: by when? Finish that sentence before you risk a dollar.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">A hunch</span>
+            <h3>Just a feeling</h3>
+            <p>No direction, no target, no deadline. That is not a thesis, it is gambling with extra steps.</p>
+          </div>
+        </div>
+        <div class="insight">Direction, magnitude, timing. If you cannot fill in all three, you do not have a trade yet, you have a wish.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · CHOOSING THE PLAY -->
+<section id="choosing">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Match the Play to the View</div>
+      <h2 class="title">The view picks the play</h2>
+      <p class="lead" style="margin:0 auto">Once you have a clear view, the right structure almost chooses itself. Two directional bets, plus two calmer plays for shares you already own.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:26px">
+      <div class="define-art"><img src="./assets/bullish-bearish.jpg" alt="A fork in the road with a green rising path and a red falling path" /></div>
+      <div>
+        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">Bullish or bearish? That fork sets the play.</p>
+        <div class="two">
+          <div class="cmp grow">
+            <span class="tag">Bullish</span>
+            <h3>Buy a call</h3>
+            <p>You expect the price to rise, so you buy the right to buy at the strike.</p>
+          </div>
+          <div class="cmp safe">
+            <span class="tag">Bearish</span>
+            <h3>Buy a put</h3>
+            <p>You expect the price to drop, so you buy the right to sell at the strike.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="define anim d2" style="margin-top:28px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Already own the shares? Two safer uses.</p>
+        <div class="two">
+          <div class="cmp safe">
+            <span class="tag">Protective put</span>
+            <h3>Insurance on your shares</h3>
+            <p>A put on stock you own works like an umbrella, cushioning the fall if the price drops.</p>
+          </div>
+          <div class="cmp grow">
+            <span class="tag">Covered call</span>
+            <h3>Income in a flat market</h3>
+            <p>Sell a call against shares you own to collect income while the market drifts sideways or edges up.</p>
+          </div>
+        </div>
+        <div class="insight">Match the play to the view, not to the excitement. The structure should serve your thesis, never your adrenaline.</div>
+      </div>
+      <div class="define-art"><img src="./assets/protective-put.jpg" alt="An umbrella shielding a small stack of shares from the rain, a protective put as insurance" /></div>
+    </div>
+    <div class="disclaim anim d3" style="margin-top:20px">These plays are teaching examples, not trade advice. Any figure you meet later in the course is illustrative, the shape of the idea, not a forecast or a promise.</div>
+  </div>
+</section>
+
+<!-- 4 · RISK OF BUYING -->
+<section id="risk-of-buying">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Why Buyers Blow Up</div>
+      <h2 class="title">Time is working against you</h2>
+      <p class="lead" style="margin:0 auto">Buying options is defined-risk, but it comes with a clock. Understand the clock and you sidestep the most common way beginners get wiped out.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:26px">
+      <div class="define-art"><img src="./assets/time-decay.jpg" alt="An hourglass draining beside a shrinking coin, an option's time decay eroding its value" /></div>
+      <div>
+        <p class="bigdef" style="font-size:clamp(20px,2.6vw,26px)">Time decay, theta, chips away at your premium every day.</p>
+        <div class="insight" style="margin-top:16px">If the move you predicted does not show up before expiration, the option can expire worthless, and you lose the entire premium you paid.</div>
+        <p class="lead" style="font-size:16px;margin-top:16px">Those cheap, far out-of-the-money contracts that promise the moon are the trap. Most of them expire worthless.</p>
+      </div>
+    </div>
+    <div class="two anim d2" style="margin-top:26px">
+      <div class="cmp safe">
+        <span class="tag">Defined risk</span>
+        <h3>Small and sized</h3>
+        <p>Keep each position small and the risk defined. Never put on more than you can calmly lose.</p>
+      </div>
+      <div class="cmp grow">
+        <span class="tag">Give it room</span>
+        <h3>Enough time</h3>
+        <p>Buy enough time to expiration so your thesis has a fair chance to play out before the clock runs down.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · THESIS MATCHER (bespoke interactive) -->
+<section id="thesis-matcher">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Build the Trade</div>
+      <h2 class="title">Match the view to the play</h2>
+      <p class="lead" style="margin:0 auto">Tap a market view on the left, then tap the options play on the right that fits it. A correct pair locks in green. A wrong pair shakes and resets.</p>
+    </div>
+    <div class="tm-wrap anim d1">
+      <div class="tm-grid">
+        <div>
+          <div class="tm-colhead">Your view</div>
+          <div class="tm-col" id="tmViews">
+            <button class="tm-item" data-key="call">Bullish, expect a rise</button>
+            <button class="tm-item" data-key="put">Bearish, expect a drop</button>
+            <button class="tm-item" data-key="pput">Own shares, want downside insurance</button>
+            <button class="tm-item" data-key="ccall">Own shares, want income in a flat market</button>
+          </div>
+        </div>
+        <div>
+          <div class="tm-colhead">The play</div>
+          <div class="tm-col" id="tmPlays">
+            <button class="tm-item" data-key="ccall">Covered call</button>
+            <button class="tm-item" data-key="call">Buy a call</button>
+            <button class="tm-item" data-key="pput">Protective put</button>
+            <button class="tm-item" data-key="put">Buy a put</button>
+          </div>
+        </div>
+      </div>
+      <div class="tm-fb" id="tmFb">Tap a view to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · DISCIPLINE SORTER (interactive) -->
+<section id="discipline-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Smart or reckless?</h2>
+      <p class="lead" style="margin:0 auto">Tap a habit to pick it up, then tap the column where it belongs. Disciplined trading is boring on purpose. Reckless trading is exciting right up until the account is gone.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="smart">Start with a clear thesis and timeframe</button>
+        <button class="chip" data-bucket="reckless">Bet the account on one weekly option</button>
+        <button class="chip" data-bucket="smart">Risk only a small, defined amount (the premium)</button>
+        <button class="chip" data-bucket="reckless">Buy far out-of-the-money lottery tickets and hope</button>
+        <button class="chip" data-bucket="smart">Paper-trade the strategy first</button>
+        <button class="chip" data-bucket="reckless">Trade with no thesis, chasing hype</button>
+        <button class="chip" data-bucket="smart">Give the trade enough time to expiration</button>
+        <button class="chip" data-bucket="reckless">Ignore the time decay eating the premium</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="smart">
+          <h4>&#10003; Smart</h4><div class="sub">Disciplined &mdash; how professionals stay in the game</div>
+          <div class="drop" id="dropSmart"></div>
+        </div>
+        <div class="col gamble" data-bucket="reckless">
+          <h4>&#10007; Reckless</h4><div class="sub">How accounts disappear</div>
+          <div class="drop" id="dropReckless"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a habit to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="2">
+        <h4>1. What does a covered call let you do?</h4>
+        <button class="opt" data-idx="0">Profit from a crash</button>
+        <button class="opt" data-idx="1">Profit only through puts</button>
+        <button class="opt" data-idx="2">Generate income while holding shares you own</button>
+        <button class="opt" data-idx="3">Eliminate all downside risk</button>
+        <div class="exp">A covered call sells a call against shares you own to generate income, best in a flat or mildly bullish market.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>2. What is the primary purpose of a protective put?</h4>
+        <button class="opt" data-idx="0">Speculating on a big rise</button>
+        <button class="opt" data-idx="1">Insuring stock you own against a decline</button>
+        <button class="opt" data-idx="2">Selling shares at a fixed price</button>
+        <button class="opt" data-idx="3">Generating dividends</button>
+        <div class="exp">A protective put acts like insurance on shares you own, cushioning losses if the price drops.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>3. You expect a stock to climb over the next month. Which fits your view?</h4>
+        <button class="opt" data-idx="0">Buy a put</button>
+        <button class="opt" data-idx="1">Buy a call</button>
+        <button class="opt" data-idx="2">Sell all your shares</button>
+        <button class="opt" data-idx="3">Do nothing ever</button>
+        <div class="exp">A bullish outlook fits buying a call, which profits if the price rises.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>4. What is the key risk of BUYING an option?</h4>
+        <button class="opt" data-idx="0">It can never expire</button>
+        <button class="opt" data-idx="1">If the move doesn't happen by expiration, it can expire worthless and the full premium is lost</button>
+        <button class="opt" data-idx="2">It pays guaranteed income</button>
+        <button class="opt" data-idx="3">It always beats owning the stock</button>
+        <div class="exp">Options have a deadline; if the underlying doesn't move past the strike in time, the option can expire worthless.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. Before risking real money on an options strategy, a smart beginner should:</h4>
+        <button class="opt" data-idx="0">Borrow money to trade bigger</button>
+        <button class="opt" data-idx="1">Practice it in a paper-trading simulator first</button>
+        <button class="opt" data-idx="2">Put the whole account in one trade</button>
+        <button class="opt" data-idx="3">Skip having a plan</button>
+        <div class="exp">Paper trading rehearses the strategy and builds discipline without risking real capital.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">You've Got the Discipline</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>Every options trade starts with a thesis: direction, magnitude, and timing.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Bullish buys a call, bearish buys a put. A protective put insures shares; a covered call earns income in a flat market.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Time decay and expiration are how buyers blow up, so keep size small and risk defined.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>The smart beginner practices in a simulator before risking real money.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 5.1</div><h3>Position Sizing, the 1&ndash;2% Rule, Stops &amp; R:R</h3></div>
+      <span class="badge">Size trades so one loss never takes you out &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 31.84, "interactive": false, "label": "A Thesis Not a Lottery Ticket"}, {"id": "thesis-first", "start": 32.34, "end": 59.06, "interactive": false, "label": "Start With a View"}, {"id": "choosing", "start": 59.56, "end": 90.44, "interactive": false, "label": "Match the Play to the View"}, {"id": "risk-of-buying", "start": 90.94, "end": 120.7, "interactive": false, "label": "Why Buyers Blow Up"}, {"id": "thesis-matcher", "start": 121.2, "end": 145.84, "interactive": true, "label": "Build the Trade"}, {"id": "discipline-sorter", "start": 146.34, "end": 174.82, "interactive": true, "label": "Smart or Reckless"}, {"id": "quiz", "start": 175.32, "end": 182.12, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 182.62, "end": 219.1, "interactive": false, "label": "Up Next Position Sizing"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: thesis-matcher "build the trade" (isolated) ---------- */
+(function(){
+  var views=document.getElementById('tmViews'), plays=document.getElementById('tmPlays');
+  if(!views||!plays) return;
+  var fb=document.getElementById('tmFb');
+  var vItems=Array.prototype.slice.call(views.querySelectorAll('.tm-item'));
+  var pItems=Array.prototype.slice.call(plays.querySelectorAll('.tm-item'));
+  var selView=null, matched=0, TOTAL=vItems.length;
+
+  function clearSel(){ vItems.concat(pItems).forEach(function(i){ i.classList.remove('tm-sel'); }); }
+  function flashWrong(el){
+    el.classList.add('tm-wrong');
+    setTimeout(function(){ el.classList.remove('tm-wrong'); }, 440);
+  }
+  vItems.forEach(function(v){
+    v.addEventListener('click',function(){
+      if(v.classList.contains('tm-done')) return;
+      if(selView===v){ v.classList.remove('tm-sel'); selView=null; fb.textContent='Tap a view to begin.'; return; }
+      vItems.forEach(function(i){ if(!i.classList.contains('tm-done')) i.classList.remove('tm-sel'); });
+      v.classList.add('tm-sel'); selView=v;
+      fb.textContent='Now tap the play that fits "'+v.textContent+'".';
+    });
+  });
+  pItems.forEach(function(p){
+    p.addEventListener('click',function(){
+      if(p.classList.contains('tm-done')) return;
+      if(!selView){ fb.textContent='Pick a view on the left first.'; return; }
+      if(p.dataset.key===selView.dataset.key){
+        selView.classList.remove('tm-sel'); selView.classList.add('tm-done'); selView.disabled=true;
+        p.classList.add('tm-done'); p.disabled=true;
+        matched++; selView=null;
+        if(matched<TOTAL){ fb.textContent='Matched '+matched+' of '+TOTAL+'. Keep going.'; }
+        else{ fb.classList.add('tm-fbdone'); fb.textContent='All four matched. That is the core options playbook.'; }
+      } else {
+        flashWrong(p); clearSel(); selView=null;
+        fb.textContent='Not quite. That view calls for a different play. Start again.';
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
