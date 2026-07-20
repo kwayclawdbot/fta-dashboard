@@ -26,7 +26,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelForXp } from "@/lib/xp";
 import { dailyFiveCount } from "@/lib/flashcards";
-import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import {
   getCurrentFicWeek,
   getOrientationState,
@@ -674,8 +673,6 @@ export default function DashboardHome() {
           </div>
         </>
       )}
-
-      <ClubActivityStrip />
         </>
       )}
     </div>
