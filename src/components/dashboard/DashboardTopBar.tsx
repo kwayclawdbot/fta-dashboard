@@ -7,6 +7,8 @@ import { Menu, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
+import type { FamilyTier } from "@/lib/tier";
+import TierBadge, { tierRingClass } from "@/components/TierBadge";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Home",
@@ -29,6 +31,7 @@ interface DashboardTopBarProps {
   user: {
     email?: string;
     display_name?: string;
+    tier?: FamilyTier;
   };
   onMenuClick: () => void;
 }
@@ -92,7 +95,11 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 text-[11px] font-bold font-display">
+              <div
+                className={`w-7 h-7 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 text-[11px] font-bold font-display ${
+                  user.tier ? tierRingClass(user.tier) : ""
+                }`}
+              >
                 {initials}
               </div>
               <ChevronDown className="w-3 h-3 text-midnight-400 hidden sm:block" />
@@ -108,9 +115,12 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
                   className="absolute right-0 mt-2 w-52 rounded-lg bg-midnight-900 border border-midnight-700 shadow-lg shadow-ink/10 overflow-hidden"
                 >
                   <div className="px-4 py-3 border-b border-midnight-800">
-                    <p className="text-sm font-medium text-midnight-100 truncate">
-                      {user.display_name || "Trader"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-midnight-100 truncate">
+                        {user.display_name || "Trader"}
+                      </p>
+                      {user.tier && <TierBadge tier={user.tier} size="xs" />}
+                    </div>
                     <p className="text-xs text-midnight-500 truncate">{user.email}</p>
                   </div>
                   <div className="py-1">

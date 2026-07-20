@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import TierBadge, { tierRingClass } from "@/components/TierBadge";
 
 interface FamilyMember {
   id: string;
@@ -30,7 +32,7 @@ interface FamilyMember {
 interface FamilyData {
   id: string;
   name: string;
-  plan_tier: string;
+  tier: FamilyTier;
 }
 
 export default function FamilyPage() {
@@ -72,15 +74,18 @@ export default function FamilyPage() {
       return;
     }
 
-    // Get family data
-    const { data: familyData } = await supabase
-      .from("families")
-      .select("id, name, plan_tier")
-      .eq("id", profile.family_id)
-      .single();
+    // Get family data + membership tier (FIC/FTA)
+    const [{ data: familyData }, tier] = await Promise.all([
+      supabase
+        .from("families")
+        .select("id, name")
+        .eq("id", profile.family_id)
+        .single(),
+      getFamilyTier(supabase, profile.family_id),
+    ]);
 
     if (familyData) {
-      setFamily(familyData);
+      setFamily({ id: familyData.id, name: familyData.name, tier });
     }
 
     // Get family members
@@ -132,15 +137,6 @@ export default function FamilyPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const tierBadge = (tier: string) => {
-    const colors: Record<string, string> = {
-      challenge: "bg-green-500/10 text-green-400",
-      academy: "bg-gold-400/10 text-gold-400",
-      free: "bg-midnight-800 text-midnight-300",
-    };
-    return colors[tier] || colors.free;
-  };
-
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto flex items-center justify-center py-20">
@@ -184,13 +180,7 @@ export default function FamilyPage() {
             <h2 className="font-display text-2xl font-bold text-midnight-100">
               {family.name}
             </h2>
-            <span
-              className={`text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
-                family.plan_tier || "free"
-              )}`}
-            >
-              {family.plan_tier || "Free"}
-            </span>
+            <TierBadge tier={family.tier} size="md" />
           </div>
           <p className="text-midnight-400 text-sm font-body">
             {members.length} member{members.length !== 1 ? "s" : ""} in your
@@ -244,10 +234,12 @@ export default function FamilyPage() {
                     <img
                       src={member.avatar_url}
                       alt={member.display_name}
-                      className="w-10 h-10 rounded-full object-cover"
+                      className={`w-10 h-10 rounded-full object-cover ${tierRingClass(family.tier)}`}
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
+                    <div
+                      className={`w-10 h-10 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0 ${tierRingClass(family.tier)}`}
+                    >
                       {initials}
                     </div>
                   )}

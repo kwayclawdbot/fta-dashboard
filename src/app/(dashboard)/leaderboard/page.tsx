@@ -5,12 +5,15 @@ import { motion } from "framer-motion";
 import { Crown, Trophy, Users, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { levelForXp } from "@/lib/xp";
+import type { FamilyTier } from "@/lib/tier";
+import TierBadge from "@/components/TierBadge";
 
 type Window = "7d" | "30d" | "all";
 
 interface FamilyRow {
   family_id: string;
   name: string;
+  tier?: FamilyTier;
   members: number;
   xp: number;
 }
@@ -134,6 +137,7 @@ export default function LeaderboardPage() {
                     <p className="font-display font-semibold text-ink truncate">
                       {row.name}
                     </p>
+                    <TierBadge tier={row.tier || "fic"} size="xs" />
                     {rank === 1 && (
                       <Crown className="w-4 h-4 text-gold-500 shrink-0" />
                     )}

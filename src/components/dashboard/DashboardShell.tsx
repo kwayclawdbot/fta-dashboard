@@ -4,6 +4,8 @@ import { useState } from "react";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 
+import type { FamilyTier } from "@/lib/tier";
+
 interface DashboardShellProps {
   user: {
     email?: string;
@@ -11,6 +13,7 @@ interface DashboardShellProps {
     role?: string;
     age_group?: string;
     track?: string;
+    tier?: FamilyTier;
   };
   children: React.ReactNode;
 }

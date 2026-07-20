@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
 
 interface LessonRow {
   id: string;
@@ -65,7 +66,7 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [track, setTrack] = useState("adults");
   const [isKid, setIsKid] = useState(false);
-  const [hasFta, setHasFta] = useState(false);
+  const [tier, setTier] = useState<FamilyTier>("fic");
   const [ficCards, setFicCards] = useState<CourseCard[]>([]);
   const [ftaCard, setFtaCard] = useState<CourseCard | null>(null);
 
@@ -86,16 +87,10 @@ export default function CoursesPage() {
       setTrack(userTrack);
       setIsKid(profile?.role === "child" && userTrack === "kids");
 
-      let ftaEnrolled = false;
-      if (profile?.family_id) {
-        const { data: enr } = await supabase
-          .from("enrollments")
-          .select("program")
-          .eq("family_id", profile.family_id)
-          .eq("status", "active");
-        ftaEnrolled = (enr || []).some((e) => e.program === "fta");
-      }
-      setHasFta(ftaEnrolled);
+      // Family membership tier drives program gating (central matrix in
+      // src/lib/tier.ts). Kids inherit the family's tier.
+      const familyTier = await getFamilyTier(supabase, profile?.family_id);
+      setTier(familyTier);
 
       const [{ data: courses }, { data: prog }] = await Promise.all([
         supabase
@@ -216,7 +211,7 @@ export default function CoursesPage() {
                   <span className="px-2.5 py-0.5 rounded-full bg-chip-sky text-sky-800 text-xs font-semibold">
                     Whole family
                   </span>
-                  {!hasFta && (
+                  {!canAccessCourse(tier, "fta") && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sand text-soft text-xs font-semibold">
                       <Lock className="w-3 h-3" /> Enrollment required
                     </span>
@@ -229,7 +224,7 @@ export default function CoursesPage() {
                   {ftaCard.course.description}
                 </p>
                 <div className="flex items-center gap-4 mt-5 flex-wrap">
-                  {hasFta ? (
+                  {canAccessCourse(tier, "fta") ? (
                     <>
                       {ftaCard.next ? (
                         <Link

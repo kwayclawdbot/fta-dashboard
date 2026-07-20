@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import TierBadge, { tierRingClass } from "@/components/TierBadge";
 
 interface FamilyMember {
   id: string;
@@ -38,6 +40,7 @@ export default function FamilyMembersPage() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string>("");
+  const [tier, setTier] = useState<FamilyTier>("fic");
 
   const loadMembers = useCallback(async () => {
     const {
@@ -68,6 +71,9 @@ export default function FamilyMembersPage() {
       setLoading(false);
       return;
     }
+
+    // Membership tier (FIC/FTA) — every member inherits it.
+    setTier(await getFamilyTier(supabase, profile.family_id));
 
     const { data: memberData } = await supabase
       .from("profiles")
@@ -147,9 +153,12 @@ export default function FamilyMembersPage() {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8"
       >
         <div>
-          <h2 className="font-display text-2xl font-bold text-midnight-100">
-            Manage Members
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="font-display text-2xl font-bold text-midnight-100">
+              Manage Members
+            </h2>
+            <TierBadge tier={tier} size="md" />
+          </div>
           <p className="text-midnight-400 text-sm font-body mt-1">
             {members.length} member{members.length !== 1 ? "s" : ""} in your
             family
@@ -192,10 +201,12 @@ export default function FamilyMembersPage() {
                 <img
                   src={member.avatar_url}
                   alt={member.display_name || "Member"}
-                  className="w-9 h-9 rounded-full object-cover shrink-0"
+                  className={`w-9 h-9 rounded-full object-cover shrink-0 ${tierRingClass(tier)}`}
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
+                <div
+                  className={`w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0 ${tierRingClass(tier)}`}
+                >
                   {initials}
                 </div>
               )}

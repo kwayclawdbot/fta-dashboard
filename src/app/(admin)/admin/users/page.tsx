@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { Users, Search, ChevronDown, Shield, User, Crown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getFamilyTierMap, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
 
 interface ProfileRow {
   id: string;
@@ -15,6 +16,7 @@ interface ProfileRow {
 }
 
 const ROLE_OPTIONS = ["parent", "child", "coach", "admin"];
+const TIER_OPTIONS: FamilyTier[] = ["fic", "fta"];
 
 export default function AdminUsersPage() {
   const supabase = createClient();
@@ -24,6 +26,8 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [expandedFamilyId, setExpandedFamilyId] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<ProfileRow[]>([]);
+  const [tiers, setTiers] = useState<Record<string, FamilyTier>>({});
+  const [savingTier, setSavingTier] = useState<string | null>(null);
 
   const loadProfiles = useCallback(async () => {
     const { data } = await supabase
@@ -31,6 +35,13 @@ export default function AdminUsersPage() {
       .select("*")
       .order("display_name");
     setProfiles(data || []);
+    // One query for every family's membership tier (family_tiers view).
+    setTiers(
+      await getFamilyTierMap(
+        supabase,
+        (data || []).map((p: ProfileRow) => p.family_id)
+      )
+    );
     setLoading(false);
   }, [supabase]);
 
@@ -46,6 +57,22 @@ export default function AdminUsersPage() {
     setProfiles((prev) =>
       prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
     );
+  }
+
+  // Manual enrollment: after a Stripe payment-link checkout, the admin flips
+  // the family's tier here. Writes go through the admin_set_family_tier RPC
+  // (migration 029), which upserts/cancels `enrollments` rows — the single
+  // source of truth every access gate reads.
+  async function handleTierChange(familyId: string, newTier: FamilyTier) {
+    setSavingTier(familyId);
+    const { error } = await supabase.rpc("admin_set_family_tier", {
+      p_family_id: familyId,
+      p_tier: newTier,
+    });
+    if (!error) {
+      setTiers((prev) => ({ ...prev, [familyId]: newTier }));
+    }
+    setSavingTier(null);
   }
 
   async function viewFamily(familyId: string) {
@@ -174,6 +201,9 @@ export default function AdminUsersPage() {
                   Family
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Tier
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Track
                 </th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
@@ -226,6 +256,40 @@ export default function AdminUsersPage() {
                         <span className="text-xs text-zinc-600">—</span>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      {profile.family_id ? (
+                        <select
+                          value={tiers[profile.family_id] || "fic"}
+                          disabled={savingTier === profile.family_id}
+                          onChange={(e) =>
+                            handleTierChange(
+                              profile.family_id!,
+                              e.target.value as FamilyTier
+                            )
+                          }
+                          title={`Membership tier — sets the whole family (${
+                            TIER_CONFIG[tiers[profile.family_id] || "fic"].name
+                          })`}
+                          className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-400/50 disabled:opacity-50 ${
+                            (tiers[profile.family_id] || "fic") === "fta"
+                              ? "text-amber-400 bg-amber-400/10"
+                              : "text-zinc-400 bg-zinc-800"
+                          }`}
+                        >
+                          {TIER_OPTIONS.map((t) => (
+                            <option
+                              key={t}
+                              value={t}
+                              className="bg-zinc-900 text-zinc-100"
+                            >
+                              {TIER_CONFIG[t].label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-xs text-zinc-600">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-xs text-zinc-400">
                       {profile.track || "—"}
                     </td>
@@ -250,7 +314,7 @@ export default function AdminUsersPage() {
                     profile.family_id &&
                     familyMembers.length > 0 && (
                       <tr key={`family-${profile.family_id}`}>
-                        <td colSpan={6} className="px-4 py-2 bg-zinc-900/60">
+                        <td colSpan={7} className="px-4 py-2 bg-zinc-900/60">
                           <div className="ml-4 border-l-2 border-amber-400/20 pl-4">
                             <p className="text-[11px] text-zinc-500 uppercase tracking-wider mb-2 font-bold">
                               Family Members

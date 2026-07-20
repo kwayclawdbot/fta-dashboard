@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import TierBadge from "@/components/TierBadge";
 import ReportCard from "@/components/dashboard/ReportCard";
 
 interface MemberSummary {
@@ -27,7 +29,7 @@ interface MemberSummary {
 
 interface FamilyOverview {
   family_name: string;
-  plan_tier: string;
+  tier: FamilyTier;
   total_lessons_completed: number;
   total_hours: number;
   average_streak: number;
@@ -54,15 +56,6 @@ function formatRelativeTime(dateStr: string) {
   if (diffDays === 1) return "Yesterday";
   return `${diffDays}d ago`;
 }
-
-const tierBadge = (tier: string) => {
-  const colors: Record<string, string> = {
-    challenge: "bg-green-500/10 text-green-400",
-    academy: "bg-gold-400/10 text-gold-400",
-    free: "bg-midnight-800 text-midnight-300",
-  };
-  return colors[tier] || colors.free;
-};
 
 function calculateStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
@@ -115,12 +108,15 @@ export default function FamilyOverviewPage() {
     }
 
     try {
-      // Get family
-      const { data: family } = await supabase
-        .from("families")
-        .select("name, plan_tier")
-        .eq("id", profile.family_id)
-        .single();
+      // Get family + membership tier (FIC/FTA)
+      const [{ data: family }, familyTier] = await Promise.all([
+        supabase
+          .from("families")
+          .select("name")
+          .eq("id", profile.family_id)
+          .single(),
+        getFamilyTier(supabase, profile.family_id),
+      ]);
 
       // Get family members
       const { data: members } = await supabase
@@ -195,7 +191,7 @@ export default function FamilyOverviewPage() {
 
       setOverview({
         family_name: family.name,
-        plan_tier: family.plan_tier,
+        tier: familyTier,
         total_lessons_completed: totalCompleted,
         total_hours: Math.round((totalSeconds / 3600) * 10) / 10,
         average_streak: avgStreak,
@@ -274,13 +270,7 @@ export default function FamilyOverviewPage() {
           <h2 className="font-display text-2xl font-bold text-midnight-100">
             {overview.family_name}
           </h2>
-          <span
-            className={`text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded ${tierBadge(
-              overview.plan_tier
-            )}`}
-          >
-            {overview.plan_tier}
-          </span>
+          <TierBadge tier={overview.tier} size="md" />
         </div>
         <p className="text-midnight-400 text-sm font-body">
           Parent overview dashboard

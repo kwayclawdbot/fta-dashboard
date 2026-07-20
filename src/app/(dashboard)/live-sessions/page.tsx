@@ -21,6 +21,13 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 import {
+  canAccessSession,
+  getFamilyTier,
+  type FamilyTier,
+  type SessionTier,
+} from "@/lib/tier";
+import TierBadge from "@/components/TierBadge";
+import {
   RECORDINGS_BUCKET,
   SIGNED_URL_TTL,
   resolveRecordingKind,
@@ -43,7 +50,7 @@ interface LiveSession {
   durationMin: number;
   track: Track;
   status: "live" | "upcoming" | "completed";
-  minTier: "challenge" | "academy";
+  minTier: SessionTier;
   zoomUrl?: string;
   recordingUrl?: string;
   recordingPath?: string;
@@ -53,7 +60,7 @@ interface LiveSession {
 interface Access {
   isChild: boolean;
   userTrack: Track;
-  hasFta: boolean;
+  tier: FamilyTier;
 }
 
 // ── Track Config (matches the courses catalog: kids / teens / adults) ──
@@ -356,11 +363,7 @@ function SessionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <TrackBadge track={session.track} />
-            {session.minTier === "academy" && (
-              <span className="text-[11px] text-gold-700 bg-gold-400/10 px-1.5 py-0.5 rounded font-semibold">
-                FTA
-              </span>
-            )}
+            {session.minTier === "academy" && <TierBadge tier="fta" />}
           </div>
           <h4 className="font-display text-sm font-semibold text-midnight-100 mb-0.5">
             {session.title}
@@ -484,7 +487,7 @@ export default function LiveSessionsPage() {
   const [access, setAccess] = useState<Access>({
     isChild: false,
     userTrack: "adults",
-    hasFta: false,
+    tier: "fic",
   });
   const [watching, setWatching] = useState<LiveSession | null>(null);
   const [rsvpInfo, setRsvpInfo] = useState<
@@ -597,7 +600,7 @@ export default function LiveSessionsPage() {
       setUserId(user.id);
 
       // Same access derivation as the courses page: profile track/age_group
-      // + family-level FTA enrollment.
+      // + the family membership tier (kids inherit the family's tier).
       const { data: profile } = await supabase
         .from("profiles")
         .select("role, age_group, track, family_id")
@@ -610,16 +613,8 @@ export default function LiveSessionsPage() {
       const isChild = profile?.role === "child";
       setFamilyId(profile?.family_id ?? null);
 
-      let hasFta = false;
-      if (profile?.family_id) {
-        const { data: enr } = await supabase
-          .from("enrollments")
-          .select("program")
-          .eq("family_id", profile.family_id)
-          .eq("status", "active");
-        hasFta = (enr || []).some((e: { program: string }) => e.program === "fta");
-      }
-      setAccess({ isChild, userTrack, hasFta });
+      const tier = await getFamilyTier(supabase, profile?.family_id);
+      setAccess({ isChild, userTrack, tier });
 
       await loadRsvps(user.id);
     }
@@ -632,9 +627,10 @@ export default function LiveSessionsPage() {
   const isTrackLocked = (track: Track) =>
     access.isChild && track !== "all" && track !== access.userTrack;
 
-  // Academy sessions are part of the FTA live program.
+  // Tier gating comes from the central access matrix (src/lib/tier.ts):
+  // 'academy' sessions are part of the FTA live program.
   const isTierLocked = (session: LiveSession) =>
-    session.minTier === "academy" && !access.hasFta;
+    !canAccessSession(access.tier, session.minTier);
 
   const sessionLock = (session: LiveSession) => {
     if (isTrackLocked(session.track))
@@ -722,7 +718,7 @@ export default function LiveSessionsPage() {
               {TRACK_CONFIG[access.userTrack]?.label || access.userTrack} +
               whole-family sessions.
             </>
-          ) : access.hasFta ? (
+          ) : access.tier === "fta" ? (
             <>
               <span className="text-midnight-200">FTA member</span> — you have
               access to every class and recording.
