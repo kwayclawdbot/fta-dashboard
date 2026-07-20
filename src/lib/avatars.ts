@@ -6,14 +6,15 @@
  * (e.g. "/avatars/adults/a03.svg"); uploaded/remote avatars are full URLs.
  * Both render through <Avatar/> with an initials fallback.
  *
- * The interim set ships as SVG (deterministic, <2KB, guaranteed). If the
- * Higgsfield illustrated PNG packs land in the same folders with the same
- * a01/t01/k01 basenames, flip AVATAR_EXT to "png" — nothing else changes.
+ * Ships as the Higgsfield illustrated PNG packs (one cohesive warm-paper style,
+ * diverse, <80KB each). The deterministic SVG set remains in the same folders
+ * with the same a01/t01/k01 basenames as an instant fallback — flip AVATAR_EXT
+ * back to "svg" and nothing else changes.
  */
 
 export type AvatarGroup = "adults" | "teens" | "kids";
 
-export const AVATAR_EXT = "svg" as const;
+export const AVATAR_EXT = "png" as const;
 
 const PREFIX: Record<AvatarGroup, string> = {
   adults: "a",
