@@ -33,6 +33,7 @@ import {
   type FicWeek,
 } from "@/lib/fic";
 import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
+import Avatar from "@/components/Avatar";
 
 /* ---------- types ---------- */
 
@@ -78,6 +79,7 @@ interface FamilyMember {
   display_name: string;
   role: string;
   age_group: string | null;
+  avatar_url: string | null;
   completed: number;
   xp: number;
 }
@@ -183,7 +185,7 @@ export default function DashboardHome() {
       if (profile?.role === "parent" && profile?.family_id) {
         const { data: members } = await supabase
           .from("profiles")
-          .select("id, display_name, role, age_group")
+          .select("id, display_name, role, age_group, avatar_url")
           .eq("family_id", profile.family_id)
           .neq("id", user.id);
         if (members?.length) {
@@ -366,8 +368,10 @@ export default function DashboardHome() {
             Your family isn&apos;t enrolled yet
           </h2>
           <p className="text-soft max-w-md mx-auto mb-5">
-            Join the Family Investing Club for the foundations, or the FTA
-            6-week live program to go from beginner to trade ready.
+            The Family Investing Club is where your family learns one money
+            concept, studies one company, and builds the habit together every
+            week. Want the deep end too? The FTA academy adds a 6-week live,
+            beginner-to-trade-ready program on top.
           </p>
           <Link
             href="/upgrade"
@@ -478,7 +482,7 @@ export default function DashboardHome() {
             </div>
           </motion.div>
 
-          {/* THIS WEEK — live class + drill (FTA execution rail) */}
+          {/* THIS WEEK — live class + drill (academy execution rail) */}
           {home.this_week && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -557,9 +561,12 @@ export default function DashboardHome() {
                 <div className="space-y-3">
                   {family.map((m) => (
                     <div key={m.id} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 text-xs font-bold font-display">
-                        {m.display_name?.[0]?.toUpperCase() || "?"}
-                      </div>
+                      <Avatar
+                        name={m.display_name}
+                        avatarUrl={m.avatar_url}
+                        role={m.role}
+                        size="sm"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-ink truncate">
                           {m.display_name}
@@ -587,7 +594,7 @@ export default function DashboardHome() {
               >
                 <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-4">
                   <Shield className="w-4 h-4 text-gold-600" />
-                  The FTA House Rules
+                  Our House Rules
                 </h3>
                 <ol className="space-y-2.5">
                   {HOUSE_RULES.map((rule, i) => (
