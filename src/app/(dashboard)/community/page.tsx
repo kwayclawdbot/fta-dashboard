@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  AtSign,
   Send,
   TrendingUp,
   Trophy,
@@ -288,6 +289,18 @@ export default function CommunityPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── @mention autocomplete ─────────────────────────────────────────────
+  // Insert format MUST match the notification trigger rule (migration 028):
+  // "@" + display name with all spaces stripped (e.g. "Kway Jr" → "@KwayJr"),
+  // matched case-insensitively in Postgres to fan out mention notifications.
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(
+    null
+  );
+  const [mentionIdx, setMentionIdx] = useState(0);
+  const [roster, setRoster] = useState<{ id: string; name: string; stripped: string }[]>([]);
+  const rosterLoaded = useRef(false);
+
   // Membership tier per family (family_tiers view) — fetched in ONE batched
   // query for the whole feed, never per message.
   const [tiers, setTiers] = useState<Record<string, FamilyTier>>({});
@@ -571,6 +584,81 @@ export default function CommunityPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  // Lazy-load the member roster the first time "@" is typed (profiles are
+  // readable by all authenticated members per migration 016).
+  const loadRoster = useCallback(async () => {
+    if (rosterLoaded.current) return;
+    rosterLoaded.current = true;
+    const { data } = await supabase.from("profiles").select("id, display_name").limit(300);
+    setRoster(
+      (data ?? [])
+        .filter((p) => p.display_name)
+        .map((p) => ({
+          id: p.id as string,
+          name: p.display_name as string,
+          stripped: (p.display_name as string).replace(/\s+/g, ""),
+        }))
+        .filter((p) => p.stripped.length > 0)
+    );
+  }, [supabase]);
+
+  const mentionCandidates = useMemo(() => {
+    if (!mention) return [];
+    const q = mention.query.toLowerCase();
+    return roster
+      .filter((p) => p.id !== me?.id)
+      .filter(
+        (p) => p.stripped.toLowerCase().startsWith(q) || p.name.toLowerCase().startsWith(q)
+      )
+      .slice(0, 6);
+  }, [mention, roster, me?.id]);
+
+  function detectMention(value: string, caret: number) {
+    // Token chars mirror the trigger's parser: letters, digits, _ . ' -
+    const upto = value.slice(0, caret);
+    const m = upto.match(/(^|\s)@([A-Za-z0-9_.'-]*)$/);
+    if (m) {
+      loadRoster();
+      setMention({ start: caret - m[2].length - 1, end: caret, query: m[2] });
+      setMentionIdx(0);
+    } else {
+      setMention(null);
+    }
+  }
+
+  function insertMention(candidate: { name: string; stripped: string }) {
+    if (!mention) return;
+    const before = newPostText.slice(0, mention.start);
+    const after = newPostText.slice(mention.end);
+    const inserted = `@${candidate.stripped} `;
+    setNewPostText(before + inserted + after);
+    setMention(null);
+    const caret = before.length + inserted.length;
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(caret, caret);
+      }
+    });
+  }
+
+  function handleComposerKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (!mention || mentionCandidates.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setMentionIdx((i) => (i + 1) % mentionCandidates.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setMentionIdx((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      insertMention(mentionCandidates[mentionIdx]);
+    } else if (e.key === "Escape") {
+      setMention(null);
+    }
+  }
+
   async function handlePost() {
     const text = newPostText.trim();
     if ((!text && !attachment) || !me || posting) return;
@@ -741,17 +829,63 @@ export default function CommunityPage() {
                 tier={(me?.family_id && tiers[me.family_id]) || "fic"}
               />
               <div className="flex-1 min-w-0">
-                <textarea
-                  value={newPostText}
-                  onChange={(e) => setNewPostText(e.target.value)}
-                  placeholder={
-                    me?.role === "child"
-                      ? "Share what you learned today..."
-                      : "Share a win, ask a question, or start a discussion..."
-                  }
-                  rows={3}
-                  className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
-                />
+                <div className="relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={newPostText}
+                    onChange={(e) => {
+                      setNewPostText(e.target.value);
+                      detectMention(
+                        e.target.value,
+                        e.target.selectionStart ?? e.target.value.length
+                      );
+                    }}
+                    onKeyDown={handleComposerKeyDown}
+                    onBlur={() => setTimeout(() => setMention(null), 150)}
+                    placeholder={
+                      me?.role === "child"
+                        ? "Share what you learned today..."
+                        : "Share a win, ask a question, or start a discussion..."
+                    }
+                    rows={3}
+                    className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
+                  />
+                  {/* @mention autocomplete */}
+                  {mention && mentionCandidates.length > 0 && (
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-sand rounded-lg shadow-lg overflow-hidden z-20">
+                      <p className="flex items-center gap-1 px-3 pt-2 pb-1 text-[10px] font-display font-semibold uppercase tracking-wider text-soft">
+                        <AtSign className="w-3 h-3" />
+                        Mention someone
+                      </p>
+                      {mentionCandidates.map((c, i) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            insertMention(c);
+                          }}
+                          onMouseEnter={() => setMentionIdx(i)}
+                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left transition-colors ${
+                            i === mentionIdx ? "bg-paper" : "bg-white"
+                          }`}
+                        >
+                          <span className="w-6 h-6 rounded-full bg-gold-400/20 text-gold-700 text-[10px] font-bold font-display flex items-center justify-center shrink-0">
+                            {initialsOf(c.name)}
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-xs font-medium text-ink truncate">
+                              {c.name}
+                            </span>
+                            <span className="block text-[10px] text-soft truncate">
+                              @{c.stripped}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {/* Attachment preview chip */}
                 <AnimatePresence>
                   {attachment && (
