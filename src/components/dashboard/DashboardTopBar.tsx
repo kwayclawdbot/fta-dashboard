@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, Bell, ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { Menu, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import NotificationsBell from "@/components/notifications/NotificationsBell";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Home",
@@ -82,10 +83,8 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
 
         {/* Right: notifications, avatar */}
         <div className="flex items-center gap-3">
-          {/* Notification bell */}
-          <button className="relative text-midnight-400 hover:text-midnight-200 transition-colors">
-            <Bell className="w-[18px] h-[18px]" />
-          </button>
+          {/* Notification bell — live unread count + dropdown */}
+          <NotificationsBell />
 
           {/* User dropdown */}
           <div className="relative" ref={dropdownRef}>

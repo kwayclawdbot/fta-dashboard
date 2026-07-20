@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,20 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Family Trading Academy | Dashboard",
   description: "Your family trading learning dashboard.",
+  // PWA — required for iOS "Add to Home Screen" (a prerequisite for iOS web push)
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FTA",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FBF7EF",
 };
 
 export default function RootLayout({

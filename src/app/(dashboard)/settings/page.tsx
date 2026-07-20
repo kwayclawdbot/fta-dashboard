@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LogOut, Save, CreditCard } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import EnablePushButton from "@/components/notifications/EnablePushButton";
 
 interface NotificationPrefs {
   email_notifs: boolean;
@@ -187,6 +188,16 @@ export default function SettingsPage() {
               </button>
             </div>
           ))}
+
+          {/* Browser push — replies + @mentions land on your device */}
+          <div className="pt-4 mt-4 border-t border-sand">
+            <p className="text-sm font-medium text-midnight-200">Push Notifications</p>
+            <p className="text-xs text-midnight-500 mb-3">
+              Get a notification on this device when someone replies to you or @mentions you in
+              the community.
+            </p>
+            <EnablePushButton />
+          </div>
         </div>
       </motion.div>
 
