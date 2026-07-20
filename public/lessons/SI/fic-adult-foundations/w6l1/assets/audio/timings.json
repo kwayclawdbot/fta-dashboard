@@ -1,0 +1,55 @@
+{
+  "total_seconds": 313.304,
+  "gap": 0.5,
+  "voice": "Voicebox Qwen-TTS 1.7B (local, profile Kway) \u2014 OpenAI TTS billing-blocked this session",
+  "sections": [
+    {
+      "id": "hero",
+      "start": 0.0,
+      "end": 35.92,
+      "dur": 35.92
+    },
+    {
+      "id": "the-account",
+      "start": 36.42,
+      "end": 67.22,
+      "dur": 30.8
+    },
+    {
+      "id": "choosing-a-broker",
+      "start": 67.72,
+      "end": 113.64,
+      "dur": 45.92
+    },
+    {
+      "id": "account-types",
+      "start": 114.14,
+      "end": 224.46,
+      "dur": 110.32
+    },
+    {
+      "id": "account-matcher",
+      "start": 224.96,
+      "end": 251.84,
+      "dur": 26.88
+    },
+    {
+      "id": "fact-myth-sorter",
+      "start": 252.34,
+      "end": 274.66,
+      "dur": 22.32
+    },
+    {
+      "id": "quiz",
+      "start": 275.16,
+      "end": 281.96,
+      "dur": 6.8
+    },
+    {
+      "id": "bridge",
+      "start": 282.46,
+      "end": 312.54,
+      "dur": 30.08
+    }
+  ]
+}

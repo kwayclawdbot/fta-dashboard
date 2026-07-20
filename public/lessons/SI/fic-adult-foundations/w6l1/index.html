@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Opening a Brokerage Account + Options Approval &middot; SI-100 Adults &middot; Module 6 &middot; Lesson 6.1</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="6" />
+<meta name="fta-lesson" content="L6.1" />
+<meta name="fta-lesson-title" content="Opening a Brokerage Account + Options Approval" />
+<meta name="fta-lesson-objectives" content="Explain what a brokerage account does|Compare brokers on costs, tools, and support|Understand options approval levels|Match account types to financial goals" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+  /* bespoke: hero art float */
+  .w6-float img{animation:w6Float 5s ease-in-out infinite}
+  @keyframes w6Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+  /* bespoke: animated account-flow SVG */
+  .fl-card{background:var(--card);border:1px solid var(--sand);border-radius:var(--r-xl);padding:22px 22px 14px;box-shadow:var(--shadow-soft);max-width:900px;margin:26px auto 0}
+  .fl-svg{width:100%;height:auto;display:block}
+  .fl-svg .fl-node{animation:flPop .7s cubic-bezier(.22,1,.36,1) both}
+  .fl-svg .fl-node.n2{animation-delay:.25s}
+  .fl-svg .fl-node.n3{animation-delay:.5s}
+  .fl-svg .fl-arrow{stroke-dasharray:10 14;animation:flDash 1.6s linear infinite}
+  @keyframes flPop{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes flDash{to{stroke-dashoffset:-48}}
+
+  /* bespoke: account matcher */
+  .am-wrap{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:880px;margin:24px auto 0}
+  @media(max-width:720px){.am-wrap{gap:12px}}
+  .am-col{display:grid;gap:12px;align-content:start}
+  .am-head{font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--soft);text-align:center}
+  .am-btn{display:block;width:100%;box-sizing:border-box;text-align:left;font-family:var(--font-display);font-weight:600;font-size:14.5px;color:var(--ink);
+    background:var(--card);border:2px solid var(--sand);border-radius:var(--r-lg);padding:13px 15px;cursor:pointer;transition:border-color .2s ease,background .2s ease,transform .15s ease}
+  .am-btn:hover{border-color:var(--gold-600)}
+  .am-btn.sel{border-color:var(--gold-600);background:var(--gold-bg,#FEF3C7);transform:translateY(-2px)}
+  .am-btn.done{border-color:var(--green);background:#DCFCE7;color:var(--green);cursor:default;pointer-events:none}
+  .am-btn.done::after{content:" \2713";font-weight:900}
+  .am-btn.shake{animation:amShake .4s ease;border-color:var(--red)}
+  @keyframes amShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
+  .am-fb{margin:16px auto 0;max-width:880px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--soft);min-height:22px}
+  .am-fb.good{color:var(--green)}
+  .am-fb.bad{color:var(--red)}
+  .am-reset{display:block;margin:10px auto 0;background:none;border:none;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--soft);text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- 1 · HERO -->
+<section id="hero">
+  <div class="inner hero-grid">
+    <div class="anim">
+      <div class="label">SI-100 Adults &middot; Module 6 &middot; Lesson 6.1</div>
+      <h1 style="font-size:clamp(34px,6.4vw,62px);font-weight:900;line-height:1;margin:12px 0 12px">Your Launchpad</h1>
+      <p class="lead">Everything so far has been preparation. The brokerage account is where it all becomes real: the doorway to buying and selling, the broker you'll trust, and the account type that fits your goal.</p>
+      <div class="badges">
+        <span class="badge"><b>8</b> sections</span>
+        <span class="badge"><b>3</b> hands-on</span>
+        <span class="badge"><b>5</b>-question quiz</span>
+        <span class="badge">~<b>4.5</b> min</span>
+      </div>
+      <button class="btn" id="startBtn">Start lesson &nbsp;&rarr;</button>
+    </div>
+    <div class="anim d2">
+      <div class="hero-art w6-float"><img src="./assets/hero.jpg" alt="A laptop showing a rising chart while a small rocket lifts off beside it" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · THE ACCOUNT -->
+<section id="the-account">
+  <div class="inner">
+    <div class="anim"><div class="label">The Foundation</div><h2 class="title">The doorway to the market</h2></div>
+    <div class="define anim d1" style="margin-top:22px">
+      <div>
+        <p class="bigdef">A <span class="hi">brokerage account</span> is an account with a licensed firm that lets you buy and sell securities &mdash; stocks, funds, and later, options.</p>
+        <div class="insight">You can't walk up to an exchange and buy a share yourself. The broker is the licensed doorway, and the account is your key. Opening one is the practical first step of your investing life.</div>
+      </div>
+    </div>
+    <div class="fl-card anim d2">
+      <svg class="fl-svg" viewBox="0 0 480 200" role="img" aria-label="Flow diagram: your cash moves into a brokerage account, and orders flow to the market">
+        <!-- node 1: cash -->
+        <g class="fl-node">
+          <circle cx="80" cy="100" r="46" fill="#FEF3C7" stroke="#D97706" stroke-width="4"/>
+          <ellipse cx="80" cy="106" rx="26" ry="10" fill="#D97706"/>
+          <ellipse cx="80" cy="100" rx="26" ry="10" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+          <ellipse cx="80" cy="92" rx="26" ry="10" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+        </g>
+        <!-- arrow 1 -->
+        <line class="fl-arrow" x1="136" y1="100" x2="184" y2="100" stroke="#5B6472" stroke-width="6" stroke-linecap="round"/>
+        <path d="M186,88 L206,100 L186,112 Z" fill="#5B6472"/>
+        <!-- node 2: account card -->
+        <g class="fl-node n2">
+          <rect x="212" y="62" width="116" height="76" rx="14" fill="#FFFFFF" stroke="#101828" stroke-width="4"/>
+          <rect x="212" y="76" width="116" height="14" fill="#101828"/>
+          <rect x="226" y="104" width="56" height="10" rx="5" fill="#EAE2D0"/>
+          <circle cx="308" cy="112" r="10" fill="#FBBF24" stroke="#D97706" stroke-width="3"/>
+        </g>
+        <!-- arrow 2 -->
+        <line class="fl-arrow" x1="336" y1="100" x2="380" y2="100" stroke="#5B6472" stroke-width="6" stroke-linecap="round"/>
+        <path d="M382,88 L402,100 L382,112 Z" fill="#5B6472"/>
+        <!-- node 3: market chart -->
+        <g class="fl-node n3">
+          <circle cx="430" cy="100" r="42" fill="#DCFCE7" stroke="#16A34A" stroke-width="4"/>
+          <path d="M410,116 L423,102 L430,109 L450,86" fill="none" stroke="#16A34A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M444,84 L456,82 L452,94 Z" fill="#16A34A"/>
+        </g>
+      </svg>
+      <div class="disclaim" style="margin-top:10px">Cash in, orders out, holdings back. That loop is the whole machine.</div>
+    </div>
+    <div class="two anim d3" style="margin-top:26px">
+      <div class="cmp safe">
+        <span class="tag">Bank account</span>
+        <h3>Holds cash</h3>
+        <p>Built for spending and saving. Your money sits as dollars, available but flat.</p>
+      </div>
+      <div class="cmp grow">
+        <span class="tag">Brokerage account</span>
+        <h3>Holds investments</h3>
+        <p>Built for owning. Your money becomes shares and funds that can grow over time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · CHOOSING A BROKER -->
+<section id="choosing-a-broker">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Choosing a Broker</div>
+      <h2 class="title">Compare three things, then check the gate</h2>
+      <p class="lead" style="margin:0 auto">The stock is the same wherever you buy it. What differs is what surrounds the trade: costs, tools, and support.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/broker-compare.jpg" alt="Two checklists side by side under a magnifying glass, one with more checks than the other" /></div>
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Run the same checklist on every broker: <span class="hi">costs</span>, <span class="hi">tools</span>, <span class="hi">support</span>.</p>
+        <div class="insight">Costs are commissions and fees. Tools are the charts, research, and order screens you'll live in. Support is whether a real human answers when something goes wrong. Also check it offers the account types you want.</div>
+      </div>
+    </div>
+    <div class="define anim d2" style="margin-top:26px">
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)"><span class="hi">Options approval levels</span> gate strategies by experience.</p>
+        <div class="insight">Ask a broker for options trading and it won't just switch on. You answer questions about your experience and goals, and the broker assigns an approval level. Lower rungs unlock the basic strategies; riskier ones stay locked until you've earned the higher rungs. The ladder matches strategy risk to your experience, and it protects beginners from tools they aren't ready for.</div>
+      </div>
+      <div class="define-art"><img src="./assets/approval-ladder.jpg" alt="Four ascending tiers with locks that open on the lower steps and stay closed on the higher ones" /></div>
+    </div>
+    <div class="insight anim d3" style="max-width:820px;margin:22px auto 0">Everyone starts low on the ladder. That's normal, and it's temporary. You climb by learning and by trading responsibly.</div>
+  </div>
+</section>
+
+<!-- 4 · ACCOUNT TYPES -->
+<section id="account-types">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Account Types</div>
+      <h2 class="title">Five jars, five different jobs</h2>
+      <p class="lead" style="margin:0 auto">Same dollars, different wrappers. The wrapper decides how your money is taxed and what rules it lives under.</p>
+    </div>
+    <div class="define anim d1" style="margin-top:24px">
+      <div class="define-art"><img src="./assets/account-types.jpg" alt="Five distinct jars of coins: an open jar, two retirement jars, an employer jar catching falling coins, and an education jar with a graduation cap" /></div>
+      <div>
+        <p class="bigdef" style="font-size:clamp(19px,2.4vw,24px)">Pick the jar by the <span class="hi">goal</span>, not the other way around.</p>
+        <div class="insight">A taxable brokerage account is the open jar: no special tax breaks, no special rules. Invest any amount, sell and withdraw whenever. Maximum flexibility.</div>
+      </div>
+    </div>
+    <div class="two anim d2" style="margin-top:26px">
+      <div class="cmp safe">
+        <span class="tag">Traditional IRA</span>
+        <h3>Tax break now</h3>
+        <p>Contributions can be deducted from your taxable income today. You pay tax later, when you withdraw in retirement.</p>
+      </div>
+      <div class="cmp grow">
+        <span class="tag">Roth IRA</span>
+        <h3>Tax-free later</h3>
+        <p>You contribute money you've already paid tax on. Qualified withdrawals in retirement come out tax-free.</p>
+      </div>
+    </div>
+    <div class="two anim d3" style="margin-top:14px">
+      <div class="cmp grow">
+        <span class="tag">401(k)</span>
+        <h3>The workplace jar</h3>
+        <p>A retirement plan that lives at your job. Many employers match part of what you contribute. That match is extra pay &mdash; take it.</p>
+      </div>
+      <div class="cmp safe">
+        <span class="tag">529 plan</span>
+        <h3>The education jar</h3>
+        <p>Built for education costs, with tax advantages when the money is used for qualified education expenses.</p>
+      </div>
+    </div>
+    <div class="disclaim anim d3" style="max-width:820px;margin:22px auto 0"><b>One honest note:</b> contribution limits and tax rules change year to year, so verify the current figures before you fund an account. The concepts here don't change; the numbers do.</div>
+  </div>
+</section>
+
+<!-- 5 · ACCOUNT MATCHER (bespoke interactive) -->
+<section id="account-matcher">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:760px;margin:0 auto">
+      <div class="label">Your Turn &middot; Match the Goal</div>
+      <h2 class="title">Which jar fits which goal?</h2>
+      <p class="lead" style="margin:0 auto">Tap a goal on the left, then tap the account built for it on the right. A green lock-in means you matched it. A shake means try again.</p>
+    </div>
+    <div class="am-wrap anim d1">
+      <div class="am-col">
+        <div class="am-head">The goal</div>
+        <button class="am-btn am-goal" data-key="roth">Tax-free qualified withdrawals in retirement</button>
+        <button class="am-btn am-goal" data-key="trad">A tax deduction now</button>
+        <button class="am-btn am-goal" data-key="k401">Capture an employer match</button>
+        <button class="am-btn am-goal" data-key="p529">Saving for education</button>
+        <button class="am-btn am-goal" data-key="tax">Maximum flexibility, no special rules</button>
+      </div>
+      <div class="am-col">
+        <div class="am-head">The account</div>
+        <button class="am-btn am-acct" data-key="trad">Traditional IRA</button>
+        <button class="am-btn am-acct" data-key="p529">529 plan</button>
+        <button class="am-btn am-acct" data-key="tax">Taxable brokerage</button>
+        <button class="am-btn am-acct" data-key="roth">Roth IRA</button>
+        <button class="am-btn am-acct" data-key="k401">401(k)</button>
+      </div>
+    </div>
+    <div class="am-fb" id="amFb">Pick a goal to begin.</div>
+    <button class="am-reset" id="amReset" type="button">Reset the board</button>
+  </div>
+</section>
+
+<!-- 6 · FACT / MYTH SORTER (interactive) -->
+<section id="fact-myth-sorter">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:720px;margin:0 auto">
+      <div class="label">Your Turn</div>
+      <h2 class="title">Fact, or myth?</h2>
+      <p class="lead" style="margin:0 auto">Tap a card to pick it up, then tap the column where it belongs. Half of these keep people out of the market for no good reason.</p>
+    </div>
+    <div class="sorter anim d1">
+      <div class="pool" id="pool">
+        <button class="chip" data-bucket="fact">A brokerage account lets you buy and sell securities</button>
+        <button class="chip" data-bucket="myth">You must be rich to open one</button>
+        <button class="chip" data-bucket="fact">Brokers gate options behind approval levels</button>
+        <button class="chip" data-bucket="myth">All brokers are identical</button>
+        <button class="chip" data-bucket="fact">A Roth IRA offers tax-free qualified withdrawals</button>
+        <button class="chip" data-bucket="myth">Options unlock instantly for everyone</button>
+        <button class="chip" data-bucket="fact">Compare costs, tools, and support when choosing</button>
+        <button class="chip" data-bucket="myth">A Roth IRA is taxed again at withdrawal</button>
+      </div>
+      <div class="cols">
+        <div class="col reasonable" data-bucket="fact">
+          <h4>&#10003; Fact</h4><div class="sub">How accounts and brokers actually work</div>
+          <div class="drop" id="dropFact"></div>
+        </div>
+        <div class="col gamble" data-bucket="myth">
+          <h4>&#10007; Myth</h4><div class="sub">Stories that keep people on the sidelines</div>
+          <div class="drop" id="dropMyth"></div>
+        </div>
+      </div>
+      <div class="sorter-fb" id="sorterFb">Pick a card to begin.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · QUIZ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim" style="text-align:center;max-width:680px;margin:0 auto">
+      <div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead" style="margin:0 auto">Five questions. Answer them to earn your points for the lesson.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. What is a brokerage account?</h4>
+        <button class="opt" data-idx="0">A savings account that pays a fixed rate of interest</button>
+        <button class="opt" data-idx="1">An account with a licensed firm that lets you buy and sell securities</button>
+        <button class="opt" data-idx="2">A loan the broker extends to you for trading</button>
+        <button class="opt" data-idx="3">A government account that holds your tax refund</button>
+        <div class="exp">A brokerage account is your doorway to the market: an account with a licensed firm through which you buy and sell securities like stocks and funds.</div>
+      </div>
+      <div class="q" data-correct="3">
+        <h4>2. Which statement best describes a Roth IRA?</h4>
+        <button class="opt" data-idx="0">You deduct contributions now and pay tax when you withdraw</button>
+        <button class="opt" data-idx="1">Only an employer can open one for you</button>
+        <button class="opt" data-idx="2">It can only be used for education expenses</button>
+        <button class="opt" data-idx="3">You contribute after-tax money, and qualified withdrawals are tax-free</button>
+        <div class="exp">The Roth flips the tax order: you pay tax on the money first, contribute it, and qualified withdrawals in retirement come out tax-free. The deduct-now version is the Traditional IRA.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>3. Why do brokers use options approval levels?</h4>
+        <button class="opt" data-idx="0">To charge higher fees for advanced strategies</button>
+        <button class="opt" data-idx="1">To guarantee that approved traders make money</button>
+        <button class="opt" data-idx="2">To match strategy risk to your experience and goals, protecting beginners</button>
+        <button class="opt" data-idx="3">To limit how many different stocks you can own</button>
+        <div class="exp">Approval levels are a safety ladder. Riskier strategies sit on higher rungs, and the broker matches your level to your experience and goals so beginners aren't handed tools they're not ready for.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>4. What is the smart way to choose a broker?</h4>
+        <button class="opt" data-idx="0">Compare costs, usability, support, and available account types against your needs</button>
+        <button class="opt" data-idx="1">Pick the one with the most memorable ads</button>
+        <button class="opt" data-idx="2">Pick whichever one a friend uses, no questions asked</button>
+        <button class="opt" data-idx="3">Pick at random, since every broker is the same</button>
+        <div class="exp">The stock is the same everywhere; the experience isn't. Run the same checklist on each broker: costs, tools and usability, support, and whether it offers the account types you need.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. Which of these is a common benefit of a 401(k)?</h4>
+        <button class="opt" data-idx="0">Unlimited tax-free withdrawals at any age</button>
+        <button class="opt" data-idx="1">An employer match that adds money to your contributions</button>
+        <button class="opt" data-idx="2">Guaranteed investment returns</button>
+        <button class="opt" data-idx="3">No rules about when you can withdraw</button>
+        <div class="exp">Many employers match part of what you contribute to a 401(k). That match is extra compensation on top of your salary, which is why the standing advice is to capture it.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · BRIDGE / SUMMARY -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim" style="max-width:760px"><div class="label">Launchpad Built</div><h2 class="title">Carry these four with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>A brokerage account is the doorway: it lets you buy and sell securities.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Choose a broker by comparing costs, tools, and support.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Options approval levels gate strategies by experience, and that protects you.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Pick the account type by the goal: retirement, education, or flexibility.</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 6.2</div><h3>Order Types &amp; the First-Trade Checklist</h3></div>
+      <span class="badge">The exact buttons you'll press &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<!-- narration -->
+<audio id="lessonAudio" preload="auto"><source src="./assets/audio/narration.mp3" type="audio/mpeg" /></audio>
+
+<!-- audio player bar -->
+<div id="bar">
+  <button class="pbtn" id="playBtn" aria-label="Play">&#9654;</button>
+  <span class="t" id="curTime">0:00</span>
+  <input id="seek" type="range" min="0" value="0" step="0.1" aria-label="Seek" />
+  <span class="t" id="durTime">0:00</span>
+  <span id="secLabel">Introduction</span>
+  <button id="spd">1x</button>
+</div>
+
+<!-- nav dots -->
+<nav id="dots"></nav>
+
+<!-- continue -->
+<div id="contWrap"><button id="contBtn">Continue</button></div>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [{"id": "hero", "start": 0.0, "end": 35.92, "interactive": false, "label": "Your Launchpad"}, {"id": "the-account", "start": 36.42, "end": 67.22, "interactive": false, "label": "The Doorway"}, {"id": "choosing-a-broker", "start": 67.72, "end": 113.64, "interactive": false, "label": "Choosing a Broker"}, {"id": "account-types", "start": 114.14, "end": 224.46, "interactive": false, "label": "Five Jars"}, {"id": "account-matcher", "start": 224.96, "end": 251.84, "interactive": true, "label": "Match the Goal"}, {"id": "fact-myth-sorter", "start": 252.34, "end": 274.66, "interactive": true, "label": "Fact or Myth"}, {"id": "quiz", "start": 275.16, "end": 281.96, "interactive": true, "label": "Quick Check"}, {"id": "bridge", "start": 282.46, "end": 312.54, "interactive": false, "label": "Up Next: Order Types"}];
+</script>
+
+<script src="./assets/lesson-runtime.js"></script>
+<script>
+/* ---------- bespoke: account matcher (isolated) ---------- */
+(function(){
+  var fb=document.getElementById('amFb'); if(!fb) return;
+  var goals=Array.prototype.slice.call(document.querySelectorAll('.am-goal'));
+  var accts=Array.prototype.slice.call(document.querySelectorAll('.am-acct'));
+  var reset=document.getElementById('amReset');
+  var sel=null, matched=0, total=goals.length;
+  function setFb(msg,cls){ fb.textContent=msg; fb.className='am-fb'+(cls?' '+cls:''); }
+  goals.forEach(function(g){
+    g.addEventListener('click',function(){
+      if(g.classList.contains('done')) return;
+      goals.forEach(function(o){ o.classList.remove('sel'); });
+      g.classList.add('sel'); sel=g;
+      setFb('Now tap the account built for that goal.');
+    });
+  });
+  accts.forEach(function(a){
+    a.addEventListener('click',function(){
+      if(a.classList.contains('done')) return;
+      if(!sel){ setFb('Pick a goal on the left first.','bad'); return; }
+      if(a.getAttribute('data-key')===sel.getAttribute('data-key')){
+        sel.classList.remove('sel'); sel.classList.add('done'); a.classList.add('done');
+        sel=null; matched++;
+        if(matched>=total){ setFb('All '+total+' matched. You can pick the right jar for any goal.','good'); }
+        else { setFb('Matched. '+(total-matched)+' to go.','good'); }
+      } else {
+        a.classList.add('shake');
+        setTimeout(function(){ a.classList.remove('shake'); },450);
+        setFb('Not that one. Think about when the tax gets paid.','bad');
+      }
+    });
+  });
+  reset.addEventListener('click',function(){
+    sel=null; matched=0;
+    goals.concat(accts).forEach(function(b){ b.classList.remove('sel','done','shake'); });
+    setFb('Pick a goal to begin.');
+  });
+})();
+</script>
+</body>
+</html>
