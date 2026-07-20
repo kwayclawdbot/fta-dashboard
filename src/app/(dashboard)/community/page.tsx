@@ -4,102 +4,47 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AtSign,
-  Send,
-  TrendingUp,
-  Trophy,
-  Pin,
-  MessageCircle,
-  Users,
-  Home,
-  ChevronDown,
-  Sparkles,
-  Hand,
-  ArrowRight,
-  Paperclip,
-  X,
-  Film,
-  Loader2,
-  Hash,
+  AtSign, Send, Trophy, Heart, MessageCircle, Users, Home, Sparkles,
+  ArrowRight, Paperclip, X, Film, Loader2, Link2, Radio,
+  Award, Eye, CheckCircle2, Target, Calendar, Pin, BookOpen,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
 import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
 import { evaluateBadges } from "@/lib/badges";
+import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
+import {
+  activityLine, linkify, timeAgo,
+  type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
+  type AnchorPayload, type Role,
+} from "@/lib/feed";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
+import AgeBadge from "@/components/community/AgeBadge";
+import LiveRooms from "@/components/community/LiveRooms";
 
-// Community rooms (migration 016 seeded room 1, renamed to "FIC Club" in 033;
-// room 2 "FTA Traders" added in 033). Both are type 'general'.
-const FIC_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
-const FTA_ROOM_ID = "c0000000-0000-4000-a000-000000000002";
+const ACTIVITY_ICONS: Record<string, React.ElementType> = {
+  award: Award, eye: Eye, check: CheckCircle2, target: Target,
+  calendar: Calendar, trophy: Trophy, sparkles: Sparkles,
+};
 
-interface Room {
+const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+const EXT_BY_MIME: Record<string, string> = {
+  "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+  "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm",
+};
+
+interface Me {
   id: string;
-  name: string;
-}
-const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "FIC Club" };
-const FTA_ROOM: Room = { id: FTA_ROOM_ID, name: "FTA Traders" };
-
-/**
- * Which rooms a member may OPEN is decided HERE, at the app layer: FIC families
- * see FIC Club only; FTA families (a superset) see both. This matches the
- * platform's existing posture — the chat_messages SELECT policy stays a simple
- * realtime-safe room-id comparison (migrations 018/019 scars), so room access
- * is enforced by which rooms this page lets you switch to, not by RLS.
- */
-function roomsForTier(tier: FamilyTier): Room[] {
-  return tier === "fta" ? [FIC_ROOM, FTA_ROOM] : [FIC_ROOM];
-}
-
-type Category = "win" | "question" | "announcement" | "discussion";
-type FilterType = "all" | Category;
-type Role = "parent" | "child" | "coach" | "admin";
-
-interface Author {
-  display_name: string | null;
-  role: Role | null;
+  display_name: string;
+  role: Role;
   age_group: string | null;
   family_id: string | null;
   avatar_url: string | null;
 }
-
-interface AttachmentMeta {
-  width?: number;
-  height?: number;
-  size?: number;
-  name?: string;
-}
-
-interface Message {
-  id: string;
-  content: string;
-  category: Category;
-  created_at: string;
-  user_id: string;
-  author: Author | null;
-  attachment_url: string | null;
-  attachment_type: "image" | "video" | null;
-  attachment_meta: AttachmentMeta | null;
-}
-
-// ── Media attachment rules (bucket allows the same list server-side) ──
-
-const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB (project upload cap)
-
-const EXT_BY_MIME: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "video/mp4": "mp4",
-  "video/quicktime": "mov",
-  "video/webm": "webm",
-};
-
 interface PendingAttachment {
   file: File;
   kind: "image" | "video";
@@ -108,513 +53,67 @@ interface PendingAttachment {
   height?: number;
 }
 
-interface CurrentUser {
-  id: string;
-  display_name: string;
-  role: Role;
-  age_group: string | null;
-  family_id: string | null;
-  avatar_url: string | null;
-}
+// PostgREST embeds
+const AUTHOR_SEL =
+  "author:profiles!feed_posts_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url)";
+const COMMENT_AUTHOR_SEL =
+  "author:profiles!post_comments_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url)";
 
-// ── Style maps (warm-paper light theme) ──
-
-const ROLE_CHIP: Record<string, string> = {
-  coach: "bg-chip-amber text-gold-800",
-  admin: "bg-chip-amber text-gold-800",
-  parent: "bg-chip-sky text-sky-800",
-  child: "bg-chip-green text-green-700",
-};
-
-const CATEGORY_CONFIG: Record<
-  Category,
-  { label: string; chip: string; icon: React.ElementType }
-> = {
-  announcement: { label: "Announcement", chip: "bg-chip-amber text-gold-800", icon: Pin },
-  win: { label: "Win", chip: "bg-chip-green text-green-700", icon: Trophy },
-  question: { label: "Question", chip: "bg-chip-sky text-sky-800", icon: MessageCircle },
-  discussion: { label: "Discussion", chip: "bg-sand text-soft", icon: TrendingUp },
-};
-
-const POSTABLE: Category[] = ["discussion", "win", "question"];
-
-function timeAgo(iso: string) {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
-}
-
-function MessageAttachment({ msg }: { msg: Message }) {
-  const [lightbox, setLightbox] = useState(false);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox]);
-
-  if (!msg.attachment_url) return null;
-
-  if (msg.attachment_type === "video") {
-    return (
-      <video
-        src={msg.attachment_url}
-        controls
-        preload="metadata"
-        playsInline
-        className="mt-2 max-h-[360px] w-auto max-w-full rounded-xl border border-sand bg-night-950"
-      />
-    );
-  }
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setLightbox(true)}
-        className="mt-2 block cursor-zoom-in"
-        aria-label="Open image full size"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={msg.attachment_url}
-          alt={msg.attachment_meta?.name || "Shared image"}
-          loading="lazy"
-          className="max-h-[360px] w-auto max-w-full rounded-xl border border-sand"
-        />
-      </button>
-      <AnimatePresence>
-        {lightbox && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setLightbox(false)}
-            className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out"
-          >
-            <button
-              type="button"
-              onClick={() => setLightbox(false)}
-              aria-label="Close image"
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={msg.attachment_url}
-              alt={msg.attachment_meta?.name || "Shared image"}
-              className="max-h-[90vh] max-w-[92vw] object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
-
-function MessageCard({ msg, tier }: { msg: Message; tier: FamilyTier }) {
-  const cat = CATEGORY_CONFIG[msg.category] || CATEGORY_CONFIG.discussion;
-  const role = msg.author?.role || "parent";
-  return (
-    <div className="paper-card p-4">
-      <div className="flex items-start gap-3">
-        <Avatar
-          name={msg.author?.display_name}
-          avatarUrl={msg.author?.avatar_url}
-          role={role}
-          tier={tier}
-          size="lg"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-display text-sm font-semibold text-ink">
-              {msg.author?.display_name || "Member"}
-            </span>
-            <TierBadge tier={tier} size="xs" />
-            <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role] || "bg-sand text-soft"}`}>
-              {role}
-            </span>
-            <span className="text-[11px] text-soft font-body">{timeAgo(msg.created_at)}</span>
-            <span className={`text-[11px] font-display font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 ${cat.chip}`}>
-              <cat.icon className="w-2.5 h-2.5" />
-              {cat.label}
-            </span>
-          </div>
-          {msg.content ? (
-            <p className="text-sm text-midnight-200 font-body leading-relaxed mt-2 whitespace-pre-wrap break-words">
-              {msg.content}
-            </p>
-          ) : null}
-          <MessageAttachment msg={msg} />
-        </div>
-      </div>
-    </div>
-  );
+function normAuthor(a: FeedAuthor | FeedAuthor[] | null): FeedAuthor | null {
+  return Array.isArray(a) ? a[0] ?? null : a;
 }
 
 export default function CommunityPage() {
   const supabase = createClient();
 
-  const [me, setMe] = useState<CurrentUser | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
   const [myTier, setMyTier] = useState<FamilyTier>("fic");
-  const [activeRoomId, setActiveRoomId] = useState<string>(FIC_ROOM_ID);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterType>("all");
-  const [newPostText, setNewPostText] = useState("");
-  const [newCategory, setNewCategory] = useState<Category>("discussion");
-  const [showCatPicker, setShowCatPicker] = useState(false);
-  const [posting, setPosting] = useState(false);
   const [stats, setStats] = useState({ families: 0, members: 0, posts: 0 });
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
-  const [attachError, setAttachError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const rooms = useMemo(() => roomsForTier(myTier), [myTier]);
-  const activeRoom = rooms.find((r) => r.id === activeRoomId) || FIC_ROOM;
+  // Likes + comments state
+  const [likeCount, setLikeCount] = useState<Record<string, number>>({});
+  const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
+  const [commentCount, setCommentCount] = useState<Record<string, number>>({});
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, PostComment[]>>({});
 
-  // ── @mention autocomplete ─────────────────────────────────────────────
-  // Insert format MUST match the notification trigger rule (migration 028):
-  // "@" + display name with all spaces stripped (e.g. "Kway Jr" → "@KwayJr"),
-  // matched case-insensitively in Postgres to fan out mention notifications.
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(
-    null
-  );
-  const [mentionIdx, setMentionIdx] = useState(0);
-  const [roster, setRoster] = useState<
-    { id: string; name: string; stripped: string; avatar_url: string | null }[]
-  >([]);
-  const rosterLoaded = useRef(false);
-
-  // Membership tier per family (family_tiers view) — fetched in ONE batched
-  // query for the whole feed, never per message.
+  // Tier map for author badges (batched)
   const [tiers, setTiers] = useState<Record<string, FamilyTier>>({});
-  // Ref mirror so realtime callbacks don't close over stale tier state.
   const tiersRef = useRef(tiers);
   tiersRef.current = tiers;
-
-  const authorCache = useRef<Record<string, Author>>({});
-
-  /** Merge tiers for any families we haven't resolved yet (single query). */
   const loadTiers = useCallback(
-    async (familyIds: Array<string | null | undefined>) => {
-      const missing = familyIds.filter(
-        (id): id is string => !!id && !(id in tiersRef.current)
-      );
-      if (missing.length === 0) return;
+    async (ids: Array<string | null | undefined>) => {
+      const missing = ids.filter((id): id is string => !!id && !(id in tiersRef.current));
+      if (!missing.length) return;
       const fetched = await getFamilyTierMap(supabase, missing);
       setTiers((prev) => ({ ...prev, ...fetched }));
     },
     [supabase]
   );
 
-  const getAuthor = useCallback(
-    async (userId: string): Promise<Author> => {
-      if (authorCache.current[userId]) return authorCache.current[userId];
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, role, age_group, family_id, avatar_url")
-        .eq("id", userId)
-        .single();
-      const author: Author = {
-        display_name: data?.display_name ?? "Member",
-        role: (data?.role as Role) ?? "parent",
-        age_group: data?.age_group ?? null,
-        family_id: data?.family_id ?? null,
-        avatar_url: data?.avatar_url ?? null,
-      };
-      authorCache.current[userId] = author;
-      await loadTiers([author.family_id]);
-      return author;
-    },
-    [supabase, loadTiers]
-  );
+  // Composer
+  const [text, setText] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [composerError, setComposerError] = useState<string | null>(null);
+  const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  /** Tier for a message author — kids inherit their family's tier. */
-  const tierOf = (author: Author | null): FamilyTier =>
-    (author?.family_id && tiers[author.family_id]) || "fic";
+  // Mobile Live Rooms drawer
+  const [liveOpen, setLiveOpen] = useState(false);
 
-  // Initial load: current user, tier (→ rooms), sidebar counts, welcome.
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, role, age_group, family_id, avatar_url")
-          .eq("id", user.id)
-          .single();
-        if (profile) {
-          const cu: CurrentUser = {
-            id: user.id,
-            display_name: profile.display_name || "You",
-            role: (profile.role as Role) || "parent",
-            age_group: profile.age_group,
-            family_id: profile.family_id ?? null,
-            avatar_url: profile.avatar_url ?? null,
-          };
-          authorCache.current[user.id] = {
-            display_name: cu.display_name,
-            role: cu.role,
-            age_group: cu.age_group,
-            family_id: cu.family_id,
-            avatar_url: cu.avatar_url,
-          };
-          if (mounted) setMe(cu);
-
-          // Family tier decides which rooms are available.
-          const tier = await getFamilyTier(supabase, profile.family_id);
-          if (mounted) setMyTier(tier);
-
-          // Data-driven professional-title badges — cheap + idempotent.
-          evaluateBadges(supabase, user.id);
-
-          // First-post welcome: show when this family has no posts yet.
-          if (profile.family_id) {
-            const { data: fam } = await supabase
-              .from("profiles")
-              .select("id")
-              .eq("family_id", profile.family_id);
-            const ids = (fam || []).map((m) => m.id);
-            if (ids.length) {
-              const { count } = await supabase
-                .from("chat_messages")
-                .select("id", { count: "exact", head: true })
-                .in("user_id", ids);
-              if (mounted && (count || 0) === 0) setShowWelcome(true);
-            }
-          }
-        }
-      }
-
-      // Real sidebar stats (families/members are global)
-      const [{ count: families }, { count: members }] = await Promise.all([
-        supabase.from("families").select("id", { count: "exact", head: true }),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-      ]);
-      if (mounted) {
-        setStats((s) => ({ ...s, families: families || 0, members: members || 0 }));
-      }
-    }
-    load();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Load messages + post count whenever the active room changes.
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setMessages([]);
-    (async () => {
-      const { data: msgs } = await supabase
-        .from("chat_messages")
-        .select(
-          "id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id, avatar_url)"
-        )
-        .eq("room_id", activeRoomId)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (mounted && msgs) {
-        const normalized: Message[] = msgs.map((m) => {
-          const raw = m as unknown as {
-            id: string;
-            content: string | null;
-            category: Category | null;
-            created_at: string;
-            user_id: string;
-            attachment_url: string | null;
-            attachment_type: "image" | "video" | null;
-            attachment_meta: AttachmentMeta | null;
-            author: Author | Author[] | null;
-          };
-          const author = Array.isArray(raw.author) ? raw.author[0] ?? null : raw.author;
-          return {
-            id: raw.id,
-            content: raw.content || "",
-            category: raw.category || "discussion",
-            created_at: raw.created_at,
-            user_id: raw.user_id,
-            author,
-            attachment_url: raw.attachment_url ?? null,
-            attachment_type: raw.attachment_type ?? null,
-            attachment_meta: raw.attachment_meta ?? null,
-          };
-        });
-        setMessages(normalized);
-        // One batched tier lookup for every family in the feed (+ mine).
-        await loadTiers([me?.family_id, ...normalized.map((m) => m.author?.family_id)]);
-      }
-
-      const { count: posts } = await supabase
-        .from("chat_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("room_id", activeRoomId);
-      if (mounted) {
-        setStats((s) => ({ ...s, posts: posts || 0 }));
-        setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRoomId, me?.id]);
-
-  // Realtime: stream new messages live for the active room.
-  useEffect(() => {
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    let cancelled = false;
-    (async () => {
-      // Authenticate the realtime socket so RLS lets this user receive INSERTs.
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (token) {
-        try { await supabase.realtime.setAuth(token); } catch { /* noop */ }
-      }
-      if (cancelled) return;
-      channel = supabase
-      .channel(`community-room-${activeRoomId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `room_id=eq.${activeRoomId}`,
-        },
-        async (payload) => {
-          const row = payload.new as {
-            id: string;
-            content: string | null;
-            category: Category | null;
-            created_at: string;
-            user_id: string;
-            attachment_url: string | null;
-            attachment_type: "image" | "video" | null;
-            attachment_meta: AttachmentMeta | null;
-          };
-          const author = await getAuthor(row.user_id);
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === row.id)) return prev;
-            return [
-              {
-                id: row.id,
-                content: row.content || "",
-                category: row.category || "discussion",
-                created_at: row.created_at,
-                user_id: row.user_id,
-                author,
-                attachment_url: row.attachment_url ?? null,
-                attachment_type: row.attachment_type ?? null,
-                attachment_meta: row.attachment_meta ?? null,
-              },
-              ...prev,
-            ];
-          });
-          setStats((s) => ({ ...s, posts: s.posts + 1 }));
-        }
-      )
-      .subscribe();
-    })();
-
-    return () => {
-      cancelled = true;
-      if (channel) supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRoomId]);
-
-  function handleFileSelect(file: File | null) {
-    if (!file) return;
-    setAttachError(null);
-
-    const isImage = IMAGE_MIMES.includes(file.type);
-    const isVideo = VIDEO_MIMES.includes(file.type);
-    if (!isImage && !isVideo) {
-      setAttachError(
-        "That file type isn't supported. Try a photo (JPG, PNG, WebP, GIF) or video (MP4, MOV, WebM)."
-      );
-      return;
-    }
-    if (isImage && file.size > MAX_IMAGE_BYTES) {
-      setAttachError("That photo is too big — images can be up to 10 MB.");
-      return;
-    }
-    if (isVideo && file.size > MAX_VIDEO_BYTES) {
-      setAttachError("That video is too big — videos can be up to 50 MB. Try trimming it down.");
-      return;
-    }
-
-    // Replace any existing pending attachment
-    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
-    const previewUrl = URL.createObjectURL(file);
-    const kind: "image" | "video" = isImage ? "image" : "video";
-    const pending: PendingAttachment = { file, kind, previewUrl };
-    setAttachment(pending);
-
-    // Best-effort dimensions for attachment_meta
-    if (isImage) {
-      const probe = new window.Image();
-      probe.onload = () => {
-        setAttachment((cur) =>
-          cur && cur.previewUrl === previewUrl
-            ? { ...cur, width: probe.naturalWidth, height: probe.naturalHeight }
-            : cur
-        );
-      };
-      probe.src = previewUrl;
-    } else {
-      const probe = document.createElement("video");
-      probe.preload = "metadata";
-      probe.onloadedmetadata = () => {
-        setAttachment((cur) =>
-          cur && cur.previewUrl === previewUrl
-            ? { ...cur, width: probe.videoWidth, height: probe.videoHeight }
-            : cur
-        );
-      };
-      probe.src = previewUrl;
-    }
-  }
-
-  function removeAttachment() {
-    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
-    setAttachment(null);
-    setAttachError(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
-  // Lazy-load the member roster the first time "@" is typed (profiles are
-  // readable by all authenticated members per migration 016).
+  // ── @mention autocomplete ──
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null);
+  const [mentionIdx, setMentionIdx] = useState(0);
+  const [roster, setRoster] = useState<{ id: string; name: string; stripped: string; avatar_url: string | null }[]>([]);
+  const rosterLoaded = useRef(false);
   const loadRoster = useCallback(async () => {
     if (rosterLoaded.current) return;
     rosterLoaded.current = true;
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url")
-      .limit(300);
+    const { data } = await supabase.from("profiles").select("id, display_name, avatar_url").limit(300);
     setRoster(
       (data ?? [])
         .filter((p) => p.display_name)
@@ -627,454 +126,390 @@ export default function CommunityPage() {
         .filter((p) => p.stripped.length > 0)
     );
   }, [supabase]);
-
   const mentionCandidates = useMemo(() => {
     if (!mention) return [];
     const q = mention.query.toLowerCase();
     return roster
       .filter((p) => p.id !== me?.id)
-      .filter(
-        (p) => p.stripped.toLowerCase().startsWith(q) || p.name.toLowerCase().startsWith(q)
-      )
+      .filter((p) => p.stripped.toLowerCase().startsWith(q) || p.name.toLowerCase().startsWith(q))
       .slice(0, 6);
   }, [mention, roster, me?.id]);
-
   function detectMention(value: string, caret: number) {
-    // Token chars mirror the trigger's parser: letters, digits, _ . ' -
-    const upto = value.slice(0, caret);
-    const m = upto.match(/(^|\s)@([A-Za-z0-9_.'-]*)$/);
+    const m = value.slice(0, caret).match(/(^|\s)@([A-Za-z0-9_.'-]*)$/);
     if (m) {
       loadRoster();
       setMention({ start: caret - m[2].length - 1, end: caret, query: m[2] });
       setMentionIdx(0);
-    } else {
-      setMention(null);
-    }
+    } else setMention(null);
   }
-
-  function insertMention(candidate: { name: string; stripped: string }) {
+  function insertMention(c: { stripped: string }) {
     if (!mention) return;
-    const before = newPostText.slice(0, mention.start);
-    const after = newPostText.slice(mention.end);
-    const inserted = `@${candidate.stripped} `;
-    setNewPostText(before + inserted + after);
+    const before = text.slice(0, mention.start);
+    const after = text.slice(mention.end);
+    const inserted = `@${c.stripped} `;
+    setText(before + inserted + after);
     setMention(null);
     const caret = before.length + inserted.length;
     requestAnimationFrame(() => {
-      const el = textareaRef.current;
-      if (el) {
-        el.focus();
-        el.setSelectionRange(caret, caret);
-      }
+      taRef.current?.focus();
+      taRef.current?.setSelectionRange(caret, caret);
     });
   }
 
-  function handleComposerKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (!mention || mentionCandidates.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setMentionIdx((i) => (i + 1) % mentionCandidates.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setMentionIdx((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length);
-    } else if (e.key === "Enter" || e.key === "Tab") {
-      e.preventDefault();
-      insertMention(mentionCandidates[mentionIdx]);
-    } else if (e.key === "Escape") {
-      setMention(null);
-    }
+  // ── Load feed (posts + likes + comment counts) ──
+  const loadFeed = useCallback(
+    async (uid: string | null) => {
+      const { data } = await supabase
+        .from("feed_posts")
+        .select(
+          `id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at, ${AUTHOR_SEL}`
+        )
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(60);
+
+      const norm: FeedPost[] = (data ?? []).map((r) => {
+        const raw = r as unknown as FeedPost & { author: FeedAuthor | FeedAuthor[] | null };
+        return { ...raw, author: normAuthor(raw.author) };
+      });
+      setPosts(norm);
+      await loadTiers(norm.map((p) => p.author?.family_id));
+
+      const ids = norm.map((p) => p.id);
+      if (ids.length) {
+        const [{ data: likes }, { data: comments }] = await Promise.all([
+          supabase.from("post_likes").select("post_id, user_id").in("post_id", ids),
+          supabase.from("post_comments").select("post_id").in("post_id", ids),
+        ]);
+        const lc: Record<string, number> = {};
+        const mine = new Set<string>();
+        for (const l of likes ?? []) {
+          lc[l.post_id as string] = (lc[l.post_id as string] || 0) + 1;
+          if (uid && l.user_id === uid) mine.add(l.post_id as string);
+        }
+        const cc: Record<string, number> = {};
+        for (const c of comments ?? []) cc[c.post_id as string] = (cc[c.post_id as string] || 0) + 1;
+        setLikeCount(lc);
+        setLikedByMe(mine);
+        setCommentCount(cc);
+      } else {
+        setLikeCount({});
+        setLikedByMe(new Set());
+        setCommentCount({});
+      }
+    },
+    [supabase, loadTiers]
+  );
+
+  // Initial load
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      let uid: string | null = null;
+      if (user) {
+        uid = user.id;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name, role, age_group, family_id, avatar_url")
+          .eq("id", user.id)
+          .single();
+        if (profile && mounted) {
+          setMe({
+            id: user.id,
+            display_name: profile.display_name || "You",
+            role: (profile.role as Role) || "parent",
+            age_group: profile.age_group,
+            family_id: profile.family_id ?? null,
+            avatar_url: profile.avatar_url ?? null,
+          });
+          const tier = await getFamilyTier(supabase, profile.family_id);
+          if (mounted) setMyTier(tier);
+          evaluateBadges(supabase, user.id);
+        }
+      }
+      await loadFeed(uid);
+      const [{ count: families }, { count: members }, { count: postCount }] = await Promise.all([
+        supabase.from("families").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("feed_posts").select("id", { count: "exact", head: true }).eq("kind", "post"),
+      ]);
+      if (mounted) {
+        setStats({ families: families || 0, members: members || 0, posts: postCount || 0 });
+        setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Light polling (P1: fetch-on-load + poll instead of realtime on feed_posts).
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (document.visibilityState === "visible") loadFeed(me?.id ?? null);
+    }, 30000);
+    return () => clearInterval(iv);
+  }, [loadFeed, me?.id]);
+
+  // ── Attachments ──
+  function handleFile(file: File | null) {
+    if (!file) return;
+    setComposerError(null);
+    const isImage = IMAGE_MIMES.includes(file.type);
+    const isVideo = VIDEO_MIMES.includes(file.type);
+    if (!isImage && !isVideo) return setComposerError("Try a photo (JPG, PNG, WebP, GIF) or video (MP4, MOV, WebM).");
+    if (isImage && file.size > MAX_IMAGE_BYTES) return setComposerError("That photo is too big — images can be up to 10 MB.");
+    if (isVideo && file.size > MAX_VIDEO_BYTES) return setComposerError("That video is too big — videos can be up to 50 MB.");
+    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+    const previewUrl = URL.createObjectURL(file);
+    setAttachment({ file, kind: isImage ? "image" : "video", previewUrl });
+  }
+  function clearAttachment() {
+    if (attachment) URL.revokeObjectURL(attachment.previewUrl);
+    setAttachment(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+  function insertLink() {
+    const el = taRef.current;
+    const caret = el?.selectionStart ?? text.length;
+    const next = text.slice(0, caret) + "https://" + text.slice(caret);
+    setText(next);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = caret + 8;
+      el?.setSelectionRange(pos, pos);
+    });
   }
 
-  async function handlePost() {
-    const text = newPostText.trim();
-    if ((!text && !attachment) || !me || posting) return;
+  // ── Create post ──
+  async function submitPost() {
+    const body = text.trim();
+    if ((!body && !attachment) || !me || posting) return;
+    const clean = checkClean(body);
+    if (!clean.ok) return setComposerError(PROFANITY_MESSAGE);
     setPosting(true);
-    setAttachError(null);
+    setComposerError(null);
 
-    // Upload the attachment first (path = {uid}/{uuid}.{ext} per storage RLS)
     let attachmentFields: {
-      attachment_url: string;
-      attachment_type: "image" | "video";
-      attachment_meta: AttachmentMeta;
+      attachment_url: string; attachment_type: "image" | "video"; attachment_meta: Record<string, unknown>;
     } | null = null;
-
     if (attachment) {
       setUploading(true);
       const ext = EXT_BY_MIME[attachment.file.type] || "bin";
       const path = `${me.id}/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage
         .from("community-media")
-        .upload(path, attachment.file, {
-          contentType: attachment.file.type,
-          cacheControl: "3600",
-        });
+        .upload(path, attachment.file, { contentType: attachment.file.type, cacheControl: "3600" });
       setUploading(false);
       if (upErr) {
-        setAttachError("Upload didn't go through. Check your connection and try again.");
         setPosting(false);
-        return;
+        return setComposerError("Upload didn't go through. Check your connection and try again.");
       }
       const { data: pub } = supabase.storage.from("community-media").getPublicUrl(path);
       attachmentFields = {
         attachment_url: pub.publicUrl,
         attachment_type: attachment.kind,
-        attachment_meta: {
-          size: attachment.file.size,
-          name: attachment.file.name,
-          ...(attachment.width ? { width: attachment.width } : {}),
-          ...(attachment.height ? { height: attachment.height } : {}),
-        },
+        attachment_meta: { size: attachment.file.size, name: attachment.file.name },
       };
     }
 
     const { data, error } = await supabase
-      .from("chat_messages")
-      .insert({
-        room_id: activeRoomId,
-        user_id: me.id,
-        content: text,
-        category: newCategory,
-        ...(attachmentFields || {}),
-      })
-      .select("id, content, category, created_at, user_id, attachment_url, attachment_type, attachment_meta")
+      .from("feed_posts")
+      .insert({ author_id: me.id, family_id: me.family_id, kind: "post", body, ...(attachmentFields || {}) })
+      .select(`id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at`)
       .single();
 
     if (!error && data) {
-      // Optimistic local add (deduped against realtime echo)
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === data.id)) return prev;
-        return [
-          {
-            id: data.id,
-            content: data.content || "",
-            category: (data.category as Category) || "discussion",
-            created_at: data.created_at,
-            user_id: data.user_id,
-            author: {
-              display_name: me.display_name,
-              role: me.role,
-              age_group: me.age_group,
-              family_id: me.family_id,
-              avatar_url: me.avatar_url,
-            },
-            attachment_url: data.attachment_url ?? null,
-            attachment_type: (data.attachment_type as "image" | "video" | null) ?? null,
-            attachment_meta: (data.attachment_meta as AttachmentMeta | null) ?? null,
-          },
-          ...prev,
-        ];
-      });
+      const newPost: FeedPost = {
+        ...(data as unknown as FeedPost),
+        author: {
+          id: me.id, display_name: me.display_name, role: me.role,
+          age_group: me.age_group, family_id: me.family_id, avatar_url: me.avatar_url,
+        },
+      };
+      setPosts((prev) => [newPost, ...prev]);
       setStats((s) => ({ ...s, posts: s.posts + 1 }));
-      setNewPostText("");
-      removeAttachment();
-      setShowWelcome(false);
-
-      // +5 XP per post, capped at the first few posts per day.
+      setText("");
+      clearAttachment();
       const todayPosts = await countXpToday(supabase, me.id, "community");
-      if (todayPosts < 3) {
-        await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
-      }
-    } else if (error) {
-      setAttachError("Your post didn't go through. Please try again.");
+      if (todayPosts < 3) await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
+    } else {
+      setComposerError("Your post didn't go through. Please try again.");
     }
     setPosting(false);
   }
 
-  function prefillWelcome() {
-    setNewCategory("discussion");
-    setNewPostText(
-      "Hi everyone! We just joined the club. Here are the companies our family picked: "
-    );
-    setShowWelcome(false);
-    document
-      .querySelector<HTMLTextAreaElement>("textarea")
-      ?.focus();
+  // ── Likes ──
+  async function toggleLike(postId: string) {
+    if (!me) return;
+    const liked = likedByMe.has(postId);
+    // optimistic
+    setLikedByMe((prev) => {
+      const n = new Set(prev);
+      if (liked) n.delete(postId); else n.add(postId);
+      return n;
+    });
+    setLikeCount((prev) => ({ ...prev, [postId]: Math.max(0, (prev[postId] || 0) + (liked ? -1 : 1)) }));
+    if (liked) {
+      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", me.id);
+    } else {
+      const { error } = await supabase.from("post_likes").insert({ post_id: postId, user_id: me.id });
+      if (error) {
+        // revert on failure (e.g., unique race)
+        setLikedByMe((prev) => { const n = new Set(prev); n.delete(postId); return n; });
+        setLikeCount((prev) => ({ ...prev, [postId]: Math.max(0, (prev[postId] || 1) - 1) }));
+      }
+    }
   }
 
-  const filtered = filter === "all" ? messages : messages.filter((m) => m.category === filter);
+  // ── Comments ──
+  async function toggleComments(postId: string) {
+    const willOpen = !openComments[postId];
+    setOpenComments((prev) => ({ ...prev, [postId]: willOpen }));
+    if (willOpen && !commentsByPost[postId]) {
+      const { data } = await supabase
+        .from("post_comments")
+        .select(`id, post_id, author_id, body, created_at, ${COMMENT_AUTHOR_SEL}`)
+        .eq("post_id", postId)
+        .order("created_at", { ascending: true });
+      const norm: PostComment[] = (data ?? []).map((r) => {
+        const raw = r as unknown as PostComment & { author: FeedAuthor | FeedAuthor[] | null };
+        return { ...raw, author: normAuthor(raw.author) };
+      });
+      setCommentsByPost((prev) => ({ ...prev, [postId]: norm }));
+    }
+  }
+  async function addComment(postId: string, body: string): Promise<boolean> {
+    if (!me) return false;
+    const clean = checkClean(body);
+    if (!clean.ok) return false;
+    const { data, error } = await supabase
+      .from("post_comments")
+      .insert({ post_id: postId, author_id: me.id, body })
+      .select(`id, post_id, author_id, body, created_at`)
+      .single();
+    if (error || !data) return false;
+    const comment: PostComment = {
+      ...(data as unknown as PostComment),
+      author: {
+        id: me.id, display_name: me.display_name, role: me.role,
+        age_group: me.age_group, family_id: me.family_id, avatar_url: me.avatar_url,
+      },
+    };
+    setCommentsByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), comment] }));
+    setCommentCount((prev) => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }));
+    return true;
+  }
 
-  const filters: { id: FilterType; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "announcement", label: "Announcements" },
-    { id: "win", label: "Wins" },
-    { id: "question", label: "Questions" },
-    { id: "discussion", label: "Discussion" },
-  ];
+  const tierOf = (a: FeedAuthor | null): FamilyTier => (a?.family_id && tiers[a.family_id]) || "fic";
 
-  const catConf = CATEGORY_CONFIG[newCategory];
+  const anchor = posts.find((p) => p.kind === "anchor");
+  const feedList = posts.filter((p) => p.kind !== "anchor");
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-6">
+    <div className="max-w-6xl mx-auto">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-5">
         <h1 className="font-display text-2xl font-bold text-ink">Community</h1>
-        <p className="text-soft text-sm mt-1 font-body">Learn out loud, grow together</p>
+        <p className="text-soft text-sm mt-1 font-body">The club town square — learn out loud, grow together.</p>
       </motion.div>
 
-      {/* Room tabs — FIC families see FIC Club only; FTA families see both. */}
-      {rooms.length > 1 && (
-        <div className="flex items-center gap-2 mb-5">
-          {rooms.map((r) => {
-            const active = r.id === activeRoomId;
-            return (
-              <button
-                key={r.id}
-                onClick={() => setActiveRoomId(r.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border transition-colors ${
-                  active
-                    ? "bg-chip-amber border-gold-300 text-gold-800"
-                    : "bg-white border-sand text-soft hover:border-gold-300 hover:text-ink"
-                }`}
-              >
-                <Hash className={`w-3.5 h-3.5 ${active ? "text-gold-700" : "text-midnight-500"}`} />
-                <span className="font-display text-sm font-semibold">{r.name}</span>
-                {r.id === FTA_ROOM_ID && <TierBadge tier="fta" size="xs" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Mobile Live Rooms toggle */}
+      <button
+        onClick={() => setLiveOpen(true)}
+        className="lg:hidden mb-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gold-300 bg-chip-amber/50 text-gold-800 font-display text-sm font-semibold"
+      >
+        <Radio className="w-4 h-4" /> Open Live Rooms
+      </button>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main feed */}
         <div className="flex-1 min-w-0 space-y-4">
-          {/* First-post welcome */}
-          <AnimatePresence>
-            {showWelcome && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                className="paper-card p-5 bg-chip-amber/40 border-gold-300"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gold-500/20 flex items-center justify-center shrink-0">
-                    <Hand className="w-5 h-5 text-gold-700" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-bold text-ink">
-                      New here? Say hello
-                    </h3>
-                    <p className="text-sm text-soft mt-0.5">
-                      Introduce your family and post the companies you picked.
-                      It is the best way to meet everyone.
-                    </p>
-                    <button
-                      onClick={prefillWelcome}
-                      className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs mt-3"
-                    >
-                      Start my hello post
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Pinned This Week anchor */}
+          {anchor && <AnchorCard post={anchor} onReply={() => toggleComments(anchor.id)} />}
 
-          {/* Compose */}
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="paper-card p-4">
+          {/* Composer */}
+          <div className="paper-card p-4">
             <div className="flex gap-3">
-              <Avatar
-                name={me?.display_name}
-                avatarUrl={me?.avatar_url}
-                role={me?.role}
-                tier={(me?.family_id && tiers[me.family_id]) || myTier}
-                size="lg"
-              />
+              <Avatar name={me?.display_name} avatarUrl={me?.avatar_url} role={me?.role} tier={(me?.family_id && tiers[me.family_id]) || myTier} size="lg" />
               <div className="flex-1 min-w-0">
                 <div className="relative">
                   <textarea
-                    ref={textareaRef}
-                    value={newPostText}
-                    onChange={(e) => {
-                      setNewPostText(e.target.value);
-                      detectMention(
-                        e.target.value,
-                        e.target.selectionStart ?? e.target.value.length
-                      );
+                    ref={taRef}
+                    value={text}
+                    onChange={(e) => { setText(e.target.value); detectMention(e.target.value, e.target.selectionStart ?? e.target.value.length); }}
+                    onKeyDown={(e) => {
+                      if (mention && mentionCandidates.length) {
+                        if (e.key === "ArrowDown") { e.preventDefault(); setMentionIdx((i) => (i + 1) % mentionCandidates.length); }
+                        else if (e.key === "ArrowUp") { e.preventDefault(); setMentionIdx((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length); }
+                        else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); insertMention(mentionCandidates[mentionIdx]); }
+                        else if (e.key === "Escape") setMention(null);
+                      }
                     }}
-                    onKeyDown={handleComposerKeyDown}
                     onBlur={() => setTimeout(() => setMention(null), 150)}
-                    placeholder={
-                      me?.role === "child"
-                        ? `Share what you learned today...`
-                        : `Post to ${activeRoom.name} — share a win, ask a question, start a discussion...`
-                    }
+                    placeholder={me?.role === "child" ? "Share what your family learned today…" : "Share a win, ask a question, or post your family's pick…"}
                     rows={3}
                     className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
                   />
-                  {/* @mention autocomplete */}
                   {mention && mentionCandidates.length > 0 && (
                     <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-sand rounded-lg shadow-lg overflow-hidden z-20">
                       <p className="flex items-center gap-1 px-3 pt-2 pb-1 text-[10px] font-display font-semibold uppercase tracking-wider text-soft">
-                        <AtSign className="w-3 h-3" />
-                        Mention someone
+                        <AtSign className="w-3 h-3" /> Mention someone
                       </p>
                       {mentionCandidates.map((c, i) => (
                         <button
                           key={c.id}
                           type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            insertMention(c);
-                          }}
+                          onMouseDown={(e) => { e.preventDefault(); insertMention(c); }}
                           onMouseEnter={() => setMentionIdx(i)}
-                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left transition-colors ${
-                            i === mentionIdx ? "bg-paper" : "bg-white"
-                          }`}
+                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left ${i === mentionIdx ? "bg-paper" : "bg-white"}`}
                         >
                           <Avatar name={c.name} avatarUrl={c.avatar_url} size="xs" />
                           <span className="min-w-0">
-                            <span className="block text-xs font-medium text-ink truncate">
-                              {c.name}
-                            </span>
-                            <span className="block text-[10px] text-soft truncate">
-                              @{c.stripped}
-                            </span>
+                            <span className="block text-xs font-medium text-ink truncate">{c.name}</span>
+                            <span className="block text-[10px] text-soft truncate">@{c.stripped}</span>
                           </span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-                {/* Attachment preview chip */}
-                <AnimatePresence>
-                  {attachment && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="mt-2 inline-flex items-center gap-2.5 bg-paper border border-sand rounded-xl p-2 pr-3 max-w-full"
-                    >
-                      {attachment.kind === "image" ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={attachment.previewUrl}
-                          alt="Attachment preview"
-                          className="w-12 h-12 rounded-lg object-cover border border-sand shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-night-950 flex items-center justify-center shrink-0">
-                          <Film className="w-5 h-5 text-night-50" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-xs font-display font-semibold text-ink truncate max-w-[180px]">
-                          {attachment.file.name}
-                        </p>
-                        <p className="text-[11px] text-soft font-body">
-                          {uploading
-                            ? "Uploading..."
-                            : `${attachment.kind === "image" ? "Photo" : "Video"} · ${(attachment.file.size / (1024 * 1024)).toFixed(1)} MB`}
-                        </p>
-                      </div>
-                      {uploading ? (
-                        <Loader2 className="w-4 h-4 text-gold-600 animate-spin shrink-0" />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={removeAttachment}
-                          aria-label="Remove attachment"
-                          className="w-6 h-6 rounded-full bg-sand hover:bg-midnight-700 flex items-center justify-center text-midnight-300 hover:text-ink transition-colors shrink-0"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
-                {/* Attachment validation / upload errors */}
-                {attachError && (
-                  <p className="mt-2 text-xs text-red-600 font-body">{attachError}</p>
+                {attachment && (
+                  <div className="mt-2 inline-flex items-center gap-2.5 bg-paper border border-sand rounded-xl p-2 pr-3 max-w-full">
+                    {attachment.kind === "image" ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={attachment.previewUrl} alt="preview" className="w-12 h-12 rounded-lg object-cover border border-sand shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-night-950 flex items-center justify-center shrink-0"><Film className="w-5 h-5 text-night-50" /></div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-display font-semibold text-ink truncate max-w-[180px]">{attachment.file.name}</p>
+                      <p className="text-[11px] text-soft">{uploading ? "Uploading…" : `${attachment.kind === "image" ? "Photo" : "Video"} · ${(attachment.file.size / (1024 * 1024)).toFixed(1)} MB`}</p>
+                    </div>
+                    {uploading ? <Loader2 className="w-4 h-4 text-gold-600 animate-spin shrink-0" /> : (
+                      <button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="w-6 h-6 rounded-full bg-sand flex items-center justify-center text-midnight-300 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                    )}
+                  </div>
                 )}
+                {composerError && <p className="mt-2 text-xs text-red-600 font-body">{composerError}</p>}
 
                 <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-                  <div className="flex items-center gap-1.5 relative">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={[...IMAGE_MIMES, ...VIDEO_MIMES].join(",")}
-                      className="hidden"
-                      onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={posting}
-                      aria-label="Attach a photo or video"
-                      title="Attach a photo or video"
-                      className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 transition-colors disabled:opacity-40"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setShowCatPicker((v) => !v)}
-                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-display font-semibold ${catConf.chip}`}
-                    >
-                      <catConf.icon className="w-3 h-3" />
-                      {catConf.label}
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
-                    <AnimatePresence>
-                      {showCatPicker && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          className="absolute top-full left-0 mt-1 bg-white border border-sand rounded-lg overflow-hidden z-10 shadow-lg"
-                        >
-                          {POSTABLE.map((cat) => {
-                            const c = CATEGORY_CONFIG[cat];
-                            return (
-                              <button
-                                key={cat}
-                                onClick={() => {
-                                  setNewCategory(cat);
-                                  setShowCatPicker(false);
-                                }}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-xs font-body text-midnight-200 hover:bg-paper transition-colors"
-                              >
-                                <c.icon className="w-3 h-3" />
-                                {c.label}
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                  <div className="flex items-center gap-1.5">
+                    <input ref={fileRef} type="file" accept={[...IMAGE_MIMES, ...VIDEO_MIMES].join(",")} className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={posting} aria-label="Attach a photo or video" title="Attach a photo or video" className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 disabled:opacity-40"><Paperclip className="w-4 h-4" /></button>
+                    <button type="button" onClick={insertLink} disabled={posting} aria-label="Add a link" title="Add a link" className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 disabled:opacity-40"><Link2 className="w-4 h-4" /></button>
                   </div>
-                  <button
-                    onClick={handlePost}
-                    disabled={(!newPostText.trim() && !attachment) || posting || !me}
-                    className="cta-button flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    {uploading ? "Uploading..." : posting ? "Posting..." : "Post"}
+                  <button onClick={submitPost} disabled={(!text.trim() && !attachment) || posting || !me} className="cta-button flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Send className="w-3.5 h-3.5" />{uploading ? "Uploading…" : posting ? "Posting…" : "Post"}
                   </button>
                 </div>
               </div>
             </div>
-          </motion.div>
-
-          {/* Filters */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-body whitespace-nowrap transition-colors border ${
-                  filter === f.id
-                    ? "bg-chip-amber text-gold-800 border-gold-300"
-                    : "text-soft border-sand hover:border-gold-300 hover:text-ink"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
           </div>
 
-          {/* Messages */}
+          {/* Feed */}
           {loading ? (
             <div className="space-y-4">
               {[0, 1, 2].map((i) => (
@@ -1085,80 +520,343 @@ export default function CommunityPage() {
                 </div>
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : feedList.length === 0 ? (
             <div className="paper-card p-10 text-center">
               <Sparkles className="w-7 h-7 text-gold-500 mx-auto mb-3" />
-              <p className="font-display text-base font-semibold text-ink mb-1">
-                {messages.length === 0 ? "Be the first to post" : "Nothing here yet"}
-              </p>
-              <p className="text-sm text-soft font-body max-w-sm mx-auto">
-                {messages.length === 0
-                  ? `Share a win, ask a question, or say hi in ${activeRoom.name}.`
-                  : "No posts in this category yet."}
-              </p>
+              <p className="font-display text-base font-semibold text-ink mb-1">The club is just getting started</p>
+              <p className="text-sm text-soft font-body max-w-sm mx-auto">Share a win, ask a question, or post your family&apos;s pick. Every badge, mission, and watchlist add shows up here too.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filtered.map((msg, i) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.02, 0.2) }}
-                >
-                  <MessageCard msg={msg} tier={tierOf(msg.author)} />
+              {feedList.map((p, i) => (
+                <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
+                  {p.kind === "activity" ? (
+                    <ActivityCard
+                      post={p} me={me}
+                      likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
+                      commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
+                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
+                    />
+                  ) : (
+                    <PostCard
+                      post={p} me={me} tier={tierOf(p.author)}
+                      likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
+                      commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
+                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
+                    />
+                  )}
                 </motion.div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Sidebar */}
-        <motion.aside
-          initial={{ opacity: 0, x: 12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.15, duration: 0.3 }}
-          className="lg:w-[280px] shrink-0 space-y-4"
-        >
+        {/* Right rail */}
+        <aside className="hidden lg:block lg:w-[320px] shrink-0 space-y-4">
+          <LiveRooms me={me} tier={myTier} />
+          {anchor && <ThisWeekSnapshot post={anchor} />}
+          <Link href="/leaderboard" className="paper-card p-4 flex items-center gap-3 group hover:border-gold-300 transition-colors">
+            <div className="w-9 h-9 rounded-lg bg-chip-amber text-gold-800 flex items-center justify-center shrink-0"><Trophy className="w-4 h-4" /></div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm font-semibold text-ink">Family XP leaderboard</p>
+              <p className="text-[11px] text-soft">Scored by average XP — every family competes fairly</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-midnight-600 group-hover:text-gold-700" />
+          </Link>
           <div className="paper-card p-4">
-            <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-3">
-              {activeRoom.name}
-            </h3>
             <div className="grid grid-cols-3 gap-3">
               <Stat icon={Home} value={stats.families} label="Families" />
               <Stat icon={Users} value={stats.members} label="Members" />
               <Stat icon={MessageCircle} value={stats.posts} label="Posts" />
             </div>
           </div>
-
-          <Link
-            href="/leaderboard"
-            className="paper-card p-4 flex items-center gap-3 group hover:border-gold-300 transition-colors"
-          >
-            <div className="w-9 h-9 rounded-lg bg-chip-amber text-gold-800 flex items-center justify-center shrink-0">
-              <Trophy className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display text-sm font-semibold text-ink">
-                Family XP leaderboard
-              </p>
-              <p className="text-[11px] text-soft">See how your family ranks</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-midnight-600 group-hover:text-gold-700" />
-          </Link>
-
-          <div className="paper-card p-4">
-            <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-3">
-              House rules
-            </h3>
-            <ul className="space-y-2 text-sm text-midnight-200 font-body">
-              <li className="flex gap-2"><span className="text-gold-600">•</span> No dumb questions — we all started somewhere.</li>
-              <li className="flex gap-2"><span className="text-gold-600">•</span> Celebrate each other&apos;s wins.</li>
-              <li className="flex gap-2"><span className="text-gold-600">•</span> Keep it kind — kids are here too.</li>
-            </ul>
-          </div>
-        </motion.aside>
+          <HouseRules />
+        </aside>
       </div>
+
+      {/* Mobile Live Rooms drawer */}
+      <AnimatePresence>
+        {liveOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/50 lg:hidden flex items-end" onClick={() => setLiveOpen(false)}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "tween", duration: 0.2 }} className="w-full max-h-[85vh] bg-paper rounded-t-2xl p-3 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="font-display text-sm font-bold text-ink">Live Rooms</span>
+                <button onClick={() => setLiveOpen(false)} aria-label="Close"><X className="w-5 h-5 text-soft" /></button>
+              </div>
+              <LiveRooms me={me} tier={myTier} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function PostBody({ body }: { body: string }) {
+  if (!body) return null;
+  return (
+    <p className="text-sm text-midnight-200 font-body leading-relaxed mt-2 whitespace-pre-wrap break-words">
+      {linkify(body).map((seg, i) =>
+        seg.href ? (
+          <a key={i} href={seg.href} target="_blank" rel="noopener noreferrer" className="text-gold-700 underline break-all">{seg.text}</a>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </p>
+  );
+}
+
+function PostAttachment({ url, type, name }: { url: string | null; type: "image" | "video" | null; name?: string }) {
+  const [lightbox, setLightbox] = useState(false);
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightbox(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox]);
+  if (!url) return null;
+  if (type === "video") {
+    return <video src={url} controls preload="metadata" playsInline className="mt-2 max-h-[360px] w-auto max-w-full rounded-xl border border-sand bg-night-950" />;
+  }
+  return (
+    <>
+      <button type="button" onClick={() => setLightbox(true)} className="mt-2 block cursor-zoom-in" aria-label="Open image full size">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt={name || "Shared image"} loading="lazy" className="max-h-[360px] w-auto max-w-full rounded-xl border border-sand" />
+      </button>
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setLightbox(false)} className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out">
+            <button type="button" onClick={() => setLightbox(false)} aria-label="Close image" className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"><X className="w-5 h-5" /></button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt={name || "Shared image"} className="max-h-[90vh] max-w-[92vw] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+const ROLE_CHIP: Record<string, string> = {
+  coach: "bg-chip-amber text-gold-800",
+  admin: "bg-chip-amber text-gold-800",
+  parent: "bg-chip-sky text-sky-800",
+  child: "bg-chip-green text-green-700",
+};
+
+interface EngagementProps {
+  post: FeedPost;
+  me: Me | null;
+  likeCount: number;
+  liked: boolean;
+  onLike: () => void;
+  commentCount: number;
+  commentsOpen: boolean;
+  onToggleComments: () => void;
+  comments?: PostComment[];
+  onAddComment: (postId: string, body: string) => Promise<boolean>;
+  tierOf: (a: FeedAuthor | null) => FamilyTier;
+}
+
+function LikeCommentBar({ liked, likeCount, onLike, commentCount, onToggleComments }: {
+  liked: boolean; likeCount: number; onLike: () => void; commentCount: number; onToggleComments: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-4 mt-3">
+      <button onClick={onLike} className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${liked ? "text-red-500" : "text-soft hover:text-red-500"}`}>
+        <Heart className={`w-4 h-4 ${liked ? "fill-red-500" : ""}`} />
+        {likeCount > 0 ? likeCount : "Like"}
+      </button>
+      <button onClick={onToggleComments} className="flex items-center gap-1.5 text-xs font-medium text-soft hover:text-gold-700 transition-colors">
+        <MessageCircle className="w-4 h-4" />
+        {commentCount > 0 ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}` : "Comment"}
+      </button>
+    </div>
+  );
+}
+
+function PostCard(props: EngagementProps & { tier: FamilyTier }) {
+  const { post, tier } = props;
+  const role = post.author?.role || "parent";
+  return (
+    <div className="paper-card p-4">
+      <div className="flex items-start gap-3">
+        <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} size="lg" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-display text-sm font-semibold text-ink">{post.author?.display_name || "Member"}</span>
+            <AgeBadge role={post.author?.role} ageGroup={post.author?.age_group} />
+            <TierBadge tier={tier} size="xs" />
+            <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role] || "bg-sand text-soft"}`}>{role}</span>
+            <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
+          </div>
+          <PostBody body={post.body} />
+          <PostAttachment url={post.attachment_url} type={post.attachment_type} name={post.attachment_meta?.name} />
+          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} />
+        </div>
+      </div>
+      {props.commentsOpen && <CommentThread {...props} />}
+    </div>
+  );
+}
+
+function ActivityCard(props: EngagementProps) {
+  const { post } = props;
+  const payload = post.activity_payload as ActivityPayload;
+  const line = activityLine(payload);
+  const Icon = ACTIVITY_ICONS[line.iconKey] || Sparkles;
+  return (
+    <div className="paper-card p-4 border-l-2 border-l-gold-300">
+      <div className="flex items-start gap-3">
+        <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${line.accent}`}><Icon className="w-5 h-5" /></span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-midnight-200 font-body leading-relaxed">
+            <span className="font-display font-semibold text-ink">{line.subject}</span>
+            {payload.actor_age_group || payload.actor_role ? (
+              <> <AgeBadge role={payload.actor_role} ageGroup={payload.actor_age_group} className="align-middle" /></>
+            ) : null}{" "}
+            {line.verb} <span className="font-semibold text-ink">{line.target}</span>
+            {payload.family_name ? <span className="text-soft"> · {payload.family_name}</span> : null}
+          </p>
+          <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
+          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} />
+        </div>
+      </div>
+      {props.commentsOpen && <CommentThread {...props} />}
+    </div>
+  );
+}
+
+function CommentThread(props: EngagementProps) {
+  const { post, me, comments, onAddComment } = props;
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    const body = draft.trim();
+    if (!body || sending || !me) return;
+    setSending(true);
+    setErr(null);
+    const ok = await onAddComment(post.id, body);
+    if (ok) setDraft("");
+    else setErr(PROFANITY_MESSAGE);
+    setSending(false);
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-sand space-y-3">
+      {comments === undefined ? (
+        <div className="flex justify-center py-2"><Loader2 className="w-4 h-4 text-gold-500 animate-spin" /></div>
+      ) : comments.length === 0 ? (
+        <p className="text-xs text-soft">No comments yet — be the first to reply.</p>
+      ) : (
+        comments.map((c) => (
+          <div key={c.id} className="flex items-start gap-2">
+            <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} size="sm" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-display text-xs font-semibold text-ink">{c.author?.display_name || "Member"}</span>
+                <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
+                <span className="text-[10px] text-soft">{timeAgo(c.created_at)}</span>
+              </div>
+              <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5">{c.body}</p>
+            </div>
+          </div>
+        ))
+      )}
+      {me && (
+        <div>
+          {err && <p className="text-[11px] text-red-600 mb-1">{err}</p>}
+          <div className="flex items-end gap-2">
+            <Avatar name={me.display_name} avatarUrl={me.avatar_url} role={me.role} size="sm" />
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+              rows={1}
+              placeholder="Write a reply…"
+              className="flex-1 resize-none bg-paper border border-sand rounded-lg px-2.5 py-1.5 text-xs text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 max-h-24"
+            />
+            <button onClick={submit} disabled={!draft.trim() || sending} aria-label="Reply" className="cta-button w-8 h-8 shrink-0 rounded-lg flex items-center justify-center disabled:opacity-40"><Send className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AnchorCard({ post, onReply }: { post: FeedPost; onReply: () => void }) {
+  const a = post.activity_payload as AnchorPayload;
+  return (
+    <div className="paper-card p-5 bg-chip-amber/30 border-gold-300">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-8 h-8 rounded-lg bg-gold-500/20 text-gold-700 flex items-center justify-center"><Pin className="w-4 h-4" /></span>
+        <div>
+          <p className="text-[10px] font-display font-bold uppercase tracking-wider text-gold-700">This Week in the Club</p>
+          <h3 className="font-display text-base font-bold text-ink leading-tight">{a.class_title || "This week"}</h3>
+        </div>
+      </div>
+      {a.company_name && (
+        <div className="flex items-center gap-2 text-sm text-midnight-200 mb-2">
+          <BookOpen className="w-4 h-4 text-gold-600" />
+          <span>Company of the Week: <span className="font-semibold text-ink">{a.company_name}</span>{a.company_ticker ? ` (${a.company_ticker})` : ""}</span>
+        </div>
+      )}
+      {a.discussion_question && (
+        <div className="rounded-lg bg-white/70 border border-gold-200 p-3 mb-2">
+          <p className="text-[11px] font-display font-bold uppercase tracking-wider text-soft mb-1">Family discussion</p>
+          <p className="text-sm text-ink font-body">{a.discussion_question}</p>
+        </div>
+      )}
+      {a.family_assignment && (
+        <div className="rounded-lg bg-white/70 border border-gold-200 p-3 mb-3">
+          <p className="text-[11px] font-display font-bold uppercase tracking-wider text-soft mb-1">Your family&apos;s job</p>
+          <p className="text-sm text-ink font-body">{a.family_assignment}</p>
+        </div>
+      )}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={onReply} className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs">
+          <MessageCircle className="w-3.5 h-3.5" /> Post your family&apos;s pick
+        </button>
+        <Link href="/dashboard?tab=this-week" className="text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">
+          Open This Week <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ThisWeekSnapshot({ post }: { post: FeedPost }) {
+  const a = post.activity_payload as AnchorPayload;
+  return (
+    <div className="paper-card p-4">
+      <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-2">This Week snapshot</h3>
+      <p className="font-display text-sm font-bold text-ink">{a.class_title}</p>
+      {a.company_name && <p className="text-xs text-soft mt-0.5">Company: {a.company_name}{a.company_ticker ? ` (${a.company_ticker})` : ""}</p>}
+      {a.kid_challenge && (
+        <div className="mt-2 rounded-lg bg-paper border border-sand p-2.5">
+          <p className="text-[10px] font-display font-bold uppercase tracking-wider text-gold-700 mb-0.5">Kid challenge</p>
+          <p className="text-xs text-midnight-200">{a.kid_challenge}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HouseRules() {
+  return (
+    <div className="paper-card p-4">
+      <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-3">House rules</h3>
+      <ul className="space-y-2 text-sm text-midnight-200 font-body">
+        <li className="flex gap-2"><span className="text-gold-600">•</span> We&apos;re here to learn — no dumb questions, we all started somewhere.</li>
+        <li className="flex gap-2"><span className="text-gold-600">•</span> Be kind and celebrate each other — kids are in the club too.</li>
+        <li className="flex gap-2"><span className="text-gold-600">•</span> Education only — no financial advice, hot tips, or &quot;buy this now.&quot;</li>
+        <li className="flex gap-2"><span className="text-gold-600">•</span> Practice money only. We never pressure anyone to trade for real.</li>
+      </ul>
     </div>
   );
 }

@@ -137,9 +137,9 @@ function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier = "fic")
   // ── Primary FIC club nav (teens + parents, both tiers). ──
   const clubPrimary: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+    CLUB_COMMUNITY,
     CLUB_START_HERE,
     CLUB_THIS_WEEK,
-    CLUB_COMMUNITY,
     ...(isFta ? [] : learning),
     CLUB_WATCHLIST,
     CLUB_MISSIONS,

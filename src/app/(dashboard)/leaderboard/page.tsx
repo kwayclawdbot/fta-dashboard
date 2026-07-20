@@ -70,8 +70,10 @@ export default function LeaderboardPage() {
           <h1 className="font-display text-2xl font-bold text-ink">Family XP</h1>
         </div>
         <p className="text-soft text-sm">
-          Every lesson, quiz, card, and game your family earns adds up. Climb the
-          board together.
+          Every lesson, quiz, card, and game earns XP. A family&apos;s score is the
+          <span className="font-semibold text-ink"> average XP of its members</span>,
+          so big families and small families compete fairly. Climb the board
+          together.
         </p>
       </motion.div>
 
@@ -157,7 +159,7 @@ export default function LeaderboardPage() {
                     <Zap className="w-4 h-4 text-gold-500" />
                     {row.xp.toLocaleString()}
                   </p>
-                  <p className="text-[11px] text-soft">XP</p>
+                  <p className="text-[11px] text-soft">avg XP</p>
                 </div>
               </motion.div>
             );
