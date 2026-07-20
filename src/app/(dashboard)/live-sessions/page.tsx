@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Video,
   Play,
@@ -9,24 +9,28 @@ import {
   Calendar,
   Lock,
   Users,
-  MessageCircle,
-  Mic,
-  MicOff,
-  VideoOff,
-  Monitor,
-  Hand,
   BookOpen,
   Filter,
   Check,
   CalendarCheck,
+  ExternalLink,
+  X,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
+import {
+  RECORDINGS_BUCKET,
+  SIGNED_URL_TTL,
+  resolveRecordingKind,
+  youtubeEmbedUrl,
+  type RecordingKind,
+} from "@/lib/recordings";
 
 // ── Types ──
 
-type Track = "stocks-options" | "forex" | "futures" | "crypto" | "all";
+type Track = "kids" | "teens" | "adults" | "all";
 
 interface LiveSession {
   id: string;
@@ -35,51 +39,50 @@ interface LiveSession {
   host: string;
   hostAvatar: string;
   scheduledAt: string;
-  scheduledDate: string;
+  scheduledIso: string | null;
   durationMin: number;
   track: Track;
   status: "live" | "upcoming" | "completed";
-  attendees?: number;
-  maxAttendees?: number;
+  minTier: "challenge" | "academy";
   zoomUrl?: string;
   recordingUrl?: string;
-  tags: string[];
+  recordingPath?: string;
+  recordingKind: RecordingKind | null;
 }
 
-// ── Track Config ──
+interface Access {
+  isChild: boolean;
+  userTrack: Track;
+  hasFta: boolean;
+}
+
+// ── Track Config (matches the courses catalog: kids / teens / adults) ──
 
 const TRACK_CONFIG: Record<
   Track,
   { label: string; color: string; bgColor: string }
 > = {
-  "stocks-options": {
-    label: "Stocks & Options",
-    color: "text-blue-400",
-    bgColor: "bg-blue-400/10",
+  kids: {
+    label: "Kids Corner",
+    color: "text-sky-800",
+    bgColor: "bg-chip-sky",
   },
-  forex: {
-    label: "Forex",
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-400/10",
-  },
-  futures: {
-    label: "Futures",
-    color: "text-purple-400",
+  teens: {
+    label: "Teens",
+    color: "text-purple-700",
     bgColor: "bg-purple-400/10",
   },
-  crypto: {
-    label: "Crypto",
-    color: "text-orange-400",
-    bgColor: "bg-orange-400/10",
+  adults: {
+    label: "Parents & Adults",
+    color: "text-gold-800",
+    bgColor: "bg-chip-amber",
   },
   all: {
-    label: "All Tracks",
+    label: "Whole Family",
     color: "text-midnight-300",
     bgColor: "bg-midnight-700/50",
   },
 };
-
-const USER_TRACKS: Track[] = ["stocks-options"];
 
 // ── Components ──
 
@@ -96,18 +99,24 @@ function TrackBadge({ track }: { track: Track }) {
 
 function HostAvatar({ initials }: { initials: string }) {
   return (
-    <div className="w-8 h-8 rounded-full bg-gold-400/20 text-gold-400 ring-1 ring-gold-400/30 flex items-center justify-center text-[11px] font-display font-bold shrink-0">
+    <div className="w-8 h-8 rounded-full bg-gold-400/20 text-gold-700 ring-1 ring-gold-400/30 flex items-center justify-center text-[11px] font-display font-bold shrink-0">
       {initials}
     </div>
   );
 }
 
-function LiveRoom({ session }: { session: LiveSession }) {
-  const [muted, setMuted] = useState(true);
-  const [videoOn, setVideoOn] = useState(false);
-  const [handRaised, setHandRaised] = useState(false);
-  const [chatOpen, setChatOpen] = useState(true);
-
+/**
+ * Honest live-session card. Zoom SDK creds are pending, so joining happens
+ * in Zoom itself — this card shows the real session info + real RSVP count
+ * and hands members the join link. No simulated mic/camera/chat.
+ */
+function LiveNowCard({
+  session,
+  familiesGoing,
+}: {
+  session: LiveSession;
+  familiesGoing: number;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -117,201 +126,222 @@ function LiveRoom({ session }: { session: LiveSession }) {
       <div className="flex items-center justify-between px-4 py-2 bg-red-500/10 border-b border-red-500/20">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-xs font-bold text-red-400 uppercase">
+          <span className="text-xs font-bold text-red-500 uppercase">
             Live Now
           </span>
           <span className="text-[11px] text-midnight-400">|</span>
           <TrackBadge track={session.track} />
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-midnight-400">
-          <Users className="w-3 h-3" />
-          {session.attendees}/{session.maxAttendees}
-        </div>
+        {familiesGoing > 0 && (
+          <div className="flex items-center gap-1.5 text-[11px] text-midnight-400">
+            <Users className="w-3 h-3" />
+            {familiesGoing} famil{familiesGoing === 1 ? "y" : "ies"} RSVP&apos;d
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col lg:flex-row">
-        <div className="flex-1 min-w-0">
-          <div className="relative aspect-video bg-midnight-950">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-gold-400/20 text-gold-400 ring-2 ring-gold-400/30 flex items-center justify-center text-2xl font-display font-bold mx-auto mb-3">
-                  {session.hostAvatar}
-                </div>
-                <p className="text-sm font-display font-semibold text-midnight-100">
-                  {session.host}
-                </p>
-                <p className="text-[11px] text-midnight-500 mt-1">
-                  Speaking...
-                </p>
-              </div>
+      <div className="p-6">
+        <div className="flex items-start gap-3">
+          <HostAvatar initials={session.hostAvatar} />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-lg font-bold text-midnight-100">
+              {session.title}
+            </h3>
+            {session.description && (
+              <p className="text-sm text-midnight-400 font-body mt-1 leading-relaxed">
+                {session.description}
+              </p>
+            )}
+            <div className="flex items-center gap-3 mt-2 text-[11px] text-midnight-500">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {session.durationMin} min
+              </span>
+              <span>{session.host}</span>
             </div>
-            <div className="absolute bottom-3 right-3 w-32 h-24 rounded-lg bg-midnight-800 border border-midnight-700 flex items-center justify-center">
-              {videoOn ? (
-                <p className="text-[11px] text-midnight-500">
-                  Camera On
-                </p>
-              ) : (
-                <div className="text-center">
-                  <div className="w-8 h-8 rounded-full bg-midnight-700 text-midnight-400 flex items-center justify-center text-[11px] font-display font-bold mx-auto">
-                    KC
-                  </div>
-                  <p className="text-[11px] text-midnight-600 mt-1">
-                    You
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded bg-midnight-950/80 text-[11px] text-midnight-300">
-              <Users className="w-3 h-3" />
-              {session.attendees} watching
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 px-4 py-3 bg-midnight-900/80 border-t border-midnight-800/60">
-            <button
-              onClick={() => setMuted(!muted)}
-              className={`p-2.5 rounded-full transition-colors ${
-                muted
-                  ? "bg-red-500/20 text-red-400"
-                  : "bg-midnight-700 text-midnight-200"
-              }`}
-            >
-              {muted ? (
-                <MicOff className="w-4 h-4" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={() => setVideoOn(!videoOn)}
-              className={`p-2.5 rounded-full transition-colors ${
-                !videoOn
-                  ? "bg-red-500/20 text-red-400"
-                  : "bg-midnight-700 text-midnight-200"
-              }`}
-            >
-              {videoOn ? (
-                <Video className="w-4 h-4" />
-              ) : (
-                <VideoOff className="w-4 h-4" />
-              )}
-            </button>
-            <button className="p-2.5 rounded-full bg-midnight-700 text-midnight-200 hover:bg-midnight-600 transition-colors">
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setHandRaised(!handRaised)}
-              className={`p-2.5 rounded-full transition-colors ${
-                handRaised
-                  ? "bg-gold-400/20 text-gold-400"
-                  : "bg-midnight-700 text-midnight-200"
-              }`}
-            >
-              <Hand className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setChatOpen(!chatOpen)}
-              className={`p-2.5 rounded-full transition-colors ${
-                chatOpen
-                  ? "bg-gold-400/20 text-gold-400"
-                  : "bg-midnight-700 text-midnight-200"
-              }`}
-            >
-              <MessageCircle className="w-4 h-4" />
-            </button>
-            <div className="w-px h-6 bg-midnight-700 mx-1" />
-            <button className="px-4 py-2 rounded-full bg-red-500 text-white text-xs font-display font-semibold hover:bg-red-400 transition-colors">
-              Leave
-            </button>
           </div>
         </div>
 
-        <AnimatePresence>
-          {chatOpen && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 300, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-l border-midnight-800/60 flex flex-col overflow-hidden shrink-0"
-              style={{ height: "calc(100%)" }}
+        <div className="mt-5">
+          {session.zoomUrl ? (
+            <a
+              href={session.zoomUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500 text-white text-sm font-display font-semibold hover:bg-red-600 transition-colors shadow-soft"
             >
-              <div className="px-3 py-2.5 border-b border-midnight-800/60">
-                <p className="text-xs font-bold text-midnight-300 uppercase">
-                  Live Chat
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-                {[
-                  {
-                    name: "Sarah T.",
-                    msg: "Can you zoom in on that chart?",
-                    time: "2m",
-                  },
-                  {
-                    name: "Coach",
-                    msg: "Sure, let me pull that up...",
-                    time: "2m",
-                    coach: true,
-                  },
-                  {
-                    name: "Mike D.",
-                    msg: "That pattern is textbook",
-                    time: "1m",
-                  },
-                ].map((chat, i) => (
-                  <div key={i} className="flex gap-2">
-                    <span
-                      className={`text-[11px] font-bold shrink-0 ${
-                        chat.coach ? "text-gold-400" : "text-midnight-400"
-                      }`}
-                    >
-                      {chat.name}
-                    </span>
-                    <p className="text-[11px] font-body text-midnight-300 flex-1">
-                      {chat.msg}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="p-2 border-t border-midnight-800/60">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  className="w-full bg-midnight-800/50 border border-midnight-700/50 rounded px-3 py-1.5 text-xs text-midnight-200 placeholder:text-midnight-600 font-body focus:outline-none focus:border-gold-400/40"
-                />
-              </div>
-            </motion.div>
+              <Video className="w-4 h-4" />
+              Join Live Class
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <p className="text-sm text-midnight-400 font-body">
+              The join link hasn&apos;t been posted yet — refresh in a moment
+              or check your email.
+            </p>
           )}
-        </AnimatePresence>
-      </div>
-
-      <div className="px-4 py-3 border-t border-midnight-800/60">
-        <h3 className="font-display text-sm font-semibold text-midnight-100">
-          {session.title}
-        </h3>
-        <p className="text-xs text-midnight-400 font-body mt-1">
-          {session.description}
-        </p>
+          <p className="text-[11px] text-midnight-500 font-body mt-2">
+            Opens in Zoom. A recording will be posted here after class.
+          </p>
+        </div>
       </div>
     </motion.div>
+  );
+}
+
+/**
+ * In-app recording player.
+ *   upload   → signed URL from the private class-recordings bucket
+ *   youtube  → privacy-enhanced youtube-nocookie embed
+ *   (external recordings never open this modal — they link out directly)
+ */
+function RecordingPlayerModal({
+  session,
+  userId,
+  onClose,
+}: {
+  session: LiveSession;
+  userId: string;
+  onClose: () => void;
+}) {
+  const supabase = createClient();
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const embedUrl =
+    session.recordingKind === "youtube" && session.recordingUrl
+      ? youtubeEmbedUrl(session.recordingUrl)
+      : null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function setup() {
+      if (session.recordingKind === "upload" && session.recordingPath) {
+        const { data, error: err } = await supabase.storage
+          .from(RECORDINGS_BUCKET)
+          .createSignedUrl(session.recordingPath, SIGNED_URL_TTL);
+        if (cancelled) return;
+        if (err || !data?.signedUrl) {
+          setError("Couldn't load this recording. Please try again shortly.");
+        } else {
+          setVideoUrl(data.signedUrl);
+        }
+      }
+
+      // One-time XP for watching this class recording.
+      if (userId) {
+        const ref = `recording:${session.id}`;
+        const already = await hasXpForRef(supabase, userId, "bonus", ref);
+        if (!already && !cancelled) {
+          await awardXp(supabase, userId, "bonus", XP.RECORDING, ref);
+        }
+      }
+    }
+    setup();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.id]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-midnight-900 rounded-xl border border-midnight-800 shadow-lift w-full max-w-3xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-midnight-800">
+          <div className="flex items-center gap-2 min-w-0">
+            <Play className="w-4 h-4 text-gold-600 shrink-0" />
+            <h3 className="font-display text-sm font-semibold text-midnight-100 truncate">
+              {session.title}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-midnight-400 hover:text-midnight-100 hover:bg-midnight-800 transition-colors"
+            aria-label="Close player"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="aspect-video bg-night-950">
+          {session.recordingKind === "upload" ? (
+            error ? (
+              <div className="w-full h-full flex items-center justify-center px-6">
+                <p className="text-sm text-midnight-600 font-body text-center">
+                  {error}
+                </p>
+              </div>
+            ) : videoUrl ? (
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+              </div>
+            )
+          ) : embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title={session.title}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center px-6">
+              <p className="text-sm text-midnight-600 font-body text-center">
+                This recording can&apos;t be played in-app.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="px-4 py-3 flex items-center gap-3 text-[11px] text-midnight-500">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {session.durationMin} min
+          </span>
+          <TrackBadge track={session.track} />
+          {session.scheduledAt && <span>Recorded {session.scheduledAt}</span>}
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
 function SessionCard({
   session,
   locked,
+  lockReason,
   rsvp,
   onRsvp,
+  onWatch,
 }: {
   session: LiveSession;
   locked: boolean;
+  lockReason?: string;
   rsvp?: { count: number; going: boolean };
   onRsvp?: () => void;
+  onWatch?: () => void;
 }) {
   const isRecording = session.status === "completed";
   const families = rsvp?.count ?? 0;
   const going = rsvp?.going ?? false;
+  const hasRecording = session.recordingKind !== null;
 
   return (
     <div
@@ -326,14 +356,11 @@ function SessionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <TrackBadge track={session.track} />
-            {session.tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag}
-                className="text-[11px] text-midnight-500 bg-midnight-800/50 px-1.5 py-0.5 rounded"
-              >
-                {tag}
+            {session.minTier === "academy" && (
+              <span className="text-[11px] text-gold-700 bg-gold-400/10 px-1.5 py-0.5 rounded font-semibold">
+                FTA
               </span>
-            ))}
+            )}
           </div>
           <h4 className="font-display text-sm font-semibold text-midnight-100 mb-0.5">
             {session.title}
@@ -354,12 +381,6 @@ function SessionCard({
               <Clock className="w-3 h-3" />
               {session.durationMin} min
             </span>
-            {isRecording && session.attendees ? (
-              <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                {session.attendees} attended
-              </span>
-            ) : null}
             {!isRecording && onRsvp ? (
               <span className="flex items-center gap-1 text-gold-700">
                 <Users className="w-3 h-3" />
@@ -371,26 +392,39 @@ function SessionCard({
         </div>
         <div className="shrink-0">
           {locked ? (
-            <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-500 text-xs">
+            <div
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-500 text-xs"
+              title={lockReason}
+            >
               <Lock className="w-3 h-3" />
-              Locked
+              {lockReason || "Locked"}
             </div>
           ) : isRecording ? (
-            session.recordingUrl ? (
-              <a
-                href={session.recordingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-200 text-xs hover:bg-midnight-700 transition-colors"
-              >
-                <Play className="w-3 h-3" />
-                Watch
-              </a>
+            hasRecording ? (
+              session.recordingKind === "external" && session.recordingUrl ? (
+                <a
+                  href={session.recordingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-700 border border-gold-400/30 text-xs font-medium hover:bg-gold-400/20 transition-colors"
+                >
+                  <Play className="w-3 h-3" />
+                  Watch
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : (
+                <button
+                  onClick={onWatch}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/10 text-gold-700 border border-gold-400/30 text-xs font-medium hover:bg-gold-400/20 transition-colors"
+                >
+                  <Play className="w-3 h-3" />
+                  Watch
+                </button>
+              )
             ) : (
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-midnight-800 text-midnight-200 text-xs hover:bg-midnight-700 transition-colors">
-                <Play className="w-3 h-3" />
-                Watch
-              </button>
+              <span className="text-[11px] text-midnight-500">
+                Recording coming soon
+              </span>
             )
           ) : onRsvp ? (
             <button
@@ -426,12 +460,6 @@ function SessionCard({
 
 type TabType = "live" | "upcoming" | "recordings";
 
-function formatScheduledDate(dateStr: string | null): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 function formatScheduledAt(dateStr: string | null, status: string): string {
   if (!dateStr) return "";
   if (status === "live") return "LIVE NOW";
@@ -453,6 +481,12 @@ export default function LiveSessionsPage() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
   const [familyId, setFamilyId] = useState<string | null>(null);
+  const [access, setAccess] = useState<Access>({
+    isChild: false,
+    userTrack: "adults",
+    hasFta: false,
+  });
+  const [watching, setWatching] = useState<LiveSession | null>(null);
   const [rsvpInfo, setRsvpInfo] = useState<
     Record<string, { count: number; going: boolean }>
   >({});
@@ -519,6 +553,8 @@ export default function LiveSessionsPage() {
           duration_min: number | null;
           zoom_join_url: string | null;
           recording_url: string | null;
+          recording_path: string | null;
+          recording_kind: string | null;
           status: string;
           track: string | null;
           min_tier: string | null;
@@ -529,16 +565,18 @@ export default function LiveSessionsPage() {
           host: "Coach",
           hostAvatar: "C",
           scheduledAt: formatScheduledAt(s.scheduled_at, s.status),
-          scheduledDate: formatScheduledDate(s.scheduled_at),
+          scheduledIso: s.scheduled_at,
           durationMin: s.duration_min || 45,
           track: (s.track as Track) || "all",
           status:
             s.status === "scheduled"
               ? "upcoming"
               : (s.status as "live" | "upcoming" | "completed"),
+          minTier: (s.min_tier as "challenge" | "academy") || "challenge",
           zoomUrl: s.zoom_join_url || undefined,
           recordingUrl: s.recording_url || undefined,
-          tags: [s.track || "General"].filter(Boolean),
+          recordingPath: s.recording_path || undefined,
+          recordingKind: resolveRecordingKind(s),
         })
       );
       setSessions(mapped);
@@ -557,27 +595,74 @@ export default function LiveSessionsPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
+
+      // Same access derivation as the courses page: profile track/age_group
+      // + family-level FTA enrollment.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("family_id")
+        .select("role, age_group, track, family_id")
         .eq("id", user.id)
         .single();
+
+      const userTrack = (profile?.age_group ||
+        profile?.track ||
+        "adults") as Track;
+      const isChild = profile?.role === "child";
       setFamilyId(profile?.family_id ?? null);
+
+      let hasFta = false;
+      if (profile?.family_id) {
+        const { data: enr } = await supabase
+          .from("enrollments")
+          .select("program")
+          .eq("family_id", profile.family_id)
+          .eq("status", "active");
+        hasFta = (enr || []).some((e: { program: string }) => e.program === "fta");
+      }
+      setAccess({ isChild, userTrack, hasFta });
+
       await loadRsvps(user.id);
     }
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Kids see their own track + whole-family sessions; parents/teens see all
+  // family tracks (mirrors the courses page's family-library behavior).
+  const isTrackLocked = (track: Track) =>
+    access.isChild && track !== "all" && track !== access.userTrack;
+
+  // Academy sessions are part of the FTA live program.
+  const isTierLocked = (session: LiveSession) =>
+    session.minTier === "academy" && !access.hasFta;
+
+  const sessionLock = (session: LiveSession) => {
+    if (isTrackLocked(session.track))
+      return { locked: true, reason: TRACK_CONFIG[session.track].label };
+    if (isTierLocked(session)) return { locked: true, reason: "FTA members" };
+    return { locked: false, reason: undefined };
+  };
+
+  const now = Date.now();
   const liveSession = sessions.find((s) => s.status === "live");
-  const upcoming = sessions.filter((s) => s.status === "upcoming");
-  const recordings = sessions.filter((s) => s.status === "completed");
+  // Only genuinely future (or in-progress) classes count as upcoming —
+  // stale past-dated rows shouldn't masquerade as a schedule.
+  const upcoming = sessions.filter(
+    (s) =>
+      s.status === "upcoming" &&
+      (!s.scheduledIso ||
+        new Date(s.scheduledIso).getTime() + s.durationMin * 60_000 >= now)
+  );
+  const recordings = sessions
+    .filter((s) => s.status === "completed")
+    .sort(
+      (a, b) =>
+        new Date(b.scheduledIso || 0).getTime() -
+        new Date(a.scheduledIso || 0).getTime()
+    );
 
   const filterByTrack = (list: LiveSession[]) =>
     trackFilter === "all" ? list : list.filter((s) => s.track === trackFilter);
-
-  const isTrackLocked = (track: Track) =>
-    track !== "all" && !USER_TRACKS.includes(track);
 
   const tabs: { id: TabType; label: string; count: number }[] = [
     { id: "live", label: "Live Now", count: liveSession ? 1 : 0 },
@@ -585,13 +670,7 @@ export default function LiveSessionsPage() {
     { id: "recordings", label: "Recordings", count: recordings.length },
   ];
 
-  const trackFilters: Track[] = [
-    "all",
-    "stocks-options",
-    "forex",
-    "futures",
-    "crypto",
-  ];
+  const trackFilters: Track[] = ["all", "kids", "teens", "adults"];
 
   if (loading) {
     return (
@@ -613,40 +692,55 @@ export default function LiveSessionsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-2xl font-bold text-midnight-100">
-              Live Sessions
+              Live Classes
             </h2>
             <p className="text-midnight-400 text-sm mt-1 font-body">
-              Live Q&A, coaching calls, and 5-Day Challenge sessions
+              Live coaching calls, Q&A, and class recordings
             </p>
           </div>
           {liveSession && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-xs font-bold text-red-400">
-                1 LIVE NOW
-              </span>
+              <span className="text-xs font-bold text-red-500">1 LIVE NOW</span>
             </div>
           )}
         </div>
       </motion.div>
 
-      {/* Track gating notice */}
+      {/* Access notice */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05 }}
         className="mb-4 flex items-center gap-3 px-4 py-2.5 rounded-lg border border-midnight-800/60 bg-midnight-900/40 text-xs"
       >
-        <BookOpen className="w-4 h-4 text-gold-400 shrink-0" />
+        <BookOpen className="w-4 h-4 text-gold-600 shrink-0" />
         <p className="font-body text-midnight-400">
-          <span className="text-midnight-200">Your tracks:</span>{" "}
-          {USER_TRACKS.map((t) => TRACK_CONFIG[t].label).join(", ")}.{" "}
-          <Link
-            href="/courses"
-            className="text-gold-400 hover:text-gold-300 transition-colors"
-          >
-            Unlock more tracks
-          </Link>
+          {access.isChild ? (
+            <>
+              <span className="text-midnight-200">Your track:</span>{" "}
+              {TRACK_CONFIG[access.userTrack]?.label || access.userTrack} +
+              whole-family sessions.
+            </>
+          ) : access.hasFta ? (
+            <>
+              <span className="text-midnight-200">FTA member</span> — you have
+              access to every class and recording.
+            </>
+          ) : (
+            <>
+              <span className="text-midnight-200">Foundations member</span> —
+              family classes are open to you. Sessions marked{" "}
+              <span className="text-gold-700 font-semibold">FTA</span> are part
+              of the 6-week live program.{" "}
+              <Link
+                href="/upgrade"
+                className="text-gold-700 hover:text-gold-800 transition-colors font-semibold"
+              >
+                Join the next cohort
+              </Link>
+            </>
+          )}
         </p>
       </motion.div>
 
@@ -658,7 +752,7 @@ export default function LiveSessionsPage() {
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-body transition-colors border-b-2 ${
               tab === t.id
-                ? "text-gold-400 border-gold-400"
+                ? "text-gold-700 border-gold-500"
                 : "text-midnight-500 border-transparent hover:text-midnight-300"
             }`}
           >
@@ -674,7 +768,7 @@ export default function LiveSessionsPage() {
               <span
                 className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                   tab === t.id
-                    ? "bg-gold-400/10 text-gold-400"
+                    ? "bg-gold-400/10 text-gold-700"
                     : "bg-midnight-800 text-midnight-500"
                 }`}
               >
@@ -699,8 +793,7 @@ export default function LiveSessionsPage() {
                   : "text-midnight-500 hover:text-midnight-300"
               }`}
             >
-              {TRACK_CONFIG[t].label}
-              {isTrackLocked(t) && <Lock className="w-2.5 h-2.5 inline ml-1" />}
+              {t === "all" ? "All" : TRACK_CONFIG[t].label}
             </button>
           ))}
         </div>
@@ -710,7 +803,7 @@ export default function LiveSessionsPage() {
       {tab === "live" && (
         <div>
           {liveSession ? (
-            isTrackLocked(liveSession.track) ? (
+            sessionLock(liveSession).locked ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -721,18 +814,27 @@ export default function LiveSessionsPage() {
                   Session Locked
                 </h3>
                 <p className="text-sm text-midnight-400 font-body mb-4">
-                  This live session is part of the{" "}
-                  {TRACK_CONFIG[liveSession.track].label} track.
+                  {isTierLocked(liveSession)
+                    ? "This live class is part of the FTA 6-week program."
+                    : `This live class is for the ${
+                        TRACK_CONFIG[liveSession.track].label
+                      } track.`}
                 </p>
-                <Link
-                  href="/courses"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors"
-                >
-                  Unlock Track
-                </Link>
+                {isTierLocked(liveSession) && (
+                  <Link
+                    href="/upgrade"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-500 text-white text-sm font-display font-semibold hover:bg-gold-600 transition-colors"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Join the next cohort
+                  </Link>
+                )}
               </motion.div>
             ) : (
-              <LiveRoom session={liveSession} />
+              <LiveNowCard
+                session={liveSession}
+                familiesGoing={rsvpInfo[liveSession.id]?.count ?? 0}
+              />
             )
           ) : (
             <motion.div
@@ -742,14 +844,14 @@ export default function LiveSessionsPage() {
             >
               <Video className="w-8 h-8 text-midnight-500 mx-auto mb-3" />
               <h3 className="font-display text-lg font-semibold text-midnight-200 mb-1">
-                No Live Session Right Now
+                No Live Class Right Now
               </h3>
               <p className="text-sm text-midnight-400 font-body mb-4">
                 Check the upcoming schedule or watch a recording.
               </p>
               <button
                 onClick={() => setTab("upcoming")}
-                className="text-sm text-gold-400 hover:text-gold-300 font-body transition-colors"
+                className="text-sm text-gold-700 hover:text-gold-800 font-body transition-colors"
               >
                 View upcoming sessions
               </button>
@@ -769,21 +871,27 @@ export default function LiveSessionsPage() {
               </p>
             </div>
           ) : (
-            filterByTrack(upcoming).map((session, i) => (
-              <motion.div
-                key={session.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <SessionCard
-                  session={session}
-                  locked={isTrackLocked(session.track)}
-                  rsvp={rsvpInfo[session.id]}
-                  onRsvp={() => toggleRsvp(session.id)}
-                />
-              </motion.div>
-            ))
+            filterByTrack(upcoming).map((session, i) => {
+              const lock = sessionLock(session);
+              return (
+                <motion.div
+                  key={session.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <SessionCard
+                    session={session}
+                    locked={lock.locked}
+                    lockReason={lock.reason}
+                    rsvp={rsvpInfo[session.id]}
+                    onRsvp={
+                      lock.locked ? undefined : () => toggleRsvp(session.id)
+                    }
+                  />
+                </motion.div>
+              );
+            })
           )}
         </div>
       )}
@@ -799,21 +907,36 @@ export default function LiveSessionsPage() {
               </p>
             </div>
           ) : (
-            filterByTrack(recordings).map((session, i) => (
-              <motion.div
-                key={session.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <SessionCard
-                  session={session}
-                  locked={isTrackLocked(session.track)}
-                />
-              </motion.div>
-            ))
+            filterByTrack(recordings).map((session, i) => {
+              const lock = sessionLock(session);
+              return (
+                <motion.div
+                  key={session.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <SessionCard
+                    session={session}
+                    locked={lock.locked}
+                    lockReason={lock.reason}
+                    onWatch={
+                      lock.locked ? undefined : () => setWatching(session)
+                    }
+                  />
+                </motion.div>
+              );
+            })
           )}
         </div>
+      )}
+
+      {watching && (
+        <RecordingPlayerModal
+          session={watching}
+          userId={userId}
+          onClose={() => setWatching(null)}
+        />
       )}
     </div>
   );

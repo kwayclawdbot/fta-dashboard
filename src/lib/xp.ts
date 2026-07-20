@@ -24,6 +24,7 @@ export const XP = {
   GAME: 10,
   COMMUNITY: 5,
   RSVP: 5,
+  RECORDING: 5,
 } as const;
 
 // Game "round" XP only lands when the session clears this accuracy.

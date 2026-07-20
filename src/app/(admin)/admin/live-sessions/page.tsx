@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus,
   Pencil,
@@ -9,8 +9,18 @@ import {
   Video,
   Calendar,
   ExternalLink,
+  Upload,
+  Link2,
+  Film,
+  CheckCircle2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  RECORDINGS_BUCKET,
+  detectUrlKind,
+  recordingObjectPath,
+  resolveRecordingKind,
+} from "@/lib/recordings";
 
 interface SessionRow {
   id: string;
@@ -20,12 +30,75 @@ interface SessionRow {
   duration_min: number | null;
   zoom_join_url: string | null;
   recording_url: string | null;
+  recording_path: string | null;
+  recording_kind: string | null;
   status: string;
   track: string | null;
   min_tier: string | null;
 }
 
-const STATUS_OPTIONS = ["upcoming", "live", "completed", "cancelled"];
+// Must match the live_sessions_status_check constraint.
+const STATUS_OPTIONS = ["scheduled", "live", "completed", "cancelled"];
+
+// Must match the live_sessions_track_check constraint (026).
+const TRACK_OPTIONS = [
+  { value: "all", label: "Whole Family" },
+  { value: "kids", label: "Kids Corner" },
+  { value: "teens", label: "Teens" },
+  { value: "adults", label: "Parents & Adults" },
+];
+
+const ACCEPT_EXTENSIONS = [".mp4", ".m4a", ".webm"];
+
+/**
+ * Upload straight to Supabase Storage with XHR so we get real progress
+ * events (supabase-js upload() can't report progress). Auth is the admin's
+ * own session token — storage RLS (migration 026) enforces admin-only writes.
+ */
+async function uploadWithProgress(
+  token: string,
+  path: string,
+  file: File,
+  onProgress: (pct: number) => void
+): Promise<void> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim();
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim();
+  const url = `${base}/storage/v1/object/${RECORDINGS_BUCKET}/${path}`;
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("apikey", anon);
+    xhr.setRequestHeader("x-upsert", "true");
+    xhr.setRequestHeader(
+      "Content-Type",
+      file.type || "application/octet-stream"
+    );
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable)
+        onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else {
+        let msg = `Upload failed (HTTP ${xhr.status})`;
+        try {
+          const body = JSON.parse(xhr.responseText);
+          if (body?.message) msg += `: ${body.message}`;
+          else if (body?.error) msg += `: ${body.error}`;
+        } catch {
+          /* keep generic message */
+        }
+        if (xhr.status === 413)
+          msg +=
+            " — file exceeds the project's upload size limit. Use a YouTube unlisted link instead, or raise the limit in Supabase project settings (Storage).";
+        reject(new Error(msg));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(file);
+  });
+}
 
 export default function AdminLiveSessionsPage() {
   const supabase = createClient();
@@ -42,9 +115,17 @@ export default function AdminLiveSessionsPage() {
   const [formDuration, setFormDuration] = useState(45);
   const [formZoomUrl, setFormZoomUrl] = useState("");
   const [formRecordingUrl, setFormRecordingUrl] = useState("");
-  const [formStatus, setFormStatus] = useState("upcoming");
-  const [formTrack, setFormTrack] = useState("stocks-options");
+  const [formStatus, setFormStatus] = useState("scheduled");
+  const [formTrack, setFormTrack] = useState("all");
   const [formTier, setFormTier] = useState("challenge");
+
+  // Recording modal state
+  const [recordingFor, setRecordingFor] = useState<SessionRow | null>(null);
+  const [recUrl, setRecUrl] = useState("");
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [recError, setRecError] = useState<string | null>(null);
+  const [recSaving, setRecSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadSessions = useCallback(async () => {
     const { data } = await supabase
@@ -66,8 +147,8 @@ export default function AdminLiveSessionsPage() {
     setFormDuration(45);
     setFormZoomUrl("");
     setFormRecordingUrl("");
-    setFormStatus("upcoming");
-    setFormTrack("stocks-options");
+    setFormStatus("scheduled");
+    setFormTrack("all");
     setFormTier("challenge");
     setEditingId(null);
     setShowForm(false);
@@ -91,29 +172,45 @@ export default function AdminLiveSessionsPage() {
     setFormZoomUrl(session.zoom_join_url || "");
     setFormRecordingUrl(session.recording_url || "");
     setFormStatus(session.status);
-    setFormTrack(session.track || "stocks-options");
+    setFormTrack(session.track || "all");
     setFormTier(session.min_tier || "challenge");
     setShowForm(true);
   }
 
   async function handleSave() {
     setSaving(true);
+    const editing = editingId
+      ? sessions.find((s) => s.id === editingId)
+      : undefined;
+    // Keep recording_kind honest: pasted URL wins, otherwise an existing
+    // uploaded file keeps kind 'upload', otherwise no recording -> null.
+    const recordingKind = formRecordingUrl
+      ? detectUrlKind(formRecordingUrl)
+      : editing?.recording_path
+        ? "upload"
+        : null;
     const payload = {
       title: formTitle,
       description: formDescription || null,
-      scheduled_at: formScheduledAt ? new Date(formScheduledAt).toISOString() : null,
+      scheduled_at: formScheduledAt
+        ? new Date(formScheduledAt).toISOString()
+        : null,
       duration_min: formDuration,
       zoom_join_url: formZoomUrl || null,
       recording_url: formRecordingUrl || null,
+      recording_kind: recordingKind,
       status: formStatus,
       track: formTrack,
       min_tier: formTier,
     };
 
-    if (editingId) {
-      await supabase.from("live_sessions").update(payload).eq("id", editingId);
-    } else {
-      await supabase.from("live_sessions").insert(payload);
+    const { error } = editingId
+      ? await supabase.from("live_sessions").update(payload).eq("id", editingId)
+      : await supabase.from("live_sessions").insert(payload);
+    if (error) {
+      alert(`Save failed: ${error.message}`);
+      setSaving(false);
+      return;
     }
 
     setSaving(false);
@@ -124,6 +221,14 @@ export default function AdminLiveSessionsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this live session?")) return;
+    const session = sessions.find((s) => s.id === id);
+    // Remove the uploaded recording file too, so the bucket doesn't
+    // accumulate orphans.
+    if (session?.recording_path) {
+      await supabase.storage
+        .from(RECORDINGS_BUCKET)
+        .remove([session.recording_path]);
+    }
     await supabase.from("live_sessions").delete().eq("id", id);
     setLoading(true);
     loadSessions();
@@ -141,6 +246,112 @@ export default function AdminLiveSessionsPage() {
     );
   }
 
+  // ── Recording modal ──
+
+  function openRecordingModal(session: SessionRow) {
+    setRecordingFor(session);
+    setRecUrl(session.recording_url || "");
+    setUploadPct(null);
+    setRecError(null);
+    setRecSaving(false);
+  }
+
+  function closeRecordingModal() {
+    if (uploadPct !== null && uploadPct < 100 && recSaving) return; // mid-upload
+    setRecordingFor(null);
+    setUploadPct(null);
+    setRecError(null);
+    setRecSaving(false);
+  }
+
+  async function handleFileUpload(file: File) {
+    if (!recordingFor) return;
+    const ext = "." + (file.name.split(".").pop() || "").toLowerCase();
+    if (!ACCEPT_EXTENSIONS.includes(ext)) {
+      setRecError(`Unsupported file type. Use ${ACCEPT_EXTENSIONS.join(", ")}.`);
+      return;
+    }
+    setRecError(null);
+    setRecSaving(true);
+    setUploadPct(0);
+    try {
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession();
+      const token = authSession?.access_token;
+      if (!token) throw new Error("Not signed in");
+
+      const path = recordingObjectPath(recordingFor.id, file.name);
+      await uploadWithProgress(token, path, file, setUploadPct);
+
+      const { error } = await supabase
+        .from("live_sessions")
+        .update({
+          recording_path: path,
+          recording_kind: "upload",
+          status: "completed",
+        })
+        .eq("id", recordingFor.id);
+      if (error) throw new Error(error.message);
+
+      setUploadPct(100);
+      setRecordingFor(null);
+      setLoading(true);
+      loadSessions();
+    } catch (e) {
+      setRecError(e instanceof Error ? e.message : "Upload failed");
+      setUploadPct(null);
+    } finally {
+      setRecSaving(false);
+    }
+  }
+
+  async function handleUrlSave() {
+    if (!recordingFor || !recUrl.trim()) return;
+    setRecError(null);
+    setRecSaving(true);
+    const url = recUrl.trim();
+    const { error } = await supabase
+      .from("live_sessions")
+      .update({
+        recording_url: url,
+        recording_kind: detectUrlKind(url),
+        status: "completed",
+      })
+      .eq("id", recordingFor.id);
+    setRecSaving(false);
+    if (error) {
+      setRecError(error.message);
+      return;
+    }
+    setRecordingFor(null);
+    setLoading(true);
+    loadSessions();
+  }
+
+  async function handleRemoveRecording() {
+    if (!recordingFor) return;
+    if (!confirm("Remove this session's recording?")) return;
+    setRecSaving(true);
+    if (recordingFor.recording_path) {
+      await supabase.storage
+        .from(RECORDINGS_BUCKET)
+        .remove([recordingFor.recording_path]);
+    }
+    await supabase
+      .from("live_sessions")
+      .update({
+        recording_path: null,
+        recording_url: null,
+        recording_kind: null,
+      })
+      .eq("id", recordingFor.id);
+    setRecSaving(false);
+    setRecordingFor(null);
+    setLoading(true);
+    loadSessions();
+  }
+
   function formatDate(dateStr: string | null) {
     if (!dateStr) return "—";
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -156,7 +367,7 @@ export default function AdminLiveSessionsPage() {
     switch (status) {
       case "live":
         return "text-red-400 bg-red-400/10";
-      case "upcoming":
+      case "scheduled":
         return "text-blue-400 bg-blue-400/10";
       case "completed":
         return "text-green-400 bg-green-400/10";
@@ -167,13 +378,28 @@ export default function AdminLiveSessionsPage() {
     }
   };
 
+  const recordingBadge = (session: SessionRow) => {
+    const kind = resolveRecordingKind(session);
+    if (!kind) return null;
+    const label =
+      kind === "upload" ? "Video" : kind === "youtube" ? "YouTube" : "Link";
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
+        <Film className="w-3 h-3" />
+        {label}
+      </span>
+    );
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Live Sessions</h1>
           <p className="text-zinc-400 text-sm mt-1">
-            Manage live coaching sessions and recordings
+            Manage live coaching sessions and recordings. To publish a past
+            class, create a session with status &quot;completed&quot; and add
+            its recording.
           </p>
         </div>
         <button
@@ -227,7 +453,7 @@ export default function AdminLiveSessionsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-zinc-400 mb-1">
-                    Scheduled At
+                    Scheduled / class date
                   </label>
                   <input
                     type="datetime-local"
@@ -264,15 +490,19 @@ export default function AdminLiveSessionsPage() {
               </div>
               <div>
                 <label className="block text-xs text-zinc-400 mb-1">
-                  Recording URL
+                  Recording URL (YouTube unlisted or other link)
                 </label>
                 <input
                   type="text"
                   value={formRecordingUrl}
                   onChange={(e) => setFormRecordingUrl(e.target.value)}
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
-                  placeholder="https://..."
+                  placeholder="https://youtu.be/..."
                 />
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  To upload a video file instead, save the session, then use
+                  the recording button in the table.
+                </p>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -300,11 +530,11 @@ export default function AdminLiveSessionsPage() {
                     onChange={(e) => setFormTrack(e.target.value)}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
                   >
-                    <option value="stocks-options">Stocks & Options</option>
-                    <option value="forex">Forex</option>
-                    <option value="futures">Futures</option>
-                    <option value="crypto">Crypto</option>
-                    <option value="all">All Tracks</option>
+                    {TRACK_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -317,7 +547,7 @@ export default function AdminLiveSessionsPage() {
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
                   >
                     <option value="challenge">Challenge</option>
-                    <option value="academy">Academy</option>
+                    <option value="academy">Academy (FTA)</option>
                   </select>
                 </div>
               </div>
@@ -337,6 +567,129 @@ export default function AdminLiveSessionsPage() {
                 {saving ? "Saving..." : editingId ? "Update" : "Create"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recording Modal */}
+      {recordingFor && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-lg font-bold text-zinc-100">
+                Class Recording
+              </h2>
+              <button
+                onClick={closeRecordingModal}
+                className="text-zinc-400 hover:text-zinc-200"
+                disabled={recSaving && uploadPct !== null}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500 mb-5 truncate">
+              {recordingFor.title}
+            </p>
+
+            {resolveRecordingKind(recordingFor) && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-emerald-400/10 text-emerald-400 text-xs">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                Recording attached (
+                {resolveRecordingKind(recordingFor) === "upload"
+                  ? recordingFor.recording_path
+                  : recordingFor.recording_url}
+                )
+              </div>
+            )}
+
+            {/* Upload */}
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-zinc-300 mb-2">
+                <Upload className="w-3.5 h-3.5 inline mr-1" />
+                Upload video file
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPT_EXTENSIONS.join(",")}
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFileUpload(f);
+                  e.target.value = "";
+                }}
+              />
+              {uploadPct !== null ? (
+                <div>
+                  <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 transition-all"
+                      style={{ width: `${uploadPct}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-1.5">
+                    Uploading... {uploadPct}%
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={recSaving}
+                  className="w-full px-4 py-3 rounded-lg border border-dashed border-zinc-700 text-zinc-400 text-sm hover:border-amber-400/50 hover:text-zinc-200 transition-colors disabled:opacity-50"
+                >
+                  Choose file ({ACCEPT_EXTENSIONS.join(" / ")})
+                </button>
+              )}
+              <p className="text-[11px] text-zinc-500 mt-1.5">
+                Stored privately; members stream it in-app. Large Zoom
+                exports over the project upload limit? Use a YouTube unlisted
+                link below.
+              </p>
+            </div>
+
+            {/* URL */}
+            <div className="mb-5">
+              <label className="block text-xs font-semibold text-zinc-300 mb-2">
+                <Link2 className="w-3.5 h-3.5 inline mr-1" />
+                Or paste a recording link
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={recUrl}
+                  onChange={(e) => setRecUrl(e.target.value)}
+                  placeholder="https://youtu.be/..."
+                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                />
+                <button
+                  onClick={handleUrlSave}
+                  disabled={recSaving || !recUrl.trim()}
+                  className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+              <p className="text-[11px] text-zinc-500 mt-1.5">
+                YouTube links play in-app (privacy-enhanced embed); other
+                links open in a new tab.
+              </p>
+            </div>
+
+            {recError && (
+              <p className="text-xs text-red-400 mb-4 break-words">
+                {recError}
+              </p>
+            )}
+
+            {resolveRecordingKind(recordingFor) && (
+              <button
+                onClick={handleRemoveRecording}
+                disabled={recSaving}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+              >
+                Remove recording
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -381,7 +734,7 @@ export default function AdminLiveSessionsPage() {
                   Status
                 </th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
-                  Duration
+                  Recording
                 </th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Actions
@@ -406,9 +759,18 @@ export default function AdminLiveSessionsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-zinc-400">
                     {formatDate(session.scheduled_at)}
+                    {session.duration_min ? (
+                      <span className="text-zinc-600">
+                        {" "}
+                        · {session.duration_min}m
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 text-xs text-zinc-400">
-                    {session.track || "—"}
+                    {TRACK_OPTIONS.find((t) => t.value === session.track)
+                      ?.label ||
+                      session.track ||
+                      "—"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
@@ -419,8 +781,10 @@ export default function AdminLiveSessionsPage() {
                       {session.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-zinc-400 text-center">
-                    {session.duration_min ? `${session.duration_min}m` : "—"}
+                  <td className="px-4 py-3 text-center">
+                    {recordingBadge(session) || (
+                      <span className="text-xs text-zinc-600">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -435,6 +799,13 @@ export default function AdminLiveSessionsPage() {
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
+                      <button
+                        onClick={() => openRecordingModal(session)}
+                        className="p-1.5 rounded text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 transition-colors"
+                        title="Upload or link recording"
+                      >
+                        <Upload className="w-4 h-4" />
+                      </button>
                       {session.status !== "completed" && (
                         <button
                           onClick={() => markCompleted(session)}
@@ -447,12 +818,14 @@ export default function AdminLiveSessionsPage() {
                       <button
                         onClick={() => openEditForm(session)}
                         className="p-1.5 rounded text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"
+                        title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(session.id)}
                         className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                        title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
