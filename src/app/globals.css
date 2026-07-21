@@ -1,14 +1,27 @@
 @import "tailwindcss";
 
 /*
-  FTA design system — deck-aligned "warm paper" light theme.
-  The midnight-* ramp is intentionally remapped so the whole app flips light
-  while existing class pairings keep their relationships:
-    bg-midnight-950 = paper page bg   · bg-midnight-900 = white card
+  FTA design system — deck-aligned "warm paper" theme with a warm-charcoal dark mode.
+
+  MECHANISM (Tailwind v4):
+  The color/shadow tokens below live in `@theme inline` but point at raw CSS
+  variables (--m50 … --m950, --paper, --ink, --sand, --sh-soft …). Because the
+  theme values are `var()` refs, Tailwind inlines the *reference* into every
+  utility (`.text-ink { color: var(--ink) }`). We then redefine those raw vars
+  under `:root[data-theme="dark"]` — flipping the whole app with zero page edits.
+
+  Light (brand default) keeps the historical inversion of the midnight-* ramp:
+    bg-midnight-950 = paper page bg · bg-midnight-900 = card surface
     border-midnight-700/800 = warm sand · text-midnight-50 = ink heading
-    text-midnight-300/400/500 = grays  · night-* = the ONLY true darks,
-  reserved for deliberate "pro chart" / special-moment islands.
+    text-midnight-300/400/500 = grays · night-* = the ONLY true darks (chart
+    panes / film moments), constant across themes.
+  Dark inverts the surface cluster to warm charcoals and lifts the text cluster
+  to warm off-whites; gold stays gold (it sings on dark).
 */
+
+/* data-theme drives dark: variants too (escape hatch for one-off cases) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
   --color-gold-50: #FFFBEB;
   --color-gold-100: #FEF3C7;
@@ -21,20 +34,20 @@
   --color-gold-800: #92400E;
   --color-gold-900: #78350F;
 
-  /* Inverted ramp: light surfaces + readable grays (deck paper/ink system) */
-  --color-midnight-50: #101828;
-  --color-midnight-100: #1D2939;
-  --color-midnight-200: #344054;
-  --color-midnight-300: #475467;
-  --color-midnight-400: #5B6472;
-  --color-midnight-500: #667085;
-  --color-midnight-600: #98A2B3;
-  --color-midnight-700: #E4DBC6;
-  --color-midnight-800: #EAE2D0;
-  --color-midnight-900: #FFFFFF;
-  --color-midnight-950: #FBF7EF;
+  /* Surface + text ramp — themeable via raw vars (see :root blocks below) */
+  --color-midnight-50: var(--m50);
+  --color-midnight-100: var(--m100);
+  --color-midnight-200: var(--m200);
+  --color-midnight-300: var(--m300);
+  --color-midnight-400: var(--m400);
+  --color-midnight-500: var(--m500);
+  --color-midnight-600: var(--m600);
+  --color-midnight-700: var(--m700);
+  --color-midnight-800: var(--m800);
+  --color-midnight-900: var(--m900);
+  --color-midnight-950: var(--m950);
 
-  /* True darks — deliberate islands only (charts, film moments, end cards) */
+  /* True darks — deliberate islands (charts, film moments). Constant. */
   --color-night-50: #F0F2F5;
   --color-night-300: #75819D;
   --color-night-500: #192D5C;
@@ -43,16 +56,16 @@
   --color-night-900: #050912;
   --color-night-950: #04060C;
 
-  /* Semantic aliases (deck names) */
-  --color-paper: #FBF7EF;
-  --color-ink: #101828;
-  --color-soft: #5B6472;
-  --color-sand: #EAE2D0;
-  --color-chip-amber: #FEF3C7;
-  --color-chip-sky: #E0F2FE;
-  --color-chip-green: #DCFCE7;
+  /* Semantic aliases (deck names) — themeable */
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-soft: var(--soft);
+  --color-sand: var(--sand);
+  --color-chip-amber: var(--chip-amber);
+  --color-chip-sky: var(--chip-sky);
+  --color-chip-green: var(--chip-green);
 
-  /* Market semantics (deck values) */
+  /* Market semantics (deck values) — constant across themes */
   --color-red-500: #DC2626;
   --color-red-600: #B91C1C;
   --color-green-400: #22C55E;
@@ -67,8 +80,92 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
 
-  --shadow-soft: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 16px rgba(16, 24, 40, 0.06);
-  --shadow-lift: 0 2px 4px rgba(16, 24, 40, 0.06), 0 12px 32px rgba(16, 24, 40, 0.10);
+  /* Shadows — themeable (dark uses deeper blacks so lift is visible) */
+  --shadow-soft: var(--sh-soft);
+  --shadow-lift: var(--sh-lift);
+}
+
+/* ------------------------------------------------------------------ */
+/* Light palette (brand default)                                      */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+
+  --m50: #101828;
+  --m100: #1D2939;
+  --m200: #344054;
+  --m300: #475467;
+  --m400: #5B6472;
+  --m500: #667085;
+  --m600: #98A2B3;
+  --m700: #E4DBC6;
+  --m800: #EAE2D0;
+  --m900: #FFFFFF;
+  --m950: #FBF7EF;
+
+  --paper: #FBF7EF;
+  --ink: #101828;
+  --soft: #5B6472;
+  --sand: #EAE2D0;
+  --card: #FFFFFF;
+  --chip-amber: #FEF3C7;
+  --chip-sky: #E0F2FE;
+  --chip-green: #DCFCE7;
+
+  --sh-soft: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 16px rgba(16, 24, 40, 0.06);
+  --sh-lift: 0 2px 4px rgba(16, 24, 40, 0.06), 0 12px 32px rgba(16, 24, 40, 0.10);
+
+  --sb-track: #F3EDE1;
+  --sb-thumb: #D8CDB4;
+  --sb-thumb-hover: #B45309;
+
+  --island: #04060C;
+  --island-ink: #F0F2F5;
+  --urgency-bg: #FEF3C7;
+  --urgency-border: #FDE68A;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dark palette — warm charcoal grounds, lifted cards, gold intact     */
+/* :root[data-theme] beats bare :root regardless of source order.      */
+/* ------------------------------------------------------------------ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* text cluster (50 brightest heading → 600 faintest) */
+  --m50: #F7F2E6;
+  --m100: #ECE4D3;
+  --m200: #D8CFBB;
+  --m300: #B0A794;
+  --m400: #968D7B;
+  --m500: #7E7767;
+  --m600: #6A6456;
+  /* surface cluster (700 border-strong / off-track → 950 page bg) */
+  --m700: #453E33;
+  --m800: #38322A;
+  --m900: #221C14;
+  --m950: #17120B;
+
+  --paper: #17120B;
+  --ink: #F7F2E6;
+  --soft: #968D7B;
+  --sand: #38322A;
+  --card: #221C14;
+  --chip-amber: rgba(251, 191, 36, 0.15);
+  --chip-sky: rgba(56, 189, 248, 0.15);
+  --chip-green: rgba(52, 211, 153, 0.15);
+
+  --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.5);
+  --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.5), 0 18px 44px rgba(0, 0, 0, 0.62);
+
+  --sb-track: #17120B;
+  --sb-thumb: #453E33;
+  --sb-thumb-hover: #B45309;
+
+  --island: #04060C;
+  --island-ink: #F0F2F5;
+  --urgency-bg: rgba(251, 191, 36, 0.12);
+  --urgency-border: rgba(251, 191, 36, 0.22);
 }
 
 html {
@@ -76,24 +173,25 @@ html {
 }
 
 body {
-  background: #FBF7EF;
-  color: #101828;
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #F3EDE1;
+  background: var(--sb-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D8CDB4;
+  background: var(--sb-thumb);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B45309;
+  background: var(--sb-thumb-hover);
 }
 
 .text-gradient-gold {
@@ -120,7 +218,7 @@ body {
 
 /* Legacy decorative classes remapped to the paper system */
 .glow-border {
-  border: 1px solid #EAE2D0;
+  border: 1px solid var(--sand);
   box-shadow: var(--shadow-soft);
 }
 
@@ -131,7 +229,7 @@ body {
 
 .section-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, #EAE2D0, transparent);
+  background: linear-gradient(90deg, transparent, var(--sand), transparent);
 }
 
 .cta-button {
@@ -150,9 +248,9 @@ body {
 }
 
 .urgency-bar {
-  background: #FEF3C7;
-  border-top: 1px solid #FDE68A;
-  border-bottom: 1px solid #FDE68A;
+  background: var(--urgency-bg);
+  border-top: 1px solid var(--urgency-border);
+  border-bottom: 1px solid var(--urgency-border);
 }
 
 .stack-row {
@@ -163,8 +261,8 @@ body {
 }
 
 .testimonial-card {
-  background: #FFFFFF;
-  border: 1px solid #EAE2D0;
+  background: var(--card);
+  border: 1px solid var(--sand);
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
 }
@@ -174,16 +272,16 @@ body {
 
 /* Warm paper card — the default surface of the redesign */
 .paper-card {
-  background: #FFFFFF;
-  border: 1px solid #EAE2D0;
+  background: var(--card);
+  border: 1px solid var(--sand);
   border-radius: 1rem;
   box-shadow: var(--shadow-soft);
 }
 
 /* Deliberate dark island (pro chart pane, special moments) */
 .night-island {
-  background: #04060C;
-  color: #F0F2F5;
+  background: var(--island);
+  color: var(--island-ink);
   border-radius: 1rem;
   overflow: hidden;
 }

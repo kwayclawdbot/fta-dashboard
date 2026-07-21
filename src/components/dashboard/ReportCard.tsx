@@ -209,7 +209,7 @@ export default function ReportCard({
                         ? "bg-chip-green text-green-700"
                         : w.done > 0
                           ? "bg-chip-amber text-gold-800"
-                          : "bg-white border border-sand text-soft"
+                          : "bg-midnight-900 border border-sand text-soft"
                   }`}
                 >
                   {complete ? <Check className="w-3 h-3" /> : `W${w.week}`}
@@ -306,7 +306,7 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-sand bg-white p-3 text-center">
+    <div className="rounded-xl border border-sand bg-midnight-900 p-3 text-center">
       <p className="text-[11px] text-soft uppercase tracking-wide flex items-center justify-center gap-1">
         {label === "Practice" && <Target className="w-3 h-3" />}
         {label === "Badges" && <Award className="w-3 h-3" />}

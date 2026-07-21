@@ -535,7 +535,7 @@ export default function WatchlistPage() {
           </button>
           <button
             onClick={() => openAdd(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-300 bg-white px-4 py-2.5 text-sm font-semibold text-gold-700 hover:bg-chip-amber"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-300 bg-midnight-900 px-4 py-2.5 text-sm font-semibold text-gold-700 hover:bg-chip-amber"
           >
             <BookMarked className="h-4 w-4" />
             Big Book of Stocks
@@ -545,7 +545,7 @@ export default function WatchlistPage() {
 
       {/* Filters */}
       {items.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-sand bg-white p-3 shadow-soft">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-sand bg-midnight-900 p-3 shadow-soft">
           <span className="text-xs font-semibold text-soft">Filter:</span>
           {/* trend */}
           {trendsPresent.length > 0 && (
@@ -654,7 +654,7 @@ export default function WatchlistPage() {
                         layout
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`relative overflow-hidden rounded-2xl border bg-white shadow-soft transition-colors ${
+                        className={`relative overflow-hidden rounded-2xl border bg-midnight-900 shadow-soft transition-colors ${
                           unlockedId === item.id
                             ? "border-gold-400"
                             : "border-sand"
@@ -986,7 +986,7 @@ export default function WatchlistPage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-lift sm:rounded-2xl"
+              className="w-full max-w-lg rounded-t-2xl bg-midnight-900 p-5 shadow-lift sm:rounded-2xl"
             >
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-display text-lg font-bold text-ink">
@@ -1049,14 +1049,14 @@ export default function WatchlistPage() {
                       value={tickerQuery}
                       onChange={(e) => setTickerQuery(e.target.value)}
                       placeholder={isKid ? "Type a name, like Nike" : "e.g. Nike or NKE"}
-                      className="w-full rounded-lg border border-sand bg-white py-2 pl-8 pr-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                      className="w-full rounded-lg border border-sand bg-midnight-900 py-2 pl-8 pr-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
                     />
                     {searching && (
                       <div className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />
                     )}
                   </div>
                   {tickerHits.length > 0 && (
-                    <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-sand bg-white shadow-lift">
+                    <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-sand bg-midnight-900 shadow-lift">
                       {tickerHits.map((hit) => (
                         <button
                           key={hit.ticker}
@@ -1083,7 +1083,7 @@ export default function WatchlistPage() {
                       onChange={(e) => setAddName(e.target.value)}
                       placeholder={isKid ? "Like Nike or Roblox" : "Company name"}
                       required
-                      className="mt-1 w-full rounded-lg border border-sand bg-white px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                      className="mt-1 w-full rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -1097,7 +1097,7 @@ export default function WatchlistPage() {
                       }
                       placeholder="NKE"
                       required
-                      className="mt-1 w-full rounded-lg border border-sand bg-white px-3 py-2 text-sm uppercase text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                      className="mt-1 w-full rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm uppercase text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1114,7 +1114,7 @@ export default function WatchlistPage() {
                     placeholder={
                       isKid ? "Sneakers and sports stuff" : "Product / service"
                     }
-                    className="mt-1 w-full rounded-lg border border-sand bg-white px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1133,7 +1133,7 @@ export default function WatchlistPage() {
                         ? "Everyone at school wears them!"
                         : "In your family's own words"
                     }
-                    className="mt-1 w-full resize-none rounded-lg border border-sand bg-white px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                    className="mt-1 w-full resize-none rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
                   />
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-paper p-2.5 text-xs text-soft">
@@ -1169,7 +1169,7 @@ export default function WatchlistPage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 shadow-lift sm:rounded-2xl"
+              className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-midnight-900 p-5 shadow-lift sm:rounded-2xl"
             >
               <div className="mb-1 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-display text-lg font-bold text-ink">
@@ -1331,7 +1331,7 @@ function ResearchField({
         onChange={(e) => onChange(e.target.value)}
         rows={2}
         placeholder={placeholder}
-        className="mt-1 w-full resize-none rounded-lg border border-sand bg-white px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+        className="mt-1 w-full resize-none rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
       />
     </div>
   );

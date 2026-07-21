@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useResolvedTheme } from "@/lib/useTheme";
 
 /**
  * FREE TradingView "mini symbol overview" embed — a tiny price sparkline for a
@@ -18,6 +19,7 @@ export default function TradingViewMini({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const theme = useResolvedTheme();
 
   // Reveal when the card enters the viewport (load-once, keep mounted).
   useEffect(() => {
@@ -56,7 +58,7 @@ export default function TradingViewMini({
       height,
       locale: "en",
       dateRange: "3M",
-      colorTheme: "light",
+      colorTheme: theme === "dark" ? "dark" : "light",
       isTransparent: true,
       autosize: false,
       largeChartUrl: "",
@@ -71,7 +73,7 @@ export default function TradingViewMini({
     return () => {
       el.innerHTML = "";
     };
-  }, [visible, symbol, height]);
+  }, [visible, symbol, height, theme]);
 
   return (
     <div

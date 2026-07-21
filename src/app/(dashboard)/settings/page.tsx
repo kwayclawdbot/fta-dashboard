@@ -10,6 +10,7 @@ import EnablePushButton from "@/components/notifications/EnablePushButton";
 import Avatar from "@/components/Avatar";
 import AvatarPicker from "@/components/AvatarPicker";
 import BadgeCase from "@/components/BadgeCase";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface NotificationPrefs {
   email_notifs: boolean;
@@ -227,6 +228,17 @@ export default function SettingsPage() {
           <BadgeCase userId={userId} title="Your Credentials" evaluateSelf />
         </motion.div>
       )}
+
+      <div className="border-t border-sand mb-8" />
+
+      {/* Appearance */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.09, duration: 0.3 }} className="mb-10">
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Appearance</h3>
+        <p className="text-sm text-midnight-400 font-body mb-4">
+          Choose how the dashboard looks. System follows your device setting.
+        </p>
+        <ThemeToggle />
+      </motion.div>
 
       <div className="border-t border-sand mb-8" />
 

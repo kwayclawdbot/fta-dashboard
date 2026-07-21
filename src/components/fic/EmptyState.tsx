@@ -21,7 +21,7 @@ function EmptyState({
   cta?: { label: string; href: string };
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-white p-10 text-center">
+    <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-midnight-900 p-10 text-center">
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-60">
         <SunCircle className="h-40 w-40" />
       </div>
@@ -64,7 +64,7 @@ export function EmptyMissions() {
 /** A corkboard with one pin — start your research board. */
 export function EmptyWatchlist({ onAdd }: { onAdd?: () => void }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-white p-10 text-center">
+    <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-midnight-900 p-10 text-center">
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-50">
         <SunCircle className="h-44 w-44" />
       </div>

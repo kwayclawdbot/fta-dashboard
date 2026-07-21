@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useResolvedTheme } from "@/lib/useTheme";
 
 /**
  * FREE TradingView Advanced Chart embed — the Practice Chart. No API key, no
@@ -17,6 +18,8 @@ export default function TradingViewAdvancedChart({
   lineStyle: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const theme = useResolvedTheme();
+  const dark = theme === "dark";
 
   useEffect(() => {
     const el = hostRef.current;
@@ -38,12 +41,12 @@ export default function TradingViewAdvancedChart({
       symbol,
       interval: "D",
       timezone: "Etc/UTC",
-      theme: "light",
+      theme: dark ? "dark" : "light",
       // 3 = area (kids), 1 = candles (teens/parents)
       style: lineStyle ? "3" : "1",
       locale: "en",
-      backgroundColor: "#FFFFFF",
-      gridColor: "rgba(16, 24, 40, 0.06)",
+      backgroundColor: dark ? "#221C14" : "#FFFFFF",
+      gridColor: dark ? "rgba(247, 242, 230, 0.06)" : "rgba(16, 24, 40, 0.06)",
       hide_top_toolbar: false,
       hide_side_toolbar: lineStyle, // fewer distractions for kids
       allow_symbol_change: true,
@@ -56,7 +59,7 @@ export default function TradingViewAdvancedChart({
     return () => {
       el.innerHTML = "";
     };
-  }, [symbol, lineStyle]);
+  }, [symbol, lineStyle, dark]);
 
   return (
     <div

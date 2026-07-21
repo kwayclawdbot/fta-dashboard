@@ -281,7 +281,7 @@ export default function DashboardHome() {
               </span>
             </span>
           ) : (
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-sand text-ink text-sm font-semibold">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-midnight-900 border border-sand text-ink text-sm font-semibold">
               <Zap className="w-4 h-4 text-gold-500" />
               <span className="font-display">{level.name}</span>
               <span className="text-soft font-normal">{xp} XP</span>

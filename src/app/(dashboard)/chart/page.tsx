@@ -105,7 +105,7 @@ function ChartInner() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Symbol (e.g. AAPL)"
-              className="w-40 rounded-lg border border-sand bg-white py-2 pl-8 pr-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+              className="w-40 rounded-lg border border-sand bg-midnight-900 py-2 pl-8 pr-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
               aria-label="Chart symbol"
             />
           </form>
@@ -117,7 +117,7 @@ function ChartInner() {
                 className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
                   lineStyle
                     ? "bg-chip-amber text-gold-700"
-                    : "bg-white text-soft hover:bg-paper"
+                    : "bg-midnight-900 text-soft hover:bg-paper"
                 }`}
                 aria-pressed={!!lineStyle}
               >
@@ -129,7 +129,7 @@ function ChartInner() {
                 className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
                   !lineStyle
                     ? "bg-chip-amber text-gold-700"
-                    : "bg-white text-soft hover:bg-paper"
+                    : "bg-midnight-900 text-soft hover:bg-paper"
                 }`}
                 aria-pressed={lineStyle === false}
               >
@@ -155,7 +155,7 @@ function ChartInner() {
               className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
                 urlSymbol === s
                   ? "border-gold-400 bg-chip-amber text-gold-700"
-                  : "border-sand bg-white text-soft hover:border-gold-300"
+                  : "border-sand bg-midnight-900 text-soft hover:border-gold-300"
               }`}
             >
               {shown}
@@ -169,7 +169,7 @@ function ChartInner() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-sand bg-white shadow-soft"
+        className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-sand bg-midnight-900 shadow-soft"
       >
         {roleLoaded && lineStyle !== null ? (
           <TradingViewAdvancedChart symbol={urlSymbol} lineStyle={lineStyle} />

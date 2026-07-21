@@ -453,7 +453,7 @@ export default function CommunityPage() {
                     className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
                   />
                   {mention && mentionCandidates.length > 0 && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-sand rounded-lg shadow-lg overflow-hidden z-20">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-midnight-900 border border-sand rounded-lg shadow-lg overflow-hidden z-20">
                       <p className="flex items-center gap-1 px-3 pt-2 pb-1 text-[10px] font-display font-semibold uppercase tracking-wider text-soft">
                         <AtSign className="w-3 h-3" /> Mention someone
                       </p>
@@ -463,7 +463,7 @@ export default function CommunityPage() {
                           type="button"
                           onMouseDown={(e) => { e.preventDefault(); insertMention(c); }}
                           onMouseEnter={() => setMentionIdx(i)}
-                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left ${i === mentionIdx ? "bg-paper" : "bg-white"}`}
+                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left ${i === mentionIdx ? "bg-paper" : "bg-midnight-900"}`}
                         >
                           <Avatar name={c.name} avatarUrl={c.avatar_url} size="xs" />
                           <span className="min-w-0">
@@ -807,13 +807,13 @@ function AnchorCard({ post, onReply }: { post: FeedPost; onReply: () => void }) 
         </div>
       )}
       {a.discussion_question && (
-        <div className="rounded-lg bg-white/70 border border-gold-200 p-3 mb-2">
+        <div className="rounded-lg bg-midnight-900/70 border border-gold-200 p-3 mb-2">
           <p className="text-[11px] font-display font-bold uppercase tracking-wider text-soft mb-1">Family discussion</p>
           <p className="text-sm text-ink font-body">{a.discussion_question}</p>
         </div>
       )}
       {a.family_assignment && (
-        <div className="rounded-lg bg-white/70 border border-gold-200 p-3 mb-3">
+        <div className="rounded-lg bg-midnight-900/70 border border-gold-200 p-3 mb-3">
           <p className="text-[11px] font-display font-bold uppercase tracking-wider text-soft mb-1">Your family&apos;s job</p>
           <p className="text-sm text-ink font-body">{a.family_assignment}</p>
         </div>

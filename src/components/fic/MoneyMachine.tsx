@@ -123,7 +123,7 @@ export default function MoneyMachine(props: Props) {
   const anim = inView && !reduce;
 
   return (
-    <div ref={rootRef} className="rounded-2xl border border-sand bg-white p-5 lg:p-6">
+    <div ref={rootRef} className="rounded-2xl border border-sand bg-midnight-900 p-5 lg:p-6">
       {/* Company header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
