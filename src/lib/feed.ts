@@ -56,6 +56,25 @@ export interface ActivityPayload {
   scheduled_at?: string;
 }
 
+/** A member sharing one of their family's watchlist picks as a rich card. */
+export interface WatchlistSharePayload {
+  type: "watchlist_share";
+  ticker: string;
+  company_name: string;
+  status: "watch" | "study" | "favorite" | "avoid";
+  why_we_picked: string | null;
+  bull_case: string | null;
+  bear_case: string | null;
+  champion_name: string | null;
+  family_name: string | null;
+}
+
+export function isWatchlistShare(
+  p: FeedPost["activity_payload"]
+): p is WatchlistSharePayload {
+  return !!p && (p as WatchlistSharePayload).type === "watchlist_share";
+}
+
 export interface AnchorPayload {
   week_start: string | null;
   class_title: string | null;
@@ -75,7 +94,7 @@ export interface FeedPost {
   attachment_url: string | null;
   attachment_type: "image" | "video" | null;
   attachment_meta: AttachmentMeta | null;
-  activity_payload: ActivityPayload | AnchorPayload | null;
+  activity_payload: ActivityPayload | AnchorPayload | WatchlistSharePayload | null;
   anchor_week_id: string | null;
   pinned: boolean;
   created_at: string;

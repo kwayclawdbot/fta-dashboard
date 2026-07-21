@@ -17,7 +17,7 @@ import {
   FlaskConical,
   Check,
   Sparkles,
-  BookMarked,
+  Share2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
@@ -57,23 +57,6 @@ interface Member {
   avatar_url: string | null;
   role: string;
 }
-
-// A curated starter set so "Add from the Big Book" feels like a real shelf
-// (the final top-100 list isn't locked yet — these pre-fill name + ticker).
-const BIG_BOOK_PICKS = [
-  { name: "Apple", ticker: "AAPL" },
-  { name: "Nike", ticker: "NKE" },
-  { name: "Roblox", ticker: "RBLX" },
-  { name: "Disney", ticker: "DIS" },
-  { name: "McDonald's", ticker: "MCD" },
-  { name: "Netflix", ticker: "NFLX" },
-  { name: "Coca-Cola", ticker: "KO" },
-  { name: "Chipotle", ticker: "CMG" },
-  { name: "Costco", ticker: "COST" },
-  { name: "Nvidia", ticker: "NVDA" },
-  { name: "Lego (Mattel)", ticker: "MAT" },
-  { name: "Crocs", ticker: "CROX" },
-];
 
 function initialsOf(name: string | null) {
   return (name || "?")
@@ -128,6 +111,10 @@ export default function WatchlistPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
+  const [shareItem, setShareItem] = useState<WatchlistItem | null>(null);
+  const [shareNote, setShareNote] = useState("");
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareDone, setShareDone] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [role, setRole] = useState("parent");
   const [isKid, setIsKid] = useState(false);
@@ -153,11 +140,9 @@ export default function WatchlistPage() {
   // filters
   const [fTrend, setFTrend] = useState<string | null>(null);
   const [fMember, setFMember] = useState<string | null>(null);
-  const [fBigBook, setFBigBook] = useState(false);
 
   // add modal
   const [addOpen, setAddOpen] = useState(false);
-  const [addBigBook, setAddBigBook] = useState(false);
   const [addName, setAddName] = useState("");
   const [addTicker, setAddTicker] = useState("");
   const [addSell, setAddSell] = useState("");
@@ -263,8 +248,32 @@ export default function WatchlistPage() {
   }
 
   // ── Add ──────────────────────────────────────────────────────────────────
-  function openAdd(bigBook: boolean) {
-    setAddBigBook(bigBook);
+  async function submitShare() {
+    if (!shareItem || !userId || shareBusy) return;
+    setShareBusy(true);
+    const champ = shareItem.champion_id ? members[shareItem.champion_id] : null;
+    const { error } = await supabase.from("feed_posts").insert({
+      author_id: userId,
+      family_id: familyId,
+      kind: "post",
+      body: shareNote.trim(),
+      activity_payload: {
+        type: "watchlist_share",
+        ticker: shareItem.ticker,
+        company_name: shareItem.company_name,
+        status: shareItem.status,
+        why_we_picked: shareItem.why_we_picked || null,
+        bull_case: shareItem.bull_case || null,
+        bear_case: shareItem.bear_case || null,
+        champion_name: champ?.display_name || null,
+        family_name: null,
+      },
+    });
+    setShareBusy(false);
+    if (!error) setShareDone(true);
+  }
+
+  function openAdd() {
     setAddName("");
     setAddTicker("");
     setAddSell("");
@@ -291,7 +300,6 @@ export default function WatchlistPage() {
         champion_id: userId,
         what_they_sell: addSell.trim() || null,
         why_we_picked: addWhy.trim() || null,
-        in_big_book: addBigBook,
       })
       .select("*")
       .single();
@@ -465,10 +473,9 @@ export default function WatchlistPage() {
       items.filter((i) => {
         if (fTrend && i.trend !== fTrend) return false;
         if (fMember && i.champion_id !== fMember) return false;
-        if (fBigBook && !i.in_big_book) return false;
         return true;
       }),
-    [items, fTrend, fMember, fBigBook]
+    [items, fTrend, fMember]
   );
 
   const researchItem = researchId
@@ -508,18 +515,11 @@ export default function WatchlistPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => openAdd(false)}
+            onClick={() => openAdd()}
             className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm"
           >
             <Plus className="h-4 w-4" />
             Add a company
-          </button>
-          <button
-            onClick={() => openAdd(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gold-300 bg-midnight-900 px-4 py-2.5 text-sm font-semibold text-gold-700 hover:bg-chip-amber"
-          >
-            <BookMarked className="h-4 w-4" />
-            Big Book of Stocks
           </button>
         </div>
       </motion.div>
@@ -561,24 +561,11 @@ export default function WatchlistPage() {
               ))}
             </select>
           )}
-          {/* big book */}
-          <button
-            onClick={() => setFBigBook((v) => !v)}
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-              fBigBook
-                ? "bg-chip-amber text-gold-700"
-                : "bg-paper text-soft hover:bg-sand"
-            }`}
-          >
-            <BookMarked className="h-3 w-3" />
-            Big Book only
-          </button>
-          {(fTrend || fMember || fBigBook) && (
+          {(fTrend || fMember) && (
             <button
               onClick={() => {
                 setFTrend(null);
                 setFMember(null);
-                setFBigBook(false);
               }}
               className="text-xs font-medium text-gold-700 hover:text-gold-800"
             >
@@ -589,7 +576,7 @@ export default function WatchlistPage() {
       )}
 
       {/* Empty state */}
-      {items.length === 0 && <EmptyWatchlist onAdd={() => openAdd(false)} />}
+      {items.length === 0 && <EmptyWatchlist onAdd={() => openAdd()} />}
 
       {/* Board — columns by status */}
       {items.length > 0 && (
@@ -667,12 +654,6 @@ export default function WatchlistPage() {
                                   <h4 className="truncate font-display text-base font-bold text-ink">
                                     {item.company_name}
                                   </h4>
-                                  {item.in_big_book && (
-                                    <BookMarked
-                                      className="h-3.5 w-3.5 shrink-0 text-gold-500"
-                                      aria-label="From the Big Book"
-                                    />
-                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <p className="text-xs font-medium text-midnight-500">
@@ -836,6 +817,17 @@ export default function WatchlistPage() {
                                 Rethink
                               </button>
                             )}
+                            <button
+                              onClick={() => {
+                                setShareItem(item);
+                                setShareNote("");
+                                setShareDone(false);
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
+                            >
+                              <Share2 className="h-3.5 w-3.5" />
+                              Post to community
+                            </button>
                           </div>
 
                           {/* footer: notes toggle, chart, delete */}
@@ -971,17 +963,8 @@ export default function WatchlistPage() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="flex items-center gap-2 font-display text-lg font-bold text-ink">
-                  {addBigBook ? (
-                    <>
-                      <BookMarked className="h-5 w-5 text-gold-500" />
-                      Add from the Big Book of Stocks 2027
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-5 w-5 text-gold-500" />
-                      Add a company
-                    </>
-                  )}
+                  <Plus className="h-5 w-5 text-gold-500" />
+                  Add a company
                 </h2>
                 <button
                   onClick={() => !addBusy && setAddOpen(false)}
@@ -990,33 +973,6 @@ export default function WatchlistPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
-              {addBigBook && (
-                <div className="mb-4">
-                  <p className="mb-2 text-xs text-soft">
-                    Tap a company from the shelf to pre-fill it, or type your
-                    own below.
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {BIG_BOOK_PICKS.map((p) => (
-                      <button
-                        key={p.ticker}
-                        onClick={() => {
-                          setAddName(p.name);
-                          setAddTicker(p.ticker);
-                        }}
-                        className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                          addTicker === p.ticker
-                            ? "border-gold-400 bg-chip-amber text-gold-700"
-                            : "border-sand bg-paper text-soft hover:border-gold-300"
-                        }`}
-                      >
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               <form onSubmit={submitAdd} className="space-y-3">
                 {/* Ticker lookup (Polygon reference search) */}
@@ -1280,6 +1236,87 @@ export default function WatchlistPage() {
                   </>
                 )}
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Post-to-community dialog */}
+      <AnimatePresence>
+        {shareItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
+            onClick={() => !shareBusy && setShareItem(null)}
+          >
+            <motion.div
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 24, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-t-2xl bg-midnight-900 p-5 shadow-lift sm:rounded-2xl"
+            >
+              {shareDone ? (
+                <div className="text-center py-4">
+                  <Check className="mx-auto mb-2 h-8 w-8 text-green-600" />
+                  <p className="font-display text-base font-bold text-ink">
+                    Posted to the club
+                  </p>
+                  <Link
+                    href="/community"
+                    className="mt-3 inline-block text-sm font-semibold text-gold-700 hover:text-gold-800"
+                  >
+                    See it in the feed →
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h2 className="flex items-center gap-2 font-display text-lg font-bold text-ink">
+                      <Share2 className="h-5 w-5 text-gold-500" />
+                      Post to community
+                    </h2>
+                    <button
+                      onClick={() => !shareBusy && setShareItem(null)}
+                      className="text-midnight-500 hover:text-ink"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="mb-3 flex items-center gap-2.5 rounded-lg border border-sand bg-paper p-3">
+                    <CompanyLogo
+                      symbol={shareItem.ticker}
+                      name={shareItem.company_name}
+                      size={32}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-sm font-bold text-ink">
+                        {shareItem.company_name}
+                      </p>
+                      <p className="text-[11px] text-soft">
+                        {shareItem.ticker} ·{" "}
+                        {STATUS_META[shareItem.status]?.label || shareItem.status}
+                      </p>
+                    </div>
+                  </div>
+                  <textarea
+                    value={shareNote}
+                    onChange={(e) => setShareNote(e.target.value)}
+                    rows={2}
+                    placeholder="Add a note (optional)"
+                    className="w-full resize-none rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                  />
+                  <button
+                    onClick={submitShare}
+                    disabled={shareBusy}
+                    className="cta-button mt-3 w-full rounded-lg py-2.5 text-sm disabled:opacity-60"
+                  >
+                    {shareBusy ? "Posting…" : "Post"}
+                  </button>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

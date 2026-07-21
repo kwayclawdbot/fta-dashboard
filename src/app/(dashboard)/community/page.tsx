@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AtSign, Send, Trophy, Heart, MessageCircle, Users, Home, Sparkles,
+  AtSign, Send, Trophy, Heart, MessageCircle, Sparkles,
   ArrowRight, Paperclip, X, Film, Loader2, Link2, Radio,
   Award, Eye, CheckCircle2, Target, Calendar, Pin, BookOpen,
 } from "lucide-react";
@@ -14,7 +14,8 @@ import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
-  activityLine, linkify, timeAgo,
+  activityLine, isWatchlistShare, linkify, timeAgo,
+  type WatchlistSharePayload,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
   type AnchorPayload, type Role,
 } from "@/lib/feed";
@@ -22,6 +23,7 @@ import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
 import LiveRooms from "@/components/community/LiveRooms";
+import CompanyLogo from "@/components/fic/CompanyLogo";
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   award: Award, eye: Eye, check: CheckCircle2, target: Target,
@@ -70,7 +72,6 @@ export default function CommunityPage() {
   const [myTier, setMyTier] = useState<FamilyTier>("fic");
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ families: 0, members: 0, posts: 0 });
 
   // Likes + comments state
   const [likeCount, setLikeCount] = useState<Record<string, number>>({});
@@ -224,14 +225,6 @@ export default function CommunityPage() {
         return data;
       })();
 
-      const statsP = Promise.all([
-        // families is RLS-scoped to your own family; the community-wide count comes
-        // from the community_family_count SECURITY DEFINER RPC (no billing exposure).
-        supabase.rpc("community_family_count"),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("feed_posts").select("id", { count: "exact", head: true }).eq("kind", "post"),
-      ]);
-
       const feedP = loadFeed(uid);
 
       const profile = await profileP;
@@ -253,10 +246,7 @@ export default function CommunityPage() {
       }
 
       await feedP;
-      const [famRes, { count: members }, { count: postCount }] = await statsP;
-      const families = Number(famRes.data ?? 0);
       if (mounted) {
-        setStats({ families: families || 0, members: members || 0, posts: postCount || 0 });
         setLoading(false);
       }
     })();
@@ -351,7 +341,6 @@ export default function CommunityPage() {
         },
       };
       setPosts((prev) => [newPost, ...prev]);
-      setStats((s) => ({ ...s, posts: s.posts + 1 }));
       setText("");
       clearAttachment();
       const todayPosts = await countXpToday(supabase, me.id, "community");
@@ -431,11 +420,6 @@ export default function CommunityPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-5">
-        <h1 className="font-display text-2xl font-bold text-ink">Community</h1>
-        <p className="text-soft text-sm mt-1 font-body">The club town square — learn out loud, grow together.</p>
-      </motion.div>
-
       {/* Mobile Live Rooms toggle */}
       <button
         onClick={() => setLiveOpen(true)}
@@ -576,22 +560,7 @@ export default function CommunityPage() {
         <aside className="hidden lg:block lg:w-[320px] shrink-0 space-y-4">
           <LiveRooms me={me} tier={myTier} />
           {anchor && <ThisWeekSnapshot post={anchor} />}
-          <Link href="/leaderboard" className="paper-card p-4 flex items-center gap-3 group hover:border-gold-300 transition-colors">
-            <div className="w-9 h-9 rounded-lg bg-chip-amber text-gold-800 flex items-center justify-center shrink-0"><Trophy className="w-4 h-4" /></div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display text-sm font-semibold text-ink">Family XP leaderboard</p>
-              <p className="text-[11px] text-soft">Scored by average XP — every family competes fairly</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-midnight-600 group-hover:text-gold-700" />
-          </Link>
-          <div className="paper-card p-4">
-            <div className="grid grid-cols-3 gap-3">
-              <Stat icon={Home} value={stats.families} label="Families" />
-              <Stat icon={Users} value={stats.members} label="Members" />
-              <Stat icon={MessageCircle} value={stats.posts} label="Posts" />
-            </div>
-          </div>
-          <HouseRules />
+          <HouseRulesLink />
         </aside>
       </div>
 
@@ -715,6 +684,9 @@ function PostCard(props: EngagementProps & { tier: FamilyTier }) {
             <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
           </div>
           <PostBody body={post.body} />
+          {isWatchlistShare(post.activity_payload) && (
+            <WatchlistShareCard payload={post.activity_payload} />
+          )}
           <PostAttachment url={post.attachment_url} type={post.attachment_type} name={post.attachment_meta?.name} />
           <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} />
         </div>
@@ -748,6 +720,69 @@ function ActivityCard(props: EngagementProps) {
       </div>
       {props.commentsOpen && <CommentThread {...props} />}
     </div>
+  );
+}
+
+const SHARE_STATUS_CHIP: Record<string, { label: string; chip: string }> = {
+  watch: { label: "Watching", chip: "bg-chip-sky text-sky-800" },
+  study: { label: "Studying", chip: "bg-chip-amber text-gold-800" },
+  favorite: { label: "Family favorite", chip: "bg-chip-green text-green-700" },
+  avoid: { label: "Decided to avoid", chip: "bg-sand text-red-700" },
+};
+
+function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
+  const [quote, setQuote] = useState<{ price: number; changePct: number } | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    fetch(`/api/market/quote?symbol=${encodeURIComponent(payload.ticker)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!mounted) return;
+        const q = data?.quote;
+        if (q && typeof q.price === "number") {
+          setQuote({ price: q.price, changePct: Number(q.changePercent) || 0 });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [payload.ticker]);
+
+  const status = SHARE_STATUS_CHIP[payload.status] || SHARE_STATUS_CHIP.watch;
+  const thesis = payload.why_we_picked || payload.bull_case;
+  return (
+    <Link
+      href={`/chart?symbol=${encodeURIComponent(payload.ticker)}`}
+      className="mt-2 block rounded-xl border border-sand bg-paper p-3 hover:border-gold-300 transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        <CompanyLogo symbol={payload.ticker} name={payload.company_name} size={40} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-display text-sm font-bold text-ink truncate">{payload.company_name}</span>
+            <span className="text-[11px] font-mono text-soft">{payload.ticker}</span>
+            <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${status.chip}`}>{status.label}</span>
+          </div>
+          {quote && (
+            <p className="text-xs font-body mt-0.5">
+              <span className="font-semibold text-ink">${quote.price.toFixed(2)}</span>{" "}
+              <span className={quote.changePct >= 0 ? "text-green-700" : "text-red-700"}>
+                {quote.changePct >= 0 ? "+" : ""}
+                {quote.changePct.toFixed(2)}% today
+              </span>{" "}
+              <span className="text-soft">· delayed</span>
+            </p>
+          )}
+        </div>
+      </div>
+      {thesis && (
+        <p className="mt-2 text-xs text-soft font-body italic line-clamp-2">&ldquo;{thesis}&rdquo;</p>
+      )}
+      {payload.champion_name && (
+        <p className="mt-1 text-[11px] text-soft font-body">Championed by {payload.champion_name}</p>
+      )}
+    </Link>
   );
 }
 
@@ -868,28 +903,24 @@ function ThisWeekSnapshot({ post }: { post: FeedPost }) {
   );
 }
 
-function HouseRules() {
+function HouseRulesLink() {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="paper-card p-4">
-      <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-3">House rules</h3>
-      <ul className="space-y-2 text-sm text-midnight-200 font-body">
-        <li className="flex gap-2"><span className="text-gold-600">•</span> We&apos;re here to learn — no dumb questions, we all started somewhere.</li>
-        <li className="flex gap-2"><span className="text-gold-600">•</span> Be kind and celebrate each other — kids are in the club too.</li>
-        <li className="flex gap-2"><span className="text-gold-600">•</span> Education only — no financial advice, hot tips, or &quot;buy this now.&quot;</li>
-        <li className="flex gap-2"><span className="text-gold-600">•</span> Practice money only. We never pressure anyone to trade for real.</li>
-      </ul>
-    </div>
-  );
-}
-
-function Stat({ icon: Icon, value, label }: { icon: React.ElementType; value: number; label: string }) {
-  return (
-    <div>
-      <div className="flex items-center gap-1 text-gold-700">
-        <Icon className="w-3.5 h-3.5" />
-        <p className="font-display text-lg font-bold text-ink">{value}</p>
-      </div>
-      <p className="text-[11px] text-soft font-body mt-0.5">{label}</p>
+    <div className="px-1">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="text-[11px] text-soft hover:text-gold-700 font-body underline underline-offset-2"
+      >
+        House rules
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1.5 text-xs text-soft font-body">
+          <li>• We&apos;re here to learn — no dumb questions.</li>
+          <li>• Be kind — kids are in the club too.</li>
+          <li>• Education only — no financial advice or &quot;buy this now.&quot;</li>
+          <li>• Practice money only. Nobody is pressured to trade for real.</li>
+        </ul>
+      )}
     </div>
   );
 }
