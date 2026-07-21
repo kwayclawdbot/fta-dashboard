@@ -26,6 +26,7 @@ import {
   Heart,
   Dumbbell,
   GraduationCap,
+  Gift,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -54,6 +55,7 @@ const CLUB_THIS_WEEK: NavItem = { label: "This Week", href: "/dashboard?tab=this
 const CLUB_WATCHLIST: NavItem = { label: "Family Watchlist", href: "/watchlist", icon: Eye };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
 const CLUB_PARENT_CORNER: NavItem = { label: "Parent Corner", href: "/parent-corner", icon: Heart };
+const CLUB_REFERRALS: NavItem = { label: "Invite Families", href: "/referrals", icon: Gift, parentOnly: true };
 const CLUB_FLASHCARDS: NavItem = { label: "Flashcards", href: "/flashcards", icon: Layers };
 const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
 
@@ -146,7 +148,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
     practiceGroup(true),
     CLUB_FLASHCARDS,
     { label: "My Progress", href: "/progress", icon: Trophy },
-    ...(canParent ? [FAMILY_ITEM, CLUB_PARENT_CORNER] : []),
+    ...(canParent ? [FAMILY_ITEM, CLUB_PARENT_CORNER, CLUB_REFERRALS] : []),
   ];
 
   if (isFta) {

@@ -5,34 +5,24 @@ import { createClient } from "@/lib/supabase/server";
 import { REF_COOKIE } from "@/lib/referral";
 
 /**
- * OAuth + email-link callback.
+ * Email confirmation handler (Supabase SSR `verifyOtp` / token_hash flow).
  *
- * Handles BOTH auth flows that can land here:
- *   1. PKCE / OAuth: `?code=...`   → exchangeCodeForSession
- *      (Google sign-in, and the default `{{ .ConfirmationURL }}` signup email
- *       once Site URL + redirect allowlist point at this domain).
- *   2. token_hash:   `?token_hash=...&type=...` → verifyOtp
- *      (fallback so this route also works if the email template links here).
+ * Point the "Confirm signup" email template here for the most robust flow:
+ *   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard
  *
- * On failure it lands on a styled error page (with a resend action), never a
- * bare 404 / silent bounce. On success it attributes any pending referral.
+ * Unlike the legacy `/auth/v1/verify?...&redirect_to=<SiteURL>` flow, this does
+ * NOT depend on the dashboard Site URL / redirect allowlist to land the user in
+ * the right place — we verify the token_hash ourselves and redirect locally.
+ * It also works cross-device (no PKCE code_verifier cookie required).
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const next = sanitizeNext(searchParams.get("next"));
 
-  const supabase = await createClient();
-
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      await attachReferralIfPending(supabase);
-      return NextResponse.redirect(`${origin}${next}`);
-    }
-  } else if (token_hash && type) {
+  if (token_hash && type) {
+    const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (!error) {
       await attachReferralIfPending(supabase);
@@ -49,14 +39,19 @@ function sanitizeNext(next: string | null): string {
   return next;
 }
 
+/**
+ * If a first-touch referral cookie is present, attribute this just-verified user
+ * to the referrer (server-side, forge-proof: the referred user is the session).
+ * Best-effort — never blocks the redirect.
+ */
 async function attachReferralIfPending(
   supabase: Awaited<ReturnType<typeof createClient>>
 ) {
   try {
     const cookieStore = await cookies();
-    const refCode = cookieStore.get(REF_COOKIE)?.value;
-    if (!refCode) return;
-    await supabase.rpc("attach_referral", { p_code: refCode });
+    const code = cookieStore.get(REF_COOKIE)?.value;
+    if (!code) return;
+    await supabase.rpc("attach_referral", { p_code: code });
     cookieStore.delete(REF_COOKIE);
   } catch {
     /* non-fatal */

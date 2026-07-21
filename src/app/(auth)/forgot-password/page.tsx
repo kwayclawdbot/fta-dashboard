@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { authCallbackUrl } from "@/lib/site-url";
 
 export default function ForgotPasswordPage() {
   const supabase = createClient();
@@ -22,7 +23,7 @@ export default function ForgotPasswordPage() {
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email,
       {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: authCallbackUrl("/settings"),
       }
     );
 

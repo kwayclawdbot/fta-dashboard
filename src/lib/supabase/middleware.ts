@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { REF_COOKIE, REF_COOKIE_MAX_AGE } from "@/lib/referral";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -49,6 +50,22 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  // First-touch referral capture: any URL carrying ?ref=CODE (a direct
+  // /signup?ref= link or a marketing-site passthrough) seeds the fta_ref cookie
+  // once. Never overwrites an existing cookie, so the original sharer keeps
+  // credit. The dedicated /r/[code] route additionally logs the click event.
+  // Applied to the final response so it survives Supabase's cookie refresh.
+  const ref = request.nextUrl.searchParams.get("ref");
+  if (ref && !request.cookies.get(REF_COOKIE)) {
+    supabaseResponse.cookies.set(REF_COOKIE, ref.trim().toUpperCase(), {
+      maxAge: REF_COOKIE_MAX_AGE,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+    });
   }
 
   return supabaseResponse;

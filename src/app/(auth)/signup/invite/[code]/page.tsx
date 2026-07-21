@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, Users, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { authCallbackUrl } from "@/lib/site-url";
 
 export default function InvitePage() {
   return (
@@ -108,7 +109,7 @@ function InviteSignupForm() {
           display_name: displayName,
           invite_code: code,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: authCallbackUrl(),
       },
     });
 

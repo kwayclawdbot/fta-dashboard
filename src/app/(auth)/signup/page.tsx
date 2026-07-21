@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Ticket, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { authCallbackUrl } from "@/lib/site-url";
 
 export default function SignupPage() {
   return (
@@ -41,7 +42,7 @@ function SignupForm() {
           display_name: displayName,
           invite_code: inviteCode || undefined,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: authCallbackUrl(),
       },
     });
 
@@ -60,7 +61,7 @@ function SignupForm() {
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: authCallbackUrl(),
       },
     });
 

@@ -37,7 +37,8 @@ export interface ActivityPayload {
     | "watchlist_verdict"
     | "mission_complete"
     | "session_rsvp"
-    | "level_up";
+    | "level_up"
+    | "referral_welcome";
   icon: string;
   actor_name: string;
   actor_avatar: string | null;
@@ -157,6 +158,12 @@ export function activityLine(p: ActivityPayload): ActivityLine {
       return {
         iconKey: "trophy", subject, verb: "leveled up to",
         target: p.level ? `${p.level_name} (Level ${p.level})` : p.level_name || "a new level",
+        accent: "bg-chip-amber text-gold-800",
+      };
+    case "referral_welcome":
+      return {
+        iconKey: "sparkles", subject, verb: "welcomed",
+        target: "a new family to the club",
         accent: "bg-chip-amber text-gold-800",
       };
     default:
