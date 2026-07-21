@@ -13,11 +13,13 @@ import {
   Shield,
   Clapperboard,
   CalendarRange,
+  Contact,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "CRM", href: "/admin/crm", icon: Contact },
   { label: "This Week (FIC)", href: "/admin/fic-weeks", icon: CalendarRange },
   { label: "Courses", href: "/admin/courses", icon: BookOpen },
   { label: "Coach Demos", href: "/admin/coach-demos", icon: Clapperboard },
