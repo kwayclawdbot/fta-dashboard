@@ -30,12 +30,12 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
 
-interface SubNavItem {
+export interface SubNavItem {
   label: string;
   href: string;
 }
 
-interface NavItem {
+export interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
@@ -101,7 +101,7 @@ function practiceGroup(includeSimulator: boolean): NavItem {
  *   parent-gated) and never the FTA subsection.
  * - Role filters (kid / teen / parent) still apply.
  */
-function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier = "fic"): NavItem[] {
+export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier = "fic"): NavItem[] {
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";
   const canParent = role === "parent" || role === "admin";

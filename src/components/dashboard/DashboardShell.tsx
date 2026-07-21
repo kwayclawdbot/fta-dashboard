@@ -3,6 +3,7 @@
 import { useState } from "react";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
+import MobileTabBar from "./MobileTabBar";
 
 import type { FamilyTier } from "@/lib/tier";
 
@@ -43,8 +44,15 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
           onMenuClick={() => setMobileOpen(true)}
         />
 
-        <main className="px-4 lg:px-8 py-6">{children}</main>
+        {/* Bottom padding on phones so content never hides behind the tab bar
+            (bar is 4rem + the iOS safe-area inset). Reverts at md+. */}
+        <main className="px-4 lg:px-8 pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">
+          {children}
+        </main>
       </div>
+
+      {/* App-style bottom tab bar — phones only, dashboard routes only. */}
+      <MobileTabBar user={user} />
     </div>
   );
 }

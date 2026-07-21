@@ -68,9 +68,11 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         {/* Left: hamburger + title */}
         <div className="flex items-center gap-3">
+          {/* Tablet-only hamburger (md–lg). Phones navigate via the bottom tab
+              bar + More sheet; desktop (lg+) uses the sidebar. */}
           <button
             onClick={onMenuClick}
-            className="lg:hidden text-midnight-300 hover:text-midnight-100 transition-colors"
+            className="hidden md:block lg:hidden text-midnight-300 hover:text-midnight-100 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>

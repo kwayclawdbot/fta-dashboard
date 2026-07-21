@@ -31,6 +31,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#FBF7EF",
+  // Let content + fixed bars extend into the notch/home-indicator areas so
+  // env(safe-area-inset-*) is honored for the PWA bottom tab bar on iPhone.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
