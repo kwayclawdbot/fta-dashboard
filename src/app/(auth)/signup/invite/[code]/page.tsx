@@ -43,50 +43,29 @@ function InviteSignupForm() {
 
   useEffect(() => {
     async function validateInvite() {
-      // Look up invite code
-      const { data: invite } = await supabase
-        .from("family_invites")
-        .select("family_id, role, expires_at, used_by")
-        .eq("code", code)
-        .single();
+      // Invite codes are bearer secrets. Validation runs through the
+      // invite_details SECURITY DEFINER RPC — the family_invites/families tables
+      // are RLS-locked and unreadable by a not-yet-signed-in visitor.
+      const { data } = await supabase.rpc("invite_details", { p_code: code });
+      const info = data as {
+        valid?: boolean;
+        family_id?: string;
+        family_name?: string;
+        inviter_name?: string;
+        role?: string;
+      } | null;
 
-      if (
-        !invite ||
-        invite.used_by ||
-        new Date(invite.expires_at) < new Date()
-      ) {
+      if (!info?.valid) {
         setInviteValid(false);
         setChecking(false);
         return;
       }
-
-      // Get family info
-      const { data: family } = await supabase
-        .from("families")
-        .select("id, name")
-        .eq("id", invite.family_id)
-        .single();
-
-      if (!family) {
-        setInviteValid(false);
-        setChecking(false);
-        return;
-      }
-
-      // Inviter name = the family's owner (parent)
-      const { data: inviter } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("family_id", family.id)
-        .eq("role", "parent")
-        .limit(1)
-        .maybeSingle();
 
       setInviteData({
-        family_id: family.id,
-        family_name: family.name,
-        invited_by_name: inviter?.display_name || "A family member",
-        role: invite.role,
+        family_id: info.family_id!,
+        family_name: info.family_name!,
+        invited_by_name: info.inviter_name || "A family member",
+        role: info.role,
       });
       setInviteValid(true);
       setChecking(false);
@@ -119,21 +98,14 @@ function InviteSignupForm() {
       return;
     }
 
-    // If email confirmation is disabled, auto-join the family
+    // If email confirmation is disabled, auto-join the family. The join + invite
+    // consume happen atomically inside the redeem_invite SECURITY DEFINER RPC (the
+    // client can no longer write another family's invite row under RLS).
     if (signUpData.user && signUpData.session) {
-      await supabase.from("profiles").upsert({
-        id: signUpData.user.id,
-        display_name: displayName,
-        family_id: inviteData.family_id,
-        role: inviteData.role || "child",
-        onboarding_complete: false,
+      await supabase.rpc("redeem_invite", {
+        p_code: code,
+        p_display_name: displayName,
       });
-
-      // Mark invite as used (records who redeemed it)
-      await supabase
-        .from("family_invites")
-        .update({ used_by: signUpData.user.id })
-        .eq("code", code);
 
       // Invited children finish a short kid onboarding at /onboarding
       router.push("/onboarding");

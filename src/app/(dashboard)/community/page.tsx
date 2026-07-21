@@ -229,11 +229,14 @@ export default function CommunityPage() {
         }
       }
       await loadFeed(uid);
-      const [{ count: families }, { count: members }, { count: postCount }] = await Promise.all([
-        supabase.from("families").select("id", { count: "exact", head: true }),
+      const [famRes, { count: members }, { count: postCount }] = await Promise.all([
+        // families is RLS-scoped to your own family; the community-wide count comes
+        // from the community_family_count SECURITY DEFINER RPC (no billing exposure).
+        supabase.rpc("community_family_count"),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("feed_posts").select("id", { count: "exact", head: true }).eq("kind", "post"),
       ]);
+      const families = Number(famRes.data ?? 0);
       if (mounted) {
         setStats({ families: families || 0, members: members || 0, posts: postCount || 0 });
         setLoading(false);
