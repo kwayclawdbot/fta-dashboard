@@ -140,85 +140,114 @@ export default function DashboardHome() {
 
   useEffect(() => {
     async function load() {
+      // getSession() reads the cached session locally (no network round trip);
+      // RLS still enforces every query server-side. The dashboard layout has
+      // already validated the user server-side before this renders.
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
 
-      const [{ data: state }, { data: profile }] = await Promise.all([
-        supabase.rpc("get_home_state", { p_user_id: user.id }),
-        supabase
-          .from("profiles")
-          .select("display_name, family_id, role")
-          .eq("id", user.id)
-          .single(),
-      ]);
+      // Round trip 1: everything that only needs the user id, in parallel.
+      // (get_home_state, profile, current FIC week, and lifetime XP were four
+      // sequential awaits before — none depend on each other.)
+      const [{ data: state }, { data: profile }, week, xpTotal] =
+        await Promise.all([
+          supabase.rpc("get_home_state", { p_user_id: user.id }),
+          supabase
+            .from("profiles")
+            .select("display_name, family_id, role")
+            .eq("id", user.id)
+            .single(),
+          getCurrentFicWeek(supabase),
+          getUserXp(supabase, user.id),
+        ]);
 
       const hs = state as HomeState;
       setHome(hs);
       setFirstName(profile?.display_name?.split(" ")[0] || "");
-
-      // FIC: current published week + family orientation checklist state.
-      const famId = profile?.family_id ?? null;
-      setHasFamily(!!famId);
-      const week = await getCurrentFicWeek(supabase);
       setFicWeek(week);
-      if (famId) {
-        const { data: fam } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("family_id", famId);
-        const memberIds = fam?.length ? fam.map((m) => m.id) : [user.id];
-        const orient = await getOrientationState(supabase, famId, memberIds);
-        setOrientationDone(orient.completed.size);
-      }
-
-      // Own XP + Daily 5 due count
-      const track = hs?.track || "adults";
-      const [xpTotal, due] = await Promise.all([
-        getUserXp(supabase, user.id),
-        dailyFiveCount(supabase, user.id, track),
-      ]);
       setXp(xpTotal);
-      setDueCount(due);
 
-      // Parent view: family strip with per-member completed counts + XP level
-      if (profile?.role === "parent" && profile?.family_id) {
-        const { data: members } = await supabase
-          .from("profiles")
-          .select("id, display_name, role, age_group, avatar_url")
-          .eq("family_id", profile.family_id)
-          .neq("id", user.id);
-        if (members?.length) {
-          const memberIds = members.map((m) => m.id);
-          const [{ data: prog }, { data: xpRows }] = await Promise.all([
-            supabase
-              .from("lesson_progress")
-              .select("user_id")
-              .eq("status", "completed")
-              .in("user_id", memberIds),
-            supabase
-              .from("xp_events")
-              .select("user_id, amount")
-              .in("user_id", memberIds),
-          ]);
-          const counts: Record<string, number> = {};
-          (prog || []).forEach((r) => {
-            counts[r.user_id] = (counts[r.user_id] || 0) + 1;
-          });
-          const xpByMember: Record<string, number> = {};
-          (xpRows || []).forEach((r: { user_id: string; amount: number }) => {
-            xpByMember[r.user_id] = (xpByMember[r.user_id] || 0) + (r.amount || 0);
-          });
-          setFamily(
-            members.map((m) => ({
-              ...m,
-              completed: counts[m.id] || 0,
-              xp: xpByMember[m.id] || 0,
-            }))
-          );
-        }
+      const famId = profile?.family_id ?? null;
+      const track = hs?.track || "adults";
+      setHasFamily(!!famId);
+
+      // Round trip 2: the remaining independent work runs concurrently instead
+      // of chaining (daily-5 due count + family orientation + parent strip).
+      const tasks: Promise<void>[] = [];
+
+      tasks.push(dailyFiveCount(supabase, user.id, track).then(setDueCount));
+
+      if (famId) {
+        tasks.push(
+          (async () => {
+            // One fetch of the family roster serves both the orientation state
+            // and the parent family strip (was two separate profile queries).
+            const { data: allMembers } = await supabase
+              .from("profiles")
+              .select("id, display_name, role, age_group, avatar_url")
+              .eq("family_id", famId);
+            const roster = allMembers || [];
+            const memberIds = roster.length
+              ? roster.map((m) => m.id)
+              : [user.id];
+
+            const others = roster.filter((m) => m.id !== user.id);
+            const isParent = profile?.role === "parent";
+
+            const [orient, strip] = await Promise.all([
+              getOrientationState(supabase, famId, memberIds),
+              isParent && others.length
+                ? Promise.all([
+                    supabase
+                      .from("lesson_progress")
+                      .select("user_id")
+                      .eq("status", "completed")
+                      .in(
+                        "user_id",
+                        others.map((m) => m.id)
+                      ),
+                    supabase
+                      .from("xp_events")
+                      .select("user_id, amount")
+                      .in(
+                        "user_id",
+                        others.map((m) => m.id)
+                      ),
+                  ])
+                : Promise.resolve(null),
+            ]);
+
+            setOrientationDone(orient.completed.size);
+
+            if (strip) {
+              const [{ data: prog }, { data: xpRows }] = strip;
+              const counts: Record<string, number> = {};
+              (prog || []).forEach((r) => {
+                counts[r.user_id] = (counts[r.user_id] || 0) + 1;
+              });
+              const xpByMember: Record<string, number> = {};
+              (xpRows || []).forEach(
+                (r: { user_id: string; amount: number }) => {
+                  xpByMember[r.user_id] =
+                    (xpByMember[r.user_id] || 0) + (r.amount || 0);
+                }
+              );
+              setFamily(
+                others.map((m) => ({
+                  ...m,
+                  completed: counts[m.id] || 0,
+                  xp: xpByMember[m.id] || 0,
+                }))
+              );
+            }
+          })()
+        );
       }
+
+      await Promise.all(tasks);
       setLoading(false);
     }
     load();

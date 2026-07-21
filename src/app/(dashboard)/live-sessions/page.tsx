@@ -659,10 +659,15 @@ export default function LiveSessionsPage() {
   useEffect(() => {
     async function loadUser() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
       setUserId(user.id);
+
+      // RSVP counts only need the user id — run them in parallel with the
+      // profile + tier lookup instead of after it.
+      const rsvpsP = loadRsvps(user.id);
 
       // Same access derivation as the courses page: profile track/age_group
       // + the family membership tier (kids inherit the family's tier).
@@ -681,7 +686,7 @@ export default function LiveSessionsPage() {
       const tier = await getFamilyTier(supabase, profile?.family_id);
       setAccess({ isChild, userTrack, tier });
 
-      await loadRsvps(user.id);
+      await rsvpsP;
     }
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps

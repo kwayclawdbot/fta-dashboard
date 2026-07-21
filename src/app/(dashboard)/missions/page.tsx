@@ -14,7 +14,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
+import { awardXp, hasXpForRef } from "@/lib/xp";
 import MissionEmblem from "@/components/fic/MissionEmblem";
 import Celebrate, {
   crossedLevel,
@@ -70,70 +70,81 @@ export default function MissionsPage() {
 
   const load = useCallback(async () => {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) {
       setLoading(false);
       return;
     }
     setUserId(user.id);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, age_group, family_id")
-      .eq("id", user.id)
-      .single();
-    setFamilyId(profile?.family_id ?? null);
-    const kid = profile?.age_group === "kids" || profile?.role === "child";
-    setIsKid(kid);
-    setRegister(kid ? "kid" : profile?.age_group === "teens" ? "teen" : "parent");
+    // One aggregate round trip: profile + missions + this user's completions +
+    // championed count + lifetime XP (was 5 sequential queries).
+    const { data: stateRaw } = await supabase.rpc("get_missions_state");
+    const state = (stateRaw || {}) as {
+      role?: string;
+      age_group?: string;
+      family_id?: string | null;
+      xp?: number;
+      championed?: number;
+      missions?: Mission[];
+      completions?: Completion[];
+    };
 
-    const { data: missionRows } = await supabase
-      .from("fic_missions")
-      .select("id, slug, title, description, kid_prompt, xp_reward, sort")
-      .order("sort");
-    const list = (missionRows as Mission[]) || [];
+    setFamilyId(state.family_id ?? null);
+    const kid = state.age_group === "kids" || state.role === "child";
+    setIsKid(kid);
+    setRegister(kid ? "kid" : state.age_group === "teens" ? "teen" : "parent");
+
+    const list = state.missions || [];
     setMissions(list);
 
-    const { data: compRows } = await supabase
-      .from("mission_completions")
-      .select("mission_id, evidence, completed_at")
-      .eq("user_id", user.id);
     const compMap: Record<string, Completion> = {};
-    for (const c of (compRows as Completion[]) || []) compMap[c.mission_id] = c;
+    for (const c of state.completions || []) compMap[c.mission_id] = c;
+    setCompletions(compMap);
 
-    // Brand Detective auto-detect: companies THIS user has championed.
-    const { count: championed } = await supabase
-      .from("family_watchlist")
-      .select("id", { count: "exact", head: true })
-      .eq("champion_id", user.id);
-    setChampionedCount(championed || 0);
+    const championed = state.championed || 0;
+    setChampionedCount(championed);
+    setXp(state.xp || 0);
+    setLoading(false); // paint now — the initial data is one round trip in
 
-    // Auto-complete Brand Detective when the 5-add goal is met.
+    // Deferred (post-paint): auto-complete Brand Detective when the 5-add goal
+    // is met. Rare write; must never block first content.
     const brand = list.find((m) => m.slug === "brand-detective");
-    if (brand && (championed || 0) >= BRAND_DETECTIVE_GOAL && !compMap[brand.id]) {
+    if (brand && championed >= BRAND_DETECTIVE_GOAL && !compMap[brand.id]) {
       const { error } = await supabase.from("mission_completions").insert({
         mission_id: brand.id,
         user_id: user.id,
-        family_id: profile?.family_id ?? null,
+        family_id: state.family_id ?? null,
         evidence: `Added ${championed} companies to the family watchlist.`,
       });
       if (!error) {
-        const already = await hasXpForRef(supabase, user.id, "bonus", `mission:${brand.id}`);
+        const already = await hasXpForRef(
+          supabase,
+          user.id,
+          "bonus",
+          `mission:${brand.id}`
+        );
         if (!already) {
-          await awardXp(supabase, user.id, "bonus", brand.xp_reward, `mission:${brand.id}`);
+          await awardXp(
+            supabase,
+            user.id,
+            "bonus",
+            brand.xp_reward,
+            `mission:${brand.id}`
+          );
         }
-        compMap[brand.id] = {
-          mission_id: brand.id,
-          evidence: `Added ${championed} companies to the family watchlist.`,
-          completed_at: new Date().toISOString(),
-        };
+        setCompletions((prev) => ({
+          ...prev,
+          [brand.id]: {
+            mission_id: brand.id,
+            evidence: `Added ${championed} companies to the family watchlist.`,
+            completed_at: new Date().toISOString(),
+          },
+        }));
       }
     }
-
-    setCompletions(compMap);
-    setXp(await getUserXp(supabase, user.id));
-    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {

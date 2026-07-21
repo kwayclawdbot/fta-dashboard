@@ -175,49 +175,50 @@ export default function WatchlistPage() {
 
   const load = useCallback(async () => {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
+    const user = session?.user;
     if (!user) {
       setLoading(false);
       return;
     }
     setUserId(user.id);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, age_group, family_id")
-      .eq("id", user.id)
-      .single();
-    setFamilyId(profile?.family_id ?? null);
-    setRole(profile?.role ?? "parent");
-    const kid = profile?.age_group === "kids" || profile?.role === "child";
-    setIsKid(kid);
-    setRegister(kid ? "kid" : profile?.age_group === "teens" ? "teen" : "parent");
+    // Lifetime XP is display-only chrome — fetch it off the critical path.
     getUserXp(supabase, user.id).then(setXp);
 
-    if (!profile?.family_id) {
-      setLoading(false);
-      return;
-    }
+    // One aggregate round trip: profile + family roster + watchlist items +
+    // notes (was profile -> [members, items] -> notes, three sequential hops).
+    const { data: boardRaw } = await supabase.rpc("get_watchlist_board");
+    const board = (boardRaw || {}) as {
+      family_id?: string | null;
+      role?: string;
+      age_group?: string;
+      members?: Member[];
+      items?: WatchlistItem[];
+      notes?: WatchlistNote[];
+    };
 
-    const [{ data: memberRows }, { data: itemRows }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, role")
-        .eq("family_id", profile.family_id),
-      supabase
-        .from("family_watchlist")
-        .select("*")
-        .eq("family_id", profile.family_id)
-        .order("created_at", { ascending: false }),
-    ]);
+    setFamilyId(board.family_id ?? null);
+    setRole(board.role ?? "parent");
+    const kid = board.age_group === "kids" || board.role === "child";
+    setIsKid(kid);
+    setRegister(kid ? "kid" : board.age_group === "teens" ? "teen" : "parent");
 
     const memMap: Record<string, Member> = {};
-    for (const m of (memberRows as Member[]) || []) memMap[m.id] = m;
+    for (const m of board.members || []) memMap[m.id] = m;
     setMembers(memMap);
 
-    const list = (itemRows as WatchlistItem[]) || [];
+    const list = board.items || [];
     setItems(list);
+
+    const grouped: Record<string, WatchlistNote[]> = {};
+    for (const n of board.notes || []) {
+      (grouped[n.watchlist_id] ||= []).push(n);
+    }
+    setNotes(grouped);
+
+    setLoading(false);
 
     // Batch live quotes for the whole board in ONE Polygon call (via our cached
     // proxy). Fails soft to no-price so cards degrade to static content.
@@ -225,26 +226,6 @@ export default function WatchlistPage() {
     if (tickers.length > 0) {
       fetchQuotes(tickers).then((q) => setQuotes((prev) => ({ ...prev, ...q })));
     }
-
-    if (list.length > 0) {
-      const { data: noteRows } = await supabase
-        .from("watchlist_notes")
-        .select("*")
-        .in(
-          "watchlist_id",
-          list.map((i) => i.id)
-        )
-        .order("created_at", { ascending: true });
-      const grouped: Record<string, WatchlistNote[]> = {};
-      for (const n of (noteRows as WatchlistNote[]) || []) {
-        (grouped[n.watchlist_id] ||= []).push(n);
-      }
-      setNotes(grouped);
-    } else {
-      setNotes({});
-    }
-
-    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {

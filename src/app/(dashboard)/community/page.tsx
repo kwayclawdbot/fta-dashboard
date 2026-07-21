@@ -205,37 +205,55 @@ export default function CommunityPage() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      let uid: string | null = null;
-      if (user) {
-        uid = user.id;
-        const { data: profile } = await supabase
+      // getSession() is a local read (no network); RLS still guards every query.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const uid: string | null = session?.user?.id ?? null;
+
+      // Fire the three independent reads together: the feed (the actual
+      // content), the viewer's profile, and the community stat counts. The feed
+      // no longer waits behind the profile + tier lookups.
+      const profileP = (async () => {
+        if (!uid) return null;
+        const { data } = await supabase
           .from("profiles")
           .select("display_name, role, age_group, family_id, avatar_url")
-          .eq("id", user.id)
+          .eq("id", uid)
           .single();
-        if (profile && mounted) {
-          setMe({
-            id: user.id,
-            display_name: profile.display_name || "You",
-            role: (profile.role as Role) || "parent",
-            age_group: profile.age_group,
-            family_id: profile.family_id ?? null,
-            avatar_url: profile.avatar_url ?? null,
-          });
-          const tier = await getFamilyTier(supabase, profile.family_id);
-          if (mounted) setMyTier(tier);
-          evaluateBadges(supabase, user.id);
-        }
-      }
-      await loadFeed(uid);
-      const [famRes, { count: members }, { count: postCount }] = await Promise.all([
+        return data;
+      })();
+
+      const statsP = Promise.all([
         // families is RLS-scoped to your own family; the community-wide count comes
         // from the community_family_count SECURITY DEFINER RPC (no billing exposure).
         supabase.rpc("community_family_count"),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("feed_posts").select("id", { count: "exact", head: true }).eq("kind", "post"),
       ]);
+
+      const feedP = loadFeed(uid);
+
+      const profile = await profileP;
+      if (profile && uid && mounted) {
+        setMe({
+          id: uid,
+          display_name: profile.display_name || "You",
+          role: (profile.role as Role) || "parent",
+          age_group: profile.age_group,
+          family_id: profile.family_id ?? null,
+          avatar_url: profile.avatar_url ?? null,
+        });
+        // Tier badge + badge evaluation are non-critical chrome — resolve them
+        // after paint so they never hold up the feed.
+        getFamilyTier(supabase, profile.family_id).then((t) => {
+          if (mounted) setMyTier(t);
+        });
+        evaluateBadges(supabase, uid);
+      }
+
+      await feedP;
+      const [famRes, { count: members }, { count: postCount }] = await statsP;
       const families = Number(famRes.data ?? 0);
       if (mounted) {
         setStats({ families: families || 0, members: members || 0, posts: postCount || 0 });
