@@ -75,16 +75,12 @@ export default function ReferralsPage() {
             (e) => e.kind === "signup"
           ).length;
 
-          const { data: xpRows } = await supabase
-            .from("xp_events")
-            .select("amount, ref_id")
-            .eq("user_id", user.id)
-            .eq("kind", "bonus")
-            .like("ref_id", "referral:%");
-          const xp = (xpRows || []).reduce(
-            (sum, r) => sum + (r.amount || 0),
-            0
-          );
+          // XP earned is deterministic: attach_referral awards exactly
+          // REFERRAL_SIGNUP_XP once per verified referred family, so the signup
+          // count is the single source of truth. (Reading xp_events directly is
+          // unreliable here — that table's SELECT policy is family-scoped, so a
+          // parent without a family, or reading pre-aggregation, can miss rows.)
+          const xp = signups * REFERRAL_SIGNUP_XP;
 
           setStats({ clicks, signups, xp });
         }
