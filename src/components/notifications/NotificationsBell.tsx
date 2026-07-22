@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { AtSign, Bell, CheckCheck, CornerUpLeft, Megaphone } from "lucide-react";
+import { AtSign, Bell, CheckCheck, CornerUpLeft, LifeBuoy, Megaphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { registerServiceWorker } from "@/lib/push";
 import EnablePushButton from "./EnablePushButton";
 
 interface NotificationItem {
   id: string;
-  type: "reply" | "mention" | "announcement";
+  type: "reply" | "mention" | "announcement" | "support_reply";
   body: string;
   read_at: string | null;
   created_at: string;
@@ -37,6 +37,8 @@ function verbFor(type: NotificationItem["type"]): string {
       return "mentioned you";
     case "announcement":
       return "posted an announcement";
+    case "support_reply":
+      return "replied to your support ticket";
   }
 }
 
@@ -44,6 +46,7 @@ function IconFor({ type }: { type: NotificationItem["type"] }) {
   const cls = "w-3.5 h-3.5";
   if (type === "reply") return <CornerUpLeft className={cls} />;
   if (type === "mention") return <AtSign className={cls} />;
+  if (type === "support_reply") return <LifeBuoy className={cls} />;
   return <Megaphone className={cls} />;
 }
 
@@ -142,7 +145,7 @@ export default function NotificationsBell() {
         .update({ read_at: new Date().toISOString() })
         .eq("id", n.id);
     }
-    router.push("/community");
+    router.push(n.type === "support_reply" ? "/help" : "/community");
   }
 
   async function markAllRead() {
@@ -226,7 +229,9 @@ export default function NotificationsBell() {
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-midnight-200">
                         <span className="font-semibold text-midnight-100">
-                          {n.actor?.display_name || "Someone"}
+                          {n.type === "support_reply"
+                            ? "FTA Support"
+                            : n.actor?.display_name || "Someone"}
                         </span>{" "}
                         {verbFor(n.type)}
                       </span>

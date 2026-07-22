@@ -119,6 +119,23 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const adminItems: NavItem[] =
     role === "admin" ? [{ label: "Admin", href: "/admin/crm", icon: ShieldCheck }] : [];
 
+  // ── Free tier (social-funnel signups): a deliberately small nav. Home
+  //    (limited), read-only Community, the Free Class hub, a "Join FIC" upsell,
+  //    and Settings. Everything else is locked (see DashboardShell). Applies to
+  //    every role in a free family (a free family is parent-only today, but a
+  //    kid inheriting free tier gets the same calm surface). ──
+  if (tier === "free") {
+    return [
+      { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+      CLUB_COMMUNITY,
+      { label: "Free Class", href: "/free-class", icon: Video },
+      { label: "Join FIC", href: "/upgrade", icon: Sparkles },
+      ...adminItems,
+      help,
+      settings,
+    ];
+  }
+
   // ── Young kids: simple flat club nav (tier-agnostic; the FIC/FTA split is a
   // parent-facing concept — kids just consume whatever their family unlocks). ──
   if (isKid) {
@@ -210,7 +227,9 @@ export default function DashboardSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const navItems = getNavItems(user.role, user.age_group, user.tier);
-  const isFic = (user.tier ?? "fic") === "fic";
+  // Free + FIC families both live under the Family Investing Club brand; only
+  // FTA flips the logo to the academy.
+  const isFic = (user.tier ?? "fic") !== "fta";
   const supabase = createClient();
   const [loggingOut, setLoggingOut] = useState(false);
 
