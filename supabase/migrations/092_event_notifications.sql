@@ -170,7 +170,7 @@ begin
   v_link := '/courses/' || coalesce(v_slug, '');
 
   insert into notifications (user_id, actor_id, type, body, link, ref_id)
-  select a.user_id, null, 'new_lesson', v_body, v_link, v_course_id
+  select a.user_id, null::uuid, 'new_lesson', v_body, v_link, v_course_id
   from public.notif_audience_ids(v_audience) a;
 
   return new;
@@ -208,7 +208,7 @@ begin
   v_body := 'Recording posted: ' || coalesce(new.title, 'a class you attended');
 
   insert into notifications (user_id, actor_id, type, body, link, ref_id)
-  select distinct r.user_id, null, 'recording_posted', v_body, '/live-sessions', new.id
+  select distinct r.user_id, null::uuid, 'recording_posted', v_body, '/live-sessions', new.id
   from session_rsvps r
   where r.session_id = new.id
     and r.user_id is not null;
