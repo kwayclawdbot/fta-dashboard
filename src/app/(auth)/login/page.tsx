@@ -22,7 +22,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -33,7 +33,18 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    // Admins land in the admin console; everyone else on the member dashboard.
+    let dest = "/dashboard";
+    if (signInData.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", signInData.user.id)
+        .single();
+      if (profile?.role === "admin") dest = "/admin/crm";
+    }
+
+    router.push(dest);
     router.refresh();
   }
 

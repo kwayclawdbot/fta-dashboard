@@ -27,6 +27,7 @@ import {
   Dumbbell,
   GraduationCap,
   Gift,
+  ShieldCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -109,6 +110,9 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const canParent = role === "parent" || role === "admin";
   const isFta = tier === "fta";
   const settings: NavItem = { label: "Settings", href: "/settings", icon: Settings };
+  // Admins get a way back into the admin console from the member side.
+  const adminItems: NavItem[] =
+    role === "admin" ? [{ label: "Admin", href: "/admin/crm", icon: ShieldCheck }] : [];
 
   // ── Young kids: simple flat club nav (tier-agnostic; the FIC/FTA split is a
   // parent-facing concept — kids just consume whatever their family unlocks). ──
@@ -160,7 +164,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       { label: "Courses", href: "/courses", icon: BookOpen },
       { label: "Live Classes", href: "/live-sessions", icon: Video },
     ];
-    return [...clubPrimary, ...ftaSection, settings];
+    return [...clubPrimary, ...ftaSection, ...adminItems, settings];
   }
 
   // FIC parents: tasteful upgrade teaser mirroring the courses/upgrade pitch
@@ -172,7 +176,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       ]
     : [];
 
-  return [...clubPrimary, ...upgradeTease, settings];
+  return [...clubPrimary, ...upgradeTease, ...adminItems, settings];
 }
 
 interface DashboardSidebarProps {
