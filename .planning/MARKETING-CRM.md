@@ -58,8 +58,13 @@ RPCs: `admin_marketing_leads`, `_lead_detail`, `_import`, `_add_lead`,
   event timeline, notes, stage select, one-click "Convert". Stage changes log
   `stage_changed` events.
 - **Conversion tracking** — `Sync conversions` (and `admin_marketing_sync_conversions`)
-  matches lead emails against `profiles.email`; any match ⇒ stage `converted`,
-  `converted_profile_id` set, `converted` event logged.
+  matches lead emails against `profiles.email`. **A "conversion" requires an
+  ACTIVE PAID enrollment** (fic or fta) on the matched profile's family ⇒ stage
+  `converted`, `converted_profile_id` set, `converted` event logged. A lead whose
+  email has a profile but **no** paid enrollment (e.g. free-class funnel signups,
+  source `free_class`, which create auth users immediately) is escalated to
+  `engaged` at most — never auto-converted (migration 045). Manual "Convert" in
+  the drawer remains an explicit admin override.
 - **Cold detection** — a lead not converted/unsubscribed with no activity for
   21+ days is flagged `is_cold` (badge in kanban + "Cold only" filter). Move to
   cold via the drawer stage select.

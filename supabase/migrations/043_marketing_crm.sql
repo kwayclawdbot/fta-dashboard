@@ -379,10 +379,11 @@ $$;
 grant execute on function admin_marketing_update_lead(uuid, text, text[]) to authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
--- admin_marketing_sync_conversions() — match lead emails against existing
--- profiles; any non-converted/unsubscribed lead whose email now has a profile
--- becomes 'converted' with converted_profile_id set + a 'converted' event.
--- Returns { converted, ids: [...] }.
+-- admin_marketing_sync_conversions() — "converted" means the lead's email
+-- belongs to a family with an ACTIVE PAID enrollment (fic or fta). A lead that
+-- has a profile but NO paid enrollment (e.g. free-class funnel signups, source
+-- 'free_class') is escalated to 'engaged' at most — never auto-converted.
+-- Returns { converted, ids: [...], engaged }.  (See migration 045.)
 -- ════════════════════════════════════════════════════════════════════════════
 create or replace function admin_marketing_sync_conversions()
 returns jsonb
@@ -390,34 +391,41 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  r       record;
-  v_ids   uuid[] := '{}';
-  v_count int := 0;
+declare r record; v_ids uuid[] := '{}'; v_count int := 0; v_engaged int := 0;
 begin
   perform _mkt_require_admin();
 
   for r in
-    select l.id as lead_id, p.id as profile_id
+    select l.id as lead_id, l.stage as cur_stage, p.id as profile_id,
+           exists (
+             select 1 from enrollments e
+             where e.family_id = p.family_id
+               and e.program in ('fic','fta')
+               and e.status = 'active'
+           ) as paid
     from marketing_leads l
     join profiles p on lower(p.email) = lower(l.email::text)
     where l.stage not in ('converted','unsubscribed')
   loop
-    update marketing_leads set
-      stage = 'converted',
-      converted_profile_id = r.profile_id,
-      last_activity_at = now(),
-      updated_at = now()
-    where id = r.lead_id;
-
-    insert into marketing_lead_events (lead_id, type, meta)
-    values (r.lead_id, 'converted', jsonb_build_object('profile_id', r.profile_id, 'auto', true));
-
-    v_ids := v_ids || r.lead_id;
-    v_count := v_count + 1;
+    if r.paid then
+      update marketing_leads set
+        stage = 'converted', converted_profile_id = r.profile_id,
+        last_activity_at = now(), updated_at = now()
+      where id = r.lead_id;
+      insert into marketing_lead_events (lead_id, type, meta)
+      values (r.lead_id, 'converted', jsonb_build_object('profile_id', r.profile_id, 'auto', true, 'reason', 'active_paid_enrollment'));
+      v_ids := v_ids || r.lead_id; v_count := v_count + 1;
+    elsif r.cur_stage in ('new','contacted') then
+      update marketing_leads set
+        stage = 'engaged', last_activity_at = now(), updated_at = now()
+      where id = r.lead_id;
+      insert into marketing_lead_events (lead_id, type, meta)
+      values (r.lead_id, 'stage_changed', jsonb_build_object('from', r.cur_stage, 'to', 'engaged', 'auto', true, 'reason', 'has_account_no_paid_enrollment'));
+      v_engaged := v_engaged + 1;
+    end if;
   end loop;
 
-  return jsonb_build_object('converted', v_count, 'ids', to_jsonb(v_ids));
+  return jsonb_build_object('converted', v_count, 'ids', to_jsonb(v_ids), 'engaged', v_engaged);
 end;
 $$;
 grant execute on function admin_marketing_sync_conversions() to authenticated;
