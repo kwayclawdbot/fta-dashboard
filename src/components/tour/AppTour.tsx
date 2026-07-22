@@ -230,7 +230,7 @@ export default function AppTour({ user }: { user: TourUser }) {
       const r = el.getBoundingClientRect();
       const visible = r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && getComputedStyle(el).visibility !== "hidden";
       if (!visible) continue;
-      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
       const rr = el.getBoundingClientRect();
       setRect({ top: rr.top, left: rr.left, width: rr.width, height: rr.height });
       return;
@@ -258,17 +258,41 @@ export default function AppTour({ user }: { user: TourUser }) {
   const next = () => (idx >= steps.length - 1 ? finish(true) : setIdx((i) => i + 1));
   const back = () => idx > 0 && setIdx((i) => i - 1);
 
-  // ── card placement ──
-  const pad = 8;
-  let cardStyle: React.CSSProperties = { left: "50%", top: "50%", transform: "translate(-50%,-50%)" };
-  if (rect) {
-    const below = rect.top + rect.height + pad + 210 < innerHeight;
-    const top = below ? rect.top + rect.height + pad + 6 : undefined;
-    const bottom = below ? undefined : innerHeight - rect.top + pad + 6;
-    let left = rect.left + rect.width / 2;
-    left = Math.max(180, Math.min(innerWidth - 180, left));
-    cardStyle = { left, top, bottom, transform: "translateX(-50%)" };
-  }
+  // ── card placement: measure the real card, then clamp fully on-screen ──
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [cardPos, setCardPos] = useState<{ left: number; top: number } | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    setCardPos(null); // re-measure for the new step
+    const id = requestAnimationFrame(() => {
+      const el = cardRef.current;
+      if (!el) return;
+      const M = 12; // viewport margin
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const vw = innerWidth;
+      const vh = innerHeight;
+      let left: number, top: number;
+      if (rect) {
+        left = rect.left + rect.width / 2 - w / 2;
+        const fitsBelow = rect.top + rect.height + 14 + h <= vh - M;
+        const fitsAbove = rect.top - 14 - h >= M;
+        if (fitsBelow) top = rect.top + rect.height + 14;
+        else if (fitsAbove) top = rect.top - 14 - h;
+        else top = Math.max(M, Math.min(vh - h - M, rect.top + rect.height + 14));
+      } else {
+        left = vw / 2 - w / 2;
+        top = vh / 2 - h / 2;
+      }
+      left = Math.max(M, Math.min(vw - w - M, left));
+      top = Math.max(M, Math.min(vh - h - M, top));
+      setCardPos({ left, top });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [active, idx, rect]);
+  const cardStyle: React.CSSProperties = cardPos
+    ? { left: cardPos.left, top: cardPos.top }
+    : { left: "50%", top: "50%", transform: "translate(-50%,-50%)", visibility: "hidden" };
 
   return (
     <>
@@ -307,7 +331,8 @@ export default function AppTour({ user }: { user: TourUser }) {
               initial={{ opacity: 0, y: 14, scale: .97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8 }}
-              className="absolute w-[min(340px,calc(100vw-2rem))] rounded-2xl bg-midnight-900 border border-gold-300/60 shadow-lift p-5"
+              ref={cardRef}
+              className="absolute w-[min(340px,calc(100vw-1.5rem))] max-h-[min(70vh,420px)] overflow-y-auto rounded-2xl bg-midnight-900 border border-gold-300/60 shadow-lift p-5"
               style={cardStyle}
             >
               <div className="flex items-start gap-3">
