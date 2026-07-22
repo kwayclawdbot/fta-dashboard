@@ -13,6 +13,7 @@ import {
   Sparkles,
   Send,
   Tag,
+  Lock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchQuote, formatPrice, formatChangePct, changeTone, type MarketQuote } from "@/lib/market/client";
@@ -20,8 +21,10 @@ import CompanyLogo from "@/components/fic/CompanyLogo";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
 import PickVideo from "@/components/picks/PickVideo";
+import UpsellCard from "@/components/dashboard/UpsellCard";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import { timeAgo } from "@/lib/feed";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import {
   normArticleLinks,
   normPickAuthor,
@@ -36,8 +39,6 @@ import {
   type PickComment,
 } from "@/lib/picks";
 
-const PICK_SELECT =
-  "id, ticker, company_name, status, headline, thesis_short, thesis_long, picked_at, picked_price, video_path, video_kind, article_links, tags, created_by, closed_note, created_at, updated_at";
 const COMMENT_SELECT =
   "id, pick_id, user_id, body, created_at, author:profiles!pick_comments_user_id_fkey(id, display_name, role, age_group, avatar_url)";
 
@@ -47,6 +48,7 @@ interface Me {
   role: string | null;
   age_group: string | null;
   avatar_url: string | null;
+  family_id: string | null;
 }
 
 export default function PickDetailPage() {
@@ -56,6 +58,8 @@ export default function PickDetailPage() {
 
   const [me, setMe] = useState<Me | null>(null);
   const [pick, setPick] = useState<Pick | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [tier, setTier] = useState<FamilyTier>("fic");
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -77,17 +81,20 @@ export default function PickDetailPage() {
     if (user) {
       const { data: prof } = await supabase
         .from("profiles")
-        .select("id, display_name, role, age_group, avatar_url")
+        .select("id, display_name, role, age_group, avatar_url, family_id")
         .eq("id", user.id)
         .single();
-      if (prof) setMe(prof as Me);
+      if (prof) {
+        setMe(prof as Me);
+        getFamilyTier(supabase, (prof as Me).family_id).then(setTier);
+      }
     }
 
-    const { data } = await supabase
-      .from("fic_picks")
-      .select(PICK_SELECT)
-      .eq("id", pickId)
-      .single();
+    // Server-enforced read: pick_detail (migration 087) strips the guidance
+    // fields (thesis/video/articles) for a locked pick BEFORE they leave the
+    // database — a free viewer never receives a non-free pick's thesis_long.
+    const { data: rows } = await supabase.rpc("pick_detail", { p_id: pickId });
+    const data = Array.isArray(rows) ? rows[0] : rows;
 
     if (!data) {
       setNotFound(true);
@@ -101,6 +108,7 @@ export default function PickDetailPage() {
       tags: (data as { tags: string[] | null }).tags ?? [],
     };
     setPick(row);
+    setLocked(!!(data as { locked?: boolean }).locked);
     setLoading(false);
 
     fetchQuote(row.ticker).then((q) => q && setQuote(q));
@@ -216,6 +224,8 @@ export default function PickDetailPage() {
         ? "bg-red-500/10 text-red-700"
         : "bg-paper text-soft";
   const paragraphs = toParagraphs(pick.thesis_long);
+  // Free members read the free pick in full, but liking/commenting is member-only.
+  const readOnly = tier === "free";
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
@@ -307,15 +317,43 @@ export default function PickDetailPage() {
         {PICKS_EDUCATION_LINE}
       </p>
 
+      {/* LOCKED — free viewer on a non-free pick. The guidance never arrived
+          from the server (pick_detail withheld it); we render a faded teaser
+          block behind the upsell so the value is visible but not the content. */}
+      {locked && (
+        <section className="mt-6">
+          <h3 className="font-display text-sm font-bold uppercase tracking-wider text-soft">
+            Why we study this company
+          </h3>
+          <div className="relative mt-3 overflow-hidden rounded-xl">
+            <div aria-hidden className="select-none space-y-2.5 blur-[6px] opacity-50">
+              <div className="h-4 w-11/12 rounded bg-sand" />
+              <div className="h-4 w-full rounded bg-sand" />
+              <div className="h-4 w-10/12 rounded bg-sand" />
+              <div className="h-4 w-9/12 rounded bg-sand" />
+              <div className="h-4 w-full rounded bg-sand" />
+              <div className="h-4 w-8/12 rounded bg-sand" />
+            </div>
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-paper" />
+            <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-midnight-900 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-gold-600 ring-1 ring-sand">
+              <Lock className="h-2.5 w-2.5" /> FIC members
+            </span>
+          </div>
+          <div className="mt-4">
+            <UpsellCard context="pick" variant="band" />
+          </div>
+        </section>
+      )}
+
       {/* Video */}
-      {pick.video_kind && pick.video_path && (
+      {!locked && pick.video_kind && pick.video_path && (
         <div className="mt-5">
           <PickVideo pick={pick} />
         </div>
       )}
 
       {/* Thesis */}
-      {(pick.thesis_short || paragraphs.length > 0) && (
+      {!locked && (pick.thesis_short || paragraphs.length > 0) && (
         <section className="mt-6">
           <h3 className="font-display text-sm font-bold uppercase tracking-wider text-soft">
             Why we study this company
@@ -334,7 +372,7 @@ export default function PickDetailPage() {
       )}
 
       {/* Closed note */}
-      {pick.status === "closed" && pick.closed_note && (
+      {!locked && pick.status === "closed" && pick.closed_note && (
         <div className="mt-5 rounded-xl border border-sand bg-paper/60 p-4">
           <p className="font-display text-xs font-bold uppercase tracking-wider text-soft">
             How this pick wrapped up
@@ -346,7 +384,7 @@ export default function PickDetailPage() {
       )}
 
       {/* Article links */}
-      {pick.article_links.length > 0 && (
+      {!locked && pick.article_links.length > 0 && (
         <section className="mt-6">
           <h3 className="flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wider text-soft">
             <Newspaper className="h-4 w-4" /> Read more
@@ -369,17 +407,18 @@ export default function PickDetailPage() {
         </section>
       )}
 
-      {/* Engagement */}
+      {/* Engagement — hidden entirely on a locked pick (nothing to engage with). */}
+      {!locked && (
       <section className="mt-8 border-t border-sand pt-5">
         <div className="flex items-center gap-4">
           <button
-            onClick={toggleLike}
-            disabled={!me}
+            onClick={readOnly ? undefined : toggleLike}
+            disabled={!me || readOnly}
             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
               liked
                 ? "bg-red-500/10 text-red-600"
                 : "bg-paper text-soft ring-1 ring-sand hover:text-ink"
-            } disabled:opacity-50`}
+            } disabled:opacity-50 disabled:cursor-default`}
           >
             <Heart className={`h-4 w-4 ${liked ? "fill-red-500 text-red-500" : ""}`} />
             {likeCount} {likeCount === 1 ? "like" : "likes"}
@@ -390,8 +429,15 @@ export default function PickDetailPage() {
           </span>
         </div>
 
-        {/* Composer */}
-        {me && (
+        {/* Free members read the discussion but join FIC to take part. */}
+        {readOnly && (
+          <div className="mt-4">
+            <UpsellCard context="pick-engage" variant="band" />
+          </div>
+        )}
+
+        {/* Composer — members only. */}
+        {me && !readOnly && (
           <div className="mt-4 flex items-start gap-2.5">
             <Avatar
               name={me.display_name}
@@ -464,6 +510,7 @@ export default function PickDetailPage() {
           )}
         </div>
       </section>
+      )}
 
       {/* Disclaimer */}
       <footer className="mt-12 border-t border-sand pt-5">

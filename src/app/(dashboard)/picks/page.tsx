@@ -13,8 +13,13 @@ import {
   type PickStatus,
 } from "@/lib/picks";
 
+// The grid card renders logo/price/headline/media hints only — it never shows
+// the thesis, so the guidance fields are deliberately NOT selected here. That
+// keeps the full grid alive for free members (live prices) without ever shipping
+// a locked pick's thesis to the client; the gated thesis lives behind the
+// server-enforced pick_detail RPC on the detail page.
 const PICK_SELECT =
-  "id, ticker, company_name, status, headline, thesis_short, thesis_long, picked_at, picked_price, video_path, video_kind, article_links, tags, created_by, closed_note, created_at, updated_at";
+  "id, ticker, company_name, status, headline, picked_at, picked_price, video_path, video_kind, article_links, tags, created_by, closed_note, created_at, updated_at, is_free";
 
 type StatusFilter = "all" | Exclude<PickStatus, "draft">;
 
