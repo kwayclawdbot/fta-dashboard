@@ -128,7 +128,10 @@ export default function AdminUsersPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100">Users</h1>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h1 className="text-2xl font-bold text-zinc-100">Users</h1>
+          <InviteMemberButton />
+        </div>
         <p className="text-zinc-400 text-sm mt-1">
           Manage user accounts and roles
         </p>
@@ -351,5 +354,82 @@ export default function AdminUsersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function InviteMemberButton() {
+  const supabase = createClient();
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [program, setProgram] = useState<"fic" | "fta">("fic");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function send() {
+    if (busy) return;
+    setBusy(true);
+    setMsg(null);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/admin/invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session?.access_token ?? ""}`,
+      },
+      body: JSON.stringify({ email, program }),
+    });
+    const j = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) { setMsg(j.error || "Failed"); return; }
+    setMsg(
+      j.mode === "activated"
+        ? "Existing member — program activated immediately."
+        : "Invite sent. They'll get an email to create their account."
+    );
+    setEmail("");
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => { setOpen(true); setMsg(null); }}
+        className="px-3.5 py-2 rounded-lg bg-amber-500 text-zinc-950 text-sm font-semibold hover:bg-amber-400"
+      >
+        + Invite member
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => !busy && setOpen(false)}>
+          <div className="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-zinc-100 mb-1">Invite a member</h2>
+            <p className="text-xs text-zinc-400 mb-4">Bypasses Stripe — they get an email link to create their account, and their program activates automatically.</p>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="parent@example.com"
+              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 mb-3 focus:outline-none focus:border-amber-500"
+            />
+            <div className="flex gap-2 mb-4">
+              {(["fic", "fta"] as const).map((pr) => (
+                <button
+                  key={pr}
+                  onClick={() => setProgram(pr)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${program === pr ? "bg-amber-500/15 border-amber-500 text-amber-400" : "border-zinc-700 text-zinc-400"}`}
+                >
+                  {pr === "fic" ? "FIC — Investing Club" : "FTA — Trading Academy"}
+                </button>
+              ))}
+            </div>
+            {msg && <p className="text-xs mb-3 text-amber-300">{msg}</p>}
+            <div className="flex gap-2">
+              <button onClick={() => setOpen(false)} className="flex-1 py-2 rounded-lg border border-zinc-700 text-sm text-zinc-300">Close</button>
+              <button onClick={send} disabled={busy || !email} className="flex-1 py-2 rounded-lg bg-amber-500 text-zinc-950 text-sm font-semibold disabled:opacity-50">
+                {busy ? "Sending…" : "Send invite"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -1,0 +1,3 @@
+-- 042: membership gating — paid/invited members only. (Applied via MCP; see repo history.)
+-- pending_memberships + claim_pending_membership(family_id) SECURITY DEFINER.
+-- Rows written by service role (Stripe webhook / admin invite API); claimed at onboarding.

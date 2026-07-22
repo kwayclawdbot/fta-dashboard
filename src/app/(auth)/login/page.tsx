@@ -167,12 +167,12 @@ export default function LoginPage() {
         Continue with Google
       </button>
 
-      {/* Signup link */}
+      {/* Membership is purchase- or invite-only */}
       <p className="mt-6 text-center text-sm text-midnight-400">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-gold-400 hover:text-gold-300 font-medium transition-colors">
-          Sign up
-        </Link>
+        New here?{" "}
+        <a href="https://familyinvestingclub.com" className="text-gold-400 hover:text-gold-300 font-medium transition-colors">
+          Join the club
+        </a>
       </p>
     </motion.div>
   );

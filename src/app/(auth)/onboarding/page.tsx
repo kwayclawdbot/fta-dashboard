@@ -129,6 +129,13 @@ export default function OnboardingPage() {
         .eq("id", user.id);
       if (profErr) throw profErr;
 
+      // Paid/invited members: auto-activate their program (no-op otherwise).
+      try {
+        await supabase.rpc("claim_pending_membership", { p_family_id: fam.id });
+      } catch {
+        // best-effort; non-members simply have no pending row to claim
+      }
+
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
