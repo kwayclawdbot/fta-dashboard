@@ -25,6 +25,7 @@ import Avatar from "@/components/Avatar";
 import ProfileLink from "@/components/ProfileLink";
 import AgeBadge from "@/components/community/AgeBadge";
 import LiveRooms from "@/components/community/LiveRooms";
+import AnnouncementCard from "@/components/community/AnnouncementCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
@@ -154,11 +155,20 @@ export default function CommunityPage() {
   const mentionCandidates = useMemo(() => {
     if (!mention) return [];
     const q = mention.query.toLowerCase();
-    return roster
+    const people = roster
       .filter((p) => p.id !== me?.id)
       .filter((p) => p.stripped.toLowerCase().startsWith(q) || p.name.toLowerCase().startsWith(q))
       .slice(0, 6);
-  }, [mention, roster, me?.id]);
+    // Admins only: @everyone broadcasts to all members (migration 091). Inert
+    // text for everyone else, so it is offered only to admins.
+    if (me?.role === "admin" && "everyone".startsWith(q)) {
+      return [
+        { id: "__everyone__", name: "Everyone", stripped: "everyone", avatar_url: null },
+        ...people,
+      ];
+    }
+    return people;
+  }, [mention, roster, me?.id, me?.role]);
   function detectMention(value: string, caret: number) {
     const m = value.slice(0, caret).match(/(^|\s)@([A-Za-z0-9_.'-]*)$/);
     if (m) {
@@ -187,7 +197,7 @@ export default function CommunityPage() {
       const { data } = await supabase
         .from("feed_posts")
         .select(
-          `id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at, ${AUTHOR_SEL}`
+          `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at, ${AUTHOR_SEL}`
         )
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
@@ -451,7 +461,14 @@ export default function CommunityPage() {
   const readOnly = myTier === "free";
 
   const anchor = posts.find((p) => p.kind === "anchor");
-  const feedList = posts.filter((p) => p.kind !== "anchor");
+  // Latest announcement pins above the feed for 7 days; older ones flow in-feed.
+  const SEVEN_DAYS = 7 * 24 * 3600 * 1000;
+  const pinnedAnnouncement = posts.find(
+    (p) => p.kind === "announcement" && Date.now() - new Date(p.created_at).getTime() < SEVEN_DAYS
+  );
+  const feedList = posts.filter(
+    (p) => p.kind !== "anchor" && p.id !== pinnedAnnouncement?.id
+  );
 
   return (
     <MentionProvider map={mentions}>
@@ -469,6 +486,9 @@ export default function CommunityPage() {
         <div className="flex-1 min-w-0 space-y-4">
           {/* Pinned This Week anchor */}
           {anchor && <AnchorCard post={anchor} onReply={() => toggleComments(anchor.id)} />}
+
+          {/* Pinned latest announcement (first 7 days) */}
+          {pinnedAnnouncement && <AnnouncementCard post={pinnedAnnouncement} pinned />}
 
           {/* Composer — or a read-only upsell for free members */}
           {readOnly ? (
@@ -575,7 +595,9 @@ export default function CommunityPage() {
             <div className="space-y-4">
               {feedList.map((p, i) => (
                 <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
-                  {p.kind === "activity" ? (
+                  {p.kind === "announcement" ? (
+                    <AnnouncementCard post={p} />
+                  ) : p.kind === "activity" ? (
                     <ActivityCard
                       post={p} me={me} readOnly={readOnly}
                       likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
