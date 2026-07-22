@@ -16,12 +16,30 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
+import UpsellCard from "@/components/dashboard/UpsellCard";
 
 interface LessonRow {
   id: string;
   title: string;
   sort_order: number;
   drip_week: number;
+  is_free: boolean;
+}
+
+interface FreeLessonRef {
+  courseSlug: string;
+  moduleId: string;
+  lessonId: string;
+  title: string;
+  track: string;
+}
+
+interface LockedCourseCard {
+  slug: string;
+  title: string;
+  description: string | null;
+  track: string;
+  lockedCount: number;
 }
 
 interface ModuleRow {
@@ -69,6 +87,8 @@ export default function CoursesPage() {
   const [tier, setTier] = useState<FamilyTier>("fic");
   const [ficCards, setFicCards] = useState<CourseCard[]>([]);
   const [ftaCard, setFtaCard] = useState<CourseCard | null>(null);
+  const [freeLessons, setFreeLessons] = useState<FreeLessonRef[]>([]);
+  const [lockedCourses, setLockedCourses] = useState<LockedCourseCard[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -96,7 +116,7 @@ export default function CoursesPage() {
         supabase
           .from("courses")
           .select(
-            "id, slug, title, description, program, sort_order, modules(id, track, title, sort_order, lessons(id, title, sort_order, drip_week))"
+            "id, slug, title, description, program, sort_order, modules(id, track, title, sort_order, lessons(id, title, sort_order, drip_week, is_free))"
           )
           .in("program", ["fic", "fta"])
           .eq("published", true)
@@ -133,6 +153,47 @@ export default function CoursesPage() {
 
       const all = (courses || []) as unknown as CourseRow[];
 
+      // ── FREE tier: a three-lesson sampler + the rest of the catalog as locked
+      //    cards with counts. Short-circuit the member layout entirely. ──
+      if (familyTier === "free") {
+        const samplers: FreeLessonRef[] = [];
+        const locked: LockedCourseCard[] = [];
+        for (const c of all.filter((c) => c.program === "fic")) {
+          const tracked = (c.modules || []).filter((m) => m.track);
+          if (tracked.length === 0) continue;
+          const courseTrack = tracked[0]?.track || "adults";
+          let lockedCount = 0;
+          for (const m of tracked) {
+            for (const l of m.lessons || []) {
+              if (l.is_free) {
+                samplers.push({
+                  courseSlug: c.slug,
+                  moduleId: m.id,
+                  lessonId: l.id,
+                  title: l.title,
+                  track: m.track || courseTrack,
+                });
+              } else {
+                lockedCount += 1;
+              }
+            }
+          }
+          if (lockedCount > 0) {
+            locked.push({
+              slug: c.slug,
+              title: c.title,
+              description: c.description,
+              track: courseTrack,
+              lockedCount,
+            });
+          }
+        }
+        setFreeLessons(samplers);
+        setLockedCourses(locked);
+        setLoading(false);
+        return;
+      }
+
       const fic = all
         .filter((c) => c.program === "fic")
         .map((c) => ({
@@ -166,6 +227,12 @@ export default function CoursesPage() {
         <div className="h-52 rounded-2xl bg-sand/40" />
         <div className="h-52 rounded-2xl bg-sand/40" />
       </div>
+    );
+  }
+
+  if (tier === "free") {
+    return (
+      <FreeCoursesView freeLessons={freeLessons} lockedCourses={lockedCourses} />
     );
   }
 
@@ -322,6 +389,149 @@ export default function CoursesPage() {
           })}
         </div>
       </motion.section>
+    </div>
+  );
+}
+
+// ── FREE tier courses: the sampler + the locked catalog ─────────────────────
+function FreeCoursesView({
+  freeLessons,
+  lockedCourses,
+}: {
+  freeLessons: FreeLessonRef[];
+  lockedCourses: LockedCourseCard[];
+}) {
+  const totalLocked = lockedCourses.reduce((n, c) => n + c.lockedCount, 0);
+  return (
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      <div>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-[11px] font-display font-bold uppercase tracking-[0.14em]">
+          <Sparkles className="w-3 h-3" /> Free sampler
+        </span>
+        <h1 className="font-display text-2xl font-bold text-ink mt-3">Courses</h1>
+        <p className="text-soft mt-1">
+          Three full lessons to try — free, and yours to keep. Play them start to
+          finish, take the quiz, earn XP. The rest of the library opens when you
+          join.
+        </p>
+      </div>
+
+      {/* Free sampler — fully playable */}
+      <section>
+        <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-midnight-500 mb-3 flex items-center gap-2">
+          <PlayCircle className="w-4 h-4 text-gold-600" />
+          Free lessons — start here
+        </h2>
+        <div className="grid md:grid-cols-3 gap-4">
+          {freeLessons.map((l, i) => (
+            <motion.div
+              key={l.lessonId}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06 }}
+            >
+              <Link
+                href={`/courses/${l.courseSlug}/${l.moduleId}/${l.lessonId}`}
+                className="paper-card overflow-hidden flex flex-col h-full group hover:border-gold-300 transition-colors"
+              >
+                <div className="relative h-28">
+                  <Image
+                    src={TRACK_ART[l.track] || TRACK_ART.adults}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-midnight-950/60 to-transparent" />
+                  <span className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-white/90 text-ink text-xs font-semibold">
+                    {TRACK_LABELS[l.track] || l.track}
+                  </span>
+                  <span className="absolute bottom-2.5 right-3 inline-flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-white">
+                    Free
+                  </span>
+                </div>
+                <div className="p-4 flex flex-col flex-1">
+                  <h3 className="font-display text-base font-semibold text-ink leading-snug">
+                    {l.title}
+                  </h3>
+                  <div className="flex items-center justify-between mt-3 pt-1">
+                    <span className="text-xs text-soft inline-flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Quiz +
+                      XP
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-gold-700 group-hover:text-gold-800">
+                      <PlayCircle className="w-4 h-4" /> Play
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* The full library — locked */}
+      {lockedCourses.length > 0 && (
+        <section>
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-midnight-500 mb-3 flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-gold-600" />
+            The full library
+            {totalLocked > 0 && (
+              <span className="text-soft normal-case font-body">
+                · {totalLocked} more lessons
+              </span>
+            )}
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {lockedCourses.map((c, i) => (
+              <motion.div
+                key={c.slug}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Link
+                  href="/upgrade"
+                  className="paper-card overflow-hidden flex h-full group hover:border-gold-300 transition-colors"
+                >
+                  <div className="relative w-28 shrink-0">
+                    <Image
+                      src={TRACK_ART[c.track] || TRACK_ART.adults}
+                      alt=""
+                      fill
+                      sizes="112px"
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-midnight-950/45" />
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <Lock className="w-5 h-5 text-white" />
+                    </span>
+                  </div>
+                  <div className="p-4 flex flex-col flex-1 min-w-0">
+                    <span className="text-[11px] font-display font-semibold uppercase tracking-wider text-soft">
+                      {TRACK_LABELS[c.track] || c.track}
+                    </span>
+                    <h3 className="font-display text-base font-semibold text-ink leading-snug mt-0.5 truncate">
+                      {c.title}
+                    </h3>
+                    <p className="text-xs text-soft mt-1 line-clamp-2 flex-1">
+                      {c.description}
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-700 mt-2">
+                      <Lock className="w-3.5 h-3.5" />
+                      {c.lockedCount} more lesson{c.lockedCount === 1 ? "" : "s"} in
+                      FIC
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Upsell */}
+      <UpsellCard context="courses" variant="band" />
     </div>
   );
 }
