@@ -14,13 +14,15 @@ import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
-  activityLine, isWatchlistShare, linkify, timeAgo,
+  activityLine, isWatchlistShare, timeAgo,
   type WatchlistSharePayload,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
   type AnchorPayload, type Role,
 } from "@/lib/feed";
+import { MentionProvider, RichBody, extractHandles, type MentionMap } from "@/lib/mentions";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
+import ProfileLink from "@/components/ProfileLink";
 import AgeBadge from "@/components/community/AgeBadge";
 import LiveRooms from "@/components/community/LiveRooms";
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -46,6 +48,7 @@ interface Me {
   age_group: string | null;
   family_id: string | null;
   avatar_url: string | null;
+  username: string | null;
 }
 interface PendingAttachment {
   file: File;
@@ -57,9 +60,9 @@ interface PendingAttachment {
 
 // PostgREST embeds
 const AUTHOR_SEL =
-  "author:profiles!feed_posts_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url)";
+  "author:profiles!feed_posts_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url, username)";
 const COMMENT_AUTHOR_SEL =
-  "author:profiles!post_comments_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url)";
+  "author:profiles!post_comments_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url, username)";
 
 function normAuthor(a: FeedAuthor | FeedAuthor[] | null): FeedAuthor | null {
   return Array.isArray(a) ? a[0] ?? null : a;
@@ -79,6 +82,27 @@ export default function CommunityPage() {
   const [commentCount, setCommentCount] = useState<Record<string, number>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
   const [commentsByPost, setCommentsByPost] = useState<Record<string, PostComment[]>>({});
+
+  // @mention → username map (batched; resolves @handles in bodies to profile links)
+  const [mentions, setMentions] = useState<MentionMap>({});
+  const mentionsRef = useRef(mentions);
+  mentionsRef.current = mentions;
+  const resolveMentions = useCallback(
+    async (bodies: Array<string | null | undefined>) => {
+      const handles = extractHandles(bodies).filter((h) => !(h in mentionsRef.current));
+      if (!handles.length) return;
+      const { data } = await supabase.rpc("public_profile_mentions", { p_handles: handles });
+      if (!data) return;
+      setMentions((prev) => {
+        const next = { ...prev };
+        for (const r of data as { handle: string; username: string }[]) {
+          if (r.handle && r.username && !(r.handle in next)) next[r.handle] = r.username;
+        }
+        return next;
+      });
+    },
+    [supabase]
+  );
 
   // Tier map for author badges (batched)
   const [tiers, setTiers] = useState<Record<string, FamilyTier>>({});
@@ -175,6 +199,7 @@ export default function CommunityPage() {
       });
       setPosts(norm);
       await loadTiers(norm.map((p) => p.author?.family_id));
+      resolveMentions(norm.map((p) => p.body));
 
       const ids = norm.map((p) => p.id);
       if (ids.length) {
@@ -199,7 +224,7 @@ export default function CommunityPage() {
         setCommentCount({});
       }
     },
-    [supabase, loadTiers]
+    [supabase, loadTiers, resolveMentions]
   );
 
   // Initial load
@@ -219,7 +244,7 @@ export default function CommunityPage() {
         if (!uid) return null;
         const { data } = await supabase
           .from("profiles")
-          .select("display_name, role, age_group, family_id, avatar_url")
+          .select("display_name, role, age_group, family_id, avatar_url, username")
           .eq("id", uid)
           .single();
         return data;
@@ -236,6 +261,7 @@ export default function CommunityPage() {
           age_group: profile.age_group,
           family_id: profile.family_id ?? null,
           avatar_url: profile.avatar_url ?? null,
+          username: profile.username ?? null,
         });
         // Tier badge + badge evaluation are non-critical chrome — resolve them
         // after paint so they never hold up the feed.
@@ -338,9 +364,11 @@ export default function CommunityPage() {
         author: {
           id: me.id, display_name: me.display_name, role: me.role,
           age_group: me.age_group, family_id: me.family_id, avatar_url: me.avatar_url,
+          username: me.username,
         },
       };
       setPosts((prev) => [newPost, ...prev]);
+      resolveMentions([body]);
       setText("");
       clearAttachment();
       const todayPosts = await countXpToday(supabase, me.id, "community");
@@ -389,6 +417,7 @@ export default function CommunityPage() {
         return { ...raw, author: normAuthor(raw.author) };
       });
       setCommentsByPost((prev) => ({ ...prev, [postId]: norm }));
+      resolveMentions(norm.map((c) => c.body));
     }
   }
   async function addComment(postId: string, body: string): Promise<boolean> {
@@ -406,10 +435,12 @@ export default function CommunityPage() {
       author: {
         id: me.id, display_name: me.display_name, role: me.role,
         age_group: me.age_group, family_id: me.family_id, avatar_url: me.avatar_url,
+        username: me.username,
       },
     };
     setCommentsByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), comment] }));
     setCommentCount((prev) => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }));
+    resolveMentions([body]);
     return true;
   }
 
@@ -423,6 +454,7 @@ export default function CommunityPage() {
   const feedList = posts.filter((p) => p.kind !== "anchor");
 
   return (
+    <MentionProvider map={mentions}>
     <div className="max-w-6xl mx-auto">
       {/* Mobile Live Rooms toggle */}
       <button
@@ -587,6 +619,7 @@ export default function CommunityPage() {
         )}
       </AnimatePresence>
     </div>
+    </MentionProvider>
   );
 }
 
@@ -596,13 +629,7 @@ function PostBody({ body }: { body: string }) {
   if (!body) return null;
   return (
     <p className="text-sm text-midnight-200 font-body leading-relaxed mt-2 whitespace-pre-wrap break-words">
-      {linkify(body).map((seg, i) =>
-        seg.href ? (
-          <a key={i} href={seg.href} target="_blank" rel="noopener noreferrer" className="text-gold-700 underline break-all">{seg.text}</a>
-        ) : (
-          <span key={i}>{seg.text}</span>
-        )
-      )}
+      <RichBody body={body} />
     </p>
   );
 }
@@ -710,10 +737,14 @@ function PostCard(props: EngagementProps & { tier: FamilyTier }) {
   return (
     <div className="paper-card p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} size="lg" />
+        <ProfileLink username={post.author?.username} variant="avatar">
+          <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} size="lg" />
+        </ProfileLink>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-display text-sm font-semibold text-ink">{post.author?.display_name || "Member"}</span>
+            <ProfileLink username={post.author?.username} className="font-display text-sm font-semibold text-ink">
+              {post.author?.display_name || "Member"}
+            </ProfileLink>
             <AgeBadge role={post.author?.role} ageGroup={post.author?.age_group} />
             <TierBadge tier={tier} size="xs" />
             <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role] || "bg-sand text-soft"}`}>{role}</span>
@@ -743,7 +774,9 @@ function ActivityCard(props: EngagementProps) {
         <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${line.accent}`}><Icon className="w-5 h-5" /></span>
         <div className="flex-1 min-w-0">
           <p className="text-sm text-midnight-200 font-body leading-relaxed">
-            <span className="font-display font-semibold text-ink">{line.subject}</span>
+            <ProfileLink username={post.author?.username} className="font-display font-semibold text-ink">
+              {line.subject}
+            </ProfileLink>
             {payload.actor_age_group || payload.actor_role ? (
               <> <AgeBadge role={payload.actor_role} ageGroup={payload.actor_age_group} className="align-middle" /></>
             ) : null}{" "}
@@ -848,14 +881,18 @@ function CommentThread(props: EngagementProps) {
       ) : (
         comments.map((c) => (
           <div key={c.id} className="flex items-start gap-2">
-            <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} size="sm" />
+            <ProfileLink username={c.author?.username} variant="avatar">
+              <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} size="sm" />
+            </ProfileLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-display text-xs font-semibold text-ink">{c.author?.display_name || "Member"}</span>
+                <ProfileLink username={c.author?.username} className="font-display text-xs font-semibold text-ink">
+                  {c.author?.display_name || "Member"}
+                </ProfileLink>
                 <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
                 <span className="text-[10px] text-soft">{timeAgo(c.created_at)}</span>
               </div>
-              <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5">{c.body}</p>
+              <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5"><RichBody body={c.body} /></p>
             </div>
           </div>
         ))

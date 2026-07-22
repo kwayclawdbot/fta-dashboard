@@ -21,6 +21,7 @@ export interface PickAuthor {
   role: string | null;
   age_group: string | null;
   avatar_url: string | null;
+  username?: string | null;
 }
 
 export interface Pick {

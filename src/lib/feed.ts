@@ -10,7 +10,7 @@
  *                current fic_weeks row.
  */
 
-export type FeedKind = "post" | "activity" | "anchor";
+export type FeedKind = "post" | "activity" | "anchor" | "announcement";
 export type AgeGroup = "kids" | "teens" | "adults";
 export type Role = "parent" | "child" | "coach" | "admin";
 
@@ -28,6 +28,7 @@ export interface FeedAuthor {
   age_group: string | null;
   family_id: string | null;
   avatar_url: string | null;
+  username?: string | null;
 }
 
 export interface ActivityPayload {
@@ -99,6 +100,10 @@ export interface FeedPost {
   pinned: boolean;
   created_at: string;
   author: FeedAuthor | null;
+  // kind='announcement' (migration 090): admin-authored gold megaphone card.
+  title?: string | null;
+  link?: string | null;
+  audience?: string | null;
 }
 
 export interface PostComment {

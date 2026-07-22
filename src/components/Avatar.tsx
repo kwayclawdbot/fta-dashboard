@@ -14,6 +14,7 @@ const SIZES = {
   md: "w-9 h-9 text-xs",
   lg: "w-10 h-10 text-xs",
   xl: "w-14 h-14 text-base",
+  hero: "w-20 h-20 text-2xl",
 } as const;
 
 const ROLE_BG: Record<string, string> = {

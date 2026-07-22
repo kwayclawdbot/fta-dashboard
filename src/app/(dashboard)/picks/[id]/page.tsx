@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchQuote, formatPrice, formatChangePct, changeTone, type MarketQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import Avatar from "@/components/Avatar";
+import ProfileLink from "@/components/ProfileLink";
 import AgeBadge from "@/components/community/AgeBadge";
 import PickVideo from "@/components/picks/PickVideo";
 import UpsellCard from "@/components/dashboard/UpsellCard";
@@ -40,7 +41,7 @@ import {
 } from "@/lib/picks";
 
 const COMMENT_SELECT =
-  "id, pick_id, user_id, body, created_at, author:profiles!pick_comments_user_id_fkey(id, display_name, role, age_group, avatar_url)";
+  "id, pick_id, user_id, body, created_at, author:profiles!pick_comments_user_id_fkey(id, display_name, role, age_group, avatar_url, username)";
 
 interface Me {
   id: string;
@@ -49,6 +50,7 @@ interface Me {
   age_group: string | null;
   avatar_url: string | null;
   family_id: string | null;
+  username: string | null;
 }
 
 export default function PickDetailPage() {
@@ -81,7 +83,7 @@ export default function PickDetailPage() {
     if (user) {
       const { data: prof } = await supabase
         .from("profiles")
-        .select("id, display_name, role, age_group, avatar_url, family_id")
+        .select("id, display_name, role, age_group, avatar_url, family_id, username")
         .eq("id", user.id)
         .single();
       if (prof) {
@@ -487,17 +489,19 @@ export default function PickDetailPage() {
           ) : (
             comments.map((c) => (
               <div key={c.id} className="flex items-start gap-2.5">
-                <Avatar
-                  name={c.author?.display_name}
-                  avatarUrl={c.author?.avatar_url}
-                  role={c.author?.role}
-                  size="sm"
-                />
+                <ProfileLink username={c.author?.username} variant="avatar">
+                  <Avatar
+                    name={c.author?.display_name}
+                    avatarUrl={c.author?.avatar_url}
+                    role={c.author?.role}
+                    size="sm"
+                  />
+                </ProfileLink>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-display text-sm font-semibold text-ink">
+                    <ProfileLink username={c.author?.username} className="font-display text-sm font-semibold text-ink">
                       {c.author?.display_name || "Member"}
-                    </span>
+                    </ProfileLink>
                     <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
                     <span className="text-[11px] text-soft">{timeAgo(c.created_at)}</span>
                   </div>

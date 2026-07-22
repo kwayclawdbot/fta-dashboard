@@ -5,12 +5,14 @@ import { motion } from "framer-motion";
 import { Crown, Flame, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import ProfileLink from "@/components/ProfileLink";
 
 interface LeaderboardEntry {
   rank: number;
   id: string;
   display_name: string | null;
   avatar_url: string | null;
+  username: string | null;
   lessons_completed: number;
   current_streak: number;
 }
@@ -66,7 +68,7 @@ export default function FamilyLeaderboardPage() {
     // Get family members
     const { data: members } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_url")
+      .select("id, display_name, avatar_url, username")
       .eq("family_id", profile.family_id);
 
     if (!members) {
@@ -103,6 +105,7 @@ export default function FamilyLeaderboardPage() {
           id: m.id,
           display_name: m.display_name,
           avatar_url: m.avatar_url,
+          username: (m as { username: string | null }).username ?? null,
           lessons_completed: memberProgress.length,
           current_streak: calculateStreak(completionDates),
         };
@@ -222,24 +225,26 @@ export default function FamilyLeaderboardPage() {
                   </span>
 
                   {/* Avatar */}
-                  {entry.avatar_url ? (
-                    <img
-                      src={entry.avatar_url}
-                      alt={entry.display_name || "Member"}
-                      className="w-9 h-9 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
-                      {initials}
-                    </div>
-                  )}
+                  <ProfileLink username={entry.username} variant="avatar" className="shrink-0">
+                    {entry.avatar_url ? (
+                      <img
+                        src={entry.avatar_url}
+                        alt={entry.display_name || "Member"}
+                        className="w-9 h-9 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
+                        {initials}
+                      </div>
+                    )}
+                  </ProfileLink>
 
                   {/* Name */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-display font-semibold text-midnight-100 truncate">
+                      <ProfileLink username={entry.username} className="text-sm font-display font-semibold text-midnight-100 truncate">
                         {entry.display_name || "Member"}
-                      </p>
+                      </ProfileLink>
                       {entry.rank === 1 && (
                         <Crown className="w-3.5 h-3.5 text-gold-400 shrink-0" />
                       )}

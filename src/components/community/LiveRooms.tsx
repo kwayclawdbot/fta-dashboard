@@ -9,7 +9,9 @@ import { getFamilyTierMap, type FamilyTier } from "@/lib/tier";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import { timeAgo, type Role } from "@/lib/feed";
+import { MentionProvider, RichBody, extractHandles, type MentionMap } from "@/lib/mentions";
 import Avatar from "@/components/Avatar";
+import ProfileLink from "@/components/ProfileLink";
 import TierBadge from "@/components/TierBadge";
 import AgeBadge from "@/components/community/AgeBadge";
 
@@ -60,6 +62,7 @@ interface Author {
   age_group: string | null;
   family_id: string | null;
   avatar_url: string | null;
+  username: string | null;
 }
 interface Msg {
   id: string;
@@ -77,6 +80,7 @@ interface Me {
   age_group: string | null;
   family_id: string | null;
   avatar_url: string | null;
+  username?: string | null;
 }
 interface PendingAttachment {
   file: File;
@@ -104,6 +108,27 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
   tiersRef.current = tiers;
   const authorCache = useRef<Record<string, Author>>({});
 
+  // @mention → username map (batched), so @handles in messages link to profiles.
+  const [mentions, setMentions] = useState<MentionMap>({});
+  const mentionsRef = useRef(mentions);
+  mentionsRef.current = mentions;
+  const resolveMentions = useCallback(
+    async (bodies: Array<string | null | undefined>) => {
+      const handles = extractHandles(bodies).filter((h) => !(h in mentionsRef.current));
+      if (!handles.length) return;
+      const { data } = await supabase.rpc("public_profile_mentions", { p_handles: handles });
+      if (!data) return;
+      setMentions((prev) => {
+        const next = { ...prev };
+        for (const r of data as { handle: string; username: string }[]) {
+          if (r.handle && r.username && !(r.handle in next)) next[r.handle] = r.username;
+        }
+        return next;
+      });
+    },
+    [supabase]
+  );
+
   const loadTiers = useCallback(
     async (ids: Array<string | null | undefined>) => {
       const missing = ids.filter((id): id is string => !!id && !(id in tiersRef.current));
@@ -119,7 +144,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
       if (authorCache.current[userId]) return authorCache.current[userId];
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, role, age_group, family_id, avatar_url")
+        .select("display_name, role, age_group, family_id, avatar_url, username")
         .eq("id", userId)
         .single();
       const a: Author = {
@@ -128,6 +153,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
         age_group: data?.age_group ?? null,
         family_id: data?.family_id ?? null,
         avatar_url: data?.avatar_url ?? null,
+        username: data?.username ?? null,
       };
       authorCache.current[userId] = a;
       await loadTiers([a.family_id]);
@@ -161,11 +187,19 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
   const mentionCandidates = useMemo(() => {
     if (!mention) return [];
     const q = mention.query.toLowerCase();
-    return roster
+    const people = roster
       .filter((p) => p.id !== me?.id)
       .filter((p) => p.stripped.toLowerCase().startsWith(q) || p.name.toLowerCase().startsWith(q))
       .slice(0, 5);
-  }, [mention, roster, me?.id]);
+    // Admins only: @everyone pings every member in the room (migration 091).
+    if (me?.role === "admin" && "everyone".startsWith(q)) {
+      return [
+        { id: "__everyone__", name: "Everyone", stripped: "everyone", avatar_url: null },
+        ...people,
+      ];
+    }
+    return people;
+  }, [mention, roster, me?.id, me?.role]);
   function detectMention(value: string, caret: number) {
     const m = value.slice(0, caret).match(/(^|\s)@([A-Za-z0-9_.'-]*)$/);
     if (m) {
@@ -197,7 +231,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
       const { data } = await supabase
         .from("chat_messages")
         .select(
-          "id, content, created_at, user_id, attachment_url, attachment_type, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id, avatar_url)"
+          "id, content, created_at, user_id, attachment_url, attachment_type, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id, avatar_url, username)"
         )
         .eq("room_id", activeRoomId)
         .order("created_at", { ascending: false })
@@ -218,6 +252,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
       });
       setMessages(norm);
       await loadTiers([me?.family_id, ...norm.map((m) => m.author?.family_id)]);
+      resolveMentions(norm.map((m) => m.content));
       setLoading(false);
     })();
     return () => {
@@ -248,6 +283,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
               attachment_url: string | null; attachment_type: "image" | "video" | null;
             };
             const author = await getAuthor(row.user_id);
+            resolveMentions([row.content]);
             setMessages((prev) =>
               prev.some((m) => m.id === row.id)
                 ? prev
@@ -330,7 +366,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
           : [
               {
                 id: data.id, content: data.content || "", created_at: data.created_at, user_id: data.user_id,
-                author: { display_name: me.display_name, role: me.role, age_group: me.age_group, family_id: me.family_id, avatar_url: me.avatar_url },
+                author: { display_name: me.display_name, role: me.role, age_group: me.age_group, family_id: me.family_id, avatar_url: me.avatar_url, username: me.username ?? null },
                 attachment_url: data.attachment_url ?? null, attachment_type: (data.attachment_type as "image" | "video" | null) ?? null,
               },
               ...prev,
@@ -349,6 +385,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
   const tierOf = (a: Author | null): FamilyTier => (a?.family_id && tiers[a.family_id]) || "fic";
 
   return (
+    <MentionProvider map={mentions}>
     <div className="paper-card overflow-hidden flex flex-col max-h-[560px]">
       {/* Header + room tabs */}
       <div className="px-4 py-3 border-b border-sand">
@@ -420,14 +457,18 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
         ) : (
           [...messages].reverse().map((m) => (
             <div key={m.id} className="flex items-start gap-2">
-              <Avatar name={m.author?.display_name} avatarUrl={m.author?.avatar_url} role={m.author?.role} tier={tierOf(m.author)} size="sm" />
+              <ProfileLink username={m.author?.username} variant="avatar">
+                <Avatar name={m.author?.display_name} avatarUrl={m.author?.avatar_url} role={m.author?.role} tier={tierOf(m.author)} size="sm" />
+              </ProfileLink>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-display text-xs font-semibold text-ink">{m.author?.display_name || "Member"}</span>
+                  <ProfileLink username={m.author?.username} className="font-display text-xs font-semibold text-ink">
+                    {m.author?.display_name || "Member"}
+                  </ProfileLink>
                   <AgeBadge role={m.author?.role} ageGroup={m.author?.age_group} />
                   <span className="text-[10px] text-soft">{timeAgo(m.created_at)}</span>
                 </div>
-                {m.content && <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5">{m.content}</p>}
+                {m.content && <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5"><RichBody body={m.content} /></p>}
                 {m.attachment_url && m.attachment_type === "image" && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={m.attachment_url} alt="shared" loading="lazy" className="mt-1 max-h-40 w-auto rounded-lg border border-sand" />
@@ -506,5 +547,6 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
         </div>
       </div>
     </div>
+    </MentionProvider>
   );
 }
