@@ -11,7 +11,6 @@ import {
   Loader2,
   Flame,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { formatClassWhen, type NextClassResponse } from "@/lib/free-class";
 import { TopBar } from "@/components/free-class/ui";
 import { startSession, getStoredFunnelId } from "@/lib/funnel";
@@ -20,11 +19,13 @@ import { startSession, getStoredFunnelId } from "@/lib/funnel";
  * Funnel landing / hook — step 0 of the multi-page free-class funnel.
  * Creates (or resumes) a funnel_sessions row on mount (capturing UTM), shows the
  * class date, honest social proof + seat scarcity, then routes into /q/1.
- * Signed-in visitors are sent to the confirmation hub.
+ * Only visitors who have ACTUALLY registered for a free class (a
+ * free_class_registrations row, checked server-side) are sent to the
+ * confirmation hub; every other visitor — signed out, or a member/admin/free
+ * user who never registered — sees the funnel normally.
  */
 export default function FreeClassLanding() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [ready, setReady] = useState(false);
   const [meta, setMeta] = useState<NextClassResponse | null>(null);
@@ -33,14 +34,16 @@ export default function FreeClassLanding() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const [{ data: auth }, nextRes] = await Promise.all([
-        supabase.auth.getUser(),
+      const [status, nextRes] = await Promise.all([
+        fetch("/api/free-class/status")
+          .then((r) => (r.ok ? (r.json() as Promise<{ registered?: boolean }>) : null))
+          .catch(() => null),
         fetch("/api/free-class/next")
           .then((r) => (r.ok ? (r.json() as Promise<NextClassResponse>) : null))
           .catch(() => null),
       ]);
       if (!mounted) return;
-      if (auth?.user) {
+      if (status?.registered) {
         router.replace("/free-class/confirmed");
         return;
       }

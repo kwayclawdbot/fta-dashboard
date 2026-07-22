@@ -33,6 +33,9 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exists, setExists] = useState(false);
+  // Signed-in members skip account creation — one-click seat reservation instead.
+  const [signedIn, setSignedIn] = useState(false);
+  const [memberName, setMemberName] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -42,10 +45,25 @@ export default function RegisterPage() {
         router.replace("/free-class");
         return;
       }
-      const state = await fetchSession(stored);
+      const [state, { data: auth }] = await Promise.all([
+        fetchSession(stored),
+        supabase.auth.getUser(),
+      ]);
       if (!mounted) return;
       if (!state) {
         router.replace("/free-class");
+        return;
+      }
+      if (auth?.user) {
+        // Already has an account — no create-account step; reserve directly.
+        setSignedIn(true);
+        const meta = auth.user.user_metadata as { display_name?: string } | null;
+        setMemberName(meta?.display_name || "");
+        setSid(stored);
+        setEmail(state.email || auth.user.email || "");
+        setAnswers(state.answers || {});
+        logEvent(stored, "register", "view");
+        setReady(true);
         return;
       }
       if (!state.email) {
@@ -63,6 +81,27 @@ export default function RegisterPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function reserveAsMember() {
+    setError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/free-class/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: sid }),
+      });
+      if (!res.ok) {
+        setSubmitting(false);
+        return setError("Something went wrong reserving your seat. Please try again.");
+      }
+      clearStoredFunnelId();
+      router.push("/free-class/confirmed?welcome=1");
+    } catch {
+      setSubmitting(false);
+      setError("Network error. Please try again.");
+    }
+  }
 
   async function submit() {
     setError(null);
@@ -125,6 +164,41 @@ export default function RegisterPage() {
 
       <AnimatePresence mode="wait">
         <FunnelStage stageKey="register">
+          {signedIn ? (
+            <>
+              <div className="text-center mb-6">
+                <h2 className="font-display text-2xl font-bold text-ink">
+                  You&apos;re already a member{memberName ? `, ${memberName}` : ""}
+                </h2>
+                <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
+                  No new account needed — reserve your seat in one tap.
+                </p>
+              </div>
+
+              {error && <p className="mb-3 text-sm text-red-600 font-body text-center">{error}</p>}
+
+              <button
+                onClick={reserveAsMember}
+                disabled={submitting}
+                className="cta-button w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] disabled:opacity-50"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Reserving your seat…
+                  </>
+                ) : (
+                  <>
+                    Reserve my seat <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+              <p className="mt-3 text-center text-xs text-soft flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Education only. No card, ever.
+              </p>
+            </>
+          ) : (
+          <>
           <div className="text-center mb-6">
             <h2 className="font-display text-2xl font-bold text-ink">Save your seat</h2>
             <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
@@ -183,6 +257,8 @@ export default function RegisterPage() {
               Log in
             </Link>
           </p>
+          </>
+          )}
         </FunnelStage>
       </AnimatePresence>
     </div>
