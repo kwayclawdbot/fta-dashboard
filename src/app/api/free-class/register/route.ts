@@ -9,6 +9,7 @@ interface RegisterBody {
   password?: string;
   phone?: string;
   quiz?: Record<string, unknown>;
+  sessionId?: string;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,10 +33,29 @@ export async function POST(req: Request) {
   }
 
   const firstName = (body.firstName || "").trim();
-  const email = (body.email || "").trim().toLowerCase();
   const password = body.password || "";
   const phone = (body.phone || "").trim();
   const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : {};
+  const sessionId = (body.sessionId || "").trim();
+
+  const supabaseEarly = createAdminClient();
+
+  // Email may arrive in the body OR already be captured on the funnel session
+  // (the multi-page flow captures it at /save, before this password step).
+  let email = (body.email || "").trim().toLowerCase();
+  let sessionAnswers: Record<string, unknown> = {};
+  if (sessionId) {
+    const { data: fs } = await supabaseEarly
+      .from("funnel_sessions")
+      .select("email, answers")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (fs) {
+      if (!email && fs.email) email = String(fs.email).trim().toLowerCase();
+      if (fs.answers && typeof fs.answers === "object") sessionAnswers = fs.answers;
+    }
+  }
+  const mergedQuiz = { ...sessionAnswers, ...quiz };
 
   if (!firstName) {
     return NextResponse.json({ error: "Please enter your first name." }, { status: 400 });
@@ -50,7 +70,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const supabase = createAdminClient();
+  const supabase = supabaseEarly;
 
   // Next upcoming free class (for the RSVP + confirmation card).
   const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -129,27 +149,74 @@ export async function POST(req: Request) {
   await supabase.from("free_class_registrations").insert({
     user_id: userId,
     email,
-    quiz: { ...quiz, phone: phone || null, first_name: firstName },
+    quiz: { ...mergedQuiz, phone: phone || null, first_name: firstName },
     source: "funnel",
     session_id: session?.id ?? null,
   });
 
-  // 7. Best-effort marketing-CRM lead. The marketing_leads.source enum (owned by
-  //    the marketing module) does not include 'free_class', so we record an
-  //    allowed source and tag the origin instead. Wrapped so a concurrent schema
-  //    change or a missing table never fails the signup.
+  // 7. Complete the funnel session — status 'registered' + link the user.
+  if (sessionId) {
+    await supabase
+      .from("funnel_sessions")
+      .update({
+        status: "registered",
+        user_id: userId,
+        email,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", sessionId)
+      .then(undefined, () => {});
+    await supabase
+      .from("funnel_events")
+      .insert({ session_id: sessionId, step: "register", event: "submit", meta: {} })
+      .then(undefined, () => {});
+  }
+
+  // 8. Flip the partial marketing lead (source 'free_class') to registered.
+  //    A /save-captured lead already exists; flip it to 'engaged' + tag it and
+  //    bind the profile. If none exists (rare: someone skipped /save), create it.
+  //    Wrapped so any marketing-schema drift never fails the signup.
   try {
-    await supabase.from("marketing_leads").insert({
-      email,
-      first_name: firstName,
-      phone: phone || null,
-      source: "manual",
-      stage: "engaged",
-      tags: ["free_class", "funnel"],
-      consent_source: "free_class_funnel",
-      converted_profile_id: userId,
-      custom: { quiz, phone: phone || null },
-    });
+    const { data: lead } = await supabase
+      .from("marketing_leads")
+      .select("id, tags")
+      .eq("email", email)
+      .eq("source", "free_class")
+      .maybeSingle();
+
+    if (lead) {
+      const tags = Array.from(new Set([...(lead.tags || []), "funnel", "registered"]));
+      await supabase
+        .from("marketing_leads")
+        .update({
+          first_name: firstName,
+          phone: phone || null,
+          stage: "engaged",
+          tags,
+          converted_profile_id: userId,
+          custom: { quiz: mergedQuiz, phone: phone || null },
+          last_activity_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", lead.id);
+      await supabase.from("marketing_lead_events").insert({
+        lead_id: lead.id,
+        type: "stage_changed",
+        meta: { to: "engaged", reason: "free_class_registered" },
+      });
+    } else {
+      await supabase.from("marketing_leads").insert({
+        email,
+        first_name: firstName,
+        phone: phone || null,
+        source: "free_class",
+        stage: "engaged",
+        tags: ["funnel", "registered"],
+        consent_source: "free_class_funnel",
+        converted_profile_id: userId,
+        custom: { quiz: mergedQuiz, phone: phone || null },
+      });
+    }
   } catch {
     // marketing table absent or mid-migration — skip silently.
   }

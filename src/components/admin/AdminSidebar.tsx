@@ -20,6 +20,7 @@ import {
   Gem,
   LifeBuoy,
   ShoppingBag,
+  Filter,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -40,6 +41,7 @@ const navItems = [
 const marketingItems = [
   { label: "Leads", href: "/admin/crm/leads", icon: Megaphone },
   { label: "Pipeline", href: "/admin/crm/pipeline", icon: KanbanSquare },
+  { label: "Funnel", href: "/admin/crm/funnel", icon: Filter },
   { label: "Campaigns", href: "/admin/crm/campaigns", icon: Send },
 ];
 

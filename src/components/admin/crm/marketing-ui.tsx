@@ -8,14 +8,21 @@ import { STAGE_META, SOURCE_META, type Stage } from "@/lib/marketing";
 export function MarketingNav({
   active,
 }: {
-  active: "overview" | "members" | "leads" | "pipeline" | "campaigns";
+  active:
+    | "overview"
+    | "members"
+    | "leads"
+    | "pipeline"
+    | "campaigns"
+    | "support";
 }) {
   const tabs = [
     { id: "overview", label: "Overview", href: "/admin/crm" },
-    { id: "members", label: "Members", href: "/admin/crm/members" },
+    { id: "members", label: "Contacts", href: "/admin/crm/members" },
     { id: "leads", label: "Leads", href: "/admin/crm/leads" },
     { id: "pipeline", label: "Pipeline", href: "/admin/crm/pipeline" },
     { id: "campaigns", label: "Campaigns", href: "/admin/crm/campaigns" },
+    { id: "support", label: "Support", href: "/admin/crm/support" },
   ] as const;
   return (
     <div className="flex items-center gap-1 border-b border-zinc-800 mb-6 overflow-x-auto">

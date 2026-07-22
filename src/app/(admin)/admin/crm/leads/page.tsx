@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Upload,
   UserPlus,
@@ -46,6 +47,7 @@ const FIELD_LABELS: Record<FieldKey, string> = {
 
 export default function LeadsPage() {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -413,7 +415,11 @@ export default function LeadsPage() {
                 <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600 text-sm">No leads match.</td></tr>
               ) : (
                 filtered.map((l) => (
-                  <tr key={l.id} className="border-t border-zinc-800/70 hover:bg-zinc-800/20">
+                  <tr
+                    key={l.id}
+                    onClick={() => router.push(`/admin/crm/members/lead-${l.id}`)}
+                    className="border-t border-zinc-800/70 hover:bg-zinc-800/20 cursor-pointer"
+                  >
                     <td className="px-4 py-2.5">
                       <div className="font-medium text-zinc-200">{leadName(l)}</div>
                       <div className="text-xs text-zinc-500">{l.email}</div>

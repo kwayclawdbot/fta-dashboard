@@ -11,6 +11,8 @@ import {
   CalendarCheck,
   Award,
   Activity,
+  UserPlus,
+  Send,
 } from "lucide-react";
 import { initialsOf } from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -91,6 +93,27 @@ export function RoleChip({ role }: { role: string }) {
   );
 }
 
+export function ContactKindChip({
+  kind,
+}: {
+  kind: "lead" | "free" | "fic" | "fta";
+}) {
+  const META: Record<string, { label: string; cls: string }> = {
+    lead: { label: "Lead", cls: "text-sky-300 bg-sky-500/10" },
+    free: { label: "Free", cls: "text-zinc-300 bg-zinc-700/50" },
+    fic: { label: "FIC", cls: "text-blue-300 bg-blue-500/10" },
+    fta: { label: "FTA", cls: "text-amber-300 bg-amber-400/10" },
+  };
+  const m = META[kind] ?? META.free;
+  return (
+    <span
+      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${m.cls}`}
+    >
+      {m.label}
+    </span>
+  );
+}
+
 const DOT: Record<string, string> = {
   today: "bg-emerald-400",
   week: "bg-lime-400",
@@ -124,6 +147,8 @@ const ICONS: Record<
   rsvp: { icon: CalendarCheck, color: "text-sky-400", bg: "bg-sky-400/10" },
   badge: { icon: Award, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   chat: { icon: MessageCircle, color: "text-zinc-300", bg: "bg-zinc-700/40" },
+  lead: { icon: UserPlus, color: "text-sky-400", bg: "bg-sky-400/10" },
+  comm: { icon: Send, color: "text-teal-400", bg: "bg-teal-400/10" },
 };
 
 export function ActivityIcon({ type }: { type: TimelineType }) {

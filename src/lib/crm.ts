@@ -93,7 +93,9 @@ export type TimelineType =
   | "mission"
   | "rsvp"
   | "badge"
-  | "chat";
+  | "chat"
+  | "lead"
+  | "comm";
 
 export interface TimelineEvent {
   type: TimelineType;

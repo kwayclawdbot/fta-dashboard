@@ -27,6 +27,7 @@ import {
   type TicketCategory,
 } from "@/lib/help/tickets";
 import { AdminAvatar } from "@/components/admin/crm/ui";
+import { MarketingNav } from "@/components/admin/crm/marketing-ui";
 
 const STATUSES: (TicketStatus | "all")[] = [
   "all",
@@ -187,6 +188,8 @@ export default function AdminSupportPage() {
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
+
+      <MarketingNav active="support" />
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">

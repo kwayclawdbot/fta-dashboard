@@ -19,6 +19,8 @@ export interface FreeClassSession {
 export interface NextClassResponse {
   session: FreeClassSession | null;
   video_url: string | null;
+  seats_left?: number | null;
+  registered_count?: number | null;
 }
 
 /** Pretty date + time, e.g. "Tuesday, Jul 29 · 7:00 PM". */
