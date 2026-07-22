@@ -566,7 +566,7 @@ export default function CommunityPage() {
 
         {/* Right rail */}
         <aside className="hidden lg:block lg:w-[320px] shrink-0 space-y-4">
-          <LiveRooms me={me} tier={myTier} />
+          <LiveRooms key={myTier} me={me} tier={myTier} />
           {anchor && <ThisWeekSnapshot post={anchor} />}
           <HouseRulesLink />
         </aside>
@@ -581,7 +581,7 @@ export default function CommunityPage() {
                 <span className="font-display text-sm font-bold text-ink">Live Rooms</span>
                 <button onClick={() => setLiveOpen(false)} aria-label="Close"><X className="w-5 h-5 text-soft" /></button>
               </div>
-              <LiveRooms me={me} tier={myTier} />
+              <LiveRooms key={myTier} me={me} tier={myTier} />
             </motion.div>
           </motion.div>
         )}
