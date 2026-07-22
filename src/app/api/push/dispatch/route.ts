@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { siteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   if (vapidConfigured()) {
     webpush.setVapidDetails(
-      "https://fta-dashboard-ruddy.vercel.app",
+      siteUrl(),
       process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!.trim(),
       process.env.VAPID_PRIVATE_KEY!.trim()
     );
