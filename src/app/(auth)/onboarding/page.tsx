@@ -162,35 +162,21 @@ export default function OnboardingPage() {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
-      const { data: fam, error: famErr } = await supabase
-        .from("families")
-        .insert({ name: familyName.trim() })
-        .select("id")
-        .single();
-      if (famErr) throw famErr;
+      // One atomic definer RPC: creates the family, links this profile
+      // (role=parent, onboarding_complete=true), and CLAIMS any pending paid
+      // membership — see migration 075. Avoids the client ins().select() RLS
+      // returning-trap that silently blocked UI family creation.
+      const { data: newFamilyId, error: rpcErr } = await supabase.rpc(
+        "onboard_create_family",
+        {
+          p_name: familyName.trim(),
+          p_display_name: displayName.trim() || "Parent",
+          p_avatar_url: avatarUrl,
+        }
+      );
+      if (rpcErr) throw rpcErr;
 
-      const { error: profErr } = await supabase
-        .from("profiles")
-        .update({
-          family_id: fam.id,
-          role: "parent",
-          age_group: "adults",
-          track: "adults",
-          display_name: displayName.trim() || "Parent",
-          avatar_url: avatarUrl,
-          onboarding_complete: true,
-        })
-        .eq("id", user.id);
-      if (profErr) throw profErr;
-
-      // Paid/invited members: auto-activate their program (no-op otherwise).
-      try {
-        await supabase.rpc("claim_pending_membership", { p_family_id: fam.id });
-      } catch {
-        // best-effort; non-members simply have no pending row to claim
-      }
-
-      setFamilyId(fam.id);
+      setFamilyId(newFamilyId as string);
       setLoading(false);
       return true;
     } catch (err: unknown) {
