@@ -41,6 +41,12 @@ export async function POST(req: NextRequest) {
   const event = JSON.parse(payload);
   if (event.type === "checkout.session.completed") {
     const s = event.data?.object ?? {};
+    // Shop (physical book) purchases are handled by /api/shop/webhook — never
+    // provision a membership for them. Stripe fans every event to every
+    // endpoint, so guard by our metadata tag before any provisioning.
+    if (s.metadata?.kind === "shop") {
+      return NextResponse.json({ received: true, skipped: "shop" });
+    }
     const email: string | undefined =
       s.customer_details?.email || s.customer_email;
     if (email) {

@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Gem,
   LifeBuoy,
+  ShoppingBag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -115,6 +116,9 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const settings: NavItem = { label: "Settings", href: "/settings", icon: Settings };
   // Help desk — available to EVERY role (kids included; the bot copy is kid-safe).
   const help: NavItem = { label: "Help", href: "/help", icon: LifeBuoy };
+  // Shop — the physical book store (public storefront; a natural upsell for
+  // every family, so it sits alongside Help/Settings in every nav.)
+  const shop: NavItem = { label: "Shop", href: "/shop", icon: ShoppingBag };
   // Admins get a way back into the admin console from the member side.
   const adminItems: NavItem[] =
     role === "admin" ? [{ label: "Admin", href: "/admin/crm", icon: ShieldCheck }] : [];
@@ -131,6 +135,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       { label: "Free Class", href: "/free-class", icon: Video },
       { label: "Join FIC", href: "/upgrade", icon: Sparkles },
       ...adminItems,
+      shop,
       help,
       settings,
     ];
@@ -150,6 +155,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       practiceGroup(false), // chart + games only for young kids
       { label: "My Cards", href: "/flashcards", icon: Layers },
       { label: "My Badges", href: "/progress", icon: Trophy },
+      shop,
       help,
       settings,
     ];
@@ -188,7 +194,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       { label: "Courses", href: "/courses", icon: BookOpen },
       { label: "Live Classes", href: "/live-sessions", icon: Video },
     ];
-    return [...clubPrimary, ...ftaSection, ...adminItems, help, settings];
+    return [...clubPrimary, ...ftaSection, ...adminItems, shop, help, settings];
   }
 
   // FIC parents: tasteful upgrade teaser mirroring the courses/upgrade pitch
@@ -200,7 +206,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       ]
     : [];
 
-  return [...clubPrimary, ...upgradeTease, ...adminItems, help, settings];
+  return [...clubPrimary, ...upgradeTease, ...adminItems, shop, help, settings];
 }
 
 interface DashboardSidebarProps {

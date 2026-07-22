@@ -19,6 +19,7 @@ import {
   Send,
   Gem,
   LifeBuoy,
+  ShoppingBag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -28,6 +29,7 @@ const navItems = [
   { label: "Support", href: "/admin/crm/support", icon: LifeBuoy },
   { label: "This Week (FIC)", href: "/admin/fic-weeks", icon: CalendarRange },
   { label: "Team Picks", href: "/admin/picks", icon: Gem },
+  { label: "Shop", href: "/admin/shop", icon: ShoppingBag },
   { label: "Courses", href: "/admin/courses", icon: BookOpen },
   { label: "Coach Demos", href: "/admin/coach-demos", icon: Clapperboard },
   { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
