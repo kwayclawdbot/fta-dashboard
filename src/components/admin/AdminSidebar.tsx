@@ -14,6 +14,9 @@ import {
   Clapperboard,
   CalendarRange,
   Contact,
+  Megaphone,
+  KanbanSquare,
+  Send,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,6 +29,12 @@ const navItems = [
   { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Community", href: "/admin/community", icon: MessageCircle },
+];
+
+const marketingItems = [
+  { label: "Leads", href: "/admin/crm/leads", icon: Megaphone },
+  { label: "Pipeline", href: "/admin/crm/pipeline", icon: KanbanSquare },
+  { label: "Campaigns", href: "/admin/crm/campaigns", icon: Send },
 ];
 
 export default function AdminSidebar() {
@@ -72,6 +81,31 @@ export default function AdminSidebar() {
               </Link>
             );
           })}
+
+          {/* Marketing */}
+          <div className="pt-4 mt-2 border-t border-zinc-800/70">
+            <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
+              Marketing
+            </p>
+            {marketingItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                    isActive
+                      ? "text-amber-400 bg-amber-400/5"
+                      : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                  }`}
+                >
+                  <Icon className="w-[18px] h-[18px] shrink-0" />
+                  <span className="truncate font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Footer */}
