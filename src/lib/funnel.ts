@@ -112,21 +112,33 @@ export function captureUtm(): Record<string, string> {
 }
 
 // ── Thin API client ──────────────────────────────────────────────────────────
-/** Create-or-resume a session. Returns the id; captures UTM on first create. */
+/** Create-or-resume a session. Returns the id; captures UTM on first create.
+ *  De-duped via an in-flight promise on window so a double effect-invoke
+ *  (React StrictMode remount) can never create two sessions for one visit. */
 export async function startSession(existingId: string | null): Promise<FunnelState | null> {
-  try {
-    const res = await fetch("/api/free-class/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: existingId || undefined, utm: existingId ? undefined : captureUtm() }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as FunnelState;
-    if (data?.id) setStoredFunnelId(data.id);
-    return data;
-  } catch {
-    return null;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = (typeof window !== "undefined" ? window : {}) as any;
+  if (w.__ftaFunnelStart) return w.__ftaFunnelStart as Promise<FunnelState | null>;
+
+  const run = (async () => {
+    try {
+      const id = existingId || getStoredFunnelId();
+      const res = await fetch("/api/free-class/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: id || undefined, utm: id ? undefined : captureUtm() }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as FunnelState;
+      if (data?.id) setStoredFunnelId(data.id);
+      return data;
+    } catch {
+      return null;
+    }
+  })();
+
+  w.__ftaFunnelStart = run;
+  return run;
 }
 
 /** Fetch current session state (rehydrate on a deep-link / refresh). */
