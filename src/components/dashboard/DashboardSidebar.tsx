@@ -28,6 +28,8 @@ import {
   GraduationCap,
   Gift,
   ShieldCheck,
+  Gem,
+  LifeBuoy,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -59,6 +61,7 @@ const CLUB_PARENT_CORNER: NavItem = { label: "Parent Corner", href: "/parent-cor
 const CLUB_REFERRALS: NavItem = { label: "Invite Families", href: "/referrals", icon: Gift, parentOnly: true };
 const CLUB_FLASHCARDS: NavItem = { label: "Flashcards", href: "/flashcards", icon: Layers };
 const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
+const CLUB_PICKS: NavItem = { label: "Team Picks", href: "/picks", icon: Gem };
 
 const FAMILY_ITEM: NavItem = {
   label: "Family",
@@ -110,6 +113,8 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const canParent = role === "parent" || role === "admin";
   const isFta = tier === "fta";
   const settings: NavItem = { label: "Settings", href: "/settings", icon: Settings };
+  // Help desk — available to EVERY role (kids included; the bot copy is kid-safe).
+  const help: NavItem = { label: "Help", href: "/help", icon: LifeBuoy };
   // Admins get a way back into the admin console from the member side.
   const adminItems: NavItem[] =
     role === "admin" ? [{ label: "Admin", href: "/admin/crm", icon: ShieldCheck }] : [];
@@ -128,6 +133,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       practiceGroup(false), // chart + games only for young kids
       { label: "My Cards", href: "/flashcards", icon: Layers },
       { label: "My Badges", href: "/progress", icon: Trophy },
+      help,
       settings,
     ];
   }
@@ -144,6 +150,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const clubPrimary: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     CLUB_COMMUNITY,
+    CLUB_PICKS,
     CLUB_START_HERE,
     CLUB_THIS_WEEK,
     ...(isFta ? [] : learning),
@@ -164,7 +171,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       { label: "Courses", href: "/courses", icon: BookOpen },
       { label: "Live Classes", href: "/live-sessions", icon: Video },
     ];
-    return [...clubPrimary, ...ftaSection, ...adminItems, settings];
+    return [...clubPrimary, ...ftaSection, ...adminItems, help, settings];
   }
 
   // FIC parents: tasteful upgrade teaser mirroring the courses/upgrade pitch
@@ -176,7 +183,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       ]
     : [];
 
-  return [...clubPrimary, ...upgradeTease, ...adminItems, settings];
+  return [...clubPrimary, ...upgradeTease, ...adminItems, help, settings];
 }
 
 interface DashboardSidebarProps {

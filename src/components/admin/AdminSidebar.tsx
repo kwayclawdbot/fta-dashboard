@@ -17,13 +17,17 @@ import {
   Megaphone,
   KanbanSquare,
   Send,
+  Gem,
+  LifeBuoy,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "CRM", href: "/admin/crm", icon: Contact },
+  { label: "Support", href: "/admin/crm/support", icon: LifeBuoy },
   { label: "This Week (FIC)", href: "/admin/fic-weeks", icon: CalendarRange },
+  { label: "Team Picks", href: "/admin/picks", icon: Gem },
   { label: "Courses", href: "/admin/courses", icon: BookOpen },
   { label: "Coach Demos", href: "/admin/coach-demos", icon: Clapperboard },
   { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
