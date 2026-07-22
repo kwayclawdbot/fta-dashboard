@@ -8,6 +8,8 @@ import MobileTabBar from "./MobileTabBar";
 import FreeLocked from "./FreeLocked";
 import type { UpsellContext } from "./UpsellCard";
 import AppTour from "@/components/tour/AppTour";
+import NotificationOnboard from "@/components/notifications/NotificationOnboard";
+import { Toaster } from "@/components/ui/Toast";
 import { Suspense } from "react";
 
 import type { FamilyTier } from "@/lib/tier";
@@ -108,6 +110,12 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
       <Suspense fallback={null}>
         <AppTour user={user} />
       </Suspense>
+
+      {/* Silent push self-heal + platform-aware zero-friction enrollment. */}
+      <NotificationOnboard />
+
+      {/* Global toast host (enrollment confirmations, etc.). */}
+      <Toaster />
     </div>
   );
 }

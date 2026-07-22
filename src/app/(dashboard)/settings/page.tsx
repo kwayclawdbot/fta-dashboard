@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { LogOut, Save, CreditCard, AtSign, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EnablePushButton from "@/components/notifications/EnablePushButton";
+import PushDevices from "@/components/notifications/PushDevices";
 import Avatar from "@/components/Avatar";
 import AvatarPicker from "@/components/AvatarPicker";
 import BadgeCase from "@/components/BadgeCase";
@@ -314,6 +315,7 @@ export default function SettingsPage() {
               category off below to silence its push — it still shows in your bell.
             </p>
             <EnablePushButton />
+            <PushDevices />
 
             <div className="mt-5 space-y-4">
               {pushToggles.map((t) => (

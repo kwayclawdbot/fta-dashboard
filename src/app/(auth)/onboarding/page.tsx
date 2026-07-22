@@ -227,6 +227,12 @@ export default function OnboardingPage() {
         .eq("id", user.id);
       if (profErr) throw profErr;
 
+      // Mark a high-intent moment so NotificationOnboard offers push on the
+      // first dashboard load (capped; honored once permission is 'default').
+      try {
+        localStorage.setItem("fic-push-intent-pending", "1");
+      } catch {}
+
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
@@ -237,6 +243,9 @@ export default function OnboardingPage() {
   }
 
   function finishToDashboard() {
+    try {
+      localStorage.setItem("fic-push-intent-pending", "1");
+    } catch {}
     router.push("/dashboard");
     router.refresh();
   }

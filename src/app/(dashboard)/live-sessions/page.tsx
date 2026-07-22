@@ -593,6 +593,10 @@ export default function LiveSessionsPage() {
           .insert({ session_id: sessionId, user_id: userId, family_id: familyId });
         const already = await hasXpForRef(supabase, userId, "rsvp", sessionId);
         if (!already) await awardXp(supabase, userId, "rsvp", XP.RSVP, sessionId);
+        // High-intent moment — nudge push enrollment (NotificationOnboard caps it).
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("fic:notify-intent"));
+        }
       }
       await loadRsvps(userId);
     },
