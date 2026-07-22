@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { AtSign, Hash, Paperclip, Radio, Send, X, Film, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { AtSign, Hash, Lock, Paperclip, Radio, Send, X, Film, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTierMap, type FamilyTier } from "@/lib/tier";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
@@ -23,10 +24,26 @@ import AgeBadge from "@/components/community/AgeBadge";
 
 const FIC_ROOM_ID = "c0000000-0000-4000-a000-000000000001";
 const FTA_ROOM_ID = "c0000000-0000-4000-a000-000000000002";
-const ROOMS = [
-  { id: FIC_ROOM_ID, name: "FIC Club" },
-  { id: FTA_ROOM_ID, name: "FTA Traders" },
-];
+const FREE_LOUNGE_ROOM_ID = "c0000000-0000-4000-a000-000000000003";
+
+interface Room {
+  id: string;
+  name: string;
+}
+const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "FIC Club" };
+const FTA_ROOM: Room = { id: FTA_ROOM_ID, name: "FTA Traders" };
+const FREE_LOUNGE: Room = { id: FREE_LOUNGE_ROOM_ID, name: "Free Lounge" };
+
+/** Rooms a tier may OPEN + post in (app-layer gating, per migrations 016/033/086). */
+function openRoomsFor(tier: FamilyTier): Room[] {
+  if (tier === "free") return [FREE_LOUNGE];
+  if (tier === "fta") return [FIC_ROOM, FTA_ROOM, FREE_LOUNGE];
+  return [FIC_ROOM, FREE_LOUNGE]; // fic — members also see the Free Lounge to welcome newcomers
+}
+/** Rooms shown but locked for this tier (a tasteful upsell chip). */
+function lockedRoomsFor(tier: FamilyTier): Room[] {
+  return tier === "free" ? [FIC_ROOM] : [];
+}
 
 const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const VIDEO_MIMES = ["video/mp4", "video/quicktime", "video/webm"];
@@ -69,8 +86,11 @@ interface PendingAttachment {
 
 export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTier }) {
   const supabase = createClient();
-  const rooms = useMemo(() => (tier === "fta" ? ROOMS : ROOMS.slice(0, 1)), [tier]);
-  const [activeRoomId, setActiveRoomId] = useState(FIC_ROOM_ID);
+  const rooms = useMemo(() => openRoomsFor(tier), [tier]);
+  const lockedRooms = useMemo(() => lockedRoomsFor(tier), [tier]);
+  const [activeRoomId, setActiveRoomId] = useState(
+    tier === "free" ? FREE_LOUNGE_ROOM_ID : FIC_ROOM_ID
+  );
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -341,9 +361,13 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
             <Radio className="w-4 h-4 text-gold-600" /> Live Rooms
           </h3>
         </div>
-        <p className="text-[11px] text-soft mt-0.5">Always-on chat — hop in during class or anytime.</p>
-        {rooms.length > 1 && (
-          <div className="flex items-center gap-1.5 mt-2">
+        <p className="text-[11px] text-soft mt-0.5">
+          {tier === "free"
+            ? "Say hi in the Free Lounge — the whole club can see it."
+            : "Always-on chat — hop in during class or anytime."}
+        </p>
+        {rooms.length + lockedRooms.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
             {rooms.map((r) => {
               const active = r.id === activeRoomId;
               return (
@@ -360,7 +384,28 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
                 </button>
               );
             })}
+            {lockedRooms.map((r) => (
+              <Link
+                key={r.id}
+                href="/upgrade"
+                title="Members chat — join FIC"
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-display font-semibold border border-sand bg-paper text-soft/80 hover:text-gold-700 hover:border-gold-300 transition-colors"
+              >
+                <Lock className="w-3 h-3" />
+                {r.name}
+              </Link>
+            ))}
           </div>
+        )}
+        {tier === "free" && (
+          <p className="text-[11px] text-soft/80 mt-1.5">
+            <Lock className="inline w-3 h-3 -mt-0.5 mr-0.5" />
+            FIC Club is the members&apos; room —{" "}
+            <Link href="/upgrade" className="text-gold-700 font-semibold">
+              join FIC
+            </Link>{" "}
+            to chat there.
+          </p>
         )}
       </div>
 
