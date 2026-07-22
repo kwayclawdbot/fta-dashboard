@@ -30,14 +30,28 @@ export async function provisionMembership(opts: {
   const db = serviceClient();
   const email = opts.email.trim().toLowerCase();
 
-  const { error: pendErr } = await db.from("pending_memberships").insert({
-    email,
-    program: opts.program,
-    source: opts.source,
-    stripe_session: opts.stripeSession ?? null,
-    invited_by: opts.invitedBy ?? null,
-  });
-  if (pendErr) return { ok: false as const, error: pendErr.message };
+  // Idempotency: if there's already an UNCLAIMED pending row for this
+  // email+program, skip the insert and continue. This prevents Stripe webhook
+  // retries (or repeated admin invites) from piling up duplicate rows.
+  const { data: dupe } = await db
+    .from("pending_memberships")
+    .select("id")
+    .eq("email", email)
+    .eq("program", opts.program)
+    .is("claimed_at", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (!dupe) {
+    const { error: pendErr } = await db.from("pending_memberships").insert({
+      email,
+      program: opts.program,
+      source: opts.source,
+      stripe_session: opts.stripeSession ?? null,
+      invited_by: opts.invitedBy ?? null,
+    });
+    if (pendErr) return { ok: false as const, error: pendErr.message };
+  }
 
   // Existing account?
   const { data: existing } = await db
@@ -53,8 +67,14 @@ export async function provisionMembership(opts: {
     const { error } = await db.auth.admin.inviteUserByEmail(email, {
       redirectTo: `${SITE}/auth/callback?next=/onboarding`,
     });
+    // Invite-send failure is NON-FATAL. The pending_memberships row is the
+    // durable source of truth; the user can still be provisioned later (admin
+    // resend, or the claim path once they create an account). Returning ok
+    // keeps the Stripe webhook from 500ing and triggering a retry storm during
+    // mailer rate-limiting (Supabase built-in mailer caps ~2/hr).
     if (error && !/already/i.test(error.message)) {
-      return { ok: false as const, error: error.message };
+      console.error("inviteUserByEmail failed:", email, error.message);
+      return { ok: true as const, mode: "invite_email_failed" as const };
     }
     return { ok: true as const, mode: "invited" as const };
   }

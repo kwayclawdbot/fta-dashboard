@@ -384,6 +384,8 @@ function InviteMemberButton() {
     setMsg(
       j.mode === "activated"
         ? "Existing member — program activated immediately."
+        : j.mode === "invite_email_failed"
+        ? "Recorded — but the invite email could not be sent right now (mailer limit). Try again later or share the login link manually."
         : "Invite sent. They'll get an email to create their account."
     );
     setEmail("");
