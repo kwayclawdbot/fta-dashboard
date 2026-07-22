@@ -41,6 +41,10 @@ export interface Pick {
   closed_note: string | null;
   created_at: string;
   updated_at: string;
+  /** Free sampler pick — the one pick free members read in full. */
+  is_free?: boolean;
+  /** Set by the pick_detail RPC: guidance fields were withheld for this viewer. */
+  locked?: boolean;
 }
 
 export interface PickComment {
