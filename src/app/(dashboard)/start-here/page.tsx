@@ -129,6 +129,21 @@ export default function StartHerePage() {
         </p>
       </div>
 
+      {/* App walkthrough video — the two-minute tour */}
+      <div className="paper-card overflow-hidden">
+        <div className="px-5 pt-4 pb-3">
+          <h2 className="font-display text-base font-bold text-ink">Watch: the two-minute app tour</h2>
+          <p className="text-[13px] text-soft mt-0.5">Everything in the club — home, watchlist, missions, games and classes — narrated in a hundred seconds.</p>
+        </div>
+        <video
+          controls
+          preload="metadata"
+          playsInline
+          className="w-full aspect-[16/10] bg-ink"
+          src="https://zvkercqohmmeyofycbgr.supabase.co/storage/v1/object/public/community-media/walkthrough/app-walkthrough.mp4"
+        />
+      </div>
+
       {/* Progress — the setup journey */}
       <SetupTrail
         steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
