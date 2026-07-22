@@ -18,6 +18,8 @@ map directly to their answers).
   - `updated_at timestamptz`
 - **RLS (own-row)** — a parent reads/writes only their own family's row (`family_id = get_my_family_id() and get_my_role() = 'parent'`); kids never see it. Admins read any via the definer RPC below (also allowed on the SELECT policy). Helpers `get_my_family_id()/get_my_role()/is_admin()` from migration 039.
 - **`admin_family_profile(family_id uuid) → jsonb`** — SECURITY DEFINER, admin-only (mirrors `admin_family_detail` in 037). Returns the row as jsonb or `null`.
+- **`onboard_create_family(p_name, p_display_name, p_avatar_url) → uuid`** — SECURITY DEFINER. Creates the family, links the caller's profile (`role=parent`, `onboarding_complete=true`), and calls `claim_pending_membership` — all in one `auth.uid()` context. Idempotent (returns the existing family on retry).
+  - **Fixes a pre-existing latent bug**: the original client-side `families.insert().select()` hit PostgREST's RETURNING-select RLS trap — the families SELECT policy (`id IN (my family_ids)`) rejects re-reading the new row before the profile is linked, so UI family creation 403'd with "new row violates row-level security policy". Only the service-role funnel path could create families. Verified live: `return=minimal` inserts succeed, `.select()` 403s; the RPC path works end to end.
 
 ## CRM wiring — TODO for the CRM lane / follow-up
 
@@ -104,6 +106,17 @@ otherwise             → null
 
 ## Regression safety
 
-- `establishFamily()` keeps the exact family-insert + profile-update + `claim_pending_membership` calls from the original `completeParent()` — just moved earlier (after the You step) so the paid membership is claimed **before** any optional step and can never be blocked by them.
+- `establishFamily()` performs the same three outcomes as the original `completeParent()` (create family, link profile, claim membership) via the `onboard_create_family` RPC — moved earlier (after the You step) so the paid membership is claimed **before** any optional step and can never be blocked by them. This also fixes the latent RLS bug that prevented UI family creation.
 - Child flow (name / age / avatar) unchanged.
 - Funnel users' `onboarding_complete = true` fast-path unchanged — they never hit `/onboarding`.
+
+## Live verification (Playwright, fta-dashboard-ruddy.vercel.app)
+
+| Scenario | Result |
+| --- | --- |
+| Fresh parent, FULL onboarding (desktop + 390) | Family created via RPC · welcome "Welcome, The Osei family / 2 kids learning alongside you / Starting from the very beginning — perfect. / Here to raise money-smart kids." · recs Kid Missions + Start Here + Parent Corner · dashboard recommend card present · `family_profiles` = `{household:{kids:2,adults:1,[5-8,13-17]}, experience:none, goals:[teach_kids,build_wealth], hear_about:null (skipped), completed}` ✓ |
+| Skip a step | Hear-about skipped via "I'll do this later" → `hear_about` null, partial data still persisted ✓ |
+| Existing family, no profile → backfill | Backfill card shown → standalone flow completed → card replaced by recommend card · `family_profiles` correct ✓ |
+| Claim pending membership through onboarding | Pending **fta** row → after onboarding: enrollment `fta/active`, `family_tiers.tier=fta`, `pending_memberships.claimed_at` set ✓ |
+
+Screenshots (desktop + 390 each step; welcome in light + dark) in the run artifacts. All disposable users/families/pending rows cleaned after.
