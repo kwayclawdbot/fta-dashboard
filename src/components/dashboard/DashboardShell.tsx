@@ -6,39 +6,45 @@ import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
 import FreeLocked from "./FreeLocked";
+import type { UpsellContext } from "./UpsellCard";
 import AppTour from "@/components/tour/AppTour";
 import { Suspense } from "react";
 
 import type { FamilyTier } from "@/lib/tier";
 
-// FREE-tier families may reach only these dashboard surfaces; every other route
-// renders a locked upsell (centralized here rather than gating each page). Home
-// (limited) and Community (read-only) handle their own free-state internally.
+// FREE-tier families may reach these dashboard surfaces; every other route
+// renders a locked upsell (centralized here rather than gating each page). The
+// principle is "give the tools, gate the guidance": free members get the courses
+// sampler, the practice chart + games hub, the picks teaser, and read-only
+// community — the pages themselves handle their own free-state internally. Deep
+// child routes (a locked lesson, Trend or Trap) enforce their own server/page
+// checks. Everything else is locked here.
 const FREE_ALLOWED_PREFIXES = [
   "/dashboard",
   "/community",
   "/settings",
   "/upgrade",
   "/help",
+  "/courses", // sampler mode (locked lessons enforced server-side in the route)
+  "/chart", // full practice chart
+  "/games", // hub + Candle Battle (Trend or Trap locks itself at the page)
+  "/picks", // teaser grid + gated detail (server-enforced)
 ];
 
-// Human labels for the lock screen, matched by longest prefix.
-const LOCKED_LABELS: { prefix: string; label: string }[] = [
-  { prefix: "/courses", label: "Courses" },
-  { prefix: "/live-sessions", label: "Live classes" },
-  { prefix: "/watchlist", label: "The family watchlist" },
-  { prefix: "/missions", label: "Kid missions" },
-  { prefix: "/flashcards", label: "Flashcards" },
-  { prefix: "/games", label: "Practice games" },
-  { prefix: "/chart", label: "The practice chart" },
-  { prefix: "/simulator", label: "The trading simulator" },
-  { prefix: "/picks", label: "Team Picks" },
-  { prefix: "/progress", label: "Progress & badges" },
-  { prefix: "/family", label: "Family & report cards" },
-  { prefix: "/parent-corner", label: "Parent Corner" },
-  { prefix: "/referrals", label: "Invite Families" },
-  { prefix: "/leaderboard", label: "The leaderboard" },
-  { prefix: "/start-here", label: "Start Here" },
+// The remaining locked prefixes map to a shared UpsellCard context, matched by
+// longest prefix.
+const LOCKED_CONTEXTS: { prefix: string; context: UpsellContext }[] = [
+  { prefix: "/live-sessions", context: "live" },
+  { prefix: "/watchlist", context: "watchlist" },
+  { prefix: "/missions", context: "missions" },
+  { prefix: "/flashcards", context: "flashcards" },
+  { prefix: "/simulator", context: "simulator" },
+  { prefix: "/progress", context: "progress" },
+  { prefix: "/family", context: "generic" },
+  { prefix: "/parent-corner", context: "generic" },
+  { prefix: "/referrals", context: "generic" },
+  { prefix: "/leaderboard", context: "generic" },
+  { prefix: "/start-here", context: "generic" },
 ];
 
 interface DashboardShellProps {
@@ -65,9 +71,9 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
     !FREE_ALLOWED_PREFIXES.some(
       (p) => pathname === p || pathname.startsWith(p + "/")
     );
-  const lockedLabel =
-    LOCKED_LABELS.find((l) => pathname.startsWith(l.prefix))?.label ??
-    "This feature";
+  const lockedContext =
+    LOCKED_CONTEXTS.find((l) => pathname.startsWith(l.prefix))?.context ??
+    "generic";
 
   return (
     <div className="min-h-screen bg-midnight-950">
@@ -92,7 +98,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         {/* Bottom padding on phones so content never hides behind the tab bar
             (bar is 4rem + the iOS safe-area inset). Reverts at md+. */}
         <main className="px-4 lg:px-8 pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">
-          {freeLocked ? <FreeLocked feature={lockedLabel} /> : children}
+          {freeLocked ? <FreeLocked context={lockedContext} /> : children}
         </main>
       </div>
 

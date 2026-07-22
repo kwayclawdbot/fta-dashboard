@@ -13,7 +13,8 @@ import {
   MessageCircle,
   Menu,
   ChevronRight,
-  Sparkles,
+  BookOpen,
+  Gem,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -34,12 +35,13 @@ interface Tab {
  *   kids    → Missions + Games          (earn-rewards loop + play)
  */
 function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, Tab] {
-  // Free tier: only the unlocked surfaces belong on the bar (the rest are
-  // locked), so flank Community with the Free Class hub and the Join-FIC upsell.
+  // Free tier: surface the two "give the tools" value pages — the free courses
+  // sampler and the Team Picks teaser — flanking Community. Free Class + Join FIC
+  // live one tap away in the More sheet.
   if (tier === "free")
     return [
-      { label: "Free Class", href: "/free-class", icon: Video },
-      { label: "Join FIC", href: "/upgrade", icon: Sparkles },
+      { label: "Courses", href: "/courses", icon: BookOpen },
+      { label: "Picks", href: "/picks", icon: Gem },
     ];
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";

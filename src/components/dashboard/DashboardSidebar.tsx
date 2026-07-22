@@ -123,19 +123,21 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const adminItems: NavItem[] =
     role === "admin" ? [{ label: "Admin", href: "/admin/crm", icon: ShieldCheck }] : [];
 
-  // ── Free tier (social-funnel signups): a deliberately small nav. Home
-  //    (limited), read-only Community, the Free Class hub, a "Join FIC" upsell,
-  //    and Settings. Everything else is locked (see DashboardShell). Applies to
-  //    every role in a free family (a free family is parent-only today, but a
-  //    kid inheriting free tier gets the same calm surface). ──
+  // ── Free tier (social-funnel signups): "give the tools, gate the guidance."
+  //    Home (limited + journey checklist), read-only Community, the free courses
+  //    sampler, Practice (chart + games), the Team Picks teaser, the Free Class
+  //    hub, a "Join FIC" upsell, Help, and Settings. Every guidance surface is
+  //    locked (see DashboardShell). Applies to every role in a free family. ──
   if (tier === "free") {
     return [
       { label: "Home", href: "/dashboard", icon: LayoutDashboard },
       CLUB_COMMUNITY,
+      { label: "Free Courses", href: "/courses", icon: BookOpen },
+      practiceGroup(false), // chart + games (Candle Battle); simulator stays locked
+      CLUB_PICKS,
       { label: "Free Class", href: "/free-class", icon: Video },
       { label: "Join FIC", href: "/upgrade", icon: Sparkles },
       ...adminItems,
-      shop,
       help,
       settings,
     ];
