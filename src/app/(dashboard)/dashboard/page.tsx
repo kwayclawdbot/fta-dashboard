@@ -36,6 +36,7 @@ import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
 import Avatar from "@/components/Avatar";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import FreeHome from "@/components/dashboard/FreeHome";
+import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
 import { getFamilyTier } from "@/lib/tier";
 
 /* ---------- types ---------- */
@@ -135,6 +136,7 @@ export default function DashboardHome() {
   const [ficWeek, setFicWeek] = useState<FicWeek | null>(null);
   const [orientationDone, setOrientationDone] = useState(0);
   const [hasFamily, setHasFamily] = useState(false);
+  const [familyId, setFamilyId] = useState<string | null>(null);
   const [isFree, setIsFree] = useState(false);
 
   useEffect(() => {
@@ -176,6 +178,7 @@ export default function DashboardHome() {
       const famId = profile?.family_id ?? null;
       const track = hs?.track || "adults";
       setHasFamily(!!famId);
+      setFamilyId(famId);
 
       // FREE tier gets a dedicated, limited home (the free-class hub + upsell).
       // Short-circuit before loading any member content.
@@ -373,6 +376,12 @@ export default function DashboardHome() {
             <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
           </motion.div>
         </Link>
+      )}
+
+      {/* Family profile — backfill prompt or personalized "recommended next".
+          Self-contained: renders null when there's nothing to show. Parents only. */}
+      {isParent && hasFamily && familyId && (
+        <FamilyProfileHome familyId={familyId} />
       )}
 
       {/* Home tabs: everyday home vs This Week in FIC */}

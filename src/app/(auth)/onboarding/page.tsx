@@ -3,9 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, GraduationCap, ArrowRight, ArrowLeft, Check, Sparkles, AtSign } from "lucide-react";
+import { Users, GraduationCap, ArrowRight, ArrowLeft, Check, AtSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import AvatarPicker from "@/components/AvatarPicker";
+import {
+  HouseholdStep,
+  ExperienceStep,
+  GoalsStep,
+  HearAboutStep,
+  PersonalizedWelcome,
+} from "@/components/onboarding/ProfileSteps";
+import {
+  emptyDraft,
+  draftFromQuiz,
+  composeWelcome,
+  deriveRecommendations,
+  saveFamilyProfile,
+  type ProfileDraft,
+} from "@/lib/onboarding-profile";
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 200 : -200, opacity: 0 }),
@@ -14,6 +29,18 @@ const slideVariants = {
 };
 
 type Mode = "loading" | "parent" | "child";
+
+// Parent step indices — family creation + membership claim happen on leaving
+// PROFILE_START-1 (the "You" step), so the paid membership is NEVER blocked by
+// the optional profile-building steps that follow.
+const P_FAMILY = 0;
+const P_YOU = 1;
+const P_HOUSEHOLD = 2;
+const P_EXPERIENCE = 3;
+const P_GOALS = 4;
+const P_HEAR = 5;
+const P_WELCOME = 6;
+const PARENT_STEPS = ["Family", "You", "Household", "Experience", "Goals", "Found us", "Welcome"];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -27,6 +54,8 @@ export default function OnboardingPage() {
 
   // Parent flow state
   const [familyName, setFamilyName] = useState("");
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<ProfileDraft>(emptyDraft());
 
   // Shared: username (= display_name; @mentions match it spaces-stripped) + avatar
   const [displayName, setDisplayName] = useState("");
@@ -53,15 +82,34 @@ export default function OnboardingPage() {
         .eq("id", user.id)
         .single();
 
-      setDisplayName(
-        profile?.display_name || user.user_metadata?.display_name || ""
-      );
+      setDisplayName(profile?.display_name || user.user_metadata?.display_name || "");
       setAvatarUrl(profile?.avatar_url ?? null);
 
       if (profile?.family_id && profile.role === "child") {
         setMode("child");
-      } else {
-        setMode("parent");
+        return;
+      }
+
+      // Prefill the profile draft from the free-class funnel quiz if this user
+      // came through the funnel — never re-ask what we already know.
+      const { data: reg } = await supabase
+        .from("free_class_registrations")
+        .select("quiz")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (reg?.quiz) {
+        setDraft((d) => ({ ...d, ...draftFromQuiz(reg.quiz as Record<string, unknown>) }));
+      }
+
+      setMode("parent");
+
+      // A parent who already has a family (resume / accidental re-entry) skips
+      // straight to the profile-building steps — never creates a second family.
+      if (profile?.family_id) {
+        setFamilyId(profile.family_id as string);
+        setStep(P_HOUSEHOLD);
       }
     }
     detect();
@@ -89,17 +137,23 @@ export default function OnboardingPage() {
     }
   }
 
+  const parentEstablished = mode === "parent" && familyId !== null;
+  const minStep = parentEstablished ? P_HOUSEHOLD : 0;
+
   function goNext() {
     setDirection(1);
     setStep((s) => s + 1);
   }
   function goBack() {
     setDirection(-1);
-    setStep((s) => s - 1);
+    setStep((s) => Math.max(minStep, s - 1));
   }
 
-  // ── Parent: create the family, become owner ──
-  async function completeParent() {
+  // ── Parent: create the family, become owner, CLAIM MEMBERSHIP ──
+  // Runs when leaving the "You" step so a paid/invited membership activates
+  // immediately, before (and independent of) the optional profile questions.
+  async function establishFamily(): Promise<boolean> {
+    if (familyId) return true; // already created (resume / back-and-forth)
     setError("");
     setLoading(true);
     try {
@@ -136,13 +190,33 @@ export default function OnboardingPage() {
         // best-effort; non-members simply have no pending row to claim
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      setFamilyId(fam.id);
+      setLoading(false);
+      return true;
     } catch (err: unknown) {
       const e = err as { message?: string };
       setError(e?.message || "Something went wrong");
       setLoading(false);
+      return false;
     }
+  }
+
+  // Persist the running profile draft (best-effort; never blocks navigation).
+  async function savePartial(complete: boolean) {
+    if (!familyId) return;
+    await saveFamilyProfile(supabase, familyId, draft, complete);
+  }
+
+  // Advance out of the "You" step: establish the family first, then continue.
+  async function continueFromYou() {
+    const ok = await establishFamily();
+    if (ok) goNext();
+  }
+
+  // Advance out of an optional profile step (Continue or "I'll do this later").
+  async function advanceProfileStep(toWelcome: boolean) {
+    savePartial(toWelcome); // fire-and-forget; welcome save marks completed_at
+    goNext();
   }
 
   // ── Child: confirm name + age band + avatar ──
@@ -176,6 +250,15 @@ export default function OnboardingPage() {
     }
   }
 
+  function finishToDashboard() {
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  function patchDraft(patch: Partial<ProfileDraft>) {
+    setDraft((d) => ({ ...d, ...patch }));
+  }
+
   if (mode === "loading") {
     return (
       <div className="flex items-center justify-center py-16">
@@ -184,56 +267,52 @@ export default function OnboardingPage() {
     );
   }
 
-  const steps =
-    mode === "parent" ? ["Family", "You", "All set"] : ["Your name", "Your age", "Your look"];
+  const steps = mode === "parent" ? PARENT_STEPS : ["Your name", "Your age", "Your look"];
   const canProceed =
     mode === "parent"
-      ? step === 0
+      ? step === P_FAMILY
         ? familyName.trim().length > 0
-        : step === 1
+        : step === P_YOU
           ? displayName.trim().length > 0
-          : true
+          : true // profile steps are all optional
       : step === 0
         ? displayName.trim().length > 0
         : step === 1
           ? ageBand !== ""
           : true;
-  const isLast = step === steps.length - 1;
+
+  const isChildLast = mode === "child" && step === steps.length - 1;
+  const isProfileStep =
+    mode === "parent" && step >= P_HOUSEHOLD && step <= P_HEAR;
+  const isWelcome = mode === "parent" && step === P_WELCOME;
+
+  const welcome = isWelcome ? composeWelcome(draft, familyName) : null;
+  const recommendations = isWelcome ? deriveRecommendations(draft) : [];
 
   return (
     <div className="w-full max-w-lg mx-auto">
-      {/* Progress dots */}
-      <div className="flex items-center justify-center gap-3 mb-8">
+      {/* Progress dots — compact so 7 parent steps stay clean at 390px */}
+      <div className="flex items-center justify-center gap-2 mb-8">
         {steps.map((s, i) => {
           const isDone = i < step;
           const isCurrent = i === step;
           return (
-            <div key={s} className="flex items-center gap-3">
-              <div
-                className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${
-                  isDone
-                    ? "bg-gold-400/15 border-gold-400/30"
-                    : isCurrent
-                      ? "bg-gold-400/10 border-gold-400/40"
-                      : "bg-midnight-800 border-sand"
-                }`}
-              >
-                {isDone ? (
-                  <Check className="w-3.5 h-3.5 text-gold-400" />
-                ) : (
-                  <span className={`text-xs font-display font-bold ${isCurrent ? "text-gold-600" : "text-midnight-500"}`}>
-                    {i + 1}
-                  </span>
-                )}
-              </div>
-              {i < steps.length - 1 && <div className={`w-6 h-px ${isDone ? "bg-gold-400/30" : "bg-sand"}`} />}
-            </div>
+            <div
+              key={s}
+              className={`h-2 rounded-full transition-all ${
+                isCurrent
+                  ? "w-6 bg-gold-500"
+                  : isDone
+                    ? "w-2 bg-gold-400/50"
+                    : "w-2 bg-sand"
+              }`}
+            />
           );
         })}
       </div>
 
       {/* Step content */}
-      <div className="relative overflow-hidden min-h-[320px]">
+      <div className="relative overflow-hidden min-h-[340px]">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={`${mode}-${step}`}
@@ -246,10 +325,12 @@ export default function OnboardingPage() {
             className="w-full"
           >
             {/* PARENT — step 0: family name */}
-            {mode === "parent" && step === 0 && (
+            {mode === "parent" && step === P_FAMILY && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">What&apos;s your family name?</h2>
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
+                    What&apos;s your family name?
+                  </h2>
                   <p className="text-midnight-400 text-sm font-body">
                     You&apos;re the family owner — this is how your family appears in the academy.
                   </p>
@@ -269,7 +350,7 @@ export default function OnboardingPage() {
             )}
 
             {/* PARENT — step 1: username + avatar */}
-            {mode === "parent" && step === 1 && (
+            {mode === "parent" && step === P_YOU && (
               <UsernameAvatarStep
                 heading="Set up your profile"
                 sub="Pick a display name and a look. Your name is how family members @mention you."
@@ -286,30 +367,39 @@ export default function OnboardingPage() {
               />
             )}
 
-            {/* PARENT — step 2: confirm */}
-            {mode === "parent" && step === 2 && (
-              <div className="space-y-6 text-center">
-                <div className="w-14 h-14 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-gold-500" />
-                </div>
-                <div>
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
-                    You&apos;re all set, {displayName.trim() || familyName.trim() || "friend"}
-                  </h2>
-                  <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">
-                    We&apos;ll create your family and set you up as the owner. You can invite your kids anytime from the
-                    Family page — they join with a link, no signup hassle.
-                  </p>
-                </div>
-              </div>
+            {/* PARENT — profile-building steps */}
+            {mode === "parent" && step === P_HOUSEHOLD && (
+              <HouseholdStep draft={draft} onChange={patchDraft} />
+            )}
+            {mode === "parent" && step === P_EXPERIENCE && (
+              <ExperienceStep draft={draft} onChange={patchDraft} />
+            )}
+            {mode === "parent" && step === P_GOALS && (
+              <GoalsStep draft={draft} onChange={patchDraft} />
+            )}
+            {mode === "parent" && step === P_HEAR && (
+              <HearAboutStep draft={draft} onChange={patchDraft} />
+            )}
+
+            {/* PARENT — final: personalized welcome */}
+            {isWelcome && welcome && (
+              <PersonalizedWelcome
+                title={welcome.title}
+                lines={welcome.lines}
+                recommendations={recommendations}
+              />
             )}
 
             {/* CHILD — step 0: confirm name */}
             {mode === "child" && step === 0 && (
               <div className="space-y-6">
                 <div className="text-center">
-                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">Welcome! What should we call you?</h2>
-                  <p className="text-midnight-400 text-sm font-body">You&apos;ve joined your family — let&apos;s set up your corner.</p>
+                  <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">
+                    Welcome! What should we call you?
+                  </h2>
+                  <p className="text-midnight-400 text-sm font-body">
+                    You&apos;ve joined your family — let&apos;s set up your corner.
+                  </p>
                 </div>
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-midnight-400" />
@@ -339,7 +429,9 @@ export default function OnboardingPage() {
               <div className="space-y-6">
                 <div className="text-center">
                   <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">How old are you?</h2>
-                  <p className="text-midnight-400 text-sm font-body">We&apos;ll pick the right lessons and adventures for you.</p>
+                  <p className="text-midnight-400 text-sm font-body">
+                    We&apos;ll pick the right lessons and adventures for you.
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {([
@@ -371,12 +463,7 @@ export default function OnboardingPage() {
                   <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">Pick your look</h2>
                   <p className="text-midnight-400 text-sm font-body">Choose an avatar — you can change it anytime in Settings.</p>
                 </div>
-                <AvatarPicker
-                  value={avatarUrl}
-                  onChange={setAvatarUrl}
-                  role="child"
-                  ageGroup={ageBand || "teens"}
-                />
+                <AvatarPicker value={avatarUrl} onChange={setAvatarUrl} role="child" ageGroup={ageBand || "teens"} />
               </div>
             )}
           </motion.div>
@@ -395,7 +482,7 @@ export default function OnboardingPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between mt-8">
-        {step > 0 ? (
+        {step > minStep && !isWelcome ? (
           <button onClick={goBack} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-medium">
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -404,25 +491,62 @@ export default function OnboardingPage() {
           <div />
         )}
 
-        {!isLast ? (
-          <button
-            onClick={goNext}
-            disabled={!canProceed}
-            className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Continue
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={mode === "parent" ? completeParent : completeChild}
-            disabled={!canProceed || loading}
-            className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {loading ? "Setting up..." : mode === "parent" ? "Create my family" : "Start learning"}
-            {!loading && <Check className="w-4 h-4" />}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Skip affordance on optional profile steps */}
+          {isProfileStep && (
+            <button
+              onClick={() => advanceProfileStep(step === P_HEAR)}
+              className="text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-medium"
+            >
+              I&apos;ll do this later
+            </button>
+          )}
+
+          {isWelcome ? (
+            <button
+              onClick={finishToDashboard}
+              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm"
+            >
+              Go to my dashboard
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : isChildLast ? (
+            <button
+              onClick={completeChild}
+              disabled={!canProceed || loading}
+              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? "Setting up..." : "Start learning"}
+              {!loading && <Check className="w-4 h-4" />}
+            </button>
+          ) : mode === "parent" && step === P_YOU ? (
+            <button
+              onClick={continueFromYou}
+              disabled={!canProceed || loading}
+              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? "Setting up..." : "Continue"}
+              {!loading && <ArrowRight className="w-4 h-4" />}
+            </button>
+          ) : isProfileStep ? (
+            <button
+              onClick={() => advanceProfileStep(step === P_HEAR)}
+              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm"
+            >
+              Continue
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={goNext}
+              disabled={!canProceed}
+              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Continue
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
