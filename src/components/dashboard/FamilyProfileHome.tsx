@@ -103,33 +103,32 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
 
   if (view.kind === "backfill") {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="paper-card p-5 flex items-center gap-4 relative"
-      >
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
+        <Link
+          href="/onboarding/profile"
+          className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+            <Home className="w-6 h-6 text-gold-700" />
+          </div>
+          <div className="flex-1 min-w-0 pr-6">
+            <p className="font-display font-semibold text-ink">Tell us about your family</p>
+            <p className="text-sm text-soft">
+              A few quick questions so we can tailor lessons, missions, and pacing to your family.
+            </p>
+          </div>
+          <span className="cta-button hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm shrink-0">
+            Get started <ArrowRight className="w-4 h-4" />
+          </span>
+          <ArrowRight className="w-5 h-5 text-gold-700 shrink-0 sm:hidden" />
+        </Link>
         <button
           onClick={dismissBackfill}
           aria-label="Dismiss"
-          className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-midnight-500 hover:text-ink hover:bg-sand/60 transition-colors"
+          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-midnight-500 hover:text-ink hover:bg-sand/60 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
-        <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-          <Home className="w-6 h-6 text-gold-700" />
-        </div>
-        <div className="flex-1 min-w-0 pr-6">
-          <p className="font-display font-semibold text-ink">Tell us about your family</p>
-          <p className="text-sm text-soft">
-            A few quick questions so we can tailor lessons, missions, and pacing to your family.
-          </p>
-        </div>
-        <Link
-          href="/onboarding/profile"
-          className="cta-button hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm shrink-0"
-        >
-          Get started <ArrowRight className="w-4 h-4" />
-        </Link>
       </motion.div>
     );
   }
