@@ -3,15 +3,38 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { AtSign, Bell, CheckCheck, CornerUpLeft, LifeBuoy, Megaphone } from "lucide-react";
+import {
+  AtSign,
+  Bell,
+  BookOpen,
+  CheckCheck,
+  CornerUpLeft,
+  Gem,
+  LifeBuoy,
+  Megaphone,
+  Users,
+  Video,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { registerServiceWorker } from "@/lib/push";
 import EnablePushButton from "./EnablePushButton";
 
+type NotifType =
+  | "reply"
+  | "mention"
+  | "announcement"
+  | "support_reply"
+  | "mention_everyone"
+  | "new_pick"
+  | "new_lesson"
+  | "recording_posted"
+  | "broadcast";
+
 interface NotificationItem {
   id: string;
-  type: "reply" | "mention" | "announcement" | "support_reply";
+  type: NotifType;
   body: string;
+  link: string | null;
   read_at: string | null;
   created_at: string;
   actor: { display_name: string } | null;
@@ -35,8 +58,18 @@ function verbFor(type: NotificationItem["type"]): string {
       return "replied to you";
     case "mention":
       return "mentioned you";
+    case "mention_everyone":
+      return "tagged everyone";
     case "announcement":
       return "posted an announcement";
+    case "broadcast":
+      return "sent an update";
+    case "new_pick":
+      return "posted a new Team Pick";
+    case "new_lesson":
+      return "added a new lesson";
+    case "recording_posted":
+      return "posted a class recording";
     case "support_reply":
       return "replied to your support ticket";
   }
@@ -46,8 +79,19 @@ function IconFor({ type }: { type: NotificationItem["type"] }) {
   const cls = "w-3.5 h-3.5";
   if (type === "reply") return <CornerUpLeft className={cls} />;
   if (type === "mention") return <AtSign className={cls} />;
+  if (type === "mention_everyone") return <Users className={cls} />;
   if (type === "support_reply") return <LifeBuoy className={cls} />;
+  if (type === "new_pick") return <Gem className={cls} />;
+  if (type === "new_lesson") return <BookOpen className={cls} />;
+  if (type === "recording_posted") return <Video className={cls} />;
   return <Megaphone className={cls} />;
+}
+
+// Who a row is attributed to when there is no human actor (system events).
+function labelFor(n: NotificationItem): string {
+  if (n.type === "support_reply") return "FTA Support";
+  if (n.type === "new_lesson" || n.type === "recording_posted") return "Family Trading Academy";
+  return n.actor?.display_name || "Someone";
 }
 
 export default function NotificationsBell() {
@@ -65,7 +109,7 @@ export default function NotificationsBell() {
         supabase
           .from("notifications")
           .select(
-            "id, type, body, read_at, created_at, actor:profiles!notifications_actor_id_fkey(display_name)"
+            "id, type, body, link, read_at, created_at, actor:profiles!notifications_actor_id_fkey(display_name)"
           )
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
@@ -145,7 +189,9 @@ export default function NotificationsBell() {
         .update({ read_at: new Date().toISOString() })
         .eq("id", n.id);
     }
-    router.push(n.type === "support_reply" ? "/help" : "/community");
+    // Deep-link stored on the row wins; fall back per type for legacy rows.
+    const fallback = n.type === "support_reply" ? "/help" : "/community";
+    router.push(n.link || fallback);
   }
 
   async function markAllRead() {
@@ -229,9 +275,7 @@ export default function NotificationsBell() {
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm text-midnight-200">
                         <span className="font-semibold text-midnight-100">
-                          {n.type === "support_reply"
-                            ? "FTA Support"
-                            : n.actor?.display_name || "Someone"}
+                          {labelFor(n)}
                         </span>{" "}
                         {verbFor(n.type)}
                       </span>

@@ -28,6 +28,7 @@ const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "CRM", href: "/admin/crm", icon: Contact },
   { label: "Support", href: "/admin/crm/support", icon: LifeBuoy },
+  { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
   { label: "This Week (FIC)", href: "/admin/fic-weeks", icon: CalendarRange },
   { label: "Team Picks", href: "/admin/picks", icon: Gem },
   { label: "Shop", href: "/admin/shop", icon: ShoppingBag },

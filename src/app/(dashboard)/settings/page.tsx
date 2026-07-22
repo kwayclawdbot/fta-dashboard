@@ -16,12 +16,28 @@ interface NotificationPrefs {
   email_notifs: boolean;
   live_alerts: boolean;
   weekly_digest: boolean;
+  // Per-category PUSH toggles. These gate WEB PUSH only — the in-app bell row
+  // always creates (you never miss anything in-app; you just choose what buzzes
+  // your device). Enforced server-side in /api/push/dispatch. Opt-out, so an
+  // absent key = on.
+  push_replies: boolean;
+  push_mentions: boolean;
+  push_announcements: boolean;
+  push_picks: boolean;
+  push_lessons: boolean;
+  push_recordings: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
   email_notifs: true,
   live_alerts: true,
   weekly_digest: false,
+  push_replies: true,
+  push_mentions: true,
+  push_announcements: true,
+  push_picks: true,
+  push_lessons: true,
+  push_recordings: true,
 };
 
 export default function SettingsPage() {
@@ -132,6 +148,17 @@ export default function SettingsPage() {
     { key: "email_notifs", label: "Email Notifications", desc: "Receive updates about courses and community" },
     { key: "live_alerts", label: "Live Session Alerts", desc: "Get notified 15 min before live sessions" },
     { key: "weekly_digest", label: "Weekly Digest", desc: "Summary of your progress and new content" },
+  ];
+
+  // Per-category push toggles (buzz on this device). Disabling only silences
+  // push — the notification still appears in your bell.
+  const pushToggles: { key: keyof NotificationPrefs; label: string; desc: string }[] = [
+    { key: "push_replies", label: "Replies", desc: "When someone replies to your post or comment" },
+    { key: "push_mentions", label: "Mentions", desc: "When someone @mentions you or tags @everyone" },
+    { key: "push_announcements", label: "Announcements", desc: "Team announcements and admin updates" },
+    { key: "push_picks", label: "New Team Picks", desc: "When the team posts a new pick" },
+    { key: "push_lessons", label: "New Lessons", desc: "When a new lesson is added to your courses" },
+    { key: "push_recordings", label: "Class Recordings", desc: "When a class you RSVP'd to is posted" },
   ];
 
   return (
@@ -283,10 +310,32 @@ export default function SettingsPage() {
           <div className="pt-4 mt-4 border-t border-sand">
             <p className="text-sm font-medium text-midnight-200">Push Notifications</p>
             <p className="text-xs text-midnight-500 mb-3">
-              Get a notification on this device when someone replies to you or @mentions you in
-              the community.
+              Get a notification on this device when things happen in the community. Turn a
+              category off below to silence its push — it still shows in your bell.
             </p>
             <EnablePushButton />
+
+            <div className="mt-5 space-y-4">
+              {pushToggles.map((t) => (
+                <div key={t.key} className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-midnight-200">{t.label}</p>
+                    <p className="text-xs text-midnight-500">{t.desc}</p>
+                  </div>
+                  <button
+                    onClick={() => togglePref(t.key)}
+                    aria-pressed={prefs[t.key]}
+                    className={`relative w-10 h-5.5 rounded-full transition-colors shrink-0 ${prefs[t.key] ? "bg-gold-400" : "bg-midnight-700"}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${
+                        prefs[t.key] ? "translate-x-4.5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>

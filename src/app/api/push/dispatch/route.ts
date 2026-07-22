@@ -20,12 +20,49 @@ interface NotificationRow {
   id: string;
   user_id: string;
   actor_id: string | null;
-  type: "reply" | "mention" | "announcement";
+  type: NotifType;
   message_id: string | null;
   body: string;
+  link: string | null;
   read_at: string | null;
   dispatched_at: string | null;
   created_at: string;
+}
+
+type NotifType =
+  | "reply"
+  | "mention"
+  | "announcement"
+  | "support_reply"
+  | "mention_everyone"
+  | "new_pick"
+  | "new_lesson"
+  | "recording_posted"
+  | "broadcast";
+
+/**
+ * Map a notification type → the notification_prefs push-toggle key that gates
+ * it. DESIGN (documented in migration 090): the in-app notification ROW always
+ * creates; notification_prefs gate PUSH only, enforced HERE at dispatch time.
+ * So a user who disables "Announcements" push still sees the bell row but gets
+ * no web-push. Absent/true pref = send (opt-out, not opt-in).
+ */
+const PREF_KEY_FOR: Record<NotifType, string | null> = {
+  reply: "push_replies",
+  mention: "push_mentions",
+  mention_everyone: "push_mentions",
+  announcement: "push_announcements",
+  broadcast: "push_announcements",
+  new_pick: "push_picks",
+  new_lesson: "push_lessons",
+  recording_posted: "push_recordings",
+  support_reply: null, // support replies always push (transactional)
+};
+
+function pushAllowed(prefs: Record<string, unknown> | null, type: NotifType): boolean {
+  const key = PREF_KEY_FOR[type];
+  if (!key || !prefs) return true;
+  return prefs[key] !== false;
 }
 
 function vapidConfigured(): boolean {
@@ -40,8 +77,20 @@ function titleFor(n: NotificationRow, actorName: string): string {
       return `${actorName} replied to you`;
     case "mention":
       return `${actorName} mentioned you`;
+    case "mention_everyone":
+      return `${actorName} tagged everyone`;
     case "announcement":
       return "New announcement";
+    case "broadcast":
+      return "Family Trading Academy";
+    case "new_pick":
+      return "New Team Pick";
+    case "new_lesson":
+      return "New lesson";
+    case "recording_posted":
+      return "Class recording posted";
+    case "support_reply":
+      return "FTA Support replied";
   }
 }
 
@@ -51,6 +100,21 @@ async function dispatchOne(
 ): Promise<{ sent: number; pruned: number }> {
   let sent = 0;
   let pruned = 0;
+
+  // Recipient's push preferences gate PUSH only (in-app row already exists).
+  const { data: recipient } = await supabase
+    .from("profiles")
+    .select("notification_prefs")
+    .eq("id", n.user_id)
+    .single();
+
+  if (!pushAllowed(recipient?.notification_prefs as Record<string, unknown> | null, n.type)) {
+    await supabase
+      .from("notifications")
+      .update({ dispatched_at: new Date().toISOString() })
+      .eq("id", n.id);
+    return { sent: 0, pruned: 0 };
+  }
 
   const { data: subs } = await supabase
     .from("push_subscriptions")
@@ -71,7 +135,7 @@ async function dispatchOne(
     const payload = JSON.stringify({
       title: titleFor(n, actorName),
       body: (n.body || "").slice(0, 160),
-      url: "/community",
+      url: n.link || "/community",
     });
 
     await Promise.all(
