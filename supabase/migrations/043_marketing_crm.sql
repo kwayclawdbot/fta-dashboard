@@ -507,7 +507,8 @@ begin
   select coalesce(jsonb_agg(row_to_json(t) order by t.last_activity_at desc), '[]'::jsonb)
   into v_result
   from (
-    select l.id, l.email::text as email, l.first_name, l.last_name, l.phone, l.stage, l.tags
+    select l.id, l.email::text as email, l.first_name, l.last_name, l.phone,
+           l.stage, l.tags, l.last_activity_at
     from marketing_leads l
     where l.stage <> 'unsubscribed'
       and (array_length(v_stages,1) is null or l.stage = any(v_stages))
