@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Gamepad2, Trophy } from "lucide-react";
+import { ArrowRight, Gamepad2, Trophy, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 
 interface GameCard {
   href: string;
@@ -15,6 +16,8 @@ interface GameCard {
   bar: string;
   gameKey?: string;
   scored: boolean; // shows best out of 10
+  /** Playable on the free tier. Others show a "FIC members" locked card. */
+  freeOpen: boolean;
 }
 
 const GAMES: GameCard[] = [
@@ -26,6 +29,7 @@ const GAMES: GameCard[] = [
     bar: "linear-gradient(135deg, rgba(34,197,94,0.85), rgba(220,38,38,0.75))",
     gameKey: "candle-battle",
     scored: true,
+    freeOpen: true,
   },
   {
     href: "/games/trend-or-trap",
@@ -35,6 +39,7 @@ const GAMES: GameCard[] = [
     bar: "linear-gradient(135deg, rgba(251,191,36,0.9), rgba(217,119,6,0.8))",
     gameKey: "trend-or-trap",
     scored: true,
+    freeOpen: false,
   },
   {
     href: "/simulator/lessons",
@@ -43,6 +48,7 @@ const GAMES: GameCard[] = [
     art: "/art/pool-story.jpg",
     bar: "linear-gradient(135deg, rgba(56,189,248,0.85), rgba(14,165,233,0.8))",
     scored: false,
+    freeOpen: false,
   },
 ];
 
@@ -59,6 +65,7 @@ export default function GamesHubPage() {
   const supabase = createClient();
   const [best, setBest] = useState<Record<string, number>>({});
   const [last, setLast] = useState<Record<string, string>>({});
+  const [tier, setTier] = useState<FamilyTier>("fic");
 
   useEffect(() => {
     async function load() {
@@ -66,6 +73,12 @@ export default function GamesHubPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("family_id")
+        .eq("id", user.id)
+        .single();
+      getFamilyTier(supabase, profile?.family_id).then(setTier);
       const { data } = await supabase
         .from("game_scores")
         .select("game, score, created_at")
@@ -83,6 +96,8 @@ export default function GamesHubPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const isFree = tier === "free";
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -115,7 +130,9 @@ export default function GamesHubPage() {
       </motion.div>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {GAMES.map((g, i) => (
+        {GAMES.map((g, i) => {
+          const locked = isFree && !g.freeOpen;
+          return (
           <motion.div
             key={g.href}
             initial={{ opacity: 0, y: 14 }}
@@ -123,21 +140,34 @@ export default function GamesHubPage() {
             transition={{ delay: i * 0.06 }}
           >
             <Link
-              href={g.href}
+              href={locked ? "/upgrade" : g.href}
               className="paper-card overflow-hidden flex flex-col h-full group hover:shadow-[var(--shadow-lift)] transition-shadow"
             >
               <div className="relative h-28">
                 <Image src={g.art} alt="" fill className="object-cover" />
-                <div className="absolute inset-0 opacity-70" style={{ background: g.bar }} />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: g.bar, opacity: locked ? 0.4 : 0.7 }}
+                />
+                {locked && <div className="absolute inset-0 bg-midnight-950/45" />}
                 <h2 className="absolute bottom-3 left-4 font-display text-lg font-extrabold text-white drop-shadow">
                   {g.title}
                 </h2>
+                {locked && (
+                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-midnight-950/70 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-white ring-1 ring-white/20">
+                    <Lock className="w-2.5 h-2.5" /> FIC members
+                  </span>
+                )}
               </div>
               <div className="p-5 flex flex-col flex-1">
                 <p className="text-sm text-soft leading-relaxed flex-1">{g.desc}</p>
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-xs text-soft inline-flex items-center gap-1.5">
-                    {g.gameKey && best[g.gameKey] !== undefined ? (
+                    {locked ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5 text-gold-600" /> Members only
+                      </>
+                    ) : g.gameKey && best[g.gameKey] !== undefined ? (
                       <>
                         <Trophy className="w-3.5 h-3.5 text-gold-600" />
                         Best {best[g.gameKey]}/10
@@ -152,13 +182,18 @@ export default function GamesHubPage() {
                     )}
                   </span>
                   <span className="inline-flex items-center gap-1 text-sm font-medium text-gold-700 group-hover:text-gold-800">
-                    Play <ArrowRight className="w-4 h-4" />
+                    {locked ? (
+                      <>Join FIC <ArrowRight className="w-4 h-4" /></>
+                    ) : (
+                      <>Play <ArrowRight className="w-4 h-4" /></>
+                    )}
                   </span>
                 </div>
               </div>
             </Link>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
