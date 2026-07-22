@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Menu,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -32,7 +33,14 @@ interface Tab {
  *   teens   → Watchlist + Missions      (research + gamified engagement)
  *   kids    → Missions + Games          (earn-rewards loop + play)
  */
-function flanksFor(role?: string, ageGroup?: string): [Tab, Tab] {
+function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, Tab] {
+  // Free tier: only the unlocked surfaces belong on the bar (the rest are
+  // locked), so flank Community with the Free Class hub and the Join-FIC upsell.
+  if (tier === "free")
+    return [
+      { label: "Free Class", href: "/free-class", icon: Video },
+      { label: "Join FIC", href: "/upgrade", icon: Sparkles },
+    ];
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";
   const Watchlist: Tab = { label: "Watchlist", href: "/watchlist", icon: Eye };
@@ -59,7 +67,7 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const [flank1, flank2] = flanksFor(user.role, user.age_group);
+  const [flank1, flank2] = flanksFor(user.role, user.age_group, user.tier);
   const HOME: Tab = { label: "Home", href: "/dashboard", icon: Home };
 
   // Close the sheet whenever the route changes (e.g. after tapping an item).

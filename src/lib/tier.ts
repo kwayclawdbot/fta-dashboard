@@ -14,7 +14,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * be shown cross-family without widening enrollments RLS.
  */
 
-export type FamilyTier = "fic" | "fta";
+export type FamilyTier = "free" | "fic" | "fta";
 export type ProgramKey = "fic" | "fta";
 /** Legacy values still used by courses.min_tier / live_sessions.min_tier. */
 export type SessionTier = "challenge" | "academy";
@@ -48,6 +48,15 @@ export const TIER_CONFIG: Record<
     chip: "bg-sand text-soft",
     avatarRing: "",
   },
+  // Free tier — social-funnel signups. A quiet neutral chip, never punished;
+  // the whole app nudges them toward joining FIC, so the badge itself stays calm.
+  free: {
+    label: "Free",
+    name: "Free member",
+    premium: false,
+    chip: "bg-sand text-soft",
+    avatarRing: "",
+  },
 };
 
 // ── Access matrix ────────────────────────────────────────────────────────────
@@ -63,6 +72,14 @@ export const TIER_ACCESS: Record<
     tracks: readonly ContentTrack[];
   }
 > = {
+  // Free members unlock NO paid content programs or member live sessions. Track
+  // access stays age-based (unused here since they have no course/session
+  // access), matching the shape of the other tiers.
+  free: {
+    programs: [],
+    sessionTiers: [],
+    tracks: ["kids", "teens", "adults", "all"],
+  },
   fic: {
     programs: ["fic"],
     sessionTiers: ["challenge"],
@@ -118,7 +135,14 @@ export function tierFromPrograms(
 }
 
 function normalizeTier(value: unknown): FamilyTier {
-  return value === "fta" ? "fta" : "fic";
+  if (value === "fta") return "fta";
+  if (value === "free") return "free";
+  return "fic";
+}
+
+/** True for the social-funnel free tier (read-only community, locked academy). */
+export function isFreeTier(tier: FamilyTier): boolean {
+  return tier === "free";
 }
 
 // ── Fetchers (family_tiers view, migration 029) ─────────────────────────────

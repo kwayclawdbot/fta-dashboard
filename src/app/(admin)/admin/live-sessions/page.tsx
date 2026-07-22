@@ -54,6 +54,7 @@ const TRACK_OPTIONS = [
 // Must match the live_sessions_class_type_check constraint (031).
 const CLASS_TYPE_OPTIONS = [
   { value: "", label: "— none —" },
+  { value: "free_class", label: "Free Class (public funnel)" },
   { value: "weekly_class", label: "Weekly Family Stock Class" },
   { value: "guest_speaker", label: "Guest Speaker" },
   { value: "orientation", label: "Orientation" },

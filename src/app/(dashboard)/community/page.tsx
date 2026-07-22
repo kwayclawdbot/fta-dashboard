@@ -415,6 +415,10 @@ export default function CommunityPage() {
 
   const tierOf = (a: FeedAuthor | null): FamilyTier => (a?.family_id && tiers[a.family_id]) || "fic";
 
+  // FREE-tier families can VIEW the feed + rooms but can't post, like, or
+  // comment. Every write affordance is swapped for a tasteful "Join FIC" nudge.
+  const readOnly = myTier === "free";
+
   const anchor = posts.find((p) => p.kind === "anchor");
   const feedList = posts.filter((p) => p.kind !== "anchor");
 
@@ -434,7 +438,10 @@ export default function CommunityPage() {
           {/* Pinned This Week anchor */}
           {anchor && <AnchorCard post={anchor} onReply={() => toggleComments(anchor.id)} />}
 
-          {/* Composer */}
+          {/* Composer — or a read-only upsell for free members */}
+          {readOnly ? (
+            <FreeComposerUpsell />
+          ) : (
           <div className="paper-card p-4">
             <div className="flex gap-3">
               <Avatar name={me?.display_name} avatarUrl={me?.avatar_url} role={me?.role} tier={(me?.family_id && tiers[me.family_id]) || myTier} size="lg" />
@@ -513,6 +520,7 @@ export default function CommunityPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Feed */}
           {loading ? (
@@ -537,14 +545,14 @@ export default function CommunityPage() {
                 <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
                   {p.kind === "activity" ? (
                     <ActivityCard
-                      post={p} me={me}
+                      post={p} me={me} readOnly={readOnly}
                       likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
                       commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
                       comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
                     />
                   ) : (
                     <PostCard
-                      post={p} me={me} tier={tierOf(p.author)}
+                      post={p} me={me} tier={tierOf(p.author)} readOnly={readOnly}
                       likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
                       commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
                       comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
@@ -640,6 +648,7 @@ const ROLE_CHIP: Record<string, string> = {
 interface EngagementProps {
   post: FeedPost;
   me: Me | null;
+  readOnly?: boolean;
   likeCount: number;
   liked: boolean;
   onLike: () => void;
@@ -651,19 +660,46 @@ interface EngagementProps {
   tierOf: (a: FeedAuthor | null) => FamilyTier;
 }
 
-function LikeCommentBar({ liked, likeCount, onLike, commentCount, onToggleComments }: {
-  liked: boolean; likeCount: number; onLike: () => void; commentCount: number; onToggleComments: () => void;
+function LikeCommentBar({ liked, likeCount, onLike, commentCount, onToggleComments, readOnly }: {
+  liked: boolean; likeCount: number; onLike: () => void; commentCount: number; onToggleComments: () => void; readOnly?: boolean;
 }) {
+  // Free members: counts stay visible (they can read the conversation) but the
+  // like affordance is inert. The comment button still opens the thread to read.
   return (
     <div className="flex items-center gap-4 mt-3">
-      <button onClick={onLike} className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${liked ? "text-red-500" : "text-soft hover:text-red-500"}`}>
-        <Heart className={`w-4 h-4 ${liked ? "fill-red-500" : ""}`} />
+      <button
+        onClick={readOnly ? undefined : onLike}
+        disabled={readOnly}
+        className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${readOnly ? "text-soft cursor-default" : liked ? "text-red-500" : "text-soft hover:text-red-500"}`}
+      >
+        <Heart className={`w-4 h-4 ${liked && !readOnly ? "fill-red-500" : ""}`} />
         {likeCount > 0 ? likeCount : "Like"}
       </button>
       <button onClick={onToggleComments} className="flex items-center gap-1.5 text-xs font-medium text-soft hover:text-gold-700 transition-colors">
         <MessageCircle className="w-4 h-4" />
         {commentCount > 0 ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}` : "Comment"}
       </button>
+    </div>
+  );
+}
+
+// Read-only community composer for free members — a warm "Join FIC to post" card.
+function FreeComposerUpsell() {
+  return (
+    <div className="paper-card p-5 flex items-center gap-4 ring-1 ring-gold-300">
+      <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+        <Sparkles className="w-6 h-6 text-gold-700" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-display font-semibold text-ink">You&apos;re viewing the club as a free member</p>
+        <p className="text-sm text-soft">Join FIC to post, like, and comment with the community.</p>
+      </div>
+      <a
+        href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a"
+        className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs shrink-0"
+      >
+        Join FIC <ArrowRight className="w-3.5 h-3.5" />
+      </a>
     </div>
   );
 }
@@ -688,7 +724,7 @@ function PostCard(props: EngagementProps & { tier: FamilyTier }) {
             <WatchlistShareCard payload={post.activity_payload} />
           )}
           <PostAttachment url={post.attachment_url} type={post.attachment_type} name={post.attachment_meta?.name} />
-          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} />
+          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} readOnly={props.readOnly} />
         </div>
       </div>
       {props.commentsOpen && <CommentThread {...props} />}
@@ -715,7 +751,7 @@ function ActivityCard(props: EngagementProps) {
             {payload.family_name ? <span className="text-soft"> · {payload.family_name}</span> : null}
           </p>
           <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
-          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} />
+          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} readOnly={props.readOnly} />
         </div>
       </div>
       {props.commentsOpen && <CommentThread {...props} />}
@@ -787,7 +823,7 @@ function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
 }
 
 function CommentThread(props: EngagementProps) {
-  const { post, me, comments, onAddComment } = props;
+  const { post, me, comments, onAddComment, readOnly } = props;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -824,7 +860,13 @@ function CommentThread(props: EngagementProps) {
           </div>
         ))
       )}
-      {me && (
+      {me && readOnly && (
+        <p className="text-xs text-soft">
+          <a href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a" className="text-gold-700 font-semibold">Join FIC</a>{" "}
+          to join the conversation.
+        </p>
+      )}
+      {me && !readOnly && (
         <div>
           {err && <p className="text-[11px] text-red-600 mb-1">{err}</p>}
           <div className="flex items-end gap-2">

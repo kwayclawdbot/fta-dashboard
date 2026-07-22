@@ -35,6 +35,8 @@ import {
 import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
 import Avatar from "@/components/Avatar";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
+import FreeHome from "@/components/dashboard/FreeHome";
+import { getFamilyTier } from "@/lib/tier";
 
 /* ---------- types ---------- */
 
@@ -133,6 +135,7 @@ export default function DashboardHome() {
   const [ficWeek, setFicWeek] = useState<FicWeek | null>(null);
   const [orientationDone, setOrientationDone] = useState(0);
   const [hasFamily, setHasFamily] = useState(false);
+  const [isFree, setIsFree] = useState(false);
 
   useEffect(() => {
     setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
@@ -173,6 +176,16 @@ export default function DashboardHome() {
       const famId = profile?.family_id ?? null;
       const track = hs?.track || "adults";
       setHasFamily(!!famId);
+
+      // FREE tier gets a dedicated, limited home (the free-class hub + upsell).
+      // Short-circuit before loading any member content.
+      const tier = await getFamilyTier(supabase, famId);
+      if (tier === "free") {
+        setFirstName(profile?.display_name?.split(" ")[0] || "");
+        setIsFree(true);
+        setLoading(false);
+        return;
+      }
 
       // Round trip 2: the remaining independent work runs concurrently instead
       // of chaining (daily-5 due count + family orientation + parent strip).
@@ -262,6 +275,10 @@ export default function DashboardHome() {
         <div className="h-40 rounded-2xl bg-sand/40" />
       </div>
     );
+  }
+
+  if (isFree) {
+    return <FreeHome firstName={firstName} />;
   }
 
   const isKid = home?.role === "child" && home?.track === "kids";
