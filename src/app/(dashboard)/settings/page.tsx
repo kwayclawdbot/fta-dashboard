@@ -231,6 +231,18 @@ export default function SettingsPage() {
 
       <div className="border-t border-sand mb-8" />
 
+      {/* Help */}
+      <div className="paper-card p-5 mb-6">
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">Help</h3>
+        <a
+          href="/dashboard?tour=1"
+          className="inline-flex items-center gap-2 text-sm font-medium text-gold-700 hover:text-gold-800"
+          onClick={() => { try { localStorage.removeItem("fic-tour-done"); } catch {} }}
+        >
+          Replay the app tour →
+        </a>
+      </div>
+
       {/* Appearance */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.09, duration: 0.3 }} className="mb-10">
         <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Appearance</h3>

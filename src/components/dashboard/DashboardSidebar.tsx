@@ -281,6 +281,7 @@ export default function DashboardSidebar({
             <div key={item.href}>
               <Link
                 href={item.href}
+                data-tour={"nav:" + item.href}
                 onClick={onMobileClose}
                 className={`
                   relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors

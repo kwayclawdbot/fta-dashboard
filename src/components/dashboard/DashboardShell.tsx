@@ -4,6 +4,8 @@ import { useState } from "react";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
+import AppTour from "@/components/tour/AppTour";
+import { Suspense } from "react";
 
 import type { FamilyTier } from "@/lib/tier";
 
@@ -53,6 +55,10 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
 
       {/* App-style bottom tab bar — phones only, dashboard routes only. */}
       <MobileTabBar user={user} />
+
+      <Suspense fallback={null}>
+        <AppTour user={user} />
+      </Suspense>
     </div>
   );
 }

@@ -100,6 +100,7 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
     return (
       <Link
         href={tab.href}
+        data-tour={"tab:" + tab.href}
         className="flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5"
       >
         <Icon
@@ -137,6 +138,7 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
           {/* Center — elevated Community, the app's main action */}
           <Link
             href="/community"
+            data-tour="tab:/community"
             aria-label="Community"
             className="relative flex flex-1 flex-col items-center justify-end pb-1.5"
           >
@@ -163,6 +165,7 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
           {/* More — opens the full-nav bottom sheet */}
           <button
             type="button"
+            data-tour="tab:more"
             onClick={() => setMoreOpen(true)}
             aria-label="More"
             aria-expanded={moreOpen}

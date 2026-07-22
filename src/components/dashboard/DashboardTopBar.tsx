@@ -84,7 +84,7 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
         {/* Right: notifications, avatar */}
         <div className="flex items-center gap-3">
           {/* Notification bell — live unread count + dropdown */}
-          <NotificationsBell />
+          <span data-tour="bell" className="inline-flex"><NotificationsBell /></span>
 
           {/* User dropdown */}
           <div className="relative" ref={dropdownRef}>

@@ -327,7 +327,7 @@ export default function DashboardHome() {
 
       {/* Start Here — persistent until the family finishes orientation */}
       {showStartHere && (
-        <Link href="/start-here" className="block">
+        <Link href="/start-here" className="block" data-tour="start-here">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -366,6 +366,7 @@ export default function DashboardHome() {
         ].map((t) => (
           <button
             key={t.id}
+            data-tour={t.id === "week" ? "thisweek-tab" : undefined}
             onClick={() => setTab(t.id)}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               tab === t.id
