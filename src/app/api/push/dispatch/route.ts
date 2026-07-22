@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/site-url";
+import {
+  enqueueEmailFallback,
+  processEmailQueue,
+} from "@/lib/server/email-fallback";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,6 +125,18 @@ async function dispatchOne(
     .select("id, endpoint, p256dh, auth")
     .eq("user_id", n.user_id);
 
+  // EMAIL FALLBACK: a recipient with NO push subscriptions would miss this
+  // entirely. For high-value types only, enqueue an email so they're still
+  // reached (processed below / by the email-fallback route). No-op for chat
+  // noise and for users who do have a live device.
+  if (!subs || subs.length === 0) {
+    await enqueueEmailFallback(supabase, {
+      id: n.id,
+      user_id: n.user_id,
+      type: n.type,
+    });
+  }
+
   if (subs && subs.length > 0) {
     let actorName = "Someone";
     if (n.actor_id) {
@@ -190,6 +206,15 @@ export async function POST(req: NextRequest) {
 
   // Sweep mode: process everything undispatched from the last 24h
   if (req.nextUrl.searchParams.get("sweep") === "1") {
+    // Maintenance: reap abandoned devices. Dispatch already prunes 404/410 on
+    // send; this drops subscriptions no live client has touched in 60 days
+    // (last_seen_at is bumped by the client heal + resubscribe paths).
+    const cutoff = new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString();
+    const { count: reaped } = await supabase
+      .from("push_subscriptions")
+      .delete({ count: "exact" })
+      .lt("last_seen_at", cutoff);
+
     const { data: pending } = await supabase
       .from("notifications")
       .select("*")
@@ -206,12 +231,16 @@ export async function POST(req: NextRequest) {
       sent += r.sent;
       pruned += r.pruned;
     }
+    // Flush any queued email fallbacks accumulated by this sweep.
+    const email = await processEmailQueue(supabase, 50);
     return NextResponse.json({
       ok: true,
       mode: "sweep",
       processed: pending?.length ?? 0,
       sent,
       pruned,
+      reaped_stale_subs: reaped ?? 0,
+      email,
     });
   }
 
@@ -237,5 +266,14 @@ export async function POST(req: NextRequest) {
   }
 
   const { sent, pruned } = await dispatchOne(supabase, n);
-  return NextResponse.json({ ok: true, sent, pruned });
+
+  // If this recipient had no device and the type is high-value, dispatchOne
+  // enqueued an email — process it now so the fallback is immediate. Bounded
+  // and best-effort; a 403 on the unverified domain is recorded, not thrown.
+  let email;
+  if (sent === 0) {
+    email = await processEmailQueue(supabase, 5);
+  }
+
+  return NextResponse.json({ ok: true, sent, pruned, email });
 }
