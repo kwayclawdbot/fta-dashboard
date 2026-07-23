@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LineChart, Target } from "lucide-react";
+import { LineChart, Target, Bot } from "lucide-react";
 
 /**
- * Shared tab bar for the two faces of the simulator feature: the live Trading
- * Floor (/simulator) and Pattern Practice (/simulator/lessons). Rendered at the
- * top of both pages so they read as one destination with two tabs — Pattern
- * Practice is no longer a separate card in the Games arcade (audit item 12).
+ * Shared tab bar for the faces of the simulator feature: the live Trading Floor
+ * (/simulator), Pattern Practice (/simulator/lessons) and Simbot
+ * (/simulator/simbot — the embedded price-action simulator). Rendered at the
+ * top of each page so they read as one destination with tabs — Pattern Practice
+ * is no longer a separate card in the Games arcade (audit item 12).
  */
 const TABS = [
   { href: "/simulator", label: "Trading Floor", icon: LineChart },
   { href: "/simulator/lessons", label: "Pattern Practice", icon: Target },
+  { href: "/simulator/simbot", label: "Simbot", icon: Bot },
 ] as const;
 
 export default function SimulatorTabs() {
