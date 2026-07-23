@@ -1443,6 +1443,145 @@ input,select{font-family:var(--mono);}
 @keyframes aiblink{0%,60%,100%{opacity:.3;}30%{opacity:1;}}
 @media(max-width:520px){.ai-drawer{width:100vw;}.ai-fab{right:12px;}}
 </style>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     FTA PLATFORM RESKIN — chrome/CSS only. Remaps Simbot's native chrome
+     palette (--bg/--panel/--line/--text*/--amber) onto the platform token
+     palette (paper/ink/soft/sand/card + gold) for both themes. The candle
+     up/down semantics (--green/--red) and the chart engine are UNTOUCHED.
+     Driven by <html data-fta-theme="light|dark"> which the embed bootstrap
+     sets from ?theme= / postMessage. Standalone (no attr) stays Simbot dark.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<style id="fta-reskin">
+  /* platform typography — system stack so it reads like the host app without
+     needing web fonts the iframe cannot load */
+  :root[data-fta-theme] html,
+  :root[data-fta-theme] body,
+  :root[data-fta-theme] button,
+  :root[data-fta-theme] input,
+  :root[data-fta-theme] select,
+  :root[data-fta-theme] textarea {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* LIGHT — warm paper */
+  :root[data-fta-theme="light"] {
+    --bg:#FBF7EF;          /* paper */
+    --panel:#FFFFFF;       /* card */
+    --line:#EAE2D0;        /* sand */
+    --line-soft:#F1EADB;
+    --text:#101828;        /* ink */
+    --text-dim:#5B6472;    /* soft */
+    --text-dimmer:#98A2B3;
+    --amber:#B45309;       /* gold-700 — accessible accent on paper */
+    --amber-dim:#FEF3C7;   /* chip-amber */
+    --blue:#2563EB;
+    --violet:#7C3AED;
+    --teal:#0E9E92;
+  }
+  /* DARK — warm charcoal */
+  :root[data-fta-theme="dark"] {
+    --bg:#17120B;          /* paper (dark) */
+    --panel:#221C14;       /* card (dark) */
+    --line:#38322A;        /* sand (dark) */
+    --line-soft:#2A251D;
+    --text:#F7F2E6;        /* ink (dark) */
+    --text-dim:#968D7B;    /* soft (dark) */
+    --text-dimmer:#6A6456;
+    --amber:#FBBF24;       /* gold-400 */
+    --amber-dim:rgba(251,191,36,0.15);
+    --blue:#4d9dff;
+    --violet:#a78bfa;
+    --teal:#3ee6d8;
+  }
+  /* keep the scripted candle colors token-aligned but semantics intact */
+  :root[data-fta-theme] { color-scheme: light dark; }
+
+  /* ── Live Market overlay (added by fta-embed) ── */
+  #ftaLive{position:fixed;inset:0;z-index:1400;background:var(--bg);color:var(--text);
+    display:none;flex-direction:column;overflow:hidden;}
+  #ftaLive.on{display:flex;}
+  .ftaLive-head{display:flex;align-items:center;gap:10px;padding:12px 16px;
+    border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .ftaLive-head h2{font-size:15px;font-weight:800;margin:0;letter-spacing:.2px;}
+  .ftaLive-badge{font-size:10.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.4px;color:#78350F;background:#FDE68A;padding:3px 8px;border-radius:999px;}
+  :root[data-fta-theme="dark"] .ftaLive-badge{color:#FDE68A;background:rgba(251,191,36,.15);}
+  .ftaLive-tickers{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;
+    border-bottom:1px solid var(--line);}
+  .ftaLive-tk{flex:0 0 auto;font-size:12px;font-weight:700;padding:6px 11px;border-radius:8px;
+    border:1px solid var(--line);background:var(--panel);color:var(--text-dim);cursor:pointer;
+    white-space:nowrap;}
+  .ftaLive-tk.on{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
+  .ftaLive-body{flex:1;min-height:0;display:flex;gap:14px;padding:14px 16px;flex-wrap:wrap;
+    overflow:auto;align-content:flex-start;}
+  .ftaLive-chartwrap{flex:1 1 380px;min-width:0;}
+  .ftaLive-price{font-size:26px;font-weight:800;}
+  .ftaLive-chg.up{color:var(--green);} .ftaLive-chg.down{color:var(--red);}
+  .ftaLive-canvas{width:100%;height:240px;display:block;border:1px solid var(--line);
+    border-radius:10px;background:var(--panel);margin-top:8px;}
+  .ftaLive-order{flex:0 0 230px;border:1px solid var(--line);border-radius:12px;
+    background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:9px;}
+  .ftaLive-order label{font-size:11px;color:var(--text-dim);font-weight:700;text-transform:uppercase;}
+  .ftaLive-order input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-size:14px;}
+  .ftaLive-btns{display:flex;gap:8px;}
+  .ftaLive-btns button{flex:1;padding:9px;border-radius:8px;border:none;font-weight:800;
+    font-size:13px;cursor:pointer;color:#fff;}
+  .ftaLive-buy{background:var(--green);} .ftaLive-sell{background:var(--red);}
+  .ftaLive-pos{font-size:12px;color:var(--text-dim);line-height:1.7;}
+  .ftaLive-pos .pnl.up{color:var(--green);} .ftaLive-pos .pnl.down{color:var(--red);}
+  .ftaLive-close{margin-top:6px;padding:7px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-weight:700;font-size:12px;cursor:pointer;width:100%;}
+  .ftaLive-note{width:100%;font-size:11px;color:var(--text-dimmer);padding:2px 2px 8px;}
+  .ftaMode{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;
+    margin-left:8px;vertical-align:middle;}
+  .ftaMode button{background:var(--panel);color:var(--text-dim);border:none;font-size:11px;
+    font-weight:700;padding:5px 9px;cursor:pointer;}
+  .ftaMode button.on{background:var(--amber-dim);color:var(--amber);}
+  .ftaLive-x{margin-left:auto;background:none;border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:5px 11px;font-weight:700;cursor:pointer;}
+  /* Simbot lesson pages: cross-link back to full platform lesson */
+  .fta-fulllesson{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:8px 13px;
+    border:1px solid var(--amber);border-radius:9px;color:var(--amber);background:var(--amber-dim);
+    font-weight:700;font-size:12.5px;text-decoration:none;}
+</style>
+
+<!-- Embed bootstrap: parse ?uid/?theme/?embed BEFORE first paint (no flash),
+     expose window.__FTA__ (emitter + config), and keep theme live via postMessage. -->
+<script id="fta-embed-boot">
+(function(){
+  var p = new URLSearchParams(location.search);
+  var embed = p.get('embed') === '1' || p.has('uid');
+  var uid = p.get('uid') || '';
+  var theme = p.get('theme') === 'dark' ? 'dark' : (p.get('theme') === 'light' ? 'light' : null);
+  // Apply theme immediately so there is no dark-flash before the platform paints.
+  if (theme) document.documentElement.setAttribute('data-fta-theme', theme);
+  function emit(event, payload){
+    var msg = { type:'fta-simbot', v:1, event:event, payload:payload||{}, ts:Date.now() };
+    try{ window.__ftaSimbotLog = window.__ftaSimbotLog || []; window.__ftaSimbotLog.push(msg); }catch(e){}
+    try{ if(window.parent && window.parent!==window) window.parent.postMessage(msg,'*'); }catch(e){}
+    return msg;
+  }
+  window.__FTA__ = {
+    embed: embed,
+    uid: uid,
+    // deep-link base for "Read the full lesson" cross-links (parent origin)
+    platformOrigin: p.get('origin') || '',
+    emit: emit
+  };
+  // Live theme updates from the host app.
+  window.addEventListener('message', function(e){
+    var d = e.data;
+    if(d && d.type === 'fta-theme' && (d.theme === 'light' || d.theme === 'dark')){
+      document.documentElement.setAttribute('data-fta-theme', d.theme);
+    }
+  });
+  // Tell the host we mounted (host may reply with the current theme).
+  try{ if(window.parent && window.parent!==window) window.parent.postMessage({type:'fta-simbot',v:1,event:'ready',payload:{},ts:Date.now()},'*'); }catch(e){}
+})();
+</script>
 </head>
 <body>
 <!-- SIGN IN -->
@@ -6498,6 +6637,21 @@ function closePosition(pos, qty, price, reason){
   pos.qty -= qty;
   logHistory({symbol:pos.symbol, side: pos.side==='long'?'SELL':'BUY', qty, price, pnl, type:'CLOSE', reason});
   if(pos.qty<=1e-7){ ACCOUNT.positions = ACCOUNT.positions.filter(p=>p!==pos); }
+  // Platform XP bridge: first profitable closed trade worth >= 1R (once ever,
+  // per platform user). R needs a defined stop; unstopped wins don't qualify.
+  if(pnl > 0 && pos.stopLoss && window.__FTA__ && window.__FTA__.emit){
+    var _risk = Math.abs(pos.entryPrice - pos.stopLoss) * qty;
+    if(_risk > 0 && (pnl / _risk) >= 1){
+      var _seenR = false;
+      try{ _seenR = localStorage.getItem(ns('ftaFirstR')) === '1'; }catch(e){}
+      if(!_seenR){
+        try{ localStorage.setItem(ns('ftaFirstR'), '1'); }catch(e){}
+        window.__FTA__.emit('first_profitable_r', {
+          symbol: pos.symbol, r: Math.round((pnl / _risk) * 100) / 100, pnl: Math.round(pnl * 100) / 100
+        });
+      }
+    }
+  }
   return pnl;
 }
 function executeTrade(symbol, side, qty, price, stopLoss, takeProfit){
@@ -7020,8 +7174,29 @@ function lessonUnlocked(i){
   return lessonDone(LESSONS[i-1].id);
 }
 function completeLesson(id){
-  if(!lessonDone(id)){ LESSON_PROGRESS.done.push(id); saveLessons(); }
+  var _wasNew = !lessonDone(id);
+  if(_wasNew){ LESSON_PROGRESS.done.push(id); saveLessons(); }
   updateLessonProgressChips();
+  // Platform XP bridge — internal Simbot progress stays internal; we only emit
+  // milestones the platform awards XP for (host decides amounts + dedups).
+  if(_wasNew && window.__FTA__ && window.__FTA__.emit){
+    var _L = LESSONS.find(function(x){ return x.id === id; });
+    // milestone: each Simbot lesson completed once -> one platform lesson award
+    window.__FTA__.emit('lesson_complete', {
+      id: id, title: (_L && _L.title) || id, stage: _L ? _L.stage : null
+    });
+    // milestone: internal level-up = a whole stage just finished (once per stage)
+    if(_L){
+      var _stageLessons = LESSONS.filter(function(x){ return x.stage === _L.stage; });
+      var _allDone = _stageLessons.every(function(x){ return lessonDone(x.id); });
+      if(_allDone){
+        window.__FTA__.emit('level_up', {
+          stage: _L.stage,
+          name: (STAGES[_L.stage] && STAGES[_L.stage].name) || ('Stage ' + _L.stage)
+        });
+      }
+    }
+  }
 }
 function updateLessonProgressChips(){
   const txt = LESSON_PROGRESS.done.length+'/'+LESSONS.length;
@@ -8452,6 +8627,7 @@ function renderLessonPage(){
         <div class="step">${stage.name} · LESSON ${LZ.idx+1} OF ${LESSONS.length}</div>
         <h2>${l.title}</h2>
         <div class="pg-dots">${dots}<span class="pg-count">${LZ.page+1}/${LZ.pages.length}</span></div>
+        ${(typeof ftaFullLessonLink==='function') ? ftaFullLessonLink(l.id) : ''}
         <div class="pg-card" id="pgCard">${bodyHtml}</div>
         <div class="pg-nav">
           <button class="pg-btn ghost" id="pgBack" ${LZ.page===0?'disabled':''}>← Back</button>
@@ -9206,12 +9382,313 @@ function init(){
 }
 document.addEventListener('DOMContentLoaded', ()=>{
   buildAuthScreen();
+  // Embedded in the FTA platform: the platform IS the account. Skip the local
+  // login gate and namespace all localStorage per platform user id (via ns()),
+  // so shared family devices never collide. No email/password inside the frame.
+  var FTA = window.__FTA__;
+  if(FTA && FTA.embed){
+    SESSION.email = FTA.uid ? ('fta:' + FTA.uid) : null;
+    SESSION.guest = !FTA.uid;
+    var _ov = document.getElementById('authOverlay');
+    if(_ov) _ov.style.display = 'none';
+    bootApp();
+    if(typeof ftaInitEmbed === 'function') ftaInitEmbed();
+    return;
+  }
   if(restoreSession()){
     document.getElementById('authOverlay').style.display = 'none';
     bootApp();
   }
 });
 
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     FTA EMBED ADD-ONS — runs after the main script has defined its globals.
+     Nothing here touches the market engine: it only (a) renders the
+     "Read the full lesson" cross-links, and (b) adds the Live Market mode
+     (a parallel real-delayed-data surface via the same-origin /api/market
+     proxy). The synthetic terminal stays the default and is untouched.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script id="fta-embed-addons">
+(function(){
+  'use strict';
+  var TEENS = '/courses/fic-teens-foundations';
+  var MOD = {
+    1:'f1c00000-0002-0001-0000-000000000001',
+    2:'f1c00000-0002-0002-0000-000000000001',
+    3:'f1c00000-0002-0003-0000-000000000001',
+    5:'f1c00000-0002-0005-0000-000000000001',
+    6:'f1c00000-0002-0006-0000-000000000001'
+  };
+  function href(mod, lesson){ return TEENS + '/' + MOD[mod] + '/' + lesson; }
+  // Simbot lesson id -> overlapping teens platform lesson (see SIMBOT-LESSON-MAP.md).
+  // 'fvg' is intentionally omitted — it is unique to Simbot (advanced), no full lesson.
+  window.FTA_LESSON_LINKS = {
+    fight:    { t:'What Moves a Price: Supply & Demand', h: href(2,'f1c00000-0002-0002-0002-000000000001') },
+    time:     { t:'Anatomy of a Candlestick',            h: href(2,'f1c00000-0002-0002-0004-000000000001') },
+    read:     { t:'Reading a Candle: Who Won?',          h: href(2,'f1c00000-0002-0002-0005-000000000001') },
+    body:     { t:'Reading a Candle: Who Won?',          h: href(2,'f1c00000-0002-0002-0005-000000000001') },
+    doji:     { t:'Anatomy of a Candlestick',            h: href(2,'f1c00000-0002-0002-0004-000000000001') },
+    engulf:   { t:'Chart Patterns & Indicators',         h: href(3,'f1c00000-0002-0003-0001-000000000001') },
+    pinbar:   { t:'Chart Patterns & Indicators',         h: href(3,'f1c00000-0002-0003-0001-000000000001') },
+    swings:   { t:'Trend Structure: Higher Highs & Higher Lows', h: href(2,'f1c00000-0002-0002-0007-000000000001') },
+    trend:    { t:'Trend Structure: Higher Highs & Higher Lows', h: href(2,'f1c00000-0002-0002-0007-000000000001') },
+    range:    { t:'When Levels Break: Role Reversal & Breakouts', h: href(2,'f1c00000-0002-0002-0009-000000000001') },
+    levels:   { t:'Support & Resistance: The Floor and the Ceiling', h: href(2,'f1c00000-0002-0002-0008-000000000001') },
+    flip:     { t:'When Levels Break: Role Reversal & Breakouts', h: href(2,'f1c00000-0002-0002-0009-000000000001') },
+    fake:     { t:'Support & Resistance: The Floor and the Ceiling', h: href(2,'f1c00000-0002-0002-0008-000000000001') },
+    trendline:{ t:'Trend Structure: Higher Highs & Higher Lows', h: href(2,'f1c00000-0002-0002-0007-000000000001') },
+    stop:     { t:'The 1-2% Rule & Position Sizing',     h: href(5,'f1c00000-0002-0005-0001-000000000001') },
+    rmultiple:{ t:'The 1-2% Rule & Position Sizing',     h: href(5,'f1c00000-0002-0005-0001-000000000001') },
+    sizing:   { t:'The 1-2% Rule & Position Sizing',     h: href(5,'f1c00000-0002-0005-0001-000000000001') },
+    checklist:{ t:'The First-Trade Checklist',           h: href(6,'f1c00000-0002-0006-0002-000000000001') },
+    replay:   { t:'Paper Trading Setup',                 h: href(6,'f1c00000-0002-0006-0001-000000000001') }
+  };
+  // Rendered inside renderLessonPage(). Only when embedded AND the lesson maps.
+  window.ftaFullLessonLink = function(id){
+    var FTA = window.__FTA__;
+    if(!FTA || !FTA.embed) return '';
+    var link = window.FTA_LESSON_LINKS[id];
+    if(!link) return '';
+    // same-origin: target _top so the deep-link navigates the platform, not the frame
+    return '<a class="fta-fulllesson" href="' + link.h + '" target="_top" ' +
+           'title="Open the full platform lesson">📖 Read the full lesson: ' + link.t + ' →</a>';
+  };
+
+  /* ───────────────────────── LIVE MARKET MODE ─────────────────────────
+     A parallel surface fed by the same-origin /api/market proxy (delayed
+     ~15 min). Real curated tickers, real delayed quote + daily-close line
+     chart, and a delayed paper-trade layer (isolated from the synthetic
+     ACCOUNT so it never pollutes the R-accounting or the XP milestones).
+     Polls every 30s. See SIMBOT-WIRING.md / SIMBOT-LESSON-MAP.md notes for
+     the honest-subset rationale (the /api/market/bars endpoint returns
+     DAILY closes only — no intraday OHLC — so the synthetic candlestick
+     engine cannot be faithfully driven by real bars without backend
+     surgery; Live mode is therefore a real-data companion, not a swap-in). */
+  var LIVE = {
+    on: false, symbol: 'AAPL', quote: null, bars: null,
+    pos: null, poll: null, loading: false
+  };
+  var TICKERS = [
+    { t:'AAPL', n:'Apple' }, { t:'MSFT', n:'Microsoft' }, { t:'NVDA', n:'Nvidia' },
+    { t:'AMZN', n:'Amazon' }, { t:'GOOGL', n:'Alphabet' }, { t:'META', n:'Meta' },
+    { t:'TSLA', n:'Tesla' }, { t:'DIS', n:'Disney' }, { t:'NKE', n:'Nike' },
+    { t:'KO', n:'Coca-Cola' }, { t:'SPY', n:'S&P 500 ETF' }, { t:'QQQ', n:'Nasdaq 100 ETF' }
+  ];
+
+  function el(id){ return document.getElementById(id); }
+  function money(v){ return (v<0?'-$':'$') + Math.abs(v).toFixed(2); }
+
+  function buildLiveOverlay(){
+    if(el('ftaLive')) return;
+    var box = document.createElement('div');
+    box.id = 'ftaLive';
+    box.innerHTML =
+      '<div class="ftaLive-head">' +
+        '<h2>Live Market</h2>' +
+        '<span class="ftaLive-badge">Delayed ~15 min market data</span>' +
+        '<button class="ftaLive-x" id="ftaLiveClose">✕ Back to Synthetic</button>' +
+      '</div>' +
+      '<div class="ftaLive-tickers" id="ftaLiveTickers"></div>' +
+      '<div class="ftaLive-body">' +
+        '<div class="ftaLive-chartwrap">' +
+          '<div class="ftaLive-price" id="ftaLivePrice">—</div>' +
+          '<div class="ftaLive-chg" id="ftaLiveChg"></div>' +
+          '<canvas class="ftaLive-canvas" id="ftaLiveCanvas"></canvas>' +
+          '<div class="ftaLive-note" id="ftaLiveNote">Prices are delayed and for practice only. No real orders are placed.</div>' +
+        '</div>' +
+        '<div class="ftaLive-order">' +
+          '<label>Quantity</label>' +
+          '<input type="number" id="ftaLiveQty" min="1" step="1" value="10">' +
+          '<div class="ftaLive-btns">' +
+            '<button class="ftaLive-buy" id="ftaLiveBuy">BUY</button>' +
+            '<button class="ftaLive-sell" id="ftaLiveSell">SELL</button>' +
+          '</div>' +
+          '<div class="ftaLive-pos" id="ftaLivePos">No open position.</div>' +
+          '<button class="ftaLive-close" id="ftaLivePosClose" style="display:none;">Close position</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(box);
+    el('ftaLiveClose').onclick = function(){ setLive(false); };
+    el('ftaLiveBuy').onclick = function(){ livePlace('long'); };
+    el('ftaLiveSell').onclick = function(){ livePlace('short'); };
+    el('ftaLivePosClose').onclick = function(){ liveClose(); };
+    var tw = el('ftaLiveTickers');
+    tw.innerHTML = TICKERS.map(function(s){
+      return '<button class="ftaLive-tk" data-tk="' + s.t + '">' + s.t + '</button>';
+    }).join('');
+    tw.querySelectorAll('.ftaLive-tk').forEach(function(b){
+      b.onclick = function(){ selectLive(b.dataset.tk); };
+    });
+  }
+
+  function selectLive(sym){
+    LIVE.symbol = sym; LIVE.pos = null;
+    document.querySelectorAll('#ftaLiveTickers .ftaLive-tk').forEach(function(b){
+      b.classList.toggle('on', b.dataset.tk === sym);
+    });
+    renderLivePos();
+    loadLive();
+  }
+
+  function setLive(on){
+    LIVE.on = on;
+    var ov = el('ftaLive');
+    if(ov) ov.classList.toggle('on', on);
+    document.querySelectorAll('.ftaMode button').forEach(function(b){
+      b.classList.toggle('on', (b.dataset.mode === 'live') === on);
+    });
+    if(on){
+      selectLive(LIVE.symbol);
+      if(!LIVE.poll) LIVE.poll = setInterval(pollLive, 30000);
+    } else {
+      if(LIVE.poll){ clearInterval(LIVE.poll); LIVE.poll = null; }
+    }
+  }
+
+  async function loadLive(){
+    if(LIVE.loading) return;
+    LIVE.loading = true;
+    el('ftaLivePrice').textContent = 'Loading…';
+    el('ftaLiveChg').textContent = '';
+    try{
+      var qr = await fetch('/api/market/quote?symbol=' + encodeURIComponent(LIVE.symbol));
+      if(qr.status === 503){ liveUnavailable(); LIVE.loading=false; return; }
+      var qj = await qr.json();
+      LIVE.quote = qj.quote || null;
+      var br = await fetch('/api/market/bars?symbol=' + encodeURIComponent(LIVE.symbol) + '&range=3m');
+      var bj = br.ok ? await br.json() : null;
+      LIVE.bars = (bj && bj.bars) ? bj.bars : null;
+      renderLive();
+    }catch(e){ liveUnavailable(); }
+    LIVE.loading = false;
+  }
+  async function pollLive(){
+    if(!LIVE.on) return;
+    try{
+      var qr = await fetch('/api/market/quote?symbol=' + encodeURIComponent(LIVE.symbol));
+      if(qr.status === 503){ return; }
+      var qj = await qr.json();
+      LIVE.quote = qj.quote || LIVE.quote;
+      renderLive();
+    }catch(e){}
+  }
+
+  function liveUnavailable(){
+    el('ftaLivePrice').textContent = 'Market data unavailable';
+    el('ftaLiveChg').textContent = '';
+    el('ftaLiveNote').textContent = 'Live delayed data is not configured in this environment. Synthetic mode still works fully.';
+  }
+
+  function livePrice(){ return LIVE.quote && LIVE.quote.price != null ? LIVE.quote.price : null; }
+
+  function renderLive(){
+    var q = LIVE.quote, px = livePrice();
+    el('ftaLivePrice').textContent = px != null ? ('$' + px.toFixed(2)) : '—';
+    var chgEl = el('ftaLiveChg');
+    if(q && q.change != null){
+      var up = q.change >= 0;
+      chgEl.className = 'ftaLive-chg ' + (up ? 'up' : 'down');
+      chgEl.textContent = (up ? '+' : '') + q.change.toFixed(2) +
+        (q.changePercent != null ? ' (' + (up?'+':'') + q.changePercent.toFixed(2) + '%)' : '') + ' today';
+    } else { chgEl.textContent = ''; }
+    drawLiveChart();
+    renderLivePos();
+  }
+
+  function drawLiveChart(){
+    var cv = el('ftaLiveCanvas'); if(!cv) return;
+    var rect = cv.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = Math.max(200, rect.width * dpr); cv.height = 240 * dpr;
+    var ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    var W = rect.width, H = 240;
+    ctx.clearRect(0,0,W,H);
+    var bars = LIVE.bars;
+    if(!bars || bars.length < 2){
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-dim') || '#888';
+      ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('No chart data', W/2, H/2);
+      return;
+    }
+    var closes = bars.map(function(b){ return b.c; });
+    var lo = Math.min.apply(null, closes), hi = Math.max.apply(null, closes);
+    var pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
+    var css = getComputedStyle(document.documentElement);
+    var line = (css.getPropertyValue('--amber') || '#B45309').trim();
+    var last = closes[closes.length-1], first = closes[0];
+    var up = last >= first;
+    var xAt = function(i){ return (i/(closes.length-1)) * (W-8) + 4; };
+    var yAt = function(v){ return H - 12 - ((v-lo)/(hi-lo)) * (H-24); };
+    ctx.beginPath();
+    closes.forEach(function(c,i){ var x=xAt(i), y=yAt(c); i? ctx.lineTo(x,y): ctx.moveTo(x,y); });
+    ctx.strokeStyle = line; ctx.lineWidth = 1.8; ctx.stroke();
+    // fill under
+    ctx.lineTo(xAt(closes.length-1), H-12); ctx.lineTo(xAt(0), H-12); ctx.closePath();
+    ctx.fillStyle = (up ? 'rgba(0,180,90,0.10)' : 'rgba(220,60,50,0.10)'); ctx.fill();
+  }
+
+  function livePlace(side){
+    var px = livePrice();
+    if(px == null){ toast && toast('Live', 'No delayed price yet — try again in a moment.', 'sell'); return; }
+    var qty = Math.max(1, Math.floor(Number(el('ftaLiveQty').value) || 0));
+    if(LIVE.pos && LIVE.pos.side !== side){
+      // flip = close then open
+      liveClose();
+    }
+    if(!LIVE.pos){
+      LIVE.pos = { side: side, qty: qty, entry: px, symbol: LIVE.symbol };
+    } else {
+      // add: weighted-average entry
+      var tot = LIVE.pos.qty + qty;
+      LIVE.pos.entry = (LIVE.pos.entry*LIVE.pos.qty + px*qty)/tot;
+      LIVE.pos.qty = tot;
+    }
+    renderLivePos();
+  }
+  function liveClose(){
+    if(!LIVE.pos) return;
+    var px = livePrice(); if(px == null) return;
+    LIVE.pos = null;
+    renderLivePos();
+  }
+  function renderLivePos(){
+    var box = el('ftaLivePos'), btn = el('ftaLivePosClose');
+    if(!box) return;
+    if(!LIVE.pos){ box.textContent = 'No open position.'; if(btn) btn.style.display='none'; return; }
+    var px = livePrice();
+    var p = LIVE.pos;
+    var pnl = px == null ? 0 : (p.side==='long' ? (px-p.entry) : (p.entry-px)) * p.qty;
+    var up = pnl >= 0;
+    box.innerHTML = '<b>' + (p.side==='long'?'LONG':'SHORT') + ' ' + p.qty + ' ' + p.symbol + '</b><br>' +
+      'Entry ' + money(p.entry) + '<br>' +
+      'Delayed P&amp;L <span class="pnl ' + (up?'up':'down') + '">' + (up?'+':'') + money(pnl) + '</span>';
+    if(btn) btn.style.display = '';
+  }
+
+  // Mode toggle injected into the Simbot topbar.
+  function injectModeToggle(){
+    var bar = el('topbar'); if(!bar || el('ftaModeToggle')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'ftaMode'; wrap.id = 'ftaModeToggle';
+    wrap.innerHTML =
+      '<button data-mode="synthetic" class="on" data-tip-title="SYNTHETIC" data-tip="A safe, made-up market that never sleeps — practice any time.">Synthetic</button>' +
+      '<button data-mode="live" data-tip-title="LIVE MARKET" data-tip="Real tickers on delayed (~15 min) data. Practice reading the real market.">Live Market</button>';
+    bar.appendChild(wrap);
+    wrap.querySelector('[data-mode="synthetic"]').onclick = function(){ setLive(false); };
+    wrap.querySelector('[data-mode="live"]').onclick = function(){ setLive(true); };
+  }
+
+  // Called from the embed boot path once the app has booted.
+  window.ftaInitEmbed = function(){
+    try{
+      buildLiveOverlay();
+      injectModeToggle();
+      window.addEventListener('resize', function(){ if(LIVE.on) drawLiveChart(); });
+    }catch(e){ /* never break the terminal over an add-on */ }
+  };
+})();
 </script>
 </body>
 </html>
