@@ -327,7 +327,7 @@ export default function OnboardingPage() {
                     What&apos;s your family name?
                   </h2>
                   <p className="text-midnight-400 text-sm font-body">
-                    You&apos;re the family owner — this is how your family appears in the academy.
+                    You&apos;re the family owner — this is how your family appears in the club.
                   </p>
                 </div>
                 <div className="relative">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Check,
   X,
@@ -23,6 +23,8 @@ import {
   Target,
   Compass,
   HelpCircle,
+  BookOpen,
+  Gamepad2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
@@ -105,6 +107,30 @@ const PILLARS = [
   },
 ];
 
+// ── FIC ($99/mo) value — what a FREE member unlocks by joining the club ───────
+const FIC_PILLARS = [
+  {
+    icon: BookOpen,
+    title: "Every course, every track",
+    body: "The full foundations library plus the kids, teens and adult tracks — one membership covers everyone under your roof.",
+  },
+  {
+    icon: MessagesSquare,
+    title: "The club community room",
+    body: "The private FIC room where families share picks, wins and questions. You're reading it free right now — joining lets you post.",
+  },
+  {
+    icon: Trophy,
+    title: "Progress, XP & badges",
+    body: "Family progress tracking, XP and a credential shelf that turns learning into something the kids actually chase.",
+  },
+  {
+    icon: Gamepad2,
+    title: "Weekly club rhythm",
+    body: "A fresh focus each week, plus games and flashcards that make it stick — the habit that raises investors, not spenders.",
+  },
+];
+
 type Row = { label: string; fic: boolean | string; fta: boolean | string };
 const COMPARE: Row[] = [
   { label: "Foundations course library", fic: true, fta: true },
@@ -147,30 +173,91 @@ const FAQ = [
   },
 ];
 
+type NextClass = { title: string; when: string } | null;
+
 export default function UpgradePage() {
   const router = useRouter();
   const supabase = createClient();
+  const reduce = useReducedMotion();
   const [tier, setTier] = useState<FamilyTier | null>(null);
+  const [nextClass, setNextClass] = useState<NextClass>(null);
+
+  // Reduced-motion / no-JS-safe reveal: when the viewer prefers reduced motion
+  // we return NO motion props so cards render fully visible immediately. When
+  // motion is fine we animate on MOUNT (not whileInView) so content is never
+  // stuck invisible below the fold or in a static/full-page capture.
+  const rise = (i = 0) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 12 },
+          animate: { opacity: 1, y: 0 },
+          transition: { delay: i * 0.05 },
+        };
 
   // Billing is parent-only — children never see upgrade/billing.
   useEffect(() => {
+    let cancelled = false;
     async function load() {
+      // getSession reads the local session (no network round-trip) — far
+      // faster than getUser() on the first paint of this conversion screen.
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) {
+        // No session shouldn't happen behind the dashboard guard, but never
+        // hang on grey — show the FIC-first join page.
+        if (!cancelled) setTier("free");
+        return;
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("role, family_id")
         .eq("id", user.id)
         .single();
+      if (cancelled) return;
       if (profile?.role === "child") {
         router.replace("/dashboard");
         return;
       }
-      setTier(await getFamilyTier(supabase, profile?.family_id));
+      const t = await getFamilyTier(supabase, profile?.family_id);
+      if (cancelled) return;
+      // FTA families get a "next live class" pointer beneath their panel —
+      // one cheap query, only for the tier that shows it.
+      if (t === "fta") {
+        const { data: s } = await supabase
+          .from("live_sessions")
+          .select("title, scheduled_at")
+          .eq("status", "scheduled")
+          .order("scheduled_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (!cancelled && s?.scheduled_at) {
+          setNextClass({
+            title: s.title,
+            when: new Date(s.scheduled_at).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            }),
+          });
+        }
+      }
+      if (!cancelled) setTier(t);
     }
     load();
+    // Never let the page hang on grey — fall back to the FIC-first join view
+    // (the most common + most conversion-important viewer) after 5s.
+    const fallback = setTimeout(() => {
+      if (!cancelled) setTier((prev) => prev ?? "free");
+    }, 5000);
+    return () => {
+      cancelled = true;
+      clearTimeout(fallback);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -232,9 +319,277 @@ export default function UpgradePage() {
           </div>
         </motion.div>
 
+        {/* ── Next value: what to do next, not a dead-end ── */}
+        <div className="grid sm:grid-cols-2 gap-3 mt-4">
+          <div className="paper-card p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Video className="w-4 h-4 text-gold-600" />
+              <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                Your next live class
+              </span>
+            </div>
+            {nextClass ? (
+              <>
+                <p className="font-display font-bold text-ink text-sm leading-snug">
+                  {nextClass.title}
+                </p>
+                <p className="text-xs text-soft mt-1">{nextClass.when}</p>
+              </>
+            ) : (
+              <p className="text-sm text-soft leading-relaxed">
+                No class on the calendar yet — your coach posts the next session
+                in Live Classes. Recordings are always waiting there too.
+              </p>
+            )}
+            <Link
+              href="/live-sessions"
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 hover:text-gold-800"
+            >
+              Open Live Classes
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="paper-card p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <GraduationCap className="w-4 h-4 text-gold-600" />
+              <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                The six-week program
+              </span>
+            </div>
+            <p className="text-sm text-soft leading-relaxed">
+              Pick up where your family left off — foundations to trade ready,
+              at your own pace.
+            </p>
+            <Link
+              href="/courses"
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 hover:text-gold-800"
+            >
+              Continue the program
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
         <p className="text-center text-xs text-soft mt-6">
           Questions about your membership? Reach out to your coach in the
           community.
+        </p>
+      </div>
+    );
+  }
+
+  // ── FREE members: FIC-first. Their next decision is $99/mo, not $2,997. ──
+  if (tier === "free") {
+    return (
+      <div className="max-w-5xl mx-auto">
+        {/* ── FIC HERO ─────────────────────────────────────────────────── */}
+        <motion.section
+          {...(reduce
+            ? {}
+            : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } })}
+          className="night-island relative overflow-hidden px-6 py-12 sm:px-12 sm:py-16 text-center"
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{
+              background:
+                "radial-gradient(60% 50% at 50% 0%, rgba(251,191,36,0.18), transparent 70%)",
+            }}
+          />
+          <div className="relative">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/15 text-gold-300 text-[11px] font-display font-bold uppercase tracking-[0.14em]">
+              <Sparkles className="w-3 h-3" />
+              Family Investing Club
+            </span>
+            <h1 className="mt-5 font-display text-3xl sm:text-5xl font-bold text-white leading-[1.05]">
+              Unlock the whole club
+              <br className="hidden sm:block" /> for{" "}
+              <span className="text-gradient-gold">$99/mo</span>.
+            </h1>
+            <p className="mt-5 text-white/70 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+              You&apos;re exploring free. Joining opens every course and track,
+              the club community room, weekly games, and family progress — for
+              everyone under your roof, one membership.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href={FIC_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cta-button w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm"
+              >
+                Join the club — $99/mo
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <a
+                href="#whats-included"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-display font-semibold text-white/90 border border-white/15 hover:bg-white/5 transition-colors"
+              >
+                See what&apos;s included
+              </a>
+            </div>
+            <p className="mt-4 text-xs text-white/45">
+              Monthly, cancel anytime · Your whole family included · Keep your
+              free progress
+            </p>
+          </div>
+        </motion.section>
+
+        {/* ── FIC OUTCOME STRIP ────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          {[
+            { k: "Every course", v: "Kids, teens & adults" },
+            { k: "One price", v: "The whole family" },
+            { k: "Community", v: "Post in the club room" },
+            { k: "Weekly", v: "Games, flashcards & XP" },
+          ].map((s) => (
+            <div key={s.k} className="paper-card p-4 text-center">
+              <div className="font-display text-base font-bold text-ink leading-snug">
+                {s.k}
+              </div>
+              <div className="text-xs text-soft mt-0.5 leading-snug">{s.v}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── WHAT $99 UNLOCKS ─────────────────────────────────────────── */}
+        <section id="whats-included" className="mt-14 scroll-mt-6">
+          <SectionHead
+            eyebrow="What you unlock"
+            title="Everything the club opens up"
+            sub="You keep the free sampler either way — joining unlocks the full experience for the whole family."
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {FIC_PILLARS.map((p, i) => (
+              <motion.div key={p.title} {...rise(i)} className="paper-card p-6">
+                <div className="w-11 h-11 rounded-xl bg-chip-amber text-gold-800 flex items-center justify-center mb-4">
+                  <p.icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-display text-base font-bold text-ink">
+                  {p.title}
+                </h3>
+                <p className="text-sm text-soft leading-relaxed mt-1.5">
+                  {p.body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FINAL FIC CTA BAND ───────────────────────────────────────── */}
+        <section className="mt-14">
+          <motion.div
+            {...rise()}
+            className="paper-card ring-2 ring-gold-400 p-8 sm:p-10 text-center"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center mx-auto mb-5 shadow-soft">
+              <Users className="w-7 h-7" />
+            </div>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+              Join the Family Investing Club
+            </h2>
+            <p className="text-soft text-sm mt-3 max-w-md mx-auto leading-relaxed">
+              One membership. Every course, every track, the community room and
+              the weekly rhythm — for your whole family.
+            </p>
+            <div className="mt-4 flex items-baseline justify-center gap-2">
+              <span className="font-display text-4xl font-bold text-ink">
+                $99
+              </span>
+              <span className="text-sm text-soft">/mo · cancel anytime</span>
+            </div>
+            <a
+              href={FIC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cta-button mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-sm"
+            >
+              Join the club
+              <ArrowRight className="w-4 h-4" />
+            </a>
+            <p className="mt-5 text-xs text-soft max-w-md mx-auto">
+              Checkout opens securely with Stripe in a new tab.
+            </p>
+          </motion.div>
+        </section>
+
+        {/* ── COMPARISON ───────────────────────────────────────────────── */}
+        <section className="mt-14">
+          <SectionHead
+            eyebrow="FIC vs FTA"
+            title="Where the club can take you"
+            sub="Start with the club at $99/mo. When you're ready to go all the way to trade ready, FTA is there."
+          />
+          <div className="paper-card overflow-hidden">
+            <div className="grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_120px_120px] items-stretch border-b border-sand bg-paper">
+              <div className="px-4 py-3 text-xs font-display font-bold uppercase tracking-wider text-soft flex items-center">
+                Included
+              </div>
+              <div className="px-2 py-3 text-center text-xs font-display font-bold text-gold-800 bg-chip-amber flex items-center justify-center">
+                FIC
+              </div>
+              <div className="px-2 py-3 text-center text-xs font-display font-bold text-soft flex items-center justify-center">
+                FTA
+              </div>
+            </div>
+            {COMPARE.map((r, i) => (
+              <div
+                key={r.label}
+                className={`grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_120px_120px] items-stretch ${
+                  i !== COMPARE.length - 1 ? "border-b border-sand" : ""
+                }`}
+              >
+                <div className="px-4 py-3 text-sm text-midnight-200 flex items-center">
+                  {r.label}
+                </div>
+                <Cell value={r.fic} highlight />
+                <Cell value={r.fta} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── SECONDARY: FTA "go deeper" tier ──────────────────────────── */}
+        <section className="mt-8">
+          <div className="paper-card p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-5">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-base font-bold text-ink">
+                  Ready to go all the way?
+                </h3>
+                <TierBadge tier="fta" size="sm" />
+              </div>
+              <p className="text-sm text-soft leading-relaxed mt-1">
+                Family Trading Academy is the live, 6-week trade-ready program —
+                a one-time upgrade for families who want to go beyond the club.
+                You can start with FIC and add it later.
+              </p>
+            </div>
+            <a
+              href={FTA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm border border-sand text-ink hover:bg-paper transition-colors font-display font-semibold shrink-0 whitespace-nowrap"
+            >
+              Explore FTA — $2,997
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </section>
+
+        {/* ── DISCLAIMER ───────────────────────────────────────────────── */}
+        <p className="mt-10 mb-2 text-center text-xs text-soft max-w-2xl mx-auto leading-relaxed flex items-start justify-center gap-2">
+          <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>
+            Family Investing Club is an education platform. Nothing in the app or
+            community is financial advice or a promise of results. All in-app
+            portfolio activity uses practice money — no live trading, ever.
+          </span>
         </p>
       </div>
     );
@@ -322,14 +677,7 @@ export default function UpgradePage() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {PILLARS.map((p, i) => (
-            <motion.div
-              key={p.title}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ delay: i * 0.05 }}
-              className="paper-card p-6"
-            >
+            <motion.div key={p.title} {...rise(i)} className="paper-card p-6">
               <div className="w-11 h-11 rounded-xl bg-chip-amber text-gold-800 flex items-center justify-center mb-4">
                 <p.icon className="w-5 h-5" />
               </div>
@@ -355,10 +703,7 @@ export default function UpgradePage() {
           {CURRICULUM.map((w, i) => (
             <motion.div
               key={w.week}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ delay: (i % 3) * 0.05 }}
+              {...rise(i % 3)}
               className="paper-card p-5 flex flex-col"
             >
               <div className="flex items-center justify-between mb-3">
@@ -463,9 +808,7 @@ export default function UpgradePage() {
       {/* ── FINAL CTA BAND ───────────────────────────────────────────────── */}
       <section className="mt-14">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          {...rise()}
           className="paper-card ring-2 ring-gold-400 p-8 sm:p-10 text-center"
         >
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center mx-auto mb-5 shadow-soft">

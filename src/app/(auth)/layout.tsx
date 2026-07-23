@@ -10,10 +10,10 @@ export default function AuthLayout({
       {/* Logo */}
       <div className="mb-8 text-center">
         <h1 className="font-display text-2xl font-bold tracking-tight text-gold-600">
-          Family Trading Academy
+          Family Investing Club
         </h1>
         <p className="mt-1.5 text-midnight-400 text-sm font-body">
-          Build Generational Wealth Together
+          Raise investors, not spenders.
         </p>
       </div>
 
@@ -24,7 +24,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <p className="mt-8 text-midnight-500 text-xs font-body">
-        &copy; {new Date().getFullYear()} Family Trading Academy. All rights reserved.
+        &copy; {new Date().getFullYear()} Family Investing Club. All rights reserved.
       </p>
     </div>
   );
