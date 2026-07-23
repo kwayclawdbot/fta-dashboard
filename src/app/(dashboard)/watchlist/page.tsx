@@ -732,9 +732,12 @@ export default function WatchlistPage() {
                                   </h4>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <p className="text-xs font-medium text-midnight-500">
+                                  <Link
+                                    href={`/research/${encodeURIComponent(item.ticker)}`}
+                                    className="text-xs font-medium text-midnight-500 hover:text-gold-700"
+                                  >
                                     {item.ticker}
-                                  </p>
+                                  </Link>
                                   <LivePrice quote={quotes[item.ticker]} />
                                 </div>
                               </div>

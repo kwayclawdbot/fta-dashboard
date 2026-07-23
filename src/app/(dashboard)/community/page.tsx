@@ -846,7 +846,7 @@ function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
   const thesis = payload.why_we_picked || payload.bull_case;
   return (
     <Link
-      href={`/chart?symbol=${encodeURIComponent(payload.ticker)}`}
+      href={`/research/${encodeURIComponent(payload.ticker)}`}
       className="mt-2 block rounded-xl border border-sand bg-paper p-3 hover:border-gold-300 transition-colors"
     >
       <div className="flex items-center gap-3">

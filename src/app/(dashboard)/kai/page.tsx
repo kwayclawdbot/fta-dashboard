@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Sparkles,
@@ -57,7 +58,9 @@ function BlockView({ block }: { block: Block }) {
     return (
       <div className="mt-2 rounded-xl border border-sand bg-paper/40 p-3 text-gold-600">
         <div className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-soft">
-          <span>{block.symbol} · {block.range}</span>
+          <Link href={`/research/${encodeURIComponent(block.symbol)}`} className="hover:text-gold-700">
+            {block.symbol} · {block.range}
+          </Link>
           <span>delayed</span>
         </div>
         <PriceChart bars={block.bars} height={180} />
@@ -67,7 +70,11 @@ function BlockView({ block }: { block: Block }) {
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soft">
-        <Newspaper className="h-3.5 w-3.5" /> {block.symbol} headlines
+        <Newspaper className="h-3.5 w-3.5" />{" "}
+        <Link href={`/research/${encodeURIComponent(block.symbol)}`} className="hover:text-gold-700">
+          {block.symbol}
+        </Link>{" "}
+        headlines
       </div>
       {block.items.map((n, i) => (
         <a
