@@ -11,20 +11,41 @@ import {
   ShieldCheck,
   Users2,
   LineChart,
+  Sparkles,
   Trash2,
+  StickyNote,
+  Lightbulb,
+  TriangleAlert,
+  Newspaper,
+  HelpCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
-import { fetchQuote, type MarketQuote } from "@/lib/market/client";
+import { fetchQuote, fetchNews, type MarketQuote, type NewsHeadline } from "@/lib/market/client";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import LivePrice from "@/components/fic/LivePrice";
-import Sparkline from "@/components/fic/Sparkline";
 import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import KaiReportSection from "@/components/kai/KaiReportSection";
 import type { KaiReport } from "@/lib/kai/report";
+import SocialBar from "@/components/research/SocialBar";
+import Scorecard from "@/components/research/Scorecard";
+import PriceTechnicals from "@/components/research/PriceTechnicals";
+import Collapsible from "@/components/research/Collapsible";
+import {
+  KeyStatsGrid,
+  CompanyProfileCard,
+  NewsList,
+  FinancialsSection,
+} from "@/components/research/ResearchSections";
+import { fetchResearch, type ResearchPayload } from "@/lib/research/types";
+import {
+  CONTRIBUTION_TYPES,
+  contributionMeta,
+  type ContributionType,
+} from "@/lib/research/social";
 import {
   pctSinceAdded,
   formatPct,
@@ -32,28 +53,44 @@ import {
   toParagraphs,
   COMMUNITY_DISCLAIMER,
   type CommunityEntry,
-  type TickerComment,
 } from "@/lib/community-watchlist";
 
 const COMMENT_SELECT =
-  "id, ticker, user_id, body, created_at, author:profiles(display_name, avatar_url, age_group, username)";
+  "id, ticker, user_id, body, contribution_type, created_at, author:profiles(display_name, avatar_url, age_group, username)";
 
-/** Normalize a PostgREST row (author may embed as an array) into a TickerComment. */
-function normComment(r: unknown): TickerComment {
-  const row = r as {
-    id: string;
-    ticker: string;
-    user_id: string | null;
-    body: string;
-    created_at: string;
-    author: TickerComment["author"] | TickerComment["author"][] | null;
-  };
+interface ThreadComment {
+  id: string;
+  ticker: string;
+  user_id: string | null;
+  body: string;
+  contribution_type: string;
+  created_at: string;
+  author: {
+    display_name: string | null;
+    avatar_url: string | null;
+    age_group: string | null;
+    username?: string | null;
+  } | null;
+}
+
+const CONTRIB_ICON: Record<string, React.ElementType> = {
+  StickyNote,
+  Lightbulb,
+  TriangleAlert,
+  Newspaper,
+  LineChart,
+  HelpCircle,
+};
+
+function normComment(r: unknown): ThreadComment {
+  const row = r as ThreadComment & { author: ThreadComment["author"] | ThreadComment["author"][] };
   const a = row.author;
   return {
     id: row.id,
     ticker: row.ticker,
     user_id: row.user_id,
     body: row.body,
+    contribution_type: row.contribution_type || "note",
     created_at: row.created_at,
     author: Array.isArray(a) ? a[0] ?? null : a,
   };
@@ -70,39 +107,36 @@ function timeAgo(dateStr: string) {
   return d === 1 ? "yesterday" : `${d}d ago`;
 }
 
-function Avatar({
-  name,
-  url,
-  size = 28,
-}: {
-  name?: string | null;
-  url?: string | null;
-  size?: number;
-}) {
+function Avatar({ name, url, size = 28 }: { name?: string | null; url?: string | null; size?: number }) {
   const dim = { width: size, height: size };
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
-    return (
-      <img
-        src={url}
-        alt={name || "Member"}
-        style={dim}
-        className="shrink-0 rounded-full object-cover"
-      />
-    );
+    return <img src={url} alt={name || "Member"} style={dim} className="shrink-0 rounded-full object-cover" />;
   }
-  const initials = (name || "?")
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = (name || "?").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   return (
-    <div
-      style={dim}
-      className="flex shrink-0 items-center justify-center rounded-full bg-chip-amber text-[10px] font-bold text-gold-700"
-    >
+    <div style={dim} className="flex shrink-0 items-center justify-center rounded-full bg-chip-amber text-[10px] font-bold text-gold-700">
       {initials}
+    </div>
+  );
+}
+
+/** 52-week range position marker (WSZ hero device). */
+function RangeBar({ low, high, price }: { low: number | null; high: number | null; price: number | null }) {
+  if (low == null || high == null || price == null || high <= low) return null;
+  const pos = Math.max(0, Math.min(1, (price - low) / (high - low)));
+  return (
+    <div className="mt-3">
+      <div className="relative h-1.5 rounded-full bg-sand">
+        <div
+          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-gold-500 shadow-soft"
+          style={{ left: `calc(${(pos * 100).toFixed(1)}% - 6px)` }}
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-[10px] font-medium text-soft">
+        <span>52w low ${low.toFixed(2)}</span>
+        <span>52w high ${high.toFixed(2)}</span>
+      </div>
     </div>
   );
 }
@@ -117,11 +151,16 @@ export default function TickerResearchPage() {
   const [tierResolved, setTierResolved] = useState(false);
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState("parent");
+  const [ageGroup, setAgeGroup] = useState<string | null>(null);
   const [entries, setEntries] = useState<CommunityEntry[]>([]);
-  const [comments, setComments] = useState<TickerComment[]>([]);
+  const [comments, setComments] = useState<ThreadComment[]>([]);
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [report, setReport] = useState<KaiReport | null>(null);
+  const [research, setResearch] = useState<ResearchPayload | null>(null);
+  const [news, setNews] = useState<NewsHeadline[]>([]);
   const [draft, setDraft] = useState("");
+  const [draftType, setDraftType] = useState<ContributionType>("note");
+  const [filter, setFilter] = useState<string>("all");
   const [posting, setPosting] = useState(false);
   const [err, setErr] = useState("");
 
@@ -137,24 +176,21 @@ export default function TickerResearchPage() {
     setUserId(user.id);
     const { data: profile } = await supabase
       .from("profiles")
-      .select("family_id, role")
+      .select("family_id, role, age_group")
       .eq("id", user.id)
       .maybeSingle();
     setRole(profile?.role || "parent");
+    setAgeGroup(profile?.age_group ?? null);
     const t = await getFamilyTier(supabase, profile?.family_id);
     setTier(t);
     setTierResolved(true);
-    if (t === "free") {
-      setLoading(false);
-      return;
-    }
 
     // Board entries for this ticker (attribution + snapshot + latest close).
     const { data: board } = await supabase.rpc("get_community_board");
     const all = ((board || {}) as { entries?: CommunityEntry[] }).entries || [];
     setEntries(all.filter((e) => e.ticker.toUpperCase() === ticker));
 
-    // Wiki comment thread for this ticker.
+    // Canonical per-ticker wiki thread (typed contributions).
     const { data: rows } = await supabase
       .from("community_ticker_comments")
       .select(COMMENT_SELECT)
@@ -162,24 +198,37 @@ export default function TickerResearchPage() {
       .order("created_at", { ascending: true });
     setComments((rows || []).map(normComment));
 
-    // Latest published Kai research report for this ticker (if any).
-    const { data: rep } = await supabase.rpc("get_latest_kai_report", {
-      p_ticker: ticker,
-    });
+    // Latest published Kai research report (if any).
+    const { data: rep } = await supabase.rpc("get_latest_kai_report", { p_ticker: ticker });
     setReport((rep as KaiReport) ?? null);
 
     setLoading(false);
     fetchQuote(ticker).then(setQuote);
+    fetchResearch(ticker).then(setResearch);
+    fetchNews(ticker, 6).then(setNews);
   }, [supabase, ticker]);
 
   useEffect(() => {
+    // load() setStates only after awaits (data arrives async) — the initial
+    // render is the skeleton; this fills it in once the session resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
   const companyName = useMemo(
-    () => entries.find((e) => e.company_name)?.company_name || ticker,
-    [entries, ticker]
+    () => research?.company.name || entries.find((e) => e.company_name)?.company_name || ticker,
+    [research, entries, ticker]
   );
+
+  const isKid = ageGroup === "kids";
+  const locked = tier === "free" && !isKid;
+  const canVote = tier !== "free";
+
+  const filteredComments = filter === "all" ? comments : comments.filter((c) => c.contribution_type === filter);
+  const presentTypes = useMemo(() => {
+    const set = new Set(comments.map((c) => c.contribution_type));
+    return CONTRIBUTION_TYPES.filter((t) => set.has(t.key));
+  }, [comments]);
 
   async function post() {
     const body = draft.trim();
@@ -193,39 +242,31 @@ export default function TickerResearchPage() {
     setPosting(true);
     const { data, error } = await supabase
       .from("community_ticker_comments")
-      .insert({ ticker, user_id: userId, body })
+      .insert({ ticker, user_id: userId, body, contribution_type: draftType })
       .select(COMMENT_SELECT)
       .single();
     setPosting(false);
     if (!error && data) {
       setComments((prev) => [...prev, normComment(data)]);
       setDraft("");
+      setDraftType("note");
     }
   }
 
   async function remove(id: string) {
-    const { error } = await supabase
-      .from("community_ticker_comments")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("community_ticker_comments").delete().eq("id", id);
     if (!error) setComments((prev) => prev.filter((c) => c.id !== id));
   }
 
-  if (tierResolved && tier === "free") {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <UpsellCard context="watchlist" />
-      </div>
-    );
-  }
   if (loading || !tierResolved) {
     return <DashboardSkeleton variant="detail" title={ticker} />;
   }
 
   const adminEntry = entries.find((e) => e.kind === "admin") || null;
+  const threadHref = "#research-notes";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 pb-20 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-5 px-4 pb-20 sm:px-6">
       <Link
         href="/watchlist/community"
         className="inline-flex items-center gap-1.5 pt-4 text-sm font-medium text-soft hover:text-ink"
@@ -233,7 +274,7 @@ export default function TickerResearchPage() {
         <ArrowLeft className="h-4 w-4" /> Community Watchlist
       </Link>
 
-      {/* Header */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <m.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -243,41 +284,131 @@ export default function TickerResearchPage() {
           <div className="flex min-w-0 items-center gap-3">
             <CompanyLogo symbol={ticker} name={companyName} size={52} />
             <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-bold text-ink">
-                {companyName}
-              </h1>
-              <div className="mt-0.5 flex items-center gap-2">
-                <span className="text-sm font-medium text-midnight-500">
-                  {ticker}
-                </span>
+              <h1 className="truncate font-display text-2xl font-bold text-ink">{companyName}</h1>
+              <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-midnight-500">{ticker}</span>
+                {research?.company.exchange && (
+                  <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-soft">
+                    {research.company.exchange}
+                  </span>
+                )}
                 <LivePrice quote={quote} size="md" showDelayed />
               </div>
             </div>
           </div>
-          <Link
-            href={`/chart?symbol=${encodeURIComponent(ticker)}`}
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
-          >
-            <LineChart className="h-3.5 w-3.5" /> Chart
-          </Link>
+          <div className="flex shrink-0 flex-col gap-1.5">
+            <Link
+              href={`/chart?symbol=${encodeURIComponent(ticker)}`}
+              className="inline-flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
+            >
+              <LineChart className="h-3.5 w-3.5" /> Chart
+            </Link>
+            <Link
+              href={`/kai?ticker=${encodeURIComponent(ticker)}`}
+              className="inline-flex items-center gap-1 rounded-lg border border-gold-300/50 bg-chip-amber/30 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-chip-amber/50"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Ask Kai
+            </Link>
+          </div>
         </div>
 
-        <div className="mt-4">
-          <Sparkline symbol={ticker} height={110} />
+        {research && (
+          <RangeBar
+            low={research.keyStats.week52Low}
+            high={research.keyStats.week52High}
+            price={quote?.price ?? research.keyStats.week52High}
+          />
+        )}
+
+        {/* Social bar — hero variant */}
+        <div className="mt-4 border-t border-sand pt-4">
+          <SocialBar
+            supabase={supabase}
+            ticker={ticker}
+            variant="hero"
+            userId={userId}
+            ageGroup={ageGroup}
+            canVote={canVote}
+            threadHref={threadHref}
+            showConsensus
+          />
         </div>
       </m.div>
 
-      {/* Kai Research Report (premium long-form, if generated for this ticker) */}
-      {report && (
-        <KaiReportSection
-          report={report}
-          ticker={ticker}
-          companyName={companyName}
-          quote={quote}
-        />
+      {/* ── Scorecard (gauge + rings + strengths/weaknesses + checks) ─────── */}
+      {research ? (
+        research.insufficient && research.grades.overall.graded === 0 ? (
+          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
+            <p className="text-sm text-soft">
+              We don&apos;t have enough published financials to grade {companyName} yet — many smaller
+              companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
+              news, and community research below still work.
+            </p>
+          </section>
+        ) : (
+          <Scorecard
+            grades={research.grades}
+            locked={locked}
+            upsell={<UpsellCard context="watchlist" />}
+          />
+        )
+      ) : (
+        <div className="h-56 animate-pulse rounded-2xl bg-sand/40" />
       )}
 
-      {/* Admin thesis (if this ticker is one of "our research" picks) */}
+      {/* ── Price + technicals (visible to everyone incl. free) ──────────── */}
+      {research && (
+        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+          <h2 className="mb-4 font-display text-base font-bold text-ink">Price & technicals</h2>
+          <PriceTechnicals symbol={ticker} momentum={research.momentum} />
+        </section>
+      )}
+
+      {/* ── Key stats grid ───────────────────────────────────────────────── */}
+      {research && (
+        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+          <h2 className="mb-3 font-display text-base font-bold text-ink">Key stats</h2>
+          <KeyStatsGrid k={research.keyStats} />
+        </section>
+      )}
+
+      {/* ── Fundamentals (collapsed; gated for free) ─────────────────────── */}
+      {research && !research.insufficient && (
+        <Collapsible
+          storageKey="fundamentals"
+          title="Fundamentals"
+          subtitle="Revenue, profit, balance sheet, and valuation charts"
+        >
+          {locked ? (
+            <UpsellCard context="watchlist" />
+          ) : (
+            <FinancialsSection
+              charts={research.charts}
+              keyStats={research.keyStats}
+              medians={research.sectorMedians}
+            />
+          )}
+        </Collapsible>
+      )}
+
+      {/* ── About (collapsed) ────────────────────────────────────────────── */}
+      {research?.company.description && (
+        <Collapsible storageKey="about" title={`About ${companyName}`} subtitle="What the company does">
+          <CompanyProfileCard company={research.company} kidsMode={isKid} />
+        </Collapsible>
+      )}
+
+      {/* ── News (collapsed) ─────────────────────────────────────────────── */}
+      <Collapsible storageKey="news" title="News" subtitle="Recent headlines from around the web">
+        <NewsList news={news} />
+      </Collapsible>
+
+      {/* ── Kai Research Report (premium long-form, if generated) ─────────── */}
+      {report && (
+        <KaiReportSection report={report} ticker={ticker} companyName={companyName} quote={quote} />
+      )}
+
+      {/* ── Admin thesis (if this is an "our research" pick) ──────────────── */}
       {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
         <section className="rounded-2xl border border-gold-300/40 bg-chip-amber/20 p-5">
           <div className="mb-2 flex items-center gap-2">
@@ -287,9 +418,7 @@ export default function TickerResearchPage() {
             </span>
           </div>
           {adminEntry.headline && (
-            <h2 className="font-display text-lg font-bold text-ink">
-              {adminEntry.headline}
-            </h2>
+            <h2 className="font-display text-lg font-bold text-ink">{adminEntry.headline}</h2>
           )}
           <div className="mt-2 space-y-3">
             {toParagraphs(adminEntry.thesis).map((p, i) => (
@@ -301,59 +430,42 @@ export default function TickerResearchPage() {
         </section>
       )}
 
-      {/* On the board (all entries for this ticker) */}
-      <section className="space-y-2">
-        <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
-          On the board
-        </h2>
-        {entries.map((e) => {
-          const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
-          const tone = pctTone(pct);
-          return (
-            <div
-              key={e.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-sand bg-midnight-900 p-3"
-            >
-              <div className="flex min-w-0 items-center gap-2 text-sm">
-                {e.kind === "admin" ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
-                    <ShieldCheck className="h-3 w-3" /> Our research
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-soft">
-                    <Users2 className="h-3.5 w-3.5 text-gold-600" />
-                    <span className="truncate font-semibold text-ink">
-                      {e.family_name || "A family"}
+      {/* ── On the board ─────────────────────────────────────────────────── */}
+      {entries.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">On the board</h2>
+          {entries.map((e) => {
+            const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
+            const tone = pctTone(pct);
+            return (
+              <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-sand bg-midnight-900 p-3">
+                <div className="flex min-w-0 items-center gap-2 text-sm">
+                  {e.kind === "admin" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
+                      <ShieldCheck className="h-3 w-3" /> Our research
                     </span>
-                    {e.promoter_age_group && (
-                      <AgeBadge ageGroup={e.promoter_age_group} />
-                    )}
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-soft">
+                      <Users2 className="h-3.5 w-3.5 text-gold-600" />
+                      <span className="truncate font-semibold text-ink">{e.family_name || "A family"}</span>
+                      {e.promoter_age_group && <AgeBadge ageGroup={e.promoter_age_group} />}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-soft">
+                  {e.snapshot_price != null && <span>added ${e.snapshot_price.toFixed(2)}</span>}
+                  <span className={`font-bold ${tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"}`}>
+                    {formatPct(pct)}
                   </span>
-                )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-soft">
-                {e.snapshot_price != null && (
-                  <span>added ${e.snapshot_price.toFixed(2)}</span>
-                )}
-                <span
-                  className={`font-bold ${
-                    tone === "up"
-                      ? "text-green-600"
-                      : tone === "down"
-                        ? "text-red-600"
-                        : "text-soft"
-                  }`}
-                >
-                  {formatPct(pct)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </section>
+            );
+          })}
+        </section>
+      )}
 
-      {/* Collaborative research thread */}
-      <section className="space-y-3">
+      {/* ── Research notes thread (typed contributions) ──────────────────── */}
+      <section id="research-notes" className="scroll-mt-20 space-y-3">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-gold-600" />
           <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
@@ -361,57 +473,83 @@ export default function TickerResearchPage() {
           </h2>
         </div>
         <p className="text-xs text-soft">
-          Study {companyName} together — what it makes, how it earns, what could
-          go right or wrong. Everyone in the club can add to the notes.
+          Study {companyName} together — what it makes, how it earns, what could go right or wrong.
+          Tag your note so the club can find theses, risks, and questions at a glance.
         </p>
 
+        {/* type filter chips */}
+        {presentTypes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
+            {presentTypes.map((t) => (
+              <FilterChip key={t.key} label={t.label} active={filter === t.key} onClick={() => setFilter(t.key)} chip={t.chip} />
+            ))}
+          </div>
+        )}
+
         <div className="space-y-3">
-          {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-2.5">
-              <Avatar name={c.author?.display_name} url={c.author?.avatar_url} />
-              <div className="min-w-0 flex-1 rounded-xl border border-sand bg-midnight-900 px-3 py-2">
-                <div className="flex items-center gap-1.5">
-                  {c.author?.username ? (
-                    <Link
-                      href={`/u/${c.author.username}`}
-                      className="text-[13px] font-semibold text-ink hover:text-gold-700"
-                    >
-                      {c.author?.display_name || "Member"}
-                    </Link>
-                  ) : (
-                    <span className="text-[13px] font-semibold text-ink">
-                      {c.author?.display_name || "Member"}
-                    </span>
-                  )}
-                  <AgeBadge ageGroup={c.author?.age_group} />
-                  <span className="text-[10px] text-midnight-500">
-                    · {timeAgo(c.created_at)}
-                  </span>
-                  {(c.user_id === userId || role === "admin") && (
-                    <button
-                      onClick={() => remove(c.id)}
-                      className="ml-auto text-midnight-500 hover:text-red-600"
-                      aria-label="Delete note"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+          {filteredComments.map((c) => {
+            const meta = contributionMeta(c.contribution_type);
+            const Icon = CONTRIB_ICON[meta.icon] ?? StickyNote;
+            return (
+              <div key={c.id} className="flex items-start gap-2.5">
+                <Avatar name={c.author?.display_name} url={c.author?.avatar_url} />
+                <div className="min-w-0 flex-1 rounded-xl border border-sand bg-midnight-900 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {c.author?.username ? (
+                      <Link href={`/u/${c.author.username}`} className="text-[13px] font-semibold text-ink hover:text-gold-700">
+                        {c.author?.display_name || "Member"}
+                      </Link>
+                    ) : (
+                      <span className="text-[13px] font-semibold text-ink">{c.author?.display_name || "Member"}</span>
+                    )}
+                    <AgeBadge ageGroup={c.author?.age_group} />
+                    {c.contribution_type !== "note" && (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${meta.chip}`}>
+                        <Icon className="h-2.5 w-2.5" />
+                        {meta.label}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-midnight-500">· {timeAgo(c.created_at)}</span>
+                    {(c.user_id === userId || role === "admin") && (
+                      <button onClick={() => remove(c.id)} className="ml-auto text-midnight-500 hover:text-red-600" aria-label="Delete note">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">{c.body}</p>
                 </div>
-                <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">
-                  {c.body}
-                </p>
               </div>
-            </div>
-          ))}
-          {comments.length === 0 && (
+            );
+          })}
+          {filteredComments.length === 0 && (
             <p className="rounded-xl border border-dashed border-sand px-3 py-6 text-center text-sm text-midnight-500">
-              No research notes yet — be the first to share what you found.
+              {comments.length === 0
+                ? "No research notes yet — be the first to share what you found."
+                : "No notes of this type yet."}
             </p>
           )}
         </div>
 
-        {/* Composer */}
+        {/* Composer with type picker */}
         <div className="rounded-xl border border-sand bg-midnight-900 p-3">
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {CONTRIBUTION_TYPES.map((t) => {
+              const Icon = CONTRIB_ICON[t.icon] ?? StickyNote;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setDraftType(t.key)}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold transition-colors ${
+                    draftType === t.key ? t.chip : "border border-sand text-soft hover:bg-paper"
+                  }`}
+                >
+                  <Icon className="h-3 w-3" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
           <textarea
             value={draft}
             onChange={(e) => {
@@ -419,16 +557,12 @@ export default function TickerResearchPage() {
               if (err) setErr("");
             }}
             rows={2}
-            placeholder={`Add a research note about ${companyName}…`}
+            placeholder={`Add a ${contributionMeta(draftType).label.toLowerCase()} about ${companyName}…`}
             className="w-full resize-none rounded-lg border border-sand bg-paper px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
           />
           {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
           <div className="mt-2 flex justify-end">
-            <button
-              onClick={post}
-              disabled={posting || !draft.trim()}
-              className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60"
-            >
+            <button onClick={post} disabled={posting || !draft.trim()} className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60">
               <Send className="h-4 w-4" />
               {posting ? "Posting…" : "Post note"}
             </button>
@@ -437,10 +571,31 @@ export default function TickerResearchPage() {
       </section>
 
       <footer className="border-t border-sand pt-5">
-        <p className="text-[11px] leading-relaxed text-soft">
-          {COMMUNITY_DISCLAIMER}
-        </p>
+        <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
       </footer>
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  active,
+  onClick,
+  chip,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  chip?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+        active ? chip || "bg-gold-500 text-white" : "border border-sand text-soft hover:bg-paper"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
