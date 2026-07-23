@@ -11,6 +11,7 @@ import {
   Pencil,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { searchTickers, fetchQuote, type TickerHit } from "@/lib/market/client";
@@ -78,6 +79,43 @@ export default function AdminCommunityWatchlistPage() {
   const [rows, setRows] = useState<AdminEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Draft | null>(null);
+  const [genState, setGenState] = useState<Record<string, "loading" | "done" | "error">>({});
+  const [genMsg, setGenMsg] = useState<Record<string, string>>({});
+
+  async function generateReport(ticker: string) {
+    setGenState((s) => ({ ...s, [ticker]: "loading" }));
+    setGenMsg((m) => ({ ...m, [ticker]: "" }));
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      setGenState((s) => ({ ...s, [ticker]: "error" }));
+      setGenMsg((m) => ({ ...m, [ticker]: "Not signed in." }));
+      return;
+    }
+    try {
+      const res = await fetch("/api/admin/kai-report", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ticker }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGenState((s) => ({ ...s, [ticker]: "error" }));
+        setGenMsg((m) => ({ ...m, [ticker]: data?.error || "Failed." }));
+        return;
+      }
+      setGenState((s) => ({ ...s, [ticker]: "done" }));
+      setGenMsg((m) => ({ ...m, [ticker]: `Published v${data.version}` }));
+    } catch {
+      setGenState((s) => ({ ...s, [ticker]: "error" }));
+      setGenMsg((m) => ({ ...m, [ticker]: "Network error." }));
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -196,6 +234,32 @@ export default function AdminCommunityWatchlistPage() {
                   <p className="mt-0.5 text-[11px] text-zinc-600">
                     Snapshot ${Number(e.snapshot_price).toFixed(2)}
                   </p>
+                )}
+              </div>
+              <div className="flex flex-col items-end">
+                <button
+                  onClick={() => generateReport(e.ticker)}
+                  disabled={genState[e.ticker] === "loading"}
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-700/60 bg-violet-500/10 px-2.5 py-1.5 text-xs font-semibold text-violet-300 transition-colors hover:border-violet-500 disabled:opacity-50"
+                  title="Generate a Kai research report for this ticker"
+                >
+                  {genState[e.ticker] === "loading" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  Kai report
+                </button>
+                {genMsg[e.ticker] && (
+                  <span
+                    className={`mt-0.5 text-[10px] ${
+                      genState[e.ticker] === "error"
+                        ? "text-red-400"
+                        : "text-emerald-400"
+                    }`}
+                  >
+                    {genMsg[e.ticker]}
+                  </span>
                 )}
               </div>
               <button

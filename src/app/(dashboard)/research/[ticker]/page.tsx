@@ -23,6 +23,8 @@ import Sparkline from "@/components/fic/Sparkline";
 import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
+import KaiReportSection from "@/components/kai/KaiReportSection";
+import type { KaiReport } from "@/lib/kai/report";
 import {
   pctSinceAdded,
   formatPct,
@@ -118,6 +120,7 @@ export default function TickerResearchPage() {
   const [entries, setEntries] = useState<CommunityEntry[]>([]);
   const [comments, setComments] = useState<TickerComment[]>([]);
   const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [report, setReport] = useState<KaiReport | null>(null);
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
   const [err, setErr] = useState("");
@@ -158,6 +161,12 @@ export default function TickerResearchPage() {
       .eq("ticker", ticker)
       .order("created_at", { ascending: true });
     setComments((rows || []).map(normComment));
+
+    // Latest published Kai research report for this ticker (if any).
+    const { data: rep } = await supabase.rpc("get_latest_kai_report", {
+      p_ticker: ticker,
+    });
+    setReport((rep as KaiReport) ?? null);
 
     setLoading(false);
     fetchQuote(ticker).then(setQuote);
@@ -257,6 +266,16 @@ export default function TickerResearchPage() {
           <Sparkline symbol={ticker} height={110} />
         </div>
       </m.div>
+
+      {/* Kai Research Report (premium long-form, if generated for this ticker) */}
+      {report && (
+        <KaiReportSection
+          report={report}
+          ticker={ticker}
+          companyName={companyName}
+          quote={quote}
+        />
+      )}
 
       {/* Admin thesis (if this ticker is one of "our research" picks) */}
       {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
