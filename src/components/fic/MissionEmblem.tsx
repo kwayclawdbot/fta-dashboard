@@ -40,9 +40,13 @@ export default function MissionEmblem({
 }) {
   const reduce = useReducedMotion();
   const src = EMBLEMS[slug];
+  // Uncollected emblems still need to read as "collectible" — a warm-on-warm
+  // 1px ring made them nearly invisible (audit #17). Give them a firmer gold-tinted
+  // ring + soft lift so they present as slots to fill, while the collected state
+  // keeps its clearly stronger gold-ring + sheen delta.
   const ring = collected
     ? "ring-[3px] ring-gold-400 shadow-[0_0_0_4px_rgba(251,191,36,0.15)]"
-    : "ring-1 ring-sand";
+    : "ring-2 ring-gold-300/70 shadow-soft";
 
   return (
     <div
@@ -57,9 +61,7 @@ export default function MissionEmblem({
           width={size}
           height={size}
           loading="lazy"
-          className={`h-full w-full rounded-full bg-paper object-cover transition-all ${ring} ${
-            collected ? "" : "opacity-95"
-          }`}
+          className={`h-full w-full rounded-full bg-paper object-cover transition-all ${ring}`}
         />
       ) : (
         <div

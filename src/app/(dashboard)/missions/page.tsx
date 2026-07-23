@@ -23,6 +23,7 @@ import Celebrate, {
   type Register,
 } from "@/components/fic/Celebrate";
 import { EmptyMissions } from "@/components/fic/EmptyState";
+import { deriveRegister, celebrateRegister } from "@/lib/register";
 
 interface Mission {
   id: string;
@@ -93,9 +94,12 @@ export default function MissionsPage() {
     };
 
     setFamilyId(state.family_id ?? null);
-    const kid = state.age_group === "kids" || state.role === "child";
-    setIsKid(kid);
-    setRegister(kid ? "kid" : state.age_group === "teens" ? "teen" : "parent");
+    // Single source of truth: age_group wins, role only disambiguates legacy
+    // rows. A teen (age_group='teens') is never treated as a kid here, so the
+    // baby-talk copy + sound toggle never leak to teens (audit #5).
+    const reg = deriveRegister({ role: state.role, age_group: state.age_group });
+    setIsKid(reg === "kid");
+    setRegister(celebrateRegister(reg));
 
     const list = state.missions || [];
     setMissions(list);
@@ -233,12 +237,20 @@ export default function MissionsPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-chip-amber text-gold-700">
               <Compass className="h-5 w-5" />
             </div>
-            <h1 className="font-display text-2xl font-bold text-ink">Kid Missions</h1>
+            <h1 className="font-display text-2xl font-bold text-ink">
+              {register === "kid"
+                ? "My Missions"
+                : register === "teen"
+                  ? "Missions"
+                  : "Family Missions"}
+            </h1>
           </div>
           <p className="text-sm text-soft">
-            {isKid
-              ? "Little quests that turn you into an investor. Collect all five emblems!"
-              : "Playful quests for your kids — do them together to spark real conversations."}
+            {register === "kid"
+              ? "Little quests that turn you into an investor. Collect all the emblems!"
+              : register === "teen"
+                ? "Complete quests to earn XP and climb the ranks."
+                : "Playful quests for your kids — do them together to spark real conversations."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -308,8 +320,8 @@ export default function MissionsPage() {
                     {m.kid_prompt || m.description}
                   </p>
 
-                  {/* Grown-up helper (shown to parents) */}
-                  {!isKid && m.description && (
+                  {/* Grown-up helper (shown to parents only, never to teens) */}
+                  {register === "parent" && m.description && (
                     <p className="mt-2 flex items-start gap-1.5 text-xs text-soft">
                       <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-400" />
                       {m.description}
