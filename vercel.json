@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/track-performance",
+      "schedule": "0 22 * * 1-5"
+    }
+  ]
+}

@@ -64,7 +64,7 @@ const sections: AdminNavSection[] = [
     label: "Content",
     items: [
       { label: "This Week (FIC)", href: "/admin/fic-weeks", icon: CalendarRange },
-      { label: "Team Picks", href: "/admin/picks", icon: Gem },
+      { label: "Community Watchlist", href: "/admin/community-watchlist", icon: Gem },
       { label: "Courses", href: "/admin/courses", icon: BookOpen },
       { label: "Coach Demos", href: "/admin/coach-demos", icon: Clapperboard },
       { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
