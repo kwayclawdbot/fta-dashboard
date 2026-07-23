@@ -158,6 +158,12 @@ export default function DashboardHome() {
   // setup card (Start Here checklist). Persisted per family so it stays
   // dismissed, and it gates whether the profile-questions card may appear.
   const [setupDismissed, setSetupDismissed] = useState(false);
+  // Lane 8A: the onboarding questionnaire must be prominent on FIRST login for
+  // every entry path. When the family profile isn't completed yet (and the
+  // parent hasn't dismissed the prompt twice), the "Tell us about your family"
+  // card takes precedence OVER the setup checklist — the warm welcome comes
+  // first. Once the profile is done it steps aside for the setup checklist.
+  const [profileNeedsAttention, setProfileNeedsAttention] = useState(false);
 
   useEffect(() => {
     setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
@@ -232,6 +238,28 @@ export default function DashboardHome() {
       const track = hs?.track || "adults";
       setHasFamily(!!famId);
       setFamilyId(famId);
+
+      // Does the family still need to fill the profile questionnaire? Parents
+      // only; drives whether the warm welcome card jumps ahead of the setup
+      // checklist on first login. Mirrors FamilyProfileHome's dismiss counter
+      // (dismissed twice = retired).
+      if (famId && profile?.role === "parent") {
+        const { data: fpRow } = await supabase
+          .from("family_profiles")
+          .select("completed_at")
+          .eq("family_id", famId)
+          .maybeSingle();
+        let dcount = 0;
+        try {
+          dcount = parseInt(
+            localStorage.getItem(`fta:family-profile-prompt-dismissed:${famId}`) || "0",
+            10
+          ) || 0;
+        } catch {
+          /* private mode — treat as not dismissed */
+        }
+        setProfileNeedsAttention(!fpRow?.completed_at && dcount < 2);
+      }
 
       // FREE tier gets a dedicated, limited home (the free-class hub + upsell).
       // Short-circuit before loading any member content. Timeout-guarded so a
@@ -377,8 +405,13 @@ export default function DashboardHome() {
   // 3. The "Tell us about your family" profile card appears ONLY after setup is
   //    resolved (completed or dismissed), so the two never stack.
   const setupResolved = orientationComplete || setupDismissed;
-  const showSetupCard = isParent && hasFamily && !setupResolved;
-  const showProfileCard = isParent && hasFamily && !!familyId && setupResolved;
+  // Questionnaire-first on first login (Lane 8A): an incomplete family profile
+  // outranks the setup checklist, so the warm "Tell us about your family" card
+  // is the prominent first-login prompt for every entry path.
+  const showProfileFirst = isParent && hasFamily && !!familyId && profileNeedsAttention;
+  const showSetupCard = isParent && hasFamily && !setupResolved && !showProfileFirst;
+  const showProfileCard =
+    isParent && hasFamily && !!familyId && (showProfileFirst || setupResolved);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
