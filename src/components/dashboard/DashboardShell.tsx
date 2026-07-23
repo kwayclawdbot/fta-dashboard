@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { getUserXp } from "@/lib/xp";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
@@ -69,6 +71,29 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
+  // Lifetime XP for the belt chip — fetched once here and shared with the TopBar
+  // (desktop/tablet) and MobileTabBar More-sheet header so both belt chips read
+  // the same value from a single query. null = still loading (chip skeletons).
+  const [xp, setXp] = useState<number | null>(null);
+  useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    (async () => {
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (!authUser) {
+        if (active) setXp(0);
+        return;
+      }
+      const total = await getUserXp(supabase, authUser.id);
+      if (active) setXp(total);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const isFree = (user.tier ?? "fic") === "free";
   const freeLocked =
     isFree &&
@@ -96,6 +121,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
       >
         <DashboardTopBar
           user={user}
+          xp={xp}
           onMenuClick={() => setMobileOpen(true)}
         />
 
@@ -107,7 +133,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
       </div>
 
       {/* App-style bottom tab bar — phones only, dashboard routes only. */}
-      <MobileTabBar user={user} />
+      <MobileTabBar user={user} xp={xp} />
 
       <Suspense fallback={null}>
         <AppTour user={user} />

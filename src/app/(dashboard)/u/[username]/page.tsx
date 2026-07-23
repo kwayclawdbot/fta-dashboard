@@ -5,7 +5,9 @@ import { Users2, Sparkles, ArrowLeft, Settings, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicProfile, mergeBadgeRows } from "@/lib/public-profile";
 import { levelProgress } from "@/lib/xp";
+import { beltForXp } from "@/lib/belts";
 import Avatar from "@/components/Avatar";
+import BeltBadge from "@/components/BeltBadge";
 import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
 import BadgeCaseView from "@/components/BadgeCaseView";
@@ -65,6 +67,8 @@ export default async function PublicProfilePage({
   );
 
   const lp = levelProgress(profile.xp);
+  const belt = beltForXp(profile.xp);
+  const nextBelt = lp.next ? beltForXp(lp.next.min) : null;
 
   return (
     <div className="max-w-2xl mx-auto pb-12">
@@ -76,6 +80,7 @@ export default async function PublicProfilePage({
             avatarUrl={profile.avatar_url}
             role={profile.is_minor ? "child" : "parent"}
             tier={profile.tier}
+            xp={profile.xp}
             size="hero"
           />
 
@@ -88,6 +93,7 @@ export default async function PublicProfilePage({
           <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
             <AgeBadge ageGroup={profile.age_group} showLabel />
             <TierBadge tier={profile.tier} size="md" />
+            <BeltBadge rank={belt} size="md" />
             {/* Adults only: parent / member distinction */}
             {!profile.is_minor && profile.role_kind && (
               <span className="text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-chip-sky text-sky-800">
@@ -116,12 +122,15 @@ export default async function PublicProfilePage({
           )}
         </div>
 
-        {/* Level + XP progress */}
+        {/* Belt + XP progress */}
         <div className="mt-6 pt-6 border-t border-sand">
           <div className="flex items-center justify-between mb-2">
             <span className="inline-flex items-center gap-1.5 font-display text-sm font-bold text-ink">
               <Star className="w-4 h-4 text-gold-600" />
-              Level {lp.current.level} · {lp.current.name}
+              {belt.label}
+              <span className="font-body font-normal text-soft">
+                · Level {lp.current.level} · {lp.current.name}
+              </span>
             </span>
             <span className="text-xs text-soft font-body">
               {profile.xp.toLocaleString()} XP
@@ -129,14 +138,14 @@ export default async function PublicProfilePage({
           </div>
           <div className="h-2.5 rounded-full bg-sand overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-600"
-              style={{ width: `${lp.pct}%` }}
+              className="h-full rounded-full"
+              style={{ width: `${lp.pct}%`, backgroundColor: belt.belt.hex }}
             />
           </div>
           <p className="mt-1.5 text-[11px] text-soft font-body">
-            {lp.next
-              ? `${lp.toNext.toLocaleString()} XP to ${lp.next.name}`
-              : "Top level reached — Playbook Pro"}
+            {lp.next && nextBelt
+              ? `${lp.toNext.toLocaleString()} XP to ${nextBelt.label}`
+              : "Black Belt earned — top of the ladder"}
           </p>
         </div>
       </div>

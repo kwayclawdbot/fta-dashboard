@@ -17,6 +17,7 @@ import {
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
 import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
+import BeltChip from "./BeltChip";
 
 interface Tab {
   label: string;
@@ -62,9 +63,11 @@ interface MobileTabBarProps {
     avatar_url?: string;
     tier?: FamilyTier;
   };
+  /** Lifetime XP for the More-sheet belt chip (null while loading). */
+  xp?: number | null;
 }
 
-export default function MobileTabBar({ user }: MobileTabBarProps) {
+export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -244,6 +247,7 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
                   avatarUrl={user.avatar_url}
                   role={user.role}
                   tier={user.tier}
+                  xp={xp}
                   size="lg"
                 />
                 <div className="min-w-0 flex-1">
@@ -256,6 +260,12 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
                 </div>
                 <ChevronRight className="w-4 h-4 text-midnight-500 shrink-0" />
               </Link>
+
+              {/* Belt progress — persistent self-visibility on phones, where the
+                  TopBar chip is hidden. Taps through to the Leaderboard. */}
+              <div className="mx-3 mb-1 shrink-0">
+                <BeltChip xp={xp} variant="full" onNavigate={() => setMoreOpen(false)} />
+              </div>
 
               <div className="section-divider mx-3 shrink-0" />
 

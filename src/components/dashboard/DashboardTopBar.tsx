@@ -10,6 +10,7 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import type { FamilyTier } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
+import BeltChip from "@/components/dashboard/BeltChip";
 
 /**
  * Route → page title, derived so EVERY dashboard route has a real header (the
@@ -80,10 +81,12 @@ interface DashboardTopBarProps {
     age_group?: string;
     tier?: FamilyTier;
   };
+  /** Lifetime XP for the belt chip (null while loading). */
+  xp?: number | null;
   onMenuClick: () => void;
 }
 
-export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarProps) {
+export default function DashboardTopBar({ user, xp = null, onMenuClick }: DashboardTopBarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -127,8 +130,12 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
           </h1>
         </div>
 
-        {/* Right: notifications, avatar */}
+        {/* Right: belt chip, notifications, avatar */}
         <div className="flex items-center gap-3">
+          {/* Belt chip — persistent self-visibility (sm+; phones use the More
+              sheet header). Links to the Leaderboard. */}
+          <BeltChip xp={xp} variant="compact" />
+
           {/* Notification bell — live unread count + dropdown */}
           <span data-tour="bell" className="inline-flex"><NotificationsBell /></span>
 

@@ -18,6 +18,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelProgress } from "@/lib/xp";
+import { beltForXp } from "@/lib/belts";
+import BeltBadge from "@/components/BeltBadge";
 import { researchComplete } from "@/lib/watchlist";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
 import BadgeCaseView from "@/components/BadgeCaseView";
@@ -387,19 +389,31 @@ export default function ProgressPage() {
       >
         {(() => {
           const lp = levelProgress(xp);
+          const belt = beltForXp(xp);
+          const nextBelt = lp.next ? beltForXp(lp.next.min) : null;
           return (
             <>
               <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-chip-amber text-gold-700 flex items-center justify-center font-display font-bold">
-                    {lp.current.level}
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center font-display text-lg font-black"
+                    style={{
+                      backgroundColor: belt.belt.hex,
+                      color: belt.belt.onHex,
+                      boxShadow: `inset 0 0 0 1.5px ${belt.belt.borderHex}`,
+                    }}
+                  >
+                    {belt.belt.name[0]}
                   </div>
                   <div>
-                    <p className="font-display text-lg font-bold text-ink">
-                      {lp.current.name}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-display text-lg font-bold text-ink">
+                        {belt.label}
+                      </p>
+                      <BeltBadge rank={belt} size="xs" />
+                    </div>
                     <p className="text-xs text-soft">
-                      {xp.toLocaleString()} XP earned
+                      Level {lp.current.level} · {lp.current.name} · {xp.toLocaleString()} XP earned
                     </p>
                   </div>
                 </div>
@@ -408,7 +422,7 @@ export default function ProgressPage() {
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
                 >
                   <Trophy className="w-4 h-4" />
-                  Family XP leaderboard
+                  Leaderboard
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -417,13 +431,14 @@ export default function ProgressPage() {
                   initial={{ width: 0 }}
                   animate={{ width: `${lp.pct}%` }}
                   transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                  className="h-full rounded-full bg-gold-500"
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: belt.belt.hex }}
                 />
               </div>
               <p className="text-xs text-soft mt-2">
-                {lp.next
-                  ? `${lp.toNext} XP to ${lp.next.name}`
-                  : "Top level reached — Playbook Pro"}
+                {lp.next && nextBelt
+                  ? `${lp.toNext} XP to ${nextBelt.label}`
+                  : "Black Belt earned — top of the ladder"}
               </p>
             </>
           );
