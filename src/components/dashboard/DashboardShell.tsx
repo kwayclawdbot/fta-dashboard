@@ -43,6 +43,7 @@ const LOCKED_CONTEXTS: { prefix: string; context: UpsellContext }[] = [
   { prefix: "/fta", context: "live" },
   { prefix: "/live-sessions", context: "live" },
   { prefix: "/watchlist", context: "watchlist" },
+  { prefix: "/screener", context: "screener" },
   { prefix: "/missions", context: "missions" },
   { prefix: "/flashcards", context: "flashcards" },
   { prefix: "/simulator", context: "simulator" },

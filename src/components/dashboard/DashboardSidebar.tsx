@@ -29,6 +29,7 @@ import {
   Radio,
   Film,
   Bot,
+  Telescope,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -79,6 +80,7 @@ const CLUB_WATCHLIST: NavItem = {
     { label: "My Family", href: "/watchlist" },
   ],
 };
+const CLUB_SCREENER: NavItem = { label: "Screener", href: "/screener", icon: Telescope };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
 const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
 // The unified belts leaderboard — a proper nav row for every member role
@@ -262,6 +264,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
     CLUB_COMMUNITY,
     KAI_ASK,
     CLUB_WATCHLIST,
+    CLUB_SCREENER,
     CLUB_MISSIONS,
     learnGroup(false),
     practiceGroup(true),

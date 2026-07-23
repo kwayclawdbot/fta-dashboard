@@ -15,6 +15,7 @@ import {
   Trophy,
   Gamepad2,
   MessageCircle,
+  Telescope,
   type LucideIcon,
 } from "lucide-react";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
@@ -34,6 +35,7 @@ import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 export type UpsellContext =
   | "generic"
   | "simulator"
+  | "screener"
   | "watchlist"
   | "missions"
   | "flashcards"
@@ -70,6 +72,13 @@ const CONTEXT: Record<UpsellContext, ContextCopy> = {
     title: "The trading simulator",
     body: "Practice with pretend money on a live-feeling market — place orders, manage a portfolio, and learn how a trade actually plays out before any real money is involved. It opens the moment you join.",
     cta: "Unlock the simulator — join FIC",
+  },
+  screener: {
+    icon: Telescope,
+    eyebrow: "Members research here",
+    title: "The stock screener",
+    body: "Scan the whole market the way members do — filter by the fundamentals and momentum that matter, sort the results, and find the companies worth studying. It opens the moment you join.",
+    cta: "Unlock the screener — join FIC",
   },
   watchlist: {
     icon: Eye,
