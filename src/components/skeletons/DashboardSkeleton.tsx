@@ -11,11 +11,17 @@ function Block({ className = "" }: { className?: string }) {
   return <div className={`rounded-lg bg-sand/50 ${className}`} />;
 }
 
-function Header({ wide = false }: { wide?: boolean }) {
+function Header({ wide = false, title }: { wide?: boolean; title?: string }) {
   return (
     <div className="flex items-end justify-between gap-4 flex-wrap">
       <div className="space-y-2">
-        <Block className="h-7 w-56" />
+        {title ? (
+          // Real page title paints instantly so the skeleton is never a blank,
+          // anonymous shimmer — the user always knows where they are.
+          <h1 className="font-display text-2xl font-bold text-ink">{title}</h1>
+        ) : (
+          <Block className="h-7 w-56" />
+        )}
         <Block className="h-4 w-40 bg-sand/40" />
       </div>
       {wide && <Block className="h-9 w-32 rounded-full" />}
@@ -58,8 +64,12 @@ const WIDTHS: Record<SkeletonVariant, string> = {
 
 export default function DashboardSkeleton({
   variant = "default",
+  title,
 }: {
   variant?: SkeletonVariant;
+  /** When set, the real page title renders in the header instead of a
+   *  placeholder block — used by client pages that know their title up front. */
+  title?: string;
 }) {
   const width = WIDTHS[variant];
 
@@ -188,7 +198,10 @@ export default function DashboardSkeleton({
   return (
     <div className={`${width} mx-auto space-y-6 animate-pulse`} aria-hidden="true">
       {variant !== "chart" && variant !== "detail" && (
-        <Header wide={variant === "default" || variant === "board" || variant === "list"} />
+        <Header
+          wide={variant === "default" || variant === "board" || variant === "list"}
+          title={title}
+        />
       )}
       {body}
     </div>

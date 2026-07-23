@@ -24,6 +24,7 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import { getUserXp, levelForXp } from "@/lib/xp";
 import { dailyFiveCount } from "@/lib/flashcards";
 import {
@@ -37,6 +38,7 @@ import Avatar from "@/components/Avatar";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
+import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
 
 /* ---------- types ---------- */
@@ -156,17 +158,29 @@ export default function DashboardHome() {
 
       // Round trip 1: everything that only needs the user id, in parallel.
       // (get_home_state, profile, current FIC week, and lifetime XP were four
-      // sequential awaits before — none depend on each other.)
+      // sequential awaits before — none depend on each other.) Each is capped
+      // by a timeout so one slow/hung call degrades instead of pinning the page
+      // on an unbounded skeleton (audit: dashboard grey blocks for 6–11s).
       const [{ data: state }, { data: profile }, week, xpTotal] =
         await Promise.all([
-          supabase.rpc("get_home_state", { p_user_id: user.id }),
-          supabase
-            .from("profiles")
-            .select("display_name, family_id, role")
-            .eq("id", user.id)
-            .single(),
-          getCurrentFicWeek(supabase),
-          getUserXp(supabase, user.id),
+          withTimeout<{ data: HomeState | null }>(
+            supabase.rpc("get_home_state", { p_user_id: user.id }),
+            LOAD_TIMEOUT_MS,
+            { data: null }
+          ),
+          withTimeout<{
+            data: { display_name: string; family_id: string | null; role: string } | null;
+          }>(
+            supabase
+              .from("profiles")
+              .select("display_name, family_id, role")
+              .eq("id", user.id)
+              .single(),
+            LOAD_TIMEOUT_MS,
+            { data: null }
+          ),
+          withTimeout(getCurrentFicWeek(supabase), LOAD_TIMEOUT_MS, null),
+          withTimeout(getUserXp(supabase, user.id), LOAD_TIMEOUT_MS, 0),
         ]);
 
       const hs = state as HomeState;
@@ -181,8 +195,14 @@ export default function DashboardHome() {
       setFamilyId(famId);
 
       // FREE tier gets a dedicated, limited home (the free-class hub + upsell).
-      // Short-circuit before loading any member content.
-      const tier = await getFamilyTier(supabase, famId);
+      // Short-circuit before loading any member content. Timeout-guarded so a
+      // slow tier lookup can't hang the first paint; on timeout we assume a
+      // member home (the majority case) rather than freezing.
+      const tier = await withTimeout(
+        getFamilyTier(supabase, famId),
+        LOAD_TIMEOUT_MS,
+        "member" as Awaited<ReturnType<typeof getFamilyTier>>
+      );
       if (tier === "free") {
         setFirstName(profile?.display_name?.split(" ")[0] || "");
         setIsFree(true);
@@ -190,15 +210,16 @@ export default function DashboardHome() {
         return;
       }
 
-      // Round trip 2: the remaining independent work runs concurrently instead
-      // of chaining (daily-5 due count + family orientation + parent strip).
-      const tasks: Promise<void>[] = [];
+      // First paint NOW — greeting + hero + This Week render from round-trip 1.
+      // Everything below (daily-5 count, orientation progress, parent strip) is
+      // secondary chrome that hydrates progressively into already-visible cards,
+      // so it must not gate the page. Each call is timeout-capped.
+      setLoading(false);
 
-      tasks.push(dailyFiveCount(supabase, user.id, track).then(setDueCount));
+      dailyFiveCount(supabase, user.id, track).then(setDueCount).catch(() => {});
 
       if (famId) {
-        tasks.push(
-          (async () => {
+        void (async () => {
             // One fetch of the family roster serves both the orientation state
             // and the parent family strip (was two separate profile queries).
             const { data: allMembers } = await supabase
@@ -259,25 +280,15 @@ export default function DashboardHome() {
                 }))
               );
             }
-          })()
-        );
+        })().catch(() => {});
       }
-
-      await Promise.all(tasks);
-      setLoading(false);
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
-        <div className="h-8 w-64 rounded-lg bg-sand/60" />
-        <div className="h-64 rounded-2xl bg-sand/40" />
-        <div className="h-40 rounded-2xl bg-sand/40" />
-      </div>
-    );
+    return <DashboardSkeleton variant="default" />;
   }
 
   if (isFree) {

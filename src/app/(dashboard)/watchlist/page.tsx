@@ -20,6 +20,8 @@ import {
   Share2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
+import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -174,7 +176,13 @@ export default function WatchlistPage() {
 
     // One aggregate round trip: profile + family roster + watchlist items +
     // notes (was profile -> [members, items] -> notes, three sequential hops).
-    const { data: boardRaw } = await supabase.rpc("get_watchlist_board");
+    // Timeout-capped so a slow board RPC degrades to an empty board instead of
+    // spinning forever (audit: watchlist stuck >18s on mobile).
+    const { data: boardRaw } = await withTimeout(
+      supabase.rpc("get_watchlist_board"),
+      LOAD_TIMEOUT_MS,
+      { data: null } as { data: unknown }
+    );
     const board = (boardRaw || {}) as {
       family_id?: string | null;
       role?: string;
@@ -485,11 +493,7 @@ export default function WatchlistPage() {
   const rFilled = researchFilledCount({ ...researchItem, ...rForm });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />
-      </div>
-    );
+    return <DashboardSkeleton variant="board" title="Family Watchlist" />;
   }
 
   return (

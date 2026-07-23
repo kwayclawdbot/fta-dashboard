@@ -1,9 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import { TopBar, ProgressBar, FunnelStage, QuizCard } from "@/components/free-class/ui";
 import {
   QUIZ,
@@ -29,30 +28,36 @@ export default function QuestionPage({
   const idx = Math.max(1, Math.min(QUIZ.length, parseInt(step, 10) || 1));
   const stepDef = QUIZ[idx - 1];
 
-  const [sid, setSid] = useState<string | null>(null);
+  // The funnel id lives in localStorage (synchronous). We read it during render
+  // so the question paints instantly from the local QUIZ definition — no
+  // full-screen spinner between steps. The server session is only fetched in the
+  // background to rehydrate a previously-chosen answer.
+  const [sid, setSid] = useState<string | null>(() => getStoredFunnelId());
   const [selected, setSelected] = useState<string | undefined>();
   const [dir] = useState(1);
-  const [ready, setReady] = useState(false);
+  const loggedView = useRef<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const stored = getStoredFunnelId();
-      if (!stored) {
-        router.replace("/free-class");
-        return;
-      }
-      const state = await fetchSession(stored);
-      if (!mounted) return;
-      if (!state) {
-        router.replace("/free-class");
-        return;
-      }
-      setSid(stored);
-      setSelected(state.answers?.[stepDef.key]);
+    const stored = getStoredFunnelId();
+    // No funnel started → send them to the landing to create one.
+    if (!stored) {
+      router.replace("/free-class");
+      return;
+    }
+    if (stored !== sid) setSid(stored);
+
+    // Log the view once per step (fire-and-forget, no render gate).
+    if (loggedView.current !== stepDef.step) {
+      loggedView.current = stepDef.step;
       logEvent(stored, stepDef.step, "view");
-      setReady(true);
-    })();
+    }
+
+    // Background hydrate: fill in a prior answer if one exists. Never blocks
+    // paint; if the session is gone we quietly leave the question unanswered.
+    let mounted = true;
+    fetchSession(stored).then((state) => {
+      if (mounted && state) setSelected(state.answers?.[stepDef.key]);
+    });
     return () => {
       mounted = false;
     };
@@ -73,14 +78,6 @@ export default function QuestionPage({
     if (sid) logEvent(sid, stepDef.step, "back");
     if (idx > 1) router.push(`/free-class/q/${idx - 1}`);
     else router.push("/free-class");
-  }
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
-      </div>
-    );
   }
 
   const current = (FUNNEL_STEPS as readonly string[]).indexOf(stepDef.step) + 1;

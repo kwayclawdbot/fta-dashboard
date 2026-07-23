@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import {
   ORIENTATION_STEPS,
   getOrientationState,
@@ -27,6 +28,49 @@ import Celebrate, {
 } from "@/components/fic/Celebrate";
 
 const ORIENTATION_DECK_URL = "https://fta-start.vercel.app";
+const WALKTHROUGH_URL =
+  "https://zvkercqohmmeyofycbgr.supabase.co/storage/v1/object/public/community-media/walkthrough/app-walkthrough.mp4";
+const WALKTHROUGH_POSTER =
+  "https://zvkercqohmmeyofycbgr.supabase.co/storage/v1/object/public/community-media/walkthrough/app-walkthrough-poster.jpg";
+
+/** The two-minute tour, with a poster and an error fallback — never a dead well.
+ *  The source is faststart-muxed so `preload="metadata"` resolves immediately
+ *  instead of downloading the whole file (the old "spins forever" bug). */
+function TourVideo() {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div className="aspect-[16/10] w-full bg-ink/90 flex flex-col items-center justify-center gap-3 text-center px-6">
+        <PlayCircle className="w-10 h-10 text-gold-400" />
+        <p className="text-sm text-paper/90 max-w-sm">
+          The tour video didn&apos;t load. You can open it directly in a new tab.
+        </p>
+        <a
+          href={WALKTHROUGH_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-500 text-ink text-sm font-semibold hover:bg-gold-400 transition-colors"
+        >
+          <ExternalLink className="w-4 h-4" />
+          Open the tour
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <video
+      controls
+      preload="metadata"
+      playsInline
+      poster={WALKTHROUGH_POSTER}
+      onError={() => setFailed(true)}
+      className="w-full aspect-[16/10] bg-ink"
+      src={WALKTHROUGH_URL}
+    />
+  );
+}
 
 export default function StartHerePage() {
   const supabase = createClient();
@@ -46,11 +90,17 @@ export default function StartHerePage() {
       if (!user) return;
       setUserId(user.id);
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("family_id, role, age_group")
-        .eq("id", user.id)
-        .single();
+      const { data: profile } = await withTimeout<{
+        data: { family_id: string | null; role: string; age_group: string } | null;
+      }>(
+        supabase
+          .from("profiles")
+          .select("family_id, role, age_group")
+          .eq("id", user.id)
+          .single(),
+        LOAD_TIMEOUT_MS,
+        { data: null }
+      );
       const fam = profile?.family_id ?? null;
       setFamilyId(fam);
       const kid = profile?.age_group === "kids" || profile?.role === "child";
@@ -60,14 +110,26 @@ export default function StartHerePage() {
 
       let memberIds: string[] = [user.id];
       if (fam) {
-        const { data: members } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("family_id", fam);
+        const { data: members } = await withTimeout<{
+          data: { id: string }[] | null;
+        }>(
+          supabase.from("profiles").select("id").eq("family_id", fam),
+          LOAD_TIMEOUT_MS,
+          { data: null }
+        );
         if (members?.length) memberIds = members.map((m) => m.id);
       }
 
-      const state = await getOrientationState(supabase, fam, memberIds);
+      // Orientation state is progress chrome — cap it so a slow query can't
+      // pin the page on a skeleton. On timeout we render with 0 done (the trail
+      // still shows, the family just sees an un-ticked start).
+      const state = await withTimeout(
+        getOrientationState(supabase, fam, memberIds),
+        LOAD_TIMEOUT_MS,
+        { completed: new Set<string>() } as Awaited<
+          ReturnType<typeof getOrientationState>
+        >
+      );
       setCompleted(state.completed);
       setLoading(false);
     }
@@ -97,21 +159,11 @@ export default function StartHerePage() {
   const total = ORIENTATION_STEPS.length;
   const allDone = doneCount >= total;
 
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto space-y-6 animate-pulse">
-        <div className="h-8 w-56 rounded-lg bg-sand/60" />
-        <div className="h-40 rounded-2xl bg-sand/40" />
-        <div className="h-64 rounded-2xl bg-sand/40" />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
-      {/* Header */}
+      {/* Header — paints immediately (no data dependency) */}
       <div>
         <div className="flex items-center gap-2 mb-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
@@ -129,58 +181,39 @@ export default function StartHerePage() {
         </p>
       </div>
 
-      {/* App walkthrough video — the two-minute tour */}
-      <div className="paper-card overflow-hidden">
-        <div className="px-5 pt-4 pb-3">
-          <h2 className="font-display text-base font-bold text-ink">Watch: the two-minute app tour</h2>
-          <p className="text-[13px] text-soft mt-0.5">Everything in the club — home, watchlist, missions, games and classes — narrated in a hundred seconds.</p>
-        </div>
-        <video
-          controls
-          preload="metadata"
-          playsInline
-          className="w-full aspect-[16/10] bg-ink"
-          src="https://zvkercqohmmeyofycbgr.supabase.co/storage/v1/object/public/community-media/walkthrough/app-walkthrough.mp4"
-        />
-      </div>
-
-      {/* Progress — the setup journey */}
-      <SetupTrail
-        steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
-        completed={completed}
-        allDone={allDone}
-      />
-      {allDone && (
-        <p className="text-sm text-green-600 flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4" />
-          Head to your home page for This Week in FIC.
-        </p>
+      {/* HERO — the setup journey. This is the make-or-break motivator, so it
+          leads. Renders a shape-matched skeleton until orientation hydrates. */}
+      {loading ? (
+        <div className="paper-card p-6 h-40 animate-pulse bg-sand/30" />
+      ) : (
+        <>
+          <SetupTrail
+            steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
+            completed={completed}
+            allDone={allDone}
+          />
+          {allDone && (
+            <p className="text-sm text-green-600 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4" />
+              Head to your home page for This Week in FIC.
+            </p>
+          )}
+        </>
       )}
 
-      {/* Orientation deck */}
+      {/* PRIMARY media — the two-minute app tour. One embed, poster + error
+          fallback, faststart source so it never hangs on a spinner. */}
       <div className="paper-card overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-sand">
-          <PlayCircle className="w-4 h-4 text-gold-600" />
-          <h2 className="font-display text-sm font-semibold text-ink">
-            Family orientation
+        <div className="px-5 pt-4 pb-3">
+          <h2 className="font-display text-base font-bold text-ink">
+            Watch: the two-minute app tour
           </h2>
-          <a
-            href={ORIENTATION_DECK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gold-700 hover:text-gold-800"
-          >
-            Open full screen <ExternalLink className="w-3 h-3" />
-          </a>
+          <p className="text-[13px] text-soft mt-0.5">
+            Everything in the club — home, watchlist, missions, games and
+            classes — narrated in a hundred seconds.
+          </p>
         </div>
-        <div className="aspect-video bg-paper">
-          <iframe
-            src={ORIENTATION_DECK_URL}
-            title="Family orientation"
-            className="w-full h-full"
-            allowFullScreen
-          />
-        </div>
+        <TourVideo />
       </div>
 
       {/* Checklist */}
@@ -288,6 +321,28 @@ export default function StartHerePage() {
           );
         })}
       </div>
+
+      {/* SECONDARY — the fuller orientation deck, as a link card (not an inline
+          iframe). Opens in its own tab so it never renders as a blank well. */}
+      <a
+        href={ORIENTATION_DECK_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors group"
+      >
+        <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+          <PlayCircle className="w-6 h-6 text-gold-700" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-semibold text-ink">
+            Family orientation deck
+          </p>
+          <p className="text-sm text-soft">
+            Want the fuller walkthrough? Open the slide deck in a new tab.
+          </p>
+        </div>
+        <ExternalLink className="w-5 h-5 text-gold-700 shrink-0 group-hover:text-gold-800" />
+      </a>
 
       {/* Education-first footer */}
       <div className="paper-card p-5 flex items-start gap-3">
