@@ -27,6 +27,7 @@ import {
   type HearAbout,
   type Recommendation,
 } from "@/lib/onboarding-profile";
+import { SunCircle, Sparkle } from "@/components/fic/glyphs/motifs";
 
 /**
  * Reusable profile-building step screens — shared by the main onboarding flow
@@ -45,9 +46,39 @@ const ICONS: Record<string, LucideIcon> = {
   Users,
 };
 
-function StepHead({ title, sub }: { title: string; sub: string }) {
+/**
+ * A light per-step motif (audit #20) — a gold sun-circle halo behind a small
+ * emblem'd icon with a sparkle accent. It warms the "built-for-you" moment so
+ * each profile step reads as a crafted screen, not a plain centered card.
+ * Reuses the shared FIC glyph kit (no new/paid art). Gold tokens sit correctly
+ * on the midnight auth backdrop and hold up in either theme.
+ */
+function StepMotif({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <div className="relative mx-auto mb-4 h-16 w-16" aria-hidden="true">
+      <SunCircle className="absolute inset-0 h-full w-full" opacity={0.16} />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-gold-400/25 bg-gold-400/10">
+          <Icon className="h-6 w-6 text-gold-500" />
+        </div>
+      </div>
+      <Sparkle className="absolute -right-0.5 -top-0.5 h-4 w-4" />
+    </div>
+  );
+}
+
+function StepHead({
+  title,
+  sub,
+  icon,
+}: {
+  title: string;
+  sub: string;
+  icon?: LucideIcon;
+}) {
   return (
     <div className="text-center">
+      {icon && <StepMotif icon={icon} />}
       <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">{title}</h2>
       <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">{sub}</p>
     </div>
@@ -123,6 +154,7 @@ export function HouseholdStep({
   return (
     <div className="space-y-6">
       <StepHead
+        icon={Users}
         title="Who's in your family?"
         sub="This shapes the lessons, missions, and pace we put in front of you."
       />
@@ -192,6 +224,7 @@ export function ExperienceStep({
   return (
     <div className="space-y-6">
       <StepHead
+        icon={Compass}
         title="Where are you starting from?"
         sub="Every level has a seat here. There's no wrong answer."
       />
@@ -250,6 +283,7 @@ export function GoalsStep({
   return (
     <div className="space-y-6">
       <StepHead
+        icon={Target}
         title="What would make this worth it?"
         sub="Pick everything that matters — we'll point you at the right things first."
       />
@@ -325,7 +359,7 @@ export function HearAboutStep({
 }) {
   return (
     <div className="space-y-6">
-      <StepHead title="How did you find us?" sub="Totally optional — it just helps us reach more families like yours." />
+      <StepHead icon={Star} title="How did you find us?" sub="Totally optional — it just helps us reach more families like yours." />
       <div className="grid grid-cols-1 gap-2.5">
         {HEAR_ABOUT_OPTIONS.map((o) => {
           const on = draft.hear_about === o.value;

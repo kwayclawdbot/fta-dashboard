@@ -262,9 +262,33 @@ export default function SimulatorPage() {
     .sort((a, b) => a.time - b.time);
 
   if (loading) {
+    // Branded boot state (audit #15): animated candlestick bars + a one-line
+    // "what this is" while the chart engine warms, instead of a bare spinner.
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="mb-5 flex h-12 items-end gap-1.5" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <motion.span
+              key={i}
+              className="w-2.5 rounded-sm bg-gold-500/80"
+              initial={{ height: 8 }}
+              animate={{ height: [8, 40, 16, 32, 8] }}
+              transition={{
+                duration: 1.2,
+                repeat: Infinity,
+                delay: i * 0.12,
+                ease: "easeInOut",
+              }}
+            />
+          ))}
+        </div>
+        <h1 className="font-display text-lg font-bold text-midnight-100">
+          Warming up the Trading Floor
+        </h1>
+        <p className="mt-1.5 max-w-xs text-sm text-midnight-400">
+          Booting a live-feeling market so you can practice with pretend
+          money — place orders, manage a portfolio, zero real risk.
+        </p>
       </div>
     );
   }

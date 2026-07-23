@@ -15,6 +15,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
+import { deriveRegister, celebrateRegister, type Register } from "@/lib/register";
 
 const LS_KEY = "fic-tour-done";
 
@@ -34,117 +35,125 @@ interface TourUser {
   track?: string;
 }
 
+/**
+ * A trimmed, register-differentiated tour (audit #16). The old tour was 11
+ * identical steps for parent, teen and kid alike — long for a "one-minute
+ * tour" and voice-wrong for the youngest. Now every step carries per-register
+ * copy and each persona walks an ordered SUBSET:
+ *   • kid   → 5 steps, "adventure" voice
+ *   • teen  → 5 steps, rank/level framing, no baby-talk
+ *   • adult → 7 steps, calm orientation ("here's your home")
+ * Register comes from the shared register.ts derivation — no ad-hoc role/track
+ * checks. The measure-then-clamp placement machinery below is untouched.
+ */
 function buildSteps(u: TourUser): TourStep[] {
-  const isKid = u.role === "child" && (u.age_group === "kids" || u.track === "kids");
-  const isParent = u.role !== "child";
+  const register = deriveRegister(u);
   const first = (u.display_name || "").split(" ")[0];
+  const pick = <T,>(k: T, t: T, a: T): T =>
+    register === "kid" ? k : register === "teen" ? t : a;
 
-  const steps: TourStep[] = [
-    {
+  const S: Record<string, TourStep> = {
+    welcome: {
       key: "welcome",
       emoji: "👋",
-      title: first ? `Welcome to the club, ${first}!` : "Welcome to the club!",
-      body: isKid
-        ? "This is your family's money clubhouse. Let me show you around — it takes one minute, and there's a surprise at the end."
-        : "This is your family's home for learning money together. A one-minute tour and you'll know exactly where everything lives.",
+      title: pick(
+        first ? `Hey ${first}! Ready to explore?` : "Hey! Ready to explore?",
+        first ? `Welcome, ${first}.` : "Welcome.",
+        first ? `Welcome to the club, ${first}!` : "Welcome to the club!"
+      ),
+      body: pick(
+        "This is your family's money clubhouse. Let me show you around — it's quick, and there's a surprise at the end!",
+        "This is your family's home base for learning to invest. Quick tour so you know where everything lives.",
+        "This is your family's home for learning money together. A one-minute tour and you'll know exactly where everything lives."
+      ),
     },
-    {
+    thisweek: {
       key: "thisweek",
       targets: ['[data-tour="thisweek-tab"]'],
       emoji: "🗓️",
-      title: "Everything starts with This Week",
-      body: isKid
-        ? "Every week there's one company to explore, one challenge for you, and one class. It all lives right here."
-        : "One concept, one company, one mission — the club's weekly rhythm lives in this tab. Check it every Sunday.",
+      title: pick("Everything starts here", "Start with This Week", "Everything starts with This Week"),
+      body: pick(
+        "Every week there's one company to explore, one challenge for you, and one class — all right here.",
+        "One concept, one company, one mission each week. This is the tab you check first.",
+        "One concept, one company, one mission — the club's weekly rhythm lives in this tab. Check it every Sunday."
+      ),
     },
-    {
+    starthere: {
       key: "starthere",
       targets: ['[data-tour="start-here"]', '[data-tour="nav:/start-here"]'],
       emoji: "🧭",
       title: "Start Here is your setup trail",
       body: "A short checklist that gets your family fully set up — watch the orientation, add your first companies, join your first class. Finish all six and celebrate.",
     },
-    {
+    community: {
       key: "community",
       targets: ['[data-tour="tab:/community"]', '[data-tour="nav:/community"]'],
       emoji: "💬",
-      title: "The clubhouse feed",
-      body: isKid
-        ? "Post what you find, cheer for other families, and watch your wins show up in the feed automatically."
-        : "The heart of the club — share wins, post your family's picks with live data attached, and jump into Live Rooms around class time.",
+      title: pick("The clubhouse feed", "The clubhouse feed", "The clubhouse feed"),
+      body: pick(
+        "Post what you find, cheer for other families, and watch your wins show up in the feed automatically.",
+        "Where the club talks all week — share your picks with live data attached, cheer other families, and drop into Live Rooms at class time.",
+        "The heart of the club — share wins, post your family's picks with live data attached, and jump into Live Rooms around class time."
+      ),
     },
-    {
+    watchlist: {
       key: "watchlist",
       targets: ['[data-tour="tab:/watchlist"]', '[data-tour="nav:/watchlist"]'],
       emoji: "🔎",
       title: "Your family's watchlist",
-      body: isKid
-        ? "Pick a company you love and become its champion! Study it with your family before deciding if it's a favorite."
-        : "The family research board. Anyone adds a company, someone champions it, and verdicts unlock only after the research card is done.",
+      body: "The family research board. Anyone adds a company, someone champions it, and verdicts unlock only after the research card is done.",
     },
-    {
+    missions: {
       key: "missions",
       targets: ['[data-tour="tab:/missions"]', '[data-tour="nav:/missions"]'],
       emoji: "🎯",
-      title: isKid ? "Your missions" : "Kid missions",
-      body: isKid
-        ? "Brand Detective, Money Machine, Family CEO… complete missions, earn XP, and level up."
-        : "Hands-on missions that turn each week's concept into something kids do — and parents get to watch the lightbulbs go on.",
+      title: "Your missions",
+      body: "Brand Detective, Money Machine, Family CEO… complete missions, earn XP, and level up.",
     },
-    {
+    practice: {
       key: "practice",
       targets: ['[data-tour="nav:/chart"]', '[data-tour="tab:/games"]', '[data-tour="tab:more"]'],
-      emoji: "📈",
-      title: "The practice area",
-      body: isKid
-        ? "Games! Candle Battle, Trend or Trap, and a real chart to explore — all practice, zero real money."
-        : "A full-screen practice chart with live data, the paper-money simulator, and the games arcade. Real reps, zero risk.",
+      emoji: pick("🎮", "📈", "📈"),
+      title: pick("The play zone", "Practice & games", "The practice area"),
+      body: pick(
+        "Games! Candle Battle, Trend or Trap, and a real chart to explore — all practice, zero real money.",
+        "A full-screen chart with live data, the paper-money simulator, and the games arcade. Real reps, zero risk.",
+        "A full-screen practice chart with live data, the paper-money simulator, and the games arcade. Real reps, zero risk."
+      ),
     },
-    {
-      key: "flashcards",
-      targets: ['[data-tour="nav:/flashcards"]', '[data-tour="tab:more"]'],
-      emoji: "🃏",
-      title: isKid ? "Your cards" : "Daily flashcards",
-      body: "Five quick cards a day keeps the vocabulary sharp — streaks included.",
+    progress: {
+      key: "progress",
+      targets: ['[data-tour="nav:/progress"]', '[data-tour="tab:more"]'],
+      emoji: "🏅",
+      title: "Your rank & progress",
+      body: "XP, levels, and credentials you earn — Scout, Analyst, Risk Manager. Real titles for real work.",
     },
-  ];
-
-  if (isParent) {
-    steps.push({
+    family: {
       key: "family",
       targets: ['[data-tour="nav:/family"]', '[data-tour="nav:/parent-corner"]', '[data-tour="tab:more"]'],
       emoji: "👨‍👩‍👧‍👦",
       title: "Your family, your view",
       body: "Report cards for every kid, Parent Corner with this week's dinner-table questions, and invites to bring the rest of the family in.",
-    });
-  } else {
-    steps.push({
-      key: "progress",
-      targets: ['[data-tour="nav:/progress"]', '[data-tour="tab:more"]'],
-      emoji: "🏅",
-      title: "Your progress",
-      body: "XP, levels, and credentials you can earn — Scout, Analyst, Risk Manager. Real titles for real work.",
-    });
-  }
+    },
+    done: {
+      key: "done",
+      emoji: "🚀",
+      title: pick("You're in!", "That's the tour.", "That's the tour."),
+      body: pick(
+        "Time to earn your first XP. Head to This Week and start your first adventure!",
+        "Jump into This Week and start stacking XP.",
+        "Head to Start Here to finish setting up your family — the checklist takes about ten minutes total."
+      ),
+    },
+  };
 
-  steps.push({
-    key: "bell",
-    targets: ['[data-tour="bell"]'],
-    emoji: "🔔",
-    title: "Never miss a thing",
-    body: "Replies, mentions and club news land here. Turn on push notifications in Settings to get them even when the app is closed.",
-  });
+  const order: Record<Register, string[]> = {
+    kid: ["welcome", "thisweek", "missions", "practice", "done"],
+    teen: ["welcome", "thisweek", "community", "progress", "done"],
+    adult: ["welcome", "thisweek", "starthere", "community", "watchlist", "family", "done"],
+  };
 
-  steps.push({
-    key: "done",
-    emoji: "🚀",
-    title: isKid ? "You're in!" : "That's the tour.",
-    body: isKid
-      ? "Time to earn your first XP. Head to Start Here and let's go!"
-      : "Head to Start Here to finish setting up your family — the checklist takes about ten minutes total.",
-  });
-
-  return steps;
+  return order[register].map((k) => S[k]);
 }
 
 interface Rect { top: number; left: number; width: number; height: number }
@@ -221,10 +230,9 @@ export default function AppTour({ user }: { user: TourUser }) {
         .eq("id", session.user.id);
     }
     if (completed) {
-      const isKid = user.role === "child" && (user.age_group === "kids" || user.track === "kids");
       setCelebrate({
         variant: "setup",
-        register: isKid ? "kid" : "parent",
+        register: celebrateRegister(deriveRegister(user)),
         title: "Welcome to the club!",
         subtitle: "You know your way around now — go earn it.",
       });
