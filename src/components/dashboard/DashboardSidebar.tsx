@@ -28,6 +28,7 @@ import {
   Lock,
   Radio,
   Film,
+  Bot,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -85,6 +86,9 @@ const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: 
 // linked only from /progress. Medal icon keeps it distinct from the Trophy used
 // by My Progress / My Badges.
 const LEADERBOARD: NavItem = { label: "Leaderboard", href: "/leaderboard", icon: Medal };
+// "Ask Kai" — CheatCode's AI research analyst. All member roles (kids get an
+// age-aware Kai); NEVER free tier (chat is members-only, gated server-side).
+const KAI_ASK: NavItem = { label: "Ask Kai", href: "/kai", icon: Bot };
 
 // Family group (parents only) — absorbs Parent Corner, Invite Families and My
 // Progress alongside the family surfaces so parent tools live in one place.
@@ -239,6 +243,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
     return [
       { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
       CLUB_COMMUNITY,
+      KAI_ASK,
       CLUB_MISSIONS,
       CLUB_WATCHLIST,
       learnGroup(true), // My Lessons · Live Classes · My Cards
@@ -255,6 +260,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const main: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     CLUB_COMMUNITY,
+    KAI_ASK,
     CLUB_WATCHLIST,
     CLUB_MISSIONS,
     learnGroup(false),
