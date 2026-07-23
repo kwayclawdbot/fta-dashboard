@@ -330,34 +330,71 @@ export default function StartHerePage() {
                     </div>
                   )}
 
-                  {/* Orientation tour — the two-minute walkthrough, folded in
-                      here instead of a standalone hero embed. */}
+                  {/* Orientation step — the narrated walkthrough was recorded
+                      before the redesign (stale layouts), so the primary path is
+                      now the live interactive tour (?tour=1). The old video is
+                      kept for reference, folded away and labelled "older layout". */}
                   {isWatch && openPanel === "watch" && (
-                    <div className="mt-4 rounded-xl overflow-hidden border border-sand bg-paper">
-                      <TourVideo />
-                      <div className="p-4 space-y-3">
-                        <p className="text-sm text-soft leading-relaxed">
-                          Everything in the club — home, watchlist, missions,
-                          games and classes — narrated in a hundred seconds.
-                        </p>
-                        <a
-                          href={ORIENTATION_DECK_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Want the fuller walkthrough? Open the slide deck
-                        </a>
-                        <div>
-                          <button
-                            onClick={() => attest(step)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-sm font-medium hover:bg-gold-400/25 transition-colors"
+                    <div className="mt-4 space-y-3 rounded-xl border border-sand bg-paper p-4">
+                      <div className="flex items-start gap-3 rounded-xl border border-gold-300/40 bg-gold-400/10 p-3.5">
+                        <Compass className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
+                        <div className="space-y-2">
+                          <p className="text-sm leading-relaxed text-ink">
+                            <span className="font-semibold">
+                              The app has been updated.
+                            </span>{" "}
+                            The quickest way to learn your way around is the new
+                            interactive tour — it walks the live app, step by
+                            step, in about a minute.
+                          </p>
+                          <Link
+                            href="/dashboard?tour=1"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gold-600"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
-                            {step.attestLabel || "Mark as watched"}
-                          </button>
+                            <Sparkles className="h-4 w-4" />
+                            Take the new tour
+                          </Link>
                         </div>
+                      </div>
+
+                      <details className="rounded-xl border border-sand bg-paper/60">
+                        <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-2.5 text-sm text-soft">
+                          <PlayCircle className="h-4 w-4 shrink-0 text-soft" />
+                          Prefer a video? Watch the original walkthrough
+                          <span className="ml-1 rounded bg-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-soft">
+                            older layout
+                          </span>
+                        </summary>
+                        <div className="border-t border-sand">
+                          <TourVideo />
+                          <div className="space-y-2 p-3.5">
+                            <p className="text-[13px] leading-relaxed text-soft">
+                              Recorded before the redesign — some screens look
+                              different now — but the club&apos;s rhythm (home,
+                              watchlist, missions, games and classes) is narrated
+                              in a hundred seconds.
+                            </p>
+                            <a
+                              href={ORIENTATION_DECK_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              Want the fuller walkthrough? Open the slide deck
+                            </a>
+                          </div>
+                        </div>
+                      </details>
+
+                      <div>
+                        <button
+                          onClick={() => attest(step)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-gold-400/15 px-4 py-2 text-sm font-medium text-gold-700 transition-colors hover:bg-gold-400/25"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          {step.attestLabel || "Mark as watched"}
+                        </button>
                       </div>
                     </div>
                   )}
