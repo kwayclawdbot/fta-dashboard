@@ -5,8 +5,8 @@ import Link from "next/link";
 import { m, AnimatePresence } from "@/lib/motion";
 import {
   AtSign, Send, Trophy, Heart, MessageCircle, Sparkles,
-  ArrowRight, Paperclip, X, Film, Loader2, Link2, Radio,
-  Award, Eye, CheckCircle2, Target, Calendar, Pin, BookOpen,
+  ArrowRight, Paperclip, X, Film, Loader2, Link2,
+  Award, Eye, CheckCircle2, Target, Calendar, Pin,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
@@ -24,7 +24,7 @@ import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import ProfileLink from "@/components/ProfileLink";
 import AgeBadge from "@/components/community/AgeBadge";
-import LiveRooms from "@/components/community/LiveRooms";
+import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import AnnouncementCard from "@/components/community/AnnouncementCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 
@@ -133,7 +133,6 @@ export default function CommunityPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Mobile Live Rooms drawer
-  const [liveOpen, setLiveOpen] = useState(false);
 
   // ── @mention autocomplete ──
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -485,20 +484,12 @@ export default function CommunityPage() {
 
   return (
     <MentionProvider map={mentions}>
-    <div className="max-w-6xl mx-auto">
-      {/* Mobile Live Rooms toggle */}
-      <button
-        onClick={() => setLiveOpen(true)}
-        className="lg:hidden mb-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gold-300 bg-chip-amber/50 text-gold-800 font-display text-sm font-semibold"
-      >
-        <Radio className="w-4 h-4" /> Open Live Rooms
-      </button>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Main feed */}
-        <div className="flex-1 min-w-0 space-y-4">
-          {/* Pinned This Week anchor */}
-          {anchor && <AnchorCard post={anchor} onReply={() => toggleComments(anchor.id)} />}
+    <div className="max-w-2xl mx-auto">
+      <div className="space-y-4">
+        {/* Main feed — full width now that Club Chat lives in a drawer */}
+        <div className="min-w-0 space-y-4">
+          {/* Pinned This Week — one-line strip into the academy This Week tab */}
+          {anchor && <ThisWeekStrip post={anchor} />}
 
           {/* Pinned latest announcement (first 7 days) */}
           {pinnedAnnouncement && <AnnouncementCard post={pinnedAnnouncement} pinned />}
@@ -640,29 +631,10 @@ export default function CommunityPage() {
             </div>
           )}
         </div>
-
-        {/* Right rail */}
-        <aside className="hidden lg:block lg:w-[320px] shrink-0 space-y-4">
-          <LiveRooms key={myTier} me={me} tier={myTier} />
-          {anchor && <ThisWeekSnapshot post={anchor} />}
-          <HouseRulesLink />
-        </aside>
       </div>
 
-      {/* Mobile Live Rooms drawer */}
-      <AnimatePresence>
-        {liveOpen && (
-          <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/50 lg:hidden flex items-end" onClick={() => setLiveOpen(false)}>
-            <m.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "tween", duration: 0.2 }} className="w-full max-h-[85vh] bg-paper rounded-t-2xl p-3 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="font-display text-sm font-bold text-ink">Live Rooms</span>
-                <button onClick={() => setLiveOpen(false)} aria-label="Close"><X className="w-5 h-5 text-soft" /></button>
-              </div>
-              <LiveRooms key={myTier} me={me} tier={myTier} />
-            </m.div>
-          </m.div>
-        )}
-      </AnimatePresence>
+      {/* Club Chat — always one tap away via the shared drawer */}
+      <ClubChatDrawer key={myTier} me={me} tier={myTier} />
     </div>
     </MentionProvider>
   );
@@ -969,82 +941,28 @@ function CommentThread(props: EngagementProps) {
   );
 }
 
-function AnchorCard({ post, onReply }: { post: FeedPost; onReply: () => void }) {
+/**
+ * One-line pinned "This Week" strip (was the full AnchorCard). The academy This
+ * Week detail lives on the Home tab — this just points there so the feed stays
+ * the star of /community.
+ */
+function ThisWeekStrip({ post }: { post: FeedPost }) {
   const a = post.activity_payload as AnchorPayload;
   return (
-    <div className="paper-card p-5 bg-chip-amber/30 border-gold-300">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-8 h-8 rounded-lg bg-gold-500/20 text-gold-700 flex items-center justify-center"><Pin className="w-4 h-4" /></span>
-        <div>
-          <p className="text-[10px] font-display font-bold uppercase tracking-wider text-gold-700">This Week in the Club</p>
-          <h3 className="font-display text-base font-bold text-ink leading-tight">{a.class_title || "This week"}</h3>
-        </div>
-      </div>
-      {a.company_name && (
-        <div className="flex items-center gap-2 text-sm text-midnight-200 mb-2">
-          <BookOpen className="w-4 h-4 text-gold-600" />
-          <span>Company of the Week: <span className="font-semibold text-ink">{a.company_name}</span>{a.company_ticker ? ` (${a.company_ticker})` : ""}</span>
-        </div>
-      )}
-      {a.discussion_question && (
-        <div className="rounded-lg bg-midnight-900/70 border border-gold-200 p-3 mb-2">
-          <p className="text-[11px] font-display font-bold uppercase tracking-wider text-soft mb-1">Family discussion</p>
-          <p className="text-sm text-ink font-body">{a.discussion_question}</p>
-        </div>
-      )}
-      {a.family_assignment && (
-        <div className="rounded-lg bg-midnight-900/70 border border-gold-200 p-3 mb-3">
-          <p className="text-[11px] font-display font-bold uppercase tracking-wider text-soft mb-1">Your family&apos;s job</p>
-          <p className="text-sm text-ink font-body">{a.family_assignment}</p>
-        </div>
-      )}
-      <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={onReply} className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs">
-          <MessageCircle className="w-3.5 h-3.5" /> Post your family&apos;s pick
-        </button>
-        <Link href="/dashboard?tab=this-week" className="text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">
-          Open This Week <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function ThisWeekSnapshot({ post }: { post: FeedPost }) {
-  const a = post.activity_payload as AnchorPayload;
-  return (
-    <div className="paper-card p-4">
-      <h3 className="font-display text-xs font-semibold text-soft uppercase tracking-wider mb-2">This Week snapshot</h3>
-      <p className="font-display text-sm font-bold text-ink">{a.class_title}</p>
-      {a.company_name && <p className="text-xs text-soft mt-0.5">Company: {a.company_name}{a.company_ticker ? ` (${a.company_ticker})` : ""}</p>}
-      {a.kid_challenge && (
-        <div className="mt-2 rounded-lg bg-paper border border-sand p-2.5">
-          <p className="text-[10px] font-display font-bold uppercase tracking-wider text-gold-700 mb-0.5">Kid challenge</p>
-          <p className="text-xs text-midnight-200">{a.kid_challenge}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function HouseRulesLink() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="px-1">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="text-[11px] text-soft hover:text-gold-700 font-body underline underline-offset-2"
-      >
-        House rules
-      </button>
-      {open && (
-        <ul className="mt-2 space-y-1.5 text-xs text-soft font-body">
-          <li>• We&apos;re here to learn — no dumb questions.</li>
-          <li>• Be kind — kids are in the club too.</li>
-          <li>• Education only — no financial advice or &quot;buy this now.&quot;</li>
-          <li>• Practice money only. Nobody is pressured to trade for real.</li>
-        </ul>
-      )}
-    </div>
+    <Link
+      href="/dashboard?tab=this-week"
+      className="paper-card bg-chip-amber/30 border-gold-300 px-4 py-3 flex items-center gap-3 hover:border-gold-400 transition-colors group"
+    >
+      <span className="w-7 h-7 rounded-lg bg-gold-500/20 text-gold-700 flex items-center justify-center shrink-0">
+        <Pin className="w-3.5 h-3.5" />
+      </span>
+      <p className="text-sm text-ink min-w-0 truncate">
+        <span className="font-display font-bold text-gold-700">This Week:</span>{" "}
+        <span className="font-semibold">{a.class_title || "This week in the club"}</span>
+      </p>
+      <span className="ml-auto shrink-0 text-xs font-semibold text-gold-700 inline-flex items-center gap-1 group-hover:text-gold-600">
+        Open <ArrowRight className="w-3.5 h-3.5" />
+      </span>
+    </Link>
   );
 }

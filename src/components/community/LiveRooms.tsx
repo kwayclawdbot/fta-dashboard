@@ -16,8 +16,8 @@ import TierBadge from "@/components/TierBadge";
 import AgeBadge from "@/components/community/AgeBadge";
 
 /**
- * Live Rooms — the ALWAYS-ON realtime chat, demoted from the front door to a
- * side-surface (COMMUNITY-EXPERIENCE-STUDY §3.3). This REUSES the existing
+ * Club Chat — the ALWAYS-ON realtime chat, now presented as a collapsible drawer
+ * (ClubChatDrawer) shared across /community and /chart. This REUSES the existing
  * chat_messages realtime plumbing untouched (migrations 016/018/019/027):
  * `community-room-${roomId}` channel, postgres_changes INSERTs, the simple
  * realtime-safe SELECT policy. FIC Club is always available; FTA Traders too for
@@ -36,7 +36,12 @@ const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "FIC Club" };
 const FTA_ROOM: Room = { id: FTA_ROOM_ID, name: "FTA Traders" };
 const FREE_LOUNGE: Room = { id: FREE_LOUNGE_ROOM_ID, name: "Free Lounge" };
 
-/** Rooms a tier may OPEN + post in (app-layer gating, per migrations 016/033/086). */
+/**
+ * Rooms a tier may OPEN + post in (app-layer gating, per migrations 016/033/086).
+ * Single source of truth for the room list — a later lane moves FTA Traders to a
+ * dedicated FTA chat page, which is a one-line removal here (drop FTA_ROOM from
+ * the `fta` array).
+ */
 function openRoomsFor(tier: FamilyTier): Room[] {
   if (tier === "free") return [FREE_LOUNGE];
   if (tier === "fta") return [FIC_ROOM, FTA_ROOM, FREE_LOUNGE];
@@ -73,7 +78,7 @@ interface Msg {
   attachment_url: string | null;
   attachment_type: "image" | "video" | null;
 }
-interface Me {
+export interface Me {
   id: string;
   display_name: string;
   role: Role;
@@ -82,6 +87,7 @@ interface Me {
   avatar_url: string | null;
   username?: string | null;
 }
+export type LiveRoomsMe = Me;
 interface PendingAttachment {
   file: File;
   kind: "image" | "video";
@@ -395,7 +401,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
           </span>
           <h3 className="font-display text-sm font-bold text-ink flex items-center gap-1.5">
-            <Radio className="w-4 h-4 text-gold-600" /> Live Rooms
+            <Radio className="w-4 h-4 text-gold-600" /> Club Chat
           </h3>
         </div>
         <p className="text-[11px] text-soft mt-0.5">
