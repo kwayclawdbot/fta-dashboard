@@ -17,6 +17,8 @@ import {
   Bookmark,
   Share2,
   ThumbsUp,
+  RotateCw,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -221,6 +223,18 @@ export default function LessonViewerClient() {
   const [register, setRegister] = useState<Register>("adult");
   const [engaged, setEngaged] = useState(false);
   const [celebrateQueue, setCelebrateQueue] = useState<CelebrateOptions[]>([]);
+  // HTML-lesson iframe resilience (audit #25): the embed is reliable but slow
+  // to appear on phones; a bare frame reads as "failed to resolve". Track its
+  // load so we can show a branded overlay while it boots and a recover path if
+  // it errors, instead of a blank paper box.
+  const [frameState, setFrameState] = useState<"loading" | "ok" | "error">(
+    "loading"
+  );
+  const [frameNonce, setFrameNonce] = useState(0);
+  // Reset the frame state whenever the lesson changes so the overlay re-arms.
+  useEffect(() => {
+    setFrameState("loading");
+  }, [lessonId]);
 
   const enqueueCelebrate = useCallback(
     (o: CelebrateOptions) => setCelebrateQueue((q) => [...q, o]),
@@ -415,9 +429,22 @@ export default function LessonViewerClient() {
   }
 
   if (loading) {
+    // Branded lesson loader (audit #25): the course-data fetch can take a few
+    // seconds on a phone; a titled loading state reads as "loading" rather than
+    // "broken" during that window.
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="relative mb-4 h-12 w-12">
+          <div className="absolute inset-0 rounded-full border-2 border-gold-400/20" />
+          <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gold-400 animate-spin" />
+          <BookOpen className="absolute inset-0 m-auto h-5 w-5 text-gold-500" />
+        </div>
+        <p className="font-display text-sm font-semibold text-midnight-200">
+          Loading your lesson…
+        </p>
+        <p className="mt-1 text-xs text-midnight-500">
+          Getting the chart and narration ready.
+        </p>
       </div>
     );
   }
@@ -478,13 +505,63 @@ export default function LessonViewerClient() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
           <div className="relative w-full rounded-lg overflow-hidden border border-midnight-800" style={{ height: "calc(100vh - 160px)" }}>
             <iframe
+              key={frameNonce}
               className="absolute inset-0 w-full h-full border-0"
               src={currentLesson.video_id!}
               allow="autoplay; microphone"
               allowFullScreen
               title={currentLesson.title}
               style={{ background: "#FBF7EF" }}
+              onLoad={() => setFrameState("ok")}
+              onError={() => setFrameState("error")}
             />
+
+            {/* Branded overlay while the embed boots — reliable but slow on
+                phones, so the frame never reads as a dead blank (audit #25). */}
+            {frameState === "loading" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#FBF7EF] text-center">
+                <div className="relative h-11 w-11">
+                  <div className="absolute inset-0 rounded-full border-2 border-gold-400/25" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gold-500 animate-spin" />
+                  <BookOpen className="absolute inset-0 m-auto h-4 w-4 text-gold-600" />
+                </div>
+                <p className="font-display text-sm font-semibold text-midnight-800">
+                  Loading the lesson…
+                </p>
+              </div>
+            )}
+
+            {/* Recover path if the embed genuinely fails to load. */}
+            {frameState === "error" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#FBF7EF] px-6 text-center">
+                <BookOpen className="h-8 w-8 text-gold-600" />
+                <p className="max-w-sm text-sm text-midnight-800">
+                  This lesson didn&apos;t load. Try again, or open it in a new
+                  tab.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setFrameState("loading");
+                      setFrameNonce((n) => n + 1);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-display font-semibold text-white transition-colors hover:bg-gold-600"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                    Try again
+                  </button>
+                  <a
+                    href={currentLesson.video_id!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-4 py-2 text-sm font-medium text-midnight-800 transition-colors hover:bg-white/60"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Open
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom bar */}
