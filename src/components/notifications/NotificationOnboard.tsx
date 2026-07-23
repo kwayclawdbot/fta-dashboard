@@ -44,8 +44,10 @@ const K_IOS_TAPPED = "fic-push-ios-autoprompt";
 const K_INTENT_PENDING = "fic-push-intent-pending"; // set by onboarding completion
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
 
-// High-intent route(s) that themselves count as a prompt moment.
-const INTENT_ROUTES = ["/community"];
+// High-intent route(s) that themselves count as a prompt moment. Community was
+// removed (audit item 5) — landing on the feed no longer auto-fires the push
+// prompt; enrollment via the onboarding-completion intent flag is unchanged.
+const INTENT_ROUTES: string[] = [];
 // Never prompt on these even though they can render inside the shell.
 const SUPPRESS_ROUTES = ["/settings", "/onboarding", "/upgrade"];
 

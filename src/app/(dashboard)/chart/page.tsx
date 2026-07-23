@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import TradingViewAdvancedChart from "@/components/fic/TradingViewAdvancedChart";
+import ClubChatDrawer from "@/components/community/ClubChatDrawer";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import type { LiveRoomsMe } from "@/components/community/LiveRooms";
+import type { Role } from "@/lib/feed";
 
 function normalizeSymbol(raw: string): string {
   return raw.trim().toUpperCase().replace(/\s+/g, "");
@@ -31,6 +35,10 @@ function ChartInner() {
   const [input, setInput] = useState(urlSymbol);
   const [lineStyle, setLineStyle] = useState<boolean | null>(null); // null = not loaded
   const [roleLoaded, setRoleLoaded] = useState(false);
+  // Club Chat drawer needs the viewer's profile + tier, same shape /community
+  // supplies. Realtime plumbing + chat_messages schema untouched.
+  const [me, setMe] = useState<LiveRoomsMe | null>(null);
+  const [tier, setTier] = useState<FamilyTier>("fic");
 
   // Default chart style from role/age: kids → clean area/line, teens+parents → candles.
   const loadRole = useCallback(async () => {
@@ -44,7 +52,7 @@ function ChartInner() {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role, age_group")
+      .select("display_name, role, age_group, family_id, avatar_url, username")
       .eq("id", user.id)
       .single();
     const isKid =
@@ -52,6 +60,18 @@ function ChartInner() {
       (profile?.role === "child" && profile?.age_group !== "teens");
     setLineStyle(isKid);
     setRoleLoaded(true);
+    if (profile) {
+      setMe({
+        id: user.id,
+        display_name: profile.display_name || "You",
+        role: (profile.role as Role) || "parent",
+        age_group: profile.age_group ?? null,
+        family_id: profile.family_id ?? null,
+        avatar_url: profile.avatar_url ?? null,
+        username: profile.username ?? null,
+      });
+      getFamilyTier(supabase, profile.family_id ?? null).then(setTier);
+    }
   }, [supabase]);
 
   useEffect(() => {
@@ -179,6 +199,9 @@ function ChartInner() {
           </div>
         )}
       </m.div>
+
+      {/* Club Chat — shared drawer, one tap away while studying a chart */}
+      <ClubChatDrawer key={tier} me={me} tier={tier} />
     </div>
   );
 }

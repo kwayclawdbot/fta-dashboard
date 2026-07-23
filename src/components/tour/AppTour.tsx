@@ -92,8 +92,8 @@ function buildSteps(u: TourUser): TourStep[] {
       title: pick("The clubhouse feed", "The clubhouse feed", "The clubhouse feed"),
       body: pick(
         "Post what you find, cheer for other families, and watch your wins show up in the feed automatically.",
-        "Where the club talks all week — share your picks with live data attached, cheer other families, and drop into Live Rooms at class time.",
-        "The heart of the club — share wins, post your family's picks with live data attached, and jump into Live Rooms around class time."
+        "Where the club talks all week — share your picks with live data attached, cheer other families, and drop into Club Chat at class time.",
+        "The heart of the club — share wins, post your family's picks with live data attached, and jump into Club Chat around class time."
       ),
     },
     watchlist: {
