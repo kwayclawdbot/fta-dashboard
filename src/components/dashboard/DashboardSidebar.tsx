@@ -22,7 +22,6 @@ import {
   Dumbbell,
   GraduationCap,
   ShieldCheck,
-  Gem,
   LifeBuoy,
   ShoppingBag,
 } from "lucide-react";
@@ -55,10 +54,21 @@ export interface NavItem {
 // duplicated Home). Utility rows (Shop/Help/Settings/Admin) move OUT of the
 // scrolling nav into a footer cluster (see getFooterItems). No routes move —
 // groups reuse the existing subItems/childActive machinery.
-const CLUB_WATCHLIST: NavItem = { label: "Family Watchlist", href: "/watchlist", icon: Eye };
+// Watchlist is now an umbrella group: the flagship Community Board + the
+// private Family board. Parent links to the communal board (the flagship);
+// being on either surface highlights + expands the group. (Team Picks retired —
+// absorbed into the Community Board.)
+const CLUB_WATCHLIST: NavItem = {
+  label: "Watchlist",
+  href: "/watchlist/community",
+  icon: Eye,
+  subItems: [
+    { label: "Community Board", href: "/watchlist/community" },
+    { label: "My Family", href: "/watchlist" },
+  ],
+};
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
 const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
-const CLUB_PICKS: NavItem = { label: "Team Picks", href: "/picks", icon: Gem };
 
 // Family group (parents only) — absorbs Parent Corner, Invite Families and My
 // Progress alongside the family surfaces so parent tools live in one place.
@@ -168,15 +178,16 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
 
   // ── Free tier (social-funnel signups): "give the tools, gate the guidance."
   //    Home (limited + journey checklist), read-only Community, the free courses
-  //    sampler, Practice (chart + games), the Team Picks teaser, the Free Class
-  //    hub, and a "Join FIC" upsell. Help/Settings live in the footer. ──
+  //    sampler, Practice (chart + games), the Community Watchlist door (gated to
+  //    the members-only UpsellCard — this replaces the old Team Picks teaser),
+  //    the Free Class hub, and a "Join FIC" upsell. Help/Settings in the footer. ──
   if (tier === "free") {
     return [
       { label: "Home", href: "/dashboard", icon: LayoutDashboard },
       CLUB_COMMUNITY,
       { label: "Free Courses", href: "/courses", icon: BookOpen },
       practiceGroup(false), // chart + games (Candle Battle); simulator stays locked
-      CLUB_PICKS,
+      { label: "Community Watchlist", href: "/watchlist/community", icon: Eye },
       { label: "Free Class", href: "/free-class", icon: Video },
       { label: "Join FIC", href: "/upgrade", icon: Sparkles },
     ];
@@ -201,7 +212,6 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const main: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     CLUB_COMMUNITY,
-    CLUB_PICKS,
     CLUB_WATCHLIST,
     CLUB_MISSIONS,
     learnGroup(isFta, false),

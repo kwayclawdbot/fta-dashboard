@@ -13,7 +13,6 @@ import {
   Menu,
   ChevronRight,
   BookOpen,
-  Gem,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -35,16 +34,18 @@ interface Tab {
  */
 function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, Tab] {
   // Free tier: surface the two "give the tools" value pages — the free courses
-  // sampler and the Team Picks teaser — flanking Community. Free Class + Join FIC
-  // live one tap away in the More sheet.
+  // sampler and the gated Community Watchlist door — flanking Community. Free
+  // Class + Join FIC live one tap away in the More sheet.
   if (tier === "free")
     return [
       { label: "Courses", href: "/courses", icon: BookOpen },
-      { label: "Picks", href: "/picks", icon: Gem },
+      { label: "Watchlist", href: "/watchlist/community", icon: Eye },
     ];
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";
-  const Watchlist: Tab = { label: "Watchlist", href: "/watchlist", icon: Eye };
+  // Watchlist tab lands on the flagship Community Board; My Family is one tap
+  // deeper via the Watchlist group in the More sheet.
+  const Watchlist: Tab = { label: "Watchlist", href: "/watchlist/community", icon: Eye };
   const Missions: Tab = { label: "Missions", href: "/missions", icon: Target };
   const Games: Tab = { label: "Games", href: "/games", icon: Gamepad2 };
   if (isKid) return [Missions, Games];
