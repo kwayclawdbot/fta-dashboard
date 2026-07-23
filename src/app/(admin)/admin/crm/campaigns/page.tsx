@@ -22,7 +22,6 @@ import {
   type Campaign,
   type Stage,
 } from "@/lib/marketing";
-import { MarketingNav } from "@/components/admin/crm/marketing-ui";
 
 export default function CampaignsPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -152,7 +151,6 @@ export default function CampaignsPage() {
         </button>
       </div>
 
-      <MarketingNav active="campaigns" />
 
       {domainBanner && (
         <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3">

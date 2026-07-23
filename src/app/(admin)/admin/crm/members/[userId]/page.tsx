@@ -18,6 +18,7 @@ import {
   Tag,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { TIER_CONFIG, type FamilyTier } from "@/lib/tier";
 import { levelForXp, levelProgress } from "@/lib/xp";
 import {
   fetchMembers,
@@ -316,6 +317,11 @@ export default function ContactDetailPage() {
                 <MessageSquare className="w-4 h-4" /> SMS
               </button>
             </div>
+
+            {/* Admin controls — role + membership tier (ported from the retired
+                /admin/users directory; the family-tier flip goes through the
+                admin_set_family_tier RPC, the single source access gates read). */}
+            {!isLead && member ? <MemberAdminControls member={member} /> : null}
           </div>
         </div>
       </div>
@@ -671,4 +677,98 @@ function profileEntries(obj: Record<string, unknown>): [string, string][] {
     }
   }
   return out.slice(0, 12);
+}
+
+/**
+ * Role + membership-tier editor, ported from the retired /admin/users
+ * directory so the merge into CRM Contacts loses no capability. Role writes to
+ * profiles.role directly; the tier flip goes through admin_set_family_tier
+ * (migration 029) which upserts/cancels the family's enrollment — the single
+ * source of truth every access gate reads. Renders only for members that have
+ * a family (tier is a family-level concept).
+ */
+const ADMIN_ROLE_OPTIONS = ["parent", "child", "coach", "admin"];
+const ADMIN_TIER_OPTIONS: FamilyTier[] = ["fic", "fta"];
+
+function MemberAdminControls({ member }: { member: MemberRow }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [role, setRole] = useState(member.role);
+  const [tier, setTier] = useState<FamilyTier>(member.tier);
+  const [savingRole, setSavingRole] = useState(false);
+  const [savingTier, setSavingTier] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function changeRole(next: string) {
+    const prev = role;
+    setRole(next);
+    setSavingRole(true);
+    setMsg(null);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role: next })
+      .eq("id", member.id);
+    setSavingRole(false);
+    if (error) {
+      setRole(prev);
+      setMsg("Could not change role.");
+    }
+  }
+
+  async function changeTier(next: FamilyTier) {
+    if (!member.family_id) return;
+    const prev = tier;
+    setTier(next);
+    setSavingTier(true);
+    setMsg(null);
+    const { error } = await supabase.rpc("admin_set_family_tier", {
+      p_family_id: member.family_id,
+      p_tier: next,
+    });
+    setSavingTier(false);
+    if (error) {
+      setTier(prev);
+      setMsg("Could not change tier.");
+    } else {
+      setMsg(`Family set to ${TIER_CONFIG[next].label}.`);
+    }
+  }
+
+  return (
+    <div className="mt-4 flex items-center gap-3 flex-wrap">
+      <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+        Role
+        <select
+          value={role}
+          disabled={savingRole}
+          onChange={(e) => changeRole(e.target.value)}
+          className="text-xs font-semibold px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 focus:outline-none focus:border-amber-400/50 disabled:opacity-50"
+        >
+          {ADMIN_ROLE_OPTIONS.map((r) => (
+            <option key={r} value={r} className="bg-zinc-900">
+              {r}
+            </option>
+          ))}
+        </select>
+      </label>
+      {member.family_id ? (
+        <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+          Tier
+          <select
+            value={tier}
+            disabled={savingTier}
+            title="Membership tier — sets the whole family"
+            onChange={(e) => changeTier(e.target.value as FamilyTier)}
+            className="text-xs font-semibold px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-amber-300 focus:outline-none focus:border-amber-400/50 disabled:opacity-50"
+          >
+            {ADMIN_TIER_OPTIONS.map((t) => (
+              <option key={t} value={t} className="bg-zinc-900 text-zinc-100">
+                {TIER_CONFIG[t].label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {msg ? <span className="text-xs text-amber-300">{msg}</span> : null}
+    </div>
+  );
 }

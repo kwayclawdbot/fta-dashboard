@@ -28,7 +28,6 @@ import {
   type ImportRow,
 } from "@/lib/marketing";
 import {
-  MarketingNav,
   StageBadge,
   SourceBadge,
   ColdBadge,
@@ -250,7 +249,6 @@ export default function LeadsPage() {
         </button>
       </div>
 
-      <MarketingNav active="leads" />
 
       {/* stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">

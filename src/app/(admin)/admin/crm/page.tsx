@@ -21,7 +21,6 @@ import {
   type DailyPoint,
 } from "@/lib/crm";
 import {
-  CrmNav,
   StatTile,
   BarChart,
   AdminAvatar,
@@ -80,7 +79,6 @@ export default function CrmOverviewPage() {
         </p>
       </div>
 
-      <CrmNav active="overview" />
 
       {loading ? (
         <div className="flex items-center justify-center py-20">

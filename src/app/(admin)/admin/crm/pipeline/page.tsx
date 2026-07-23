@@ -30,7 +30,6 @@ import {
   type EventType,
 } from "@/lib/marketing";
 import {
-  MarketingNav,
   StageBadge,
   SourceBadge,
   ColdBadge,
@@ -174,7 +173,6 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      <MarketingNav active="pipeline" />
 
       {syncMsg && <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-2 text-sm text-emerald-300">{syncMsg}</div>}
       {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm text-red-400">{error}</div>}
