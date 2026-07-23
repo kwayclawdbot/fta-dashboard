@@ -12,11 +12,18 @@ import {
 } from "@/lib/market/polygon";
 import {
   buildChatSystemPrompt,
+  buildPersonalizationBlock,
+  buildMemorySummaryPrompt,
   CHAT_TOOLS,
   KAI_CHAT_DAILY_CAP,
   KAI_MAX_TOOL_ROUNDS,
   KAI_MODEL,
+  KAI_SUMMARY_MODEL,
+  KAI_MEMORY_MAX_CHARS,
 } from "@/lib/kai/persona";
+import { beltForXp } from "@/lib/belts";
+import { serviceClient } from "@/lib/server/membership";
+import type { Register } from "@/lib/register";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -129,6 +136,68 @@ async function runTool(
   }
 }
 
+/**
+ * Cross-thread memory refresh (Lane 8B). Runs a cheap Haiku pass over the
+ * member's recent chat activity + their prior summary, and writes an updated
+ * bounded summary via the service role (kai_user_memory has no member write
+ * policy). Kid accounts get a learning-context-only summarization prompt.
+ * Best-effort: any failure is swallowed so it never affects the chat reply.
+ */
+async function refreshKaiMemory(opts: {
+  key: string;
+  userId: string;
+  register: Register;
+  priorSummary: string;
+  transcript: { role: string; content: unknown }[];
+  msgsSummarized: number;
+}): Promise<void> {
+  const transcriptText = opts.transcript
+    .map((r) => {
+      const c = typeof r.content === "string" ? r.content : JSON.stringify(r.content);
+      return `${r.role === "assistant" ? "Kai" : "Member"}: ${c}`;
+    })
+    .join("\n")
+    .slice(0, 8000);
+
+  const userMsg = `PREVIOUS SUMMARY (may be empty):\n${opts.priorSummary || "(none yet)"}\n\nRECENT TRANSCRIPT:\n${transcriptText}`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": opts.key,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: KAI_SUMMARY_MODEL,
+      max_tokens: 500,
+      system: buildMemorySummaryPrompt(opts.register),
+      messages: [{ role: "user", content: userMsg }],
+    }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) return;
+  const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+  const summary = (data.content || [])
+    .filter((b) => b.type === "text")
+    .map((b) => b.text || "")
+    .join("")
+    .trim()
+    .slice(0, KAI_MEMORY_MAX_CHARS);
+  if (!summary) return;
+
+  const admin = serviceClient();
+  await admin.from("kai_user_memory").upsert(
+    {
+      user_id: opts.userId,
+      summary,
+      msgs_summarized: opts.msgsSummarized,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const {
@@ -184,7 +253,38 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const text = String(body?.message || "").trim().slice(0, 2000);
   let threadId = body?.threadId ? String(body.threadId) : null;
+  const startedNewThread = !threadId; // memory-refresh trigger (Lane 8B)
   if (!text) return Response.json({ error: "Empty message." }, { status: 400 });
+
+  // Personalization (Lane 8B) — sourced server-side, never client-supplied. The
+  // definer RPC returns only THIS caller's data (works for kids past the
+  // parent-only family_profiles RLS); the memory summary is the caller's own row.
+  const { data: persData } = await supabase.rpc("kai_personalization");
+  const { data: memRow } = await supabase
+    .from("kai_user_memory")
+    .select("summary, msgs_summarized")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const pers = (persData || {}) as {
+    display_name?: string | null;
+    xp?: number;
+    family?: {
+      experience?: string | null;
+      goals?: string[] | null;
+      market_interest?: string | null;
+      household?: { adults?: number; kids?: number; kid_age_ranges?: string[] } | null;
+    } | null;
+  };
+  const fam = pers.family || {};
+  const personalizationBlock = buildPersonalizationBlock({
+    displayName: pers.display_name,
+    beltLabel: typeof pers.xp === "number" ? beltForXp(pers.xp).label : null,
+    experience: fam.experience ?? null,
+    goals: fam.goals ?? null,
+    marketInterest: fam.market_interest ?? null,
+    household: fam.household ?? null,
+    memory: memRow?.summary ?? null,
+  });
 
   // Ensure a thread (own-row).
   if (!threadId) {
@@ -222,7 +322,7 @@ export async function POST(req: NextRequest) {
     messages.push({ role: "user", content: text });
   }
 
-  const system = buildChatSystemPrompt(register);
+  const system = buildChatSystemPrompt(register, personalizationBlock);
   const tid = threadId;
 
   const stream = new ReadableStream({
@@ -366,6 +466,39 @@ export async function POST(req: NextRequest) {
         });
 
         emit({ type: "done", threadId: tid, content: safeText, blocks: collectedBlocks });
+
+        // Cross-thread memory refresh (Lane 8B). Cheap trigger: on a new-thread
+        // start (the previous session just ended), or once ≥8 user messages have
+        // accrued since the last summary. The user already has their answer, so
+        // this runs after `done`; best-effort and never surfaced to the client.
+        try {
+          const { count: totalUserMsgs } = await supabase
+            .from("kai_chat_messages")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("role", "user");
+          const total = totalUserMsgs ?? 0;
+          const summarized = memRow?.msgs_summarized ?? 0;
+          if (total > summarized && (startedNewThread || total - summarized >= 8)) {
+            const { data: recent } = await supabase
+              .from("kai_chat_messages")
+              .select("role, content")
+              .eq("user_id", user.id)
+              .order("created_at", { ascending: false })
+              .limit(24);
+            const transcript = (recent || []).slice().reverse();
+            await refreshKaiMemory({
+              key,
+              userId: user.id,
+              register,
+              priorSummary: memRow?.summary ?? "",
+              transcript,
+              msgsSummarized: total,
+            });
+          }
+        } catch (e) {
+          console.error("[KaiChat] memory refresh failed:", e);
+        }
       } catch (err) {
         console.error("[KaiChat] stream error:", err);
         emit({ type: "error", error: "Kai had trouble answering. Try again." });

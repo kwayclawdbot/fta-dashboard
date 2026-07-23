@@ -188,7 +188,83 @@ export const CHAT_TOOLS = [
   },
 ] as const;
 
-export function buildChatSystemPrompt(register: Register): string {
+/**
+ * Per-request personalization (Lane 8B). Every field is sourced SERVER-SIDE
+ * (from the kai_personalization RPC + kai_user_memory), never client-supplied,
+ * and folded into the system prompt so Kai addresses the member by name and
+ * tailors depth/examples to their profile and prior conversations.
+ */
+export interface KaiPersonalization {
+  displayName?: string | null;
+  beltLabel?: string | null;
+  experience?: string | null;
+  goals?: string[] | null;
+  marketInterest?: string | null;
+  household?: {
+    adults?: number;
+    kids?: number;
+    kid_age_ranges?: string[];
+  } | null;
+  /** The rolling "what Kai remembers about you" summary from kai_user_memory. */
+  memory?: string | null;
+}
+
+const EXPERIENCE_PHRASE: Record<string, string> = {
+  none: "brand new to investing — start from the very beginning",
+  beginner: "knows the terms but hasn't built the habit — reinforce fundamentals",
+  some: "has dabbled a little — give structure",
+  active: "already invests actively — you can go deeper",
+};
+const INTEREST_PHRASE: Record<string, string> = {
+  investing: "most interested in long-term investing",
+  trading: "most interested in active trading",
+  both: "interested in both long-term investing and active trading",
+  unsure: "still figuring out whether investing or trading fits",
+};
+const GOAL_PHRASE: Record<string, string> = {
+  teach_kids: "raising money-smart kids",
+  family_habit: "building a weekly family money habit",
+  build_wealth: "building long-term family wealth",
+  learn_trading: "learning to invest themselves",
+  prep_college: "preparing for college / a first job",
+};
+
+/**
+ * Assemble the injected "who am I talking to" block. Returns "" when there's
+ * nothing personal to add (so the base prompt is used verbatim).
+ */
+export function buildPersonalizationBlock(p: KaiPersonalization): string {
+  const lines: string[] = [];
+  const name = (p.displayName || "").trim();
+  if (name) {
+    lines.push(`This member's name is ${name}. Address them by their first name naturally (don't overuse it).`);
+  }
+  if (p.beltLabel) {
+    lines.push(`They've earned the ${p.beltLabel} in the club — acknowledge their progress when it's natural.`);
+  }
+  const profileBits: string[] = [];
+  if (p.experience && EXPERIENCE_PHRASE[p.experience]) profileBits.push(EXPERIENCE_PHRASE[p.experience]);
+  if (p.marketInterest && INTEREST_PHRASE[p.marketInterest]) profileBits.push(INTEREST_PHRASE[p.marketInterest]);
+  const goalPhrases = (p.goals || [])
+    .map((g) => GOAL_PHRASE[g])
+    .filter(Boolean);
+  if (goalPhrases.length) profileBits.push(`their family is here for ${goalPhrases.join(" and ")}`);
+  const kids = p.household?.kids ?? (p.household?.kid_age_ranges?.length ?? 0);
+  if (kids > 0) profileBits.push(`there are kids in the household learning alongside them`);
+  if (profileBits.length) {
+    lines.push(`About this family: ${profileBits.join("; ")}. Shape your depth and examples to fit.`);
+  }
+  if (p.memory && p.memory.trim()) {
+    lines.push(`What you remember about them from past chats: ${p.memory.trim()}`);
+  }
+  if (!lines.length) return "";
+  return `\n\nWHO YOU ARE TALKING TO (private context — never read this back verbatim, just let it shape how you respond):\n${lines.map((l) => `- ${l}`).join("\n")}`;
+}
+
+export function buildChatSystemPrompt(
+  register: Register,
+  personalizationBlock: string = ""
+): string {
   const audience =
     register === "kid"
       ? `You are talking to a CHILD. Keep it warm, simple, and encouraging — short words, everyday analogies, no jargon, no scary money talk. Never discuss buying or selling with a child; steer them toward understanding what a company does and toward their lessons and their parent.`
@@ -204,7 +280,38 @@ You are "Ask Kai" — a conversational research assistant inside the app. Use yo
 
 Answer in clean, well-structured Markdown. Keep answers focused. When you decline an advice question, be brief and warm, then offer what you CAN help study.
 
-Where relevant, point members to deeper study on the platform: the research wiki page for a company is at /research/TICKER (e.g. /research/AAPL), and the community watchlist board is at /watchlist/community.`;
+Where relevant, point members to deeper study on the platform: the research wiki page for a company is at /research/TICKER (e.g. /research/AAPL), and the community watchlist board is at /watchlist/community.${personalizationBlock}`;
+}
+
+/** Model for the cross-thread memory summarization pass (cheap, frequent). */
+export const KAI_SUMMARY_MODEL = "claude-haiku-4-5";
+
+/** Max characters kept in a user's rolling memory summary. */
+export const KAI_MEMORY_MAX_CHARS = 1200;
+
+/**
+ * System prompt for the Haiku summarization pass. Register-aware: for KID
+ * accounts the summary is hard-restricted to learning context — no personal
+ * details beyond a first name and learning progress (privacy, Lane 8B).
+ */
+export function buildMemorySummaryPrompt(register: Register): string {
+  const kidRule =
+    register === "kid"
+      ? `\n\nThis is a CHILD's account. RESTRICT the summary to LEARNING CONTEXT ONLY: what companies/topics they've asked about, what they seem to understand or find confusing, and their progress. Do NOT record any personal details beyond their first name — no family details, no location, no personal circumstances, nothing about their life outside learning.`
+      : "";
+  return `You maintain a compact rolling memory of an individual member of a family investing-education app, so the assistant "Kai" can remember them across conversations.
+
+Given the member's PREVIOUS memory summary (may be empty) and a RECENT transcript of their chat with Kai, produce an UPDATED summary that captures, in plain prose:
+- topics and companies/tickers they've discussed or follow
+- their stated goals and what they're trying to learn
+- their apparent comprehension level (beginner vs. more advanced)
+
+Rules:
+- Write ONE compact paragraph, at most ${KAI_MEMORY_MAX_CHARS} characters. Be terse.
+- Merge new information with the previous summary; drop stale or superseded details.
+- Only record what's evident from the conversation. Do not invent.
+- No financial advice, no buy/sell opinions — this is a factual memory, not a recommendation.
+- Output ONLY the updated summary text, nothing else.${kidRule}`;
 }
 
 /** Config: daily message caps per membership tier (owner-retunable). */
