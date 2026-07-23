@@ -9,7 +9,7 @@ snippets. Everything Lane 5 owns is already committed on `lane5-simbot`.
 - `public/sim/index.html` — vendored Simbot, reskinned to platform tokens (both
   themes via `<html data-fta-theme>`), embed session (skips local login, namespaces
   localStorage per platform user via `?uid`), XP milestone bridge, lesson
-  cross-links, and Live Market mode.
+  cross-links, and Live Market mode (now drives the real engine — see §9).
 - `src/lib/simbot-bridge.ts` — `useSimbotBridge` (origin-validated milestone → XP).
 - `src/app/(dashboard)/simulator/simbot/page.tsx` + `loading.tsx` — the Simbot page.
 - `src/components/simulator/SimulatorTabs.tsx` — added the "Simbot" tab.
@@ -139,7 +139,7 @@ Simbot's internal XP/progress economy stays internal — only these milestones c
 
 ## 7. Env / infra
 - **Live Market mode** needs Polygon configured for `/api/market/*` (already set in
-  Vercel prod). If unset it degrades honestly to "Market data unavailable"; Synthetic
+  Vercel prod). If unset it degrades honestly to "Live data unavailable"; Synthetic
   mode (the default) always works with zero external deps.
 - **Owner flag (from plan §6):** the Simbot source repo
   `github.com/Andwelecoffie2012/simbot` is **public** — consider making it private
@@ -153,3 +153,79 @@ embed boot (auth bypassed, session `fta:<uid>`), `?theme=` applied + live flip v
 R 1.5) → `first_profitable_r` emit, `lesson_complete` emit, stage `level_up` emit,
 and the "Read the full lesson →" cross-link rendering with the correct `_top`
 deep-link. Zero console errors. **Prod verification is the integrator's job.**
+
+---
+
+## 9. Live Market mode — real intraday data (rebuilt, supersedes the old stub)
+
+**Previous limitation (now RESOLVED):** Live mode used to be an honest-subset stub —
+a parallel overlay showing a delayed quote + a *daily-close line chart*, because
+`/api/market/bars` only served daily aggregates. The synthetic engine was the only
+real trading experience. Owner complaint: *"simbot isn't live data."*
+
+**Now:** Live Market mode drives the **actual Simbot candlestick engine, order layer
+and R-accounting** with **real delayed (~15 min) intraday bars**. No parallel surface.
+
+### What the Polygon key actually serves (verified empirically 2026-07-23)
+The plan is **delayed ~15 min** (`status: DELAYED` on every aggregate) but serves full
+intraday OHLCV at every resolution we need, **including pre/post extended-hours bars**:
+
+| tf   | Polygon agg   | verified (AAPL, ~20:02 UTC) |
+|------|---------------|------------------------------|
+| 1m   | `1/minute`    | 2323 bars/2d, last 19:47 (≈15 min behind) |
+| 5m   | `5/minute`    | 715 bars/4d, last 19:45 |
+| 15m  | `15/minute`   | last 19:45 |
+| 1h   | `1/hour`      | last 19:00 |
+| 1d   | `1/day`       | (existing daily path) |
+
+`/v1/marketstatus/now` also works → drives the honest open / extended-hours /
+pre-market / **market-closed — last session** labelling. Latency measured: the newest
+bar trails wall-clock by ~15–17 min, exactly the plan's delay.
+
+### Market proxy (`/api/market/bars` + `src/lib/market/polygon.ts`)
+- **New intraday path:** `?symbol=AAPL&tf=5m` → `{ symbol, tf, bars:[{t,o,h,l,c,v}],
+  marketState, delayed:true }`. `tf ∈ 1m|3m|5m|15m|30m|1h|1d|1w`.
+- **Per-tf server cache TTL** (warm-instance + `Cache-Control s-maxage`): 30s (1m) …
+  60s (15m/30m/1h) … 15 min (1d). Per-tf lookback windows + an 800-bar payload cap.
+- **Backward compatible:** the daily close-only path (`?symbol=&range=3m` → `[{t,c}]`)
+  is untouched — screener / watchlist / research sparklines are unaffected. Intraday
+  only activates when a valid `tf` is supplied. `getBars` (daily) is left verbatim;
+  intraday is a new `getOHLCBars` + `getMarketState`.
+- Key stays server-only (same `/api/market/*` boundary; never reaches the client).
+
+### Engine integration (`public/sim/index.html`) — injection at the data-feed boundary
+The proven trading/rendering core is **unchanged**. Real bars are injected:
+- Real OHLCV → `candleCache[symbol|tf]` (identical bar shape `{t,o,h,l,c,v}`).
+- Delayed mark → `livePrice[symbol]`; real prev-close → `prevClose[symbol]` (so the
+  price block, order fills and P&L all run on real numbers).
+- **One core gate** in `tickLivePrices`: the synthetic random-walk skips the live
+  symbol (`window.__LIVE_FEED`) so it never overwrites real bars. That's the only
+  edit to engine code — the walk maths, `openPosition`/`closePosition`/`unrealizedPnl`,
+  `drawMainChart`, tf buttons and `refreshAll` are all reused as-is.
+- Poll every ~35s (open/extended) refreshes the forming bar + mark; ~90s when closed
+  to catch the reopen. Other timeframes are prefetched so the engine's own tf buttons
+  switch to real bars instantly (no synthetic flash).
+- **Ticker selection:** curated quick-chips **+ a search box** hitting the existing
+  same-origin `/api/market/search` — any real symbol loads live (searched symbols get
+  lightweight `SYM_MAP` metadata only; they never enter the synthetic universe/walk).
+- **Market-hours awareness:** outside RTH the strip shows "MARKET CLOSED — LAST
+  SESSION" with the last completed session's bars, still paper-tradeable at the frozen
+  last price. The "Delayed ~15 min market data" badge stays prominent in all states.
+- **UI:** the old full-screen overlay is gone; Live is a thin strip under the topbar
+  (pulsing status + delayed badge + search + chips) driving the main terminal below.
+
+### XP
+Unchanged. Live-mode trades run through the same order layer, so a profitable closed
+≥1R trade emits `first_profitable_r` exactly like synthetic — it's paper either way.
+
+### Fallbacks
+- Polygon unset / 503 → "Live data unavailable" toast; Synthetic stays fully working.
+- A symbol with no delayed data → "No live data for X"; stays on the prior symbol.
+- Synthetic mode remains the **default** (nights/weekends) and is untouched.
+
+### Remaining limitations (honest)
+- Data is **delayed ~15 min** (plan constraint) — labelled everywhere; not real-time.
+- Extended-hours bars are included but thin; the forming bar updates on the ~35s poll,
+  not tick-by-tick (a paper terminal, not a live feed).
+- Fills are at the delayed mark ± the engine's synthetic spread — realistic for
+  practice, not a real broker route (no real orders are ever placed).

@@ -1498,43 +1498,38 @@ input,select{font-family:var(--mono);}
   /* keep the scripted candle colors token-aligned but semantics intact */
   :root[data-fta-theme] { color-scheme: light dark; }
 
-  /* ── Live Market overlay (added by fta-embed) ── */
-  #ftaLive{position:fixed;inset:0;z-index:1400;background:var(--bg);color:var(--text);
-    display:none;flex-direction:column;overflow:hidden;}
-  #ftaLive.on{display:flex;}
-  .ftaLive-head{display:flex;align-items:center;gap:10px;padding:12px 16px;
-    border-bottom:1px solid var(--line);flex-wrap:wrap;}
-  .ftaLive-head h2{font-size:15px;font-weight:800;margin:0;letter-spacing:.2px;}
-  .ftaLive-badge{font-size:10.5px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.4px;color:#78350F;background:#FDE68A;padding:3px 8px;border-radius:999px;}
+  /* ── Live Market strip (added by fta-embed) — drives the MAIN terminal ── */
+  #ftaLiveBar{display:none;align-items:center;gap:10px;padding:7px 12px;flex-wrap:wrap;
+    background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:30;}
+  #ftaLiveBar.on{display:flex;}
+  .ftaLive-status{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;
+    letter-spacing:.3px;color:var(--text);white-space:nowrap;}
+  .ftaLive-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:0 0 auto;
+    box-shadow:0 0 0 0 rgba(62,230,80,.55);animation:ftaPulse 1.8s infinite;}
+  .ftaLive-dot.closed{background:var(--text-dimmer);animation:none;box-shadow:none;}
+  @keyframes ftaPulse{0%{box-shadow:0 0 0 0 rgba(62,230,80,.5);}70%{box-shadow:0 0 0 7px rgba(62,230,80,0);}100%{box-shadow:0 0 0 0 rgba(62,230,80,0);}}
+  .ftaLive-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+    color:#78350F;background:#FDE68A;padding:3px 9px;border-radius:999px;white-space:nowrap;}
   :root[data-fta-theme="dark"] .ftaLive-badge{color:#FDE68A;background:rgba(251,191,36,.15);}
-  .ftaLive-tickers{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;
-    border-bottom:1px solid var(--line);}
-  .ftaLive-tk{flex:0 0 auto;font-size:12px;font-weight:700;padding:6px 11px;border-radius:8px;
-    border:1px solid var(--line);background:var(--panel);color:var(--text-dim);cursor:pointer;
-    white-space:nowrap;}
-  .ftaLive-tk.on{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
-  .ftaLive-body{flex:1;min-height:0;display:flex;gap:14px;padding:14px 16px;flex-wrap:wrap;
-    overflow:auto;align-content:flex-start;}
-  .ftaLive-chartwrap{flex:1 1 380px;min-width:0;}
-  .ftaLive-price{font-size:26px;font-weight:800;}
-  .ftaLive-chg.up{color:var(--green);} .ftaLive-chg.down{color:var(--red);}
-  .ftaLive-canvas{width:100%;height:240px;display:block;border:1px solid var(--line);
-    border-radius:10px;background:var(--panel);margin-top:8px;}
-  .ftaLive-order{flex:0 0 230px;border:1px solid var(--line);border-radius:12px;
-    background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:9px;}
-  .ftaLive-order label{font-size:11px;color:var(--text-dim);font-weight:700;text-transform:uppercase;}
-  .ftaLive-order input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:14px;}
-  .ftaLive-btns{display:flex;gap:8px;}
-  .ftaLive-btns button{flex:1;padding:9px;border-radius:8px;border:none;font-weight:800;
-    font-size:13px;cursor:pointer;color:#fff;}
-  .ftaLive-buy{background:var(--green);} .ftaLive-sell{background:var(--red);}
-  .ftaLive-pos{font-size:12px;color:var(--text-dim);line-height:1.7;}
-  .ftaLive-pos .pnl.up{color:var(--green);} .ftaLive-pos .pnl.down{color:var(--red);}
-  .ftaLive-close{margin-top:6px;padding:7px;border-radius:8px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-weight:700;font-size:12px;cursor:pointer;width:100%;}
-  .ftaLive-note{width:100%;font-size:11px;color:var(--text-dimmer);padding:2px 2px 8px;}
+  .ftaLive-search{position:relative;flex:1 1 220px;min-width:150px;max-width:340px;}
+  .ftaLive-search input{width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-size:12.5px;outline:none;}
+  .ftaLive-search input:focus{border-color:var(--amber);}
+  .ftaLive-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:50;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;
+    box-shadow:0 12px 32px rgba(0,0,0,.4);display:none;max-height:260px;overflow-y:auto;}
+  .ftaLive-results.on{display:block;}
+  .ftaLive-results button{display:flex;justify-content:space-between;gap:10px;width:100%;
+    text-align:left;padding:8px 10px;background:none;border:none;color:var(--text);font-size:12px;
+    cursor:pointer;border-bottom:1px solid var(--line-soft);}
+  .ftaLive-results button:hover{background:var(--amber-dim);}
+  .ftaLive-results .lr-t{font-weight:800;}
+  .ftaLive-results .lr-n{color:var(--text-dim);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ftaLive-chips{display:flex;gap:5px;overflow-x:auto;flex:1 1 auto;min-width:0;}
+  .ftaLive-chip{flex:0 0 auto;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;
+    border:1px solid var(--line);background:var(--bg);color:var(--text-dim);cursor:pointer;white-space:nowrap;}
+  .ftaLive-chip.on{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
+  .ftaLive-note{font-size:10.5px;color:var(--text-dimmer);white-space:nowrap;}
   .ftaMode{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;
     margin-left:8px;vertical-align:middle;}
   .ftaMode button{background:var(--panel);color:var(--text-dim);border:none;font-size:11px;
@@ -2609,6 +2604,11 @@ function tickLivePrices(rnd){
 
   let newBars = 0;
   SYMBOLS.forEach(s=>{
+    // Live Market mode: the charted symbol is fed REAL delayed intraday bars by the
+    // FTA add-on (candleCache + livePrice injected directly). Skip the synthetic
+    // random-walk for it so real bars/price are never overwritten. Injection-layer
+    // gate only — the walk maths below is the untouched proven engine.
+    if(window.__LIVE_FEED && window.__LIVE_FEED.active && s.t === window.__LIVE_FEED.symbol) return;
     // s.vol is a DAILY move; size each tick so the walk compounds to that over a
     // real day. Same maths regardless of timeframe.
     const amp = s.vol * Math.sqrt(1.6 * dt / 86400000);
@@ -9457,214 +9457,293 @@ document.addEventListener('DOMContentLoaded', ()=>{
   };
 
   /* ───────────────────────── LIVE MARKET MODE ─────────────────────────
-     A parallel surface fed by the same-origin /api/market proxy (delayed
-     ~15 min). Real curated tickers, real delayed quote + daily-close line
-     chart, and a delayed paper-trade layer (isolated from the synthetic
-     ACCOUNT so it never pollutes the R-accounting or the XP milestones).
-     Polls every 30s. See SIMBOT-WIRING.md / SIMBOT-LESSON-MAP.md notes for
-     the honest-subset rationale (the /api/market/bars endpoint returns
-     DAILY closes only — no intraday OHLC — so the synthetic candlestick
-     engine cannot be faithfully driven by real bars without backend
-     surgery; Live mode is therefore a real-data companion, not a swap-in). */
+     Live mode drives the MAIN Simbot terminal with REAL delayed (~15 min)
+     intraday bars from the same-origin /api/market proxy. The proven
+     candlestick engine, order layer and R-accounting are reused verbatim:
+     real OHLCV is injected into candleCache[symbol|tf], livePrice/prevClose
+     are set to the delayed mark, the synthetic random-walk is gated off for
+     the live symbol (window.__LIVE_FEED — see tickLivePrices), STATE points
+     at the ticker, and the engine renders + fills orders on real prices.
+     Profitable live trades feed the SAME XP milestones (it is paper either
+     way). Synthetic mode stays the untouched default for nights/weekends.
+     See SIMBOT-WIRING.md for the data-feed contract. */
   var LIVE = {
-    on: false, symbol: 'AAPL', quote: null, bars: null,
-    pos: null, poll: null, loading: false
+    active:false, symbol:null, marketState:null, quote:null,
+    loadedKey:null, syncPoll:null, lastFetch:0, searchT:null, loading:false
   };
-  var TICKERS = [
+  var CURATED = [
     { t:'AAPL', n:'Apple' }, { t:'MSFT', n:'Microsoft' }, { t:'NVDA', n:'Nvidia' },
     { t:'AMZN', n:'Amazon' }, { t:'GOOGL', n:'Alphabet' }, { t:'META', n:'Meta' },
-    { t:'TSLA', n:'Tesla' }, { t:'DIS', n:'Disney' }, { t:'NKE', n:'Nike' },
-    { t:'KO', n:'Coca-Cola' }, { t:'SPY', n:'S&P 500 ETF' }, { t:'QQQ', n:'Nasdaq 100 ETF' }
+    { t:'TSLA', n:'Tesla' }, { t:'AMD', n:'AMD' }, { t:'SPY', n:'S&P 500 ETF' },
+    { t:'QQQ', n:'Nasdaq 100 ETF' }, { t:'DIS', n:'Disney' }, { t:'NKE', n:'Nike' }
   ];
+  // Every timeframe the engine exposes maps to a Polygon multiplier the key serves.
+  var ENGINE_TFS = ['1m','3m','5m','15m','30m','1H','1D','1W'];
 
   function el(id){ return document.getElementById(id); }
-  function money(v){ return (v<0?'-$':'$') + Math.abs(v).toFixed(2); }
+  function apiTf(tf){ return String(tf).toLowerCase(); }
 
-  function buildLiveOverlay(){
-    if(el('ftaLive')) return;
-    var box = document.createElement('div');
-    box.id = 'ftaLive';
-    box.innerHTML =
-      '<div class="ftaLive-head">' +
-        '<h2>Live Market</h2>' +
-        '<span class="ftaLive-badge">Delayed ~15 min market data</span>' +
-        '<button class="ftaLive-x" id="ftaLiveClose">✕ Back to Synthetic</button>' +
-      '</div>' +
-      '<div class="ftaLive-tickers" id="ftaLiveTickers"></div>' +
-      '<div class="ftaLive-body">' +
-        '<div class="ftaLive-chartwrap">' +
-          '<div class="ftaLive-price" id="ftaLivePrice">—</div>' +
-          '<div class="ftaLive-chg" id="ftaLiveChg"></div>' +
-          '<canvas class="ftaLive-canvas" id="ftaLiveCanvas"></canvas>' +
-          '<div class="ftaLive-note" id="ftaLiveNote">Prices are delayed and for practice only. No real orders are placed.</div>' +
-        '</div>' +
-        '<div class="ftaLive-order">' +
-          '<label>Quantity</label>' +
-          '<input type="number" id="ftaLiveQty" min="1" step="1" value="10">' +
-          '<div class="ftaLive-btns">' +
-            '<button class="ftaLive-buy" id="ftaLiveBuy">BUY</button>' +
-            '<button class="ftaLive-sell" id="ftaLiveSell">SELL</button>' +
-          '</div>' +
-          '<div class="ftaLive-pos" id="ftaLivePos">No open position.</div>' +
-          '<button class="ftaLive-close" id="ftaLivePosClose" style="display:none;">Close position</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(box);
-    el('ftaLiveClose').onclick = function(){ setLive(false); };
-    el('ftaLiveBuy').onclick = function(){ livePlace('long'); };
-    el('ftaLiveSell').onclick = function(){ livePlace('short'); };
-    el('ftaLivePosClose').onclick = function(){ liveClose(); };
-    var tw = el('ftaLiveTickers');
-    tw.innerHTML = TICKERS.map(function(s){
-      return '<button class="ftaLive-tk" data-tk="' + s.t + '">' + s.t + '</button>';
-    }).join('');
-    tw.querySelectorAll('.ftaLive-tk').forEach(function(b){
-      b.onclick = function(){ selectLive(b.dataset.tk); };
+  async function apiBars(sym, tf){
+    var r = await fetch('/api/market/bars?symbol=' + encodeURIComponent(sym) + '&tf=' + apiTf(tf));
+    if(r.status === 503) return { unavailable:true };
+    if(!r.ok) return null;
+    return await r.json();  // { bars:[{t,o,h,l,c,v}], marketState, delayed }
+  }
+  async function apiQuote(sym){
+    try{
+      var r = await fetch('/api/market/quote?symbol=' + encodeURIComponent(sym));
+      if(!r.ok) return null;
+      var j = await r.json();
+      return j.quote || null;
+    }catch(e){ return null; }
+  }
+
+  // API bar shape is already the engine's OHLCV shape — just normalise/clone.
+  function toEngineBars(bars){
+    return bars.map(function(b){ return { t:b.t, o:b.o, h:b.h, l:b.l, c:b.c, v:b.v || 0 }; });
+  }
+  // Register just enough symbol metadata (name/decimals/category) that
+  // currentSym()/.dec resolve. NOT pushed into SYMBOLS, so a searched ticker
+  // never enters the synthetic universe, watchlist, or random-walk.
+  function ensureMeta(sym, name, bars){
+    var lastC = bars && bars.length ? bars[bars.length-1].c : 100;
+    if(typeof SYM_MAP[sym] === 'undefined'){
+      SYM_MAP[sym] = { t:sym, n:name || sym, cat:'Stocks', base:lastC,
+                       dec: lastC < 1 ? 4 : 2, vol:0.02 };
+    } else if(name && SYM_MAP[sym].n === sym){
+      SYM_MAP[sym].n = name;
+    }
+  }
+  // The delayed mark + real prev-close so the price block, order fills and P&L
+  // all run on real numbers.
+  function setMark(sym, quote, bars){
+    var last = bars[bars.length-1];
+    var mark = (quote && quote.price != null) ? quote.price : (last ? last.c : null);
+    if(mark != null) livePrice[sym] = mark;
+    if(quote && quote.prevClose != null) prevClose[sym] = quote.prevClose;
+    else if(bars.length > 1 && prevClose[sym] == null) prevClose[sym] = bars[0].c;
+  }
+
+  function injectBars(sym, tf, bars){ candleCache[sym + '|' + tf] = toEngineBars(bars); }
+
+  async function loadLiveSymbol(sym, name){
+    sym = String(sym || '').toUpperCase().trim();
+    if(!sym) return false;
+    if(LIVE.loading) return false;
+    LIVE.loading = true;
+    setStatusText('Loading ' + sym + '…');
+    try{
+      var tf = STATE.tf || '5m';
+      var res = await apiBars(sym, tf);
+      if(res && res.unavailable){ liveUnavailable(); return false; }
+      if(!res || !res.bars || res.bars.length < 2){
+        setStatusText('No live data for ' + sym);
+        toastMsg('No delayed data available for ' + sym + '.');
+        return false;
+      }
+      ensureMeta(sym, name, res.bars);
+      injectBars(sym, tf, res.bars);
+      LIVE.marketState = res.marketState || 'unknown';
+      var q = await apiQuote(sym); LIVE.quote = q;
+      setMark(sym, q, res.bars);
+      LIVE.symbol = sym; LIVE.loadedKey = sym + '|' + tf; LIVE.lastFetch = Date.now();
+      window.__LIVE_FEED = { active:true, symbol:sym };
+      STATE.symbol = sym; STATE.view = null; STATE.priceScale = 1; STATE.priceOffsetFrac = 0;
+      if(typeof resetLiveEdgeTracking === 'function') resetLiveEdgeTracking();
+      refreshAll();
+      prefetchTfs(sym, tf);
+      renderStrip();
+      return true;
+    }catch(e){ liveUnavailable(); return false; }
+    finally{ LIVE.loading = false; }
+  }
+
+  // Warm the other timeframes so the engine's own tf buttons switch instantly to
+  // real bars (no synthetic flash). Best-effort; failures are ignored.
+  function prefetchTfs(sym, skipTf){
+    ENGINE_TFS.forEach(function(tf){
+      if(tf === skipTf) return;
+      apiBars(sym, tf).then(function(res){
+        if(res && res.bars && res.bars.length > 1 && LIVE.symbol === sym){
+          injectBars(sym, tf, res.bars);
+        }
+      }).catch(function(){});
     });
   }
 
-  function selectLive(sym){
-    LIVE.symbol = sym; LIVE.pos = null;
-    document.querySelectorAll('#ftaLiveTickers .ftaLive-tk').forEach(function(b){
-      b.classList.toggle('on', b.dataset.tk === sym);
+  function startPolls(){ stopPolls(); LIVE.syncPoll = setInterval(syncTick, 5000); }
+  function stopPolls(){ if(LIVE.syncPoll){ clearInterval(LIVE.syncPoll); LIVE.syncPoll = null; } }
+
+  // Single lightweight beat: react to symbol/timeframe changes made through the
+  // engine's own controls, and refresh the forming bar + mark on a slow cadence.
+  async function syncTick(){
+    if(!LIVE.active || LIVE.loading) return;
+    // User picked another symbol via the core picker → adopt it live.
+    if(STATE.symbol !== LIVE.symbol){
+      await loadLiveSymbol(STATE.symbol, (SYM_MAP[STATE.symbol] || {}).n);
+      return;
+    }
+    var key = LIVE.symbol + '|' + STATE.tf;
+    // Timeframe changed → fetch that resolution now.
+    if(key !== LIVE.loadedKey){
+      LIVE.loadedKey = key; LIVE.lastFetch = Date.now();
+      var res = await apiBars(LIVE.symbol, STATE.tf);
+      if(res && res.bars && res.bars.length > 1){
+        injectBars(LIVE.symbol, STATE.tf, res.bars);
+        LIVE.marketState = res.marketState || LIVE.marketState;
+        setMark(LIVE.symbol, LIVE.quote, res.bars);
+        if(STATE.symbol === LIVE.symbol && !STATE.replay.active) refreshAll();
+      }
+      renderStrip();
+      return;
+    }
+    // Steady-state refresh. Open/extended → ~35s; closed → ~90s (to catch reopen).
+    var gap = LIVE.marketState === 'closed' ? 90000 : 35000;
+    if(Date.now() - LIVE.lastFetch < gap) return;
+    LIVE.lastFetch = Date.now();
+    var q = await apiQuote(LIVE.symbol); if(q) LIVE.quote = q;
+    var r2 = await apiBars(LIVE.symbol, STATE.tf);
+    if(r2 && r2.bars && r2.bars.length > 1){
+      injectBars(LIVE.symbol, STATE.tf, r2.bars);
+      LIVE.marketState = r2.marketState || LIVE.marketState;
+      setMark(LIVE.symbol, LIVE.quote, r2.bars);
+      if(STATE.symbol === LIVE.symbol && !STATE.replay.active) refreshAll();
+    }
+    renderStrip();
+  }
+
+  function liveUnavailable(){
+    setStatusText('Live data unavailable');
+    var dot = el('ftaLiveDot'); if(dot) dot.className = 'ftaLive-dot closed';
+    toastMsg("Live delayed data isn't configured here. Synthetic mode still works fully.");
+  }
+  function toastMsg(m){ try{ if(typeof toast === 'function') toast('Live Market', m, 'sell'); }catch(e){} }
+
+  /* ── Live strip UI (search + curated chips + honest status) ── */
+  function buildStrip(){
+    if(el('ftaLiveBar')) return;
+    var app = el('app'); if(!app) return;
+    var main = app.querySelector('.main');
+    var bar = document.createElement('div');
+    bar.id = 'ftaLiveBar';
+    bar.innerHTML =
+      '<span class="ftaLive-status"><span class="ftaLive-dot" id="ftaLiveDot"></span>' +
+        '<span id="ftaLiveStatusTxt">LIVE</span></span>' +
+      '<span class="ftaLive-badge">Delayed ~15 min market data</span>' +
+      '<div class="ftaLive-search">' +
+        '<input id="ftaLiveSearch" type="text" placeholder="Search any ticker… (e.g. COST)" autocomplete="off" spellcheck="false">' +
+        '<div class="ftaLive-results" id="ftaLiveResults"></div>' +
+      '</div>' +
+      '<div class="ftaLive-chips" id="ftaLiveChips"></div>' +
+      '<span class="ftaLive-note">Paper trading · real orders never placed</span>';
+    if(main) app.insertBefore(bar, main); else app.appendChild(bar);
+
+    el('ftaLiveChips').innerHTML = CURATED.map(function(s){
+      return '<button class="ftaLive-chip" data-tk="' + s.t + '" title="' + s.n + '">' + s.t + '</button>';
+    }).join('');
+    el('ftaLiveChips').querySelectorAll('.ftaLive-chip').forEach(function(b){
+      b.onclick = function(){ hideResults(); loadLiveSymbol(b.dataset.tk, b.title); };
     });
-    renderLivePos();
-    loadLive();
+
+    var inp = el('ftaLiveSearch');
+    inp.addEventListener('input', function(){
+      clearTimeout(LIVE.searchT);
+      LIVE.searchT = setTimeout(function(){ runSearch(inp.value); }, 250);
+    });
+    inp.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        var v = inp.value.trim().toUpperCase();
+        if(v){ inp.value = ''; hideResults(); loadLiveSymbol(v); }
+      } else if(e.key === 'Escape'){ hideResults(); }
+    });
+    document.addEventListener('click', function(e){
+      var b = el('ftaLiveBar'); if(b && !b.contains(e.target)) hideResults();
+    });
+  }
+
+  async function runSearch(q){
+    q = (q || '').trim();
+    var box = el('ftaLiveResults'); if(!box) return;
+    if(q.length < 1){ hideResults(); return; }
+    try{
+      var r = await fetch('/api/market/search?q=' + encodeURIComponent(q));
+      var j = await r.json();
+      var rows = (j.results || []).slice(0, 8);
+      if(!rows.length){
+        box.innerHTML = '<button disabled style="opacity:.6;cursor:default;">No matches</button>';
+        box.classList.add('on'); return;
+      }
+      box.innerHTML = rows.map(function(x){
+        return '<button data-tk="' + x.ticker + '"><span class="lr-t">' + x.ticker +
+               '</span><span class="lr-n">' + (x.name || '') + '</span></button>';
+      }).join('');
+      box.querySelectorAll('button[data-tk]').forEach(function(b){
+        b.onclick = function(){
+          var inp = el('ftaLiveSearch'); if(inp) inp.value = '';
+          hideResults();
+          loadLiveSymbol(b.dataset.tk, b.querySelector('.lr-n') ? b.querySelector('.lr-n').textContent : '');
+        };
+      });
+      box.classList.add('on');
+    }catch(e){ hideResults(); }
+  }
+  function hideResults(){ var b = el('ftaLiveResults'); if(b){ b.classList.remove('on'); b.innerHTML = ''; } }
+
+  function setStatusText(msg){ var t = el('ftaLiveStatusTxt'); if(t) t.textContent = msg; }
+  function renderStrip(){
+    var dot = el('ftaLiveDot'), txt = el('ftaLiveStatusTxt');
+    var ms = LIVE.marketState;
+    var closed = (ms === 'closed' || ms === 'unknown' || !ms);
+    if(dot) dot.className = 'ftaLive-dot' + (closed ? ' closed' : '');
+    if(txt){
+      var label = LIVE.symbol || 'LIVE';
+      if(ms === 'open') txt.textContent = label + ' · LIVE';
+      else if(ms === 'extended-hours') txt.textContent = label + ' · EXTENDED HOURS';
+      else if(ms === 'pre-market') txt.textContent = label + ' · PRE-MARKET';
+      else txt.textContent = label + ' · MARKET CLOSED — LAST SESSION';
+    }
+    document.querySelectorAll('#ftaLiveChips .ftaLive-chip').forEach(function(b){
+      b.classList.toggle('on', b.dataset.tk === LIVE.symbol);
+    });
   }
 
   function setLive(on){
-    LIVE.on = on;
-    var ov = el('ftaLive');
-    if(ov) ov.classList.toggle('on', on);
+    LIVE.active = on;
+    var bar = el('ftaLiveBar'); if(bar) bar.classList.toggle('on', on);
     document.querySelectorAll('.ftaMode button').forEach(function(b){
       b.classList.toggle('on', (b.dataset.mode === 'live') === on);
     });
     if(on){
-      selectLive(LIVE.symbol);
-      if(!LIVE.poll) LIVE.poll = setInterval(pollLive, 30000);
+      window.__LIVE_FEED = { active:true, symbol: LIVE.symbol };
+      loadLiveSymbol(LIVE.symbol || 'AAPL');
+      startPolls();
     } else {
-      if(LIVE.poll){ clearInterval(LIVE.poll); LIVE.poll = null; }
+      stopPolls();
+      exitLive();
     }
   }
 
-  async function loadLive(){
-    if(LIVE.loading) return;
-    LIVE.loading = true;
-    el('ftaLivePrice').textContent = 'Loading…';
-    el('ftaLiveChg').textContent = '';
-    try{
-      var qr = await fetch('/api/market/quote?symbol=' + encodeURIComponent(LIVE.symbol));
-      if(qr.status === 503){ liveUnavailable(); LIVE.loading=false; return; }
-      var qj = await qr.json();
-      LIVE.quote = qj.quote || null;
-      var br = await fetch('/api/market/bars?symbol=' + encodeURIComponent(LIVE.symbol) + '&range=3m');
-      var bj = br.ok ? await br.json() : null;
-      LIVE.bars = (bj && bj.bars) ? bj.bars : null;
-      renderLive();
-    }catch(e){ liveUnavailable(); }
-    LIVE.loading = false;
-  }
-  async function pollLive(){
-    if(!LIVE.on) return;
-    try{
-      var qr = await fetch('/api/market/quote?symbol=' + encodeURIComponent(LIVE.symbol));
-      if(qr.status === 503){ return; }
-      var qj = await qr.json();
-      LIVE.quote = qj.quote || LIVE.quote;
-      renderLive();
-    }catch(e){}
-  }
-
-  function liveUnavailable(){
-    el('ftaLivePrice').textContent = 'Market data unavailable';
-    el('ftaLiveChg').textContent = '';
-    el('ftaLiveNote').textContent = 'Live delayed data is not configured in this environment. Synthetic mode still works fully.';
-  }
-
-  function livePrice(){ return LIVE.quote && LIVE.quote.price != null ? LIVE.quote.price : null; }
-
-  function renderLive(){
-    var q = LIVE.quote, px = livePrice();
-    el('ftaLivePrice').textContent = px != null ? ('$' + px.toFixed(2)) : '—';
-    var chgEl = el('ftaLiveChg');
-    if(q && q.change != null){
-      var up = q.change >= 0;
-      chgEl.className = 'ftaLive-chg ' + (up ? 'up' : 'down');
-      chgEl.textContent = (up ? '+' : '') + q.change.toFixed(2) +
-        (q.changePercent != null ? ' (' + (up?'+':'') + q.changePercent.toFixed(2) + '%)' : '') + ' today';
-    } else { chgEl.textContent = ''; }
-    drawLiveChart();
-    renderLivePos();
-  }
-
-  function drawLiveChart(){
-    var cv = el('ftaLiveCanvas'); if(!cv) return;
-    var rect = cv.getBoundingClientRect();
-    var dpr = window.devicePixelRatio || 1;
-    cv.width = Math.max(200, rect.width * dpr); cv.height = 240 * dpr;
-    var ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-    var W = rect.width, H = 240;
-    ctx.clearRect(0,0,W,H);
-    var bars = LIVE.bars;
-    if(!bars || bars.length < 2){
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-dim') || '#888';
-      ctx.font = '13px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText('No chart data', W/2, H/2);
-      return;
+  // Turn the synthetic engine back on for the (formerly) live symbol: drop the
+  // injected real bars so the engine rebuilds fresh synthetic candles, and un-gate
+  // the walk. Searched (non-universe) tickers fall back to a safe default.
+  function exitLive(){
+    var sym = LIVE.symbol;
+    window.__LIVE_FEED = { active:false, symbol:null };
+    if(sym){
+      ENGINE_TFS.forEach(function(tf){ delete candleCache[sym + '|' + tf]; });
+      try{ if(typeof SERIES_INDEX !== 'undefined' && SERIES_INDEX[sym]) delete SERIES_INDEX[sym]; }catch(e){}
+      var inUniverse = SYMBOLS.some(function(s){ return s.t === sym; });
+      if(inUniverse){
+        try{ livePrice[sym] = priceNow(sym); prevClose[sym] = null; }catch(e){}
+      } else {
+        STATE.symbol = 'AAPL';  // searched ticker has no synthetic backbone
+      }
     }
-    var closes = bars.map(function(b){ return b.c; });
-    var lo = Math.min.apply(null, closes), hi = Math.max.apply(null, closes);
-    var pad = (hi - lo) * 0.08 || 1; lo -= pad; hi += pad;
-    var css = getComputedStyle(document.documentElement);
-    var line = (css.getPropertyValue('--amber') || '#B45309').trim();
-    var last = closes[closes.length-1], first = closes[0];
-    var up = last >= first;
-    var xAt = function(i){ return (i/(closes.length-1)) * (W-8) + 4; };
-    var yAt = function(v){ return H - 12 - ((v-lo)/(hi-lo)) * (H-24); };
-    ctx.beginPath();
-    closes.forEach(function(c,i){ var x=xAt(i), y=yAt(c); i? ctx.lineTo(x,y): ctx.moveTo(x,y); });
-    ctx.strokeStyle = line; ctx.lineWidth = 1.8; ctx.stroke();
-    // fill under
-    ctx.lineTo(xAt(closes.length-1), H-12); ctx.lineTo(xAt(0), H-12); ctx.closePath();
-    ctx.fillStyle = (up ? 'rgba(0,180,90,0.10)' : 'rgba(220,60,50,0.10)'); ctx.fill();
-  }
-
-  function livePlace(side){
-    var px = livePrice();
-    if(px == null){ toast && toast('Live', 'No delayed price yet — try again in a moment.', 'sell'); return; }
-    var qty = Math.max(1, Math.floor(Number(el('ftaLiveQty').value) || 0));
-    if(LIVE.pos && LIVE.pos.side !== side){
-      // flip = close then open
-      liveClose();
-    }
-    if(!LIVE.pos){
-      LIVE.pos = { side: side, qty: qty, entry: px, symbol: LIVE.symbol };
-    } else {
-      // add: weighted-average entry
-      var tot = LIVE.pos.qty + qty;
-      LIVE.pos.entry = (LIVE.pos.entry*LIVE.pos.qty + px*qty)/tot;
-      LIVE.pos.qty = tot;
-    }
-    renderLivePos();
-  }
-  function liveClose(){
-    if(!LIVE.pos) return;
-    var px = livePrice(); if(px == null) return;
-    LIVE.pos = null;
-    renderLivePos();
-  }
-  function renderLivePos(){
-    var box = el('ftaLivePos'), btn = el('ftaLivePosClose');
-    if(!box) return;
-    if(!LIVE.pos){ box.textContent = 'No open position.'; if(btn) btn.style.display='none'; return; }
-    var px = livePrice();
-    var p = LIVE.pos;
-    var pnl = px == null ? 0 : (p.side==='long' ? (px-p.entry) : (p.entry-px)) * p.qty;
-    var up = pnl >= 0;
-    box.innerHTML = '<b>' + (p.side==='long'?'LONG':'SHORT') + ' ' + p.qty + ' ' + p.symbol + '</b><br>' +
-      'Entry ' + money(p.entry) + '<br>' +
-      'Delayed P&amp;L <span class="pnl ' + (up?'up':'down') + '">' + (up?'+':'') + money(pnl) + '</span>';
-    if(btn) btn.style.display = '';
+    LIVE.loadedKey = null;
+    STATE.view = null; STATE.priceScale = 1; STATE.priceOffsetFrac = 0;
+    if(typeof resetLiveEdgeTracking === 'function') resetLiveEdgeTracking();
+    refreshAll();
   }
 
   // Mode toggle injected into the Simbot topbar.
@@ -9674,7 +9753,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     wrap.className = 'ftaMode'; wrap.id = 'ftaModeToggle';
     wrap.innerHTML =
       '<button data-mode="synthetic" class="on" data-tip-title="SYNTHETIC" data-tip="A safe, made-up market that never sleeps — practice any time.">Synthetic</button>' +
-      '<button data-mode="live" data-tip-title="LIVE MARKET" data-tip="Real tickers on delayed (~15 min) data. Practice reading the real market.">Live Market</button>';
+      '<button data-mode="live" data-tip-title="LIVE MARKET" data-tip="Real tickers on delayed (~15 min) intraday data. Trade the real market on paper.">Live Market</button>';
     bar.appendChild(wrap);
     wrap.querySelector('[data-mode="synthetic"]').onclick = function(){ setLive(false); };
     wrap.querySelector('[data-mode="live"]').onclick = function(){ setLive(true); };
@@ -9683,9 +9762,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // Called from the embed boot path once the app has booted.
   window.ftaInitEmbed = function(){
     try{
-      buildLiveOverlay();
+      buildStrip();
       injectModeToggle();
-      window.addEventListener('resize', function(){ if(LIVE.on) drawLiveChart(); });
     }catch(e){ /* never break the terminal over an add-on */ }
   };
 })();
