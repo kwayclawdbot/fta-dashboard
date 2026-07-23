@@ -32,11 +32,24 @@ import {
  * the dashboard only needs to drop <FamilyProfileHome familyId /> once for
  * parents. Two mutually-exclusive states, both server-derived from
  * family_profiles — no scattered flags:
- *   • no completed profile → a dismissible "Tell us about your family" card
- *     (the backfill path for families that pre-date this onboarding).
+ *   • no completed profile → a PROMINENT "Tell us about your family" card. This
+ *     is the questionnaire's cross-entry-path guarantee (Lane 8A): funnel signups
+ *     land here with onboarding_complete already true (set server-side) and so
+ *     never see the inline /onboarding profile steps; every parent, whatever
+ *     their entry path (funnel, admin invite, Stripe webhook, family invite),
+ *     reaches the dashboard and this card — keyed on the PER-FAMILY completed_at,
+ *     not the per-profile onboarding flag. Warm and skippable, never a wall, but
+ *     it stays prominent on first login until the profile is completed OR the
+ *     parent dismisses it twice.
  *   • completed within the first week → the "recommended next" card whose picks
- *     map directly to their household / experience / goals answers.
+ *     map directly to their household / experience / interest / goals answers.
  */
+
+// Prominent-until-completed-or-dismissed-twice (Lane 8A). We count dismissals in
+// localStorage rather than a one-shot flag so a single accidental close doesn't
+// bury the questionnaire — it comes back next login, and only a deliberate
+// second dismissal retires it.
+const DISMISS_MAX = 2;
 
 const ICONS: Record<string, LucideIcon> = {
   Target,
@@ -60,17 +73,24 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
 
   const dismissKey = `fta:family-profile-prompt-dismissed:${familyId}`;
 
+  function dismissCount(): number {
+    if (typeof window === "undefined") return 0;
+    const raw = localStorage.getItem(dismissKey);
+    if (!raw) return 0;
+    // Back-compat: the old one-shot flag stored "1" (a single dismissal).
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : 0;
+  }
+
   useEffect(() => {
     let mounted = true;
     (async () => {
       const profile = await fetchFamilyProfile(supabase, familyId);
 
       if (!profile || !profile.completed_at) {
-        // Backfill prompt — unless this parent dismissed it.
-        const dismissed =
-          typeof window !== "undefined" && localStorage.getItem(dismissKey) === "1";
+        // Backfill prompt — stays prominent until dismissed DISMISS_MAX times.
         if (!mounted) return;
-        setView(dismissed ? { kind: "hidden" } : { kind: "backfill" });
+        setView(dismissCount() >= DISMISS_MAX ? { kind: "hidden" } : { kind: "backfill" });
         return;
       }
 
@@ -92,7 +112,7 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
 
   function dismissBackfill() {
     try {
-      localStorage.setItem(dismissKey, "1");
+      localStorage.setItem(dismissKey, String(dismissCount() + 1));
     } catch {
       /* private mode — fine, it'll just show again next visit */
     }
@@ -106,15 +126,16 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
       <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
         <Link
           href="/onboarding/profile"
-          className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
+          className="paper-card relative overflow-hidden p-5 flex items-center gap-4 border-gold-400/40 ring-1 ring-gold-400/20 bg-gradient-to-br from-gold-400/[0.07] to-transparent hover:border-gold-400/60 transition-colors"
         >
-          <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-gold-400/20 flex items-center justify-center shrink-0">
             <Home className="w-6 h-6 text-gold-700" />
           </div>
           <div className="flex-1 min-w-0 pr-6">
             <p className="font-display font-semibold text-ink">Tell us about your family</p>
             <p className="text-sm text-soft">
-              A few quick questions so we can tailor lessons, missions, and pacing to your family.
+              A 2-minute warm welcome — a few questions so we can tailor lessons, missions,
+              pacing, and Kai to your family.
             </p>
           </div>
           <span className="cta-button hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm shrink-0">
