@@ -175,6 +175,10 @@ export interface Company {
   homepage: string | null;
   primaryExchange: string | null;
   sector: string | null;
+  /** City, State — for the Ziggma-style company profile card (research page). */
+  address: string | null;
+  employees: number | null;
+  listDate: string | null; // ISO date the ticker started trading
   hasLogo: boolean;
   hasIcon: boolean;
 }
@@ -188,6 +192,9 @@ interface TickerDetails {
     homepage_url?: string;
     primary_exchange?: string;
     sic_description?: string;
+    total_employees?: number;
+    list_date?: string;
+    address?: { address1?: string; city?: string; state?: string; postal_code?: string };
     branding?: { logo_url?: string; icon_url?: string };
   };
 }
@@ -223,6 +230,12 @@ export async function getCompany(symbol: string): Promise<Company | null> {
     homepage: r.homepage_url ?? null,
     primaryExchange: r.primary_exchange ?? null,
     sector: r.sic_description ?? null,
+    address:
+      r.address?.city && r.address?.state
+        ? `${r.address.city}, ${r.address.state}`
+        : (r.address?.city ?? r.address?.state ?? null),
+    employees: r.total_employees ?? null,
+    listDate: r.list_date ?? null,
     hasLogo: !!r.branding?.logo_url,
     hasIcon: !!r.branding?.icon_url,
   };
@@ -455,6 +468,143 @@ export async function getFinancials(
   // Keep only periods that carry at least a revenue figure.
   const usable = periods.filter((p) => p.revenue != null && p.label);
   return usable.length >= 2 ? usable : null;
+}
+
+/* ---------- robust fundamentals (research page — Lane 9) ---------- */
+
+/** One reported period's standardized statement highlights. */
+export interface FundQuarter {
+  label: string;                 // "Q3 2024"
+  endDate: string | null;        // period_of_report_date
+  revenue: number | null;
+  grossProfit: number | null;
+  operatingIncome: number | null;
+  netIncome: number | null;
+  eps: number | null;            // diluted preferred, basic fallback
+  assets: number | null;
+  currentAssets: number | null;
+  liabilities: number | null;
+  currentLiabilities: number | null;
+  equity: number | null;
+  opCashFlow: number | null;
+}
+
+export interface FundAnnual {
+  label: string;                 // "2024"
+  revenue: number | null;
+  netIncome: number | null;
+  eps: number | null;
+}
+
+export interface DividendItem {
+  exDate: string | null;
+  cashAmount: number | null;
+}
+
+export interface Fundamentals {
+  quarterly: FundQuarter[];      // oldest → newest, up to 8
+  annual: FundAnnual[];          // oldest → newest, up to 5
+  dividends: DividendItem[];     // newest → oldest, up to 16
+}
+
+interface RawStatementVal {
+  value?: number;
+}
+interface RawFinancialResult {
+  fiscal_period?: string;
+  fiscal_year?: string;
+  period_of_report_date?: string;
+  financials?: {
+    income_statement?: Record<string, RawStatementVal>;
+    balance_sheet?: Record<string, RawStatementVal>;
+    cash_flow_statement?: Record<string, RawStatementVal>;
+  };
+}
+
+const num = (v: RawStatementVal | undefined): number | null =>
+  typeof v?.value === "number" && Number.isFinite(v.value) ? v.value : null;
+
+function parseQuarter(r: RawFinancialResult): FundQuarter {
+  const inc = r.financials?.income_statement ?? {};
+  const bal = r.financials?.balance_sheet ?? {};
+  const cf = r.financials?.cash_flow_statement ?? {};
+  return {
+    label:
+      r.fiscal_period && r.fiscal_year ? `${r.fiscal_period} ${r.fiscal_year}` : "",
+    endDate: r.period_of_report_date ?? null,
+    revenue: num(inc.revenues),
+    grossProfit: num(inc.gross_profit),
+    operatingIncome: num(inc.operating_income_loss),
+    netIncome: num(inc.net_income_loss),
+    eps: num(inc.diluted_earnings_per_share) ?? num(inc.basic_earnings_per_share),
+    assets: num(bal.assets),
+    currentAssets: num(bal.current_assets),
+    liabilities: num(bal.liabilities),
+    currentLiabilities: num(bal.current_liabilities),
+    equity: num(bal.equity),
+    opCashFlow: num(cf.net_cash_flow_from_operating_activities),
+  };
+}
+
+async function fetchFinancials(
+  sym: string,
+  timeframe: "quarterly" | "annual",
+  limit: number
+): Promise<RawFinancialResult[]> {
+  const data = await fetchJson<{ results?: RawFinancialResult[] }>(
+    `/vX/reference/financials?ticker=${sym}&timeframe=${timeframe}&order=desc&sort=period_of_report_date&limit=${limit}`,
+    24 * 60 * 60_000
+  );
+  return data?.results ?? [];
+}
+
+async function fetchDividends(sym: string, limit: number): Promise<DividendItem[]> {
+  const data = await fetchJson<{
+    results?: { ex_dividend_date?: string; cash_amount?: number }[];
+  }>(`/v3/reference/dividends?ticker=${sym}&order=desc&limit=${limit}`, 24 * 60 * 60_000);
+  return (data?.results ?? []).map((d) => ({
+    exDate: d.ex_dividend_date ?? null,
+    cashAmount: typeof d.cash_amount === "number" ? d.cash_amount : null,
+  }));
+}
+
+/**
+ * Full research fundamentals for /research/[ticker]. Three parallel Polygon
+ * calls (quarterly financials, annual financials, dividends), all 24h-cached.
+ * Degrades gracefully: returns empty arrays where the key isn't entitled or the
+ * ticker (many small-caps / ETFs) simply has no standardized financials — the
+ * caller surfaces an honest "not enough data" state, never a fake grade.
+ */
+export async function getFundamentals(symbol: string): Promise<Fundamentals> {
+  const sym = normalizeSymbol(symbol);
+  if (!sym) return { quarterly: [], annual: [], dividends: [] };
+
+  const [qRaw, aRaw, dividends] = await Promise.all([
+    fetchFinancials(sym, "quarterly", 8),
+    fetchFinancials(sym, "annual", 5),
+    fetchDividends(sym, 16),
+  ]);
+
+  const quarterly = qRaw
+    .map(parseQuarter)
+    .filter((q) => q.label && q.revenue != null)
+    .reverse(); // oldest → newest
+
+  const annual: FundAnnual[] = aRaw
+    .map((r) => {
+      const inc = r.financials?.income_statement ?? {};
+      return {
+        label: r.fiscal_year ? String(r.fiscal_year) : r.fiscal_period ?? "",
+        revenue: num(inc.revenues),
+        netIncome: num(inc.net_income_loss),
+        eps:
+          num(inc.diluted_earnings_per_share) ?? num(inc.basic_earnings_per_share),
+      };
+    })
+    .filter((a) => a.label && a.revenue != null)
+    .reverse();
+
+  return { quarterly, annual, dividends };
 }
 
 export interface NewsItem {
