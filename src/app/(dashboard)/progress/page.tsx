@@ -129,6 +129,7 @@ export default function ProgressPage() {
       supabase
         .from("courses")
         .select("slug, title, modules(lessons(id))")
+        .in("program", ["fic", "fta"])
         .eq("published", true)
         .order("sort_order"),
     ]);
