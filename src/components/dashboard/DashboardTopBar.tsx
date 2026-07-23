@@ -11,28 +11,73 @@ import type { FamilyTier } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 
-const routeTitles: Record<string, string> = {
-  "/dashboard": "Home",
-  "/courses": "Courses",
-  "/live-sessions": "Live Classes",
-  "/community": "Community",
-  "/progress": "Progress",
-  "/family": "Family",
-  "/family/overview": "Family Overview",
-  "/family/leaderboard": "Family Leaderboard",
-  "/family/members": "Family Members",
-  "/simulator": "Trading Floor",
-  "/simulator/lessons": "Pattern Practice",
-  "/simulator/leaderboard": "Leaderboard",
-  "/upgrade": "Upgrade",
-  "/settings": "Settings",
+/**
+ * Route → page title, derived so EVERY dashboard route has a real header (the
+ * old 13-entry map fell back to "Home" on most pages). Ordered longest-prefix
+ * first so nested routes (/family/overview, /simulator/lessons) win before
+ * their parents. A match is exact or a path segment below the prefix. Kid
+ * personas get the kid-worded labels used in their nav (Kids Corner / My
+ * Lessons / My Cards / My Badges) so the header matches the sidebar.
+ */
+const ROUTE_TITLES: [string, string][] = [
+  ["/simulator/lessons", "Pattern Practice"],
+  ["/simulator/leaderboard", "Leaderboard"],
+  ["/simulator", "Trading Floor"],
+  ["/family/overview", "Family Overview"],
+  ["/family/leaderboard", "Family Leaderboard"],
+  ["/family/members", "Family Members"],
+  ["/family", "Family"],
+  ["/onboarding/profile", "About Your Family"],
+  ["/onboarding", "Welcome"],
+  ["/dashboard", "Home"],
+  ["/community", "Community"],
+  ["/picks", "Team Picks"],
+  ["/watchlist", "Family Watchlist"],
+  ["/missions", "Kid Missions"],
+  ["/courses", "Courses"],
+  ["/live-sessions", "Live Classes"],
+  ["/flashcards", "Flashcards"],
+  ["/start-here", "Start Here"],
+  ["/chart", "Practice Chart"],
+  ["/games", "Games"],
+  ["/progress", "My Progress"],
+  ["/parent-corner", "Parent Corner"],
+  ["/referrals", "Invite Families"],
+  ["/leaderboard", "Leaderboard"],
+  ["/upgrade", "Upgrade"],
+  ["/shop", "Shop"],
+  ["/help", "Help"],
+  ["/settings", "Settings"],
+  ["/free-class", "Free Class"],
+  ["/u", "Profile"],
+];
+
+// Kid-worded overrides — the same routes the kid nav relabels.
+const KID_TITLE_OVERRIDES: Record<string, string> = {
+  "/dashboard": "Kids Corner",
+  "/courses": "My Lessons",
+  "/flashcards": "My Cards",
+  "/progress": "My Badges",
+  "/missions": "Missions",
 };
+
+function resolveTitle(pathname: string, isKid: boolean): string {
+  for (const [prefix, title] of ROUTE_TITLES) {
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) {
+      if (isKid && KID_TITLE_OVERRIDES[prefix]) return KID_TITLE_OVERRIDES[prefix];
+      return title;
+    }
+  }
+  return isKid ? "Kids Corner" : "Home";
+}
 
 interface DashboardTopBarProps {
   user: {
     email?: string;
     display_name?: string;
     avatar_url?: string;
+    role?: string;
+    age_group?: string;
     tier?: FamilyTier;
   };
   onMenuClick: () => void;
@@ -45,7 +90,8 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const pageTitle = routeTitles[pathname] || "Home";
+  const isKid = user.role === "child" && user.age_group === "kids";
+  const pageTitle = resolveTitle(pathname, isKid);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

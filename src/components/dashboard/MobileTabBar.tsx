@@ -8,7 +8,6 @@ import {
   Home,
   Eye,
   Target,
-  Video,
   Gamepad2,
   MessageCircle,
   Menu,
@@ -18,7 +17,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
-import { getNavItems, type NavItem } from "./DashboardSidebar";
+import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
 
 interface Tab {
   label: string;
@@ -27,12 +26,12 @@ interface Tab {
 }
 
 /**
- * Role-aware flanks around the elevated Community center button. The center is
- * always Community (the app's main action — kids are in the club too, see the
- * community feed's child affordances). Owner-guided priorities:
- *   parents → Watchlist + Live Classes  (shared research + the weekly class)
- *   teens   → Watchlist + Missions      (research + gamified engagement)
- *   kids    → Missions + Games          (earn-rewards loop + play)
+ * Role-aware flanks around the elevated Community center button (Scheme B,
+ * 2026-07-22). The center is always Community (the app's main action — kids are
+ * in the club too). Owner-guided priorities:
+ *   parents → Watchlist + Missions  (shared research + kid engagement)
+ *   teens   → Watchlist + Missions  (research + gamified engagement)
+ *   kids    → Missions + Games      (earn-rewards loop + play)
  */
 function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, Tab] {
   // Free tier: surface the two "give the tools" value pages — the free courses
@@ -47,11 +46,10 @@ function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, T
   const isKid = isChild && ageGroup === "kids";
   const Watchlist: Tab = { label: "Watchlist", href: "/watchlist", icon: Eye };
   const Missions: Tab = { label: "Missions", href: "/missions", icon: Target };
-  const Live: Tab = { label: "Live", href: "/live-sessions", icon: Video };
   const Games: Tab = { label: "Games", href: "/games", icon: Gamepad2 };
   if (isKid) return [Missions, Games];
-  if (isChild) return [Watchlist, Missions];
-  return [Watchlist, Live];
+  // Teens + parents share the same pair under Scheme B.
+  return [Watchlist, Missions];
 }
 
 interface MobileTabBarProps {
@@ -91,18 +89,26 @@ export default function MobileTabBar({ user }: MobileTabBarProps) {
     pathname === href || pathname.startsWith(href + "/");
   const communityActive = isActive("/community");
 
-  // ── The More sheet reuses the sidebar's role/tier-aware nav definitions, minus
-  //    whatever already has a dedicated tab, so the two never fall out of sync. ──
+  // ── The More sheet reuses the sidebar's role/tier-aware nav definitions plus
+  //    the footer utility cluster, minus whatever already has a dedicated tab,
+  //    so the two never fall out of sync. Sub-items that duplicate a tab href
+  //    (e.g. kids' Games, which is a flank tab AND a Practice sub-item) are
+  //    stripped too, so nothing appears twice. ──
   const usedHrefs = new Set<string>([
     HOME.href,
     "/community",
     flank1.href,
     flank2.href,
   ]);
+  const dedupeSubs = (item: NavItem): NavItem =>
+    item.subItems
+      ? { ...item, subItems: item.subItems.filter((s) => !usedHrefs.has(s.href)) }
+      : item;
   const allNav = getNavItems(user.role, user.age_group, user.tier);
-  const moreItems: NavItem[] = allNav.filter(
-    (item) => item.sectionHeader || !usedHrefs.has(item.href)
-  );
+  const footerNav = getFooterItems(user.role, user.tier);
+  const moreItems: NavItem[] = [...allNav, ...footerNav]
+    .filter((item) => item.sectionHeader || !usedHrefs.has(item.href))
+    .map(dedupeSubs);
 
   function TabSlot({ tab }: { tab: Tab }) {
     const active = isActive(tab.href);
