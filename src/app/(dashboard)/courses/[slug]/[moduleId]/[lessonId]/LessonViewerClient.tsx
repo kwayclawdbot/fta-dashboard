@@ -366,13 +366,25 @@ export default function LessonViewerClient() {
   });
 
   async function handleMarkComplete() {
-    const alreadyCompleted = isCompleted;
+    if (isCompleted) return;
     setIsCompleted(true);
 
-    let awardedXp = 0;
-    let prevXp = 0;
-    let newXp = 0;
+    // Celebrate the core action IMMEDIATELY (audit #4) — before the DB
+    // round-trips — so the reward moment lands the instant you click, not a
+    // second later. Kid gets confetti energy, teen/parent a quieter moment;
+    // both get the +50 XP pop instead of a silent flip to "Completed".
+    enqueueCelebrate({
+      variant: "mission",
+      register: celebrateRegister(register),
+      title: register === "kid" ? "Lesson done!" : "Lesson complete",
+      subtitle: currentLesson?.title,
+      xp: XP.LESSON,
+    });
 
+    if (currentLesson?.has_quiz && quiz) setShowQuiz(true);
+
+    // Persist + award XP in the background; enqueue a level-up moment if the
+    // threshold was actually crossed.
     if (!isMock) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -384,42 +396,21 @@ export default function LessonViewerClient() {
           completed_at: new Date().toISOString(),
         }, { onConflict: "user_id,lesson_id" });
 
-        // +50 XP for completing a lesson (once per lesson).
-        if (!alreadyCompleted && !(await hasXpForRef(supabase, user.id, "lesson", lessonId))) {
-          prevXp = await getUserXp(supabase, user.id);
+        if (!(await hasXpForRef(supabase, user.id, "lesson", lessonId))) {
+          const prevXp = await getUserXp(supabase, user.id);
           await awardXp(supabase, user.id, "lesson", XP.LESSON, lessonId);
-          awardedXp = XP.LESSON;
-          newXp = prevXp + awardedXp;
+          const lvl = crossedLevel(prevXp, prevXp + XP.LESSON);
+          if (lvl) {
+            enqueueCelebrate({
+              variant: "levelup",
+              register: celebrateRegister(register),
+              title: `Level ${lvl.level}: ${lvl.name}`,
+              subtitle: register === "kid" ? "You leveled up!" : "New level reached",
+            });
+          }
         }
       }
-    } else if (!alreadyCompleted) {
-      // Mock lessons celebrate too (no persistence), so the demo path still
-      // shows the reward moment.
-      awardedXp = XP.LESSON;
     }
-
-    // Celebrate the core action (audit #4): kid gets confetti energy, teen/parent
-    // a quieter seal-style moment; both get the XP pop. Silent flip → gone.
-    if (!alreadyCompleted) {
-      enqueueCelebrate({
-        variant: "mission",
-        register: celebrateRegister(register),
-        title: register === "kid" ? "Lesson done!" : "Lesson complete",
-        subtitle: currentLesson?.title,
-        xp: awardedXp || undefined,
-      });
-      const lvl = newXp > 0 ? crossedLevel(prevXp, newXp) : null;
-      if (lvl) {
-        enqueueCelebrate({
-          variant: "levelup",
-          register: celebrateRegister(register),
-          title: `Level ${lvl.level}: ${lvl.name}`,
-          subtitle: register === "kid" ? "You leveled up!" : "New level reached",
-        });
-      }
-    }
-
-    if (currentLesson?.has_quiz && quiz) setShowQuiz(true);
   }
 
   if (loading) {

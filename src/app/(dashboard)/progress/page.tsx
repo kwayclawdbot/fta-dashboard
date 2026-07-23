@@ -108,21 +108,32 @@ export default function ProgressPage() {
       return;
     }
 
-    setXp(await getUserXp(supabase, user.id));
+    // Independent reads run together (was a long sequential chain — the N+1
+    // course loop below alone fired ~2 queries per published course and pushed
+    // the whole page past the spinner window; audit #1). Course structure now
+    // arrives in ONE nested query instead of 2×N.
+    const [
+      xpVal,
+      { count: totalLessons },
+      { data: completedProgress },
+      { data: courses },
+    ] = await Promise.all([
+      getUserXp(supabase, user.id),
+      supabase.from("lessons").select("id", { count: "exact", head: true }),
+      supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed_at")
+        .eq("user_id", user.id)
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false }),
+      supabase
+        .from("courses")
+        .select("slug, title, modules(lessons(id))")
+        .eq("published", true)
+        .order("sort_order"),
+    ]);
 
-    // Get all lessons count
-    const { count: totalLessons } = await supabase
-      .from("lessons")
-      .select("id", { count: "exact", head: true });
-
-    // Get user's completed lessons
-    const { data: completedProgress } = await supabase
-      .from("lesson_progress")
-      .select("lesson_id, completed_at")
-      .eq("user_id", user.id)
-      .eq("status", "completed")
-      .order("completed_at", { ascending: false });
-
+    setXp(xpVal);
     const completedCount = completedProgress?.length ?? 0;
 
     // Calculate hours watched from completed lessons
@@ -188,13 +199,7 @@ export default function ProgressPage() {
       currentStreak: streak,
     });
 
-    // Course progress
-    const { data: courses } = await supabase
-      .from("courses")
-      .select("id, slug, title")
-      .eq("published", true)
-      .order("sort_order");
-
+    // Course progress — aggregated client-side from the single nested query.
     if (courses && courses.length > 0) {
       const completedLessonIds = new Set(
         (completedProgress || []).map(
@@ -202,35 +207,22 @@ export default function ProgressPage() {
         )
       );
 
+      type NestedCourse = {
+        slug: string;
+        title: string;
+        modules: { lessons: { id: string }[] | null }[] | null;
+      };
       const progress: CourseProgress[] = [];
-      for (const course of courses) {
-        const { data: mods } = await supabase
-          .from("modules")
-          .select("id")
-          .eq("course_id", course.id);
-
-        if (mods && mods.length > 0) {
-          const modIds = mods.map((m: { id: string }) => m.id);
-          const { data: lessons } = await supabase
-            .from("lessons")
-            .select("id")
-            .in("module_id", modIds);
-
-          const total = lessons?.length ?? 0;
-          const completed =
-            lessons?.filter((l: { id: string }) =>
-              completedLessonIds.has(l.id)
-            ).length ?? 0;
-
-          if (total > 0) {
-            progress.push({
-              slug: course.slug,
-              title: course.title,
-              completed,
-              total,
-            });
-          }
-        }
+      for (const course of courses as unknown as NestedCourse[]) {
+        const lessons = (course.modules || []).flatMap(
+          (m) => m.lessons || []
+        );
+        const total = lessons.length;
+        if (total === 0) continue;
+        const completed = lessons.filter((l) =>
+          completedLessonIds.has(l.id)
+        ).length;
+        progress.push({ slug: course.slug, title: course.title, completed, total });
       }
       setCourseProgress(progress);
     }
@@ -265,6 +257,13 @@ export default function ProgressPage() {
 
       setRecentActivity(recent);
     }
+
+    // Core content is in — paint now. The credential shelf renders its own
+    // skeleton (rows=null) and the FIC strip fills in right after, so neither
+    // blocks first paint and the page is fast every time.
+    settled = true;
+    clearTimeout(timeout);
+    setLoading(false);
 
     // Credential shelf — the same BadgeCase / professional-title engine used on
     // community & profiles (audit #9). Self-award anything newly earned, then
@@ -310,18 +309,18 @@ export default function ProgressPage() {
       // Tables from a sibling migration may not exist yet — fail soft.
       setFic(null);
     }
-
-      settled = true;
-      setLoading(false);
     } catch (err) {
       // Root-cause fix for the infinite spinner: any rejecting/hanging query in
       // the chain above used to strand loading=true forever. Now we always
       // settle — render whatever loaded plus a retry, never an endless spinner.
+      // Only surface the error screen if we never got to paint the core content.
       console.warn("[Progress] load error:", err);
-      settled = true;
-      setLoadError(true);
-      setLoading(false);
+      if (!settled) {
+        setLoadError(true);
+        setLoading(false);
+      }
     } finally {
+      settled = true;
       clearTimeout(timeout);
     }
   }, [supabase]);
