@@ -22,6 +22,8 @@ import {
   Zap,
   Layers,
   Gamepad2,
+  GraduationCap,
+  Video,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -41,6 +43,9 @@ import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
+
+/** Next scheduled academy class, for the FTA premium home rail. */
+type NextClass = { title: string; when: string } | null;
 
 /* ---------- types ---------- */
 
@@ -141,6 +146,12 @@ export default function DashboardHome() {
   const [hasFamily, setHasFamily] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [isFree, setIsFree] = useState(false);
+  // FTA premium home rail (audit #3): tier==='fta' families get a distinct
+  // Academy module above the fold — next live academy class + 6-week program
+  // pointer — so the $2,997 purchase is visible where they land. Kept to one
+  // rail so it never takes over the club-first layout.
+  const [isFta, setIsFta] = useState(false);
+  const [ftaNextClass, setFtaNextClass] = useState<NextClass>(null);
   // Onboarding-prompt orchestration: whether the parent has dismissed the one
   // setup card (Start Here checklist). Persisted per family so it stays
   // dismissed, and it gates whether the profile-questions card may appear.
@@ -241,6 +252,34 @@ export default function DashboardHome() {
       // secondary chrome that hydrates progressively into already-visible cards,
       // so it must not gate the page. Each call is timeout-capped.
       setLoading(false);
+
+      // FTA families: hydrate the premium Academy rail after paint. One cheap
+      // query for the next scheduled class, only for the tier that shows it —
+      // mirrors the /upgrade FTA panel so the two stay consistent.
+      if (tier === "fta") {
+        setIsFta(true);
+        void (async () => {
+          const { data: s } = await supabase
+            .from("live_sessions")
+            .select("title, scheduled_at")
+            .eq("status", "scheduled")
+            .order("scheduled_at", { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          if (s?.scheduled_at) {
+            setFtaNextClass({
+              title: s.title,
+              when: new Date(s.scheduled_at).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              }),
+            });
+          }
+        })().catch(() => {});
+      }
 
       dailyFiveCount(supabase, user.id, track).then(setDueCount).catch(() => {});
 
@@ -441,6 +480,85 @@ export default function DashboardHome() {
           time. Self-contained (renders null when there's nothing to show). */}
       {showProfileCard && familyId && (
         <FamilyProfileHome familyId={familyId} />
+      )}
+
+      {/* FTA PREMIUM HOME RAIL (audit #3) — a distinct gold "Academy" module for
+          $2,997 families, above the fold. One rail, not a takeover: the
+          club-first hero + This Week stay exactly as they are below. */}
+      {isFta && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl border border-gold-400/40 bg-gradient-to-br from-gold-400/[0.12] via-gold-400/[0.05] to-transparent p-5 lg:p-6"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                Family Trading Academy
+              </p>
+              <p className="font-display font-bold text-ink leading-snug">
+                Your premium 6-week program
+              </p>
+            </div>
+            <Link
+              href="/live-sessions"
+              className="ml-auto hidden sm:inline-flex items-center gap-1.5 text-sm font-display font-semibold text-gold-700 hover:text-gold-800 shrink-0"
+            >
+              <Video className="w-4 h-4" />
+              Live classes
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Link
+              href="/live-sessions"
+              className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Video className="w-4 h-4 text-gold-600" />
+                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                  Your next live class
+                </span>
+              </div>
+              {ftaNextClass ? (
+                <>
+                  <p className="font-display font-bold text-ink text-sm leading-snug truncate">
+                    {ftaNextClass.title}
+                  </p>
+                  <p className="text-xs text-soft mt-1">{ftaNextClass.when}</p>
+                </>
+              ) : (
+                <p className="text-sm text-soft leading-relaxed">
+                  Your coach posts the next session in Live Classes —
+                  recordings are always waiting there too.
+                </p>
+              )}
+              <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
+                Open Live Classes <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+            <Link
+              href="/courses"
+              className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <GraduationCap className="w-4 h-4 text-gold-600" />
+                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                  The six-week program
+                </span>
+              </div>
+              <p className="text-sm text-soft leading-relaxed">
+                Pick up where your family left off — foundations to trade
+                ready, at your own pace.
+              </p>
+              <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
+                Continue the program <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+          </div>
+        </motion.div>
       )}
 
       {/* Home tabs: everyday home vs This Week in FIC */}
