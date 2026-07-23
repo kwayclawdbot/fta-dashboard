@@ -35,6 +35,9 @@ const FREE_ALLOWED_PREFIXES = [
   "/u", // member profiles are read-only for everyone; a free user must be able
   //       to see their OWN profile. Upsell belongs on member-only ACTIONS
   //       (posting, commenting), not on viewing a read-only profile page.
+  "/research", // WSZ funnel bait (Lane 9): free tier sees the hero + price chart
+  //             + news; the page itself locks the scorecard/checks/fundamentals
+  //             behind UpsellCard and hides all locks from kids.
 ];
 
 // The remaining locked prefixes map to a shared UpsellCard context, matched by

@@ -531,7 +531,12 @@ export default function TickerResearchPage() {
           )}
         </div>
 
-        {/* Composer with type picker */}
+        {/* Composer with type picker — members only (free tier reads only) */}
+        {!canVote ? (
+          <p className="rounded-xl border border-dashed border-sand px-3 py-4 text-center text-sm text-soft">
+            Join the Family Investing Club to add your own research notes.
+          </p>
+        ) : (
         <div className="rounded-xl border border-sand bg-midnight-900 p-3">
           <div className="mb-2 flex flex-wrap gap-1.5">
             {CONTRIBUTION_TYPES.map((t) => {
@@ -568,6 +573,7 @@ export default function TickerResearchPage() {
             </button>
           </div>
         </div>
+        )}
       </section>
 
       <footer className="border-t border-sand pt-5">
