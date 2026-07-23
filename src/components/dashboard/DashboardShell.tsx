@@ -40,6 +40,7 @@ const FREE_ALLOWED_PREFIXES = [
 // The remaining locked prefixes map to a shared UpsellCard context, matched by
 // longest prefix.
 const LOCKED_CONTEXTS: { prefix: string; context: UpsellContext }[] = [
+  { prefix: "/fta", context: "live" },
   { prefix: "/live-sessions", context: "live" },
   { prefix: "/watchlist", context: "watchlist" },
   { prefix: "/missions", context: "missions" },

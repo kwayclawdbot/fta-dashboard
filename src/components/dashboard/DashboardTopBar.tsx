@@ -21,6 +21,10 @@ import BeltChip from "@/components/dashboard/BeltChip";
  * Lessons / My Cards / My Badges) so the header matches the sidebar.
  */
 const ROUTE_TITLES: [string, string][] = [
+  ["/fta/chat", "FTA Traders Chat"],
+  ["/fta/courses", "FTA Course Library"],
+  ["/fta/recordings", "FTA Recordings"],
+  ["/fta", "FTA — Trading Academy"],
   ["/simulator/lessons", "Pattern Practice"],
   ["/simulator", "Trading Floor"],
   ["/family/overview", "Family Overview"],

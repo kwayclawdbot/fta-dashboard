@@ -24,6 +24,8 @@ import {
   Gamepad2,
   GraduationCap,
   Video,
+  Radio,
+  Film,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -500,7 +502,7 @@ export default function DashboardHome() {
                 Family Trading Academy
               </p>
               <p className="font-display font-bold text-ink leading-snug">
-                Your premium 6-week program
+                Your premium trading hub
               </p>
             </div>
             <Link
@@ -511,50 +513,74 @@ export default function DashboardHome() {
               Live classes
             </Link>
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
+          {/* Next live class strip — the live JOIN stays on Live Classes; the
+              three hub doors below open the FTA section. */}
+          {ftaNextClass && (
             <Link
               href="/live-sessions"
+              className="group mb-3 flex items-center gap-2 rounded-xl border border-gold-400/30 bg-gold-400/[0.06] px-3.5 py-2.5 hover:border-gold-400/60 transition-colors"
+            >
+              <Video className="w-4 h-4 text-gold-600 shrink-0" />
+              <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700 shrink-0">
+                Next live class
+              </span>
+              <span className="font-display font-semibold text-ink text-sm truncate">
+                {ftaNextClass.title}
+              </span>
+              <span className="text-xs text-soft shrink-0 hidden sm:inline">{ftaNextClass.when}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-gold-700 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          )}
+          <div className="grid sm:grid-cols-3 gap-3">
+            <Link
+              href="/fta/chat"
               className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1.5">
-                <Video className="w-4 h-4 text-gold-600" />
+                <Radio className="w-4 h-4 text-gold-600" />
                 <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-                  Your next live class
+                  Traders Chat
                 </span>
               </div>
-              {ftaNextClass ? (
-                <>
-                  <p className="font-display font-bold text-ink text-sm leading-snug truncate">
-                    {ftaNextClass.title}
-                  </p>
-                  <p className="text-xs text-soft mt-1">{ftaNextClass.when}</p>
-                </>
-              ) : (
-                <p className="text-sm text-soft leading-relaxed">
-                  Your coach posts the next session in Live Classes —
-                  recordings are always waiting there too.
-                </p>
-              )}
+              <p className="text-sm text-soft leading-relaxed">
+                Your always-on FTA room — setups, questions, and live-class talk.
+              </p>
               <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
-                Open Live Classes <ArrowRight className="w-3.5 h-3.5" />
+                Open chat <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </Link>
             <Link
-              href="/courses"
+              href="/fta/courses"
               className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <GraduationCap className="w-4 h-4 text-gold-600" />
                 <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-                  The six-week program
+                  Course Library
                 </span>
               </div>
               <p className="text-sm text-soft leading-relaxed">
-                Pick up where your family left off — foundations to trade
-                ready, at your own pace.
+                Pick up where your family left off — foundations to trade ready.
               </p>
               <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
                 Continue the program <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+            <Link
+              href="/fta/recordings"
+              className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Film className="w-4 h-4 text-gold-600" />
+                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                  Recordings
+                </span>
+              </div>
+              <p className="text-sm text-soft leading-relaxed">
+                Every FTA class, always waiting — newest first, grouped by series.
+              </p>
+              <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
+                Watch recordings <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </Link>
           </div>
