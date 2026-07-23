@@ -10,6 +10,7 @@ import {
   Video,
   MessageCircle,
   Trophy,
+  Medal,
   Users,
   Settings,
   LogOut,
@@ -69,6 +70,11 @@ const CLUB_WATCHLIST: NavItem = {
 };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
 const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
+// The unified belts leaderboard — a proper nav row for every member role
+// (kids included; kid-vs-kid competition is owner-wanted). Was a near-orphan
+// linked only from /progress. Medal icon keeps it distinct from the Trophy used
+// by My Progress / My Badges.
+const LEADERBOARD: NavItem = { label: "Leaderboard", href: "/leaderboard", icon: Medal };
 
 // Family group (parents only) — absorbs Parent Corner, Invite Families and My
 // Progress alongside the family surfaces so parent tools live in one place.
@@ -79,7 +85,6 @@ const FAMILY_ITEM: NavItem = {
   parentOnly: true,
   subItems: [
     { label: "Overview & Report Cards", href: "/family/overview" },
-    { label: "Leaderboard", href: "/family/leaderboard" },
     { label: "Members", href: "/family/members" },
     { label: "Parent Corner", href: "/parent-corner" },
     { label: "Refer Families", href: "/referrals" },
@@ -204,6 +209,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       learnGroup(isFta, true), // My Lessons · Live Classes · My Cards
       practiceGroup(false), // chart + games only for young kids
       { label: "My Badges", href: "/progress", icon: Trophy },
+      LEADERBOARD,
     ];
   }
 
@@ -220,6 +226,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
 
   if (canParent) {
     main.push(FAMILY_ITEM);
+    main.push(LEADERBOARD);
     // FIC parents get a single "Upgrade to FTA" row (no section header).
     // Children never see billing, so it's parent-gated. FTA parents drop it.
     if (!isFta) {
@@ -228,6 +235,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   } else {
     // Teens: My Progress flat (no Family group, no Upgrade).
     main.push({ label: "My Progress", href: "/progress", icon: Trophy });
+    main.push(LEADERBOARD);
   }
 
   return main;
