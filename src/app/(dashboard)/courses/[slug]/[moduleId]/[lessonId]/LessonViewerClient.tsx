@@ -20,11 +20,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { XP, awardXp, hasXpForRef } from "@/lib/xp";
+import { XP, awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import { useLessonBridge } from "@/lib/lesson-bridge";
+import { deriveRegister, celebrateRegister, type Register } from "@/lib/register";
 import VideoPlayer from "@/components/dashboard/VideoPlayer";
 import QuizPanel from "@/components/dashboard/QuizPanel";
 import AiCoachPanel from "@/components/dashboard/AiCoachPanel";
+import Celebrate, {
+  crossedLevel,
+  type CelebrateOptions,
+} from "@/components/fic/Celebrate";
+import { Sparkles } from "lucide-react";
 
 interface Lesson {
   id: string;
@@ -210,14 +216,37 @@ export default function LessonViewerClient() {
   const [isMock, setIsMock] = useState(false);
   const [quiz, setQuiz] = useState<QuizQuestion[] | null>(null);
   const [quizId, setQuizId] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [register, setRegister] = useState<Register>("adult");
+  const [engaged, setEngaged] = useState(false);
+  const [celebrateQueue, setCelebrateQueue] = useState<CelebrateOptions[]>([]);
+
+  const enqueueCelebrate = useCallback(
+    (o: CelebrateOptions) => setCelebrateQueue((q) => [...q, o]),
+    []
+  );
 
   const loadData = useCallback(async () => {
+    // Who are we talking to? Drives the register-correct "unlocks soon" copy and
+    // the completion celebration.
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (authUser) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, age_group, track")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      if (profile) setRegister(deriveRegister(profile));
+    }
+
     // Try Supabase first
     const { data: course } = await supabase
       .from("courses")
       .select("id, title")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
     if (course) {
       setCourseTitle(course.title);
@@ -282,12 +311,40 @@ export default function LessonViewerClient() {
       setCourseTitle(mock.courseTitle);
       setModules(mock.modules);
       setIsMock(true);
+    } else {
+      // Neither the DB nor the mock catalog has this lesson. The most common
+      // real cause (verified for fic-kids-corner) is an UNPUBLISHED course: RLS
+      // hides published=false courses/modules/lessons from members, so the query
+      // returns nothing. That's a not-ready state, not an error — render a
+      // register-correct "unlocks soon" screen instead of a dead "Lesson Not
+      // Found" (audit #2).
+      setNotFound(true);
     }
 
     setLoading(false);
   }, [supabase, slug, moduleId, lessonId]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Light-touch engagement gate (audit #14): "Mark Complete" unlocks once the
+  // member has actually spent a little time on the lesson or scrolled through it,
+  // rather than being clickable the instant the page paints. Already-completed
+  // lessons skip the gate.
+  useEffect(() => {
+    if (isCompleted) { setEngaged(true); return; }
+    setEngaged(false);
+    const dwell = setTimeout(() => setEngaged(true), 8000);
+    const onScroll = () => {
+      const scrolled = window.scrollY + window.innerHeight;
+      const total = document.documentElement.scrollHeight;
+      if (total > 0 && scrolled >= total * 0.5) setEngaged(true);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      clearTimeout(dwell);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [lessonId, isCompleted]);
 
   const currentModule = modules.find((m) => m.id === moduleId);
   const currentLesson = currentModule?.lessons.find((l) => l.id === lessonId);
@@ -309,7 +366,13 @@ export default function LessonViewerClient() {
   });
 
   async function handleMarkComplete() {
+    const alreadyCompleted = isCompleted;
     setIsCompleted(true);
+
+    let awardedXp = 0;
+    let prevXp = 0;
+    let newXp = 0;
+
     if (!isMock) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -322,11 +385,40 @@ export default function LessonViewerClient() {
         }, { onConflict: "user_id,lesson_id" });
 
         // +50 XP for completing a lesson (once per lesson).
-        if (!(await hasXpForRef(supabase, user.id, "lesson", lessonId))) {
+        if (!alreadyCompleted && !(await hasXpForRef(supabase, user.id, "lesson", lessonId))) {
+          prevXp = await getUserXp(supabase, user.id);
           await awardXp(supabase, user.id, "lesson", XP.LESSON, lessonId);
+          awardedXp = XP.LESSON;
+          newXp = prevXp + awardedXp;
         }
       }
+    } else if (!alreadyCompleted) {
+      // Mock lessons celebrate too (no persistence), so the demo path still
+      // shows the reward moment.
+      awardedXp = XP.LESSON;
     }
+
+    // Celebrate the core action (audit #4): kid gets confetti energy, teen/parent
+    // a quieter seal-style moment; both get the XP pop. Silent flip → gone.
+    if (!alreadyCompleted) {
+      enqueueCelebrate({
+        variant: "mission",
+        register: celebrateRegister(register),
+        title: register === "kid" ? "Lesson done!" : "Lesson complete",
+        subtitle: currentLesson?.title,
+        xp: awardedXp || undefined,
+      });
+      const lvl = newXp > 0 ? crossedLevel(prevXp, newXp) : null;
+      if (lvl) {
+        enqueueCelebrate({
+          variant: "levelup",
+          register: celebrateRegister(register),
+          title: `Level ${lvl.level}: ${lvl.name}`,
+          subtitle: register === "kid" ? "You leveled up!" : "New level reached",
+        });
+      }
+    }
+
     if (currentLesson?.has_quiz && quiz) setShowQuiz(true);
   }
 
@@ -338,11 +430,32 @@ export default function LessonViewerClient() {
     );
   }
 
-  if (!currentModule || !currentLesson) {
+  if (notFound || !currentModule || !currentLesson) {
+    const kid = register === "kid";
     return (
-      <div className="max-w-4xl mx-auto py-12 text-center">
-        <h2 className="font-display text-xl font-bold text-midnight-100 mb-2">Lesson Not Found</h2>
-        <Link href={`/courses/${slug}`} className="text-gold-400 text-sm font-body hover:underline">Back to course</Link>
+      <div className="max-w-lg mx-auto py-16 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 18 }}
+          className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-chip-amber text-gold-600"
+        >
+          <Sparkles className="h-9 w-9" />
+        </motion.div>
+        <h2 className="font-display text-2xl font-bold text-ink mb-2">
+          {kid ? "This adventure unlocks soon!" : "This lesson isn't ready yet"}
+        </h2>
+        <p className="mx-auto max-w-sm text-sm text-soft leading-relaxed mb-6">
+          {kid
+            ? "We're still polishing this one for you. Check back soon — there's so much cool stuff coming!"
+            : "This lesson is still being prepared. It'll appear here as soon as it's published."}
+        </p>
+        <Link
+          href={`/courses/${slug}`}
+          className="cta-button inline-flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm"
+        >
+          {kid ? "Back to my lessons" : "Back to course"}
+        </Link>
       </div>
     );
   }
@@ -359,6 +472,10 @@ export default function LessonViewerClient() {
   if (isHtmlLesson) {
     return (
       <div className="max-w-[1600px] mx-auto">
+        <Celebrate
+          opts={celebrateQueue[0] ?? null}
+          onDone={() => setCelebrateQueue((q) => q.slice(1))}
+        />
         {/* Breadcrumb */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
           <Link href={`/courses/${slug}`} className="hover:text-midnight-300 transition-colors flex items-center gap-1">
@@ -388,7 +505,12 @@ export default function LessonViewerClient() {
           <div className="mt-3 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               {!isCompleted ? (
-                <button onClick={handleMarkComplete} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors">
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={!engaged}
+                  title={engaged ? undefined : "Look through the lesson first"}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Check className="w-4 h-4" />
                   Mark Complete
                 </button>
@@ -420,6 +542,10 @@ export default function LessonViewerClient() {
   // ── Video Lesson: standard layout with sidebar ──
   return (
     <div className="max-w-[1400px] mx-auto">
+      <Celebrate
+        opts={celebrateQueue[0] ?? null}
+        onDone={() => setCelebrateQueue((q) => q.slice(1))}
+      />
       {/* Breadcrumb */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
         <Link href={`/courses/${slug}`} className="hover:text-midnight-300 transition-colors flex items-center gap-1">
@@ -447,7 +573,12 @@ export default function LessonViewerClient() {
           <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               {!isCompleted ? (
-                <button onClick={handleMarkComplete} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors">
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={!engaged}
+                  title={engaged ? undefined : "Watch a bit of the lesson first"}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Check className="w-4 h-4" />
                   Mark Complete
                 </button>
@@ -501,6 +632,16 @@ export default function LessonViewerClient() {
               <h3 className="font-display text-base font-semibold text-midnight-100 mb-1">Lesson Quiz</h3>
               <p className="text-xs text-midnight-500 font-body mb-4">Test your understanding</p>
               <QuizPanel questions={quiz} onComplete={async (score, passed, answers) => {
+                // Modest register-correct win on a pass (audit #21). Kid gets
+                // confetti energy; teen/parent a quieter seal moment.
+                if (passed) {
+                  enqueueCelebrate({
+                    variant: "mission",
+                    register: celebrateRegister(register),
+                    title: register === "kid" ? "Quiz aced!" : "Quiz passed",
+                    subtitle: score >= 100 ? "Perfect score!" : `You scored ${score}%`,
+                  });
+                }
                 // Persist the attempt (report-card data) — real users only.
                 if (!isMock && quizId) {
                   try {
