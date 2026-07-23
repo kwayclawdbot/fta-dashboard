@@ -13,7 +13,12 @@ import { classify, computeMetrics } from "@/lib/screener";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// The nightly recompute spans ~11.5k tickers + reference pagination + a batch of
+// ticker-details, which can exceed 60s. Request up to 300s (Vercel Pro honours
+// this; Hobby clamps to 60). Every step is idempotent — history append, metric
+// upsert and the mcap round-robin all resume cleanly — so even a clamped run
+// self-heals across nights rather than corrupting anything.
+export const maxDuration = 300;
 
 /**
  * Screener refresh — FULL UNIVERSE (Lane 6 rebuild; see 106_screener_full_universe).
@@ -60,7 +65,7 @@ export async function GET(req: NextRequest) {
   );
   const mcapBudget = Math.min(
     6000,
-    Math.max(0, Number(req.nextUrl.searchParams.get("mcap")) ?? 1200)
+    Math.max(0, Number(req.nextUrl.searchParams.get("mcap")) || 1000)
   );
 
   try {
