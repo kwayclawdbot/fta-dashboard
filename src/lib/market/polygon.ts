@@ -296,6 +296,93 @@ export async function getBars(
   return data.results.map((b) => ({ t: b.t, c: b.c }));
 }
 
+export interface FinancialPeriod {
+  label: string;        // e.g. "Q3 2024"
+  revenue: number | null;
+  netIncome: number | null;
+}
+
+interface FinancialsResult {
+  results?: {
+    fiscal_period?: string;
+    fiscal_year?: string;
+    financials?: {
+      income_statement?: {
+        revenues?: { value?: number };
+        net_income_loss?: { value?: number };
+      };
+    };
+  }[];
+}
+
+/**
+ * Quarterly income-statement highlights (revenue, net income) for the "The
+ * Numbers" report chart. Degrades to null if the key isn't entitled for the
+ * financials endpoint — the report renders the price chart only in that case.
+ */
+export async function getFinancials(
+  symbol: string,
+  limit = 8
+): Promise<FinancialPeriod[] | null> {
+  const sym = normalizeSymbol(symbol);
+  if (!sym) return null;
+  const data = await fetchJson<FinancialsResult>(
+    `/vX/reference/financials?ticker=${sym}&timeframe=quarterly&order=desc&sort=period_of_report_date&limit=${limit}`,
+    24 * 60 * 60_000
+  );
+  if (!data?.results || data.results.length === 0) return null;
+  const periods: FinancialPeriod[] = data.results.map((r) => ({
+    label:
+      r.fiscal_period && r.fiscal_year
+        ? `${r.fiscal_period} ${r.fiscal_year}`
+        : "",
+    revenue: r.financials?.income_statement?.revenues?.value ?? null,
+    netIncome: r.financials?.income_statement?.net_income_loss?.value ?? null,
+  }));
+  // Oldest → newest for a left-to-right time axis.
+  periods.reverse();
+  // Keep only periods that carry at least a revenue figure.
+  const usable = periods.filter((p) => p.revenue != null && p.label);
+  return usable.length >= 2 ? usable : null;
+}
+
+export interface NewsItem {
+  title: string;
+  url: string;
+  publisher: string | null;
+  published: string | null; // ISO
+  description: string | null;
+}
+
+interface NewsResult {
+  results?: {
+    title?: string;
+    article_url?: string;
+    published_utc?: string;
+    description?: string;
+    publisher?: { name?: string };
+  }[];
+}
+
+/** Recent news headlines for a ticker (Ask Kai news tool → link cards). */
+export async function getNews(symbol: string, limit = 6): Promise<NewsItem[]> {
+  const sym = normalizeSymbol(symbol);
+  if (!sym) return [];
+  const data = await fetchJson<NewsResult>(
+    `/v2/reference/news?ticker=${sym}&order=desc&limit=${limit}&sort=published_utc`,
+    15 * 60_000
+  );
+  return (data?.results || [])
+    .filter((r) => r.title && r.article_url)
+    .map((r) => ({
+      title: r.title!,
+      url: r.article_url!,
+      publisher: r.publisher?.name ?? null,
+      published: r.published_utc ?? null,
+      description: r.description ?? null,
+    }));
+}
+
 export interface SearchResult {
   ticker: string;
   name: string;

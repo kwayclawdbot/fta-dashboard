@@ -37,6 +37,13 @@ export interface TickerHit {
   name: string;
 }
 
+/** Client-safe mirror of the server FinancialPeriod (Kai report charts). */
+export interface FinancialPeriod {
+  label: string;
+  revenue: number | null;
+  netIncome: number | null;
+}
+
 async function getJson<T>(url: string, signal?: AbortSignal): Promise<T | null> {
   try {
     const res = await fetch(url, { signal });
