@@ -10,7 +10,6 @@ import EnablePushButton from "@/components/notifications/EnablePushButton";
 import PushDevices from "@/components/notifications/PushDevices";
 import Avatar from "@/components/Avatar";
 import AvatarPicker from "@/components/AvatarPicker";
-import BadgeCase from "@/components/BadgeCase";
 import ThemeToggle from "@/components/ThemeToggle";
 
 interface NotificationPrefs {
@@ -250,27 +249,6 @@ export default function SettingsPage() {
 
       <div className="border-t border-sand mb-8" />
 
-      {/* Credentials — professional-title badge case */}
-      {userId && (
-        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08, duration: 0.3 }} className="mb-10">
-          <BadgeCase userId={userId} title="Your Credentials" evaluateSelf />
-        </m.div>
-      )}
-
-      <div className="border-t border-sand mb-8" />
-
-      {/* Help */}
-      <div className="paper-card p-5 mb-6">
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">Help</h3>
-        <a
-          href="/dashboard?tour=1"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gold-700 hover:text-gold-800"
-          onClick={() => { try { localStorage.removeItem("fic-tour-done"); } catch {} }}
-        >
-          Replay the app tour →
-        </a>
-      </div>
-
       {/* Appearance */}
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.09, duration: 0.3 }} className="mb-10">
         <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Appearance</h3>
@@ -364,9 +342,18 @@ export default function SettingsPage() {
 
       <div className="border-t border-sand mb-8" />
 
-      {/* Danger Zone */}
+      {/* Account */}
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }} className="mb-8">
-        <h3 className="font-display text-sm font-semibold text-red-500/80 uppercase tracking-wider mb-3">Danger Zone</h3>
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">Account</h3>
+        <div className="mb-5">
+          <a
+            href="/dashboard?tour=1"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gold-700 hover:text-gold-800"
+            onClick={() => { try { localStorage.removeItem("fic-tour-done"); } catch {} }}
+          >
+            Replay the app tour →
+          </a>
+        </div>
         <p className="text-sm text-midnight-400 font-body mb-4">Sign out of your account on this device.</p>
         <button
           onClick={handleLogout}

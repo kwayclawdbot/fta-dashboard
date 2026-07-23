@@ -260,26 +260,13 @@ export default function StartHerePage() {
         </p>
       )}
 
-      {/* PRIMARY media — the two-minute app tour. One embed, poster + error
-          fallback, faststart source so it never hangs on a spinner. */}
-      <div className="paper-card overflow-hidden">
-        <div className="px-5 pt-4 pb-3">
-          <h2 className="font-display text-base font-bold text-ink">
-            Watch: the two-minute app tour
-          </h2>
-          <p className="text-[13px] text-soft mt-0.5">
-            Everything in the club — home, watchlist, missions, games and
-            classes — narrated in a hundred seconds.
-          </p>
-        </div>
-        <TourVideo />
-      </div>
-
-      {/* Checklist */}
+      {/* Checklist — the two-minute tour is folded into the "Watch the
+          orientation" step below (no standalone hero embed). */}
       <div className="space-y-3">
         {ORIENTATION_STEPS.map((step, i) => {
           const done = completed.has(step.key);
           const isAccounts = step.key === "open_accounts";
+          const isWatch = step.key === "watch_orientation";
           return (
             <mm.div
               key={step.key}
@@ -314,14 +301,21 @@ export default function StartHerePage() {
                       ) : (
                         <button
                           onClick={() =>
-                            isAccounts
+                            isWatch
                               ? setOpenPanel(
-                                  openPanel === "accounts" ? null : "accounts"
+                                  openPanel === "watch" ? null : "watch"
                                 )
-                              : window.open(ORIENTATION_DECK_URL, "_blank")
+                              : isAccounts
+                                ? setOpenPanel(
+                                    openPanel === "accounts" ? null : "accounts"
+                                  )
+                                : window.open(ORIENTATION_DECK_URL, "_blank")
                           }
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-sm font-medium hover:bg-gold-400/25 transition-colors"
                         >
+                          {isWatch ? (
+                            <PlayCircle className="w-4 h-4" />
+                          ) : null}
                           {step.ctaLabel}
                         </button>
                       )}
@@ -333,6 +327,38 @@ export default function StartHerePage() {
                           {step.attestLabel || "Mark done"}
                         </button>
                       )}
+                    </div>
+                  )}
+
+                  {/* Orientation tour — the two-minute walkthrough, folded in
+                      here instead of a standalone hero embed. */}
+                  {isWatch && openPanel === "watch" && (
+                    <div className="mt-4 rounded-xl overflow-hidden border border-sand bg-paper">
+                      <TourVideo />
+                      <div className="p-4 space-y-3">
+                        <p className="text-sm text-soft leading-relaxed">
+                          Everything in the club — home, watchlist, missions,
+                          games and classes — narrated in a hundred seconds.
+                        </p>
+                        <a
+                          href={ORIENTATION_DECK_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Want the fuller walkthrough? Open the slide deck
+                        </a>
+                        <div>
+                          <button
+                            onClick={() => attest(step)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-sm font-medium hover:bg-gold-400/25 transition-colors"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            {step.attestLabel || "Mark as watched"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -380,28 +406,6 @@ export default function StartHerePage() {
           );
         })}
       </div>
-
-      {/* SECONDARY — the fuller orientation deck, as a link card (not an inline
-          iframe). Opens in its own tab so it never renders as a blank well. */}
-      <a
-        href={ORIENTATION_DECK_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors group"
-      >
-        <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-          <PlayCircle className="w-6 h-6 text-gold-700" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-display font-semibold text-ink">
-            Family orientation deck
-          </p>
-          <p className="text-sm text-soft">
-            Want the fuller walkthrough? Open the slide deck in a new tab.
-          </p>
-        </div>
-        <ExternalLink className="w-5 h-5 text-gold-700 shrink-0 group-hover:text-gold-800" />
-      </a>
 
       {/* Education-first footer */}
       <div className="paper-card p-5 flex items-start gap-3">

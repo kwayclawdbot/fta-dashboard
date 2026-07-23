@@ -57,7 +57,7 @@ export default function FamilyLeaderboardPage() {
       .single();
 
     if (!profile || profile.role !== "parent") {
-      router.replace("/family");
+      router.replace("/dashboard");
       return;
     }
 

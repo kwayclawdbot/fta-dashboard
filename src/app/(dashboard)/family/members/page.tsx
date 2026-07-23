@@ -17,7 +17,6 @@ import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
-import BadgeCase from "@/components/BadgeCase";
 import { getBadgeSummaries, type BadgeSummary } from "@/lib/badges";
 
 interface FamilyMember {
@@ -66,7 +65,7 @@ export default function FamilyMembersPage() {
       return;
     }
     if (!profile || profile.role !== "parent") {
-      router.replace("/family");
+      router.replace("/dashboard");
       return;
     }
 
@@ -296,18 +295,6 @@ export default function FamilyMembersPage() {
           );
         })}
       </mm.div>
-
-      {/* Your credential shelf */}
-      {currentUserId && (
-        <mm.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-          className="mt-10 pt-8 border-t border-midnight-800/50"
-        >
-          <BadgeCase userId={currentUserId} title="Your Credentials" evaluateSelf />
-        </mm.div>
-      )}
 
       {/* Invite Modal */}
       <AnimatePresence>

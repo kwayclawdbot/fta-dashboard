@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, m } from "@/lib/motion";
-import { Menu, ChevronDown, LogOut, Settings, User } from "lucide-react";
+import { Menu, ChevronDown, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
@@ -21,7 +21,6 @@ import Avatar from "@/components/Avatar";
  */
 const ROUTE_TITLES: [string, string][] = [
   ["/simulator/lessons", "Pattern Practice"],
-  ["/simulator/leaderboard", "Leaderboard"],
   ["/simulator", "Trading Floor"],
   ["/family/overview", "Family Overview"],
   ["/family/leaderboard", "Family Leaderboard"],
@@ -43,7 +42,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/games", "Games"],
   ["/progress", "My Progress"],
   ["/parent-corner", "Parent Corner"],
-  ["/referrals", "Invite Families"],
+  ["/referrals", "Refer Families"],
   ["/leaderboard", "Leaderboard"],
   ["/upgrade", "Upgrade"],
   ["/shop", "Shop"],
@@ -167,14 +166,6 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
                     <p className="text-xs text-midnight-500 truncate">{user.email}</p>
                   </div>
                   <div className="py-1">
-                    <Link
-                      href="/settings"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-sm text-midnight-300 hover:text-midnight-100 hover:bg-midnight-800 transition-colors"
-                    >
-                      <User className="w-4 h-4" />
-                      Profile
-                    </Link>
                     <Link
                       href="/settings"
                       onClick={() => setDropdownOpen(false)}
