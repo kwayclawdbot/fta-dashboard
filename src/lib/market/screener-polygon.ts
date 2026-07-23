@@ -80,6 +80,66 @@ export async function getGroupedDaily(date: string): Promise<GroupedBar[] | null
   return rows.map((r) => ({ T: r.T, o: r.o, c: r.c, v: r.v }));
 }
 
+/** One row of the reference-tickers list (cheap, paginated — no mcap). */
+export interface ReferenceTicker {
+  ticker: string;
+  name: string | null;
+  primaryExchange: string | null; // MIC, e.g. 'XNYS' | 'XNAS' | 'XASE' | 'ARCX' | 'BATS'
+  type: string | null; // 'CS' | 'ETF' | 'ADRC' | …
+}
+
+/**
+ * Fetch the FULL active US-stock reference list (name / exchange / type for every
+ * ticker), following `next_url` pagination. ~13 pages of 1000; a handful of calls.
+ * This is how the cron classifies the universe and discovers new listings — it
+ * does NOT return market cap (that needs the per-ticker details call).
+ */
+export async function getAllReferenceTickers(
+  maxPages = 20
+): Promise<ReferenceTicker[]> {
+  const key = apiKey();
+  if (!key) return [];
+  const out: ReferenceTicker[] = [];
+  let url:
+    | string
+    | null = `${BASE}/v3/reference/tickers?market=stocks&active=true&limit=1000`;
+  let pages = 0;
+  while (url && pages < maxPages) {
+    const sep = url.includes("?") ? "&" : "?";
+    const res = await fetch(`${url}${sep}apiKey=${key}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    }).catch(() => null);
+    if (!res) break;
+    if (res.status === 429) {
+      await sleep(1500);
+      continue;
+    }
+    if (!res.ok) break;
+    const data = (await res.json()) as {
+      results?: {
+        ticker: string;
+        name?: string;
+        primary_exchange?: string;
+        type?: string;
+      }[];
+      next_url?: string;
+    };
+    for (const r of data.results || []) {
+      out.push({
+        ticker: r.ticker,
+        name: r.name ?? null,
+        primaryExchange: r.primary_exchange ?? null,
+        type: r.type ?? null,
+      });
+    }
+    pages++;
+    url = data.next_url ?? null;
+    await sleep(60);
+  }
+  return out;
+}
+
 export interface TickerDetail {
   ticker: string;
   name: string | null;

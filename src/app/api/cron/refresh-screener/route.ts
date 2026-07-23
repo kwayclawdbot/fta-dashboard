@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  getAllReferenceTickers,
   getGroupedDaily,
   getTickerDetail,
   recentWeekdays,
@@ -8,43 +9,43 @@ import {
   sleep,
   type GroupedBar,
 } from "@/lib/market/screener-polygon";
-import { UNIVERSE, computeMetrics } from "@/lib/screener";
+import { classify, computeMetrics } from "@/lib/screener";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Screener refresh (Vercel Cron → this route; see .planning/SCREENER-WIRING.md).
+ * Screener refresh — FULL UNIVERSE (Lane 6 rebuild; see 106_screener_full_universe).
  *
- * Two modes, ONE Polygon-frugal design:
- *   • default (nightly cron): fetch the latest trading day's grouped-daily
- *     (ONE call = every US ticker) → append {close, volume} to screener_history
- *     for the EXISTING universe → recompute every metric from the trailing
- *     series → upsert screener_metrics. Idempotent per day (history PK is
- *     (ticker, as_of); metrics upsert on ticker). A capped batch of stale/missing
- *     ticker-details (mcap/name/sector) is refreshed each run.
+ * The universe is EVERY common stock (+ labeled ETF) on NYSE / NASDAQ / AMEX
+ * (ETFs also on NYSE Arca / Cboe) — ~8-11k rows. No mcap / liquidity gate. The
+ * design stays Polygon-frugal:
+ *   • reference list  (getAllReferenceTickers)  — ~13 paginated calls; classifies
+ *     the universe + discovers new listings. No mcap.
+ *   • grouped-daily   — ONE call = every US ticker's OHLCV for a day → history.
+ *   • ticker-details  — mcap/sector, one call each → expensive → filled by a
+ *     nightly ROUND-ROBIN (oldest mcap_updated_at first, ~1200/night) instead of
+ *     thousands at once. Unknown mcap is never an exclusion; it renders "—".
+ *
+ * Two modes:
+ *   • default (nightly cron): refresh classification, append the latest trading
+ *     day, add new listings, recompute every metric, enrich a batch of mcaps.
  *   • ?bootstrap=1&days=70 : deep backfill — pull ~70 weekdays of grouped-daily,
- *     build history for every ticker, keep the liquid top-of-book (price + avg
- *     dollar-volume), resolve market cap via cached ticker-details, drop names
- *     under $300M mcap, then compute + write. Long-running: intended to be run
- *     ONCE locally against live (dev server has no 60s ceiling). Purely additive.
+ *     build full history for every classified ticker, compute + write. This is
+ *     the reproducible path; the one-time live fill uses scripts/bootstrap-
+ *     screener.mjs (direct COPY) because it writes ~700k history rows.
  *
- * Auth: copies /api/cron/track-performance exactly — if CRON_SECRET is set,
- * require Bearer CRON_SECRET (Vercel injects it) OR ?secret=. No secret → refuse.
+ * Auth mirrors /api/cron/track-performance: Bearer CRON_SECRET or ?secret=.
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 401 });
   }
   const auth = req.headers.get("authorization") || "";
   const qsSecret = req.nextUrl.searchParams.get("secret") || "";
-  const ok = auth === `Bearer ${secret}` || qsSecret === secret;
-  if (!ok) {
+  if (!(auth === `Bearer ${secret}` || qsSecret === secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   if (!screenerConfigured()) {
@@ -57,11 +58,15 @@ export async function GET(req: NextRequest) {
     260,
     Math.max(30, Number(req.nextUrl.searchParams.get("days")) || 70)
   );
+  const mcapBudget = Math.min(
+    6000,
+    Math.max(0, Number(req.nextUrl.searchParams.get("mcap")) ?? 1200)
+  );
 
   try {
     return isBootstrap
-      ? await bootstrap(db, days)
-      : await incremental(db);
+      ? await bootstrap(db, days, mcapBudget)
+      : await incremental(db, mcapBudget);
   } catch (e) {
     return NextResponse.json(
       { error: "refresh failed", detail: (e as Error).message },
@@ -71,29 +76,143 @@ export async function GET(req: NextRequest) {
 }
 
 type Db = ReturnType<typeof createAdminClient>;
+type Classified = { exchange: string; type: "common" | "etf"; name: string | null };
+type HistRow = { ticker: string; as_of: string; close: number; volume: number };
 
 /* ---------------------------------------------------------------------------
- * BOOTSTRAP — deep backfill (run once locally).
+ * Shared: build the classified universe reference map (ticker → class + name).
  * ------------------------------------------------------------------------- */
-async function bootstrap(db: Db, days: number) {
-  // 1. Pull `days` weekdays of grouped-daily, OLD → NEW, skipping empty days.
-  const dates = recentWeekdays(days).reverse(); // oldest first
+async function buildRefMap(): Promise<Map<string, Classified>> {
+  const ref = await getAllReferenceTickers();
+  const map = new Map<string, Classified>();
+  for (const r of ref) {
+    const c = classify(r.type, r.primaryExchange);
+    if (!c) continue;
+    map.set(r.ticker, { exchange: c.exchange, type: c.type, name: r.name });
+  }
+  return map;
+}
+
+function isSaneBar(b: GroupedBar): boolean {
+  return typeof b.c === "number" && b.c > 0 && typeof b.v === "number" && b.v >= 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * mcap ROUND-ROBIN — enrich the N stalest common-stock rows (oldest / never
+ * enriched first). Bounded per run; spreads the ~5.5k detail calls over nights.
+ * ------------------------------------------------------------------------- */
+async function enrichMcap(db: Db, budget: number): Promise<number> {
+  if (budget <= 0) return 0;
+  const { data } = await db
+    .from("screener_metrics")
+    .select("ticker")
+    .eq("type", "common")
+    .order("mcap_updated_at", { ascending: true, nullsFirst: true })
+    .limit(budget);
+  const tickers = ((data as { ticker: string }[]) || []).map((r) => r.ticker);
+  let done = 0;
+  const BATCH = 25;
+  const now = new Date().toISOString();
+  for (let i = 0; i < tickers.length; i += BATCH) {
+    const slice = tickers.slice(i, i + BATCH);
+    const details = await Promise.all(slice.map((t) => getTickerDetail(t)));
+    const updates = slice.map((t, j) => {
+      const d = details[j];
+      return {
+        ticker: t,
+        mcap: d?.marketCap ?? null,
+        sector: d?.sector ?? null,
+        mcap_updated_at: now,
+      };
+    });
+    // Per-row update (upsert would need every NOT-NULL column; we only touch 3).
+    await Promise.all(
+      updates.map((u) =>
+        db
+          .from("screener_metrics")
+          .update({ mcap: u.mcap, sector: u.sector, mcap_updated_at: u.mcap_updated_at })
+          .eq("ticker", u.ticker)
+      )
+    );
+    done += slice.length;
+    await sleep(120);
+  }
+  return done;
+}
+
+/* ---------------------------------------------------------------------------
+ * Shared write helpers.
+ * ------------------------------------------------------------------------- */
+async function upsertMetrics(db: Db, rows: Record<string, unknown>[]) {
+  for (let i = 0; i < rows.length; i += 500) {
+    await db
+      .from("screener_metrics")
+      .upsert(rows.slice(i, i + 500), { onConflict: "ticker" });
+  }
+}
+
+async function upsertHistory(db: Db, rows: HistRow[]) {
+  for (let i = 0; i < rows.length; i += 500) {
+    await db
+      .from("screener_history")
+      .upsert(rows.slice(i, i + 500), { onConflict: "ticker,as_of" });
+  }
+}
+
+async function writeMetaCounts(db: Db, patch: Record<string, unknown>) {
+  const counts = await Promise.all([
+    db.from("screener_metrics").select("ticker", { count: "exact", head: true }),
+    db
+      .from("screener_metrics")
+      .select("ticker", { count: "exact", head: true })
+      .eq("type", "common"),
+    db
+      .from("screener_metrics")
+      .select("ticker", { count: "exact", head: true })
+      .eq("type", "etf"),
+    db
+      .from("screener_metrics")
+      .select("ticker", { count: "exact", head: true })
+      .not("mcap", "is", null),
+  ]);
+  await db.from("screener_meta").upsert(
+    {
+      id: true,
+      universe_count: counts[0].count ?? null,
+      common_count: counts[1].count ?? null,
+      etf_count: counts[2].count ?? null,
+      mcap_count: counts[3].count ?? null,
+      ...patch,
+    },
+    { onConflict: "id" }
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * BOOTSTRAP — deep backfill of the FULL universe (reproducible; run locally).
+ * ------------------------------------------------------------------------- */
+async function bootstrap(db: Db, days: number, mcapBudget: number) {
+  const ref = await buildRefMap();
+
+  // Pull `days` weekdays of grouped-daily, OLD → NEW, skipping empty days.
+  const dates = recentWeekdays(days).reverse();
   const series = new Map<
     string,
     { closes: number[]; volumes: number[]; latestOpen: number | null }
   >();
+  const histRows: HistRow[] = [];
   let tradingDays = 0;
 
   for (const date of dates) {
     const bars = await getGroupedDaily(date);
     if (bars == null) {
-      await sleep(1200); // hard failure (maybe 429) — back off, then continue
+      await sleep(1200);
       continue;
     }
-    if (bars.length === 0) continue; // holiday / non-trading day
+    if (bars.length === 0) continue;
     tradingDays++;
     for (const b of bars) {
-      if (!isSaneBar(b)) continue;
+      if (!ref.has(b.T) || !isSaneBar(b)) continue;
       let s = series.get(b.T);
       if (!s) {
         s = { closes: [], volumes: [], latestOpen: null };
@@ -101,123 +220,75 @@ async function bootstrap(db: Db, days: number) {
       }
       s.closes.push(b.c);
       s.volumes.push(b.v);
-      s.latestOpen = b.o; // last write wins → newest day's open (for gap)
+      s.latestOpen = b.o;
+      histRows.push({ ticker: b.T, as_of: date, close: b.c, volume: Math.round(b.v) });
     }
-    await sleep(120); // polite pacing between grouped-daily calls
+    await sleep(120);
   }
 
-  // 2. Liquidity pre-filter (needs no per-ticker call): price + avg $-volume.
-  type Cand = { ticker: string; dollarVol: number };
-  const candidates: Cand[] = [];
-  for (const [ticker, s] of series) {
-    const price = s.closes[s.closes.length - 1];
-    if (price == null || price < UNIVERSE.MIN_PRICE) continue;
-    const n = Math.min(20, s.volumes.length);
-    if (n === 0) continue;
-    const avgVol =
-      s.volumes.slice(-n).reduce((a, b) => a + b, 0) / n;
-    const dollarVol = avgVol * price;
-    if (dollarVol < UNIVERSE.MIN_AVG_DOLLAR_VOL) continue;
-    candidates.push({ ticker, dollarVol });
-  }
-  candidates.sort((a, b) => b.dollarVol - a.dollarVol);
-  const top = candidates.slice(0, UNIVERSE.MAX_CANDIDATES);
-
-  // 3. Resolve mcap / name / sector via cached ticker-details (paced batches).
-  const detail = new Map<
-    string,
-    { name: string | null; mcap: number | null; sector: string | null }
-  >();
-  const BATCH = 20;
-  for (let i = 0; i < top.length; i += BATCH) {
-    const slice = top.slice(i, i + BATCH);
-    const results = await Promise.all(
-      slice.map((c) => getTickerDetail(c.ticker))
-    );
-    results.forEach((d, j) => {
-      const t = slice[j].ticker;
-      if (d) detail.set(t, { name: d.name, mcap: d.marketCap, sector: d.sector });
-    });
-    await sleep(250);
-  }
-
-  // 4. Keep mcap ≥ threshold; compute metrics; stage writes.
-  let unknownMcap = 0;
+  // Compute metrics for every classified ticker that traded. mcap starts null.
   const metricRows: Record<string, unknown>[] = [];
-  const keptTickers: string[] = [];
-  for (const c of top) {
-    const d = detail.get(c.ticker);
-    if (!d || d.mcap == null || d.mcap < UNIVERSE.MIN_MCAP) {
-      unknownMcap++;
-      continue;
-    }
-    const s = series.get(c.ticker)!;
+  const now = new Date().toISOString();
+  for (const [ticker, s] of series) {
+    if (s.closes.length === 0) continue;
+    const cls = ref.get(ticker)!;
     const m = computeMetrics({
       closes: s.closes,
       volumes: s.volumes,
       latestOpen: s.latestOpen,
     });
-    keptTickers.push(c.ticker);
-    metricRows.push({ ticker: c.ticker, name: d.name, sector: d.sector, mcap: d.mcap, ...m, updated_at: new Date().toISOString() });
+    metricRows.push({
+      ticker,
+      name: cls.name,
+      exchange: cls.exchange,
+      type: cls.type,
+      sector: null,
+      mcap: null,
+      mcap_updated_at: null,
+      ...m,
+      updated_at: now,
+    });
   }
 
-  // Persist metrics.
   await upsertMetrics(db, metricRows);
+  await upsertHistory(db, histRows);
+  const mcapDone = await enrichMcap(db, mcapBudget);
 
-  // Persist compact history for kept tickers using the tail of trading dates.
-  await persistHistory(db, keptTickers, series, tradingDays);
-
-  await db.from("screener_meta").upsert(
-    {
-      id: true,
-      last_run_at: new Date().toISOString(),
-      last_trading_day: newestTradingDate(dates),
-      universe_count: keptTickers.length,
-      unknown_mcap_excluded: unknownMcap,
-      history_days: tradingDays,
-      bootstrap_done: true,
-      note: `bootstrap ${tradingDays} trading days; ${candidates.length} liquid → top ${top.length} → ${keptTickers.length} kept (mcap ≥ $300M)`,
-    },
-    { onConflict: "id" }
-  );
+  await writeMetaCounts(db, {
+    last_run_at: now,
+    last_trading_day: dates[dates.length - 1] ?? null,
+    unknown_mcap_excluded: 0,
+    history_days: tradingDays,
+    bootstrap_done: true,
+    note: `bootstrap ${tradingDays} trading days; ${metricRows.length} tickers; ${mcapDone} mcaps enriched`,
+  });
 
   return NextResponse.json({
     ok: true,
     mode: "bootstrap",
     trading_days: tradingDays,
-    liquid_candidates: candidates.length,
-    detail_calls: top.length,
-    universe_kept: keptTickers.length,
-    unknown_mcap_excluded: unknownMcap,
-    history_tickers_written: keptTickers.length,
+    universe: metricRows.length,
+    history_rows: histRows.length,
+    mcap_enriched: mcapDone,
   });
 }
 
 /* ---------------------------------------------------------------------------
- * INCREMENTAL — nightly one-call refresh.
+ * INCREMENTAL — nightly: reclassify, append latest day, add new listings,
+ * recompute every metric, enrich a batch of mcaps.
  * ------------------------------------------------------------------------- */
-async function incremental(db: Db) {
-  // Universe = whatever bootstrap established.
+async function incremental(db: Db, mcapBudget: number) {
+  const ref = await buildRefMap();
+
+  // Existing universe.
   const { data: uni } = await db
     .from("screener_metrics")
-    .select("ticker, name, sector, mcap, updated_at");
-  const universe = (uni || []) as {
-    ticker: string;
-    name: string | null;
-    sector: string | null;
-    mcap: number | null;
-    updated_at: string | null;
-  }[];
-  if (universe.length === 0) {
-    return NextResponse.json({
-      ok: true,
-      mode: "incremental",
-      note: "universe empty — run ?bootstrap=1 first",
-    });
-  }
-  const uniSet = new Set(universe.map((u) => u.ticker));
+    .select("ticker, name, exchange, type, sector, mcap");
+  const existing = new Map(
+    ((uni as { ticker: string }[]) || []).map((u) => [u.ticker, u])
+  );
 
-  // 1. Latest trading day grouped-daily (walk back until a non-empty day).
+  // Latest trading day grouped-daily (walk back until a non-empty day).
   let bars: GroupedBar[] | null = null;
   let usedDate = "";
   for (const date of recentWeekdays(6)) {
@@ -236,35 +307,49 @@ async function incremental(db: Db) {
     );
   }
 
-  // 2. Append today's close/volume for universe tickers (idempotent PK).
-  const todays = new Map<string, { close: number; open: number; volume: number }>();
-  const histRows: { ticker: string; as_of: string; close: number; volume: number }[] =
-    [];
+  // Universe for this run = existing ∪ (classified tickers that traded today).
+  const todays = new Map<string, { open: number }>();
+  const histRows: HistRow[] = [];
+  const newStubs: Record<string, unknown>[] = [];
+  const now = new Date().toISOString();
   for (const b of bars) {
-    if (!uniSet.has(b.T) || !isSaneBar(b)) continue;
-    todays.set(b.T, { close: b.c, open: b.o, volume: b.v });
-    histRows.push({ ticker: b.T, as_of: usedDate, close: b.c, volume: b.v });
+    const cls = ref.get(b.T);
+    if (!cls || !isSaneBar(b)) continue;
+    todays.set(b.T, { open: b.o });
+    histRows.push({ ticker: b.T, as_of: usedDate, close: b.c, volume: Math.round(b.v) });
+    if (!existing.has(b.T)) {
+      // New listing → stub row; metrics fill in as history accrues.
+      newStubs.push({
+        ticker: b.T,
+        name: cls.name,
+        exchange: cls.exchange,
+        type: cls.type,
+        sector: null,
+        mcap: null,
+        mcap_updated_at: null,
+        price: b.c,
+        updated_at: now,
+      });
+      existing.set(b.T, {
+        ticker: b.T,
+        name: cls.name,
+        exchange: cls.exchange,
+        type: cls.type,
+      } as { ticker: string });
+    }
   }
-  for (let i = 0; i < histRows.length; i += 500) {
-    await db
-      .from("screener_history")
-      .upsert(histRows.slice(i, i + 500), { onConflict: "ticker,as_of" });
-  }
+  if (newStubs.length > 0) await upsertMetrics(db, newStubs);
+  await upsertHistory(db, histRows);
 
-  // 3. Recompute metrics for each universe ticker from its trailing history.
-  //    Pull history in chunks so one query stays bounded.
-  const detailRefreshBudget = 100; // cap stale mcap/name refetches per run
-  let detailRefreshed = 0;
+  // Recompute metrics for every universe ticker from its trailing history.
+  const universeTickers = Array.from(existing.keys());
   const metricRows: Record<string, unknown>[] = [];
-  const staleCut = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-  for (let i = 0; i < universe.length; i += 200) {
-    const chunk = universe.slice(i, i + 200);
-    const tickers = chunk.map((u) => u.ticker);
+  for (let i = 0; i < universeTickers.length; i += 200) {
+    const chunk = universeTickers.slice(i, i + 200);
     const { data: hist } = await db
       .from("screener_history")
       .select("ticker, as_of, close, volume")
-      .in("ticker", tickers)
+      .in("ticker", chunk)
       .order("as_of", { ascending: true });
     const byTicker = new Map<string, { closes: number[]; volumes: number[] }>();
     for (const h of (hist || []) as {
@@ -280,145 +365,65 @@ async function incremental(db: Db) {
       s.closes.push(Number(h.close));
       s.volumes.push(Number(h.volume ?? 0));
     }
-
-    for (const u of chunk) {
-      const s = byTicker.get(u.ticker);
+    for (const ticker of chunk) {
+      const s = byTicker.get(ticker);
       if (!s || s.closes.length === 0) continue;
-      const today = todays.get(u.ticker);
+      const cls = ref.get(ticker);
+      const prev = existing.get(ticker) as {
+        name?: string | null;
+        exchange?: string | null;
+        type?: string | null;
+        sector?: string | null;
+        mcap?: number | null;
+      };
       const m = computeMetrics({
         closes: s.closes,
         volumes: s.volumes,
-        latestOpen: today?.open ?? null,
+        latestOpen: todays.get(ticker)?.open ?? null,
       });
-
-      // Optionally refresh stale/missing details within budget.
-      let name = u.name;
-      let sector = u.sector;
-      let mcap = u.mcap;
-      const stale =
-        u.name == null ||
-        u.mcap == null ||
-        (u.updated_at ? Date.parse(u.updated_at) < staleCut : true);
-      if (stale && detailRefreshed < detailRefreshBudget) {
-        const d = await getTickerDetail(u.ticker);
-        detailRefreshed++;
-        if (d) {
-          name = d.name ?? name;
-          sector = d.sector ?? sector;
-          mcap = d.marketCap ?? mcap;
-        }
-      }
-
       metricRows.push({
-        ticker: u.ticker,
-        name,
-        sector,
-        mcap,
+        ticker,
+        // Reference wins for identity (handles reclassification / renames).
+        name: cls?.name ?? prev?.name ?? null,
+        exchange: cls?.exchange ?? prev?.exchange ?? null,
+        type: cls?.type ?? prev?.type ?? null,
+        sector: prev?.sector ?? null, // sector is set by mcap round-robin
+        mcap: prev?.mcap ?? null, // preserved; refreshed by round-robin
         ...m,
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       });
     }
   }
-
   await upsertMetrics(db, metricRows);
 
-  // 4. Prune very old history so the trailing window caps near a true 52 weeks.
-  const cutoff = ymdDaysAgo(400);
-  await db.from("screener_history").delete().lt("as_of", cutoff);
+  const mcapDone = await enrichMcap(db, mcapBudget);
 
-  // 5. Trailing-window depth for meta (max rows any ticker now has).
+  // Prune history older than ~400 calendar days (caps trailing window near 52w).
+  await db.from("screener_history").delete().lt("as_of", ymdDaysAgo(400));
+
   const { count: histDepth } = await db
     .from("screener_history")
     .select("as_of", { count: "exact", head: true })
-    .eq("ticker", universe[0]?.ticker ?? "");
+    .eq("ticker", universeTickers[0] ?? "");
 
-  await db.from("screener_meta").upsert(
-    {
-      id: true,
-      last_run_at: new Date().toISOString(),
-      last_trading_day: usedDate,
-      universe_count: universe.length,
-      history_days: histDepth ?? null,
-      note: `incremental ${usedDate}; ${metricRows.length} metrics recomputed; ${detailRefreshed} details refreshed`,
-    },
-    { onConflict: "id" }
-  );
+  await writeMetaCounts(db, {
+    last_run_at: now,
+    last_trading_day: usedDate,
+    history_days: histDepth ?? null,
+    bootstrap_done: true,
+    note: `incremental ${usedDate}; ${metricRows.length} recomputed; ${newStubs.length} new listings; ${mcapDone} mcaps enriched`,
+  });
 
   return NextResponse.json({
     ok: true,
     mode: "incremental",
     trading_day: usedDate,
-    universe: universe.length,
+    universe: universeTickers.length,
+    new_listings: newStubs.length,
     history_appended: histRows.length,
     metrics_recomputed: metricRows.length,
-    details_refreshed: detailRefreshed,
+    mcap_enriched: mcapDone,
   });
-}
-
-/* ---------------------------------------------------------------------------
- * Shared write helpers.
- * ------------------------------------------------------------------------- */
-async function upsertMetrics(db: Db, rows: Record<string, unknown>[]) {
-  for (let i = 0; i < rows.length; i += 500) {
-    await db
-      .from("screener_metrics")
-      .upsert(rows.slice(i, i + 500), { onConflict: "ticker" });
-  }
-}
-
-/**
- * Persist compact history for kept tickers. We stamp the trailing tradingDays
- * dates (weekday sequence approximation is fine — as_of is only used to ORDER
- * and to age-out old rows, never to reconcile to an exact calendar day).
- */
-async function persistHistory(
-  db: Db,
-  tickers: string[],
-  series: Map<
-    string,
-    { closes: number[]; volumes: number[]; latestOpen: number | null }
-  >,
-  tradingDays: number
-) {
-  const dateStamps = recentWeekdays(tradingDays).reverse(); // old→new, len≈tradingDays
-  const rows: { ticker: string; as_of: string; close: number; volume: number }[] = [];
-  for (const ticker of tickers) {
-    const s = series.get(ticker);
-    if (!s) continue;
-    const closes = s.closes;
-    const vols = s.volumes;
-    // Align the tail of `dateStamps` to the tail of the arrays.
-    const n = Math.min(closes.length, dateStamps.length);
-    for (let k = 0; k < n; k++) {
-      const idxData = closes.length - n + k;
-      const idxDate = dateStamps.length - n + k;
-      rows.push({
-        ticker,
-        as_of: dateStamps[idxDate],
-        close: closes[idxData],
-        volume: Math.round(vols[idxData] ?? 0),
-      });
-    }
-  }
-  for (let i = 0; i < rows.length; i += 500) {
-    await db
-      .from("screener_history")
-      .upsert(rows.slice(i, i + 500), { onConflict: "ticker,as_of" });
-  }
-}
-
-function isSaneBar(b: GroupedBar): boolean {
-  return (
-    typeof b.c === "number" &&
-    b.c > 0 &&
-    typeof b.v === "number" &&
-    b.v >= 0 &&
-    /^[A-Z]{1,6}$/.test(b.T) // plain common-stock tickers only (no warrants/units)
-  );
-}
-
-function newestTradingDate(datesOldToNew: string[]): string {
-  return datesOldToNew[datesOldToNew.length - 1] ?? new Date().toISOString().slice(0, 10);
 }
 
 function ymdDaysAgo(n: number): string {

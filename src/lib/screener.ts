@@ -13,12 +13,15 @@
  */
 
 export type EmaState = "above" | "below" | "unknown";
+export type SecurityType = "common" | "etf";
 
 /** One row of the screener table — exactly the shape the UI reads. */
 export interface ScreenerRow {
   ticker: string;
   name: string | null;
   sector: string | null;
+  exchange: string | null; // 'NYSE' | 'NASDAQ' | 'AMEX' | 'NYSE Arca' | 'Cboe'
+  type: SecurityType | null; // 'common' | 'etf'
   mcap: number | null;
   price: number | null;
   chg_1d: number | null;
@@ -38,16 +41,62 @@ export interface ScreenerRow {
 }
 
 /* ============================================================================
- * Universe thresholds — "liquid, real companies a family would recognise".
- * Pre-filter is dollar-volume + price (needs no per-ticker call); the mcap gate
- * is applied after cached ticker-details resolve market cap.
+ * Universe classification — a REAL screener: every common stock (+ labeled ETF)
+ * that trades on the recognized US venues. No price / liquidity / mcap gate;
+ * the ONLY filter is "is this a real, listed common stock or ETF?" (drops
+ * warrants, units, preferreds, rights, OTC). Unknown mcap is NOT an exclusion.
  * ==========================================================================*/
-export const UNIVERSE = {
-  MIN_PRICE: 3, // no sub-$3 names (penny-stock noise)
-  MIN_AVG_DOLLAR_VOL: 10_000_000, // ≥ $10M average daily dollar volume
-  MIN_MCAP: 300_000_000, // ≥ $300M market cap
-  MAX_CANDIDATES: 1500, // bound bootstrap detail calls (top by $ volume)
-} as const;
+
+/** Polygon primary_exchange MIC → friendly name. Others → null (not in scope). */
+export function exchangeName(mic: string | null | undefined): string | null {
+  switch (mic) {
+    case "XNYS":
+      return "NYSE";
+    case "XNAS":
+      return "NASDAQ";
+    case "XASE":
+      return "AMEX";
+    case "ARCX":
+      return "NYSE Arca";
+    case "BATS":
+      return "Cboe";
+    default:
+      return null;
+  }
+}
+
+/** Polygon `type` → our two-class label, or null if out of scope. */
+export function securityType(polygonType: string | null | undefined): SecurityType | null {
+  switch (polygonType) {
+    case "CS": // common stock
+    case "ADRC": // American Depositary Receipt (common)
+      return "common";
+    case "ETF":
+    case "ETV":
+    case "ETN":
+    case "FUND":
+      return "etf";
+    default:
+      return null; // WARRANT / UNIT / PFD / RIGHT / SP / … → out of scope
+  }
+}
+
+/**
+ * Membership rule for the screener universe.
+ *   - common stocks: only on NYSE / NASDAQ / AMEX (the three the owner named).
+ *   - ETFs: on those three PLUS the ETF venues NYSE Arca / Cboe (where most list).
+ * Returns the resolved {exchange, type} to store, or null to skip the ticker.
+ */
+export function classify(
+  polygonType: string | null | undefined,
+  mic: string | null | undefined
+): { exchange: string; type: SecurityType } | null {
+  const type = securityType(polygonType);
+  const exchange = exchangeName(mic);
+  if (!type || !exchange) return null;
+  if (type === "common" && !["NYSE", "NASDAQ", "AMEX"].includes(exchange)) return null;
+  return { exchange, type };
+}
 
 /* ============================================================================
  * Pure indicator math (operate on close arrays ordered OLD → NEW).
@@ -128,7 +177,10 @@ export function computeMetrics(input: {
   closes: number[];
   volumes: number[];
   latestOpen?: number | null;
-}): Omit<ScreenerRow, "ticker" | "name" | "sector" | "mcap" | "updated_at"> {
+}): Omit<
+  ScreenerRow,
+  "ticker" | "name" | "sector" | "exchange" | "type" | "mcap" | "updated_at"
+> {
   const { closes, volumes, latestOpen } = input;
   const price = closes.length ? closes[closes.length - 1] : null;
   const prev = nBack(closes, 1);
@@ -157,9 +209,106 @@ export function computeMetrics(input: {
 }
 
 /* ============================================================================
- * PRESETS — first-class, education-first. Each preset is a pure predicate over
- * a ScreenerRow plus a plain-English "what it finds & why it matters" line
- * (kids see these — no hype, no "hot picks"). `sort` names the default column.
+ * Composable filters — the CORE of the real screener. Every field is optional
+ * and ANDs with the rest. `basic` fields are available to every member (FIC+);
+ * `advanced` (RSI / EMA trend / gap / 52w-near) are the FTA technical layer.
+ * A preset is just a curated Partial<CustomFilters> (+ default sort) applied as
+ * a quick-start — fully transparent and editable afterward, never a black box.
+ * ==========================================================================*/
+
+export type EmaTrend = "above20" | "below20" | "above50" | "below50" | "above2050";
+
+export interface CustomFilters {
+  // ── basic (all tiers) ──
+  q?: string | null; // ticker / name search
+  exchange?: string | null; // 'NYSE' | 'NASDAQ' | 'AMEX' | 'NYSE Arca' | 'Cboe'
+  type?: SecurityType | null; // 'common' | 'etf'
+  sector?: string | null;
+  minMcap?: number | null; // USD
+  maxMcap?: number | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  minChg1d?: number | null;
+  minChg5d?: number | null;
+  minChg1m?: number | null;
+  minChg3m?: number | null;
+  minVolRatio?: number | null;
+  // ── advanced (FTA technical) ──
+  rsiMax?: number | null; // "oversold below…"
+  rsiMin?: number | null; // "strong/overbought above…"
+  emaTrend?: EmaTrend | null;
+  nearHigh?: boolean | null; // within 3% of trailing-window high
+  nearLow?: boolean | null; // within 3% of trailing-window low
+  minGap?: number | null; // gap up ≥
+  maxGap?: number | null; // gap down ≤ (negative)
+}
+
+/** Keys that belong to the FTA-only advanced technical panel. */
+export const ADVANCED_FILTER_KEYS: (keyof CustomFilters)[] = [
+  "rsiMax",
+  "rsiMin",
+  "emaTrend",
+  "nearHigh",
+  "nearLow",
+  "minGap",
+  "maxGap",
+];
+
+export function hasAdvancedFilter(f: CustomFilters): boolean {
+  return ADVANCED_FILTER_KEYS.some((k) => f[k] != null && f[k] !== false);
+}
+
+/** True when NO filter is active (search excluded — search is orthogonal). */
+export function filtersEmpty(f: CustomFilters): boolean {
+  return (Object.keys(f) as (keyof CustomFilters)[]).every(
+    (k) => k === "q" || f[k] == null || f[k] === false || f[k] === ""
+  );
+}
+
+export function matchesCustom(r: ScreenerRow, f: CustomFilters): boolean {
+  // Search (ticker or name, case-insensitive substring).
+  if (f.q && f.q.trim()) {
+    const q = f.q.trim().toLowerCase();
+    const hay = `${r.ticker} ${r.name ?? ""}`.toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  if (f.exchange && r.exchange !== f.exchange) return false;
+  if (f.type && r.type !== f.type) return false;
+  if (f.sector && r.sector !== f.sector) return false;
+  if (f.minMcap != null && (r.mcap == null || r.mcap < f.minMcap)) return false;
+  if (f.maxMcap != null && (r.mcap == null || r.mcap > f.maxMcap)) return false;
+  if (f.minPrice != null && (r.price == null || r.price < f.minPrice)) return false;
+  if (f.maxPrice != null && (r.price == null || r.price > f.maxPrice)) return false;
+  if (f.minChg1d != null && (r.chg_1d == null || r.chg_1d < f.minChg1d)) return false;
+  if (f.minChg5d != null && (r.chg_5d == null || r.chg_5d < f.minChg5d)) return false;
+  if (f.minChg1m != null && (r.chg_1m == null || r.chg_1m < f.minChg1m)) return false;
+  if (f.minChg3m != null && (r.chg_3m == null || r.chg_3m < f.minChg3m)) return false;
+  if (f.minVolRatio != null && (r.vol_ratio == null || r.vol_ratio < f.minVolRatio))
+    return false;
+  // advanced
+  if (f.rsiMax != null && (r.rsi14 == null || r.rsi14 > f.rsiMax)) return false;
+  if (f.rsiMin != null && (r.rsi14 == null || r.rsi14 < f.rsiMin)) return false;
+  if (f.emaTrend === "above20" && r.ema20_state !== "above") return false;
+  if (f.emaTrend === "below20" && r.ema20_state !== "below") return false;
+  if (f.emaTrend === "above50" && r.ema50_state !== "above") return false;
+  if (f.emaTrend === "below50" && r.ema50_state !== "below") return false;
+  if (
+    f.emaTrend === "above2050" &&
+    (r.ema20_state !== "above" || r.ema50_state !== "above")
+  )
+    return false;
+  if (f.nearHigh && (r.dist_52w_high == null || r.dist_52w_high < -3)) return false;
+  if (f.nearLow && (r.dist_52w_low == null || r.dist_52w_low > 3)) return false;
+  if (f.minGap != null && (r.gap_pct == null || r.gap_pct < f.minGap)) return false;
+  if (f.maxGap != null && (r.gap_pct == null || r.gap_pct > f.maxGap)) return false;
+  return true;
+}
+
+/* ============================================================================
+ * PRESETS — quick-start chips. Each is a curated filter combo + default sort +
+ * an education-first, kid-safe "what it finds & why it matters" blurb. Clicking
+ * a chip just APPLIES its filters (visible + editable) — presets are a starting
+ * point, never the product.
  * ==========================================================================*/
 
 export type SortDir = "asc" | "desc";
@@ -175,24 +324,20 @@ export interface ScreenerPreset {
   blurb: string;
   /** Lucide icon name (resolved in the page). */
   icon: string;
-  match: (r: ScreenerRow) => boolean;
+  filters: CustomFilters;
   sort: PresetSort;
+  /** Convenience predicate = matchesCustom(row, filters). */
+  match: (r: ScreenerRow) => boolean;
 }
 
-const num = (v: number | null | undefined) => (v == null ? null : v);
-
-export const PRESETS: ScreenerPreset[] = [
+const PRESET_DEFS: Omit<ScreenerPreset, "match">[] = [
   {
     id: "big-brands-new-highs",
     label: "Big brands at new highs",
     blurb:
       "Large, well-known companies trading near the top of their recent range. A stock at new highs means buyers have been steadily willing to pay more — a sign of strength worth understanding before you follow it.",
     icon: "Trophy",
-    match: (r) =>
-      num(r.mcap) != null &&
-      r.mcap! >= 10_000_000_000 &&
-      num(r.dist_52w_high) != null &&
-      r.dist_52w_high! >= -3,
+    filters: { minMcap: 10_000_000_000, nearHigh: true },
     sort: { key: "dist_52w_high", dir: "desc" },
   },
   {
@@ -201,13 +346,7 @@ export const PRESETS: ScreenerPreset[] = [
     blurb:
       "Companies grinding higher over months, not spiking overnight. Their price sits above both its 20- and 50-day average lines — the calm, durable kind of uptrend that rewards patience over excitement.",
     icon: "TrendingUp",
-    match: (r) =>
-      r.ema20_state === "above" &&
-      r.ema50_state === "above" &&
-      num(r.chg_3m) != null &&
-      r.chg_3m! >= 5 &&
-      num(r.chg_1m) != null &&
-      r.chg_1m! >= 0,
+    filters: { emaTrend: "above2050", minChg3m: 5 },
     sort: { key: "chg_3m", dir: "desc" },
   },
   {
@@ -216,12 +355,7 @@ export const PRESETS: ScreenerPreset[] = [
     blurb:
       "Stocks with strong recent momentum this past month. Fast moves can reverse just as fast, so this list is a starting point for research — never a reason to chase. Notice which names show up and ask why.",
     icon: "Rocket",
-    match: (r) =>
-      num(r.chg_1m) != null &&
-      r.chg_1m! >= 10 &&
-      num(r.rsi14) != null &&
-      r.rsi14! >= 55 &&
-      r.rsi14! <= 80,
+    filters: { minChg1m: 10, rsiMin: 55, rsiMax: 80 },
     sort: { key: "chg_1m", dir: "desc" },
   },
   {
@@ -230,11 +364,7 @@ export const PRESETS: ScreenerPreset[] = [
     blurb:
       "Solid companies that have pulled back and now look 'oversold' (a low RSI reading). Sometimes that is a bargain, sometimes a warning — the point is to study why the price fell, not to assume it will bounce.",
     icon: "Waves",
-    match: (r) =>
-      num(r.mcap) != null &&
-      r.mcap! >= 2_000_000_000 &&
-      num(r.rsi14) != null &&
-      r.rsi14! <= 35,
+    filters: { minMcap: 2_000_000_000, rsiMax: 35 },
     sort: { key: "rsi14", dir: "asc" },
   },
   {
@@ -243,56 +373,19 @@ export const PRESETS: ScreenerPreset[] = [
     blurb:
       "Stocks trading far more shares than usual today. Unusual volume means something got people's attention — news, earnings, a big buyer. It is a clue to go investigate, not a signal on its own.",
     icon: "BarChart3",
-    match: (r) => num(r.vol_ratio) != null && r.vol_ratio! >= 2,
+    filters: { minVolRatio: 2 },
     sort: { key: "vol_ratio", dir: "desc" },
   },
 ];
 
+export const PRESETS: ScreenerPreset[] = PRESET_DEFS.map((p) => ({
+  ...p,
+  match: (r: ScreenerRow) => matchesCustom(r, p.filters),
+}));
+
 export function getPreset(id: string | null | undefined): ScreenerPreset | null {
   if (!id) return null;
   return PRESETS.find((p) => p.id === id) ?? null;
-}
-
-/* ============================================================================
- * Custom filter builder — the FTA-tier advanced surface. Pure predicate build.
- * ==========================================================================*/
-
-export interface CustomFilters {
-  minMcap?: number | null; // USD
-  maxMcap?: number | null;
-  sector?: string | null;
-  minPrice?: number | null;
-  maxPrice?: number | null;
-  minChg1d?: number | null;
-  minChg1m?: number | null;
-  minVolRatio?: number | null;
-  rsiMax?: number | null; // "oversold below…"
-  rsiMin?: number | null; // "overbought above…"
-  emaTrend?: "above20" | "above50" | "above2050" | null;
-  nearHigh?: boolean | null; // within 3% of window high
-}
-
-export function matchesCustom(r: ScreenerRow, f: CustomFilters): boolean {
-  if (f.minMcap != null && (r.mcap == null || r.mcap < f.minMcap)) return false;
-  if (f.maxMcap != null && (r.mcap == null || r.mcap > f.maxMcap)) return false;
-  if (f.sector && r.sector !== f.sector) return false;
-  if (f.minPrice != null && (r.price == null || r.price < f.minPrice)) return false;
-  if (f.maxPrice != null && (r.price == null || r.price > f.maxPrice)) return false;
-  if (f.minChg1d != null && (r.chg_1d == null || r.chg_1d < f.minChg1d)) return false;
-  if (f.minChg1m != null && (r.chg_1m == null || r.chg_1m < f.minChg1m)) return false;
-  if (f.minVolRatio != null && (r.vol_ratio == null || r.vol_ratio < f.minVolRatio))
-    return false;
-  if (f.rsiMax != null && (r.rsi14 == null || r.rsi14 > f.rsiMax)) return false;
-  if (f.rsiMin != null && (r.rsi14 == null || r.rsi14 < f.rsiMin)) return false;
-  if (f.emaTrend === "above20" && r.ema20_state !== "above") return false;
-  if (f.emaTrend === "above50" && r.ema50_state !== "above") return false;
-  if (
-    f.emaTrend === "above2050" &&
-    (r.ema20_state !== "above" || r.ema50_state !== "above")
-  )
-    return false;
-  if (f.nearHigh && (r.dist_52w_high == null || r.dist_52w_high < -3)) return false;
-  return true;
 }
 
 /* ============================================================================
