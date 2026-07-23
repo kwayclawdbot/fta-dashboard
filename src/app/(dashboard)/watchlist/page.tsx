@@ -18,9 +18,12 @@ import {
   Check,
   Sparkles,
   Share2,
+  Users2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
@@ -35,6 +38,7 @@ import Celebrate, {
   type Register,
 } from "@/components/fic/Celebrate";
 import {
+  fetchQuote,
   fetchQuotes,
   searchTickers as searchPolygonTickers,
   type MarketQuote,
@@ -120,6 +124,11 @@ export default function WatchlistPage() {
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [role, setRole] = useState("parent");
   const [isKid, setIsKid] = useState(false);
+  const [tier, setTier] = useState<FamilyTier>("fic");
+  const [tierResolved, setTierResolved] = useState(false);
+  // watchlist item id -> already promoted to the community board.
+  const [promoted, setPromoted] = useState<Record<string, boolean>>({});
+  const [promotingId, setPromotingId] = useState<string | null>(null);
 
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [members, setMembers] = useState<Record<string, Member>>({});
@@ -167,6 +176,7 @@ export default function WatchlistPage() {
     const user = session?.user;
     if (!user) {
       setLoading(false);
+      setTierResolved(true);
       return;
     }
     setUserId(user.id);
@@ -193,6 +203,11 @@ export default function WatchlistPage() {
     };
 
     setFamilyId(board.family_id ?? null);
+    // Members-only gate: resolve the family's tier (free -> UpsellCard).
+    getFamilyTier(supabase, board.family_id ?? null).then((t) => {
+      setTier(t);
+      setTierResolved(true);
+    });
     setRole(board.role ?? "parent");
     const kid = board.age_group === "kids" || board.role === "child";
     setIsKid(kid);
@@ -204,6 +219,24 @@ export default function WatchlistPage() {
 
     const list = board.items || [];
     setItems(list);
+
+    // Which of these items are already on the community board.
+    if (list.length) {
+      supabase
+        .from("community_watchlist")
+        .select("source_watchlist_id")
+        .in(
+          "source_watchlist_id",
+          list.map((i) => i.id)
+        )
+        .then(({ data }) => {
+          const map: Record<string, boolean> = {};
+          for (const r of (data || []) as { source_watchlist_id: string | null }[]) {
+            if (r.source_watchlist_id) map[r.source_watchlist_id] = true;
+          }
+          setPromoted(map);
+        });
+    }
 
     const grouped: Record<string, WatchlistNote[]> = {};
     for (const n of board.notes || []) {
@@ -298,6 +331,9 @@ export default function WatchlistPage() {
     const ticker = addTicker.trim().toUpperCase();
     if (!name || !ticker) return;
     setAddBusy(true);
+    // Snapshot the price at the moment it lands on the watchlist (the cron
+    // backfills any NULL from the first daily close).
+    const snapQuote = await fetchQuote(ticker);
     const { data, error } = await supabase
       .from("family_watchlist")
       .insert({
@@ -308,6 +344,8 @@ export default function WatchlistPage() {
         champion_id: userId,
         what_they_sell: addSell.trim() || null,
         why_we_picked: addWhy.trim() || null,
+        snapshot_price: snapQuote?.price ?? null,
+        snapshot_at: new Date().toISOString(),
       })
       .select("*")
       .single();
@@ -442,6 +480,27 @@ export default function WatchlistPage() {
     if (!error) setItems((prev) => prev.filter((i) => i.id !== item.id));
   }
 
+  // ── Promote to the community watchlist ──────────────────────────────────────
+  async function promoteToCommunity(item: WatchlistItem) {
+    if (promotingId || promoted[item.id]) return;
+    setPromotingId(item.id);
+    const price = quotes[item.ticker]?.price ?? null;
+    const { error } = await supabase.rpc("promote_to_community", {
+      p_watchlist_id: item.id,
+      p_snapshot_price: price,
+    });
+    setPromotingId(null);
+    if (!error) {
+      setPromoted((p) => ({ ...p, [item.id]: true }));
+      enqueue({
+        variant: "verdict",
+        register,
+        title: isKid ? "On the club board!" : "Added to the community",
+        subtitle: `${item.company_name} is now on the Community Watchlist — the whole club can research it with you.`,
+      });
+    }
+  }
+
   // ── Notes ──────────────────────────────────────────────────────────────────
   async function addNote(item: WatchlistItem) {
     const text = (noteDraft[item.id] || "").trim();
@@ -492,7 +551,14 @@ export default function WatchlistPage() {
   const rComplete = researchComplete({ ...researchItem, ...rForm });
   const rFilled = researchFilledCount({ ...researchItem, ...rForm });
 
-  if (loading) {
+  if (tierResolved && tier === "free") {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <UpsellCard context="watchlist" />
+      </div>
+    );
+  }
+  if (loading || !tierResolved) {
     return <DashboardSkeleton variant="board" title="Family Watchlist" />;
   }
 
@@ -518,6 +584,13 @@ export default function WatchlistPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link
+            href="/watchlist/community"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-4 py-2.5 text-sm font-semibold text-soft hover:bg-paper"
+          >
+            <Users2 className="h-4 w-4" />
+            Community board
+          </Link>
           <button
             onClick={() => openAdd()}
             className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm"
@@ -832,6 +905,27 @@ export default function WatchlistPage() {
                               <Share2 className="h-3.5 w-3.5" />
                               Post to community
                             </button>
+                            {promoted[item.id] ? (
+                              <Link
+                                href={`/research/${encodeURIComponent(item.ticker)}`}
+                                className="inline-flex items-center gap-1 rounded-lg bg-gold-400/15 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-gold-100"
+                              >
+                                <Users2 className="h-3.5 w-3.5" />
+                                On club board
+                              </Link>
+                            ) : (
+                              <button
+                                onClick={() => promoteToCommunity(item)}
+                                disabled={promotingId === item.id}
+                                title="Add this company to the club's Community Watchlist"
+                                className="inline-flex items-center gap-1 rounded-lg border border-gold-300 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-chip-amber disabled:opacity-60"
+                              >
+                                <Users2 className="h-3.5 w-3.5" />
+                                {promotingId === item.id
+                                  ? "Adding…"
+                                  : "Add to community"}
+                              </button>
+                            )}
                           </div>
 
                           {/* footer: notes toggle, chart, delete */}
