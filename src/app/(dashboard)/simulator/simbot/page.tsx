@@ -17,10 +17,12 @@ import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
  * /simulator/simbot — the embedded Simbot price-action simulator.
  *
  * Same-origin iframe (public/sim/index.html) so localStorage is per platform
- * user (?uid) and the milestone bridge is trusted. The synthetic engine is the
- * default; a Live Market mode inside the frame reads delayed data through the
- * same-origin /api/market proxy. Platform XP is awarded only on the defined
- * milestones (see useSimbotBridge). Free tier is locked; kids see no upsell.
+ * user (?uid) and the milestone bridge is trusted. The frame opens in Live
+ * Market mode by default (real delayed data via the same-origin /api/market
+ * proxy); the Practice Engine (simulated) is opt-in and each user's last
+ * mode + ticker persist per-user inside the frame. Platform XP is awarded only
+ * on the defined milestones (see useSimbotBridge). Free tier is locked; kids
+ * see no upsell.
  */
 
 export default function SimbotPage() {

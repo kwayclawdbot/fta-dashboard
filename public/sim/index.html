@@ -1530,6 +1530,11 @@ input,select{font-family:var(--mono);}
     border:1px solid var(--line);background:var(--bg);color:var(--text-dim);cursor:pointer;white-space:nowrap;}
   .ftaLive-chip.on{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
   .ftaLive-note{font-size:10.5px;color:var(--text-dimmer);white-space:nowrap;}
+  .ftaLive-fallback{display:none;align-items:center;gap:6px;font-size:11px;font-weight:800;
+    color:#78350F;background:#FDE68A;padding:4px 10px;border-radius:999px;white-space:nowrap;}
+  .ftaLive-fallback.on{display:inline-flex;}
+  :root[data-fta-theme="dark"] .ftaLive-fallback{color:#FCD34D;background:rgba(251,191,36,.18);}
+  .ftaLive-mark{font-variant-numeric:tabular-nums;}
   .ftaMode{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;
     margin-left:8px;vertical-align:middle;}
   .ftaMode button{background:var(--panel);color:var(--text-dim);border:none;font-size:11px;
@@ -9553,6 +9558,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
       refreshAll();
       prefetchTfs(sym, tf);
       renderStrip();
+      saveSymbol(sym);           // remember this user's last live ticker
+      hideFallbackNotice();      // a good load clears any prior fallback banner
       return true;
     }catch(e){ liveUnavailable(); return false; }
     finally{ LIVE.loading = false; }
@@ -9635,6 +9642,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         '<div class="ftaLive-results" id="ftaLiveResults"></div>' +
       '</div>' +
       '<div class="ftaLive-chips" id="ftaLiveChips"></div>' +
+      '<span class="ftaLive-fallback" id="ftaLiveFallback">⚠ Live data unavailable — showing Practice Engine (simulated)</span>' +
       '<span class="ftaLive-note">Paper trading · real orders never placed</span>';
     if(main) app.insertBefore(bar, main); else app.appendChild(bar);
 
@@ -9697,31 +9705,87 @@ document.addEventListener('DOMContentLoaded', ()=>{
     var closed = (ms === 'closed' || ms === 'unknown' || !ms);
     if(dot) dot.className = 'ftaLive-dot' + (closed ? ' closed' : '');
     if(txt){
-      var label = LIVE.symbol || 'LIVE';
-      if(ms === 'open') txt.textContent = label + ' · LIVE';
-      else if(ms === 'extended-hours') txt.textContent = label + ' · EXTENDED HOURS';
-      else if(ms === 'pre-market') txt.textContent = label + ' · PRE-MARKET';
-      else txt.textContent = label + ' · MARKET CLOSED — LAST SESSION';
+      var sym = LIVE.symbol || 'LIVE';
+      // Real delayed mark, shown immediately so it's obviously live data.
+      var mark = LIVE.symbol ? livePrice[LIVE.symbol] : null;
+      var dec = (SYM_MAP[LIVE.symbol] && SYM_MAP[LIVE.symbol].dec != null) ? SYM_MAP[LIVE.symbol].dec : 2;
+      var priceStr = (mark != null && isFinite(mark)) ? ' $' + Number(mark).toFixed(dec) : '';
+      var stateStr;
+      if(ms === 'open') stateStr = 'LIVE · delayed 15m';
+      else if(ms === 'extended-hours') stateStr = 'EXTENDED HOURS · delayed 15m';
+      else if(ms === 'pre-market') stateStr = 'PRE-MARKET · delayed 15m';
+      else stateStr = 'MARKET CLOSED — LAST SESSION';
+      txt.textContent = sym + priceStr + ' · ' + stateStr;
     }
     document.querySelectorAll('#ftaLiveChips .ftaLive-chip').forEach(function(b){
       b.classList.toggle('on', b.dataset.tk === LIVE.symbol);
     });
   }
 
-  function setLive(on){
-    LIVE.active = on;
-    var bar = el('ftaLiveBar'); if(bar) bar.classList.toggle('on', on);
+  /* ── per-user persistence (via the platform-namespaced ns()) ──
+     'live' is the default when nothing is stored; an explicit switch to
+     'synthetic' sticks for that user until they switch back. A live-data
+     FAILURE is never persisted, so the next open retries live. */
+  function savedMode(){ try{ return localStorage.getItem(ns('marketMode')); }catch(e){ return null; } }
+  function saveMode(m){ try{ localStorage.setItem(ns('marketMode'), m); }catch(e){} }
+  function savedSymbol(){ try{ return (localStorage.getItem(ns('liveSymbol')) || '').toUpperCase() || null; }catch(e){ return null; } }
+  function saveSymbol(s){ try{ if(s) localStorage.setItem(ns('liveSymbol'), String(s).toUpperCase()); }catch(e){} }
+
+  function updateToggleUI(live){
     document.querySelectorAll('.ftaMode button').forEach(function(b){
-      b.classList.toggle('on', (b.dataset.mode === 'live') === on);
+      b.classList.toggle('on', (b.dataset.mode === 'live') === live);
     });
+  }
+  function showFallbackNotice(){ var n = el('ftaLiveFallback'); if(n) n.classList.add('on'); }
+  function hideFallbackNotice(){ var n = el('ftaLiveFallback'); if(n) n.classList.remove('on'); }
+
+  function setLive(on){
+    var bar = el('ftaLiveBar');
     if(on){
-      window.__LIVE_FEED = { active:true, symbol: LIVE.symbol };
-      loadLiveSymbol(LIVE.symbol || 'AAPL');
-      startPolls();
+      saveMode('live');
+      hideFallbackNotice();
+      LIVE.active = true;
+      if(bar) bar.classList.add('on');
+      updateToggleUI(true);
+      var sym = LIVE.symbol || savedSymbol() || 'AAPL';
+      LIVE.symbol = sym;
+      window.__LIVE_FEED = { active:true, symbol: sym };
+      loadLiveSymbol(sym).then(function(ok){
+        if(ok){ startPolls(); }
+        else { fallbackToSynthetic(); }
+      }).catch(function(){ fallbackToSynthetic(); });
     } else {
+      saveMode('synthetic');   // explicit user choice — sticks for this user
+      LIVE.active = false;
+      updateToggleUI(false);
+      if(bar) bar.classList.remove('on');
       stopPolls();
       exitLive();
     }
+  }
+
+  // First live load failed → drop to the synthetic engine WITH a visible notice
+  // (never silent). Not persisted as a preference, so next open retries live.
+  function fallbackToSynthetic(){
+    LIVE.active = false;
+    stopPolls();
+    window.__LIVE_FEED = { active:false, symbol:null };
+    updateToggleUI(false);
+    var bar = el('ftaLiveBar'); if(bar) bar.classList.remove('on');
+    showFallbackNotice();
+    exitLive();
+  }
+
+  // Decide the opening mode: default LIVE, unless this user explicitly chose
+  // synthetic last time. Renders the real ticker + delayed mark immediately.
+  function bootMode(){
+    var mode = savedMode();
+    LIVE.symbol = savedSymbol() || 'AAPL';
+    if(mode === 'synthetic'){
+      updateToggleUI(false);   // honor the stored practice-engine choice
+      return;
+    }
+    setLive(true);             // default (or stored 'live') → open on real market
   }
 
   // Turn the synthetic engine back on for the (formerly) live symbol: drop the
@@ -9752,8 +9816,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     var wrap = document.createElement('div');
     wrap.className = 'ftaMode'; wrap.id = 'ftaModeToggle';
     wrap.innerHTML =
-      '<button data-mode="synthetic" class="on" data-tip-title="SYNTHETIC" data-tip="A safe, made-up market that never sleeps — practice any time.">Synthetic</button>' +
-      '<button data-mode="live" data-tip-title="LIVE MARKET" data-tip="Real tickers on delayed (~15 min) intraday data. Trade the real market on paper.">Live Market</button>';
+      '<button data-mode="live" class="on" data-tip-title="LIVE MARKET (DELAYED)" data-tip="Real tickers on delayed (~15 min) intraday data. Trade the real market on paper.">Live Market (delayed)</button>' +
+      '<button data-mode="synthetic" data-tip-title="PRACTICE ENGINE (SIMULATED)" data-tip="A safe, made-up market that never sleeps — simulated prices for practice any time.">Practice Engine (simulated)</button>';
     bar.appendChild(wrap);
     wrap.querySelector('[data-mode="synthetic"]').onclick = function(){ setLive(false); };
     wrap.querySelector('[data-mode="live"]').onclick = function(){ setLive(true); };
@@ -9764,6 +9828,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     try{
       buildStrip();
       injectModeToggle();
+      bootMode();   // default = Live Market on open (unless user chose synthetic)
     }catch(e){ /* never break the terminal over an add-on */ }
   };
 })();
