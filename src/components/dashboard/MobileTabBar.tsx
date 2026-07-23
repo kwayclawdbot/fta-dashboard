@@ -13,6 +13,7 @@ import {
   Menu,
   ChevronRight,
   BookOpen,
+  Lock,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -283,6 +284,52 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
                   }
                   const active = isActive(item.href);
                   const Icon = item.icon;
+                  // The gold FTA section keeps its hard-split identity in the
+                  // More sheet too: a divider, gold text, PRO badge or lock.
+                  if (item.fta) {
+                    return (
+                      <div key={item.href} className="mt-2 pt-2 border-t border-gold-400/25">
+                        <Link
+                          href={item.href}
+                          onClick={() => setMoreOpen(false)}
+                          className={`flex items-center gap-3 px-2 py-2.5 rounded-xl transition-colors ${
+                            active && !item.locked
+                              ? "text-gold-700 bg-gold-400/15"
+                              : "text-gold-700/90 hover:bg-gold-400/10"
+                          }`}
+                        >
+                          <Icon className="w-[18px] h-[18px] shrink-0" />
+                          <span className="text-sm font-semibold font-display flex-1">{item.label}</span>
+                          {item.locked ? (
+                            <Lock className="w-3.5 h-3.5 shrink-0 text-gold-600/80" />
+                          ) : item.badge ? (
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-gold-400 to-gold-600 text-white">
+                              {item.badge}
+                            </span>
+                          ) : null}
+                        </Link>
+                        {!item.locked && item.subItems && (
+                          <div className="ml-9 mt-0.5 mb-1 space-y-0.5">
+                            {item.subItems.map((sub) => {
+                              const subActive = isActive(sub.href);
+                              return (
+                                <Link
+                                  key={sub.href}
+                                  href={sub.href}
+                                  onClick={() => setMoreOpen(false)}
+                                  className={`block px-2 py-2 rounded-lg text-[13px] transition-colors ${
+                                    subActive ? "text-gold-700 font-medium" : "text-gold-700/70 hover:text-gold-700"
+                                  }`}
+                                >
+                                  {sub.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
                   return (
                     <div key={item.href}>
                       <Link

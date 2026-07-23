@@ -25,6 +25,9 @@ import {
   ShieldCheck,
   LifeBuoy,
   ShoppingBag,
+  Lock,
+  Radio,
+  Film,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -44,6 +47,13 @@ export interface NavItem {
   sectionHeader?: boolean;
   /** Small pill after the label (e.g. gold "PRO" on the FTA Academy group). */
   badge?: string;
+  /** Marks the gold "FTA — Trading Academy" section: a top divider, gold accent
+   *  chrome, PRO identity, and (unlike ordinary groups) always-expanded
+   *  subItems so it reads as a distinct hub section, not a collapsible row. */
+  fta?: boolean;
+  /** FIC-only teaser variant of the FTA section — a single locked row that
+   *  links to /upgrade instead of expanding into the hub. */
+  locked?: boolean;
 }
 
 // ── Family Investing Club items ──────────────────────────────────────────────
@@ -93,14 +103,13 @@ const FAMILY_ITEM: NavItem = {
 };
 
 /**
- * Learn group. For FIC families the label is "Learn"; for FTA families it
- * becomes a gold-badged "Academy" group (this replaces the old standalone
- * "FTA — Trading Academy" section header — the tier framing now rides on the
- * group label + badge). Young kids get the kid-worded variant (My Lessons /
- * My Cards). Start Here folds in here as a permanent refresher (it also lives
- * as a dismissible Home card during onboarding). Routes are NOT moved.
+ * Learn group — the SHARED (FIC + FTA) learning surfaces: Start Here, Courses,
+ * Live Classes, Flashcards. It stays in the default warm register for every
+ * tier now that the gold PRO identity lives solely on the dedicated FTA section
+ * below (a hard FIC/FTA split, Lane 3). Young kids get the kid-worded variant.
+ * Routes are NOT moved.
  */
-function learnGroup(isFta: boolean, isKid: boolean): NavItem {
+function learnGroup(isKid: boolean): NavItem {
   if (isKid) {
     return {
       label: "Learn",
@@ -114,10 +123,9 @@ function learnGroup(isFta: boolean, isKid: boolean): NavItem {
     };
   }
   return {
-    label: isFta ? "Academy" : "Learn",
+    label: "Learn",
     href: "/courses",
     icon: GraduationCap,
-    badge: isFta ? "PRO" : undefined,
     subItems: [
       { label: "Start Here", href: "/start-here" },
       { label: "Courses", href: "/courses" },
@@ -126,6 +134,33 @@ function learnGroup(isFta: boolean, isKid: boolean): NavItem {
     ],
   };
 }
+
+/**
+ * FTA — Trading Academy: the gold, PRO-identity section that is the visual
+ * counterpart to the warm FIC club rows above. For FTA families it is an
+ * always-expanded hub (Traders Chat · Course Library · Recordings); FIC-only
+ * PARENTS see FTA_LOCKED instead — one compact locked teaser that opens the
+ * /upgrade pitch. Kids and teens never see the locked teaser (no upsell posture).
+ */
+const FTA_SECTION: NavItem = {
+  label: "FTA — Trading Academy",
+  href: "/fta/chat",
+  icon: GraduationCap,
+  fta: true,
+  badge: "PRO",
+  subItems: [
+    { label: "Traders Chat", href: "/fta/chat" },
+    { label: "Course Library", href: "/fta/courses" },
+    { label: "Recordings", href: "/fta/recordings" },
+  ],
+};
+const FTA_LOCKED: NavItem = {
+  label: "FTA — Trading Academy",
+  href: "/upgrade",
+  icon: GraduationCap,
+  fta: true,
+  locked: true,
+};
 
 /**
  * Practice grouping: a single "Practice" tab whose subtabs are the
@@ -206,11 +241,13 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
       CLUB_COMMUNITY,
       CLUB_MISSIONS,
       CLUB_WATCHLIST,
-      learnGroup(isFta, true), // My Lessons · Live Classes · My Cards
+      learnGroup(true), // My Lessons · Live Classes · My Cards
       practiceGroup(false), // chart + games only for young kids
       { label: "My Badges", href: "/progress", icon: Trophy },
       LEADERBOARD,
     ];
+    // Young kids never see the FTA hub or any upsell — their loop stays
+    // curated (the day-trading traders chat / recordings are teen+adult).
   }
 
   // ── Teens + parents (both tiers). High-frequency club surfaces stay flat;
@@ -220,22 +257,22 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
     CLUB_COMMUNITY,
     CLUB_WATCHLIST,
     CLUB_MISSIONS,
-    learnGroup(isFta, false),
+    learnGroup(false),
     practiceGroup(true),
   ];
 
   if (canParent) {
     main.push(FAMILY_ITEM);
     main.push(LEADERBOARD);
-    // FIC parents get a single "Upgrade to FTA" row (no section header).
-    // Children never see billing, so it's parent-gated. FTA parents drop it.
-    if (!isFta) {
-      main.push({ label: "Upgrade to FTA", href: "/upgrade", icon: Sparkles });
-    }
+    // The FTA section closes the nav as a hard-split gold hub for FTA families;
+    // FIC-only parents get the compact locked teaser in its place (→ /upgrade).
+    main.push(isFta ? FTA_SECTION : FTA_LOCKED);
   } else {
-    // Teens: My Progress flat (no Family group, no Upgrade).
+    // Teens: My Progress flat (no Family group). FTA teens still get the hub;
+    // FIC teens see nothing here (billing/upsell stays parent-gated).
     main.push({ label: "My Progress", href: "/progress", icon: Trophy });
     main.push(LEADERBOARD);
+    if (isFta) main.push(FTA_SECTION);
   }
 
   return main;
@@ -329,6 +366,85 @@ export default function DashboardSidebar({
               </div>
             );
           }
+          // ── Gold "FTA — Trading Academy" section — the hard-split hub. A top
+          //    divider + gold chrome + PRO identity set it apart from the warm
+          //    FIC rows above. FTA families get an always-expanded hub; FIC-only
+          //    parents get the single locked teaser (→ /upgrade). ──
+          if (item.fta) {
+            const Icon = item.icon;
+            const onFta = pathname.startsWith("/fta");
+            const FTA_SUB_ICON: Record<string, React.ElementType> = {
+              "/fta/chat": Radio,
+              "/fta/courses": GraduationCap,
+              "/fta/recordings": Film,
+            };
+            return (
+              <div key={item.href} className="mt-3 pt-3 border-t border-gold-400/25">
+                <Link
+                  href={item.href}
+                  data-tour={"nav:" + item.href}
+                  onClick={onMobileClose}
+                  title={item.locked ? "Unlock FTA" : "FTA — Trading Academy"}
+                  className={`
+                    relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                    ${collapsed ? "justify-center" : ""}
+                    ${onFta && !item.locked
+                      ? "text-gold-700 bg-gold-400/15"
+                      : "text-gold-700/90 hover:text-gold-700 hover:bg-gold-400/10"
+                    }
+                  `}
+                >
+                  {onFta && !item.locked && (
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-500" />
+                  )}
+                  <Icon className="w-[18px] h-[18px] shrink-0" />
+                  {!collapsed && (
+                    <span className="truncate font-semibold font-display">{item.label}</span>
+                  )}
+                  {!collapsed && item.locked && (
+                    <Lock className="ml-auto w-3.5 h-3.5 shrink-0 text-gold-600/80" />
+                  )}
+                  {!collapsed && !item.locked && item.badge && (
+                    <span className="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-gold-400 to-gold-600 text-white">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+                {item.locked && !collapsed && (
+                  <p className="px-3 pt-0.5 text-[10px] text-gold-700/60 leading-snug">
+                    Unlock the traders chat, course library & recordings.
+                  </p>
+                )}
+                {!item.locked && !collapsed && item.subItems && (
+                  <div className="ml-9 mt-0.5 space-y-0.5">
+                    {item.subItems.map((sub) => {
+                      const subActive =
+                        pathname === sub.href || pathname.startsWith(sub.href + "/");
+                      const SubIcon = FTA_SUB_ICON[sub.href];
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={onMobileClose}
+                          className={`
+                            flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors
+                            ${subActive
+                              ? "text-gold-700 font-medium"
+                              : "text-gold-700/70 hover:text-gold-700"
+                            }
+                          `}
+                        >
+                          {SubIcon && <SubIcon className="w-3.5 h-3.5 shrink-0" />}
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           const isActive = pathname === item.href;
           const isParentActive = pathname.startsWith(item.href + "/");
           // Groups whose subItems are sibling top-level routes (e.g. Practice →
