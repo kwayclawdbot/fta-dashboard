@@ -34,6 +34,7 @@ import Celebrate, {
 } from "@/components/fic/Celebrate";
 import { beltCelebrateFields } from "@/lib/belts";
 import { Sparkles } from "lucide-react";
+import PracticeInSimbotLink from "@/components/simulator/PracticeInSimbotLink";
 
 interface Lesson {
   id: string;
@@ -582,6 +583,7 @@ export default function LessonViewerClient() {
                   Completed
                 </div>
               )}
+              <PracticeInSimbotLink lessonId={lessonId} />
             </div>
             <div className="flex items-center gap-2">
               {prevLesson && (
@@ -671,6 +673,11 @@ export default function LessonViewerClient() {
               {currentLesson.description}
             </p>
           )}
+
+          {/* Practice cross-link — only for lessons with a Simbot analogue */}
+          <div className="mt-4 empty:mt-0">
+            <PracticeInSimbotLink lessonId={lessonId} />
+          </div>
 
           {/* Navigation */}
           <div className="mt-4 pt-4 border-t border-midnight-800 flex items-center justify-between">

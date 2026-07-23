@@ -26,6 +26,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/fta/recordings", "FTA Recordings"],
   ["/fta", "FTA — Trading Academy"],
   ["/simulator/lessons", "Pattern Practice"],
+  ["/simulator/simbot", "Simbot"],
   ["/simulator", "Trading Floor"],
   ["/family/overview", "Family Overview"],
   ["/family/members", "Family Members"],
@@ -37,6 +38,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/research", "Research"],
   ["/watchlist/community", "Community Watchlist"],
   ["/watchlist", "Family Watchlist"],
+  ["/screener", "Stock Screener"],
   ["/missions", "Kid Missions"],
   ["/courses", "Courses"],
   ["/live-sessions", "Live Classes"],
@@ -59,6 +61,7 @@ const ROUTE_TITLES: [string, string][] = [
 // Kid-worded overrides — the same routes the kid nav relabels.
 const KID_TITLE_OVERRIDES: Record<string, string> = {
   "/dashboard": "Kids Corner",
+  "/simulator/simbot": "Simbot",
   "/courses": "My Lessons",
   "/flashcards": "My Cards",
   "/progress": "My Badges",
