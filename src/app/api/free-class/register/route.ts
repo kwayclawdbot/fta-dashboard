@@ -123,8 +123,14 @@ export async function POST(req: Request) {
     .from("enrollments")
     .insert({ family_id: familyId, program: "free", status: "active" });
 
-  // 4. Complete the parent profile (the handle_new_user trigger already made
-  //    the row from the auth insert).
+  // 4. Link the parent profile (the handle_new_user trigger already made the
+  //    row from the auth insert). Lane 8R: we deliberately do NOT set
+  //    onboarding_complete here. The signup wizard is now the account-setup step
+  //    for EVERY entry path — the dashboard gate routes this funnel parent into
+  //    /onboarding (onboarding_complete stays false, the trigger's default)
+  //    until they finish the wizard, which stamps the flag itself. The family
+  //    already exists here, so the wizard skips family creation and just
+  //    collects the profile answers + username + avatar.
   await supabase
     .from("profiles")
     .update({
@@ -133,7 +139,7 @@ export async function POST(req: Request) {
       age_group: "adults",
       track: "adults",
       display_name: firstName,
-      onboarding_complete: true,
+      onboarding_complete: false,
     })
     .eq("id", userId);
 
