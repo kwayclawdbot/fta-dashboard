@@ -47,24 +47,31 @@ function toneClass(v: number | null): string {
 export default function PriceTechnicals({
   symbol,
   momentum,
+  bars: providedBars,
 }: {
   symbol: string;
   momentum: MomentumStats;
+  /** Pre-loaded 2Y bars from the page (avoids a duplicate fetch). */
+  bars?: MarketBar[];
 }) {
-  const [bars, setBars] = useState<MarketBar[] | null>(null);
+  const [fetched, setFetched] = useState<MarketBar[] | null>(null);
   const [range, setRange] = useState("1y");
   const [showEma20, setShowEma20] = useState(true);
   const [showEma50, setShowEma50] = useState(false);
 
+  const hasProvided = providedBars != null && providedBars.length > 0;
+  const bars: MarketBar[] | null = hasProvided ? providedBars! : fetched;
+
   useEffect(() => {
+    if (hasProvided) return;
     let live = true;
     fetchBars(symbol, "2y").then((b) => {
-      if (live) setBars(b);
+      if (live) setFetched(b);
     });
     return () => {
       live = false;
     };
-  }, [symbol]);
+  }, [symbol, hasProvided]);
 
   const closesFull = useMemo(() => (bars || []).map((b) => b.c), [bars]);
 

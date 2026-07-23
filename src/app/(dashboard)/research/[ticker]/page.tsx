@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
-import { fetchQuote, fetchNews, type MarketQuote, type NewsHeadline } from "@/lib/market/client";
+import { fetchQuote, fetchNews, fetchBars, type MarketQuote, type MarketBar, type NewsHeadline } from "@/lib/market/client";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import LivePrice from "@/components/fic/LivePrice";
@@ -157,6 +157,7 @@ export default function TickerResearchPage() {
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [report, setReport] = useState<KaiReport | null>(null);
   const [research, setResearch] = useState<ResearchPayload | null>(null);
+  const [bars, setBars] = useState<MarketBar[]>([]);
   const [news, setNews] = useState<NewsHeadline[]>([]);
   const [draft, setDraft] = useState("");
   const [draftType, setDraftType] = useState<ContributionType>("note");
@@ -206,6 +207,7 @@ export default function TickerResearchPage() {
     fetchQuote(ticker).then(setQuote);
     fetchResearch(ticker).then(setResearch);
     fetchNews(ticker, 6).then(setNews);
+    fetchBars(ticker, "2y").then(setBars);
   }, [supabase, ticker]);
 
   useEffect(() => {
@@ -223,6 +225,24 @@ export default function TickerResearchPage() {
   const isKid = ageGroup === "kids";
   const locked = tier === "free" && !isKid;
   const canVote = tier !== "free";
+
+  // True 52-week high/low from the last ~252 daily closes (accurate — the
+  // screener's trailing-window distance is only an approximation and can read
+  // below the live price). Falls back to the payload when bars aren't loaded.
+  const week52 = useMemo(() => {
+    if (bars.length < 20) return null;
+    const closes = bars.slice(-252).map((b) => b.c);
+    return { low: Math.min(...closes), high: Math.max(...closes) };
+  }, [bars]);
+
+  const keyStats = useMemo(() => {
+    if (!research) return null;
+    return {
+      ...research.keyStats,
+      week52Low: week52?.low ?? research.keyStats.week52Low,
+      week52High: week52?.high ?? research.keyStats.week52High,
+    };
+  }, [research, week52]);
 
   const filteredComments = filter === "all" ? comments : comments.filter((c) => c.contribution_type === filter);
   const presentTypes = useMemo(() => {
@@ -312,11 +332,11 @@ export default function TickerResearchPage() {
           </div>
         </div>
 
-        {research && (
+        {keyStats && (
           <RangeBar
-            low={research.keyStats.week52Low}
-            high={research.keyStats.week52High}
-            price={quote?.price ?? research.keyStats.week52High}
+            low={keyStats.week52Low}
+            high={keyStats.week52High}
+            price={quote?.price ?? keyStats.week52High}
           />
         )}
 
@@ -360,20 +380,20 @@ export default function TickerResearchPage() {
       {research && (
         <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
           <h2 className="mb-4 font-display text-base font-bold text-ink">Price & technicals</h2>
-          <PriceTechnicals symbol={ticker} momentum={research.momentum} />
+          <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
         </section>
       )}
 
       {/* ── Key stats grid ───────────────────────────────────────────────── */}
-      {research && (
+      {keyStats && (
         <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
           <h2 className="mb-3 font-display text-base font-bold text-ink">Key stats</h2>
-          <KeyStatsGrid k={research.keyStats} />
+          <KeyStatsGrid k={keyStats} />
         </section>
       )}
 
       {/* ── Fundamentals (collapsed; gated for free) ─────────────────────── */}
-      {research && !research.insufficient && (
+      {research && keyStats && !research.insufficient && (
         <Collapsible
           storageKey="fundamentals"
           title="Fundamentals"
@@ -384,7 +404,7 @@ export default function TickerResearchPage() {
           ) : (
             <FinancialsSection
               charts={research.charts}
-              keyStats={research.keyStats}
+              keyStats={keyStats}
               medians={research.sectorMedians}
             />
           )}
