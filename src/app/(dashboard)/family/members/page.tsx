@@ -11,6 +11,8 @@ import {
   Copy,
   Check,
   Award,
+  Brain,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -45,6 +47,31 @@ export default function FamilyMembersPage() {
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string>("");
   const [tier, setTier] = useState<FamilyTier>("fic");
+
+  // Parent view/clear of a family member's Kai memory (Lane 8B). Authorized by
+  // the kai_memory_view / kai_memory_clear definer RPCs (parent-of-same-family).
+  const [memoryFor, setMemoryFor] = useState<{ id: string; name: string } | null>(null);
+  const [memoryText, setMemoryText] = useState<string | null>(null);
+  const [memoryLoading, setMemoryLoading] = useState(false);
+  const [memoryClearing, setMemoryClearing] = useState(false);
+
+  async function openMemory(id: string, name: string) {
+    setMemoryFor({ id, name });
+    setMemoryText(null);
+    setMemoryLoading(true);
+    const { data } = await supabase.rpc("kai_memory_view", { p_user: id });
+    const row = (data || {}) as { summary?: string };
+    setMemoryText(row.summary || "");
+    setMemoryLoading(false);
+  }
+
+  async function clearMemory() {
+    if (!memoryFor) return;
+    setMemoryClearing(true);
+    await supabase.rpc("kai_memory_clear", { p_user: memoryFor.id });
+    setMemoryText("");
+    setMemoryClearing(false);
+  }
 
   const loadMembers = useCallback(async () => {
     const {
@@ -249,6 +276,18 @@ export default function FamilyMembersPage() {
                 </div>
               </div>
 
+              {/* Kai memory (parent can view/clear a member's Kai memory) */}
+              {!isCurrentUser && (
+                <button
+                  onClick={() => openMemory(member.id, member.display_name || "This member")}
+                  className="text-midnight-500 hover:text-gold-500 transition-colors shrink-0"
+                  aria-label={`What Kai remembers about ${member.display_name || "this member"}`}
+                  title="What Kai remembers"
+                >
+                  <Brain className="w-4 h-4" />
+                </button>
+              )}
+
               {/* Role dropdown */}
               {!isCurrentUser && (
                 <select
@@ -359,6 +398,73 @@ export default function FamilyMembersPage() {
                 The invited member will join your family and can start learning
                 immediately.
               </p>
+            </mm.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Kai memory panel (parent view/clear a member's memory — Lane 8B) */}
+      <AnimatePresence>
+        {memoryFor && (
+          <>
+            <mm.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMemoryFor(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <mm.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl bg-midnight-900 border border-midnight-700 p-6 z-50"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/20">
+                  <Brain className="h-4 w-4 text-gold-700" />
+                </span>
+                <h3 className="flex-1 font-display text-base font-bold text-midnight-100">
+                  What Kai remembers about {memoryFor.name}
+                </h3>
+                <button
+                  onClick={() => setMemoryFor(null)}
+                  className="text-midnight-400 hover:text-midnight-200 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="max-h-56 overflow-y-auto rounded-lg border border-midnight-700 bg-midnight-800 p-3 text-sm text-midnight-200 font-body">
+                {memoryLoading ? (
+                  <span className="flex items-center gap-2 text-midnight-400">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                  </span>
+                ) : memoryText ? (
+                  memoryText
+                ) : (
+                  <span className="text-midnight-400">
+                    Kai doesn&apos;t have any notes about {memoryFor.name} yet.
+                  </span>
+                )}
+              </div>
+
+              {!memoryLoading && memoryText && (
+                <button
+                  onClick={clearMemory}
+                  disabled={memoryClearing}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-midnight-700 px-3 py-2.5 text-sm font-semibold text-midnight-300 transition-colors hover:border-red-500/40 hover:text-red-400 disabled:opacity-50"
+                >
+                  {memoryClearing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Clear {memoryFor.name}&apos;s Kai memory
+                </button>
+              )}
             </mm.div>
           </>
         )}

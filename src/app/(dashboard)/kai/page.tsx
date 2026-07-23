@@ -11,6 +11,8 @@ import {
   Loader2,
   Newspaper,
   ExternalLink,
+  Brain,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
@@ -103,6 +105,34 @@ export default function AskKaiPage() {
   const [usedToday, setUsedToday] = useState(0);
   const [capNote, setCapNote] = useState("");
 
+  // "What Kai remembers about you" transparency panel (Lane 8B).
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [memorySummary, setMemorySummary] = useState<string | null>(null);
+  const [memoryUpdatedAt, setMemoryUpdatedAt] = useState<string | null>(null);
+  const [memoryClearing, setMemoryClearing] = useState(false);
+
+  const loadMemory = useCallback(
+    async (uid: string) => {
+      const { data } = await supabase
+        .from("kai_user_memory")
+        .select("summary, updated_at")
+        .eq("user_id", uid)
+        .maybeSingle();
+      setMemorySummary((data?.summary as string) || "");
+      setMemoryUpdatedAt((data?.updated_at as string) || null);
+    },
+    [supabase]
+  );
+
+  async function clearMemory() {
+    if (!userId) return;
+    setMemoryClearing(true);
+    await supabase.from("kai_user_memory").delete().eq("user_id", userId);
+    setMemorySummary("");
+    setMemoryUpdatedAt(null);
+    setMemoryClearing(false);
+  }
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const cap = KAI_CHAT_DAILY_CAP[tier] ?? 0;
   const isKid = register === "kid";
@@ -148,10 +178,10 @@ export default function AskKaiPage() {
         .maybeSingle();
       setRegister(deriveRegister(profile));
       setTier(await getFamilyTier(supabase, profile?.family_id));
-      await Promise.all([loadThreads(), loadUsage(user.id)]);
+      await Promise.all([loadThreads(), loadUsage(user.id), loadMemory(user.id)]);
       setReady(true);
     })();
-  }, [supabase, loadThreads, loadUsage]);
+  }, [supabase, loadThreads, loadUsage, loadMemory]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -370,6 +400,14 @@ export default function AskKaiPage() {
               {Math.max(cap - usedToday, 0)} left today
             </span>
           )}
+          <button
+            onClick={() => setMemoryOpen(true)}
+            className="shrink-0 rounded-full p-1.5 text-soft transition-colors hover:bg-paper hover:text-gold-700"
+            aria-label="What Kai remembers about you"
+            title="What Kai remembers about you"
+          >
+            <Brain className="h-4.5 w-4.5" />
+          </button>
         </div>
 
         {/* Messages */}
@@ -490,6 +528,72 @@ export default function AskKaiPage() {
           )}
         </div>
       </div>
+
+      {/* "What Kai remembers about you" — transparency + clear (Lane 8B) */}
+      {memoryOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+          onClick={() => setMemoryOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl border border-sand bg-midnight-900 p-5 sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/20">
+                <Brain className="h-4 w-4 text-gold-700" />
+              </span>
+              <h2 className="flex-1 font-display text-base font-bold text-ink">
+                What Kai remembers about you
+              </h2>
+              <button
+                onClick={() => setMemoryOpen(false)}
+                className="rounded-lg p-1 text-soft hover:bg-paper"
+                aria-label="Close"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            <p className="mb-3 text-xs text-soft">
+              {isKid
+                ? "Kai keeps a few notes about what you're learning, so it can help you better next time."
+                : "To pick up where you left off, Kai keeps a short private note about the topics you discuss. Only you can see it — and you can clear it anytime."}
+            </p>
+
+            <div className="max-h-56 overflow-y-auto rounded-xl border border-sand bg-paper/40 p-3 text-sm text-midnight-200">
+              {memorySummary ? (
+                memorySummary
+              ) : (
+                <span className="text-soft">
+                  Kai doesn&apos;t have any notes about you yet. They&apos;ll build up as you chat.
+                </span>
+              )}
+            </div>
+
+            {memoryUpdatedAt && (
+              <p className="mt-2 text-[11px] text-soft">
+                Last updated {new Date(memoryUpdatedAt).toLocaleDateString()}
+              </p>
+            )}
+
+            {memorySummary && (
+              <button
+                onClick={clearMemory}
+                disabled={memoryClearing}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-sand px-3 py-2.5 text-sm font-semibold text-soft transition-colors hover:border-red-500/40 hover:text-red-600 disabled:opacity-50"
+              >
+                {memoryClearing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Clear what Kai remembers
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
