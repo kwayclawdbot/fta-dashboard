@@ -18,6 +18,10 @@ import { deriveRegister, type Register } from "@/lib/register";
 import { KAI_CHAT_DAILY_CAP } from "@/lib/kai/persona";
 import { PriceChart } from "@/components/kai/ReportCharts";
 import Markdown from "@/components/kai/Markdown";
+import {
+  useNewMemberHints,
+  HintReopen,
+} from "@/components/hints/useNewMemberHints";
 import type { MarketBar } from "@/lib/market/client";
 
 interface ChartBlock {
@@ -102,6 +106,10 @@ export default function AskKaiPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cap = KAI_CHAT_DAILY_CAP[tier] ?? 0;
   const isKid = register === "kid";
+  // The empty-state "what Kai can do" how-to blurb expires for seasoned adults
+  // (kids always keep their friendly intro; the "educational, not advice"
+  // subtitle in the header is compliance and never wrapped — Lane 7A).
+  const introHint = useNewMemberHints("kai-intro-howto");
 
   const loadThreads = useCallback(async () => {
     const { data } = await supabase
@@ -374,11 +382,25 @@ export default function AskKaiPage() {
               <h2 className="font-display text-lg font-bold text-ink">
                 {isKid ? "Hi! I'm Kai 👋" : "Ask Kai anything about a company"}
               </h2>
-              <p className="mt-1.5 text-sm text-soft">
-                {isKid
-                  ? "Ask me about a company you know — I'll explain what it does in a simple way!"
-                  : "I can explain a business, walk through its numbers and price history, and pull recent headlines. I research and teach — I can't tell you what to buy or sell."}
-              </p>
+              {isKid ? (
+                <p className="mt-1.5 text-sm text-soft">
+                  Ask me about a company you know — I&apos;ll explain what it does
+                  in a simple way!
+                </p>
+              ) : introHint.show ? (
+                <p className="mt-1.5 text-sm text-soft">
+                  I can explain a business, walk through its numbers and price
+                  history, and pull recent headlines. I research and teach — I
+                  can&apos;t tell you what to buy or sell.
+                </p>
+              ) : (
+                <div className="mt-1.5 flex justify-center">
+                  <HintReopen
+                    onClick={introHint.reopen}
+                    label="What can Kai do?"
+                  />
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {(isKid
                   ? ["What does Apple make?", "Tell me about Disney", "How does Nintendo earn money?"]

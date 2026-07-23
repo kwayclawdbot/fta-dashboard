@@ -12,6 +12,10 @@ import { useSimbotBridge, type SimbotAward } from "@/lib/simbot-bridge";
 import SimulatorTabs from "@/components/simulator/SimulatorTabs";
 import LockedState from "@/components/dashboard/LockedState";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
+import {
+  useNewMemberHints,
+  HintReopen,
+} from "@/components/hints/useNewMemberHints";
 
 /**
  * /simulator/simbot — the embedded Simbot price-action simulator.
@@ -33,6 +37,10 @@ export default function SimbotPage() {
   const isKid = register === "kid";
   const isFree = isFreeTier(tier);
   const canUse = !viewerLoading && !!me && !isFree;
+
+  // The descriptive "what Simbot is" blurb expires for seasoned members; the
+  // "every price is practice" safety line stays permanent (Lane 7A).
+  const simbotHint = useNewMemberHints("simbot-intro");
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [frameState, setFrameState] = useState<"loading" | "ok" | "error">("loading");
@@ -152,10 +160,17 @@ export default function SimbotPage() {
           <h1 className="flex items-center gap-2 text-xl font-display font-bold text-midnight-100">
             <Bot className="h-5 w-5 text-gold-500" />
             Simbot
+            {simbotHint.showReopen && (
+              <HintReopen
+                onClick={simbotHint.reopen}
+                label="How Simbot works"
+              />
+            )}
           </h1>
           <p className="text-xs text-midnight-400">
-            A hands-on price-action simulator — lessons, practice trades, and a
-            Live Market mode. Every price is practice; no real money.
+            {simbotHint.show &&
+              "A hands-on price-action simulator — lessons, practice trades, and a Live Market mode. "}
+            Every price is practice; no real money.
           </p>
         </div>
       </div>

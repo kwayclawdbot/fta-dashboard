@@ -32,6 +32,10 @@ import LockedState from "@/components/dashboard/LockedState";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import {
+  useNewMemberHints,
+  HintDismiss,
+} from "@/components/hints/useNewMemberHints";
+import {
   PRESETS,
   getPreset,
   matchesCustom,
@@ -122,6 +126,13 @@ export default function ScreenerPage() {
   const [page, setPage] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [explainerOpen, setExplainerOpen] = useState(false);
+  // The "how to use a screener" explainer auto-opens for members still inside
+  // the new-member window; the toggle button doubles as the reopen affordance
+  // for everyone else (Lane 7A).
+  const howToHint = useNewMemberHints("screener-howto");
+  useEffect(() => {
+    if (howToHint.show) setExplainerOpen(true);
+  }, [howToHint.show]);
 
   const [added, setAdded] = useState<Record<string, "family" | "community">>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -462,9 +473,17 @@ export default function ScreenerPage() {
       <AnimatePresence initial={false}>
         {explainerOpen && (
           <m.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <p className="rounded-xl border border-sand bg-paper/60 px-4 py-3 text-[13px] leading-relaxed text-soft">
-              A screener filters thousands of stocks down to a short list that shares one trait — trading near a high, surging in volume, or looking oversold. It is a tool for finding candidates to <em>research</em>, never a list of things to buy. Combine a few filters, sort the columns, then dig into any company that catches your eye.
-            </p>
+            <div className="flex items-start gap-2 rounded-xl border border-sand bg-paper/60 px-4 py-3">
+              <p className="text-[13px] leading-relaxed text-soft">
+                A screener filters thousands of stocks down to a short list that shares one trait — trading near a high, surging in volume, or looking oversold. It is a tool for finding candidates to <em>research</em>, never a list of things to buy. Combine a few filters, sort the columns, then dig into any company that catches your eye.
+              </p>
+              <HintDismiss
+                onClick={() => {
+                  setExplainerOpen(false);
+                  howToHint.dismiss();
+                }}
+              />
+            </div>
           </m.div>
         )}
       </AnimatePresence>

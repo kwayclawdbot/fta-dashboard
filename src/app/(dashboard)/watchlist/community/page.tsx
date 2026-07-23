@@ -31,6 +31,11 @@ import {
   COMMUNITY_DISCLAIMER,
   type CommunityEntry,
 } from "@/lib/community-watchlist";
+import {
+  useNewMemberHints,
+  HintReopen,
+  HintDismiss,
+} from "@/components/hints/useNewMemberHints";
 
 type Tab = "board" | "record";
 
@@ -75,6 +80,9 @@ export default function CommunityWatchlistPage() {
   const [entries, setEntries] = useState<CommunityEntry[]>([]);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [tab, setTab] = useState<Tab>("board");
+  // The "how to use the board" hint expires after the new-member window; the
+  // delayed-price / not-advice compliance line below it stays permanent (Lane 7A).
+  const howToHint = useNewMemberHints("watchlist-community-howto");
 
   const load = useCallback(async () => {
     const {
@@ -172,11 +180,27 @@ export default function CommunityWatchlistPage() {
             </p>
           </div>
         </div>
-        <p className="mt-3 flex items-start gap-2 rounded-xl border border-gold-300/40 bg-chip-amber/40 px-3.5 py-2.5 text-[13px] leading-snug text-midnight-100">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
-          Add a company from your Family Watchlist to research it together with
-          every family in the club. Prices are delayed ~15 min. Not investment advice.
-        </p>
+        {howToHint.show ? (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-gold-300/40 bg-chip-amber/40 px-3.5 py-2.5 text-[13px] leading-snug text-midnight-100">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
+            <p className="min-w-0 flex-1">
+              Add a company from your Family Watchlist to research it together
+              with every family in the club.{" "}
+              <span className="text-midnight-100/75">
+                Prices are delayed ~15 min. Not investment advice.
+              </span>
+            </p>
+            <HintDismiss onClick={howToHint.dismiss} className="mt-0.5" />
+          </div>
+        ) : (
+          <p className="mt-3 flex items-center gap-2 text-[11px] leading-snug text-soft">
+            Prices are delayed ~15 min. Not investment advice.
+            <HintReopen
+              onClick={howToHint.reopen}
+              label="How the community board works"
+            />
+          </p>
+        )}
       </m.div>
 
       {/* Tabs */}
