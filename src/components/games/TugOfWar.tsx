@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 
 /**
  * Tug-of-war meter — the deck's core metaphor. Green team (buyers) pull left,
@@ -38,7 +38,7 @@ export default function TugOfWar({ lean }: { lean: number }) {
         <div className="absolute inset-x-3 top-1/2 -translate-y-1/2 h-1 rounded-full bg-gradient-to-r from-green-500/60 via-white/25 to-red-500/60" />
 
         {/* knot / flag */}
-        <motion.div
+        <m.div
           className="absolute top-1/2 z-10"
           style={{ transform: "translate(-50%, -50%)" }}
           animate={{
@@ -57,13 +57,13 @@ export default function TugOfWar({ lean }: { lean: number }) {
                   : "radial-gradient(circle at 35% 30%, #FCD34D, #D97706)",
             }}
           >
-            <motion.span
+            <m.span
               className="block w-2 h-2 rounded-full bg-white/90"
               animate={reduce ? {} : { scale: [1, 1.25 + tension * 0.5, 1] }}
               transition={{ duration: 0.5, repeat: Infinity }}
             />
           </div>
-        </motion.div>
+        </m.div>
       </div>
 
       <p className="mt-2 text-center text-xs font-medium text-night-300">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { CheckCircle, Lock, BarChart3, CandlestickChart as CandlestickIcon } from "lucide-react";
 import { SCENARIOS, type ScenarioDefinition, type Difficulty } from "@/lib/simulator/scenarios";
 import { createClient } from "@/lib/supabase/client";
@@ -131,7 +131,7 @@ function ScenarioCard({
   index: number;
 }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
@@ -171,6 +171,6 @@ function ScenarioCard({
           </span>
         </div>
       </Link>
-    </motion.div>
+    </m.div>
   );
 }

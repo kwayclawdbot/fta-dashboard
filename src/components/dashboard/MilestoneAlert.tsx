@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import { Award, X } from "lucide-react";
 
 interface MilestoneAlertProps {
@@ -31,7 +31,7 @@ export default function MilestoneAlert({
 
   return (
     <AnimatePresence>
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
@@ -52,7 +52,7 @@ export default function MilestoneAlert({
         >
           <X className="w-3.5 h-3.5" />
         </button>
-      </motion.div>
+      </m.div>
     </AnimatePresence>
   );
 }

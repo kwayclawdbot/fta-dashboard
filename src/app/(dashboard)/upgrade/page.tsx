@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import {
   Check,
   X,
@@ -273,7 +273,7 @@ export default function UpgradePage() {
   if (tier === "fta") {
     return (
       <div className="max-w-2xl mx-auto">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="paper-card p-8 ring-2 ring-gold-400 text-center"
@@ -317,7 +317,7 @@ export default function UpgradePage() {
               Live classes
             </Link>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* ── Next value: what to do next, not a dead-end ── */}
         <div className="grid sm:grid-cols-2 gap-3 mt-4">
@@ -383,7 +383,7 @@ export default function UpgradePage() {
     return (
       <div className="max-w-5xl mx-auto">
         {/* ── FIC HERO ─────────────────────────────────────────────────── */}
-        <motion.section
+        <m.section
           {...(reduce
             ? {}
             : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } })}
@@ -435,7 +435,7 @@ export default function UpgradePage() {
               free progress
             </p>
           </div>
-        </motion.section>
+        </m.section>
 
         {/* ── FIC OUTCOME STRIP ────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
@@ -463,7 +463,7 @@ export default function UpgradePage() {
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {FIC_PILLARS.map((p, i) => (
-              <motion.div key={p.title} {...rise(i)} className="paper-card p-6">
+              <m.div key={p.title} {...rise(i)} className="paper-card p-6">
                 <div className="w-11 h-11 rounded-xl bg-chip-amber text-gold-800 flex items-center justify-center mb-4">
                   <p.icon className="w-5 h-5" />
                 </div>
@@ -473,14 +473,14 @@ export default function UpgradePage() {
                 <p className="text-sm text-soft leading-relaxed mt-1.5">
                   {p.body}
                 </p>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         </section>
 
         {/* ── FINAL FIC CTA BAND ───────────────────────────────────────── */}
         <section className="mt-14">
-          <motion.div
+          <m.div
             {...rise()}
             className="paper-card ring-2 ring-gold-400 p-8 sm:p-10 text-center"
           >
@@ -512,7 +512,7 @@ export default function UpgradePage() {
             <p className="mt-5 text-xs text-soft max-w-md mx-auto">
               Checkout opens securely with Stripe in a new tab.
             </p>
-          </motion.div>
+          </m.div>
         </section>
 
         {/* ── COMPARISON ───────────────────────────────────────────────── */}
@@ -599,7 +599,7 @@ export default function UpgradePage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <motion.section
+      <m.section
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         className="night-island relative overflow-hidden px-6 py-12 sm:px-12 sm:py-16 text-center"
@@ -651,7 +651,7 @@ export default function UpgradePage() {
             Whole family included
           </p>
         </div>
-      </motion.section>
+      </m.section>
 
       {/* ── OUTCOME STRIP ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
@@ -677,7 +677,7 @@ export default function UpgradePage() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {PILLARS.map((p, i) => (
-            <motion.div key={p.title} {...rise(i)} className="paper-card p-6">
+            <m.div key={p.title} {...rise(i)} className="paper-card p-6">
               <div className="w-11 h-11 rounded-xl bg-chip-amber text-gold-800 flex items-center justify-center mb-4">
                 <p.icon className="w-5 h-5" />
               </div>
@@ -687,7 +687,7 @@ export default function UpgradePage() {
               <p className="text-sm text-soft leading-relaxed mt-1.5">
                 {p.body}
               </p>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </section>
@@ -701,7 +701,7 @@ export default function UpgradePage() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {CURRICULUM.map((w, i) => (
-            <motion.div
+            <m.div
               key={w.week}
               {...rise(i % 3)}
               className="paper-card p-5 flex flex-col"
@@ -720,7 +720,7 @@ export default function UpgradePage() {
               <p className="text-sm text-soft leading-relaxed mt-1.5">
                 {w.body}
               </p>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </section>
@@ -807,7 +807,7 @@ export default function UpgradePage() {
 
       {/* ── FINAL CTA BAND ───────────────────────────────────────────────── */}
       <section className="mt-14">
-        <motion.div
+        <m.div
           {...rise()}
           className="paper-card ring-2 ring-gold-400 p-8 sm:p-10 text-center"
         >
@@ -849,7 +849,7 @@ export default function UpgradePage() {
               Manage FIC billing
             </a>
           </p>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* ── DISCLAIMER ───────────────────────────────────────────────────── */}

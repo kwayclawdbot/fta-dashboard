@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/client";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
 import { deriveRegister, celebrateRegister, type Register } from "@/lib/register";
@@ -318,7 +318,7 @@ export default function AppTour({ user }: { user: TourUser }) {
     <>
       <AnimatePresence>
         {active && step && (
-          <motion.div
+          <m.div
             key="tour"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -329,7 +329,7 @@ export default function AppTour({ user }: { user: TourUser }) {
           >
             {/* spotlight: hole punched via giant box-shadow */}
             {rect ? (
-              <motion.div
+              <m.div
                 layout
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="absolute rounded-xl pointer-events-none"
@@ -346,7 +346,7 @@ export default function AppTour({ user }: { user: TourUser }) {
             )}
 
             {/* coach card */}
-            <motion.div
+            <m.div
               key={step.key}
               initial={{ opacity: 0, y: 14, scale: .97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -387,8 +387,8 @@ export default function AppTour({ user }: { user: TourUser }) {
                   </button>
                 </div>
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
       <Celebrate opts={celebrate} onDone={() => setCelebrate(null)} />

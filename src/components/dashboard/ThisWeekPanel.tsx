@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   CalendarDays,
   HeartHandshake,
@@ -52,7 +52,7 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
           thing it is. The rich MoneyMachine below is the marquee (audit #8):
           the class band no longer sits as a large near-empty gold block above
           the teaching visual. Title + week on the left, RSVP on the right. */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className="paper-card p-4 flex items-center gap-4 flex-wrap sm:flex-nowrap"
@@ -75,11 +75,11 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
           <CalendarDays className="w-4 h-4" />
           {isKid ? "See the class" : "RSVP"}
         </Link>
-      </motion.div>
+      </m.div>
 
       {/* Company of the Week — the MoneyMachine teaching visual (the marquee) */}
       {(week.company_name || week.cotw_what_they_do) && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.06 }}
@@ -138,12 +138,12 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
               </div>
             </div>
           )}
-        </motion.div>
+        </m.div>
       )}
 
       {/* Family assignment */}
       {week.family_assignment && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -156,12 +156,12 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
           <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
             {week.family_assignment}
           </p>
-        </motion.div>
+        </m.div>
       )}
 
       {/* Parent prompt — parents only */}
       {isParent && week.parent_prompt && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
@@ -180,12 +180,12 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
           >
             More in Parent Corner
           </Link>
-        </motion.div>
+        </m.div>
       )}
 
       {/* Kid challenge — kids & teens */}
       {isChild && week.kid_challenge && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
@@ -202,7 +202,7 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
           >
             {week.kid_challenge}
           </p>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );

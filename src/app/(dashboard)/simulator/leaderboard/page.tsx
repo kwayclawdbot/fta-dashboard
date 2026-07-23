@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { m as mm } from "@/lib/motion";
 import { Crown, Trophy, TrendingUp, BarChart3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -168,7 +168,7 @@ export default function SimLeaderboardPage() {
             </thead>
             <tbody>
               {entries.map((entry, i) => (
-                <motion.tr
+                <mm.tr
                   key={entry.userId}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -223,7 +223,7 @@ export default function SimLeaderboardPage() {
                   <td className="py-3 px-4 text-right text-midnight-400 hidden sm:table-cell">
                     {entry.totalTrades}
                   </td>
-                </motion.tr>
+                </mm.tr>
               ))}
             </tbody>
           </table>

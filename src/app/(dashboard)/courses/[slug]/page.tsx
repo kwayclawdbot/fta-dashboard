@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as mm, AnimatePresence } from "@/lib/motion";
 import {
   ChevronDown,
   Play,
@@ -348,7 +348,7 @@ export default function CourseDetailPage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Back link */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
@@ -361,10 +361,10 @@ export default function CourseDetailPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to courses
         </Link>
-      </motion.div>
+      </mm.div>
 
       {/* Course Header */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -389,7 +389,7 @@ export default function CourseDetailPage() {
 
         {/* Progress bar */}
         <div className="w-full max-w-sm h-1.5 rounded-full bg-midnight-800 overflow-hidden">
-          <motion.div
+          <mm.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -408,7 +408,7 @@ export default function CourseDetailPage() {
             {completedLessons > 0 ? "Continue Learning" : "Start Course"}
           </Link>
         )}
-      </motion.div>
+      </mm.div>
 
       {/* Modules */}
       <div className="border-t border-midnight-800/50">
@@ -422,7 +422,7 @@ export default function CourseDetailPage() {
           ).length;
 
           return (
-            <motion.div
+            <mm.div
               key={module.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -457,18 +457,18 @@ export default function CourseDetailPage() {
                     </p>
                   </div>
                 </div>
-                <motion.div
+                <mm.div
                   animate={{ rotate: isExpanded ? 180 : 0 }}
                   transition={{ duration: 0.15 }}
                 >
                   <ChevronDown className="w-4 h-4 text-midnight-400" />
-                </motion.div>
+                </mm.div>
               </button>
 
               {/* Lessons */}
               <AnimatePresence>
                 {isExpanded && (
-                  <motion.div
+                  <mm.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -531,17 +531,17 @@ export default function CourseDetailPage() {
                         );
                       })}
                     </div>
-                  </motion.div>
+                  </mm.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </mm.div>
           );
         })}
       </div>
 
       {/* Empty state */}
       {course.modules.length === 0 && (
-        <motion.div
+        <mm.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="py-16 text-center"
@@ -554,7 +554,7 @@ export default function CourseDetailPage() {
             We&apos;re putting the finishing touches on this course. Check back
             soon!
           </p>
-        </motion.div>
+        </mm.div>
       )}
     </div>
   );

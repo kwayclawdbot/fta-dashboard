@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  motion,
+  m,
   useReducedMotion,
   useInView,
   AnimatePresence,
-} from "framer-motion";
+} from "@/lib/motion";
 import {
   ChevronDown,
   HeartHandshake,
@@ -90,7 +90,7 @@ function inputTokens(text: string | null): string[] {
 
 function Coin({ delay, reduce }: { delay: number; reduce: boolean | null }) {
   return (
-    <motion.span
+    <m.span
       className="absolute h-4 w-4 rounded-full border border-gold-600 bg-gradient-to-b from-gold-300 to-gold-500 shadow-sm"
       style={{ left: "50%" }}
       initial={reduce ? { opacity: 1, y: 30 } : { opacity: 0, y: -6, x: "-50%" }}
@@ -181,7 +181,7 @@ export default function MoneyMachine(props: Props) {
             {kid ? "What goes in" : "What they sell"}
           </p>
           {displayTokens.map((t, i) => (
-            <motion.div
+            <m.div
               key={t + i}
               className="flex items-center gap-2 rounded-xl border border-sand bg-paper px-3 py-2"
               initial={anim ? { opacity: 0, x: -18 } : false}
@@ -190,7 +190,7 @@ export default function MoneyMachine(props: Props) {
             >
               <Package className="h-4 w-4 shrink-0 text-gold-600" />
               <span className="truncate text-sm text-ink">{t}</span>
-            </motion.div>
+            </m.div>
           ))}
           <MobileConnector />
         </div>
@@ -208,14 +208,14 @@ export default function MoneyMachine(props: Props) {
               <path d="M0 6h12M12 6l-4-4M12 6l-4 4" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <motion.div
+          <m.div
             className="relative flex h-28 w-28 flex-col items-center justify-center rounded-2xl border-2 border-gold-400/50 bg-gradient-to-b from-gold-50 to-chip-amber"
             initial={anim ? { scale: 0.9, opacity: 0 } : false}
             animate={anim ? { scale: 1, opacity: 1 } : undefined}
             transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 16 }}
           >
             {/* turning gears */}
-            <motion.svg
+            <m.svg
               width="46"
               height="46"
               viewBox="0 0 24 24"
@@ -228,26 +228,26 @@ export default function MoneyMachine(props: Props) {
                 d="M12 8a4 4 0 100 8 4 4 0 000-8zm0-6l1.2 2.4L16 3l.3 2.7L19 6l-1 2.5L20 10l-2 1.5.6 2.7-2.7-.3L14 16l-2 .1L10 16l-1.9.4L6 14.2l-2.7.3.6-2.7L2 10l2-1.5L3 6l2.7-.3L6 3l2.8 1.4L10 2z"
                 fill="#D97706"
               />
-            </motion.svg>
+            </m.svg>
             <span className="mt-1 px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-gold-700">
               {kid ? "The machine" : "Makes money"}
             </span>
 
             {/* warning light — blinks once */}
-            <motion.span
+            <m.span
               className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow ring-1 ring-red-200"
               initial={anim ? { scale: 0 } : false}
               animate={anim ? { scale: 1 } : undefined}
               transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
               title="What could go wrong"
             >
-              <motion.span
+              <m.span
                 className="block h-3 w-3 rounded-full bg-red-500"
                 animate={anim ? { opacity: [1, 0.25, 1, 0.25, 1] } : undefined}
                 transition={{ delay: 0.7, duration: 1.4, times: [0, 0.25, 0.5, 0.75, 1] }}
               />
-            </motion.span>
-          </motion.div>
+            </m.span>
+          </m.div>
 
           {/* engine label from how_they_make_money */}
           {howTheyMakeMoney && (
@@ -275,7 +275,7 @@ export default function MoneyMachine(props: Props) {
             </div>
             <div className="flex flex-wrap items-end gap-0.5">
               {[10, 16, 13, 20, 24].map((h, i) => (
-                <motion.span
+                <m.span
                   key={i}
                   className="w-1.5 rounded-full bg-green-500"
                   style={{ height: h }}
@@ -307,7 +307,7 @@ export default function MoneyMachine(props: Props) {
             </span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-sand">
-            <motion.div
+            <m.div
               className="h-full rounded-full bg-gradient-to-r from-rose-400 to-red-500"
               initial={anim ? { width: 0 } : false}
               animate={anim ? { width: "82%" } : undefined}
@@ -333,7 +333,7 @@ export default function MoneyMachine(props: Props) {
           </button>
           <AnimatePresence initial={false}>
             {expanded && (
-              <motion.div
+              <m.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -350,7 +350,7 @@ export default function MoneyMachine(props: Props) {
                     icon={<ShieldAlert className="h-3.5 w-3.5 text-red-500" />}
                   />
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>

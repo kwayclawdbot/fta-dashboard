@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "@/lib/motion";
 import { Menu, ChevronDown, LogOut, Settings, User } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -149,7 +149,7 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
 
             <AnimatePresence>
               {dropdownOpen && (
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
@@ -190,7 +190,7 @@ export default function DashboardTopBar({ user, onMenuClick }: DashboardTopBarPr
                       Logout
                     </button>
                   </div>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "@/lib/motion";
 import { Users, Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { TopBar, ProgressBar, FunnelStage, Field } from "@/components/free-class/ui";

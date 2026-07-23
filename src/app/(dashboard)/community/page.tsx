@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import {
   AtSign, Send, Trophy, Heart, MessageCircle, Sparkles,
   ArrowRight, Paperclip, X, Film, Loader2, Link2, Radio,
@@ -617,7 +617,7 @@ export default function CommunityPage() {
           ) : (
             <div className="space-y-4">
               {feedList.map((p, i) => (
-                <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
+                <m.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
                   {p.kind === "announcement" ? (
                     <AnnouncementCard post={p} />
                   ) : p.kind === "activity" ? (
@@ -635,7 +635,7 @@ export default function CommunityPage() {
                       comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
                     />
                   )}
-                </motion.div>
+                </m.div>
               ))}
             </div>
           )}
@@ -652,15 +652,15 @@ export default function CommunityPage() {
       {/* Mobile Live Rooms drawer */}
       <AnimatePresence>
         {liveOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/50 lg:hidden flex items-end" onClick={() => setLiveOpen(false)}>
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "tween", duration: 0.2 }} className="w-full max-h-[85vh] bg-paper rounded-t-2xl p-3 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/50 lg:hidden flex items-end" onClick={() => setLiveOpen(false)}>
+            <m.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "tween", duration: 0.2 }} className="w-full max-h-[85vh] bg-paper rounded-t-2xl p-3 overflow-hidden" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-2 px-1">
                 <span className="font-display text-sm font-bold text-ink">Live Rooms</span>
                 <button onClick={() => setLiveOpen(false)} aria-label="Close"><X className="w-5 h-5 text-soft" /></button>
               </div>
               <LiveRooms key={myTier} me={me} tier={myTier} />
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
@@ -699,11 +699,11 @@ function PostAttachment({ url, type, name }: { url: string | null; type: "image"
       </button>
       <AnimatePresence>
         {lightbox && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setLightbox(false)} className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out">
+          <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setLightbox(false)} className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out">
             <button type="button" onClick={() => setLightbox(false)} aria-label="Close image" className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"><X className="w-5 h-5" /></button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt={name || "Shared image"} className="max-h-[90vh] max-w-[92vw] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </>

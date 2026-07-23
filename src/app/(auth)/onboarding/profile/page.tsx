@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -141,7 +141,7 @@ export default function ProfileOnboardingPage() {
 
       <div className="relative overflow-hidden min-h-[340px]">
         <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
+          <m.div
             key={step}
             custom={direction}
             variants={slideVariants}
@@ -162,7 +162,7 @@ export default function ProfileOnboardingPage() {
                 recommendations={recommendations}
               />
             )}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </div>
 

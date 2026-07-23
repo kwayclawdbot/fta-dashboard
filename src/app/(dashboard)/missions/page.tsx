@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as mm, AnimatePresence } from "@/lib/motion";
 import {
   Compass,
   Check,
@@ -226,7 +226,7 @@ export default function MissionsPage() {
       <Celebrate opts={queue[0] ?? null} onDone={() => setQueue((q) => q.slice(1))} />
 
       {/* Header */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -270,7 +270,7 @@ export default function MissionsPage() {
             <span className="text-sm text-soft">/ {missions.length} done</span>
           </div>
         </div>
-      </motion.div>
+      </mm.div>
 
       {/* Mission cards */}
       <div className="space-y-5">
@@ -284,7 +284,7 @@ export default function MissionsPage() {
           const open = openId === m.id;
 
           return (
-            <motion.div
+            <mm.div
               key={m.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -345,7 +345,7 @@ export default function MissionsPage() {
                     </Link>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-sand">
-                    <motion.div
+                    <mm.div
                       initial={{ width: 0 }}
                       animate={{ width: `${brandPct}%` }}
                       transition={{ duration: 0.7, ease: "easeOut" }}
@@ -374,7 +374,7 @@ export default function MissionsPage() {
                 <div className="mt-4">
                   <AnimatePresence initial={false}>
                     {open ? (
-                      <motion.div
+                      <mm.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
@@ -410,7 +410,7 @@ export default function MissionsPage() {
                             Cancel
                           </button>
                         </div>
-                      </motion.div>
+                      </mm.div>
                     ) : (
                       <button
                         onClick={() => {
@@ -426,7 +426,7 @@ export default function MissionsPage() {
                   </AnimatePresence>
                 </div>
               )}
-            </motion.div>
+            </mm.div>
           );
         })}
       </div>

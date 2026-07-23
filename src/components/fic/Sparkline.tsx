@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import { fetchBars, type MarketBar } from "@/lib/market/client";
 
 /**
@@ -12,7 +12,7 @@ import { fetchBars, type MarketBar } from "@/lib/market/client";
  *
  * Lazy: only fetches once the card scrolls into view (IntersectionObserver).
  * Colored by net direction over the window (locked green-team / red-team).
- * The line draws in on reveal (stroke-dashoffset) unless reduced-motion.
+ * The line draws in on reveal (stroke-dashoffset) unless reduced-m.
  * Graceful: renders nothing tall/broken if data is missing.
  */
 export default function Sparkline({
@@ -110,7 +110,7 @@ export default function Sparkline({
           aria-label={`${symbol} 3-month price trend, ${up ? "up" : "down"} over the window`}
         >
           <path d={areaPath} fill={fill} stroke="none" />
-          <motion.path
+          <m.path
             d={path}
             fill="none"
             stroke={stroke}

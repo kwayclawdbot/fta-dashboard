@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   BookHeart,
   Lock,
@@ -263,7 +263,7 @@ export default function ParentCornerPage() {
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
             {children.map((c, i) => (
-              <motion.div
+              <m.div
                 key={c.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -321,7 +321,7 @@ export default function ParentCornerPage() {
                     </span>
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         </div>
@@ -350,7 +350,7 @@ export default function ParentCornerPage() {
               {parentSections.map((s, i) => {
                 const Icon = s.icon;
                 return (
-                  <motion.div
+                  <m.div
                     key={s.title}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -368,7 +368,7 @@ export default function ParentCornerPage() {
                         {s.body}
                       </p>
                     </div>
-                  </motion.div>
+                  </m.div>
                 );
               })}
             </div>

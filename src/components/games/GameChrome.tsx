@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { Trophy, RefreshCw, ArrowRight, Volume2, VolumeX } from "lucide-react";
 import StreakFlame from "./StreakFlame";
 import Burst from "./Burst";
@@ -104,13 +104,13 @@ export function GameEndScreen({
   const pct = Math.round((score / total) * 100);
   return (
     <div className="max-w-2xl mx-auto">
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         className="paper-card p-8 text-center relative overflow-hidden"
       >
         {passed && <Burst count={26} power={150} />}
-        <motion.div
+        <m.div
           initial={{ scale: 0, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.1 }}
@@ -119,7 +119,7 @@ export function GameEndScreen({
           }`}
         >
           <Trophy className={`w-8 h-8 ${passed ? "text-green-600" : "text-gold-600"}`} />
-        </motion.div>
+        </m.div>
         <h2 className="font-display text-2xl font-bold text-ink mb-1">
           {passed ? "Great reading!" : "Good practice!"}
         </h2>
@@ -140,14 +140,14 @@ export function GameEndScreen({
             <p className="text-xs text-soft mt-1">Best streak</p>
           </div>
           <div>
-            <motion.p
+            <m.p
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
               className="font-display text-2xl font-bold text-green-600"
             >
               +{xpAwarded}
-            </motion.p>
+            </m.p>
             <p className="text-xs text-soft">{passed ? "XP earned" : "XP (need 70%)"}</p>
           </div>
         </div>
@@ -165,7 +165,7 @@ export function GameEndScreen({
             {backLabel} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

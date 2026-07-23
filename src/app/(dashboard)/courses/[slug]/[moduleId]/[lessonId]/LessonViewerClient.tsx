@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -490,7 +490,7 @@ export default function LessonViewerClient() {
           onDone={() => setCelebrateQueue((q) => q.slice(1))}
         />
         {/* Breadcrumb */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
           <Link href={`/courses/${slug}`} className="hover:text-midnight-300 transition-colors flex items-center gap-1">
             <ArrowLeft className="w-3.5 h-3.5" />
             {courseTitle}
@@ -499,10 +499,10 @@ export default function LessonViewerClient() {
           <span className="text-midnight-400">{currentModule.title}</span>
           <ChevronRight className="w-3 h-3" />
           <span className="text-midnight-300">{currentLesson.title}</span>
-        </motion.div>
+        </m.div>
 
         {/* Full-width embedded lesson */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
           <div className="relative w-full rounded-lg overflow-hidden border border-midnight-800" style={{ height: "calc(100vh - 160px)" }}>
             <iframe
               key={frameNonce}
@@ -597,7 +597,7 @@ export default function LessonViewerClient() {
               )}
             </div>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     );
   }
@@ -610,18 +610,18 @@ export default function LessonViewerClient() {
         onDone={() => setCelebrateQueue((q) => q.slice(1))}
       />
       {/* Breadcrumb */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 flex items-center gap-2 text-xs text-midnight-500 font-body">
         <Link href={`/courses/${slug}`} className="hover:text-midnight-300 transition-colors flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" />
           {courseTitle}
         </Link>
         <ChevronRight className="w-3 h-3" />
         <span className="text-midnight-400">{currentModule.title}</span>
-      </motion.div>
+      </m.div>
 
       <div className="flex flex-col lg:flex-row gap-0">
         {/* Main — video + info */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex-1 min-w-0">
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex-1 min-w-0">
           {/* Title */}
           <h1 className="font-display text-lg font-bold text-midnight-100 mb-3">{currentLesson.title}</h1>
 
@@ -768,10 +768,10 @@ export default function LessonViewerClient() {
               </button>
             </div>
           )}
-        </motion.div>
+        </m.div>
 
         {/* Side Panel */}
-        <motion.aside
+        <m.aside
           initial={{ opacity: 0, x: 12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
@@ -850,7 +850,7 @@ export default function LessonViewerClient() {
               )}
             </div>
           </div>
-        </motion.aside>
+        </m.aside>
       </div>
     </div>
   );

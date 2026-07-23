@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { m as mm } from "@/lib/motion";
 import {
   Trophy,
   Flame,
@@ -366,7 +366,7 @@ export default function ProgressPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-10">
       {/* Page title */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -377,10 +377,10 @@ export default function ProgressPage() {
         <p className="text-sm text-midnight-400 font-body mt-1">
           Track your learning journey and achievements
         </p>
-      </motion.div>
+      </mm.div>
 
       {/* Level progress */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
@@ -414,7 +414,7 @@ export default function ProgressPage() {
                 </Link>
               </div>
               <div className="w-full h-2.5 rounded-full bg-sand overflow-hidden">
-                <motion.div
+                <mm.div
                   initial={{ width: 0 }}
                   animate={{ width: `${lp.pct}%` }}
                   transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
@@ -429,10 +429,10 @@ export default function ProgressPage() {
             </>
           );
         })()}
-      </motion.div>
+      </mm.div>
 
       {/* Stats row */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
@@ -471,11 +471,11 @@ export default function ProgressPage() {
             Current streak
           </p>
         </div>
-      </motion.div>
+      </mm.div>
 
       {/* Family Investing Club contributions */}
       {fic && (
-        <motion.section
+        <mm.section
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.12 }}
@@ -531,11 +531,11 @@ export default function ProgressPage() {
               <p className="mt-0.5 text-xs text-soft">Research cards done</p>
             </Link>
           </div>
-        </motion.section>
+        </mm.section>
       )}
 
       {/* Course progress */}
-      <motion.section
+      <mm.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
@@ -568,7 +568,7 @@ export default function ProgressPage() {
                     </span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-midnight-800 overflow-hidden">
-                    <motion.div
+                    <mm.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
                       transition={{
@@ -584,10 +584,10 @@ export default function ProgressPage() {
             })}
           </div>
         )}
-      </motion.section>
+      </mm.section>
 
       {/* Recent activity */}
-      <motion.section
+      <mm.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
@@ -618,10 +618,10 @@ export default function ProgressPage() {
             No completed lessons yet. Start learning to see your activity here.
           </p>
         )}
-      </motion.section>
+      </mm.section>
 
       {/* Credentials — the shared BadgeCase shelf (community/profiles parity) */}
-      <motion.section
+      <mm.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.25 }}
@@ -631,7 +631,7 @@ export default function ProgressPage() {
           title="Credentials"
           emptyLine="Earn your first title by researching companies, joining classes, and finishing lessons — each one shows up here as an awarded credential."
         />
-      </motion.section>
+      </mm.section>
     </div>
   );
 }

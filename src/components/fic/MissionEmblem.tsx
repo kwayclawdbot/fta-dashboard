@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import { Sparkle } from "@/components/fic/glyphs/motifs";
 
 /**
@@ -74,7 +74,7 @@ export default function MissionEmblem({
       {/* collected sheen + sparkle */}
       {collected && !reduce && (
         <>
-          <motion.span
+          <m.span
             className="pointer-events-none absolute inset-0 rounded-full"
             style={{
               background:
@@ -84,14 +84,14 @@ export default function MissionEmblem({
             animate={{ opacity: [0, 1, 0], x: "60%" }}
             transition={{ duration: 0.9, ease: "easeInOut" }}
           />
-          <motion.div
+          <m.div
             className="absolute -right-1 -top-1"
             initial={{ scale: 0, rotate: -30 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 12, delay: 0.1 }}
           >
             <Sparkle className="h-5 w-5" />
-          </motion.div>
+          </m.div>
         </>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   ArrowRight,
   X,
@@ -103,7 +103,7 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
 
   if (view.kind === "backfill") {
     return (
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
+      <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
         <Link
           href="/onboarding/profile"
           className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
@@ -129,13 +129,13 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
         >
           <X className="w-4 h-4" />
         </button>
-      </motion.div>
+      </m.div>
     );
   }
 
   // recommend
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className="paper-card p-6"
@@ -168,6 +168,6 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
           );
         })}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

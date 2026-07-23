@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { m as mm } from "@/lib/motion";
 import {
   BookOpen,
   Clock,
@@ -263,7 +263,7 @@ export default function FamilyOverviewPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -278,7 +278,7 @@ export default function FamilyOverviewPage() {
         <p className="text-midnight-400 text-sm font-body">
           Parent overview dashboard
         </p>
-      </motion.div>
+      </mm.div>
 
       {/* First-week warm empty state — a brand-new family whose every stat is
           still zero gets a story-starts-here treatment instead of a stark row
@@ -287,7 +287,7 @@ export default function FamilyOverviewPage() {
       overview.total_hours === 0 &&
       overview.average_streak === 0 &&
       overview.active_members === 0 ? (
-        <motion.div
+        <mm.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.05, duration: 0.3 }}
@@ -323,10 +323,10 @@ export default function FamilyOverviewPage() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </mm.div>
       ) : (
       /* Stats row -- inline, no cards */
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05, duration: 0.3 }}
@@ -377,11 +377,11 @@ export default function FamilyOverviewPage() {
             </p>
           </div>
         </div>
-      </motion.div>
+      </mm.div>
       )}
 
       {/* Per-member progress */}
-      <motion.section
+      <mm.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.3 }}
@@ -445,11 +445,11 @@ export default function FamilyOverviewPage() {
             })}
           </div>
         )}
-      </motion.section>
+      </mm.section>
 
       {/* Per-child report cards */}
       {overview.members.filter((m) => m.role === "child").length > 0 && (
-        <motion.section
+        <mm.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.12, duration: 0.3 }}
@@ -469,11 +469,11 @@ export default function FamilyOverviewPage() {
                 />
               ))}
           </div>
-        </motion.section>
+        </mm.section>
       )}
 
       {/* This Week activity */}
-      <motion.section
+      <mm.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.15, duration: 0.3 }}
@@ -512,7 +512,7 @@ export default function FamilyOverviewPage() {
             ))}
           </div>
         )}
-      </motion.section>
+      </mm.section>
     </div>
   );
 }

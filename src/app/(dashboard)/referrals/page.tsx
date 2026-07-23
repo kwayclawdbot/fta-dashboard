@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   Gift,
   Lock,
@@ -280,7 +280,7 @@ export default function ReferralsPage() {
         {statTiles.map((s, i) => {
           const Icon = s.icon;
           return (
-            <motion.div
+            <m.div
               key={s.label}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -296,7 +296,7 @@ export default function ReferralsPage() {
                 {s.value}
               </p>
               <p className="text-xs text-soft mt-0.5">{s.label}</p>
-            </motion.div>
+            </m.div>
           );
         })}
       </div>

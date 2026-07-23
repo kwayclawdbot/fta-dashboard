@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { Mail, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authCallbackUrl } from "@/lib/site-url";
@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -63,12 +63,12 @@ export default function ForgotPasswordPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to login
         </Link>
-      </motion.div>
+      </m.div>
     );
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -122,6 +122,6 @@ export default function ForgotPasswordPage() {
           Back to login
         </Link>
       </p>
-    </motion.div>
+    </m.div>
   );
 }

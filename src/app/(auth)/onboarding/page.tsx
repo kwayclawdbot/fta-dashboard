@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import { Users, GraduationCap, ArrowRight, ArrowLeft, Check, AtSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import AvatarPicker from "@/components/AvatarPicker";
@@ -309,7 +309,7 @@ export default function OnboardingPage() {
       {/* Step content */}
       <div className="relative overflow-hidden min-h-[340px]">
         <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
+          <m.div
             key={`${mode}-${step}`}
             custom={direction}
             variants={slideVariants}
@@ -461,18 +461,18 @@ export default function OnboardingPage() {
                 <AvatarPicker value={avatarUrl} onChange={setAvatarUrl} role="child" ageGroup={ageBand || "teens"} />
               </div>
             )}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       </div>
 
       {error && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="mt-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-red-500 text-sm"
         >
           {error}
-        </motion.div>
+        </m.div>
       )}
 
       {/* Navigation */}

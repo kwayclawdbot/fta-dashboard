@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m as mm } from "@/lib/motion";
 import {
   CheckCircle2,
   Circle,
@@ -281,7 +281,7 @@ export default function StartHerePage() {
           const done = completed.has(step.key);
           const isAccounts = step.key === "open_accounts";
           return (
-            <motion.div
+            <mm.div
               key={step.key}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -376,7 +376,7 @@ export default function StartHerePage() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </mm.div>
           );
         })}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import {
   Plus,
   Upload,
@@ -224,7 +224,7 @@ export default function CoachDemosPage() {
           const course = courses.find((c) => c.slug === demo.course_slug);
 
           return (
-            <motion.div
+            <m.div
               key={demo.id}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -301,7 +301,7 @@ export default function CoachDemosPage() {
               {/* Upload URL input */}
               <AnimatePresence>
                 {uploadingId === demo.id && (
-                  <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden border-t border-zinc-800">
+                  <m.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden border-t border-zinc-800">
                     <div className="p-4 bg-zinc-800/30">
                       <label className="text-xs text-zinc-400 font-medium mb-1 block">Video URL (Bunny.net or YouTube)</label>
                       <div className="flex gap-2">
@@ -321,14 +321,14 @@ export default function CoachDemosPage() {
                         >Cancel</button>
                       </div>
                     </div>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
 
               {/* Expanded instructions */}
               <AnimatePresence>
                 {editingId === demo.id && (
-                  <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden border-t border-zinc-800">
+                  <m.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden border-t border-zinc-800">
                     <div className="p-4 bg-zinc-800/20">
                       <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Recording Instructions</h4>
                       <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{demo.instructions}</div>
@@ -339,10 +339,10 @@ export default function CoachDemosPage() {
                         <button onClick={() => deleteDemo(demo.id)} className="px-2.5 py-1 text-red-400 bg-red-400/10 rounded text-xs hover:bg-red-400/20 transition-colors">Delete</button>
                       </div>
                     </div>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </m.div>
           );
         })}
 
@@ -356,14 +356,14 @@ export default function CoachDemosPage() {
       {/* Create modal */}
       <AnimatePresence>
         {showCreate && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
             onClick={() => setShowCreate(false)}
           >
-            <motion.div
+            <m.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -447,8 +447,8 @@ export default function CoachDemosPage() {
                   Create Demo
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

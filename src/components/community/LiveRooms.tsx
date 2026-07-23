@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "@/lib/motion";
 import Link from "next/link";
 import { AtSign, Hash, Lock, Paperclip, Radio, Send, X, Film, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -466,6 +466,7 @@ export default function LiveRooms({ me, tier }: { me: Me | null; tier: FamilyTie
                     {m.author?.display_name || "Member"}
                   </ProfileLink>
                   <AgeBadge role={m.author?.role} ageGroup={m.author?.age_group} />
+                  {tierOf(m.author) === "free" && <TierBadge tier="free" size="xs" />}
                   <span className="text-[10px] text-soft">{timeAgo(m.created_at)}</span>
                 </div>
                 {m.content && <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5"><RichBody body={m.content} /></p>}

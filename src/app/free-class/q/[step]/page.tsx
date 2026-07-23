@@ -2,7 +2,7 @@
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "@/lib/motion";
 import { TopBar, ProgressBar, FunnelStage, QuizCard } from "@/components/free-class/ui";
 import {
   QUIZ,

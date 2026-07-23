@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { m as mm } from "@/lib/motion";
 import { Crown, Flame, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -141,7 +141,7 @@ export default function FamilyLeaderboardPage() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -153,10 +153,10 @@ export default function FamilyLeaderboardPage() {
         <p className="text-midnight-400 text-sm font-body mt-1">
           See who&apos;s leading the pack
         </p>
-      </motion.div>
+      </mm.div>
 
       {/* Period toggle */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05, duration: 0.3 }}
@@ -182,10 +182,10 @@ export default function FamilyLeaderboardPage() {
         >
           This Week
         </button>
-      </motion.div>
+      </mm.div>
 
       {/* Leaderboard */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.3 }}
@@ -259,7 +259,7 @@ export default function FamilyLeaderboardPage() {
             })}
           </div>
         )}
-      </motion.div>
+      </mm.div>
     </div>
   );
 }

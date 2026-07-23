@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import { Binoculars, FlaskConical, Lock, ThumbsUp, ThumbsDown, Check } from "lucide-react";
 import type { WatchStatus } from "@/lib/watchlist";
 
@@ -74,7 +74,7 @@ export default function ResearchLadder({
           <div key={rung.key} className="flex items-center gap-1">
             {i > 0 && (
               <div className="h-0.5 w-4 overflow-hidden rounded-full bg-sand">
-                <motion.div
+                <m.div
                   className="h-full rounded-full bg-gold-400"
                   initial={reduce ? false : { scaleX: 0 }}
                   animate={{ scaleX: i <= active ? 1 : 0 }}
@@ -84,7 +84,7 @@ export default function ResearchLadder({
               </div>
             )}
             <div className="flex flex-col items-center gap-0.5">
-              <motion.div
+              <m.div
                 className={`flex h-6 w-6 items-center justify-center rounded-full ring-1 ${tone}`}
                 animate={
                   current && !reduce
@@ -94,7 +94,7 @@ export default function ResearchLadder({
                 transition={current ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : undefined}
               >
                 <Icon className="h-3.5 w-3.5" />
-              </motion.div>
+              </m.div>
               <span
                 className={`text-[9px] font-semibold ${
                   reached || (rung.key === "verdict" && researchDone)

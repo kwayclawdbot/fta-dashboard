@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "@/lib/motion";
 import { Check, X } from "lucide-react";
 
 /**
@@ -48,7 +48,7 @@ export function Toaster() {
     <div className="fixed z-[100] bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none w-full max-w-sm px-4">
       <AnimatePresence>
         {items.map((t) => (
-          <motion.div
+          <m.div
             key={t.id}
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -69,7 +69,7 @@ export function Toaster() {
             )}
             {t.tone === "error" && <X className="w-4 h-4 text-red-400 shrink-0" />}
             <span className="flex-1">{t.message}</span>
-          </motion.div>
+          </m.div>
         ))}
       </AnimatePresence>
     </div>

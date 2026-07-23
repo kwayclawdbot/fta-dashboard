@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import type { PortfolioState } from "@/lib/simulator/portfolio-manager";
 import { getEquity, getWinRate, getReturnPct } from "@/lib/simulator/portfolio-manager";
 
@@ -53,7 +53,7 @@ export default function PortfolioSummary({ state }: PortfolioSummaryProps) {
   return (
     <div className="grid grid-cols-3 gap-2">
       {kpis.map((kpi, i) => (
-        <motion.div
+        <m.div
           key={kpi.label}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -62,7 +62,7 @@ export default function PortfolioSummary({ state }: PortfolioSummaryProps) {
         >
           <p className="text-[10px] text-midnight-400 mb-0.5">{kpi.label}</p>
           <p className={`text-sm font-mono font-medium ${kpi.color}`}>{kpi.value}</p>
-        </motion.div>
+        </m.div>
       ))}
     </div>
   );

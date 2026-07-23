@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "@/lib/motion";
 import { ArrowRight, Loader2, Check, CalendarDays } from "lucide-react";
 import { formatClassWhen, type NextClassResponse } from "@/lib/free-class";
 import { TopBar, ProgressBar, FunnelStage } from "@/components/free-class/ui";
@@ -97,7 +97,7 @@ export default function ResultPage() {
 
           <div className="paper-card p-5 space-y-3">
             {result.bullets.map((b, i) => (
-              <motion.div
+              <m.div
                 key={i}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -108,7 +108,7 @@ export default function ResultPage() {
                   <Check className="w-3 h-3 text-gold-700" />
                 </span>
                 <span className="text-[15px] text-ink leading-snug">{b}</span>
-              </motion.div>
+              </m.div>
             ))}
           </div>
 

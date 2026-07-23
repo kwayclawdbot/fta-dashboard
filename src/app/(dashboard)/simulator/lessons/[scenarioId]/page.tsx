@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import { ArrowLeft, BookOpen, Play } from "lucide-react";
 import Link from "next/link";
 import ScenarioDecisionPanel from "@/components/simulator/ScenarioDecisionPanel";
@@ -349,7 +349,7 @@ export default function ScenarioPracticePage() {
 
           <AnimatePresence mode="wait">
             {phase === "intro" && (
-              <motion.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button
                   onClick={startPlayback}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-400 hover:bg-gold-400/20 transition-colors text-sm font-display font-semibold"
@@ -357,20 +357,20 @@ export default function ScenarioPracticePage() {
                   <Play className="w-4 h-4" />
                   Start Practice
                 </button>
-              </motion.div>
+              </m.div>
             )}
 
             {phase === "decision" && (
-              <motion.div key="decision" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="decision" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <ScenarioDecisionPanel
                   patternName={scenario.name}
                   onDecision={playResolution}
                 />
-              </motion.div>
+              </m.div>
             )}
 
             {phase === "result" && userDecision && (
-              <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <m.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <ScenarioResultPanel
                   patternName={scenario.name}
                   userDecision={userDecision}
@@ -384,7 +384,7 @@ export default function ScenarioPracticePage() {
                   onNext={handleNext}
                   hasNext={hasNext}
                 />
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>

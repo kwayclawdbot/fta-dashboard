@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import ThemeManager from "@/components/ThemeManager";
+import { MotionProvider } from "@/lib/motion";
 
 // Applied before first paint to avoid a light→dark flash on reload.
 const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'light';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#FBF7EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
@@ -57,7 +58,7 @@ export default function RootLayout({
       </head>
       <body className={`${poppins.variable} ${inter.variable} antialiased`}>
         <ThemeManager />
-        {children}
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import type { CandleChart } from "@/lib/games/types";
 
 const GREEN = "#22C55E";
@@ -96,7 +96,7 @@ export default function FormingCandle({
       {/* live price dot */}
       {!reveal && (
         <>
-          <motion.circle
+          <m.circle
             cx={dotX}
             cy={yCur}
             r={7}
@@ -113,7 +113,7 @@ export default function FormingCandle({
       <line x1={244} x2={244} y1={12} y2={VH - 12} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
 
       {/* the forming candle (scoreboard) */}
-      <motion.g
+      <m.g
         animate={
           reveal && !reduce
             ? { filter: [`drop-shadow(0 0 0px ${color})`, `drop-shadow(0 0 14px ${color})`] }
@@ -140,7 +140,7 @@ export default function FormingCandle({
           stroke={reveal ? "#fff" : "transparent"}
           strokeWidth={reveal ? 1.5 : 0}
         />
-      </motion.g>
+      </m.g>
 
       {/* high / low tags on the scoreboard candle */}
       <text x={CX + BODY_W / 2 + 6} y={yHigh + 4} fill="rgba(255,255,255,0.6)" fontSize={10}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import { ChevronRight, RotateCcw, Trophy, X } from "lucide-react";
 
 interface QuizQuestion {
@@ -62,7 +62,7 @@ export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
     const passed = score >= PASS_THRESHOLD;
 
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className="py-6"
@@ -141,7 +141,7 @@ export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
             Retry Quiz
           </button>
         )}
-      </motion.div>
+      </m.div>
     );
   }
 
@@ -170,7 +170,7 @@ export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
 
       {/* Question */}
       <AnimatePresence mode="wait">
-        <motion.div
+        <m.div
           key={currentIndex}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -200,7 +200,7 @@ export default function QuizPanel({ questions, onComplete }: QuizPanelProps) {
               </button>
             ))}
           </div>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
 
       {/* Next button */}

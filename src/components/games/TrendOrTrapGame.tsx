@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
 import { Check, X, TrendingUp, TrendingDown } from "lucide-react";
 import { useGameRounds } from "@/lib/games/useGameRounds";
 import type { SeriesChart } from "@/lib/games/types";
@@ -168,7 +168,7 @@ export default function TrendOrTrapGame() {
         <p className="text-sm text-soft leading-relaxed">{round.prompt}</p>
       </div>
 
-      <motion.div
+      <m.div
         animate={shake && !reduce ? { x: [-6, 6, -5, 4, 0] } : { x: 0 }}
         transition={{ duration: 0.45 }}
         className="night-island relative p-4 sm:p-5"
@@ -196,12 +196,12 @@ export default function TrendOrTrapGame() {
                   ? "You read it right."
                   : "That one was a trap."}
         </p>
-      </motion.div>
+      </m.div>
 
       {/* decision UI with speed-bonus timer ring */}
       <AnimatePresence mode="wait">
         {phase === "decision" && (
-          <motion.div
+          <m.div
             key="decide"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -226,13 +226,13 @@ export default function TrendOrTrapGame() {
                 <TrendingDown className="w-5 h-5" /> FALLING
               </button>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {phase === "result" && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+          <m.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
             <div
               className={`relative rounded-2xl border p-4 ${
                 correct ? "border-green-500/30 bg-chip-green/60" : "border-red-500/25 bg-red-500/5"
@@ -262,7 +262,7 @@ export default function TrendOrTrapGame() {
             >
               {g.index + 1 >= g.total ? "See results" : "Next chart"}
             </button>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 
@@ -293,7 +293,7 @@ function TimerRing() {
   return (
     <svg width={34} height={34} viewBox="0 0 34 34">
       <circle cx={17} cy={17} r={13} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={3} />
-      <motion.circle
+      <m.circle
         cx={17}
         cy={17}
         r={13}

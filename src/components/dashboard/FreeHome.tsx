@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   CalendarDays,
   Clock,
@@ -112,7 +112,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
 
       {/* Post-class band — leads once the member's class date has passed. */}
       {classPassed && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="paper-card ring-2 ring-gold-400 p-6"
@@ -142,14 +142,14 @@ export default function FreeHome({ firstName }: { firstName: string }) {
           >
             Join FIC — $99/mo <ArrowRight className="w-4 h-4" />
           </a>
-        </motion.div>
+        </m.div>
       )}
 
       {/* Your first week checklist */}
       {journey && <JourneyCard journey={journey} onGo={markWatched} />}
 
       {/* Your free class */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className="paper-card p-6"
@@ -193,10 +193,10 @@ export default function FreeHome({ firstName }: { firstName: string }) {
             </div>
           </div>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Community (read-only) */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
@@ -219,10 +219,10 @@ export default function FreeHome({ firstName }: { firstName: string }) {
           </div>
           <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
         </Link>
-      </motion.div>
+      </m.div>
 
       {/* What membership unlocks */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -271,7 +271,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
         >
           See what $99/mo unlocks <ArrowRight className="w-4 h-4 text-gold-700" />
         </Link>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -291,7 +291,7 @@ function JourneyCard({
   const pct = Math.round((done / total) * 100);
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="paper-card p-6"
@@ -368,7 +368,7 @@ function JourneyCard({
           </Link>
         )
       )}
-    </motion.div>
+    </m.div>
   );
 }
 

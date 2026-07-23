@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   Clock,
   Video,
@@ -41,7 +41,7 @@ export default function ConfirmationView({
     <div className="min-h-screen bg-paper text-ink">
       <TopBar />
       <div className="max-w-lg mx-auto px-5 py-8 sm:py-12">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
@@ -57,10 +57,10 @@ export default function ConfirmationView({
               ? "Here's everything for the upcoming class, plus a quick look at what's inside."
               : "Here's what happens next. Your free account is ready and your seat is saved."}
           </p>
-        </motion.div>
+        </m.div>
 
         {/* Class card */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.06 }}
@@ -108,10 +108,10 @@ export default function ConfirmationView({
               )}
             </div>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Video */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
@@ -140,10 +140,10 @@ export default function ConfirmationView({
             A quick look at your upcoming class, the app your family just joined, and why families
             go all-in as members.
           </p>
-        </motion.div>
+        </m.div>
 
         {/* Join FIC */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.16 }}
@@ -169,7 +169,7 @@ export default function ConfirmationView({
           >
             Explore the app free
           </button>
-        </motion.div>
+        </m.div>
 
         <p className="mt-8 text-center text-xs text-soft max-w-sm mx-auto leading-relaxed flex items-start justify-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />

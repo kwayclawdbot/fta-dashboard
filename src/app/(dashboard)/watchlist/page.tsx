@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import {
   Plus,
   Lock,
@@ -501,7 +501,7 @@ export default function WatchlistPage() {
       <Celebrate opts={queue[0] ?? null} onDone={() => setQueue((q) => q.slice(1))} />
 
       {/* Header */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -526,7 +526,7 @@ export default function WatchlistPage() {
             Add a company
           </button>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Filters */}
       {items.length > 0 && (
@@ -621,7 +621,7 @@ export default function WatchlistPage() {
                       role === "parent" ||
                       role === "admin";
                     return (
-                      <motion.div
+                      <m.div
                         key={item.id}
                         layout
                         initial={{ opacity: 0, y: 8 }}
@@ -633,7 +633,7 @@ export default function WatchlistPage() {
                         }`}
                       >
                         {unlockedId === item.id && (
-                          <motion.span
+                          <m.span
                             className="pointer-events-none absolute inset-0 z-10"
                             style={{
                               background:
@@ -871,7 +871,7 @@ export default function WatchlistPage() {
                           {/* notes stream */}
                           <AnimatePresence initial={false}>
                             {showNotes && (
-                              <motion.div
+                              <m.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
@@ -934,11 +934,11 @@ export default function WatchlistPage() {
                                     </button>
                                   </div>
                                 </div>
-                              </motion.div>
+                              </m.div>
                             )}
                           </AnimatePresence>
                         </div>
-                      </motion.div>
+                      </m.div>
                     );
                   })}
                 </div>
@@ -951,14 +951,14 @@ export default function WatchlistPage() {
       {/* ── Add modal ──────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {addOpen && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
             onClick={() => !addBusy && setAddOpen(false)}
           >
-            <motion.div
+            <m.div
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
@@ -1090,22 +1090,22 @@ export default function WatchlistPage() {
                   {addBusy ? "Adding..." : "Add to Watching"}
                 </button>
               </form>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
 
       {/* ── Research modal ─────────────────────────────────────────────────── */}
       <AnimatePresence>
         {researchItem && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
             onClick={() => !rBusy && setResearchId(null)}
           >
-            <motion.div
+            <m.div
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
@@ -1240,22 +1240,22 @@ export default function WatchlistPage() {
                   </>
                 )}
               </p>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
 
       {/* Post-to-community dialog */}
       <AnimatePresence>
         {shareItem && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4"
             onClick={() => !shareBusy && setShareItem(null)}
           >
-            <motion.div
+            <m.div
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
@@ -1321,8 +1321,8 @@ export default function WatchlistPage() {
                   </button>
                 </>
               )}
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

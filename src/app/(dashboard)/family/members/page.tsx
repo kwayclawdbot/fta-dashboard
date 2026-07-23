@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as mm, AnimatePresence } from "@/lib/motion";
 import {
   UserPlus,
   Crown,
@@ -157,7 +157,7 @@ export default function FamilyMembersPage() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -185,10 +185,10 @@ export default function FamilyMembersPage() {
           <UserPlus className="w-4 h-4" />
           Invite Member
         </button>
-      </motion.div>
+      </mm.div>
 
       {/* Members list */}
-      <motion.div
+      <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05, duration: 0.3 }}
@@ -295,32 +295,32 @@ export default function FamilyMembersPage() {
             </div>
           );
         })}
-      </motion.div>
+      </mm.div>
 
       {/* Your credential shelf */}
       {currentUserId && (
-        <motion.div
+        <mm.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.3 }}
           className="mt-10 pt-8 border-t border-midnight-800/50"
         >
           <BadgeCase userId={currentUserId} title="Your Credentials" evaluateSelf />
-        </motion.div>
+        </mm.div>
       )}
 
       {/* Invite Modal */}
       <AnimatePresence>
         {showInviteModal && (
           <>
-            <motion.div
+            <mm.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowInviteModal(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
             />
-            <motion.div
+            <mm.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 16 }}
@@ -372,7 +372,7 @@ export default function FamilyMembersPage() {
                 The invited member will join your family and can start learning
                 immediately.
               </p>
-            </motion.div>
+            </mm.div>
           </>
         )}
       </AnimatePresence>

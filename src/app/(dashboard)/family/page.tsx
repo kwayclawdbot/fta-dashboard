@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import {
   Users,
   UserPlus,
@@ -169,7 +169,7 @@ export default function FamilyPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header -- plain text */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -198,7 +198,7 @@ export default function FamilyPage() {
           <UserPlus className="w-4 h-4" />
           Invite Member
         </button>
-      </motion.div>
+      </m.div>
 
       {/* Members Grid */}
       {members.length === 0 ? (
@@ -222,7 +222,7 @@ export default function FamilyPage() {
               .slice(0, 2);
 
             return (
-              <motion.div
+              <m.div
                 key={member.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -282,7 +282,7 @@ export default function FamilyPage() {
                     </span>
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             );
           })}
         </div>
@@ -292,14 +292,14 @@ export default function FamilyPage() {
       <AnimatePresence>
         {showInviteModal && (
           <>
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowInviteModal(false)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
             />
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 16 }}
@@ -351,7 +351,7 @@ export default function FamilyPage() {
                 The invited member will join your family and can start learning
                 immediately.
               </p>
-            </motion.div>
+            </m.div>
           </>
         )}
       </AnimatePresence>

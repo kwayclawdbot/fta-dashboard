@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m as mm } from "@/lib/motion";
 import {
   AtSign,
   Bell,
@@ -223,7 +223,7 @@ export default function NotificationsBell() {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <mm.div
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
@@ -299,7 +299,7 @@ export default function NotificationsBell() {
             <div className="px-4 py-3 border-t border-midnight-800 bg-midnight-950/60">
               <EnablePushButton compact />
             </div>
-          </motion.div>
+          </mm.div>
         )}
       </AnimatePresence>
     </div>

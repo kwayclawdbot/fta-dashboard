@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "@/lib/motion";
 import {
   LayoutDashboard,
   BookOpen,
@@ -474,14 +474,14 @@ export default function DashboardSidebar({
       <AnimatePresence>
         {mobileOpen && (
           <>
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onMobileClose}
               className="fixed inset-0 bg-black/60 z-40 lg:hidden"
             />
-            <motion.aside
+            <m.aside
               initial={{ x: -260 }}
               animate={{ x: 0 }}
               exit={{ x: -260 }}
@@ -489,7 +489,7 @@ export default function DashboardSidebar({
               className="fixed top-0 left-0 h-screen w-60 bg-midnight-900 border-r border-midnight-700/50 z-50 lg:hidden"
             >
               {sidebarContent}
-            </motion.aside>
+            </m.aside>
           </>
         )}
       </AnimatePresence>

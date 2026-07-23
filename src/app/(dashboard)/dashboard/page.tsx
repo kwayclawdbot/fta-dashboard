@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   ArrowRight,
   BookOpen,
@@ -437,7 +437,7 @@ export default function DashboardHome() {
       {showSetupCard && (
         <div className="relative" data-tour="start-here">
           <Link href="/start-here" className="block">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
@@ -463,7 +463,7 @@ export default function DashboardHome() {
                 </div>
               </div>
               <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
-            </motion.div>
+            </m.div>
           </Link>
           <button
             onClick={dismissSetupCard}
@@ -486,7 +486,7 @@ export default function DashboardHome() {
           $2,997 families, above the fold. One rail, not a takeover: the
           club-first hero + This Week stay exactly as they are below. */}
       {isFta && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden rounded-2xl border border-gold-400/40 bg-gradient-to-br from-gold-400/[0.12] via-gold-400/[0.05] to-transparent p-5 lg:p-6"
@@ -558,7 +558,7 @@ export default function DashboardHome() {
               </span>
             </Link>
           </div>
-        </motion.div>
+        </m.div>
       )}
 
       {/* Home tabs: everyday home vs This Week in FIC */}
@@ -619,7 +619,7 @@ export default function DashboardHome() {
       {home?.program && (
         <>
           {/* HERO — Today's one thing */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="paper-card overflow-hidden"
@@ -714,11 +714,11 @@ export default function DashboardHome() {
                 )}
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* THIS WEEK — live class + drill (academy execution rail) */}
           {home.this_week && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
@@ -767,7 +767,7 @@ export default function DashboardHome() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </m.div>
           )}
 
           {/* Clubhouse activity — self-contained; renders null when empty */}
@@ -777,7 +777,7 @@ export default function DashboardHome() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Parent: family this week */}
             {isParent && family.length > 0 && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.14 }}
@@ -818,12 +818,12 @@ export default function DashboardHome() {
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Kid: House Rules */}
             {isKid && (
-              <motion.div
+              <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.14 }}
@@ -843,11 +843,11 @@ export default function DashboardHome() {
                     </li>
                   ))}
                 </ol>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Everyone: quick links */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -902,7 +902,7 @@ export default function DashboardHome() {
                   sub={isKid ? "See what you've earned" : "Streaks, badges, stats"}
                 />
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </>
       )}

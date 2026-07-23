@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   ArrowRight,
   Sparkles,
@@ -86,7 +86,7 @@ export default function FreeClassLanding() {
       <TopBar />
 
       <div className="flex-1 flex items-start sm:items-center justify-center px-5 py-8">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -156,7 +156,7 @@ export default function FreeClassLanding() {
           <p className="mt-3 text-xs text-soft">
             Free · No card required · The whole family welcome
           </p>
-        </motion.div>
+        </m.div>
       </div>
     </div>
   );

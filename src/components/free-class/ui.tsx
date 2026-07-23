@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { ArrowLeft, Check } from "lucide-react";
 import type { QuizStep } from "@/lib/funnel";
 
@@ -50,7 +50,7 @@ export function ProgressBar({
           <span className="w-4 h-4 shrink-0" />
         )}
         <div className="flex-1 h-1.5 rounded-full bg-sand overflow-hidden">
-          <motion.div
+          <m.div
             className="h-full rounded-full bg-gold-500"
             initial={false}
             animate={{ width: `${pct}%` }}
@@ -78,14 +78,14 @@ export function FunnelStage({
   return (
     <div className="flex-1 flex items-start sm:items-center justify-center px-5 py-8">
       <div className="w-full max-w-md">
-        <motion.div
+        <m.div
           key={stageKey}
           initial={{ x: dir > 0 ? 60 : -60, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ type: "tween", duration: 0.22 }}
         >
           {children}
-        </motion.div>
+        </m.div>
       </div>
     </div>
   );

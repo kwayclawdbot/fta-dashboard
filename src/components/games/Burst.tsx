@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import { useMemo } from "react";
 
 /**
@@ -41,7 +41,7 @@ export default function Burst({
   return (
     <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center overflow-visible">
       {/* ring pulse */}
-      <motion.span
+      <m.span
         className="absolute rounded-full border-2"
         style={{ borderColor: colors[0] }}
         initial={{ width: 20, height: 20, opacity: 0.7 }}
@@ -49,7 +49,7 @@ export default function Burst({
         transition={{ duration: 0.6, ease: "easeOut" }}
       />
       {parts.map((p) => (
-        <motion.span
+        <m.span
           key={p.id}
           className="absolute rounded-[2px]"
           style={{ width: p.size, height: p.size, background: p.color }}

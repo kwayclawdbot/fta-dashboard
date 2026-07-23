@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { Mail, Lock, User, Eye, EyeOff, Users, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authCallbackUrl } from "@/lib/site-url";
@@ -128,7 +128,7 @@ function InviteSignupForm() {
 
   if (!inviteValid) {
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -158,13 +158,13 @@ function InviteSignupForm() {
             Sign in instead
           </Link>
         </div>
-      </motion.div>
+      </m.div>
     );
   }
 
   if (success) {
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -192,18 +192,18 @@ function InviteSignupForm() {
         >
           Back to login
         </Link>
-      </motion.div>
+      </m.div>
     );
   }
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
       {/* Invite banner */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
@@ -221,7 +221,7 @@ function InviteSignupForm() {
         <p className="text-xs text-midnight-400 mt-1 font-body">
           by {inviteData?.invited_by_name}
         </p>
-      </motion.div>
+      </m.div>
 
       <h2 className="font-display text-xl font-bold text-midnight-100 mb-1">
         Create Your Account
@@ -321,6 +321,6 @@ function InviteSignupForm() {
           Sign in
         </Link>
       </p>
-    </motion.div>
+    </m.div>
   );
 }

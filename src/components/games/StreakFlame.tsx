@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 
 /**
  * Streak flame — grows and flickers with the streak count. Deck-warm, no emoji.
@@ -22,7 +22,7 @@ export default function StreakFlame({
 
   return (
     <span className="inline-flex items-center gap-1.5 leading-none">
-      <motion.svg
+      <m.svg
         width={size}
         height={size}
         viewBox="0 0 24 24"
@@ -49,14 +49,14 @@ export default function StreakFlame({
           fill="url(#flame-g)"
         />
         {active && hot && (
-          <motion.path
+          <m.path
             d="M12 11c.9.8 1.4 1.8 1.4 3A1.4 1.4 0 0110.6 14c0-1 .5-2 1.4-3z"
             fill="#FFFBEB"
             animate={reduce ? {} : { opacity: [0.6, 1, 0.6] }}
             transition={{ duration: 0.5, repeat: Infinity }}
           />
         )}
-      </motion.svg>
+      </m.svg>
       {(active || showZero) && (
         <span
           className={`font-display font-bold tabular-nums ${

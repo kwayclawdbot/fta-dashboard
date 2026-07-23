@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { ArrowRight, Gamepad2, Trophy, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
@@ -102,7 +102,7 @@ export default function GamesHubPage() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* hero */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="paper-card overflow-hidden mb-6"
@@ -127,13 +127,13 @@ export default function GamesHubPage() {
             </p>
           </div>
         </div>
-      </motion.div>
+      </m.div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         {GAMES.map((g, i) => {
           const locked = isFree && !g.freeOpen;
           return (
-          <motion.div
+          <m.div
             key={g.href}
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -191,7 +191,7 @@ export default function GamesHubPage() {
                 </div>
               </div>
             </Link>
-          </motion.div>
+          </m.div>
           );
         })}
       </div>

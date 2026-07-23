@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import type { OHLC, LevelLine, Trendline } from "@/lib/games/types";
 
 const GREEN = "#22C55E";
@@ -160,7 +160,7 @@ export default function CandleRenderer({
         const stroke = lv.kind === "support" ? SUPPORT : RESISTANCE;
         const chipW = 8 + lv.label.length * 6.4;
         return (
-          <motion.g
+          <m.g
             key={`lv-${i}`}
             initial={reduce ? { opacity: 0 } : { opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
@@ -181,7 +181,7 @@ export default function CandleRenderer({
                 }
               });
               return (
-                <motion.circle
+                <m.circle
                   cx={xFor(bi)}
                   cy={y}
                   r={5}
@@ -228,7 +228,7 @@ export default function CandleRenderer({
             >
               {lv.label}
             </text>
-          </motion.g>
+          </m.g>
         );
       })}
 
@@ -249,7 +249,7 @@ export default function CandleRenderer({
         // above the endpoint, or below if it would clip the top
         const chipY = ay < PAD_TOP + 26 ? ay + 8 : ay - 26;
         return (
-          <motion.g
+          <m.g
             key={`tl-${i}`}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -285,7 +285,7 @@ export default function CandleRenderer({
             >
               {tl.label}
             </text>
-          </motion.g>
+          </m.g>
         );
       })}
 
@@ -314,7 +314,7 @@ export default function CandleRenderer({
         const bodyH = Math.max(Math.abs(yClose - yOpen), 2);
         const glow = highlightFrom != null && i >= highlightFrom;
         return (
-          <motion.g
+          <m.g
             key={i}
             style={{ transformBox: "fill-box", transformOrigin: "center" }}
             initial={reduce ? { opacity: 0 } : { opacity: 0, scaleY: 0.1 }}
@@ -353,7 +353,7 @@ export default function CandleRenderer({
               rx={2.5}
               fill={color}
             />
-          </motion.g>
+          </m.g>
         );
       })}
     </svg>

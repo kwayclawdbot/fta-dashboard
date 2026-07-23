@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { LogOut, Save, CreditCard, AtSign, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import EnablePushButton from "@/components/notifications/EnablePushButton";
@@ -164,13 +164,13 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-xl mx-auto">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-8">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mb-8">
         <h2 className="font-display text-2xl font-bold text-midnight-100">Settings</h2>
         <p className="text-midnight-400 text-sm mt-1 font-body">Manage your profile and preferences</p>
-      </motion.div>
+      </m.div>
 
       {/* Profile */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05, duration: 0.3 }} className="mb-10">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05, duration: 0.3 }} className="mb-10">
         <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Profile</h3>
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
@@ -240,21 +240,21 @@ export default function SettingsPage() {
               {saving ? "Saving..." : "Save Changes"}
             </button>
             {saved && (
-              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-green-600">
+              <m.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-green-600">
                 Saved!
-              </motion.span>
+              </m.span>
             )}
           </div>
         </form>
-      </motion.div>
+      </m.div>
 
       <div className="border-t border-sand mb-8" />
 
       {/* Credentials — professional-title badge case */}
       {userId && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08, duration: 0.3 }} className="mb-10">
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.08, duration: 0.3 }} className="mb-10">
           <BadgeCase userId={userId} title="Your Credentials" evaluateSelf />
-        </motion.div>
+        </m.div>
       )}
 
       <div className="border-t border-sand mb-8" />
@@ -272,18 +272,18 @@ export default function SettingsPage() {
       </div>
 
       {/* Appearance */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.09, duration: 0.3 }} className="mb-10">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.09, duration: 0.3 }} className="mb-10">
         <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Appearance</h3>
         <p className="text-sm text-midnight-400 font-body mb-4">
           Choose how the dashboard looks. System follows your device setting.
         </p>
         <ThemeToggle />
-      </motion.div>
+      </m.div>
 
       <div className="border-t border-sand mb-8" />
 
       {/* Notifications */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }} className="mb-10">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1, duration: 0.3 }} className="mb-10">
         <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Notifications</h3>
 
         <div className="space-y-4">
@@ -340,13 +340,13 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Billing — parent-only */}
       {!isChild && (
         <>
           <div className="border-t border-sand mb-8" />
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }} className="mb-10">
+          <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }} className="mb-10">
             <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Billing</h3>
             <p className="text-sm text-midnight-400 font-body mb-4">
               Manage your family&apos;s plan and see what each tier unlocks.
@@ -358,14 +358,14 @@ export default function SettingsPage() {
               <CreditCard className="w-4 h-4" />
               View plans &amp; billing
             </Link>
-          </motion.div>
+          </m.div>
         </>
       )}
 
       <div className="border-t border-sand mb-8" />
 
       {/* Danger Zone */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }} className="mb-8">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }} className="mb-8">
         <h3 className="font-display text-sm font-semibold text-red-500/80 uppercase tracking-wider mb-3">Danger Zone</h3>
         <p className="text-sm text-midnight-400 font-body mb-4">Sign out of your account on this device.</p>
         <button
@@ -376,7 +376,7 @@ export default function SettingsPage() {
           <LogOut className="w-4 h-4" />
           {loggingOut ? "Logging out..." : "Logout"}
         </button>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

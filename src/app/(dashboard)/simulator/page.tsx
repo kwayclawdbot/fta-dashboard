@@ -2,7 +2,7 @@
 
 import { useState, useReducer, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import TimeControls from "@/components/simulator/TimeControls";
 import ChartDrawingTools from "@/components/simulator/ChartDrawingTools";
 import OrderPanel from "@/components/simulator/OrderPanel";
@@ -268,7 +268,7 @@ export default function SimulatorPage() {
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="mb-5 flex h-12 items-end gap-1.5" aria-hidden="true">
           {[0, 1, 2, 3, 4].map((i) => (
-            <motion.span
+            <m.span
               key={i}
               className="w-2.5 rounded-sm bg-gold-500/80"
               initial={{ height: 8 }}
@@ -352,7 +352,7 @@ export default function SimulatorPage() {
           <ChartDrawingTools chartRef={chartRef} currentPrice={currentPrice} />
 
           {/* Chart */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="night-island border border-night-700/60 p-2"
@@ -363,7 +363,7 @@ export default function SimulatorPage() {
               markers={tradeMarkers}
               height={420}
             />
-          </motion.div>
+          </m.div>
 
           {/* Price info bar */}
           <div className="flex items-center gap-4 px-2 text-xs font-mono">

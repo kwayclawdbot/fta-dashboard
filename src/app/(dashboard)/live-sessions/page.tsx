@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   Video,
   Play,
@@ -156,7 +156,7 @@ function LiveNowCard({
   familiesGoing: number;
 }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="rounded-lg border border-red-500/30 bg-midnight-900/60 overflow-hidden"
@@ -223,7 +223,7 @@ function LiveNowCard({
           </p>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -288,7 +288,7 @@ function RecordingPlayerModal({
       className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-midnight-900 rounded-xl border border-midnight-800 shadow-lift w-full max-w-3xl overflow-hidden"
@@ -356,7 +356,7 @@ function RecordingPlayerModal({
           <TrackBadge track={session.track} />
           {session.scheduledAt && <span>Recorded {session.scheduledAt}</span>}
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -792,7 +792,7 @@ export default function LiveSessionsPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -814,10 +814,10 @@ export default function LiveSessionsPage() {
             </div>
           )}
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Access notice */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05 }}
@@ -851,7 +851,7 @@ export default function LiveSessionsPage() {
             </>
           )}
         </p>
-      </motion.div>
+      </m.div>
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-4 border-b border-midnight-800/50">
@@ -944,7 +944,7 @@ export default function LiveSessionsPage() {
               />
             )
           ) : (
-            <motion.div
+            <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="rounded-lg border border-midnight-800/60 bg-midnight-900/40 p-8 text-center"
@@ -962,7 +962,7 @@ export default function LiveSessionsPage() {
               >
                 View upcoming sessions
               </button>
-            </motion.div>
+            </m.div>
           )}
         </div>
       )}
@@ -988,7 +988,7 @@ export default function LiveSessionsPage() {
                 {group.items.map((session, i) => {
                   const lock = sessionLock(session);
                   return (
-                    <motion.div
+                    <m.div
                       key={session.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1003,7 +1003,7 @@ export default function LiveSessionsPage() {
                           lock.locked ? undefined : () => toggleRsvp(session.id)
                         }
                       />
-                    </motion.div>
+                    </m.div>
                   );
                 })}
               </div>
@@ -1033,7 +1033,7 @@ export default function LiveSessionsPage() {
                 {group.items.map((session, i) => {
                   const lock = sessionLock(session);
                   return (
-                    <motion.div
+                    <m.div
                       key={session.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1047,7 +1047,7 @@ export default function LiveSessionsPage() {
                           lock.locked ? undefined : () => setWatching(session)
                         }
                       />
-                    </motion.div>
+                    </m.div>
                   );
                 })}
               </div>

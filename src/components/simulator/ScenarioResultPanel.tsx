@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { CheckCircle, XCircle, RotateCcw, ArrowRight } from "lucide-react";
 import type { Decision } from "@/lib/simulator/scenarios";
 
@@ -40,7 +40,7 @@ export default function ScenarioResultPanel({
   const isCorrectDecision = userDecision === correctDecision;
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-5"
@@ -96,7 +96,7 @@ export default function ScenarioResultPanel({
 
       {/* Score bar */}
       <div className="h-2 bg-midnight-800 rounded-full mb-4 overflow-hidden">
-        <motion.div
+        <m.div
           initial={{ width: 0 }}
           animate={{ width: `${totalScore}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -134,6 +134,6 @@ export default function ScenarioResultPanel({
           </button>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

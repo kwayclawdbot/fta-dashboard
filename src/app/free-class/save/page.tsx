@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "@/lib/motion";
 import { Mail, Phone, ArrowRight, Loader2, ShieldCheck, Sparkles, X } from "lucide-react";
 import { TopBar, ProgressBar, FunnelStage, Field } from "@/components/free-class/ui";
 import {
@@ -188,14 +188,14 @@ export default function SavePage() {
       {/* Exit-intent — tasteful, once per session */}
       <AnimatePresence>
         {showExit && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-5"
             onClick={() => setShowExit(false)}
           >
-            <motion.div
+            <m.div
               initial={{ scale: 0.94, y: 10 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 10 }}
@@ -222,8 +222,8 @@ export default function SavePage() {
               >
                 Show me my result
               </button>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

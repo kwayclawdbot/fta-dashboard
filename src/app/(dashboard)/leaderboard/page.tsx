@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { Crown, Trophy, Users, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { levelForXp } from "@/lib/xp";
@@ -64,7 +64,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <Trophy className="w-5 h-5 text-gold-600" />
           <h1 className="font-display text-2xl font-bold text-ink">Family XP</h1>
@@ -75,7 +75,7 @@ export default function LeaderboardPage() {
           so big families and small families compete fairly. Climb the board
           together.
         </p>
-      </motion.div>
+      </m.div>
 
       {/* Window toggle */}
       <div className="inline-flex gap-1 mb-6 bg-white border border-sand rounded-xl p-1">
@@ -116,7 +116,7 @@ export default function LeaderboardPage() {
             const mine = row.family_id === myFamilyId;
             const level = levelForXp(row.xp);
             return (
-              <motion.div
+              <m.div
                 key={row.family_id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -161,7 +161,7 @@ export default function LeaderboardPage() {
                   </p>
                   <p className="text-[11px] text-soft">avg XP</p>
                 </div>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>

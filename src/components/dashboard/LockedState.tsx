@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { Lock, ArrowRight, type LucideIcon } from "lucide-react";
 
 /**
@@ -79,7 +79,7 @@ export default function LockedState({
 
   return (
     <div className={`max-w-lg mx-auto py-6 ${className}`}>
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className={
@@ -131,7 +131,7 @@ export default function LockedState({
           ))}
 
         {children}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

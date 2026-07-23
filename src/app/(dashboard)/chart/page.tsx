@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import {
   CandlestickChart,
   LineChart,
@@ -71,7 +71,7 @@ function ChartInner() {
   return (
     <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col gap-4">
       {/* Header row */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
@@ -139,7 +139,7 @@ function ChartInner() {
             </div>
           )}
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Quick symbols */}
       <div className="flex flex-wrap items-center gap-2">
@@ -165,7 +165,7 @@ function ChartInner() {
       </div>
 
       {/* The chart — fills remaining height */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
@@ -178,7 +178,7 @@ function ChartInner() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />
           </div>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

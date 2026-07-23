@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { m as mm } from "@/lib/motion";
 import {
   ArrowRight,
   BookOpen,
@@ -255,7 +255,7 @@ export default function CoursesPage() {
       {/* THE LIVE PROGRAM (FTA) — never shown to kids; the ICT day-trading
           cohort is age-inappropriate above a young kid's own content (audit #3). */}
       {ftaCard && !isKid && (
-        <motion.section
+        <mm.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -325,11 +325,11 @@ export default function CoursesPage() {
               </div>
             </div>
           </div>
-        </motion.section>
+        </mm.section>
       )}
 
       {/* FOUNDATIONS (FIC) */}
-      <motion.section
+      <mm.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
@@ -408,7 +408,7 @@ export default function CoursesPage() {
           })}
         </div>
         )}
-      </motion.section>
+      </mm.section>
     </div>
   );
 }
@@ -444,7 +444,7 @@ function FreeCoursesView({
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           {freeLessons.map((l, i) => (
-            <motion.div
+            <mm.div
               key={l.lessonId}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -485,7 +485,7 @@ function FreeCoursesView({
                   </div>
                 </div>
               </Link>
-            </motion.div>
+            </mm.div>
           ))}
         </div>
       </section>
@@ -504,7 +504,7 @@ function FreeCoursesView({
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
             {lockedCourses.map((c, i) => (
-              <motion.div
+              <mm.div
                 key={c.slug}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -544,7 +544,7 @@ function FreeCoursesView({
                     </span>
                   </div>
                 </Link>
-              </motion.div>
+              </mm.div>
             ))}
           </div>
         </section>

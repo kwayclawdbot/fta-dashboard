@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import {
   PlayCircle,
   MessageCircle,
@@ -92,7 +92,7 @@ export default function SetupTrail({
           strokeDasharray="1 8"
         />
         {/* progress path draws in */}
-        <motion.path
+        <m.path
           d={d}
           fill="none"
           stroke="#F59E0B"
@@ -114,7 +114,7 @@ export default function SetupTrail({
           const iconColor = done ? "#FFFFFF" : isNext ? "#B45309" : "#98A2B3";
           return (
             <g key={step.key}>
-              <motion.circle
+              <m.circle
                 cx={x}
                 cy={y}
                 r={done ? 15 : 13}
@@ -127,7 +127,7 @@ export default function SetupTrail({
                 style={{ transformBox: "fill-box", transformOrigin: "center" }}
               />
               {isNext && !reduce && (
-                <motion.circle
+                <m.circle
                   cx={x}
                   cy={y}
                   r={15}
@@ -158,14 +158,14 @@ export default function SetupTrail({
       </svg>
 
       {allDone && (
-        <motion.p
+        <m.p
           className="mt-1 flex items-center justify-center gap-1.5 text-sm font-medium text-green-600"
           initial={reduce ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <Flag className="h-4 w-4" />
           Orientation complete — welcome to the club!
-        </motion.p>
+        </m.p>
       )}
     </div>
   );

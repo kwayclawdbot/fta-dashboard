@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { TrendingUp, TrendingDown, Clock } from "lucide-react";
 import type { Decision } from "@/lib/simulator/scenarios";
 
@@ -14,7 +14,7 @@ export default function ScenarioDecisionPanel({
   onDecision,
 }: ScenarioDecisionPanelProps) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-midnight-900 border border-gold-400/20 rounded-lg p-5"
@@ -53,6 +53,6 @@ export default function ScenarioDecisionPanel({
       <p className="text-[10px] text-midnight-500 mt-3 text-center">
         Identifying: {patternName}
       </p>
-    </motion.div>
+    </m.div>
   );
 }

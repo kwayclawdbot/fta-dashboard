@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
 import { Check, X } from "lucide-react";
 import { useGameRounds } from "@/lib/games/useGameRounds";
 import type { CandleChart } from "@/lib/games/types";
@@ -174,7 +174,7 @@ export default function CandleBattleGame() {
       </div>
 
       {/* dark night-island stage */}
-      <motion.div
+      <m.div
         animate={shake && !reduce ? { x: [-6, 6, -5, 4, 0] } : { x: 0 }}
         transition={{ duration: 0.45 }}
         className="night-island relative p-4 sm:p-5"
@@ -193,12 +193,12 @@ export default function CandleBattleGame() {
             The battle is forming…
           </p>
         )}
-      </motion.div>
+      </m.div>
 
       {/* decision buttons */}
       <AnimatePresence mode="wait">
         {phase === "decision" && (
-          <motion.div
+          <m.div
             key="decide"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -217,7 +217,7 @@ export default function CandleBattleGame() {
             >
               RED TEAM
             </button>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 
@@ -230,7 +230,7 @@ export default function CandleBattleGame() {
       {/* reveal + why */}
       <AnimatePresence>
         {phase === "result" && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-5"
@@ -269,7 +269,7 @@ export default function CandleBattleGame() {
             >
               {g.index + 1 >= g.total ? "See results" : "Next battle"}
             </button>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 

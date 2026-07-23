@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
 import Burst from "@/components/games/Burst";
 import { LEVELS, levelForXp, type Level } from "@/lib/xp";
 
@@ -194,7 +194,7 @@ export default function Celebrate({
   return createPortal(
     <AnimatePresence>
       {opts && (
-        <motion.div
+        <m.div
           key="celebrate"
           className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/30 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
@@ -202,7 +202,7 @@ export default function Celebrate({
           exit={{ opacity: 0 }}
           onClick={onDone}
         >
-          <motion.div
+          <m.div
             className="relative mx-4 flex max-w-sm flex-col items-center gap-3 rounded-3xl border border-gold-300/60 bg-paper px-8 py-8 text-center shadow-lift"
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 12 }}
             animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
@@ -221,7 +221,7 @@ export default function Celebrate({
 
             {/* Hero mark */}
             {opts.emblemSrc ? (
-              <motion.img
+              <m.img
                 src={opts.emblemSrc}
                 alt=""
                 className="h-24 w-24 rounded-full object-cover ring-4 ring-gold-400/50"
@@ -230,24 +230,24 @@ export default function Celebrate({
                 transition={{ type: "spring", stiffness: 260, damping: 16, delay: 0.05 }}
               />
             ) : isSeal ? (
-              <motion.div
+              <m.div
                 initial={reduce ? undefined : { scale: 0, rotate: -18, opacity: 0 }}
                 animate={reduce ? undefined : { scale: 1, rotate: 0, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
               >
                 <CredentialSeal size={92} label={opts.title} />
-              </motion.div>
+              </m.div>
             ) : opts.variant === "levelup" ? (
-              <motion.div
+              <m.div
                 className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-gold-300 to-gold-500 font-display text-3xl font-black text-white shadow-lift"
                 initial={reduce ? undefined : { scale: 0 }}
                 animate={reduce ? undefined : { scale: 1 }}
                 transition={{ type: "spring", stiffness: 240, damping: 14 }}
               >
                 ↑
-              </motion.div>
+              </m.div>
             ) : (
-              <motion.div
+              <m.div
                 className="flex h-20 w-20 items-center justify-center rounded-full bg-chip-green text-4xl"
                 initial={reduce ? undefined : { scale: 0 }}
                 animate={reduce ? undefined : { scale: 1 }}
@@ -256,23 +256,23 @@ export default function Celebrate({
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
                   <path d="M5 13l4 4L19 7" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </motion.div>
+              </m.div>
             )}
 
             <h3 className="font-display text-xl font-bold text-ink">{opts.title}</h3>
             {opts.subtitle && <p className="text-sm text-soft">{opts.subtitle}</p>}
             {opts.xp != null && opts.xp > 0 && (
-              <motion.span
+              <m.span
                 className="inline-flex items-center gap-1 rounded-full bg-chip-amber px-3 py-1 font-display text-sm font-bold text-gold-700"
                 initial={reduce ? undefined : { scale: 0, y: 8 }}
                 animate={reduce ? undefined : { scale: 1, y: 0 }}
                 transition={{ delay: 0.15, type: "spring", stiffness: 260 }}
               >
                 +{opts.xp} XP
-              </motion.span>
+              </m.span>
             )}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       )}
     </AnimatePresence>,
     document.body

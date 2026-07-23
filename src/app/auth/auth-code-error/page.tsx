@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "@/lib/motion";
 import { Mail, AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authCallbackUrl } from "@/lib/site-url";
@@ -47,7 +47,7 @@ export default function AuthCodeErrorPage() {
         </p>
       </div>
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -132,7 +132,7 @@ export default function AuthCodeErrorPage() {
             </p>
           </>
         )}
-      </motion.div>
+      </m.div>
 
       <p className="mt-8 text-soft/70 text-xs">
         &copy; {new Date().getFullYear()} Family Investing Club. All rights reserved.
