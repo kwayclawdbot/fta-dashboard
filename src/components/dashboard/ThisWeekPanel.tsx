@@ -48,34 +48,36 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
 
   return (
     <div className="space-y-6">
-      {/* Class */}
+      {/* Class — slimmed to a single-row RSVP strip so it reads as the thin
+          thing it is. The rich MoneyMachine below is the marquee (audit #8):
+          the class band no longer sits as a large near-empty gold block above
+          the teaching visual. Title + week on the left, RSVP on the right. */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="paper-card p-6 lg:p-7"
+        className="paper-card p-4 flex items-center gap-4 flex-wrap sm:flex-nowrap"
       >
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" />
-            This Week in FIC
-          </span>
-          <span className="text-xs text-soft">Week of {weekLabel}</span>
+        <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-chip-amber text-gold-700 shrink-0">
+          <Sparkles className="w-4 h-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-soft">
+            This Week in FIC · Week of {weekLabel}
+          </p>
+          <h2 className="font-display text-base sm:text-lg font-bold text-ink leading-snug truncate">
+            {week.class_title}
+          </h2>
         </div>
-        <h2 className="font-display text-2xl font-bold text-ink leading-snug">
-          {week.class_title}
-        </h2>
-        <div className="flex items-center gap-3 mt-4 flex-wrap">
-          <Link
-            href="/live-sessions"
-            className="cta-button inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm"
-          >
-            <CalendarDays className="w-4 h-4" />
-            {isKid ? "See the class" : "RSVP to the live class"}
-          </Link>
-        </div>
+        <Link
+          href="/live-sessions"
+          className="cta-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm shrink-0 w-full sm:w-auto justify-center"
+        >
+          <CalendarDays className="w-4 h-4" />
+          {isKid ? "See the class" : "RSVP"}
+        </Link>
       </motion.div>
 
-      {/* Company of the Week — the MoneyMachine teaching visual */}
+      {/* Company of the Week — the MoneyMachine teaching visual (the marquee) */}
       {(week.company_name || week.cotw_what_they_do) && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}

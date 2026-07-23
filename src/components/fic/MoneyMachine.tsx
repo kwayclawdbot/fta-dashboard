@@ -14,6 +14,26 @@ import {
   ShieldAlert,
   Package,
 } from "lucide-react";
+
+/** Small numbered step chip — carries the 1→2→3 story when the machine stacks
+ *  vertically on mobile (audit #7: preserve the input→engine→payoff narrative
+ *  below md, where the desktop left→right arrows don't apply). */
+function StepNum({ n }: { n: number }) {
+  return (
+    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gold-500 text-[10px] font-bold text-white">
+      {n}
+    </span>
+  );
+}
+
+/** Mobile-only down connector between stacked machine stages. */
+function MobileConnector() {
+  return (
+    <div className="flex justify-center py-1 md:hidden" aria-hidden>
+      <ChevronDown className="h-4 w-4 text-gold-500/70" />
+    </div>
+  );
+}
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import LivePrice from "@/components/fic/LivePrice";
 import {
@@ -156,7 +176,8 @@ export default function MoneyMachine(props: Props) {
       <div className="grid items-center gap-4 md:grid-cols-[1fr_auto_1fr]">
         {/* INPUTS */}
         <div className="space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-soft">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-soft">
+            <StepNum n={1} />
             {kid ? "What goes in" : "What they sell"}
           </p>
           {displayTokens.map((t, i) => (
@@ -171,10 +192,16 @@ export default function MoneyMachine(props: Props) {
               <span className="truncate text-sm text-ink">{t}</span>
             </motion.div>
           ))}
+          <MobileConnector />
         </div>
 
         {/* ENGINE */}
         <div className="relative mx-auto flex flex-col items-center">
+          {/* mobile step badge — the desktop arrows don't render when stacked */}
+          <span className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-soft md:hidden">
+            <StepNum n={2} />
+            {kid ? "The machine" : "Makes money"}
+          </span>
           {/* connector arrows on desktop */}
           <div className="pointer-events-none absolute -left-4 top-1/2 hidden -translate-y-1/2 md:block">
             <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
@@ -230,11 +257,13 @@ export default function MoneyMachine(props: Props) {
                 : howTheyMakeMoney}
             </p>
           )}
+          <MobileConnector />
         </div>
 
         {/* OUTPUT — coins + why investors watch */}
         <div className="space-y-2">
-          <p className="text-right text-[11px] font-bold uppercase tracking-wider text-soft md:text-left">
+          <p className="flex items-center justify-end gap-1.5 text-[11px] font-bold uppercase tracking-wider text-soft md:justify-start md:text-left">
+            <StepNum n={3} />
             {kid ? "Money out" : "The payoff"}
           </p>
           <div className="relative flex items-center justify-end gap-2 md:justify-start">
