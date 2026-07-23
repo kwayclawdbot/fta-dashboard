@@ -74,6 +74,11 @@ export default function CommunityPage() {
 
   const [me, setMe] = useState<Me | null>(null);
   const [myTier, setMyTier] = useState<FamilyTier>("fic");
+  // myTier defaults to 'fic' before the fetch lands, so a FREE viewer would
+  // briefly see the member composer before the read-only join band settles.
+  // Gate the composer slot on this flag — render NEITHER the composer nor the
+  // upsell until the real tier is known, so free users never see the flash.
+  const [tierResolved, setTierResolved] = useState(false);
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -275,10 +280,18 @@ export default function CommunityPage() {
         });
         // Tier badge + badge evaluation are non-critical chrome — resolve them
         // after paint so they never hold up the feed.
-        getFamilyTier(supabase, profile.family_id).then((t) => {
-          if (mounted) setMyTier(t);
-        });
+        getFamilyTier(supabase, profile.family_id)
+          .then((t) => {
+            if (mounted) setMyTier(t);
+          })
+          .finally(() => {
+            if (mounted) setTierResolved(true);
+          });
         evaluateBadges(supabase, uid);
+      } else if (mounted) {
+        // No signed-in profile (shouldn't happen behind the guard) — resolve so
+        // the composer slot isn't stuck blank forever.
+        setTierResolved(true);
       }
 
       await feedP;
@@ -490,8 +503,18 @@ export default function CommunityPage() {
           {/* Pinned latest announcement (first 7 days) */}
           {pinnedAnnouncement && <AnnouncementCard post={pinnedAnnouncement} pinned />}
 
-          {/* Composer — or a read-only upsell for free members */}
-          {readOnly ? (
+          {/* Composer — or a read-only upsell for free members. Render NEITHER
+              until the tier is known, so a free viewer never flashes the member
+              composer while getFamilyTier is still in flight. A quiet skeleton
+              holds the slot's height to avoid a layout jump. */}
+          {!tierResolved ? (
+            <div className="paper-card p-4">
+              <div className="flex gap-3 animate-pulse">
+                <div className="w-11 h-11 rounded-full bg-sand/60 shrink-0" />
+                <div className="flex-1 h-[76px] rounded-lg bg-sand/40" />
+              </div>
+            </div>
+          ) : readOnly ? (
             <FreeComposerUpsell />
           ) : (
           <div className="paper-card p-4">
