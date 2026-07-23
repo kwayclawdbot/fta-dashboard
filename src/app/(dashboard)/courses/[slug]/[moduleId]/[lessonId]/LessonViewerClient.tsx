@@ -30,9 +30,9 @@ import QuizPanel from "@/components/dashboard/QuizPanel";
 import AiCoachPanel from "@/components/dashboard/AiCoachPanel";
 import LockedState from "@/components/dashboard/LockedState";
 import Celebrate, {
-  crossedLevel,
   type CelebrateOptions,
 } from "@/components/fic/Celebrate";
+import { beltCelebrateFields } from "@/lib/belts";
 import { Sparkles } from "lucide-react";
 
 interface Lesson {
@@ -414,13 +414,12 @@ export default function LessonViewerClient() {
         if (!(await hasXpForRef(supabase, user.id, "lesson", lessonId))) {
           const prevXp = await getUserXp(supabase, user.id);
           await awardXp(supabase, user.id, "lesson", XP.LESSON, lessonId);
-          const lvl = crossedLevel(prevXp, prevXp + XP.LESSON);
-          if (lvl) {
+          const belt = beltCelebrateFields(prevXp, prevXp + XP.LESSON, register === "kid");
+          if (belt) {
             enqueueCelebrate({
               variant: "levelup",
               register: celebrateRegister(register),
-              title: `Level ${lvl.level}: ${lvl.name}`,
-              subtitle: register === "kid" ? "You leveled up!" : "New level reached",
+              ...belt,
             });
           }
         }

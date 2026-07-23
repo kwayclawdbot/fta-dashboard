@@ -33,10 +33,10 @@ import ResearchLadder from "@/components/fic/ResearchLadder";
 import TrendGlyph from "@/components/fic/glyphs/TrendGlyph";
 import { EmptyWatchlist } from "@/components/fic/EmptyState";
 import Celebrate, {
-  crossedLevel,
   type CelebrateOptions,
   type Register,
 } from "@/components/fic/Celebrate";
+import { beltCelebrateFields } from "@/lib/belts";
 import {
   fetchQuote,
   fetchQuotes,
@@ -450,13 +450,12 @@ export default function WatchlistPage() {
         subtitle: `${updated.company_name} — Favorite or Avoid is unlocked.`,
         xp: already ? undefined : WATCHLIST_XP.RESEARCH,
       });
-      const lvl = crossedLevel(xp, newXp);
-      if (lvl) {
+      const belt = beltCelebrateFields(xp, newXp, isKid);
+      if (belt) {
         enqueue({
           variant: "levelup",
           register,
-          title: `Level ${lvl.level}: ${lvl.name}`,
-          subtitle: isKid ? "You leveled up!" : "New level reached",
+          ...belt,
         });
       }
     }

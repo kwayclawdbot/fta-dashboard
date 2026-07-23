@@ -35,6 +35,12 @@ export interface CelebrateOptions {
   emblemSrc?: string; // mission emblem to "stamp" in
   sound?: boolean; // kid + opt-in only
   durationMs?: number;
+  // Belt ceremony — when a "levelup" also carries a belt (every level-up does),
+  // these re-skin the hero mark into the belt's color so the level-up reads as a
+  // belt ceremony ("You earned your Blue Belt") without a separate system.
+  beltHex?: string;
+  beltBorderHex?: string;
+  beltInitial?: string; // e.g. "B" for the belt disc
 }
 
 /* ---------- opt-in kid sound (default silent) ---------- */
@@ -236,6 +242,21 @@ export default function Celebrate({
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
               >
                 <CredentialSeal size={92} label={opts.title} />
+              </m.div>
+            ) : opts.variant === "levelup" && opts.beltHex ? (
+              // Belt ceremony — the level-up hero becomes the earned belt's disc.
+              <m.div
+                className="flex h-20 w-20 items-center justify-center rounded-full font-display text-3xl font-black shadow-lift"
+                style={{
+                  backgroundColor: opts.beltHex,
+                  color: "#fff",
+                  boxShadow: `inset 0 0 0 2px ${opts.beltBorderHex ?? opts.beltHex}, 0 8px 24px ${opts.beltHex}66`,
+                }}
+                initial={reduce ? undefined : { scale: 0, rotate: -12 }}
+                animate={reduce ? undefined : { scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 240, damping: 14 }}
+              >
+                {opts.beltInitial ?? "↑"}
               </m.div>
             ) : opts.variant === "levelup" ? (
               <m.div

@@ -168,3 +168,39 @@ export function beltCrossing(
   const afterRank = rankForLevel(after.level);
   return { rank: afterRank, newBelt: afterRank.belt.key !== beforeRank.belt.key };
 }
+
+/**
+ * Celebration payload for a level-up, re-skinned as a belt ceremony. Spread into
+ * a `useCelebrate` enqueue with `variant: "levelup"`. Returns null when no level
+ * was crossed. Copy is register-aware: a brand-new belt reads "You earned your
+ * Blue Belt"; a new degree within a belt reads "Blue Belt II reached".
+ */
+export function beltCelebrateFields(
+  prevXp: number,
+  newXp: number,
+  isKid: boolean
+): {
+  title: string;
+  subtitle: string;
+  beltHex: string;
+  beltBorderHex: string;
+  beltInitial: string;
+} | null {
+  const crossing = beltCrossing(prevXp, newXp);
+  if (!crossing) return null;
+  const { rank, newBelt } = crossing;
+  const title = newBelt
+    ? isKid
+      ? `${rank.belt.name} Belt unlocked!`
+      : `You earned your ${rank.belt.name} Belt`
+    : isKid
+      ? `${rank.label}!`
+      : `${rank.label} reached`;
+  return {
+    title,
+    subtitle: `Level ${rank.level.level} · ${rank.level.name}`,
+    beltHex: rank.belt.hex,
+    beltBorderHex: rank.belt.borderHex,
+    beltInitial: rank.belt.name[0],
+  };
+}

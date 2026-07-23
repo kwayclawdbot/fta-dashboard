@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { awardXp, hasXpForRef } from "@/lib/xp";
+import { beltCelebrateFields } from "@/lib/belts";
 import MissionEmblem from "@/components/fic/MissionEmblem";
 import Celebrate, {
-  crossedLevel,
   useSoundOptIn,
   type CelebrateOptions,
   type Register,
@@ -196,14 +196,13 @@ export default function MissionsPage() {
         sound: register === "kid" && soundOn,
       });
 
-      // Level-up moment if the XP threshold was crossed.
-      const lvl = crossedLevel(prevXp, newXp);
-      if (lvl) {
+      // Belt ceremony if a level (= belt degree) was crossed.
+      const belt = beltCelebrateFields(prevXp, newXp, isKid);
+      if (belt) {
         enqueue({
           variant: "levelup",
           register,
-          title: `Level ${lvl.level}: ${lvl.name}`,
-          subtitle: isKid ? "You leveled up!" : "New level reached",
+          ...belt,
           sound: register === "kid" && soundOn,
         });
       }
