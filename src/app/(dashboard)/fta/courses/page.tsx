@@ -32,7 +32,8 @@ interface CourseCard {
 }
 
 export default function FtaCoursesPage() {
-  const { loading: viewerLoading, isFta } = useFtaViewer();
+  const { loading: viewerLoading, isFta, me } = useFtaViewer();
+  const isChild = me?.role === "child";
   const [loading, setLoading] = useState(true);
   const [cards, setCards] = useState<CourseCard[]>([]);
 
@@ -95,8 +96,12 @@ export default function FtaCoursesPage() {
         lockBadge
         eyebrow="FTA — Trading Academy"
         title="Unlock the Course Library"
-        body="The full FTA program library — foundations to trade-ready — opens with the Family Trading Academy. Your FIC courses stay right where they are on the Courses page."
-        cta={{ label: "Unlock FTA", href: "/upgrade", icon: Lock }}
+        body={
+          isChild
+            ? "The full FTA program library is part of your family's Family Trading Academy. Ask a parent about joining the Academy — your own courses are on the Courses page."
+            : "The full FTA program library — foundations to trade-ready — opens with the Family Trading Academy. Your FIC courses stay right where they are on the Courses page."
+        }
+        cta={isChild ? undefined : { label: "Unlock FTA", href: "/upgrade", icon: Lock }}
       />
     );
   }

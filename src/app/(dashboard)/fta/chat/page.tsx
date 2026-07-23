@@ -12,6 +12,7 @@ import LockedState from "@/components/dashboard/LockedState";
  */
 export default function FtaChatPage() {
   const { loading, me, isFta } = useFtaViewer();
+  const isChild = me?.role === "child";
 
   if (loading || !me) {
     return (
@@ -29,8 +30,12 @@ export default function FtaChatPage() {
         lockBadge
         eyebrow="FTA — Trading Academy"
         title="Unlock the Traders Chat"
-        body="The always-on FTA traders room — live setups, cohort talk, and class discussion — opens with the Family Trading Academy. Your FIC club chat stays right where it is."
-        cta={{ label: "Unlock FTA", href: "/upgrade", icon: Lock }}
+        body={
+          isChild
+            ? "The FTA traders room is part of your family's Family Trading Academy. Ask a parent about joining the Academy to unlock it."
+            : "The always-on FTA traders room — live setups, cohort talk, and class discussion — opens with the Family Trading Academy. Your FIC club chat stays right where it is."
+        }
+        cta={isChild ? undefined : { label: "Unlock FTA", href: "/upgrade", icon: Lock }}
       />
     );
   }

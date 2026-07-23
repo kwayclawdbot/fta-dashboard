@@ -50,7 +50,8 @@ function fmt(dateStr: string | null): string {
 }
 
 export default function FtaRecordingsPage() {
-  const { loading: viewerLoading, isFta } = useFtaViewer();
+  const { loading: viewerLoading, isFta, me } = useFtaViewer();
+  const isChild = me?.role === "child";
   const [loading, setLoading] = useState(true);
   const [recordings, setRecordings] = useState<Rec[]>([]);
   const [userId, setUserId] = useState("");
@@ -107,8 +108,12 @@ export default function FtaRecordingsPage() {
         lockBadge
         eyebrow="FTA — Trading Academy"
         title="Unlock the Recordings"
-        body="Every FTA live class recording — always waiting, grouped by series — opens with the Family Trading Academy. FIC class recordings stay on the Live Classes page."
-        cta={{ label: "Unlock FTA", href: "/upgrade", icon: Lock }}
+        body={
+          isChild
+            ? "FTA class recordings are part of your family's Family Trading Academy. Ask a parent about joining — your family's class recordings are on the Live Classes page."
+            : "Every FTA live class recording — always waiting, grouped by series — opens with the Family Trading Academy. FIC class recordings stay on the Live Classes page."
+        }
+        cta={isChild ? undefined : { label: "Unlock FTA", href: "/upgrade", icon: Lock }}
       />
     );
   }
