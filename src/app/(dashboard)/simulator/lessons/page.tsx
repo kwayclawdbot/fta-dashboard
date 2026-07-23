@@ -6,6 +6,7 @@ import { m } from "@/lib/motion";
 import { CheckCircle, Lock, BarChart3, CandlestickChart as CandlestickIcon } from "lucide-react";
 import { SCENARIOS, type ScenarioDefinition, type Difficulty } from "@/lib/simulator/scenarios";
 import { createClient } from "@/lib/supabase/client";
+import SimulatorTabs from "@/components/simulator/SimulatorTabs";
 
 const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   beginner: "bg-green-400/10 text-green-400 border-green-400/20",
@@ -55,6 +56,7 @@ export default function LessonsPage() {
 
   return (
     <div className="space-y-6">
+      <SimulatorTabs />
       {/* Header */}
       <div>
         <h1 className="text-xl font-display font-bold text-midnight-100">

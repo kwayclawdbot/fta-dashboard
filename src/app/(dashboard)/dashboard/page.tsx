@@ -725,9 +725,14 @@ export default function DashboardHome() {
               className="paper-card p-6 lg:p-7"
             >
               <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
-                <h3 className="font-display text-lg font-semibold text-ink">
-                  {home.this_week.title}
-                </h3>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-display font-bold uppercase tracking-wider text-gold-700 mb-0.5">
+                    Your live class + drills
+                  </p>
+                  <h3 className="font-display text-lg font-semibold text-ink">
+                    {home.this_week.title}
+                  </h3>
+                </div>
                 <Link
                   href="/live-sessions"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
@@ -770,9 +775,6 @@ export default function DashboardHome() {
             </m.div>
           )}
 
-          {/* Clubhouse activity — self-contained; renders null when empty */}
-          <ClubActivityStrip />
-
           {/* Role strips */}
           <div className="grid md:grid-cols-2 gap-6">
             {/* Parent: family this week */}
@@ -792,7 +794,7 @@ export default function DashboardHome() {
                     href="/family/overview"
                     className="text-sm font-medium text-gold-700 hover:text-gold-800"
                   >
-                    Overview
+                    Full overview →
                   </Link>
                 </div>
                 <div className="space-y-3">
@@ -904,6 +906,10 @@ export default function DashboardHome() {
               </div>
             </m.div>
           </div>
+
+          {/* Clubhouse activity — demoted below the family strips, capped to a
+              short glance; self-contained, renders null when empty */}
+          <ClubActivityStrip limit={2} />
         </>
       )}
         </>

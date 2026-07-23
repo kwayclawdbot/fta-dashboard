@@ -27,6 +27,7 @@ import {
   type Position,
 } from "@/lib/simulator/portfolio-manager";
 import type { ChartHandle } from "@/components/simulator/CandlestickChart";
+import SimulatorTabs from "@/components/simulator/SimulatorTabs";
 
 const CandlestickChart = dynamic(
   () => import("@/components/simulator/CandlestickChart"),
@@ -295,6 +296,7 @@ export default function SimulatorPage() {
 
   return (
     <div className="space-y-4">
+      <SimulatorTabs />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

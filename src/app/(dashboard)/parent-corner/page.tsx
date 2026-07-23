@@ -258,9 +258,17 @@ export default function ParentCornerPage() {
           OWN kids are before the coaching text. */}
       {children.length > 0 && (
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink mb-3">
-            Your family this week
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+            <h2 className="font-display text-lg font-semibold text-ink">
+              Your family this week
+            </h2>
+            <Link
+              href="/family/overview"
+              className="text-sm font-medium text-gold-700 hover:text-gold-800 shrink-0"
+            >
+              Full overview →
+            </Link>
+          </div>
           <div className="grid sm:grid-cols-2 gap-3">
             {children.map((c, i) => (
               <m.div

@@ -82,7 +82,7 @@ const FAMILY_ITEM: NavItem = {
     { label: "Leaderboard", href: "/family/leaderboard" },
     { label: "Members", href: "/family/members" },
     { label: "Parent Corner", href: "/parent-corner" },
-    { label: "Invite Families", href: "/referrals" },
+    { label: "Refer Families", href: "/referrals" },
     { label: "My Progress", href: "/progress" },
   ],
 };

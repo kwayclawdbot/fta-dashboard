@@ -10,6 +10,7 @@ import {
   Crown,
   Check,
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -100,7 +101,7 @@ export default function FamilyOverviewPage() {
       .single();
 
     if (!profile || profile.role !== "parent") {
-      router.replace("/family");
+      router.replace("/dashboard");
       return;
     }
 
@@ -512,6 +513,32 @@ export default function FamilyOverviewPage() {
             ))}
           </div>
         )}
+      </mm.section>
+
+      {/* Referrals — compact card (full program lives at /referrals) */}
+      <mm.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.18, duration: 0.3 }}
+        className="mt-10"
+      >
+        <Link
+          href="/referrals"
+          className="group flex items-center gap-4 rounded-2xl border border-gold-400/25 bg-gradient-to-br from-gold-400/[0.07] to-transparent p-5 transition-colors hover:border-gold-400/50"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-gold-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display font-semibold text-midnight-50">
+              Refer other families
+            </p>
+            <p className="text-sm text-midnight-400 font-body">
+              Invite families you know to the club and earn rewards together.
+            </p>
+          </div>
+          <ArrowRight className="w-5 h-5 text-gold-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </mm.section>
     </div>
   );

@@ -12,7 +12,6 @@ import {
   Compass,
   CalendarCheck,
   ClipboardCheck,
-  Eye,
   RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
@@ -486,7 +485,7 @@ export default function ProgressPage() {
               Family Investing Club
             </h2>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Link
               href="/missions"
               className="paper-card group p-4 transition-colors hover:border-gold-300"
@@ -517,18 +516,11 @@ export default function ProgressPage() {
               <Star className="mb-2 h-4 w-4 text-gold-500" />
               <p className="font-display text-2xl font-bold text-ink">
                 {fic.companiesChampioned}
+                <span className="text-base font-normal text-midnight-500">
+                  {" "}· {fic.researchDone} researched
+                </span>
               </p>
               <p className="mt-0.5 text-xs text-soft">Companies championed</p>
-            </Link>
-            <Link
-              href="/watchlist"
-              className="paper-card group p-4 transition-colors hover:border-gold-300"
-            >
-              <Eye className="mb-2 h-4 w-4 text-gold-500" />
-              <p className="font-display text-2xl font-bold text-ink">
-                {fic.researchDone}
-              </p>
-              <p className="mt-0.5 text-xs text-soft">Research cards done</p>
             </Link>
           </div>
         </mm.section>

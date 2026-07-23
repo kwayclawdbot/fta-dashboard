@@ -891,8 +891,9 @@ export default function LiveSessionsPage() {
         ))}
       </div>
 
-      {/* Track filter */}
-      {tab !== "live" && (
+      {/* Track filter — only worth showing once a tab is crowded (>6 sessions) */}
+      {tab !== "live" &&
+        (tab === "upcoming" ? upcoming.length : recordings.length) > 6 && (
         <div className="flex items-center gap-1.5 mb-4">
           <Filter className="w-3.5 h-3.5 text-midnight-500 mr-1" />
           {trackFilters.map((t) => (

@@ -41,15 +41,6 @@ const GAMES: GameCard[] = [
     scored: true,
     freeOpen: false,
   },
-  {
-    href: "/simulator/lessons",
-    title: "Pattern Practice",
-    desc: "Spot the pattern and make the trade call on real chart scenarios in the simulator.",
-    art: "/art/pool-story.jpg",
-    bar: "linear-gradient(135deg, rgba(56,189,248,0.85), rgba(14,165,233,0.8))",
-    scored: false,
-    freeOpen: false,
-  },
 ];
 
 function timeAgo(iso: string): string {
