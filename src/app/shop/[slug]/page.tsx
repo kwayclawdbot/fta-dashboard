@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BookOpen, Check, Package } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, Package, Truck, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import BuyButton from "@/components/shop/BuyButton";
 import {
@@ -162,6 +162,44 @@ export default async function ProductPage({
 
           <div className="mt-7">
             <BuyButton slug={p.slug} />
+            {/* One-line delivery expectation right at the buy decision. */}
+            <p className="mt-2 text-xs text-soft">
+              Printed to order · ships in 5–10 business days · US &amp; Canada
+            </p>
+          </div>
+
+          {/* Shipping & Returns — set expectations before Stripe (UX audit #9) */}
+          <div className="mt-6 rounded-2xl border border-sand bg-[var(--card)] p-4">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wider text-soft">
+              Shipping &amp; returns
+            </h2>
+            <ul className="mt-3 space-y-3">
+              <li className="flex items-start gap-2.5 text-[14px] text-ink/90">
+                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
+                <span>
+                  Every book is printed to order and shipped from our
+                  print-on-demand partner. Most orders arrive within{" "}
+                  <span className="font-semibold text-ink">5–10 business days</span>{" "}
+                  in the US &amp; Canada. Shipping is calculated at checkout.
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5 text-[14px] text-ink/90">
+                <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
+                <span>
+                  Because each book is made just for you, we can&apos;t take
+                  change-of-mind returns. If your order arrives damaged,
+                  misprinted, or wrong, email{" "}
+                  <a
+                    href="mailto:hello@familyinvestingclub.com"
+                    className="font-semibold text-gold-700 hover:text-gold-800"
+                  >
+                    hello@familyinvestingclub.com
+                  </a>{" "}
+                  within 30 days and we&apos;ll reprint or refund it — no need to
+                  ship anything back.
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

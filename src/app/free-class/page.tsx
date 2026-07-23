@@ -74,8 +74,12 @@ export default function FreeClassLanding() {
   const session = meta?.session ?? null;
   const registered = meta?.registered_count ?? 0;
   const seats = meta?.seats_left ?? null;
-  const showSocial = registered >= 5;
+  // Honest threshold lowered 5 -> 2 so an early cohort still shows a real
+  // count; below that, a soft always-on line carries the trust signal instead
+  // of leaving the hook with zero (UX audit #10).
+  const showSocial = registered >= 2;
   const showSeats = typeof seats === "number" && seats > 0;
+  const showSoft = !showSocial;
 
   return (
     <div className="min-h-screen bg-paper text-ink flex flex-col">
@@ -98,7 +102,7 @@ export default function FreeClassLanding() {
           <p className="text-soft mt-4 text-[15px] leading-relaxed max-w-sm mx-auto">
             Join a free live class with the Family Investing Club. In one session your family
             learns how the market actually works — and how to start the habit together. Reserve
-            your seat in 30 seconds.
+            your seat in about a minute.
           </p>
 
           {session?.scheduled_at && (
@@ -109,9 +113,17 @@ export default function FreeClassLanding() {
             </div>
           )}
 
-          {/* Honest social proof + seat scarcity (both hide themselves) */}
-          {(showSocial || showSeats) && (
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+          {/* Honest social proof + seat scarcity, with an always-on soft
+              fallback so the hook is never left with zero trust signal. */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+            {showSoft && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-green px-3 py-1 text-green-700 font-display font-semibold">
+                <Users className="w-3.5 h-3.5" />
+                Families across the club are learning this week
+              </span>
+            )}
+            {(showSocial || showSeats) && (
+              <>
               {showSocial && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-green px-3 py-1 text-green-700 font-display font-semibold">
                   <Users className="w-3.5 h-3.5" />
@@ -124,8 +136,9 @@ export default function FreeClassLanding() {
                   {seats} seats left
                 </span>
               )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
           <button
             onClick={begin}
