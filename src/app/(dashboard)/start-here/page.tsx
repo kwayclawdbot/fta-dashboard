@@ -74,7 +74,6 @@ function TourVideo() {
 
 export default function StartHerePage() {
   const supabase = createClient();
-  const [loading, setLoading] = useState(true);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -131,7 +130,6 @@ export default function StartHerePage() {
         >
       );
       setCompleted(state.completed);
-      setLoading(false);
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -182,23 +180,18 @@ export default function StartHerePage() {
       </div>
 
       {/* HERO — the setup journey. This is the make-or-break motivator, so it
-          leads. Renders a shape-matched skeleton until orientation hydrates. */}
-      {loading ? (
-        <div className="paper-card p-6 h-40 animate-pulse bg-sand/30" />
-      ) : (
-        <>
-          <SetupTrail
-            steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
-            completed={completed}
-            allDone={allDone}
-          />
-          {allDone && (
-            <p className="text-sm text-green-600 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4" />
-              Head to your home page for This Week in FIC.
-            </p>
-          )}
-        </>
+          leads and paints immediately from local state (0/6), then fills in as
+          orientation progress hydrates — no blank hero box, no loading gate. */}
+      <SetupTrail
+        steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
+        completed={completed}
+        allDone={allDone}
+      />
+      {allDone && (
+        <p className="text-sm text-green-600 flex items-center gap-1.5">
+          <Sparkles className="w-4 h-4" />
+          Head to your home page for This Week in FIC.
+        </p>
       )}
 
       {/* PRIMARY media — the two-minute app tour. One embed, poster + error
