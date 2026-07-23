@@ -31,6 +31,9 @@ const FREE_ALLOWED_PREFIXES = [
   "/chart", // full practice chart
   "/games", // hub + Candle Battle (Trend or Trap locks itself at the page)
   "/picks", // teaser grid + gated detail (server-enforced)
+  "/u", // member profiles are read-only for everyone; a free user must be able
+  //       to see their OWN profile. Upsell belongs on member-only ACTIONS
+  //       (posting, commenting), not on viewing a read-only profile page.
 ];
 
 // The remaining locked prefixes map to a shared UpsellCard context, matched by

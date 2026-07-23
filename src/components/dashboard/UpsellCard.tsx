@@ -178,20 +178,24 @@ export default function UpsellCard({
   const Icon = c.icon;
 
   if (variant === "band") {
+    // Robust to narrow slots: the row wraps (icon+text stay together, the CTA
+    // drops to full-width beneath) rather than squeezing the copy to one word
+    // per line or overlapping the button when the container is constrained
+    // below the card's natural width (UX audit #5).
     return (
       <div
-        className={`paper-card p-5 flex items-center gap-4 ring-1 ring-gold-300 ${className}`}
+        className={`paper-card p-5 flex flex-wrap items-center gap-x-4 gap-y-3 ring-1 ring-gold-300 ${className}`}
       >
         <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
           <Icon className="w-6 h-6 text-gold-700" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-[8rem]">
           <p className="font-display font-semibold text-ink">{c.title}</p>
           <p className="text-sm text-soft leading-snug">{c.body}</p>
         </div>
         <a
           href={FIC_CHECKOUT_URL}
-          className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs shrink-0 whitespace-nowrap"
+          className="cta-button inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs shrink-0 whitespace-nowrap w-full sm:w-auto"
         >
           {c.cta} <ArrowRight className="w-3.5 h-3.5" />
         </a>
