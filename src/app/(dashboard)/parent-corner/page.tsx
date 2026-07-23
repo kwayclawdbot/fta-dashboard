@@ -14,9 +14,15 @@ import {
   Utensils,
   Lightbulb,
   Ban,
+  CheckCircle2,
+  Circle,
+  Target,
+  Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentFicWeek, type FicWeek } from "@/lib/fic";
+import { researchComplete, type WatchlistItem } from "@/lib/watchlist";
+import Avatar from "@/components/Avatar";
 
 /** Evergreen parent guidance — always available regardless of the week. */
 const EVERGREEN = [
@@ -47,11 +53,24 @@ const EVERGREEN = [
   },
 ];
 
+/** One child's at-a-glance state for the per-child strip. */
+interface ChildStat {
+  id: string;
+  display_name: string;
+  avatar_url: string | null;
+  age_group: string | null;
+  missionsThisWeek: number;
+  watchlistCount: number;
+  researchedCount: number;
+  xpThisWeek: number;
+}
+
 export default function ParentCornerPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [isParent, setIsParent] = useState(false);
   const [week, setWeek] = useState<FicWeek | null>(null);
+  const [children, setChildren] = useState<ChildStat[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -61,16 +80,90 @@ export default function ParentCornerPage() {
       if (!user) return;
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, family_id")
         .eq("id", user.id)
         .single();
       const parent = profile?.role === "parent" || profile?.role === "admin";
       setIsParent(parent);
       if (parent) {
         setWeek(await getCurrentFicWeek(supabase));
+        if (profile?.family_id) {
+          void loadChildStrip(profile.family_id).catch(() => {});
+        }
       }
       setLoading(false);
     }
+
+    // Per-child "your family this week" strip (audit #4). ONE batched fetch —
+    // roster + this-week missions + family watchlist + this-week XP — then all
+    // roll-ups happen in memory. No per-child round trips (no N+1).
+    async function loadChildStrip(familyId: string) {
+      const { data: roster } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url, age_group, role")
+        .eq("family_id", familyId);
+      const kids = (roster || []).filter((m) => m.role === "child");
+      if (kids.length === 0) return;
+      const kidIds = kids.map((k) => k.id);
+
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgoIso = weekAgo.toISOString();
+
+      const [missionsRes, watchlistRes, xpRes] = await Promise.all([
+        supabase
+          .from("mission_completions")
+          .select("user_id")
+          .in("user_id", kidIds)
+          .gte("completed_at", weekAgoIso),
+        // Watchlist is family-scoped; filter by champion_id in memory so it's
+        // one query, not one per child.
+        supabase
+          .from("family_watchlist")
+          .select("champion_id, how_they_make_money, strength, risk, trend")
+          .eq("family_id", familyId),
+        supabase
+          .from("xp_events")
+          .select("user_id, amount")
+          .in("user_id", kidIds)
+          .gte("created_at", weekAgoIso),
+      ]);
+
+      const missionCount: Record<string, number> = {};
+      (missionsRes.data || []).forEach((r) => {
+        missionCount[r.user_id] = (missionCount[r.user_id] || 0) + 1;
+      });
+
+      const wlCount: Record<string, number> = {};
+      const researchedCount: Record<string, number> = {};
+      (watchlistRes.data || []).forEach((r) => {
+        const cid = (r as { champion_id: string | null }).champion_id;
+        if (!cid) return;
+        wlCount[cid] = (wlCount[cid] || 0) + 1;
+        if (researchComplete(r as Partial<WatchlistItem>)) {
+          researchedCount[cid] = (researchedCount[cid] || 0) + 1;
+        }
+      });
+
+      const xpByKid: Record<string, number> = {};
+      (xpRes.data || []).forEach((r: { user_id: string; amount: number }) => {
+        xpByKid[r.user_id] = (xpByKid[r.user_id] || 0) + (r.amount || 0);
+      });
+
+      setChildren(
+        kids.map((k) => ({
+          id: k.id,
+          display_name: k.display_name || "Member",
+          avatar_url: k.avatar_url,
+          age_group: k.age_group,
+          missionsThisWeek: missionCount[k.id] || 0,
+          watchlistCount: wlCount[k.id] || 0,
+          researchedCount: researchedCount[k.id] || 0,
+          xpThisWeek: xpByKid[k.id] || 0,
+        }))
+      );
+    }
+
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -159,6 +252,80 @@ export default function ParentCornerPage() {
           about it, and what to avoid.
         </p>
       </div>
+
+      {/* Per-child strip — "your family this week at a glance" (audit #4).
+          Sits above the weekly reading so the guiding parent sees where their
+          OWN kids are before the coaching text. */}
+      {children.length > 0 && (
+        <div>
+          <h2 className="font-display text-lg font-semibold text-ink mb-3">
+            Your family this week
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {children.map((c, i) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="paper-card p-4 flex items-center gap-3"
+              >
+                <Avatar
+                  name={c.display_name}
+                  avatarUrl={c.avatar_url}
+                  role="child"
+                  size="md"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display font-semibold text-ink text-sm truncate">
+                    {c.display_name}
+                    {c.age_group && (
+                      <span className="ml-1.5 text-xs font-body font-normal text-soft capitalize">
+                        {c.age_group}
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <span
+                      className="inline-flex items-center gap-1 text-xs text-soft"
+                      title="Missions completed this week"
+                    >
+                      {c.missionsThisWeek > 0 ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                      ) : (
+                        <Circle className="w-3.5 h-3.5 text-midnight-600" />
+                      )}
+                      {c.missionsThisWeek > 0
+                        ? `${c.missionsThisWeek} mission${c.missionsThisWeek === 1 ? "" : "s"}`
+                        : "No mission yet"}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 text-xs text-soft"
+                      title="Companies on the watchlist they champion (researched)"
+                    >
+                      <Target className="w-3.5 h-3.5 text-gold-600" />
+                      {c.watchlistCount > 0
+                        ? `${c.watchlistCount} pick${c.watchlistCount === 1 ? "" : "s"}${
+                            c.researchedCount > 0
+                              ? ` · ${c.researchedCount} researched`
+                              : ""
+                          }`
+                        : "No picks yet"}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 text-xs font-medium text-gold-700"
+                      title="XP earned this week"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-gold-500" />
+                      {c.xpThisWeek > 0 ? `+${c.xpThisWeek} XP` : "0 XP"}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* This week's parent content */}
       {week ? (
