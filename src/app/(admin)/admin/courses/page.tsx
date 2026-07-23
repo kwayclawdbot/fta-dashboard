@@ -186,8 +186,13 @@ export default function AdminCoursesPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Courses</h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Manage courses, modules, and lessons
+          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
+            Manage courses, modules, and lessons.{" "}
+            <span className="text-zinc-500">
+              Lesson videos here are on-demand, self-paced course content — not
+              live-class replays (see Live Sessions) or the weekly class video
+              (see This Week in FIC).
+            </span>
           </p>
         </div>
         <button

@@ -423,10 +423,15 @@ export default function AdminLiveSessionsPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-zinc-100">Live Sessions</h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
             Manage live coaching sessions and recordings. To publish a past
             class, create a session with status &quot;completed&quot; and add
-            its recording.
+            its recording.{" "}
+            <span className="text-zinc-500">
+              Recordings here are replays of live classes — distinct from
+              on-demand lesson videos (see Courses) and the weekly class video
+              (see This Week in FIC).
+            </span>
           </p>
         </div>
         <button

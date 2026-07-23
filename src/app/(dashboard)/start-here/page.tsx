@@ -26,6 +26,7 @@ import Celebrate, {
   type CelebrateOptions,
   type Register,
 } from "@/components/fic/Celebrate";
+import { KID_FIRST_ADVENTURE } from "@/lib/register";
 
 const ORIENTATION_DECK_URL = "https://fta-start.vercel.app";
 const WALKTHROUGH_URL =
@@ -156,6 +157,71 @@ export default function StartHerePage() {
   const doneCount = ORIENTATION_STEPS.filter((s) => completed.has(s.key)).length;
   const total = ORIENTATION_STEPS.length;
   const allDone = doneCount >= total;
+
+  // Kids get a kid Start-Here, not the parent account-setup trail (audit #23).
+  // The six orientation steps (custodial vs brokerage, opening accounts, the
+  // family orientation deck) are things only a parent can do — a child landing
+  // here should be pointed at their first adventure, not a grown-up chore list.
+  if (register === "kid") {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 pb-12">
+        <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
+        <div>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
+            <Compass className="w-3.5 h-3.5" />
+            Start Here
+          </span>
+          <h1 className="font-display text-2xl font-bold text-ink mt-2">
+            Ready for your first adventure?
+          </h1>
+          <p className="text-soft mt-1 leading-relaxed">
+            Your grown-ups take care of the boring account stuff. Your job is the
+            fun part — learning how money grows, one adventure at a time.
+          </p>
+        </div>
+
+        <Link
+          href={KID_FIRST_ADVENTURE.href}
+          className="paper-card p-6 flex items-center gap-4 hover:border-gold-400/50 transition-colors group"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-gold-400/15 flex items-center justify-center shrink-0">
+            <PlayCircle className="w-8 h-8 text-gold-700" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display text-lg font-bold text-ink">
+              {KID_FIRST_ADVENTURE.title}
+            </p>
+            <p className="text-sm text-soft mt-0.5">{KID_FIRST_ADVENTURE.body}</p>
+            <span className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-lg bg-gold-500 text-white text-sm font-display font-semibold group-hover:bg-gold-600 transition-colors">
+              <Sparkles className="w-4 h-4" />
+              {KID_FIRST_ADVENTURE.cta}
+            </span>
+          </div>
+        </Link>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Link
+            href="/missions"
+            className="paper-card p-4 flex items-center gap-2.5 hover:border-gold-400/50 transition-colors"
+          >
+            <span className="text-2xl leading-none">🎯</span>
+            <span className="font-display font-semibold text-ink text-sm">
+              My missions
+            </span>
+          </Link>
+          <Link
+            href="/games"
+            className="paper-card p-4 flex items-center gap-2.5 hover:border-gold-400/50 transition-colors"
+          >
+            <span className="text-2xl leading-none">🎮</span>
+            <span className="font-display font-semibold text-ink text-sm">
+              Play a game
+            </span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">

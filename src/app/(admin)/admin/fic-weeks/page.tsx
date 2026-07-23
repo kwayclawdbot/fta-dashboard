@@ -208,7 +208,12 @@ export default function AdminFicWeeksPage() {
             Author each Family Investing Club week: the class, the Company of the
             Week breakdown, the family assignment, the parent prompt, and the kid
             challenge. Publish a week and set it as the current week to make it
-            live on every family&apos;s home page.
+            live on every family&apos;s home page.{" "}
+            <span className="text-zinc-500">
+              The class video here is the single weekly Company-of-the-Week
+              class — distinct from on-demand lesson videos (see Courses) and
+              live-class replays (see Live Sessions).
+            </span>
           </p>
         </div>
         <button
