@@ -296,6 +296,117 @@ export async function getBars(
   return data.results.map((b) => ({ t: b.t, c: b.c }));
 }
 
+export interface OHLCBar {
+  t: number; // ms epoch (bar start)
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+}
+
+/**
+ * Intraday (and daily) OHLCV aggregates for the Simbot Live Market engine.
+ *
+ * Empirically verified against the live key (2026-07-23): the plan serves
+ * 1/5/15-minute, 1-hour and 1-day aggregates, all flagged DELAYED (~15 min),
+ * including pre/post extended-hours bars. This is the real-data feed that drives
+ * Simbot's actual candlestick engine in Live mode.
+ *
+ * Each timeframe has its own lookback window, bar cap and cache TTL — intraday
+ * refreshes every 30-60s (a new bar only closes that often anyway), daily is
+ * cached ~15 min. `getBars` (daily close-only sparkline) is intentionally left
+ * untouched so existing screener/watchlist/research consumers are unaffected.
+ */
+export type Timeframe = "1m" | "3m" | "5m" | "15m" | "30m" | "1h" | "1d" | "1w";
+
+interface TfSpec {
+  multiplier: number;
+  timespan: "minute" | "hour" | "day" | "week";
+  lookbackDays: number; // calendar days of history to request
+  ttlMs: number; // server cache TTL
+  maxBars: number; // trim to the most-recent N bars (payload cap)
+}
+
+const TF_SPECS: Record<Timeframe, TfSpec> = {
+  "1m": { multiplier: 1, timespan: "minute", lookbackDays: 3, ttlMs: 30_000, maxBars: 800 },
+  "3m": { multiplier: 3, timespan: "minute", lookbackDays: 6, ttlMs: 45_000, maxBars: 800 },
+  "5m": { multiplier: 5, timespan: "minute", lookbackDays: 12, ttlMs: 45_000, maxBars: 800 },
+  "15m": { multiplier: 15, timespan: "minute", lookbackDays: 40, ttlMs: 60_000, maxBars: 800 },
+  "30m": { multiplier: 30, timespan: "minute", lookbackDays: 90, ttlMs: 60_000, maxBars: 800 },
+  "1h": { multiplier: 1, timespan: "hour", lookbackDays: 180, ttlMs: 60_000, maxBars: 800 },
+  "1d": { multiplier: 1, timespan: "day", lookbackDays: 500, ttlMs: 15 * 60_000, maxBars: 800 },
+  "1w": { multiplier: 1, timespan: "week", lookbackDays: 2000, ttlMs: 30 * 60_000, maxBars: 800 },
+};
+
+export function isIntradayTimeframe(tf: string): tf is Timeframe {
+  return tf in TF_SPECS;
+}
+
+/** The TTL a given timeframe is cached at — used to set the route's Cache-Control. */
+export function tfCacheSeconds(tf: string): number {
+  const spec = TF_SPECS[tf as Timeframe];
+  return spec ? Math.round(spec.ttlMs / 1000) : 60;
+}
+
+/** Real OHLCV aggregates for one symbol at one timeframe (delayed ~15 min). */
+export async function getOHLCBars(
+  symbol: string,
+  tf: string
+): Promise<OHLCBar[] | null> {
+  const sym = normalizeSymbol(symbol);
+  if (!sym) return null;
+  const spec = TF_SPECS[tf as Timeframe];
+  if (!spec) return null;
+
+  const end = new Date();
+  const start = new Date(end.getTime() - spec.lookbackDays * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+  const data = await fetchJson<{
+    results?: { t: number; o: number; h: number; l: number; c: number; v: number }[];
+    status?: string;
+  }>(
+    `/v2/aggs/ticker/${sym}/range/${spec.multiplier}/${spec.timespan}/${fmt(
+      start
+    )}/${fmt(end)}?adjusted=true&sort=asc&limit=50000`,
+    spec.ttlMs
+  );
+  if (!data?.results || data.results.length === 0) return null;
+  const bars = data.results.map((b) => ({
+    t: b.t,
+    o: b.o,
+    h: b.h,
+    l: b.l,
+    c: b.c,
+    v: b.v,
+  }));
+  // Keep only the most-recent maxBars to bound the payload.
+  return bars.length > spec.maxBars ? bars.slice(-spec.maxBars) : bars;
+}
+
+export type MarketState =
+  | "open"
+  | "closed"
+  | "extended-hours"
+  | "pre-market"
+  | "unknown";
+
+/** US equities market state (for honest "market closed — last session" labels). */
+export async function getMarketState(): Promise<MarketState> {
+  const data = await fetchJson<{
+    market?: string;
+    exchanges?: { nasdaq?: string; nyse?: string };
+  }>(`/v1/marketstatus/now`, 60_000);
+  if (!data) return "unknown";
+  const m = data.market || data.exchanges?.nasdaq;
+  if (m === "open") return "open";
+  if (m === "extended-hours") return "extended-hours";
+  if (m === "closed") return "closed";
+  if (m && /pre/i.test(m)) return "pre-market";
+  return m ? "unknown" : "closed";
+}
+
 export interface FinancialPeriod {
   label: string;        // e.g. "Q3 2024"
   revenue: number | null;
