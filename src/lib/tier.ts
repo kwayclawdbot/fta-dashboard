@@ -48,13 +48,15 @@ export const TIER_CONFIG: Record<
     chip: "bg-sand text-soft",
     avatarRing: "",
   },
-  // Free tier — social-funnel signups. A quiet neutral chip, never punished;
-  // the whole app nudges them toward joining FIC, so the badge itself stays calm.
+  // Free tier — social-funnel signups. A quiet neutral OUTLINE chip ("Guest"),
+  // deliberately distinct from FIC's filled sand: clearly not-yet-a-member, but
+  // never punished. Ghosted outline reads calm and adult; the app nudges them
+  // toward joining FIC without shaming the badge itself.
   free: {
-    label: "Free",
+    label: "Guest",
     name: "Free member",
     premium: false,
-    chip: "bg-sand text-soft",
+    chip: "border border-soft/40 bg-transparent text-soft",
     avatarRing: "",
   },
 };
