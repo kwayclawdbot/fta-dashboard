@@ -27,6 +27,7 @@ import {
   type SessionTier,
 } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
+import LockedState from "@/components/dashboard/LockedState";
 import {
   RECORDINGS_BUCKET,
   SIGNED_URL_TTL,
@@ -915,32 +916,27 @@ export default function LiveSessionsPage() {
         <div>
           {liveSession ? (
             sessionLock(liveSession).locked ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="rounded-lg border border-midnight-800/60 bg-midnight-900/40 p-8 text-center"
-              >
-                <Lock className="w-8 h-8 text-midnight-500 mx-auto mb-3" />
-                <h3 className="font-display text-lg font-semibold text-midnight-200 mb-1">
-                  Session Locked
-                </h3>
-                <p className="text-sm text-midnight-400 font-body mb-4">
-                  {isTierLocked(liveSession)
+              <LockedState
+                surface="midnight"
+                icon={Lock}
+                title="Session Locked"
+                body={
+                  isTierLocked(liveSession)
                     ? "This live class is part of the FTA 6-week program."
                     : `This live class is for the ${
                         TRACK_CONFIG[liveSession.track].label
-                      } track.`}
-                </p>
-                {isTierLocked(liveSession) && (
-                  <Link
-                    href="/upgrade"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-500 text-white text-sm font-display font-semibold hover:bg-gold-600 transition-colors"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Join the next cohort
-                  </Link>
-                )}
-              </motion.div>
+                      } track.`
+                }
+                cta={
+                  isTierLocked(liveSession)
+                    ? {
+                        label: "Join the next cohort",
+                        href: "/upgrade",
+                        icon: Sparkles,
+                      }
+                    : undefined
+                }
+              />
             ) : (
               <LiveNowCard
                 session={liveSession}

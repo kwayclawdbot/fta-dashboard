@@ -26,6 +26,7 @@ import { deriveRegister, celebrateRegister, type Register } from "@/lib/register
 import VideoPlayer from "@/components/dashboard/VideoPlayer";
 import QuizPanel from "@/components/dashboard/QuizPanel";
 import AiCoachPanel from "@/components/dashboard/AiCoachPanel";
+import LockedState from "@/components/dashboard/LockedState";
 import Celebrate, {
   crossedLevel,
   type CelebrateOptions,
@@ -423,31 +424,25 @@ export default function LessonViewerClient() {
 
   if (notFound || !currentModule || !currentLesson) {
     const kid = register === "kid";
+    // Same unified LockedState the free / FTA doors use — but as a "not-ready"
+    // (coming-soon) state: amber Sparkles badge, no lock stamp, register-correct
+    // copy, and a "back to course" CTA instead of an upsell (audit #2, #22).
     return (
-      <div className="max-w-lg mx-auto py-16 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 18 }}
-          className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-chip-amber text-gold-600"
-        >
-          <Sparkles className="h-9 w-9" />
-        </motion.div>
-        <h2 className="font-display text-2xl font-bold text-ink mb-2">
-          {kid ? "This adventure unlocks soon!" : "This lesson isn't ready yet"}
-        </h2>
-        <p className="mx-auto max-w-sm text-sm text-soft leading-relaxed mb-6">
-          {kid
+      <LockedState
+        icon={Sparkles}
+        tone="amber"
+        lockBadge={false}
+        title={kid ? "This adventure unlocks soon!" : "This lesson isn't ready yet"}
+        body={
+          kid
             ? "We're still polishing this one for you. Check back soon — there's so much cool stuff coming!"
-            : "This lesson is still being prepared. It'll appear here as soon as it's published."}
-        </p>
-        <Link
-          href={`/courses/${slug}`}
-          className="cta-button inline-flex items-center gap-1.5 rounded-lg px-5 py-2.5 text-sm"
-        >
-          {kid ? "Back to my lessons" : "Back to course"}
-        </Link>
-      </div>
+            : "This lesson is still being prepared. It'll appear here as soon as it's published."
+        }
+        cta={{
+          label: kid ? "Back to my lessons" : "Back to course",
+          href: `/courses/${slug}`,
+        }}
+      />
     );
   }
 
