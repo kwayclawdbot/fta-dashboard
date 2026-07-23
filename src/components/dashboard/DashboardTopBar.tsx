@@ -140,7 +140,9 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
         <div className="flex items-center gap-3">
           {/* Belt chip — persistent self-visibility (sm+; phones use the More
               sheet header). Links to the Leaderboard. */}
-          <BeltChip xp={xp} variant="compact" />
+          <span data-tour="belt" className="inline-flex">
+            <BeltChip xp={xp} variant="compact" />
+          </span>
 
           {/* Notification bell — live unread count + dropdown */}
           <span data-tour="bell" className="inline-flex"><NotificationsBell /></span>

@@ -1,13 +1,20 @@
 "use client";
 
 /**
- * AppTour — first-login interactive walkthrough.
+ * AppTour — first-login interactive walkthrough (v2, Lane 7B).
  *
- * Spotlights real UI (sidebar links on desktop, tab bar on phones) with a
- * dimmed overlay + positioned coach card. Role-aware steps (parent / teen /
- * kid). Runs once per user: completion is stored in localStorage AND
- * profiles.tour_completed_at (migration 041) so it never re-fires across
- * devices. Replayable via /dashboard?tour=1 (Settings has a link).
+ * Spotlights real UI (sidebar links on desktop, tab bar + belt chip on phones)
+ * with a dimmed overlay + positioned coach card. Role-AND-tier-aware steps
+ * (kid / teen / parent, plus an FTA-section step for FTA families). Kids never
+ * see locked/upsell surfaces.
+ *
+ * Versioning: completion is stored in profiles.tour_completed_at (migration 041)
+ * AND profiles.tour_version (migration 107). Brand-new members (no
+ * tour_completed_at) get the tour with "welcome" framing; members who finished
+ * the pre-redesign v1 tour (tour_completed_at set, tour_version < 2) get the
+ * refreshed tour ONCE with "see what's new" framing, then it never re-imposes.
+ * Replayable via /dashboard?tour=1 (Settings has a link). The measure-then-clamp
+ * placement machinery (pixel-fixed at 1440 / 390 / 320) is unchanged.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,8 +23,16 @@ import { AnimatePresence, m } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/client";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
 import { deriveRegister, celebrateRegister, type Register } from "@/lib/register";
+import type { FamilyTier } from "@/lib/tier";
 
-const LS_KEY = "fic-tour-done";
+// Bump this when the tour materially changes so existing members see it once
+// more. Kept in sync with profiles.tour_version (migration 107).
+const CURRENT_TOUR_VERSION = 2;
+// Per-device fast-path cache of the highest tour version seen (skips the DB
+// round trip once this device has seen the current tour).
+const LSV_KEY = "fic-tour-v";
+
+type Framing = "welcome" | "whatsnew";
 
 interface TourStep {
   key: string;
@@ -33,124 +48,205 @@ interface TourUser {
   role?: string;
   age_group?: string;
   track?: string;
+  tier?: FamilyTier;
 }
 
 /**
- * A trimmed, register-differentiated tour (audit #16). The old tour was 11
- * identical steps for parent, teen and kid alike — long for a "one-minute
- * tour" and voice-wrong for the youngest. Now every step carries per-register
- * copy and each persona walks an ordered SUBSET:
- *   • kid   → 5 steps, "adventure" voice
- *   • teen  → 5 steps, rank/level framing, no baby-talk
- *   • adult → 7 steps, calm orientation ("here's your home")
- * Register comes from the shared register.ts derivation — no ad-hoc role/track
- * checks. The measure-then-clamp placement machinery below is untouched.
+ * Register- AND tier-differentiated tour for the redesigned app. Every step
+ * carries per-register copy (kid / teen / adult) and each persona walks an
+ * ordered SUBSET of the current nav:
+ *   • kid   → play/earn loop, no locked or upsell surfaces
+ *   • teen  → research + rank framing
+ *   • adult → full orientation incl. Start Here + Family
+ * FTA families additionally get the gold FTA-section step. The `framing`
+ * swaps only the first/last step copy (welcome vs. "what's new" for returning
+ * members). Register comes from the shared register.ts derivation.
  */
-function buildSteps(u: TourUser): TourStep[] {
+function buildSteps(u: TourUser, framing: Framing): TourStep[] {
   const register = deriveRegister(u);
   const first = (u.display_name || "").split(" ")[0];
+  const isFta = u.tier === "fta";
+  const whatsnew = framing === "whatsnew";
   const pick = <T,>(k: T, t: T, a: T): T =>
     register === "kid" ? k : register === "teen" ? t : a;
 
   const S: Record<string, TourStep> = {
     welcome: {
       key: "welcome",
-      emoji: "👋",
-      title: pick(
-        first ? `Hey ${first}! Ready to explore?` : "Hey! Ready to explore?",
-        first ? `Welcome, ${first}.` : "Welcome.",
-        first ? `Welcome to the club, ${first}!` : "Welcome to the club!"
-      ),
-      body: pick(
-        "This is your family's money clubhouse. Let me show you around — it's quick, and there's a surprise at the end!",
-        "This is your family's home base for learning to invest. Quick tour so you know where everything lives.",
-        "This is your family's home for learning money together. A one-minute tour and you'll know exactly where everything lives."
-      ),
-    },
-    thisweek: {
-      key: "thisweek",
-      targets: ['[data-tour="thisweek-tab"]'],
-      emoji: "🗓️",
-      title: pick("Everything starts here", "Start with This Week", "Everything starts with This Week"),
-      body: pick(
-        "Every week there's one company to explore, one challenge for you, and one class — all right here.",
-        "One concept, one company, one mission each week. This is the tab you check first.",
-        "One concept, one company, one mission — the club's weekly rhythm lives in this tab. Check it every Sunday."
-      ),
+      emoji: whatsnew ? "✨" : "👋",
+      title: whatsnew
+        ? pick(
+            "We gave the clubhouse a glow-up!",
+            first ? `Welcome back, ${first} — big changes.` : "Welcome back — big changes.",
+            first ? `We've redesigned the club, ${first}.` : "We've redesigned the club."
+          )
+        : pick(
+            first ? `Hey ${first}! Ready to explore?` : "Hey! Ready to explore?",
+            first ? `Welcome, ${first}.` : "Welcome.",
+            first ? `Welcome to the club, ${first}!` : "Welcome to the club!"
+          ),
+      body: whatsnew
+        ? pick(
+            "Lots of new things to explore. Let me show you what changed — it's quick, promise.",
+            "New home, new tools. Here's a 30-second tour of what changed.",
+            "A new Community feed, a shared Watchlist, a Screener, Ask Kai, belts and leaderboards. Here's a quick look at what's new."
+          )
+        : pick(
+            "This is your family's money clubhouse. Let me show you around — it's quick, and there's a surprise at the end!",
+            "Your family's home base for learning to invest. A quick tour so you know where everything lives.",
+            "Your family's home for learning money together. One minute and you'll know exactly where everything lives."
+          ),
     },
     starthere: {
       key: "starthere",
-      targets: ['[data-tour="start-here"]', '[data-tour="nav:/start-here"]'],
+      targets: ['[data-tour="start-here"]', '[data-tour="nav:/start-here"]', '[data-tour="tab:more"]'],
       emoji: "🧭",
       title: "Start Here is your setup trail",
-      body: "A short checklist that gets your family fully set up — watch the orientation, add your first companies, join your first class. Finish all six and celebrate.",
+      body: "A short checklist that gets your family fully set up — watch the quick orientation, add your first companies, join your first class. Finish it and celebrate.",
     },
     community: {
       key: "community",
-      targets: ['[data-tour="tab:/community"]', '[data-tour="nav:/community"]'],
+      targets: ['[data-tour="nav:/community"]', '[data-tour="tab:/community"]'],
       emoji: "💬",
-      title: pick("The clubhouse feed", "The clubhouse feed", "The clubhouse feed"),
+      title: pick("The clubhouse", "The Community feed", "The Community feed"),
       body: pick(
-        "Post what you find, cheer for other families, and watch your wins show up in the feed automatically.",
-        "Where the club talks all week — share your picks with live data attached, cheer other families, and drop into Club Chat at class time.",
-        "The heart of the club — share wins, post your family's picks with live data attached, and jump into Club Chat around class time."
+        "Share what you find and cheer for other families. That big button in the middle is always here.",
+        "Where the club talks all week — post picks with live data attached, cheer other families, and open Club Chat around class time.",
+        "The heart of the club — a full-width feed for wins and picks, plus a Club Chat drawer that slides in around class time."
       ),
     },
     watchlist: {
       key: "watchlist",
-      targets: ['[data-tour="tab:/watchlist"]', '[data-tour="nav:/watchlist"]'],
+      targets: ['[data-tour="nav:/watchlist/community"]', '[data-tour="tab:/watchlist/community"]', '[data-tour="tab:more"]'],
       emoji: "🔎",
-      title: "Your family's watchlist",
-      body: "The family research board. Anyone adds a company, someone champions it, and verdicts unlock only after the research card is done.",
+      title: "Community Watchlist",
+      body: pick(
+        "The club's shared list of companies we're all watching. See who's up and who's down.",
+        "The club's shared research board — add a company, champion it, and track how every pick does on the Pick Record.",
+        "The club's shared research board. Add a company, someone champions it, and the Pick Record tracks how the club's calls play out over time."
+      ),
+    },
+    screener: {
+      key: "screener",
+      targets: ['[data-tour="nav:/screener"]', '[data-tour="tab:more"]'],
+      emoji: "📡",
+      title: "The Screener",
+      body: pick(
+        "",
+        "Search all 11,000+ stocks and filter for the ones worth a look — near a high, surging volume, oversold. A tool to find companies to research, never a buy list.",
+        "Search the full market — 11,000+ stocks — and filter to a short list worth researching. Preset screens do the work; it's for finding candidates, never a buy list."
+      ),
+    },
+    kai: {
+      key: "kai",
+      targets: ['[data-tour="nav:/kai"]', '[data-tour="tab:more"]'],
+      emoji: "🤖",
+      title: pick("Meet Kai", "Ask Kai", "Ask Kai"),
+      body: pick(
+        "Kai is your friendly research helper. Ask what a company makes and Kai explains it simply.",
+        "Your AI research analyst. Ask about any company — Kai explains the business, walks the numbers, and pulls headlines. Research and teaching, not buy/sell calls.",
+        "Your AI research analyst. Ask about any company and Kai explains the business, charts the numbers, and surfaces news — educational, never advice."
+      ),
     },
     missions: {
       key: "missions",
-      targets: ['[data-tour="tab:/missions"]', '[data-tour="nav:/missions"]'],
+      targets: ['[data-tour="nav:/missions"]', '[data-tour="tab:/missions"]', '[data-tour="tab:more"]'],
       emoji: "🎯",
       title: "Your missions",
-      body: "Brand Detective, Money Machine, Family CEO… complete missions, earn XP, and level up.",
+      body: pick(
+        "Brand Detective, Money Machine, Family CEO… finish missions, earn XP, and move up your belt.",
+        "Guided missions that turn concepts into reps — finish them to earn XP toward your next belt.",
+        "Guided missions that turn concepts into reps — kids earn XP toward their next belt."
+      ),
     },
     practice: {
       key: "practice",
-      targets: ['[data-tour="nav:/chart"]', '[data-tour="tab:/games"]', '[data-tour="tab:more"]'],
-      emoji: pick("🎮", "📈", "📈"),
-      title: pick("The play zone", "Practice & games", "The practice area"),
+      targets: ['[data-tour="nav:/chart"]', '[data-tour="tab:more"]'],
+      emoji: "📈",
+      title: pick("The practice zone", "Practice", "Practice"),
       body: pick(
-        "Games! Candle Battle, Trend or Trap, and a real chart to explore — all practice, zero real money.",
-        "A full-screen chart with live data, the paper-money simulator, and the games arcade. Real reps, zero risk.",
-        "A full-screen practice chart with live data, the paper-money simulator, and the games arcade. Real reps, zero risk."
+        "Games and a real chart to explore — plus Simbot, a pretend trading room. All practice, zero real money.",
+        "A practice chart with live data, the games arcade, and Simbot — a full price-action simulator. Real reps, zero risk.",
+        "A practice chart with live data, the games arcade, and Simbot — a hands-on trading simulator on delayed market data. Real reps, zero risk."
       ),
     },
-    progress: {
-      key: "progress",
-      targets: ['[data-tour="nav:/progress"]', '[data-tour="tab:more"]'],
-      emoji: "🏅",
-      title: "Your rank & progress",
-      body: "XP, levels, and credentials you earn — Scout, Analyst, Risk Manager. Real titles for real work.",
+    belts: {
+      key: "belts",
+      targets: ['[data-tour="belt"]', '[data-tour="nav:/leaderboard"]', '[data-tour="tab:more"]'],
+      emoji: "🥋",
+      title: pick("Your belt & rank", "Belts & leaderboards", "Belts & leaderboards"),
+      body: pick(
+        "Earn XP to climb your belt — White, Yellow, Blue, Purple, Black. See how you rank on the Leaderboard!",
+        "This chip is your belt — White through Black, filled by XP. The Leaderboard ranks members and families over 7 days, 30 days, and all-time.",
+        "That belt chip up top tracks your rank — White to Black — filling as you earn XP. The Leaderboard ranks members and families across 7-day, 30-day, and all-time windows."
+      ),
     },
     family: {
       key: "family",
-      targets: ['[data-tour="nav:/family"]', '[data-tour="nav:/parent-corner"]', '[data-tour="tab:more"]'],
+      targets: ['[data-tour="nav:/family"]', '[data-tour="tab:more"]'],
       emoji: "👨‍👩‍👧‍👦",
       title: "Your family, your view",
-      body: "Report cards for every kid, Parent Corner with this week's dinner-table questions, and invites to bring the rest of the family in.",
+      body: "Report cards for every child, Parent Corner with this week's dinner-table questions, and invites to bring the rest of the family in — all in one place.",
+    },
+    fta: {
+      key: "fta",
+      targets: ['[data-tour="nav:/fta/chat"]', '[data-tour="tab:more"]'],
+      emoji: "🏆",
+      title: "FTA — Trading Academy",
+      body: pick(
+        "",
+        "Your Family Trading Academy hub — the traders chat, the course library, and every live-class recording, all in the gold section.",
+        "Your Family Trading Academy hub — the traders chat, the full course library, and every live-class recording, all under the gold section."
+      ),
     },
     done: {
       key: "done",
       emoji: "🚀",
-      title: pick("You're in!", "That's the tour.", "That's the tour."),
-      body: pick(
-        "Time to earn your first XP. Head to This Week and start your first adventure!",
-        "Jump into This Week and start stacking XP.",
-        "Head to Start Here to finish setting up your family — the checklist takes about ten minutes total."
-      ),
+      title: whatsnew
+        ? pick("You're all caught up!", "All caught up.", "All caught up.")
+        : pick("You're in!", "That's the tour.", "That's the tour."),
+      body: whatsnew
+        ? pick(
+            "That's what's new. Everything you already knew is still here — just easier to find.",
+            "That's what changed. Everything you knew is still here, just easier to find. Go stack some XP.",
+            "That's what's new. Everything you relied on is still here, just easier to find."
+          )
+        : pick(
+            "Time to earn your first XP. Head to This Week and start your first adventure!",
+            "Jump in and start stacking XP toward your first belt.",
+            "Head to Start Here to finish setting up your family — it takes about ten minutes."
+          ),
     },
   };
 
+  // Ordered subsets. FTA families (teens + parents) get the FTA step before the
+  // close; kids never see it (no locked/upsell surfaces in the kid tour).
   const order: Record<Register, string[]> = {
-    kid: ["welcome", "thisweek", "missions", "practice", "done"],
-    teen: ["welcome", "thisweek", "community", "progress", "done"],
-    adult: ["welcome", "thisweek", "starthere", "community", "watchlist", "family", "done"],
+    kid: ["welcome", "community", "missions", "kai", "practice", "belts", "done"],
+    teen: [
+      "welcome",
+      "community",
+      "watchlist",
+      "screener",
+      "kai",
+      "practice",
+      "belts",
+      ...(isFta ? ["fta"] : []),
+      "done",
+    ],
+    adult: [
+      "welcome",
+      "starthere",
+      "community",
+      "watchlist",
+      "screener",
+      "kai",
+      "practice",
+      "family",
+      "belts",
+      ...(isFta ? ["fta"] : []),
+      "done",
+    ],
   };
 
   return order[register].map((k) => S[k]);
@@ -168,6 +264,7 @@ export default function AppTour({ user }: { user: TourUser }) {
   const [rect, setRect] = useState<Rect | null>(null);
   const [celebrate, setCelebrate] = useState<CelebrateOptions | null>(null);
   const stepsRef = useRef<TourStep[]>([]);
+  const framingRef = useRef<Framing>("welcome");
   // The auto-run (non-forced) decision must happen at most once per mount, so a
   // benign re-render or query-param change can never restart the tour after the
   // user has seen/finished it. Forced replay (?tour=1) bypasses this guard.
@@ -178,9 +275,10 @@ export default function AppTour({ user }: { user: TourUser }) {
     if (pathname !== "/dashboard") return;
     const forced = searchParams.get("tour") === "1";
     if (forced) {
-      try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(LSV_KEY); } catch { /* ignore */ }
       autoDecidedRef.current = true; // a manual replay counts as decided
-      stepsRef.current = buildSteps(user);
+      framingRef.current = "welcome";
+      stepsRef.current = buildSteps(user, "welcome");
       setIdx(0);
       setActive(true);
       return;
@@ -188,8 +286,12 @@ export default function AppTour({ user }: { user: TourUser }) {
     // Auto-run is a one-shot per mount: once we've decided (fired or suppressed),
     // never re-evaluate — this is what stops the "re-fires every load" bug.
     if (autoDecidedRef.current) return;
+    // Fast path: this device has already seen the CURRENT tour version.
     try {
-      if (localStorage.getItem(LS_KEY)) { autoDecidedRef.current = true; return; }
+      if (Number(localStorage.getItem(LSV_KEY) || "0") >= CURRENT_TOUR_VERSION) {
+        autoDecidedRef.current = true;
+        return;
+      }
     } catch { /* ignore */ }
     autoDecidedRef.current = true;
     let mounted = true;
@@ -198,20 +300,25 @@ export default function AppTour({ user }: { user: TourUser }) {
       if (!session?.user) return;
       const { data } = await supabase
         .from("profiles")
-        .select("tour_completed_at")
+        .select("tour_completed_at, tour_version")
         .eq("id", session.user.id)
         .single();
-      if (!mounted) return;
-      // The DB flag is the source of truth: only a null tour_completed_at runs
-      // the tour. Anything else (completed on any device) suppresses it and
-      // caches that locally so we skip the round trip next time.
-      if (data && !data.tour_completed_at) {
-        stepsRef.current = buildSteps(user);
+      if (!mounted || !data) return;
+      const seen = data.tour_version ?? 0;
+      // Brand-new members get the welcome tour; members who finished an older
+      // tour version (e.g. the pre-redesign v1) get the refreshed tour ONCE with
+      // "what's new" framing. Everyone at the current version is left alone.
+      let framing: Framing | null = null;
+      if (!data.tour_completed_at) framing = "welcome";
+      else if (seen < CURRENT_TOUR_VERSION) framing = "whatsnew";
+      if (framing) {
+        framingRef.current = framing;
+        stepsRef.current = buildSteps(user, framing);
         setIdx(0);
         // Small delay so the page settles before we spotlight it.
         setTimeout(() => mounted && setActive(true), 1200);
-      } else if (data?.tour_completed_at) {
-        try { localStorage.setItem(LS_KEY, "1"); } catch { /* ignore */ }
+      } else {
+        try { localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION)); } catch { /* ignore */ }
       }
     })();
     return () => { mounted = false; };
@@ -221,20 +328,28 @@ export default function AppTour({ user }: { user: TourUser }) {
   const finish = useCallback(async (completed: boolean) => {
     setActive(false);
     setRect(null);
-    try { localStorage.setItem(LS_KEY, "1"); } catch { /* ignore */ }
+    try { localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION)); } catch { /* ignore */ }
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
+      // Stamp the version so the tour never re-imposes; keep tour_completed_at
+      // set (first completion or refreshed) as the human-readable marker.
       await supabase
         .from("profiles")
-        .update({ tour_completed_at: new Date().toISOString() })
+        .update({
+          tour_completed_at: new Date().toISOString(),
+          tour_version: CURRENT_TOUR_VERSION,
+        })
         .eq("id", session.user.id);
     }
     if (completed) {
+      const whatsnew = framingRef.current === "whatsnew";
       setCelebrate({
         variant: "setup",
         register: celebrateRegister(deriveRegister(user)),
-        title: "Welcome to the club!",
-        subtitle: "You know your way around now — go earn it.",
+        title: whatsnew ? "All caught up!" : "Welcome to the club!",
+        subtitle: whatsnew
+          ? "You've seen what's new — go earn it."
+          : "You know your way around now — go earn it.",
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
