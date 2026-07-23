@@ -302,7 +302,7 @@ export async function getBars(
     results?: { t: number; c: number }[];
     status?: string;
   }>(
-    `/v2/aggs/ticker/${sym}/range/1/day/${fmt(start)}/${fmt(end)}?adjusted=true&sort=asc&limit=200`,
+    `/v2/aggs/ticker/${sym}/range/1/day/${fmt(start)}/${fmt(end)}?adjusted=true&sort=asc&limit=800`,
     15 * 60_000 // 15 min
   );
   if (!data?.results) return null;

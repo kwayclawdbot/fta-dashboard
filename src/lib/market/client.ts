@@ -105,6 +105,27 @@ export async function fetchBars(
   return d?.bars ?? [];
 }
 
+export interface NewsHeadline {
+  title: string;
+  url: string;
+  publisher: string | null;
+  published: string | null;
+  description: string | null;
+}
+
+/** Recent third-party headlines (attribution-only link cards). */
+export async function fetchNews(
+  symbol: string,
+  limit = 6,
+  signal?: AbortSignal
+): Promise<NewsHeadline[]> {
+  const d = await getJson<{ news: NewsHeadline[] }>(
+    `/api/market/news?symbol=${encodeURIComponent(symbol)}&limit=${limit}`,
+    signal
+  );
+  return d?.news ?? [];
+}
+
 /** Ticker lookup/validation for the add-flow. */
 export async function searchTickers(
   q: string,
