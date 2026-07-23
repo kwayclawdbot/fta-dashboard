@@ -22,6 +22,7 @@ import {
   Zap,
   Layers,
   Gamepad2,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
@@ -140,10 +141,35 @@ export default function DashboardHome() {
   const [hasFamily, setHasFamily] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [isFree, setIsFree] = useState(false);
+  // Onboarding-prompt orchestration: whether the parent has dismissed the one
+  // setup card (Start Here checklist). Persisted per family so it stays
+  // dismissed, and it gates whether the profile-questions card may appear.
+  const [setupDismissed, setSetupDismissed] = useState(false);
 
   useEffect(() => {
     setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!familyId) return;
+    try {
+      setSetupDismissed(
+        localStorage.getItem(`fta:setup-card-dismissed:${familyId}`) === "1"
+      );
+    } catch {
+      /* private mode — leave it showing */
+    }
+  }, [familyId]);
+
+  function dismissSetupCard() {
+    setSetupDismissed(true);
+    try {
+      if (familyId)
+        localStorage.setItem(`fta:setup-card-dismissed:${familyId}`, "1");
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -300,7 +326,18 @@ export default function DashboardHome() {
   const isParent = !isKid && !isTeen;
   const level = levelForXp(xp);
   const orientationComplete = orientationDone >= ORIENTATION_TOTAL;
-  const showStartHere = hasFamily && !orientationComplete;
+
+  // ── Onboarding-prompt orchestration (one prioritized sequence) ──────────────
+  // 1. The guided tour (AppTour, mounted in DashboardShell) owns true first
+  //    login and runs once (gated on profiles.tour_completed_at).
+  // 2. Exactly ONE setup card here — the Start Here checklist progress — and
+  //    only for PARENTS (kids/teens never see family-setup prompts). It
+  //    auto-dismisses at 6/6 and can be dismissed manually.
+  // 3. The "Tell us about your family" profile card appears ONLY after setup is
+  //    resolved (completed or dismissed), so the two never stack.
+  const setupResolved = orientationComplete || setupDismissed;
+  const showSetupCard = isParent && hasFamily && !setupResolved;
+  const showProfileCard = isParent && hasFamily && !!familyId && setupResolved;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -356,42 +393,53 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Start Here — persistent until the family finishes orientation */}
-      {showStartHere && (
-        <Link href="/start-here" className="block" data-tour="start-here">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
-          >
-            <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-              <Compass className="w-6 h-6 text-gold-700" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display font-semibold text-ink">
-                Finish setting up your family
-              </p>
-              <p className="text-sm text-soft">
-                {orientationDone} of {ORIENTATION_TOTAL} Start Here steps done —
-                pick up where you left off.
-              </p>
-              <div className="w-full max-w-xs h-2 rounded-full bg-sand overflow-hidden mt-2">
-                <div
-                  className="h-full rounded-full bg-gold-500 transition-all"
-                  style={{
-                    width: `${Math.round((orientationDone / ORIENTATION_TOTAL) * 100)}%`,
-                  }}
-                />
+      {/* Setup card #1 — the Start Here checklist, demoted from a nav row to a
+          dismissible Home card. Parents only; auto-hides at 6/6. */}
+      {showSetupCard && (
+        <div className="relative" data-tour="start-here">
+          <Link href="/start-here" className="block">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+                <Compass className="w-6 h-6 text-gold-700" />
               </div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
-          </motion.div>
-        </Link>
+              <div className="flex-1 min-w-0 pr-6">
+                <p className="font-display font-semibold text-ink">
+                  Finish setting up your family
+                </p>
+                <p className="text-sm text-soft">
+                  {orientationDone} of {ORIENTATION_TOTAL} Start Here steps done —
+                  pick up where you left off.
+                </p>
+                <div className="w-full max-w-xs h-2 rounded-full bg-sand overflow-hidden mt-2">
+                  <div
+                    className="h-full rounded-full bg-gold-500 transition-all"
+                    style={{
+                      width: `${Math.round((orientationDone / ORIENTATION_TOTAL) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
+            </motion.div>
+          </Link>
+          <button
+            onClick={dismissSetupCard}
+            aria-label="Dismiss setup checklist"
+            className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-midnight-500 hover:text-ink hover:bg-sand/60 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
 
-      {/* Family profile — backfill prompt or personalized "recommended next".
-          Self-contained: renders null when there's nothing to show. Parents only. */}
-      {isParent && hasFamily && familyId && (
+      {/* Card #2 — family-profile prompt / "recommended next". Only surfaces
+          AFTER the setup card is resolved, so exactly one prompt shows at a
+          time. Self-contained (renders null when there's nothing to show). */}
+      {showProfileCard && familyId && (
         <FamilyProfileHome familyId={familyId} />
       )}
 

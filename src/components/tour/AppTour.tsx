@@ -159,6 +159,10 @@ export default function AppTour({ user }: { user: TourUser }) {
   const [rect, setRect] = useState<Rect | null>(null);
   const [celebrate, setCelebrate] = useState<CelebrateOptions | null>(null);
   const stepsRef = useRef<TourStep[]>([]);
+  // The auto-run (non-forced) decision must happen at most once per mount, so a
+  // benign re-render or query-param change can never restart the tour after the
+  // user has seen/finished it. Forced replay (?tour=1) bypasses this guard.
+  const autoDecidedRef = useRef(false);
 
   // ── should we run? ──
   useEffect(() => {
@@ -166,14 +170,19 @@ export default function AppTour({ user }: { user: TourUser }) {
     const forced = searchParams.get("tour") === "1";
     if (forced) {
       try { localStorage.removeItem(LS_KEY); } catch { /* ignore */ }
+      autoDecidedRef.current = true; // a manual replay counts as decided
       stepsRef.current = buildSteps(user);
       setIdx(0);
       setActive(true);
       return;
     }
+    // Auto-run is a one-shot per mount: once we've decided (fired or suppressed),
+    // never re-evaluate — this is what stops the "re-fires every load" bug.
+    if (autoDecidedRef.current) return;
     try {
-      if (localStorage.getItem(LS_KEY)) return;
+      if (localStorage.getItem(LS_KEY)) { autoDecidedRef.current = true; return; }
     } catch { /* ignore */ }
+    autoDecidedRef.current = true;
     let mounted = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -184,6 +193,9 @@ export default function AppTour({ user }: { user: TourUser }) {
         .eq("id", session.user.id)
         .single();
       if (!mounted) return;
+      // The DB flag is the source of truth: only a null tour_completed_at runs
+      // the tour. Anything else (completed on any device) suppresses it and
+      // caches that locally so we skip the round trip next time.
       if (data && !data.tour_completed_at) {
         stepsRef.current = buildSteps(user);
         setIdx(0);
