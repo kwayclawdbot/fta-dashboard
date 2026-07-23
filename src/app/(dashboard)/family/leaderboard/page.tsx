@@ -6,6 +6,7 @@ import { Crown, Flame, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ProfileLink from "@/components/ProfileLink";
+import Avatar from "@/components/Avatar";
 
 interface LeaderboardEntry {
   rank: number;
@@ -203,13 +204,6 @@ export default function FamilyLeaderboardPage() {
         ) : (
           <div>
             {entries.map((entry) => {
-              const initials = (entry.display_name || "U")
-                .split(" ")
-                .map((w) => w[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2);
-
               return (
                 <div
                   key={entry.id}
@@ -224,19 +218,13 @@ export default function FamilyLeaderboardPage() {
                     {entry.rank}
                   </span>
 
-                  {/* Avatar */}
+                  {/* Avatar — the illustrated pack, not flat initials (audit #13) */}
                   <ProfileLink username={entry.username} variant="avatar" className="shrink-0">
-                    {entry.avatar_url ? (
-                      <img
-                        src={entry.avatar_url}
-                        alt={entry.display_name || "Member"}
-                        className="w-9 h-9 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-gold-400/15 flex items-center justify-center text-gold-400 font-display font-bold text-xs shrink-0">
-                        {initials}
-                      </div>
-                    )}
+                    <Avatar
+                      name={entry.display_name}
+                      avatarUrl={entry.avatar_url}
+                      size="md"
+                    />
                   </ProfileLink>
 
                   {/* Name */}
@@ -245,7 +233,9 @@ export default function FamilyLeaderboardPage() {
                       <ProfileLink username={entry.username} className="text-sm font-display font-semibold text-midnight-100 truncate">
                         {entry.display_name || "Member"}
                       </ProfileLink>
-                      {entry.rank === 1 && (
+                      {/* Crown only for a leader who has actually done something —
+                          never an arbitrary crown on a 0-lesson tie (audit #13). */}
+                      {entry.rank === 1 && entry.lessons_completed > 0 && (
                         <Crown className="w-3.5 h-3.5 text-gold-400 shrink-0" />
                       )}
                     </div>

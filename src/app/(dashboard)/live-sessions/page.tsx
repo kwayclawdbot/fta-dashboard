@@ -538,6 +538,7 @@ function formatScheduledAt(dateStr: string | null, status: string): string {
 export default function LiveSessionsPage() {
   const supabase = createClient();
   const [tab, setTab] = useState<TabType>("live");
+  const [tabTouched, setTabTouched] = useState(false);
   const [trackFilter, setTrackFilter] = useState<Track>("all");
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -659,6 +660,24 @@ export default function LiveSessionsPage() {
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
+
+  // Open on the first tab that actually has something (audit #11): landing on an
+  // empty "Live Now" when Upcoming/Recordings have items is a dead first view.
+  // Only auto-selects until the member picks a tab themselves.
+  useEffect(() => {
+    if (loading || tabTouched) return;
+    const hasLive = sessions.some((s) => s.status === "live");
+    const hasUpcoming = sessions.some((s) => s.status === "upcoming");
+    const hasRecording = sessions.some((s) => s.status === "completed");
+    const first: TabType = hasLive
+      ? "live"
+      : hasUpcoming
+        ? "upcoming"
+        : hasRecording
+          ? "recordings"
+          : "live";
+    setTab(first);
+  }, [loading, sessions, tabTouched]);
 
   useEffect(() => {
     async function loadUser() {
@@ -838,7 +857,10 @@ export default function LiveSessionsPage() {
         {tabs.map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTabTouched(true);
+              setTab(t.id);
+            }}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-body transition-colors border-b-2 ${
               tab === t.id
                 ? "text-gold-700 border-gold-500"

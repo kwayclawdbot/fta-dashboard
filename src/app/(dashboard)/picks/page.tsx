@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Gem, Loader2, Sparkles } from "lucide-react";
+import { Eye, Gem, Loader2, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
 import PickCard from "@/components/picks/PickCard";
@@ -151,7 +151,14 @@ export default function PicksPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        // A single active pick used to sit alone on a very wide 3-col canvas,
+        // reading as empty (core#9). With 1–2 picks, constrain to a 2-up column
+        // and backfill with a soft "watching" rail so it's never one lonely card.
+        <div
+          className={`mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 ${
+            visible.length <= 2 ? "max-w-3xl" : "lg:grid-cols-3"
+          }`}
+        >
           {visible.map((pick) => (
             <PickCard
               key={pick.id}
@@ -162,6 +169,18 @@ export default function PicksPage() {
               liked={likedByMe.has(pick.id)}
             />
           ))}
+          {visible.length === 1 && (
+            <div className="flex min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed border-sand bg-paper/50 p-6 text-center">
+              <Eye className="mb-2 h-6 w-6 text-gold-400/60" />
+              <p className="font-display text-sm font-bold text-ink">
+                On the watchlist
+              </p>
+              <p className="mt-1 max-w-[16rem] text-xs text-soft">
+                The team is studying more companies — new picks land here as they
+                share them.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
