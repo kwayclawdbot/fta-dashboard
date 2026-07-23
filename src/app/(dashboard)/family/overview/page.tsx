@@ -9,7 +9,9 @@ import {
   Users,
   Crown,
   Check,
+  Sparkles,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
@@ -278,7 +280,52 @@ export default function FamilyOverviewPage() {
         </p>
       </motion.div>
 
-      {/* Stats row -- inline, no cards */}
+      {/* First-week warm empty state — a brand-new family whose every stat is
+          still zero gets a story-starts-here treatment instead of a stark row
+          of "0 / 0h / 0 / 0" (audit #12). */}
+      {overview.total_lessons_completed === 0 &&
+      overview.total_hours === 0 &&
+      overview.average_streak === 0 &&
+      overview.active_members === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.05, duration: 0.3 }}
+          className="mb-10 rounded-2xl border border-gold-400/25 bg-gradient-to-br from-gold-400/[0.07] to-transparent p-6 sm:p-7"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+              <Sparkles className="w-6 h-6 text-gold-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-display text-lg font-bold text-midnight-50">
+                Your family&apos;s story starts this week
+              </h3>
+              <p className="text-sm text-midnight-300 font-body leading-relaxed mt-1 max-w-xl">
+                This is where you&apos;ll watch lessons stack up, streaks catch
+                fire, and badges roll in. Kick it off together — start today&apos;s
+                one thing on the home screen, and the numbers here fill in as
+                your family learns.
+              </p>
+              <div className="flex items-center gap-3 mt-4 flex-wrap">
+                <Link
+                  href="/dashboard"
+                  className="cta-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
+                >
+                  Start today&apos;s lesson
+                </Link>
+                <Link
+                  href="/family/members"
+                  className="text-sm font-display font-semibold text-gold-400 hover:text-gold-300"
+                >
+                  Invite the family →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+      /* Stats row -- inline, no cards */
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -331,6 +378,7 @@ export default function FamilyOverviewPage() {
           </div>
         </div>
       </motion.div>
+      )}
 
       {/* Per-member progress */}
       <motion.section
