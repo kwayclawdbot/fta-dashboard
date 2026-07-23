@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   HouseholdStep,
   ExperienceStep,
+  MarketInterestStep,
   GoalsStep,
   HearAboutStep,
   PersonalizedWelcome,
@@ -33,10 +34,10 @@ const slideVariants = {
 // existing families that pre-date the profile-building onboarding. Same steps
 // as the main onboarding, reusing the shared components. No family creation and
 // no membership claim happen here — the family already exists.
-const STEPS = ["Household", "Experience", "Goals", "Found us", "Welcome"];
+const STEPS = ["Household", "Experience", "Focus", "Goals", "Found us", "Welcome"];
 const S_HOUSEHOLD = 0;
-const S_HEAR = 3;
-const S_WELCOME = 4;
+const S_HEAR = 4;
+const S_WELCOME = 5;
 
 export default function ProfileOnboardingPage() {
   const router = useRouter();
@@ -153,7 +154,8 @@ export default function ProfileOnboardingPage() {
           >
             {step === S_HOUSEHOLD && <HouseholdStep draft={draft} onChange={patchDraft} />}
             {step === 1 && <ExperienceStep draft={draft} onChange={patchDraft} />}
-            {step === 2 && <GoalsStep draft={draft} onChange={patchDraft} />}
+            {step === 2 && <MarketInterestStep draft={draft} onChange={patchDraft} />}
+            {step === 3 && <GoalsStep draft={draft} onChange={patchDraft} />}
             {step === S_HEAR && <HearAboutStep draft={draft} onChange={patchDraft} />}
             {isWelcome && welcome && (
               <PersonalizedWelcome

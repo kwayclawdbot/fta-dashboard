@@ -13,6 +13,7 @@ import {
   CalendarDays,
   BookOpen,
   Sparkles,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -20,11 +21,13 @@ import {
   GOAL_OPTIONS,
   KID_AGE_OPTIONS,
   HEAR_ABOUT_OPTIONS,
+  MARKET_INTEREST_OPTIONS,
   type ProfileDraft,
   type Experience,
   type Goal,
   type KidAgeRange,
   type HearAbout,
+  type MarketInterest,
   type Recommendation,
 } from "@/lib/onboarding-profile";
 import { SunCircle, Sparkle } from "@/components/fic/glyphs/motifs";
@@ -236,6 +239,61 @@ export function ExperienceStep({
               key={o.value}
               type="button"
               onClick={() => onChange({ experience: o.value as Experience })}
+              className={`w-full text-left p-4 rounded-lg border transition-colors flex items-start gap-3 ${
+                on
+                  ? "bg-gold-400/5 border-gold-400/40"
+                  : "bg-midnight-900 border-sand hover:border-gold-300"
+              }`}
+            >
+              <span
+                className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                  on ? "border-gold-500 bg-gold-500" : "border-midnight-500"
+                }`}
+              >
+                {on && <Check className="w-3 h-3 text-midnight-950" />}
+              </span>
+              <span className="min-w-0">
+                <span
+                  className={`block font-display font-semibold text-sm ${
+                    on ? "text-gold-600" : "text-midnight-100"
+                  }`}
+                >
+                  {o.label}
+                </span>
+                <span className="block text-xs text-midnight-400 mt-0.5 font-body">{o.sub}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Market interest (trading vs investing) ───────────────────────────────────
+
+export function MarketInterestStep({
+  draft,
+  onChange,
+}: {
+  draft: ProfileDraft;
+  onChange: (patch: Partial<ProfileDraft>) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <StepHead
+        icon={TrendingUp}
+        title="Investing, trading, or both?"
+        sub="This tunes what we teach first — and how Kai talks with your family."
+      />
+      <div className="space-y-2.5">
+        {MARKET_INTEREST_OPTIONS.map((o) => {
+          const on = draft.market_interest === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onChange({ market_interest: o.value as MarketInterest })}
               className={`w-full text-left p-4 rounded-lg border transition-colors flex items-start gap-3 ${
                 on
                   ? "bg-gold-400/5 border-gold-400/40"

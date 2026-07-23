@@ -9,6 +9,7 @@ import AvatarPicker from "@/components/AvatarPicker";
 import {
   HouseholdStep,
   ExperienceStep,
+  MarketInterestStep,
   GoalsStep,
   HearAboutStep,
   PersonalizedWelcome,
@@ -37,10 +38,11 @@ const P_FAMILY = 0;
 const P_YOU = 1;
 const P_HOUSEHOLD = 2;
 const P_EXPERIENCE = 3;
-const P_GOALS = 4;
-const P_HEAR = 5;
-const P_WELCOME = 6;
-const PARENT_STEPS = ["Family", "You", "Household", "Experience", "Goals", "Found us", "Welcome"];
+const P_INTEREST = 4;
+const P_GOALS = 5;
+const P_HEAR = 6;
+const P_WELCOME = 7;
+const PARENT_STEPS = ["Family", "You", "Household", "Experience", "Focus", "Goals", "Found us", "Welcome"];
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -368,6 +370,9 @@ export default function OnboardingPage() {
             )}
             {mode === "parent" && step === P_EXPERIENCE && (
               <ExperienceStep draft={draft} onChange={patchDraft} />
+            )}
+            {mode === "parent" && step === P_INTEREST && (
+              <MarketInterestStep draft={draft} onChange={patchDraft} />
             )}
             {mode === "parent" && step === P_GOALS && (
               <GoalsStep draft={draft} onChange={patchDraft} />

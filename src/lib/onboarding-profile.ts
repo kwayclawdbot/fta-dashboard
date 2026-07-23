@@ -14,6 +14,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // ── Vocab ────────────────────────────────────────────────────────────────────
 
 export type Experience = "none" | "beginner" | "some" | "active";
+/** Which side of the market the family cares about (migration 108, Lane 8A). */
+export type MarketInterest = "investing" | "trading" | "both" | "unsure";
 export type Goal =
   | "teach_kids"
   | "family_habit"
@@ -40,6 +42,7 @@ export interface FamilyProfile {
   family_id: string;
   household: Household;
   experience: Experience | null;
+  market_interest: MarketInterest | null;
   goals: Goal[];
   goals_other: string | null;
   hear_about: HearAbout | null;
@@ -52,6 +55,7 @@ export interface FamilyProfile {
 export interface ProfileDraft {
   household: Household;
   experience: Experience | null;
+  market_interest: MarketInterest | null;
   goals: Goal[];
   goals_other: string;
   hear_about: HearAbout | null;
@@ -62,6 +66,7 @@ export function emptyDraft(): ProfileDraft {
   return {
     household: { adults: 1, kids: 0, kid_age_ranges: [] },
     experience: null,
+    market_interest: null,
     goals: [],
     goals_other: "",
     hear_about: null,
@@ -105,6 +110,33 @@ export const GOAL_OPTIONS: { value: Goal; label: string; sub: string }[] = [
   { value: "learn_trading", label: "Finally learn to invest myself", sub: "Start from the beginning" },
   { value: "prep_college", label: "Prepare for college / a first job", sub: "Real-world money skills" },
   { value: "other", label: "Something else", sub: "Tell us in your words" },
+];
+
+export const MARKET_INTEREST_OPTIONS: {
+  value: MarketInterest;
+  label: string;
+  sub: string;
+}[] = [
+  {
+    value: "investing",
+    label: "Long-term investing",
+    sub: "Buy good companies and hold for years.",
+  },
+  {
+    value: "trading",
+    label: "Active trading",
+    sub: "Shorter-term moves and chart setups.",
+  },
+  {
+    value: "both",
+    label: "A bit of both",
+    sub: "Invest for the long game, learn to trade too.",
+  },
+  {
+    value: "unsure",
+    label: "Not sure yet",
+    sub: "We'll help you figure out what fits.",
+  },
 ];
 
 export const KID_AGE_OPTIONS: { value: KidAgeRange; label: string }[] = [
@@ -174,6 +206,7 @@ export function draftToRow(draft: ProfileDraft, familyId: string, complete: bool
     family_id: familyId,
     household: draft.household,
     experience: draft.experience,
+    market_interest: draft.market_interest,
     goals: draft.goals,
     goals_other: draft.goals_other.trim() || null,
     hear_about: draft.hear_about,
@@ -197,13 +230,15 @@ export interface Recommendation {
 }
 
 export function deriveRecommendations(
-  p: Pick<FamilyProfile, "household" | "experience" | "goals">
+  p: Pick<FamilyProfile, "household" | "experience" | "goals"> &
+    Partial<Pick<FamilyProfile, "market_interest">>
 ): Recommendation[] {
   const recs: Recommendation[] = [];
   const kids = p.household?.kids ?? 0;
   const hasKids = kids > 0 || (p.household?.kid_age_ranges?.length ?? 0) > 0;
   const exp = p.experience;
   const goals = p.goals ?? [];
+  const interest = p.market_interest ?? null;
   const push = (r: Recommendation) => {
     if (!recs.some((x) => x.href === r.href)) recs.push(r);
   };
@@ -245,7 +280,18 @@ export function deriveRecommendations(
     });
   }
 
-  // 3. Goal-driven picks.
+  // 3. Trading interest → the practice surfaces (deduped against experience).
+  if (interest === "trading" || interest === "both") {
+    push({
+      key: "practice",
+      title: "Practice Chart",
+      sub: "Test trade ideas with pretend money in the simulator",
+      href: "/simulator",
+      icon: "LineChart",
+    });
+  }
+
+  // 4. Goal-driven picks.
   if (goals.includes("teach_kids")) {
     push({
       key: "parent-corner",
@@ -355,6 +401,7 @@ export function normalizeProfile(row: Record<string, unknown>): FamilyProfile {
         : [],
     },
     experience: (row.experience as Experience) ?? null,
+    market_interest: (row.market_interest as MarketInterest) ?? null,
     goals: Array.isArray(row.goals) ? (row.goals as Goal[]) : [],
     goals_other: (row.goals_other as string) ?? null,
     hear_about: (row.hear_about as HearAbout) ?? null,
@@ -368,6 +415,7 @@ export function profileToDraft(p: FamilyProfile): ProfileDraft {
   return {
     household: p.household,
     experience: p.experience,
+    market_interest: p.market_interest,
     goals: p.goals,
     goals_other: p.goals_other ?? "",
     hear_about: p.hear_about,
