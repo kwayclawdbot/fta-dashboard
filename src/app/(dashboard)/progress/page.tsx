@@ -8,21 +8,21 @@ import {
   BookOpen,
   Clock,
   Check,
-  Award,
   Star,
-  Target,
-  Zap,
-  GraduationCap,
   Compass,
   CalendarCheck,
   ClipboardCheck,
   Eye,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelProgress } from "@/lib/xp";
 import { researchComplete } from "@/lib/watchlist";
+import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
+import BadgeCaseView from "@/components/BadgeCaseView";
+import StreakFlame from "@/components/games/StreakFlame";
 
 interface Stats {
   totalLessons: number;
@@ -44,15 +44,6 @@ interface RecentItem {
   completedAt: string;
 }
 
-interface Badge {
-  key: string;
-  name: string;
-  description: string;
-  icon: React.ElementType;
-  earned: boolean;
-  earnedAt?: string;
-}
-
 // Family Investing Club contributions (guarded — tables ship in migration 032).
 interface FicStats {
   missionsDone: number;
@@ -61,16 +52,6 @@ interface FicStats {
   companiesChampioned: number;
   researchDone: number;
 }
-
-// Badge icon map for DB badges
-const BADGE_ICONS: Record<string, React.ElementType> = {
-  first_lesson: Star,
-  module_master: Award,
-  week_warrior: Flame,
-  quiz_ace: Target,
-  course_complete: GraduationCap,
-  fast_learner: Zap,
-};
 
 function formatRelativeTime(dateStr: string) {
   const date = new Date(dateStr);
@@ -89,6 +70,7 @@ function formatRelativeTime(dateStr: string) {
 export default function ProgressPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [stats, setStats] = useState<Stats>({
     totalLessons: 0,
     completed: 0,
@@ -97,16 +79,31 @@ export default function ProgressPage() {
   });
   const [courseProgress, setCourseProgress] = useState<CourseProgress[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentItem[]>([]);
-  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badges, setBadges] = useState<BadgeRow[] | null>(null);
   const [xp, setXp] = useState(0);
   const [fic, setFic] = useState<FicStats | null>(null);
 
   const loadProgress = useCallback(async () => {
+    setLoadError(false);
+    // Timeout guard: if any query hangs (the audit found the page stuck on an
+    // async load that never resolved), stop the spinner and show a retry after
+    // 10s rather than spinning forever.
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        setLoadError(true);
+        setLoading(false);
+      }
+    }, 10000);
+
+    try {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
+      settled = true;
+      clearTimeout(timeout);
       setLoading(false);
       return;
     }
@@ -269,82 +266,12 @@ export default function ProgressPage() {
       setRecentActivity(recent);
     }
 
-    // Badges from DB
-    const { data: allBadges } = await supabase
-      .from("badges")
-      .select("id, slug, title, description, icon_url");
-
-    // For now, check earned badges by matching criteria
-    // Since we don't have a user_badges table, we'll check basic criteria
-    const earnedSlugs = new Set<string>();
-    if (completedCount >= 1) earnedSlugs.add("first_lesson");
-    if (completedCount >= 5) earnedSlugs.add("fast_learner");
-    if (streak >= 7) earnedSlugs.add("week_warrior");
-
-    if (allBadges && allBadges.length > 0) {
-      setBadges(
-        allBadges.map(
-          (b: {
-            id: string;
-            slug: string;
-            title: string;
-            description: string;
-          }) => ({
-            key: b.slug,
-            name: b.title,
-            description: b.description,
-            icon: BADGE_ICONS[b.slug] || Star,
-            earned: earnedSlugs.has(b.slug),
-          })
-        )
-      );
-    } else {
-      // Fallback badges if none in DB
-      setBadges([
-        {
-          key: "first_lesson",
-          name: "First Lesson",
-          description: "Completed your first lesson",
-          icon: Star,
-          earned: completedCount >= 1,
-        },
-        {
-          key: "module_master",
-          name: "Module Master",
-          description: "Completed all lessons in a module",
-          icon: Award,
-          earned: false,
-        },
-        {
-          key: "week_warrior",
-          name: "Week Warrior",
-          description: "7-day learning streak",
-          icon: Flame,
-          earned: streak >= 7,
-        },
-        {
-          key: "quiz_ace",
-          name: "Quiz Ace",
-          description: "Scored 100% on a quiz",
-          icon: Target,
-          earned: false,
-        },
-        {
-          key: "course_complete",
-          name: "Course Complete",
-          description: "Finished an entire course",
-          icon: GraduationCap,
-          earned: false,
-        },
-        {
-          key: "fast_learner",
-          name: "Fast Learner",
-          description: "Complete 5 lessons in one day",
-          icon: Zap,
-          earned: completedCount >= 5,
-        },
-      ]);
-    }
+    // Credential shelf — the same BadgeCase / professional-title engine used on
+    // community & profiles (audit #9). Self-award anything newly earned, then
+    // read the full state (all six titles + awarded flags). Both calls are
+    // guarded internally and never throw.
+    await evaluateBadges(supabase, user.id);
+    setBadges(await getBadgeState(supabase, user.id));
 
     // ── Family Investing Club contributions (guarded) ──────────────────────
     try {
@@ -384,7 +311,19 @@ export default function ProgressPage() {
       setFic(null);
     }
 
-    setLoading(false);
+      settled = true;
+      setLoading(false);
+    } catch (err) {
+      // Root-cause fix for the infinite spinner: any rejecting/hanging query in
+      // the chain above used to strand loading=true forever. Now we always
+      // settle — render whatever loaded plus a retry, never an endless spinner.
+      console.warn("[Progress] load error:", err);
+      settled = true;
+      setLoadError(true);
+      setLoading(false);
+    } finally {
+      clearTimeout(timeout);
+    }
   }, [supabase]);
 
   useEffect(() => {
@@ -395,6 +334,31 @@ export default function ProgressPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-md mx-auto py-20 text-center">
+        <Trophy className="w-8 h-8 text-gold-400/60 mx-auto mb-3" />
+        <h2 className="font-display text-lg font-bold text-midnight-100 mb-1">
+          Couldn&apos;t load your progress
+        </h2>
+        <p className="text-sm text-midnight-400 font-body mb-5">
+          Something hiccuped on our end. Your achievements are safe — give it
+          another try.
+        </p>
+        <button
+          onClick={() => {
+            setLoading(true);
+            loadProgress();
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Try again
+        </button>
       </div>
     );
   }
@@ -497,12 +461,10 @@ export default function ProgressPage() {
           </p>
         </div>
         <div>
-          <p className="text-2xl font-display font-bold text-gold-400">
+          <p className="text-2xl font-display font-bold text-gold-400 flex items-center gap-1.5">
             {stats.currentStreak}
-            <span className="text-midnight-500 text-base font-normal">
-              {" "}
-              days
-            </span>
+            <span className="text-midnight-500 text-base font-normal">days</span>
+            <StreakFlame streak={stats.currentStreak} size={22} />
           </p>
           <p className="text-xs text-midnight-500 font-body mt-0.5 flex items-center gap-1">
             <Flame className="w-3 h-3" />
@@ -658,61 +620,17 @@ export default function ProgressPage() {
         )}
       </motion.section>
 
-      {/* Badges */}
+      {/* Credentials — the shared BadgeCase shelf (community/profiles parity) */}
       <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.25 }}
       >
-        <h2 className="font-display text-lg font-semibold text-midnight-100 mb-4">
-          Badges
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {badges.map((badge) => {
-            const Icon = badge.icon;
-            return (
-              <div
-                key={badge.key}
-                className={`flex flex-col items-center text-center py-5 px-3 rounded-lg border transition-colors ${
-                  badge.earned
-                    ? "border-gold-400/20 bg-gold-400/5"
-                    : "border-midnight-800 bg-midnight-900/30 opacity-40"
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
-                    badge.earned ? "bg-gold-400/20" : "bg-midnight-800"
-                  }`}
-                >
-                  <Icon
-                    className={`w-5 h-5 ${
-                      badge.earned ? "text-gold-400" : "text-midnight-600"
-                    }`}
-                  />
-                </div>
-                <p
-                  className={`text-sm font-display font-semibold mb-0.5 ${
-                    badge.earned ? "text-midnight-100" : "text-midnight-600"
-                  }`}
-                >
-                  {badge.name}
-                </p>
-                <p
-                  className={`text-xs font-body ${
-                    badge.earned ? "text-midnight-400" : "text-midnight-700"
-                  }`}
-                >
-                  {badge.description}
-                </p>
-                {badge.earned && badge.earnedAt && (
-                  <p className="text-xs text-gold-400/60 font-body mt-1">
-                    Earned {badge.earnedAt}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <BadgeCaseView
+          rows={badges}
+          title="Credentials"
+          emptyLine="Earn your first title by researching companies, joining classes, and finishing lessons — each one shows up here as an awarded credential."
+        />
       </motion.section>
     </div>
   );
