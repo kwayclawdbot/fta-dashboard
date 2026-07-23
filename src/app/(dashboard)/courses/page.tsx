@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { deriveRegister } from "@/lib/register";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 
 interface LessonRow {
@@ -105,7 +106,9 @@ export default function CoursesPage() {
 
       const userTrack = profile?.age_group || profile?.track || "adults";
       setTrack(userTrack);
-      setIsKid(profile?.role === "child" && userTrack === "kids");
+      // Register drives what a kid should NOT see (the advanced FTA ICT cohort
+      // card + "Join the next cohort" upsell — audit #3).
+      setIsKid(deriveRegister(profile) === "kid");
 
       // Family membership tier drives program gating (central matrix in
       // src/lib/tier.ts). Kids inherit the family's tier.
@@ -249,8 +252,9 @@ export default function CoursesPage() {
         </p>
       </div>
 
-      {/* THE LIVE PROGRAM (FTA) */}
-      {ftaCard && (
+      {/* THE LIVE PROGRAM (FTA) — never shown to kids; the ICT day-trading
+          cohort is age-inappropriate above a young kid's own content (audit #3). */}
+      {ftaCard && !isKid && (
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -334,6 +338,21 @@ export default function CoursesPage() {
           <GraduationCap className="w-4 h-4 text-gold-600" />
           {isKid ? "My Adventures" : "Foundations"}
         </h2>
+        {ficCards.length === 0 ? (
+          <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-midnight-900 p-10 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-chip-amber text-gold-600">
+              <Sparkles className="h-8 w-8" />
+            </div>
+            <h3 className="font-display text-lg font-bold text-ink">
+              {isKid ? "Your first adventure is on the way!" : "New lessons are coming"}
+            </h3>
+            <p className="mx-auto mt-1 max-w-md text-sm text-soft">
+              {isKid
+                ? "We're putting the finishing touches on your very first lessons. Check back super soon — there's a whole world of money to explore."
+                : "Your foundation lessons will appear here as soon as they're published."}
+            </p>
+          </div>
+        ) : (
         <div className="grid md:grid-cols-2 gap-5">
           {ficCards.map(({ course, total, done, next }) => {
             const courseTrack = course.modules[0]?.track || "adults";
@@ -388,6 +407,7 @@ export default function CoursesPage() {
             );
           })}
         </div>
+        )}
       </motion.section>
     </div>
   );
