@@ -39,7 +39,8 @@ export interface ActivityPayload {
     | "mission_complete"
     | "session_rsvp"
     | "level_up"
-    | "referral_welcome";
+    | "referral_welcome"
+    | "ticker_like_milestone";
   icon: string;
   actor_name: string;
   actor_avatar: string | null;
@@ -55,6 +56,8 @@ export interface ActivityPayload {
   level_name?: string;
   session_id?: string;
   scheduled_at?: string;
+  net?: number;
+  milestone?: number;
 }
 
 /** A member sharing one of their family's watchlist picks as a rich card. */
@@ -189,6 +192,12 @@ export function activityLine(p: ActivityPayload): ActivityLine {
         iconKey: "sparkles", subject, verb: "welcomed",
         target: "a new family to the club",
         accent: "bg-chip-amber text-gold-800",
+      };
+    case "ticker_like_milestone":
+      return {
+        iconKey: "heart", subject: p.actor_name || "The club",
+        verb: "is warming up to", target: company,
+        accent: "bg-red-500/12 text-red-600",
       };
     default:
       return { iconKey: "sparkles", subject, verb: "", target: "", accent: "bg-sand text-soft" };

@@ -258,6 +258,9 @@ async function bootstrap(db: Db, days: number, mcapBudget: number) {
   await upsertMetrics(db, metricRows);
   await upsertHistory(db, histRows);
   const mcapDone = await enrichMcap(db, mcapBudget);
+  // Reconcile the community ❤ mirror (Lane 9) — trigger keeps it live; this is
+  // the nightly safety net so a universe rebuild never drifts the counts.
+  await db.rpc("reconcile_screener_likes");
 
   await writeMetaCounts(db, {
     last_run_at: now,
@@ -402,6 +405,8 @@ async function incremental(db: Db, mcapBudget: number) {
   await upsertMetrics(db, metricRows);
 
   const mcapDone = await enrichMcap(db, mcapBudget);
+  // Reconcile the community ❤ mirror (Lane 9) nightly safety net.
+  await db.rpc("reconcile_screener_likes");
 
   // Prune history older than ~400 calendar days (caps trailing window near 52w).
   await db.from("screener_history").delete().lt("as_of", ymdDaysAgo(400));

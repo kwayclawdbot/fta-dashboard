@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Award, Eye, CheckCircle2, Target, Calendar, Trophy, Sparkles, ArrowRight, MessageCircle,
+  Award, Eye, CheckCircle2, Target, Calendar, Trophy, Sparkles, ArrowRight, MessageCircle, Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -25,7 +25,7 @@ import AgeBadge from "@/components/community/AgeBadge";
 
 const ICONS: Record<string, React.ElementType> = {
   award: Award, eye: Eye, check: CheckCircle2, target: Target,
-  calendar: Calendar, trophy: Trophy, sparkles: Sparkles,
+  calendar: Calendar, trophy: Trophy, sparkles: Sparkles, heart: Heart,
 };
 
 interface Row {

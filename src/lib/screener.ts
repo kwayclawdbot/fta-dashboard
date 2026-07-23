@@ -37,6 +37,7 @@ export interface ScreenerRow {
   ema20_state: EmaState | null;
   ema50_state: EmaState | null;
   gap_pct: number | null;
+  like_count?: number | null; // community ❤ (net likes, precomputed — Lane 9)
   updated_at?: string;
 }
 

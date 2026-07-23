@@ -22,6 +22,7 @@ import {
   Info,
   Lock,
   X,
+  Heart,
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -50,7 +51,7 @@ import {
 const ICONS: Record<string, LucideIcon> = { Trophy, TrendingUp, Rocket, Waves, BarChart3 };
 const PAGE_SIZE = 100;
 const METRIC_COLS =
-  "ticker, name, sector, exchange, type, mcap, price, chg_1d, chg_5d, chg_1m, chg_3m, vol, avg_vol_20, vol_ratio, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, gap_pct, updated_at";
+  "ticker, name, sector, exchange, type, mcap, price, chg_1d, chg_5d, chg_1m, chg_3m, vol, avg_vol_20, vol_ratio, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, gap_pct, like_count, updated_at";
 
 /* ---------- formatting ---------- */
 function fmtPrice(v: number | null | undefined): string {
@@ -78,7 +79,8 @@ type SortKey =
   | "chg_3m"
   | "vol_ratio"
   | "mcap"
-  | "rsi14";
+  | "rsi14"
+  | "like_count";
 interface Col {
   key: SortKey;
   label: string;
@@ -95,6 +97,20 @@ const COLS: Col[] = [
   { key: "vol_ratio", label: "Vol×", align: "right", render: (r) => fmtRatio(r.vol_ratio), cls: (r) => (r.vol_ratio != null && r.vol_ratio >= 2 ? "text-gold-700 font-bold" : "") },
   { key: "mcap", label: "Mkt cap", align: "right", render: (r) => fmtMcap(r.mcap) },
   { key: "rsi14", label: "RSI", align: "right", render: (r) => fmtRsi(r.rsi14) },
+  {
+    key: "like_count",
+    label: "♥",
+    align: "right",
+    render: (r) =>
+      r.like_count && r.like_count > 0 ? (
+        <span className="inline-flex items-center gap-0.5 font-bold text-red-500">
+          <Heart className="h-3 w-3 fill-red-500" />
+          {r.like_count}
+        </span>
+      ) : (
+        <span className="text-soft">—</span>
+      ),
+  },
 ];
 
 interface Meta {

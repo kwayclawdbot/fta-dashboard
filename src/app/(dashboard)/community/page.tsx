@@ -30,7 +30,7 @@ import CompanyLogo from "@/components/fic/CompanyLogo";
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   award: Award, eye: Eye, check: CheckCircle2, target: Target,
-  calendar: Calendar, trophy: Trophy, sparkles: Sparkles,
+  calendar: Calendar, trophy: Trophy, sparkles: Sparkles, heart: Heart,
 };
 
 const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -797,7 +797,14 @@ function ActivityCard(props: EngagementProps) {
             {payload.actor_age_group || payload.actor_role ? (
               <> <AgeBadge role={payload.actor_role} ageGroup={payload.actor_age_group} className="align-middle" /></>
             ) : null}{" "}
-            {line.verb} <span className="font-semibold text-ink">{line.target}</span>
+            {line.verb}{" "}
+            {payload.type === "ticker_like_milestone" && payload.ticker ? (
+              <Link href={`/research/${encodeURIComponent(payload.ticker)}`} className="font-semibold text-gold-700 hover:text-gold-800">
+                {line.target}
+              </Link>
+            ) : (
+              <span className="font-semibold text-ink">{line.target}</span>
+            )}
             {payload.family_name ? <span className="text-soft"> · {payload.family_name}</span> : null}
           </p>
           <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>

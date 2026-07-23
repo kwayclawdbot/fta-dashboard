@@ -343,3 +343,32 @@ as $$
   from ranked r;
 $$;
 grant execute on function public.community_favorites(text, integer) to authenticated;
+
+-- ── B6. reconcile_screener_likes() — nightly cron safety net ──────────────────
+-- The trigger keeps screener_metrics.like_count live on every vote; this makes
+-- the screener column eventually-consistent even if a trigger ever no-ops or a
+-- ticker enters the universe after it was already liked. One set-based UPDATE,
+-- called from /api/cron/refresh-screener (service role).
+create or replace function public.reconcile_screener_likes()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_count integer;
+begin
+  update screener_metrics s
+    set like_count = greatest(coalesce(c.net, 0), 0)
+  from ticker_like_counts c
+  where c.ticker = s.ticker
+    and s.like_count is distinct from greatest(coalesce(c.net, 0), 0);
+  get diagnostics v_count = row_count;
+  -- Zero out rows whose likes were fully removed.
+  update screener_metrics s set like_count = 0
+  where s.like_count > 0
+    and not exists (select 1 from ticker_like_counts c where c.ticker = s.ticker and c.net > 0);
+  return v_count;
+end;
+$$;
+grant execute on function public.reconcile_screener_likes() to service_role;

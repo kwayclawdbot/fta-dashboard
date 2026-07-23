@@ -6,13 +6,13 @@ import { m } from "@/lib/motion";
 import {
   Users2,
   Sparkles,
-  MessageCircle,
   Trophy,
   TrendingUp,
   TrendingDown,
   ShieldCheck,
   ArrowRight,
   Gem,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
@@ -24,6 +24,8 @@ import Sparkline from "@/components/fic/Sparkline";
 import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
+import SocialBar from "@/components/research/SocialBar";
+import { fetchFavorites, type Favorite, type Vote } from "@/lib/research/social";
 import {
   pctSinceAdded,
   formatPct,
@@ -31,6 +33,13 @@ import {
   COMMUNITY_DISCLAIMER,
   type CommunityEntry,
 } from "@/lib/community-watchlist";
+
+interface LikeCount {
+  likes: number;
+  unlikes: number;
+  net: number;
+}
+type SortMode = "newest" | "liked";
 import {
   useNewMemberHints,
   HintReopen,
@@ -79,6 +88,13 @@ export default function CommunityWatchlistPage() {
   const [tierResolved, setTierResolved] = useState(false);
   const [entries, setEntries] = useState<CommunityEntry[]>([]);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, LikeCount>>({});
+  const [myVotes, setMyVotes] = useState<Record<string, Vote>>({});
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [favWindow, setFavWindow] = useState<"all" | "7d">("all");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [userId, setUserId] = useState("");
+  const [ageGroup, setAgeGroup] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("board");
   // The "how to use the board" hint expires after the new-member window; the
   // delayed-price / not-advice compliance line below it stays permanent (Lane 7A).
@@ -93,13 +109,15 @@ export default function CommunityWatchlistPage() {
       setTierResolved(true);
       return;
     }
+    setUserId(user.id);
 
     // Resolve tier for the members-only gate (never flash the board to free).
     const { data: profile } = await supabase
       .from("profiles")
-      .select("family_id")
+      .select("family_id, age_group")
       .eq("id", user.id)
       .maybeSingle();
+    setAgeGroup(profile?.age_group ?? null);
     const t = await getFamilyTier(supabase, profile?.family_id);
     setTier(t);
     setTierResolved(true);
@@ -118,11 +136,41 @@ export default function CommunityWatchlistPage() {
     setEntries(list);
     setLoading(false);
 
+    // Community Favorites strip (independent of the board tickers).
+    fetchFavorites(supabase, "all", 5).then(setFavorites);
+
     const tickers = Array.from(new Set(list.map((e) => e.ticker).filter(Boolean)));
     if (tickers.length) {
       fetchQuotes(tickers).then((q) => setQuotes((prev) => ({ ...prev, ...q })));
+      // Batched social — ONE query for counts, ONE for my votes (never N+1).
+      supabase
+        .from("ticker_like_counts")
+        .select("ticker, likes, unlikes, net")
+        .in("ticker", tickers)
+        .then(({ data }) => {
+          const map: Record<string, LikeCount> = {};
+          for (const r of data || []) {
+            map[r.ticker as string] = { likes: r.likes, unlikes: r.unlikes, net: r.net };
+          }
+          setLikeCounts(map);
+        });
+      supabase
+        .from("ticker_sentiment")
+        .select("ticker, vote")
+        .eq("user_id", user.id)
+        .in("ticker", tickers)
+        .then(({ data }) => {
+          const map: Record<string, Vote> = {};
+          for (const r of data || []) map[r.ticker as string] = r.vote as Vote;
+          setMyVotes(map);
+        });
     }
   }, [supabase]);
+
+  useEffect(() => {
+    if (tab !== "board" || tier === "free") return;
+    fetchFavorites(supabase, favWindow, 5).then(setFavorites);
+  }, [favWindow, tab, tier, supabase]);
 
   useEffect(() => {
     load();
@@ -132,10 +180,15 @@ export default function CommunityWatchlistPage() {
     () => entries.filter((e) => e.kind === "admin"),
     [entries]
   );
-  const memberPicks = useMemo(
-    () => entries.filter((e) => e.kind === "member"),
-    [entries]
-  );
+  const memberPicks = useMemo(() => {
+    const list = entries.filter((e) => e.kind === "member");
+    if (sortMode === "liked") {
+      return [...list].sort(
+        (a, b) => (likeCounts[b.ticker]?.net ?? 0) - (likeCounts[a.ticker]?.net ?? 0)
+      );
+    }
+    return list;
+  }, [entries, sortMode, likeCounts]);
 
   // Pick Record: rank every entry by "% since added".
   const ranked = useMemo(() => {
@@ -229,6 +282,49 @@ export default function CommunityWatchlistPage() {
 
       {tab === "board" ? (
         <>
+          {/* Community Favorites strip (top by net likes) */}
+          {favorites.length > 0 && (
+            <section className="rounded-2xl border border-sand bg-midnight-900 p-4 shadow-soft">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
+                    Community favorites
+                  </h2>
+                </div>
+                <div className="inline-flex rounded-lg border border-sand p-0.5">
+                  {(["all", "7d"] as const).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => setFavWindow(w)}
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                        favWindow === w ? "bg-gold-500 text-white" : "text-soft hover:text-ink"
+                      }`}
+                    >
+                      {w === "all" ? "All time" : "This week"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {favorites.map((f) => (
+                  <Link
+                    key={f.ticker}
+                    href={`/research/${encodeURIComponent(f.ticker)}`}
+                    className="inline-flex items-center gap-2 rounded-full border border-sand bg-paper px-3 py-1.5 text-sm hover:border-gold-300"
+                  >
+                    <CompanyLogo symbol={f.ticker} name={f.company_name} size={20} />
+                    <span className="font-semibold text-ink">{f.ticker}</span>
+                    <span className="inline-flex items-center gap-0.5 text-xs font-bold text-red-500">
+                      <Heart className="h-3 w-3 fill-red-500" />
+                      {favWindow === "7d" ? f.score : f.net}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           {entries.length === 0 && (
             <div className="rounded-2xl border border-dashed border-sand bg-paper/60 py-16 text-center">
               <Gem className="mx-auto mb-3 h-10 w-10 text-gold-400/60" />
@@ -256,7 +352,18 @@ export default function CommunityWatchlistPage() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {adminPicks.map((e) => (
-                  <EntryCard key={e.id} entry={e} quotes={quotes} featured />
+                  <EntryCard
+                    key={e.id}
+                    entry={e}
+                    quotes={quotes}
+                    featured
+                    supabase={supabase}
+                    userId={userId}
+                    ageGroup={ageGroup}
+                    canVote={tier !== "free"}
+                    like={likeCounts[e.ticker]}
+                    myVote={myVotes[e.ticker] ?? null}
+                  />
                 ))}
               </div>
             </section>
@@ -265,15 +372,40 @@ export default function CommunityWatchlistPage() {
           {/* From our families (member) */}
           {memberPicks.length > 0 && (
             <section className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Users2 className="h-4 w-4 text-gold-600" />
-                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
-                  From our families
-                </h2>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Users2 className="h-4 w-4 text-gold-600" />
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
+                    From our families
+                  </h2>
+                </div>
+                <div className="inline-flex rounded-lg border border-sand p-0.5 text-[11px]">
+                  {(["newest", "liked"] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSortMode(s)}
+                      className={`rounded-md px-2 py-0.5 font-semibold transition-colors ${
+                        sortMode === s ? "bg-gold-500 text-white" : "text-soft hover:text-ink"
+                      }`}
+                    >
+                      {s === "newest" ? "Newest" : "Most liked"}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {memberPicks.map((e) => (
-                  <EntryCard key={e.id} entry={e} quotes={quotes} />
+                  <EntryCard
+                    key={e.id}
+                    entry={e}
+                    quotes={quotes}
+                    supabase={supabase}
+                    userId={userId}
+                    ageGroup={ageGroup}
+                    canVote={tier !== "free"}
+                    like={likeCounts[e.ticker]}
+                    myVote={myVotes[e.ticker] ?? null}
+                  />
                 ))}
               </div>
             </section>
@@ -296,10 +428,22 @@ function EntryCard({
   entry,
   quotes,
   featured = false,
+  supabase,
+  userId,
+  ageGroup,
+  canVote = false,
+  like,
+  myVote = null,
 }: {
   entry: CommunityEntry;
   quotes: Record<string, MarketQuote>;
   featured?: boolean;
+  supabase?: ReturnType<typeof createClient>;
+  userId?: string;
+  ageGroup?: string | null;
+  canVote?: boolean;
+  like?: LikeCount;
+  myVote?: Vote | null;
 }) {
   const pct = pctSinceAdded(entry.snapshot_price, currentPrice(entry, quotes));
   return (
@@ -364,18 +508,28 @@ function EntryCard({
         <Sparkline symbol={entry.ticker} height={52} />
       </div>
 
-      <div className="mt-3 flex items-center justify-between border-t border-sand pt-2.5">
-        <span className="text-[11px] text-midnight-500">
-          {entry.snapshot_price != null
-            ? `Added at $${entry.snapshot_price.toFixed(2)}`
-            : "Snapshotting…"}
-        </span>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-sand pt-2.5">
+        <SocialBar
+          supabase={supabase}
+          ticker={entry.ticker}
+          variant="card"
+          userId={userId}
+          ageGroup={ageGroup}
+          canVote={canVote}
+          threadHref={`/research/${encodeURIComponent(entry.ticker)}#research-notes`}
+          initial={{
+            likes: like?.likes ?? 0,
+            unlikes: like?.unlikes ?? 0,
+            net: like?.net ?? 0,
+            commentCount: entry.comment_count,
+            myVote,
+          }}
+        />
         <Link
           href={`/research/${encodeURIComponent(entry.ticker)}`}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-gold-700 hover:text-gold-800"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-gold-700 hover:text-gold-800"
         >
-          <MessageCircle className="h-3.5 w-3.5" />
-          Research {entry.comment_count > 0 ? `(${entry.comment_count})` : ""}
+          Research
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
