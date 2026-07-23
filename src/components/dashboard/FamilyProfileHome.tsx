@@ -32,23 +32,22 @@ import {
  * the dashboard only needs to drop <FamilyProfileHome familyId /> once for
  * parents. Two mutually-exclusive states, both server-derived from
  * family_profiles — no scattered flags:
- *   • no completed profile → a PROMINENT "Tell us about your family" card. This
- *     is the questionnaire's cross-entry-path guarantee (Lane 8A): funnel signups
- *     land here with onboarding_complete already true (set server-side) and so
- *     never see the inline /onboarding profile steps; every parent, whatever
- *     their entry path (funnel, admin invite, Stripe webhook, family invite),
- *     reaches the dashboard and this card — keyed on the PER-FAMILY completed_at,
- *     not the per-profile onboarding flag. Warm and skippable, never a wall, but
- *     it stays prominent on first login until the profile is completed OR the
- *     parent dismisses it twice.
+ *   • no completed profile → a QUIET "Finish your family profile" backfill card.
+ *     As of the Lane 8R wizard rebuild, the profile questionnaire IS the signup
+ *     flow: every NEW member of every entry path completes it inside the
+ *     full-screen /onboarding wizard before ever reaching the dashboard. So the
+ *     only families that land here WITHOUT a completed profile are PRE-WIZARD
+ *     members (onboarded before the wizard existed, family_profiles never
+ *     filled). They get a low-key backfill nudge — not the old loud card — that
+ *     retires after two dismissals. New members never see it.
  *   • completed within the first week → the "recommended next" card whose picks
  *     map directly to their household / experience / interest / goals answers.
  */
 
-// Prominent-until-completed-or-dismissed-twice (Lane 8A). We count dismissals in
-// localStorage rather than a one-shot flag so a single accidental close doesn't
-// bury the questionnaire — it comes back next login, and only a deliberate
-// second dismissal retires it.
+// Quiet backfill card for pre-wizard incomplete profiles (Lane 8R). We count
+// dismissals in localStorage rather than a one-shot flag so a single accidental
+// close doesn't bury it — it comes back next login, and only a deliberate second
+// dismissal retires it.
 const DISMISS_MAX = 2;
 
 const ICONS: Record<string, LucideIcon> = {
@@ -122,33 +121,30 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
   if (view.kind === "loading" || view.kind === "hidden") return null;
 
   if (view.kind === "backfill") {
+    // Quiet, low-key backfill (Lane 8R) — only pre-wizard members reach this.
     return (
-      <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
+      <m.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="relative">
         <Link
           href="/onboarding/profile"
-          className="paper-card relative overflow-hidden p-5 flex items-center gap-4 border-gold-400/40 ring-1 ring-gold-400/20 bg-gradient-to-br from-gold-400/[0.07] to-transparent hover:border-gold-400/60 transition-colors"
+          className="flex items-center gap-3 rounded-xl border border-sand bg-card px-4 py-3 pr-9 hover:border-gold-400/40 transition-colors"
         >
-          <div className="w-11 h-11 rounded-xl bg-gold-400/20 flex items-center justify-center shrink-0">
-            <Home className="w-6 h-6 text-gold-700" />
+          <div className="w-8 h-8 rounded-lg bg-gold-400/12 flex items-center justify-center shrink-0">
+            <Home className="w-4 h-4 text-gold-700" />
           </div>
-          <div className="flex-1 min-w-0 pr-6">
-            <p className="font-display font-semibold text-ink">Tell us about your family</p>
-            <p className="text-sm text-soft">
-              A 2-minute warm welcome — a few questions so we can tailor lessons, missions,
-              pacing, and Kai to your family.
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-medium text-sm text-ink">Finish your family profile</p>
+            <p className="text-xs text-soft truncate">
+              A few quick questions so we can tailor lessons and Kai to your family.
             </p>
           </div>
-          <span className="cta-button hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm shrink-0">
-            Get started <ArrowRight className="w-4 h-4" />
-          </span>
-          <ArrowRight className="w-5 h-5 text-gold-700 shrink-0 sm:hidden" />
+          <ArrowRight className="w-4 h-4 text-soft shrink-0" />
         </Link>
         <button
           onClick={dismissBackfill}
           aria-label="Dismiss"
-          className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-midnight-500 hover:text-ink hover:bg-sand/60 transition-colors"
+          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-soft hover:text-ink hover:bg-sand/60 transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5" />
         </button>
       </m.div>
     );
