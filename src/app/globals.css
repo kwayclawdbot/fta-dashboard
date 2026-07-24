@@ -23,16 +23,62 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme inline {
-  --color-gold-50: #FFFBEB;
-  --color-gold-100: #FEF3C7;
-  --color-gold-200: #FDE68A;
-  --color-gold-300: #FCD34D;
-  --color-gold-400: #FBBF24;
-  --color-gold-500: #F59E0B;
-  --color-gold-600: #D97706;
-  --color-gold-700: #B45309;
-  --color-gold-800: #92400E;
-  --color-gold-900: #78350F;
+  /*
+    MODE DIMENSION (Cheat Code Club redesign, R1)
+    ---------------------------------------------
+    A second axis on top of data-theme: `data-mode="club|family|fta"` set on
+    <html> (ModeManager, from memberMode/route) re-skins the SAME components.
+
+      • family (default / :root)  → warm-paper + gold  (unchanged identity)
+      • club   (solo individuals) → warm sand + VOLT ORANGE + green-teal + Kai blue
+      • fta    (FTA hub routes)   → warm-paper base + METALLIC gold accents
+
+    The `gold-*` ramp is now themeable via raw vars (--g50…--g900). In club mode
+    the ramp is remapped to VOLT ORANGE, so every existing `text-gold-700`,
+    `bg-gold-400/15`, active-nav bar, `.cta-button` etc. re-colors to orange with
+    ZERO component edits. FTA's always-gold tier badge lives on the constant
+    `.chip-metal-gold` class (src/lib/tier.ts) so it never flips to orange.
+  */
+  --color-gold-50: var(--g50);
+  --color-gold-100: var(--g100);
+  --color-gold-200: var(--g200);
+  --color-gold-300: var(--g300);
+  --color-gold-400: var(--g400);
+  --color-gold-500: var(--g500);
+  --color-gold-600: var(--g600);
+  --color-gold-700: var(--g700);
+  --color-gold-800: var(--g800);
+  --color-gold-900: var(--g900);
+
+  /* Club palette — CONSTANT across modes/themes (explicit club-surface use in
+     R3–R5; the automatic recolor rides the gold ramp + surface vars above). */
+  --color-volt-50: #FFF3EA;
+  --color-volt-100: #FFE3CC;
+  --color-volt-200: #FFC79A;
+  --color-volt-300: #FFA766;
+  --color-volt-400: #FF8C33;
+  --color-volt-500: #FF6A00;
+  --color-volt-600: #E85400;
+  --color-volt-700: #C24400;
+  --color-volt-800: #963400;
+  --color-volt-900: #6E2600;
+
+  --color-teal-300: #5AD9C0;
+  --color-teal-400: #00C389;
+  --color-teal-500: #00B8A0;
+  --color-teal-600: #00B4D8;
+  --color-teal-700: #0091AD;
+
+  --color-kai-300: #7DA0FF;
+  --color-kai-400: #4D7BFF;
+  --color-kai-500: #2563FF;
+  --color-kai-600: #1D4FD6;
+  --color-kai-700: #1740A8;
+
+  /* Semantic ACCENT — mode-aware (see mode blocks). "The brand action color."
+     family=gold · club=volt orange · fta=metallic gold. */
+  --color-accent: var(--accent-solid);
+  --color-accent-strong: var(--accent-strong);
 
   /* Surface + text ramp — themeable via raw vars (see :root blocks below) */
   --color-midnight-50: var(--m50);
@@ -73,8 +119,12 @@
   --color-green-500: #16A34A;
   --color-green-600: #15803D;
 
-  --font-display: var(--font-poppins), sans-serif;
+  /* Sora (Bold/ExtraBold) headlines · Inter UI · IBM Plex Mono market data.
+     `font-display` flips to Sora at the token level so every existing headline
+     picks it up with no component edits. */
+  --font-display: var(--font-sora), var(--font-inter), sans-serif;
   --font-body: var(--font-inter), sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
 
   /* Softer, friendlier shape language */
   --radius-lg: 0.75rem;
@@ -91,6 +141,34 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
+
+  /* Gold ramp — FAMILY base (constant across themes, as before). Club mode
+     remaps these to volt orange; FTA keeps them (gold). */
+  --g50: #FFFBEB;
+  --g100: #FEF3C7;
+  --g200: #FDE68A;
+  --g300: #FCD34D;
+  --g400: #FBBF24;
+  --g500: #F59E0B;
+  --g600: #D97706;
+  --g700: #B45309;
+  --g800: #92400E;
+  --g900: #78350F;
+
+  /* Accent (brand action) — FAMILY = gold gradient. */
+  --accent-a: #FBBF24;
+  --accent-b: #F59E0B;
+  --accent-solid: #F59E0B;
+  --accent-strong: #FBBF24;
+  --accent-on: #101828;
+  --accent-gradient: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+
+  /* Signature gradients — the club's dual-brand hero fill (orange→teal) and the
+     Kai surface fill (teal→green). Defined in every mode so R3/R4 reuse them
+     verbatim; family keeps its own warm interpretation for parity. */
+  --grad-hero: linear-gradient(135deg, #FF5A00 0%, #FF8A00 45%, #00C389 100%);
+  --grad-kai: linear-gradient(135deg, #00C389 0%, #00B4D8 100%);
+  --grad-metal: linear-gradient(135deg, #FFF3C4 0%, #E6B84D 32%, #B8860B 60%, #E6B84D 85%, #FFF6CE 100%);
 
   --m50: #101828;
   --m100: #1D2939;
@@ -169,6 +247,131 @@
   --urgency-border: rgba(251, 191, 36, 0.22);
 }
 
+/* ================================================================== */
+/* MODE DIMENSION — data-mode on <html> re-skins the shared components  */
+/* ================================================================== */
+
+/* ------------------------------------------------------------------ */
+/* CLUB mode — LIGHT: warm sand base, cream cards, charcoal ink,       */
+/* gold ramp remapped to VOLT ORANGE (active nav/CTAs flip for free).  */
+/* Specificity (0,1,0) sits above bare :root (0,0,0) → wins in light.  */
+/* ------------------------------------------------------------------ */
+[data-mode="club"] {
+  /* Surfaces — sand page, cream cards, subtle neutral borders */
+  --m50: #0F1115;   /* ink heading */
+  --m100: #191C22;
+  --m200: #2A2E37;
+  --m300: #4C4A42;  /* gray */
+  --m400: #5C5648;
+  --m500: #6E6656;
+  --m600: #8C8474;  /* faint */
+  --m700: #E4D5BB;  /* sand border-strong */
+  --m800: #EADCC5;  /* light sand */
+  --m900: #FBF3E4;  /* card / cream */
+  --m950: #F3E7D0;  /* page bg / warm sand (NOT pure white) */
+
+  --paper: #F3E7D0;
+  --ink: #0F1115;
+  --soft: #5C5648;
+  --sand: #E4D5BB;
+  --card: #FBF3E4;
+  --chip-amber: #FFE9C7;
+  --chip-sky: #E0F2FE;
+  --chip-green: #DCFCE7;
+
+  --sh-soft: 0 1px 2px rgba(15, 17, 21, 0.05), 0 4px 16px rgba(15, 17, 21, 0.07);
+  --sh-lift: 0 2px 4px rgba(15, 17, 21, 0.07), 0 12px 32px rgba(15, 17, 21, 0.13);
+
+  --sb-track: #EADCC5;
+  --sb-thumb: #D8C7A6;
+  --sb-thumb-hover: #FF6A00;
+
+  --urgency-bg: #FFE9C7;
+  --urgency-border: #FFC79A;
+
+  /* Gold ramp → VOLT ORANGE. Light-oriented (700 = dark burnt orange text). */
+  --g50: #FFF3EA;
+  --g100: #FFE3CC;
+  --g200: #FFC79A;
+  --g300: #FFA766;
+  --g400: #FF8C33;
+  --g500: #FF6A00;
+  --g600: #E85400;
+  --g700: #C24400;  /* active text on sand/cream — AA on light tints */
+  --g800: #963400;
+  --g900: #6E2600;
+
+  /* Accent = volt orange gradient. Endpoint tuned to #FF8A00 (still clearly
+     orange) so it never reads as FTA gold #F59E0B. */
+  --accent-a: #FF5A00;
+  --accent-b: #FF8A00;
+  --accent-solid: #FF6A00;
+  --accent-strong: #FF8C33;
+  --accent-on: #FFFFFF;
+  /* --accent-gradient / --grad-* inherit their :root definitions (they read
+     the accent-a/b vars we just re-set, so the CTA gradient is now orange). */
+}
+
+/* ------------------------------------------------------------------ */
+/* CLUB mode — DARK: obsidian base, lighter charcoal cards, cool ink.  */
+/* Only overrides what differs from club-light; gold tints (g50–g500)  */
+/* + accent cascade from [data-mode="club"]. Text-end gold lifted so   */
+/* active-nav text reads on dark. Specificity (0,3,0) wins.            */
+/* ------------------------------------------------------------------ */
+:root[data-theme="dark"] [data-mode="club"] {
+  --m50: #F2F4F8;   /* cool off-white heading (club/tech, vs family warm) */
+  --m100: #E2E5EC;
+  --m200: #C6CBD6;
+  --m300: #9AA0AD;
+  --m400: #7C828F;
+  --m500: #666C78;
+  --m600: #545A66;
+  --m700: #2A2E37;  /* border-strong */
+  --m800: #21242C;
+  --m900: #191C22;  /* card — lighter charcoal */
+  --m950: #0F1115;  /* page bg — obsidian */
+
+  --paper: #0F1115;
+  --ink: #F2F4F8;
+  --soft: #9AA0AD;
+  --sand: #2A2E37;
+  --card: #191C22;
+  --chip-amber: rgba(255, 138, 0, 0.16);
+  --chip-sky: rgba(56, 189, 248, 0.15);
+  --chip-green: rgba(52, 211, 153, 0.15);
+
+  --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.55);
+  --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.66);
+
+  --sb-track: #0F1115;
+  --sb-thumb: #2A2E37;
+  --sb-thumb-hover: #FF6A00;
+
+  --urgency-bg: rgba(255, 138, 0, 0.12);
+  --urgency-border: rgba(255, 138, 0, 0.24);
+
+  /* Lift the text-end of the orange ramp so active-nav text reads on dark. */
+  --g600: #FF8A47;
+  --g700: #FF9A5C;  /* active text on dark tints */
+  --g800: #FFB380;
+  --g900: #FFC9A3;
+}
+
+/* ------------------------------------------------------------------ */
+/* FTA mode — warm-paper base (inherits family :root/dark) + METALLIC   */
+/* gold accents. Gold ramp stays gold; only the accent gradient becomes */
+/* a metal sheen so CTAs / .text-gradient-gold render metallic on the   */
+/* FTA desk. Full chips/rails/headers density pass = R5.               */
+/* ------------------------------------------------------------------ */
+[data-mode="fta"] {
+  --accent-a: #F4D06A;
+  --accent-b: #B8860B;
+  --accent-solid: #C9971E;
+  --accent-strong: #E6B84D;
+  --accent-on: #1A1206;
+  --accent-gradient: var(--grad-metal);
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -195,8 +398,31 @@ body {
   background: var(--sb-thumb-hover);
 }
 
+/* Brand-action gradient text — mode-aware (gold · orange · metal) via accent. */
 .text-gradient-gold {
-  background: linear-gradient(135deg, #D97706, #B45309);
+  background: linear-gradient(135deg, var(--accent-b), var(--accent-a));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Club dual-brand hero fill (orange→teal) — Ask Kai / hero cards (R3/R4). */
+.club-hero-gradient {
+  background: var(--grad-hero);
+}
+/* Kai surface fill (teal→green) — Kai Alerts / AI surfaces (R4). */
+.kai-gradient {
+  background: var(--grad-kai);
+}
+/* Metallic gold sheen — FTA chips / rails / headers (R5 density pass). */
+.metal-gold,
+.chip-metal-gold {
+  background: var(--grad-metal);
+  color: #1A1206;
+  background-size: 200% 100%;
+}
+.text-gradient-club {
+  background: var(--grad-hero);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -224,7 +450,7 @@ body {
 }
 
 .glow-border-strong {
-  border: 2px solid #FBBF24;
+  border: 2px solid var(--accent-strong);
   box-shadow: var(--shadow-soft);
 }
 
@@ -234,8 +460,8 @@ body {
 }
 
 .cta-button {
-  background: linear-gradient(135deg, #FBBF24, #F59E0B);
-  color: #101828;
+  background: var(--accent-gradient);
+  color: var(--accent-on);
   font-weight: 700;
   font-family: var(--font-display);
   letter-spacing: 0.02em;
@@ -258,7 +484,7 @@ body {
   transition: all 0.3s ease;
 }
 .stack-row:hover {
-  background: rgba(245, 158, 11, 0.07);
+  background: color-mix(in srgb, var(--accent-solid) 8%, transparent);
 }
 
 .testimonial-card {
@@ -268,7 +494,7 @@ body {
   transition: all 0.3s ease;
 }
 .testimonial-card:hover {
-  border-color: #FBBF24;
+  border-color: var(--accent-strong);
 }
 
 /* Warm paper card — the default surface of the redesign */

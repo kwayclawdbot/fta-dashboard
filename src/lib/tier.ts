@@ -40,8 +40,11 @@ export const TIER_CONFIG: Record<
     label: "FTA",
     name: "Family Trading Academy",
     premium: true,
-    chip: "bg-gradient-to-b from-gold-400 to-gold-600 text-white shadow-soft",
-    avatarRing: "ring-2 ring-gold-400 ring-offset-1 ring-offset-white",
+    // Constant METALLIC gold (.chip-metal-gold) + a fixed gold ring — NOT the
+    // themeable gold-* ramp, so an FTA member browsing in Club mode (where the
+    // ramp remaps to volt orange) still sees a distinctly gold premium badge.
+    chip: "chip-metal-gold shadow-soft",
+    avatarRing: "ring-2 ring-[#E6B84D] ring-offset-1 ring-offset-white",
   },
   fic: {
     label: "FIC",
