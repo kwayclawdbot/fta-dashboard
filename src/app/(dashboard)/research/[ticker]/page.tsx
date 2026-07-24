@@ -408,7 +408,7 @@ export default function TickerResearchPage() {
       {/* ── Permanent header (always above the tabs) ─────────────────────────
           Hero (logo / price / social bar) + scorecard summary (gauge + rings).
           Social-first: the social bar never gets buried in a tab. */}
-      <div className="mt-4 space-y-5">
+      <div className="mt-4 mb-5 space-y-5">
         <m.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -488,10 +488,11 @@ export default function TickerResearchPage() {
         )}
       </div>
 
-      {/* ── Sticky tab bar ───────────────────────────────────────────────── */}
-      <div className="mt-5">
-        <ResearchTabBar tabs={tabDefs} active={activeTab} onSelect={selectTab} />
-      </div>
+      {/* ── Sticky tab bar ───────────────────────────────────────────────────
+          Rendered as a DIRECT child of the tall page container (not inside a
+          short wrapper) so `sticky` stays pinned while the tab body scrolls —
+          a wrapping div would confine the sticky to its own height. */}
+      <ResearchTabBar tabs={tabDefs} active={activeTab} onSelect={selectTab} />
 
       {/* ── Tab content ──────────────────────────────────────────────────── */}
       <div className="mt-5 space-y-5">
