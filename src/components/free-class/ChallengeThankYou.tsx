@@ -18,6 +18,7 @@ import {
   Bot,
   LineChart,
   ArrowRight,
+  PenLine,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { downloadChallengeIcs } from "@/lib/free-class";
@@ -43,6 +44,15 @@ import { TopBar } from "@/components/free-class/ui";
  * Compliance floor: education-not-advice, capability language only, zero
  * income / return / performance promises anywhere.
  */
+
+/**
+ * Prefilled intro post the "commitment step" deep-links into. The community
+ * composer reads `?compose=` and seeds the textarea with this. Copy flexes for
+ * solo / couple / friends / family — nobody is assumed to be a parent.
+ */
+const INTRO_TEMPLATE =
+  "Hi everyone — just joined the 5-Day Investing Challenge! 👋 A bit about me (or my family / crew): \n\nOne money habit I want to build by Day 5: ";
+const INTRO_HREF = `/community?compose=${encodeURIComponent(INTRO_TEMPLATE)}`;
 export default function ChallengeThankYou({
   firstName,
   onExplore,
@@ -260,11 +270,53 @@ export default function ChallengeThankYou({
           )}
         </m.div>
 
+        {/* Commitment step — post your intro in the community NOW (the third
+            activation leg, alongside referral + calendar). Research-backed: a
+            public micro-commitment on day zero lifts follow-through. */}
+        <m.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="paper-card ring-1 ring-gold-300 p-6 mt-6"
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+              <PenLine className="w-6 h-6 text-gold-700" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                Take 60 seconds now
+              </p>
+              <h2 className="font-display text-lg font-bold text-ink leading-snug mt-0.5">
+                Post your intro in the community
+              </h2>
+              <p className="text-sm text-soft mt-1.5 leading-relaxed">
+                Introduce yourself — solo, with a partner, a friend, or the whole
+                family, whoever you&apos;re doing this with — and name one money
+                habit you want to build by Day 5. No experience needed; we learn
+                together. People who say hi on day one are far more likely to
+                finish.
+              </p>
+              <a
+                href={INTRO_HREF}
+                className="cta-button mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm"
+              >
+                <PenLine className="w-4 h-4" /> Write my intro{" "}
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <p className="text-[12px] text-soft mt-2.5 leading-relaxed">
+                We&apos;ll open the composer with a friendly starter — just fill
+                in the blanks and post.
+              </p>
+            </div>
+          </div>
+        </m.div>
+
         {/* Calendar add */}
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.14 }}
+          transition={{ delay: 0.16 }}
           className="paper-card p-5 mt-6"
         >
           <div className="flex items-start gap-3">
@@ -304,7 +356,7 @@ export default function ChallengeThankYou({
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
+          transition={{ delay: 0.2 }}
           className="paper-card p-6 mt-6 text-center"
         >
           <h3 className="font-display text-xl font-bold text-ink">

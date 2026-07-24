@@ -177,6 +177,11 @@ export default function CommunityClient({
   // Composer
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
+  // Deep-link prefill: the challenge thank-you "commitment step" sends members
+  // here with ?compose=<intro template>. Seed the composer once, when the member
+  // composer is actually rendered (not for read-only free viewers), then focus +
+  // scroll it into view and strip the param so a refresh doesn't re-seed.
+  const composeSeeded = useRef(false);
   const [composerError, setComposerError] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -557,6 +562,33 @@ export default function CommunityClient({
   // FREE-tier families can VIEW the feed + rooms but can't post, like, or
   // comment. Every write affordance is swapped for a tasteful "Join FIC" nudge.
   const readOnly = myTier === "free";
+
+  // ?compose= deep-link → seed the composer once (member composer only).
+  useEffect(() => {
+    if (composeSeeded.current || !tierResolved || readOnly) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const seed = params.get("compose");
+    if (!seed) return;
+    composeSeeded.current = true;
+    setText(seed);
+    // Strip the param so a refresh / back doesn't re-seed over their edits.
+    params.delete("compose");
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + (qs ? `?${qs}` : "")
+    );
+    // Focus + reveal the composer and drop the caret at the end.
+    requestAnimationFrame(() => {
+      const el = taRef.current;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus();
+      el.setSelectionRange(seed.length, seed.length);
+    });
+  }, [tierResolved, readOnly]);
 
   const anchor = posts.find((p) => p.kind === "anchor");
   // Latest announcement pins above the feed for 7 days; older ones flow in-feed.
