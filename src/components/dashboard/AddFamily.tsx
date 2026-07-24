@@ -158,19 +158,21 @@ export default function AddFamily({
     };
     await saveFamilyProfile(supabase, familyId, draft, true);
 
-    // Mint an invite via the existing family-invite plumbing.
+    // Mint an invite via the existing family-invite plumbing. The invite's role
+    // becomes the joiner's role on claim (accept_family_invite RPC), so a partner
+    // joins as a co-parent, kids as children. Only surface the link once the row
+    // actually persisted — a failed insert must not hand out a dead code.
     try {
       const code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      await supabase.from("family_invites").insert({
+      const { error: inviteErr } = await supabase.from("family_invites").insert({
         family_id: familyId,
         code,
-        invited_by: user?.id,
+        role: addPartner ? "parent" : "child",
         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       });
-      setInviteLink(`${window.location.origin}/signup/invite/${code}`);
+      if (!inviteErr) {
+        setInviteLink(`${window.location.origin}/signup/invite/${code}`);
+      }
     } catch {
       /* invite is optional — household flip already happened */
     }

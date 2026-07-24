@@ -130,18 +130,17 @@ export default function FamilyMembersPage() {
     setGeneratingLink(true);
 
     const code = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    await supabase.from("family_invites").insert({
+    // family_invites has no `invited_by` column — sending it made PostgREST
+    // reject the insert, so the "invite link" pointed at a code that was never
+    // stored (a dead link). Insert only real columns; role defaults to 'child'.
+    const { error: inviteErr } = await supabase.from("family_invites").insert({
       family_id: familyId,
       code,
-      invited_by: user?.id,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
-    setInviteLink(`${window.location.origin}/signup/invite/${code}`);
+    if (!inviteErr) setInviteLink(`${window.location.origin}/signup/invite/${code}`);
     setGeneratingLink(false);
   }
 
