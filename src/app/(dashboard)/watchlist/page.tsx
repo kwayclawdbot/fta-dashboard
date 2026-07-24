@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
@@ -205,7 +205,7 @@ export default function WatchlistPage() {
 
     setFamilyId(board.family_id ?? null);
     // Members-only gate: resolve the family's tier (free -> UpsellCard).
-    getFamilyTier(supabase, board.family_id ?? null).then((t) => {
+    getClubTier(supabase, board.family_id ?? null).then((t) => {
       setTier(t);
       setTierResolved(true);
     });

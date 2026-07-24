@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
 import { fetchSocial, type TickerSocial } from "@/lib/research/social";
 import { fetchNewsArticle } from "@/lib/news/client";
@@ -45,7 +45,7 @@ export default function NewsArticlePage() {
         .eq("id", user.id)
         .maybeSingle();
       setAgeGroup(profile?.age_group ?? null);
-      setTier(await getFamilyTier(supabase, profile?.family_id));
+      setTier(await getClubTier(supabase, profile?.family_id));
     }
 
     const tickers = art?.tickers ?? [];

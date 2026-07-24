@@ -26,7 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
@@ -176,7 +176,7 @@ export default function ScreenerPage() {
     const p = (profile || {}) as { role?: string; age_group?: string; family_id?: string | null };
     setFamilyId(p.family_id ?? null);
     setIsKid(p.age_group === "kids" || p.role === "child");
-    getFamilyTier(supabase, p.family_id ?? null).then((t) => {
+    getClubTier(supabase, p.family_id ?? null).then((t) => {
       setTier(t);
       setTierResolved(true);
     });

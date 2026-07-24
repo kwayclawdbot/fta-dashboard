@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import LivePrice from "@/components/fic/LivePrice";
@@ -146,7 +146,7 @@ export default function CommunityWatchlistClient({
       .maybeSingle();
     setAgeGroup(profile?.age_group ?? null);
     setRole(profile?.role ?? null);
-    const t = await getFamilyTier(supabase, profile?.family_id);
+    const t = await getClubTier(supabase, profile?.family_id);
     setTier(t);
     setTierResolved(true);
     if (t === "free") {

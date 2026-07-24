@@ -21,7 +21,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote, fetchNews, fetchBars, type MarketQuote, type MarketBar, type NewsHeadline } from "@/lib/market/client";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -312,7 +312,7 @@ export default function ResearchClient({
         .maybeSingle();
       setRole(profile?.role || "parent");
       setAgeGroup(profile?.age_group ?? null);
-      const t = await getFamilyTier(supabase, profile?.family_id);
+      const t = await getClubTier(supabase, profile?.family_id);
       setTier(t);
     } catch {
       /* keep defaults (parent / fic) — page still renders, gating stays safe */

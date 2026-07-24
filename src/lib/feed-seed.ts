@@ -1,6 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
+import {
+  getClubTier,
+  getFamilyTierMap,
+  type FamilyTier,
+} from "@/lib/tier";
 import { fetchXpForUsers } from "@/lib/belts";
 import type { FeedPost, FeedAuthor, Role } from "@/lib/feed";
 
@@ -119,7 +123,7 @@ export async function getCommunityFeedSeed(
     likeRows,
     commentRows,
   ] = await Promise.all([
-    getFamilyTier(supabase, profile?.family_id),
+    getClubTier(supabase, profile?.family_id),
     getFamilyTierMap(supabase, authorFamilyIds),
     fetchXpForUsers(supabase, authorIds),
     handles.length

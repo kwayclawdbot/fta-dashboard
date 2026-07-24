@@ -21,8 +21,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 import {
-  canAccessSession,
-  getFamilyTier,
+  canAccessSessionEffective,
+  getFamilyTierState,
   type FamilyTier,
   type SessionTier,
 } from "@/lib/tier";
@@ -90,6 +90,7 @@ interface Access {
   isChild: boolean;
   userTrack: Track;
   tier: FamilyTier;
+  clubLapsed: boolean;
 }
 
 // ── Track Config (matches the courses catalog: kids / teens / adults) ──
@@ -413,6 +414,7 @@ export default function LiveSessionsPage() {
     isChild: false,
     userTrack: "adults",
     tier: "fic",
+    clubLapsed: false,
   });
   const [watching, setWatching] = useState<LiveSession | null>(null);
   const [rsvpInfo, setRsvpInfo] = useState<
@@ -571,8 +573,11 @@ export default function LiveSessionsPage() {
       const isChild = profile?.role === "child";
       setFamilyId(profile?.family_id ?? null);
 
-      const tier = await getFamilyTier(supabase, profile?.family_id);
-      setAccess({ isChild, userTrack, tier });
+      const { tier, clubLapsed } = await getFamilyTierState(
+        supabase,
+        profile?.family_id
+      );
+      setAccess({ isChild, userTrack, tier, clubLapsed });
 
       await rsvpsP;
     }
@@ -588,7 +593,7 @@ export default function LiveSessionsPage() {
   // Tier gating comes from the central access matrix (src/lib/tier.ts):
   // 'academy' sessions are part of the FTA live program.
   const isTierLocked = (session: LiveSession) =>
-    !canAccessSession(access.tier, session.minTier);
+    !canAccessSessionEffective(access.tier, access.clubLapsed, session.minTier);
 
   const sessionLock = (session: LiveSession) => {
     if (isTrackLocked(session.track))

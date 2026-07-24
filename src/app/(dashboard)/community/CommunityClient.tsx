@@ -10,7 +10,11 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
-import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
+import {
+  getClubTier,
+  getFamilyTierMap,
+  type FamilyTier,
+} from "@/lib/tier";
 import { fetchXpForUsers } from "@/lib/belts";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
@@ -334,7 +338,7 @@ export default function CommunityClient({
         });
         // Tier badge + badge evaluation are non-critical chrome — resolve them
         // after paint so they never hold up the feed.
-        getFamilyTier(supabase, profile.family_id)
+        getClubTier(supabase, profile.family_id)
           .then((t) => {
             if (mounted) setMyTier(t);
           })

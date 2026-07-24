@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister, type Register } from "@/lib/register";
 import type { KaiChatSeed } from "@/lib/kai/chat-seed";
 import { KAI_CHAT_DAILY_CAP, type KaiProfile } from "@/lib/kai/persona";
@@ -235,7 +235,7 @@ export default function KaiChatClient({
       // profile conservatively (kid stays kid; everyone else education-first).
       // The real guardrail is enforced server-side regardless of this value.
       setProfile(reg === "kid" ? "kid" : "family-adult");
-      setTier(await getFamilyTier(supabase, profile?.family_id));
+      setTier(await getClubTier(supabase, profile?.family_id));
       await Promise.all([loadThreads(), loadUsage(user.id), loadMemory(user.id)]);
       setReady(true);
     })();

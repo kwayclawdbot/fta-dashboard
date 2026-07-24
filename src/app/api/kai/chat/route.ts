@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getFamilyTier } from "@/lib/tier";
+import { getClubTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
 import { memberMode } from "@/lib/mode";
 import {
@@ -349,7 +349,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   const register = deriveRegister(profile);
   const deepMode = profile?.kai_deep_mode === true;
-  const tier = await getFamilyTier(supabase, profile?.family_id);
+  const tier = await getClubTier(supabase, profile?.family_id);
 
   const cap = KAI_CHAT_DAILY_CAP[tier] ?? 0;
   if (cap <= 0)

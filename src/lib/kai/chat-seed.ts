@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister, type Register } from "@/lib/register";
 import { memberMode } from "@/lib/mode";
 import { resolveKaiProfile, type KaiProfile } from "@/lib/kai/persona";
@@ -76,7 +76,7 @@ export async function getKaiChatSeed(
   const canToggleDeepMode = register === "adult" && !solo;
 
   const [tier, threadsRes, usageRes, memoryRes] = await Promise.all([
-    getFamilyTier(supabase, profile?.family_id),
+    getClubTier(supabase, profile?.family_id),
     supabase
       .from("kai_chat_threads")
       .select("id, title, updated_at")

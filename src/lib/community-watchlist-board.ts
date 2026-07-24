@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchFavorites, type Favorite } from "@/lib/research/social";
 import type { CommunityEntry } from "@/lib/community-watchlist";
 
@@ -47,7 +47,7 @@ export async function getCommunityBoardSeed(
     .eq("id", user.id)
     .maybeSingle();
 
-  const tier = await getFamilyTier(supabase, profile?.family_id);
+  const tier = await getClubTier(supabase, profile?.family_id);
   const base: CommunityBoardSeed = {
     userId: user.id,
     tier,

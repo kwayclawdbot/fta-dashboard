@@ -6,7 +6,7 @@ import Image from "next/image";
 import { m } from "@/lib/motion";
 import { ArrowRight, Gamepad2, Trophy, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 
 interface GameCard {
   href: string;
@@ -69,7 +69,7 @@ export default function GamesHubPage() {
         .select("family_id")
         .eq("id", user.id)
         .single();
-      getFamilyTier(supabase, profile?.family_id).then(setTier);
+      getClubTier(supabase, profile?.family_id).then(setTier);
       const { data } = await supabase
         .from("game_scores")
         .select("game, score, created_at")

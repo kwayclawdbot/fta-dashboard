@@ -7,7 +7,7 @@ import { m } from "@/lib/motion";
 import { LogOut, Save, CreditCard, AtSign, ImagePlus, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { deriveRegister } from "@/lib/register";
-import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { getClubTier, type FamilyTier } from "@/lib/tier";
 import EnablePushButton from "@/components/notifications/EnablePushButton";
 import PushDevices from "@/components/notifications/PushDevices";
 import Avatar from "@/components/Avatar";
@@ -89,7 +89,7 @@ export default function SettingsPage() {
       setAgeGroup(profile?.age_group ?? null);
       setAvatarUrl(profile?.avatar_url ?? null);
       // Tier drives the adults-only Trade Alerts pointer below (non-free only).
-      getFamilyTier(supabase, profile?.family_id ?? null)
+      getClubTier(supabase, profile?.family_id ?? null)
         .then(setTier)
         .catch(() => {});
       if (profile?.notification_prefs) {

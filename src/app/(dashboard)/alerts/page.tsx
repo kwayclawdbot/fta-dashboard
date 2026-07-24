@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getFamilyTier } from "@/lib/tier";
+import { getClubTier } from "@/lib/tier";
 import { isSoloProfile, deriveRegister } from "@/lib/register";
 import LockedState from "@/components/dashboard/LockedState";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
@@ -42,7 +42,7 @@ export default async function AlertsPage() {
   const register = deriveRegister(profile);
   if (register !== "adult") redirect("/dashboard"); // kids/teens never see alerts
 
-  const tier = await getFamilyTier(supabase, profile?.family_id);
+  const tier = await getClubTier(supabase, profile?.family_id);
 
   if (tier === "free") {
     return (
