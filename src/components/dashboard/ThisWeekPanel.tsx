@@ -118,7 +118,7 @@ export default function ThisWeekPanel({
             <div className="mt-5 p-4 rounded-xl bg-chip-sky border border-sky-200/50">
               <p className="text-xs font-bold uppercase tracking-wider text-sky-800 mb-1 flex items-center gap-1.5">
                 <MessageCircleQuestion className="w-4 h-4" />
-                Family discussion question
+                {isSolo ? "Discussion question" : "Family discussion question"}
               </p>
               <p className="text-sm text-ink leading-relaxed">
                 {week.cotw_discussion_question}
