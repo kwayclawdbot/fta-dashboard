@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { serviceClient } from "@/lib/server/membership";
 import {
@@ -161,58 +162,16 @@ async function refreshFundamentals(
   return row as unknown as FundRow;
 }
 
-export async function GET(
-  _req: NextRequest,
-  ctx: { params: Promise<{ ticker: string }> }
-) {
-  const { ticker: rawTicker } = await ctx.params;
-  const ticker = normalizeSymbol(rawTicker);
-  if (!ticker) {
-    return NextResponse.json({ error: "bad-ticker" }, { status: 400 });
-  }
-
-  // Members-only (any tier). Presentation gating happens on the page.
-  const auth = await createClient();
-  const {
-    data: { user },
-  } = await auth.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const db = serviceClient();
-
-  // Cache-first: reuse a fresh row (< 24h, current grade version).
-  const { data: existing } = await db
-    .from("research_fundamentals")
-    .select("*")
-    .eq("ticker", ticker)
-    .maybeSingle();
-
-  let row = existing as FundRow | null;
-  const stale =
-    !row ||
-    row.grade_version !== GRADE_VERSION ||
-    Date.now() - new Date(row.fetched_at).getTime() > DAY_MS;
-
-  if (stale) {
-    if (!isConfigured()) {
-      // No Polygon key: serve whatever stale row exists, else 503.
-      if (!row) {
-        return NextResponse.json({ error: "market-data-unavailable" }, { status: 503 });
-      }
-    } else {
-      const fresh = await refreshFundamentals(db, ticker);
-      if (fresh) row = fresh;
-      else if (!row) {
-        return NextResponse.json({ error: "not-found" }, { status: 404 });
-      }
-    }
-  }
-  if (!row) {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
-  }
-
+/**
+ * Compose the research payload from a (fresh) fundamentals row + in-house
+ * momentum + PE medians + recomputed grades. Pure read + compute (service
+ * role, no cookies) so it is safe to memoize via unstable_cache.
+ */
+async function composeResearch(
+  db: ReturnType<typeof serviceClient>,
+  ticker: string,
+  row: FundRow
+): Promise<ResearchPayload> {
   // In-house momentum (never refetched from a vendor).
   const { data: sm } = await db
     .from("screener_metrics")
@@ -284,7 +243,7 @@ export async function GET(
   const week52Low =
     px != null && sm?.dist_52w_low != null ? px / (1 + sm.dist_52w_low / 100) : null;
 
-  const payload: ResearchPayload = {
+  return {
     company: {
       ticker,
       name: row.company_name,
@@ -338,6 +297,72 @@ export async function GET(
     insufficient: row.insufficient,
     cachedAt: row.fetched_at,
   };
+}
+
+export async function GET(
+  _req: NextRequest,
+  ctx: { params: Promise<{ ticker: string }> }
+) {
+  const { ticker: rawTicker } = await ctx.params;
+  const ticker = normalizeSymbol(rawTicker);
+  if (!ticker) {
+    return NextResponse.json({ error: "bad-ticker" }, { status: 400 });
+  }
+
+  // Members-only (any tier). Presentation gating happens on the page.
+  const auth = await createClient();
+  const {
+    data: { user },
+  } = await auth.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const db = serviceClient();
+
+  // Cache-first: reuse a fresh row (< 24h, current grade version).
+  const { data: existing } = await db
+    .from("research_fundamentals")
+    .select("*")
+    .eq("ticker", ticker)
+    .maybeSingle();
+
+  let row = existing as FundRow | null;
+  const stale =
+    !row ||
+    row.grade_version !== GRADE_VERSION ||
+    Date.now() - new Date(row.fetched_at).getTime() > DAY_MS;
+
+  if (stale) {
+    if (!isConfigured()) {
+      // No Polygon key: serve whatever stale row exists, else 503.
+      if (!row) {
+        return NextResponse.json({ error: "market-data-unavailable" }, { status: 503 });
+      }
+    } else {
+      const fresh = await refreshFundamentals(db, ticker);
+      if (fresh) row = fresh;
+      else if (!row) {
+        return NextResponse.json({ error: "not-found" }, { status: 404 });
+      }
+    }
+  }
+  if (!row) {
+    return NextResponse.json({ error: "not-found" }, { status: 404 });
+  }
+
+  // Compose the (user-agnostic) fundamentals+grades payload. The heavy part —
+  // two DB reads (momentum + PE medians RPC) plus the grade recompute — is
+  // memoized per (ticker, fundamentals-version) for 1h across ALL users via
+  // unstable_cache. The auth check and the fundamentals read/refresh above stay
+  // per-request; the fundamentals row itself is already 24h DB-cached. Keying on
+  // row.fetched_at means a fundamentals refresh instantly invalidates the cache;
+  // the 1h revalidate lets a nightly screener/medians refresh flow through.
+  const payload = await unstable_cache(
+    () => composeResearch(db, ticker, row!),
+    ["research-payload", ticker, row.fetched_at, String(row.grade_version ?? 0)],
+    { revalidate: 3600, tags: [`research:${ticker}`] }
+  )();
 
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "private, max-age=60" },
