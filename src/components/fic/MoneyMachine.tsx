@@ -205,7 +205,7 @@ export default function MoneyMachine(props: Props) {
           {/* connector arrows on desktop */}
           <div className="pointer-events-none absolute -left-4 top-1/2 hidden -translate-y-1/2 md:block">
             <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-              <path d="M0 6h12M12 6l-4-4M12 6l-4 4" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M0 6h12M12 6l-4-4M12 6l-4 4" stroke="var(--g500)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
           <m.div
@@ -226,7 +226,7 @@ export default function MoneyMachine(props: Props) {
             >
               <path
                 d="M12 8a4 4 0 100 8 4 4 0 000-8zm0-6l1.2 2.4L16 3l.3 2.7L19 6l-1 2.5L20 10l-2 1.5.6 2.7-2.7-.3L14 16l-2 .1L10 16l-1.9.4L6 14.2l-2.7.3.6-2.7L2 10l2-1.5L3 6l2.7-.3L6 3l2.8 1.4L10 2z"
-                fill="#D97706"
+                fill="var(--g600)"
               />
             </m.svg>
             <span className="mt-1 px-1 text-center text-[9px] font-bold uppercase leading-tight tracking-wide text-gold-700">

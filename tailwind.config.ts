@@ -52,6 +52,11 @@ const config: Config = {
         "chip-green": "#DCFCE7",
       },
       fontFamily: {
+        // `sans` (Tailwind's default family + the `font-sans` utility) resolves
+        // to Inter, not the platform stack — so any surface that leans on the
+        // preflight default or uses `font-sans` gets the club/family UI font
+        // (R1 debt: body font-sans → Inter).
+        sans: ["var(--font-body)", "sans-serif"],
         display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],

@@ -86,7 +86,7 @@ export default function SetupTrail({
         <path
           d={d}
           fill="none"
-          stroke="#EAE2D0"
+          stroke="var(--sand)"
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray="1 8"
@@ -95,7 +95,7 @@ export default function SetupTrail({
         <m.path
           d={d}
           fill="none"
-          stroke="#F59E0B"
+          stroke="var(--g500)"
           strokeWidth="4"
           strokeLinecap="round"
           initial={reduce ? { pathLength: frac } : { pathLength: 0 }}
@@ -109,9 +109,9 @@ export default function SetupTrail({
           const isNext = i === nextIdx && !allDone;
           const isFinal = i === total - 1;
           const Icon = done ? Check : NODE_ICONS[step.key] || PlayCircle;
-          const fill = done ? "#F59E0B" : isFinal && allDone ? "#16A34A" : "#FFFFFF";
-          const stroke = done ? "#D97706" : isNext ? "#F59E0B" : "#EAE2D0";
-          const iconColor = done ? "#FFFFFF" : isNext ? "#B45309" : "#98A2B3";
+          const fill = done ? "var(--g500)" : isFinal && allDone ? "#16A34A" : "#FFFFFF";
+          const stroke = done ? "var(--g600)" : isNext ? "var(--g500)" : "var(--sand)";
+          const iconColor = done ? "#FFFFFF" : isNext ? "var(--g700)" : "#98A2B3";
           return (
             <g key={step.key}>
               <m.circle
@@ -132,7 +132,7 @@ export default function SetupTrail({
                   cy={y}
                   r={15}
                   fill="none"
-                  stroke="#F59E0B"
+                  stroke="var(--g500)"
                   strokeWidth={2}
                   animate={{ r: [15, 22], opacity: [0.6, 0] }}
                   transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}

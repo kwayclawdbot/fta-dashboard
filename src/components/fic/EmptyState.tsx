@@ -48,10 +48,10 @@ export function EmptyMissions() {
       copy="Your family's playful investing quests land here soon. Check back — there's a set of emblems to collect."
       art={
         <svg viewBox="0 0 80 80" className="h-full w-full" aria-hidden="true">
-          <rect x="18" y="20" width="44" height="40" rx="4" fill="#FEF3C7" stroke="#D97706" strokeWidth="2" />
-          <path d="M18 26h44M18 34h30M18 42h34M18 50h24" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-          <ellipse cx="18" cy="40" rx="6" ry="20" fill="#FBBF24" stroke="#D97706" strokeWidth="2" />
-          <ellipse cx="62" cy="40" rx="6" ry="20" fill="#FBBF24" stroke="#D97706" strokeWidth="2" />
+          <rect x="18" y="20" width="44" height="40" rx="4" fill="var(--g100)" stroke="var(--g600)" strokeWidth="2" />
+          <path d="M18 26h44M18 34h30M18 42h34M18 50h24" stroke="var(--g500)" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+          <ellipse cx="18" cy="40" rx="6" ry="20" fill="var(--g400)" stroke="var(--g600)" strokeWidth="2" />
+          <ellipse cx="62" cy="40" rx="6" ry="20" fill="var(--g400)" stroke="var(--g600)" strokeWidth="2" />
           <g transform="translate(52 12)">
             <Sparkle className="h-4 w-4" />
           </g>
@@ -71,7 +71,7 @@ export function EmptyWatchlist({ onAdd }: { onAdd?: () => void }) {
       <div className="relative mx-auto mb-4 h-24 w-24">
         <svg viewBox="0 0 96 96" className="h-full w-full" aria-hidden="true">
           <rect x="10" y="14" width="76" height="60" rx="6" fill="#FBF7EF" stroke="#D6C9A8" strokeWidth="2" />
-          <rect x="30" y="30" width="30" height="24" rx="2" fill="#FFFFFF" stroke="#F59E0B" strokeWidth="1.5" strokeDasharray="3 3" />
+          <rect x="30" y="30" width="30" height="24" rx="2" fill="#FFFFFF" stroke="var(--g500)" strokeWidth="1.5" strokeDasharray="3 3" />
           <circle cx="45" cy="26" r="4" fill="#DC2626" />
           <line x1="45" y1="30" x2="45" y2="34" stroke="#B91C1C" strokeWidth="1.5" />
           <g transform="translate(64 40)"><LeafSprig className="h-4 w-8" /></g>
