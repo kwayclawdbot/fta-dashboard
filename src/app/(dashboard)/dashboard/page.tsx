@@ -19,7 +19,6 @@ import {
   Target,
   Trophy,
   Users,
-  Zap,
   Layers,
   Gamepad2,
   GraduationCap,
@@ -40,6 +39,8 @@ import {
 } from "@/lib/fic";
 import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
 import Avatar from "@/components/Avatar";
+import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
+import DashboardCommandCenter from "@/components/dashboard/DashboardCommandCenter";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
@@ -393,7 +394,6 @@ export default function DashboardHome() {
   const isKid = home?.role === "child" && home?.track === "kids";
   const isTeen = home?.role === "child" && home?.track === "teens";
   const isParent = !isKid && !isTeen;
-  const level = levelForXp(xp);
   const orientationComplete = orientationDone >= ORIENTATION_TOTAL;
 
   // ── Onboarding-prompt orchestration (one prioritized sequence) ──────────────
@@ -443,21 +443,6 @@ export default function DashboardHome() {
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {isKid ? (
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-chip-amber text-gold-800 font-display font-bold">
-              <Zap className="w-5 h-5" />
-              Level {level.level} · {level.name}
-              <span className="text-gold-700/80 font-body font-semibold">
-                {xp} XP
-              </span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-midnight-900 border border-sand text-ink text-sm font-semibold">
-              <Zap className="w-4 h-4 text-gold-500" />
-              <span className="font-display">{level.name}</span>
-              <span className="text-soft font-normal">{xp} XP</span>
-            </span>
-          )}
           {home?.cohort && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
               <Flame className="w-3.5 h-3.5" />
@@ -466,6 +451,9 @@ export default function DashboardHome() {
           )}
         </div>
       </div>
+
+      {/* Belt/XP hero — always-visible progress toward the next belt. */}
+      <BeltHeroStrip xp={xp} isKid={isKid} />
 
       {/* Setup card #1 — the Start Here checklist, demoted from a nav row to a
           dismissible Home card. Parents only; auto-hides at 6/6. */}
@@ -652,6 +640,9 @@ export default function DashboardHome() {
 
       {tab === "home" && (
         <>
+
+      {/* Daily command center — market pulse, community heat, Ask Kai. */}
+      <DashboardCommandCenter isKid={isKid} />
 
       {/* No program yet */}
       {!home?.program && (
@@ -863,6 +854,7 @@ export default function DashboardHome() {
                         name={m.display_name}
                         avatarUrl={m.avatar_url}
                         role={m.role}
+                        xp={m.xp}
                         size="sm"
                       />
                       <div className="flex-1 min-w-0">
