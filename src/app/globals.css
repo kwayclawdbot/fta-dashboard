@@ -317,7 +317,14 @@
 /* Only overrides what differs from club-light; gold tints (g50–g500)  */
 /* + accent cascade from [data-mode="club"]. Text-end gold lifted so   */
 /* active-nav text reads on dark. Specificity (0,3,0) wins.            */
+/*                                                                     */
+/* TWO selectors: data-mode is set on <html> (=:root, the SAME element */
+/* as data-theme) by ModeManager AND on the shell wrapper (a           */
+/* descendant). The compound form matches :root/body; the descendant   */
+/* form matches the wrapper subtree — both needed so :root and the     */
+/* wrapper stay consistent in dark.                                    */
 /* ------------------------------------------------------------------ */
+:root[data-theme="dark"][data-mode="club"],
 :root[data-theme="dark"] [data-mode="club"] {
   --m50: #F2F4F8;   /* cool off-white heading (club/tech, vs family warm) */
   --m100: #E2E5EC;
