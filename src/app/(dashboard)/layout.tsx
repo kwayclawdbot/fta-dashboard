@@ -33,6 +33,24 @@ export default async function DashboardLayout({
   // Family membership tier (FIC/FTA) — kids inherit the family's tier.
   const tier = await getFamilyTier(supabase, profile?.family_id);
 
+  // Challenge-pass window (Lane C7): a family whose tier is 'fic' MAY actually
+  // be a 5-Day Challenge pass-holder (full Club until expires_at, then free).
+  // Surface the expiry so the shell can show a friendly days-left banner. Only
+  // meaningful while the pass is still active; once expired the tier is 'free'.
+  let challengeExpiresAt: string | null = null;
+  if (profile?.family_id && tier === "fic") {
+    const { data: pass } = await supabase
+      .from("enrollments")
+      .select("expires_at")
+      .eq("family_id", profile.family_id)
+      .eq("program", "challenge_pass")
+      .eq("status", "active")
+      .not("expires_at", "is", null)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    challengeExpiresAt = (pass?.expires_at as string | null) ?? null;
+  }
+
   // Solo (individual, non-parent) member — a family of one. Only owners
   // (parent/admin) can be solo; kids/teens always belong to a parent's family.
   // Derived from a COMPLETED family_profiles household so unfinished/default
@@ -64,5 +82,9 @@ export default async function DashboardLayout({
     isSolo,
   };
 
-  return <DashboardShell user={userData}>{children}</DashboardShell>;
+  return (
+    <DashboardShell user={userData} challengeExpiresAt={challengeExpiresAt}>
+      {children}
+    </DashboardShell>
+  );
 }
