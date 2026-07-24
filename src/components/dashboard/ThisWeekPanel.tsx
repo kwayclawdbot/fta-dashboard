@@ -20,9 +20,17 @@ interface Props {
   isKid: boolean;
   isTeen: boolean;
   isParent: boolean;
+  /** Solo (individual, non-parent) member — a family of one. De-parents copy. */
+  isSolo?: boolean;
 }
 
-export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) {
+export default function ThisWeekPanel({
+  week,
+  isKid,
+  isTeen,
+  isParent,
+  isSolo = false,
+}: Props) {
   const isChild = isKid || isTeen;
 
   if (!week) {
@@ -33,8 +41,8 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
           This week is being prepared
         </h2>
         <p className="text-soft max-w-md mx-auto">
-          Your family&apos;s next Company of the Week and club assignment land
-          here soon. Check back shortly.
+          {isSolo ? "Your" : "Your family's"} next Company of the Week and club
+          assignment land here soon. Check back shortly.
         </p>
       </div>
     );
@@ -133,7 +141,7 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
                   className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-gold-700 hover:text-gold-800"
                 >
                   <Target className="w-4 h-4" />
-                  Add to Family Watchlist
+                  {isSolo ? "Add to my Watchlist" : "Add to Family Watchlist"}
                 </Link>
               </div>
             </div>
@@ -151,7 +159,7 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
         >
           <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-gold-600" />
-            Your family assignment
+            {isSolo ? "Your assignment this week" : "Your family assignment"}
           </h3>
           <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
             {week.family_assignment}
@@ -169,17 +177,19 @@ export default function ThisWeekPanel({ week, isKid, isTeen, isParent }: Props) 
         >
           <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-2">
             <HeartHandshake className="w-4 h-4 text-gold-600" />
-            Parent prompt
+            {isSolo ? "Go deeper this week" : "Parent prompt"}
           </h3>
           <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
             {week.parent_prompt}
           </p>
-          <Link
-            href="/parent-corner"
-            className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-gold-700 hover:text-gold-800"
-          >
-            More in Parent Corner
-          </Link>
+          {!isSolo && (
+            <Link
+              href="/parent-corner"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-gold-700 hover:text-gold-800"
+            >
+              More in Parent Corner
+            </Link>
+          )}
         </m.div>
       )}
 

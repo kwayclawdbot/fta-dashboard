@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
+import { isSoloProfile } from "@/lib/register";
 import TierBadge from "@/components/TierBadge";
 
 const FIC_URL = "https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a";
@@ -181,6 +182,9 @@ export default function UpgradePage() {
   const reduce = useReducedMotion();
   const [tier, setTier] = useState<FamilyTier | null>(null);
   const [nextClass, setNextClass] = useState<NextClass>(null);
+  // Solo (individual, non-parent) member — a family of one. Softens the
+  // family-assuming pitch copy without touching the data model.
+  const [isSolo, setIsSolo] = useState(false);
 
   // Reduced-motion / no-JS-safe reveal: when the viewer prefers reduced motion
   // we return NO motion props so cards render fully visible immediately. When
@@ -220,6 +224,14 @@ export default function UpgradePage() {
       if (profile?.role === "child") {
         router.replace("/dashboard");
         return;
+      }
+      if (profile?.family_id) {
+        const { data: fp } = await supabase
+          .from("family_profiles")
+          .select("household, completed_at")
+          .eq("family_id", profile.family_id)
+          .maybeSingle();
+        if (!cancelled) setIsSolo(isSoloProfile(fp));
       }
       const t = await getFamilyTier(supabase, profile?.family_id);
       if (cancelled) return;
@@ -357,8 +369,8 @@ export default function UpgradePage() {
               </span>
             </div>
             <p className="text-sm text-soft leading-relaxed">
-              Pick up where your family left off — foundations to trade ready,
-              at your own pace.
+              Pick up where {isSolo ? "you" : "your family"} left off — foundations
+              to trade ready, at your own pace.
             </p>
             <Link
               href="/courses"
@@ -624,9 +636,10 @@ export default function UpgradePage() {
             <span className="text-gradient-gold">trade ready</span> in six weeks.
           </h1>
           <p className="mt-5 text-white/70 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-            Your family already knows the foundations. FTA is the live, guided
-            6-week program that takes a real beginner all the way to a written
-            plan and a trading routine — together, with a coach.
+            {isSolo ? "You already know" : "Your family already knows"} the
+            foundations. FTA is the live, guided 6-week program that takes a real
+            beginner all the way to a written plan and a trading routine
+            {isSolo ? "" : " — together"}, with a coach.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -771,7 +784,7 @@ export default function UpgradePage() {
             — not a promise.
           </h2>
           <p className="text-white/60 text-sm mt-4 max-w-xl mx-auto leading-relaxed">
-            We don&apos;t sell outcomes or profits. We give your family the
+            We don&apos;t sell outcomes or profits. We give {isSolo ? "you" : "your family"} the
             skills, the structure, and a coach who shows up live — the same
             foundation every serious trader has to build first.
           </p>

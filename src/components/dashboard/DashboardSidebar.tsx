@@ -12,6 +12,7 @@ import {
   Trophy,
   Medal,
   Users,
+  User,
   Settings,
   LogOut,
   ChevronLeft,
@@ -123,6 +124,21 @@ const FAMILY_ITEM: NavItem = {
   ],
 };
 
+// Solo (individual, non-parent) owners: a family of one. Replaces the "Family"
+// group so no kid/parent surfaces are pushed at them — but keeps the essentials
+// the group carried (My Progress + referrals) reachable from one "Account" row.
+// Report Cards / Members / Parent Corner are family-only and simply drop out.
+const SOLO_ACCOUNT_ITEM: NavItem = {
+  label: "My Account",
+  href: "/progress",
+  icon: User,
+  parentOnly: true,
+  subItems: [
+    { label: "My Progress", href: "/progress" },
+    { label: "Refer a friend", href: "/referrals" },
+  ],
+};
+
 /**
  * Learn group — the SHARED (FIC + FTA) learning surfaces: Start Here, Courses,
  * Live Classes, Flashcards. It stays in the default warm register for every
@@ -231,7 +247,12 @@ export function getFooterItems(role?: string, tier: FamilyTier = "fic"): NavItem
  * FTA reframes the Learn group as a premium "Academy" badge instead of a
  * separate section. Role filters (kid / teen / parent) still apply.
  */
-export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier = "fic"): NavItem[] {
+export function getNavItems(
+  role?: string,
+  ageGroup?: string,
+  tier: FamilyTier = "fic",
+  isSolo = false
+): NavItem[] {
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";
   const canParent = role === "parent" || role === "admin";
@@ -289,7 +310,9 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   ];
 
   if (canParent) {
-    main.push(FAMILY_ITEM);
+    // Solo owners get the slim "My Account" group (no family/kid surfaces);
+    // parents-with-family keep the full Family group.
+    main.push(isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM);
     main.push(LEADERBOARD);
     // The FTA section closes the nav as a hard-split gold hub for FTA families;
     // FIC-only parents get the compact locked teaser in its place (→ /upgrade).
@@ -312,6 +335,7 @@ interface DashboardSidebarProps {
     role?: string;
     age_group?: string;
     tier?: FamilyTier;
+    isSolo?: boolean;
   };
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -328,7 +352,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const navItems = getNavItems(user.role, user.age_group, user.tier);
+  const navItems = getNavItems(user.role, user.age_group, user.tier, user.isSolo);
   const footerItems = getFooterItems(user.role, user.tier);
   // Free + FIC families both live under the Family Investing Club brand; only
   // FTA flips the logo to the academy.

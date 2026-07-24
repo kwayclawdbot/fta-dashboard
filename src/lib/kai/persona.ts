@@ -9,7 +9,7 @@
  * Clouds" if an indicator ever comes up.
  */
 
-import type { Register } from "@/lib/register";
+import { isSoloHousehold, type Register } from "@/lib/register";
 
 const CORE_GUARDRAILS = `You are Kai, CheatCode's AI market analyst for the Family Investing Club and Family Trading Academy — a family investing-education platform used by parents, teens, AND children.
 
@@ -236,6 +236,9 @@ const GOAL_PHRASE: Record<string, string> = {
 export function buildPersonalizationBlock(p: KaiPersonalization): string {
   const lines: string[] = [];
   const name = (p.displayName || "").trim();
+  // Solo (individual, non-parent) member — a family of one. Speak to them
+  // directly; never refer to "your family" or assume kids on the account.
+  const solo = isSoloHousehold(p.household);
   if (name) {
     lines.push(`This member's name is ${name}. Address them by their first name naturally (don't overuse it).`);
   }
@@ -248,11 +251,19 @@ export function buildPersonalizationBlock(p: KaiPersonalization): string {
   const goalPhrases = (p.goals || [])
     .map((g) => GOAL_PHRASE[g])
     .filter(Boolean);
-  if (goalPhrases.length) profileBits.push(`their family is here for ${goalPhrases.join(" and ")}`);
+  if (goalPhrases.length)
+    profileBits.push(`${solo ? "they're" : "their family is"} here for ${goalPhrases.join(" and ")}`);
   const kids = p.household?.kids ?? (p.household?.kid_age_ranges?.length ?? 0);
   if (kids > 0) profileBits.push(`there are kids in the household learning alongside them`);
   if (profileBits.length) {
-    lines.push(`About this family: ${profileBits.join("; ")}. Shape your depth and examples to fit.`);
+    lines.push(
+      `About this ${solo ? "member" : "family"}: ${profileBits.join("; ")}. Shape your depth and examples to fit.`
+    );
+  }
+  if (solo) {
+    lines.push(
+      `This member is here on their own — no kids on the account. Talk to them directly as an individual investor; do NOT say "your family" or assume a household.`
+    );
   }
   if (p.memory && p.memory.trim()) {
     lines.push(`What you remember about them from past chats: ${p.memory.trim()}`);

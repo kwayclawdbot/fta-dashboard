@@ -46,6 +46,7 @@ import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
+import { isSoloProfile } from "@/lib/register";
 
 /** Next scheduled academy class, for the FTA premium home rail. */
 type NextClass = { title: string; when: string } | null;
@@ -165,6 +166,9 @@ export default function DashboardHome() {
   // card takes precedence OVER the setup checklist — the warm welcome comes
   // first. Once the profile is done it steps aside for the setup checklist.
   const [profileNeedsAttention, setProfileNeedsAttention] = useState(false);
+  // Solo (individual, non-parent) member — a family of one. De-parents the Home
+  // copy (setup card, empty state, This Week) without any data-model change.
+  const [isSolo, setIsSolo] = useState(false);
 
   useEffect(() => {
     setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
@@ -247,9 +251,10 @@ export default function DashboardHome() {
       if (famId && profile?.role === "parent") {
         const { data: fpRow } = await supabase
           .from("family_profiles")
-          .select("completed_at")
+          .select("household, completed_at")
           .eq("family_id", famId)
           .maybeSingle();
+        setIsSolo(isSoloProfile(fpRow));
         let dcount = 0;
         try {
           dcount = parseInt(
@@ -470,7 +475,7 @@ export default function DashboardHome() {
               </div>
               <div className="flex-1 min-w-0 pr-6">
                 <p className="font-display font-semibold text-ink">
-                  Finish setting up your family
+                  {isSolo ? "Finish setting up your account" : "Finish setting up your family"}
                 </p>
                 <p className="text-sm text-soft">
                   {orientationDone} of {ORIENTATION_TOTAL} Start Here steps done —
@@ -635,6 +640,7 @@ export default function DashboardHome() {
           isKid={isKid}
           isTeen={isTeen}
           isParent={isParent}
+          isSolo={isSolo}
         />
       )}
 
@@ -649,13 +655,12 @@ export default function DashboardHome() {
         <div className="paper-card p-8 text-center">
           <Sparkles className="w-8 h-8 text-gold-500 mx-auto mb-3" />
           <h2 className="font-display text-xl font-semibold text-ink mb-2">
-            Your family isn&apos;t enrolled yet
+            {isSolo ? "You're not enrolled yet" : "Your family isn't enrolled yet"}
           </h2>
           <p className="text-soft max-w-md mx-auto mb-5">
-            The Family Investing Club is where your family learns one money
-            concept, studies one company, and builds the habit together every
-            week. Want the deep end too? The FTA academy adds a 6-week live,
-            beginner-to-trade-ready program on top.
+            {isSolo
+              ? "The Family Investing Club is where you learn one money concept, study one company, and build the habit every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."
+              : "The Family Investing Club is where your family learns one money concept, studies one company, and builds the habit together every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."}
           </p>
           <Link
             href="/upgrade"

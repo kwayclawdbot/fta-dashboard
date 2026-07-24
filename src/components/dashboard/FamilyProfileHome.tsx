@@ -24,6 +24,7 @@ import {
   isRecommendationsFresh,
   type Recommendation,
 } from "@/lib/onboarding-profile";
+import { isSoloProfile } from "@/lib/register";
 
 /**
  * Home-page surface for the family profile — the visible payoff of onboarding.
@@ -64,7 +65,7 @@ type View =
   | { kind: "loading" }
   | { kind: "hidden" }
   | { kind: "backfill" }
-  | { kind: "recommend"; recs: Recommendation[] };
+  | { kind: "recommend"; recs: Recommendation[]; solo: boolean };
 
 export default function FamilyProfileHome({ familyId }: { familyId: string }) {
   const supabase = createClient();
@@ -95,8 +96,9 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
 
       if (isRecommendationsFresh(profile.completed_at)) {
         const recs = deriveRecommendations(profile);
+        const solo = isSoloProfile(profile);
         if (!mounted) return;
-        setView(recs.length ? { kind: "recommend", recs } : { kind: "hidden" });
+        setView(recs.length ? { kind: "recommend", recs, solo } : { kind: "hidden" });
         return;
       }
 
@@ -132,9 +134,9 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
             <Home className="w-4 h-4 text-gold-700" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-display font-medium text-sm text-ink">Finish your family profile</p>
+            <p className="font-display font-medium text-sm text-ink">Finish your profile</p>
             <p className="text-xs text-soft truncate">
-              A few quick questions so we can tailor lessons and Kai to your family.
+              A few quick questions so we can tailor lessons and Kai to you.
             </p>
           </div>
           <ArrowRight className="w-4 h-4 text-soft shrink-0" />
@@ -160,7 +162,7 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
       <div className="flex items-center gap-2 mb-1">
         <Sparkles className="w-4 h-4 text-gold-600" />
         <h3 className="font-display text-base font-semibold text-ink">
-          Recommended for your family
+          {view.solo ? "Recommended for you" : "Recommended for your family"}
         </h3>
       </div>
       <p className="text-sm text-soft mb-4">Picked from what you told us. Start anywhere.</p>

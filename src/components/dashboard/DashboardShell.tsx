@@ -67,6 +67,7 @@ interface DashboardShellProps {
     track?: string;
     avatar_url?: string;
     tier?: FamilyTier;
+    isSolo?: boolean;
   };
   children: React.ReactNode;
 }

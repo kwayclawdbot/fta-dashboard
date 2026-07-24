@@ -63,6 +63,7 @@ interface MobileTabBarProps {
     age_group?: string;
     avatar_url?: string;
     tier?: FamilyTier;
+    isSolo?: boolean;
   };
   /** Lifetime XP for the More-sheet belt chip (null while loading). */
   xp?: number | null;
@@ -109,7 +110,7 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
     item.subItems
       ? { ...item, subItems: item.subItems.filter((s) => !usedHrefs.has(s.href)) }
       : item;
-  const allNav = getNavItems(user.role, user.age_group, user.tier);
+  const allNav = getNavItems(user.role, user.age_group, user.tier, user.isSolo);
   const footerNav = getFooterItems(user.role, user.tier);
   const moreItems: NavItem[] = [...allNav, ...footerNav]
     .filter((item) => item.sectionHeader || !usedHrefs.has(item.href))
