@@ -43,6 +43,7 @@ import Avatar from "@/components/Avatar";
 import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
 import DashboardCommandCenter from "@/components/dashboard/DashboardCommandCenter";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
+import ClubHome from "@/components/dashboard/ClubHome";
 import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
 import AddFamily from "@/components/dashboard/AddFamily";
@@ -257,7 +258,7 @@ export default function DashboardHome() {
       // only; drives whether the warm welcome card jumps ahead of the setup
       // checklist on first login. Mirrors FamilyProfileHome's dismiss counter
       // (dismissed twice = retired).
-      if (famId && profile?.role === "parent") {
+      if (famId && (profile?.role === "parent" || profile?.role === "admin")) {
         const { data: fpRow } = await supabase
           .from("family_profiles")
           .select("household, completed_at")
@@ -418,6 +419,22 @@ export default function DashboardHome() {
 
   if (isFree) {
     return <FreeHome firstName={firstName} />;
+  }
+
+  // CLUB (individual / solo) mode — the community-first Home (R3). Family-mode
+  // households fall through to the academy-first layout below, unchanged. FTA
+  // solo owners keep the club-first Home too; their gold Academy rail lives on
+  // the FTA hub, and the club-first surface is the owner-approved default.
+  if (isSolo) {
+    const learning =
+      home?.program && home.today
+        ? {
+            title: home.today.title,
+            href: `/courses/${home.today.course_slug}/${home.today.module_id}/${home.today.lesson_id}`,
+            context: `${home.today.module_title} · ${home.today.course_title}`,
+          }
+        : null;
+    return <ClubHome firstName={firstName} xp={xp} learning={learning} />;
   }
 
   const isKid = home?.role === "child" && home?.track === "kids";
