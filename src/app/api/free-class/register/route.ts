@@ -10,6 +10,9 @@ interface RegisterBody {
   phone?: string;
   quiz?: Record<string, unknown>;
   sessionId?: string;
+  /** 5-Day Investing Challenge signup (Lane C7): grants a full-Club challenge
+   *  pass (no card) that expires at the challenge end instead of a free tier. */
+  challenge?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,6 +40,7 @@ export async function POST(req: Request) {
   const phone = (body.phone || "").trim();
   const quiz = body.quiz && typeof body.quiz === "object" ? body.quiz : {};
   const sessionId = (body.sessionId || "").trim();
+  const isChallenge = body.challenge === true;
 
   const supabaseEarly = createAdminClient();
 
@@ -118,10 +122,31 @@ export async function POST(req: Request) {
   }
   const familyId = fam.id as string;
 
-  // 3. FREE enrollment — the sole signal that derives tier 'free'.
-  await supabase
-    .from("enrollments")
-    .insert({ family_id: familyId, program: "free", status: "active" });
+  // 3. Enrollment — the sole signal that derives the tier.
+  //    Challenge signups (Lane C7) get a full-Club challenge_pass that expires
+  //    at the challenge end; the pass is ACTIVE immediately (immediate full
+  //    access per owner), and family_tiers resolves it to 'fic' until expiry,
+  //    then 'free'. Everyone else gets the plain 'free' enrollment.
+  if (isChallenge) {
+    // challenge_end from app_settings (jsonb ISO string); default 2026-09-06.
+    let challengeEnd = "2026-09-06T00:00:00Z";
+    const { data: setting } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "challenge_end")
+      .maybeSingle();
+    if (typeof setting?.value === "string") challengeEnd = setting.value;
+    await supabase.from("enrollments").insert({
+      family_id: familyId,
+      program: "challenge_pass",
+      status: "active",
+      expires_at: challengeEnd,
+    });
+  } else {
+    await supabase
+      .from("enrollments")
+      .insert({ family_id: familyId, program: "free", status: "active" });
+  }
 
   // 4. Link the parent profile (the handle_new_user trigger already made the
   //    row from the auth insert). Lane 8R: we deliberately do NOT set
@@ -156,7 +181,7 @@ export async function POST(req: Request) {
     user_id: userId,
     email,
     quiz: { ...mergedQuiz, phone: phone || null, first_name: firstName },
-    source: "funnel",
+    source: isChallenge ? "challenge" : "funnel",
     session_id: session?.id ?? null,
   });
 
@@ -183,15 +208,21 @@ export async function POST(req: Request) {
   //    bind the profile. If none exists (rare: someone skipped /save), create it.
   //    Wrapped so any marketing-schema drift never fails the signup.
   try {
+    // Challenge signups get their own cohort source ('challenge') so the admin
+    // challenge dashboard can isolate them; free-class signups stay 'free_class'.
+    const leadSource = isChallenge ? "challenge" : "free_class";
+    const baseTags = isChallenge
+      ? ["challenge", "funnel", "registered"]
+      : ["funnel", "registered"];
     const { data: lead } = await supabase
       .from("marketing_leads")
       .select("id, tags")
       .eq("email", email)
-      .eq("source", "free_class")
+      .eq("source", leadSource)
       .maybeSingle();
 
     if (lead) {
-      const tags = Array.from(new Set([...(lead.tags || []), "funnel", "registered"]));
+      const tags = Array.from(new Set([...(lead.tags || []), ...baseTags]));
       await supabase
         .from("marketing_leads")
         .update({
@@ -208,17 +239,17 @@ export async function POST(req: Request) {
       await supabase.from("marketing_lead_events").insert({
         lead_id: lead.id,
         type: "stage_changed",
-        meta: { to: "engaged", reason: "free_class_registered" },
+        meta: { to: "engaged", reason: `${leadSource}_registered` },
       });
     } else {
       await supabase.from("marketing_leads").insert({
         email,
         first_name: firstName,
         phone: phone || null,
-        source: "free_class",
+        source: leadSource,
         stage: "engaged",
-        tags: ["funnel", "registered"],
-        consent_source: "free_class_funnel",
+        tags: baseTags,
+        consent_source: isChallenge ? "challenge_funnel" : "free_class_funnel",
         converted_profile_id: userId,
         custom: { quiz: mergedQuiz, phone: phone || null },
       });

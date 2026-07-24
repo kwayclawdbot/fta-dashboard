@@ -96,6 +96,39 @@ export function clearStoredFunnelId(): void {
   }
 }
 
+// ── 5-Day Investing Challenge flag (Lane C7) ─────────────────────────────────
+// Set on the landing view when the club-site CTA lands with ?challenge=1, read
+// at the register step so the account is provisioned with a full-Club challenge
+// pass (no card) instead of a free enrollment. Same-device localStorage carries
+// it across the multi-page funnel, mirroring getStoredFunnelId.
+const CHALLENGE_KEY = "fic_challenge";
+
+export function setChallengeFlag(on: boolean): void {
+  try {
+    if (on) window.localStorage.setItem(CHALLENGE_KEY, "1");
+    else window.localStorage.removeItem(CHALLENGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getChallengeFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(CHALLENGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearChallengeFlag(): void {
+  try {
+    window.localStorage.removeItem(CHALLENGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 // ── UTM capture (read once on the landing view) ──────────────────────────────
 export function captureUtm(): Record<string, string> {
   if (typeof window === "undefined") return {};

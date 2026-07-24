@@ -13,6 +13,8 @@ import {
   fetchSession,
   logEvent,
   clearStoredFunnelId,
+  getChallengeFlag,
+  clearChallengeFlag,
 } from "@/lib/funnel";
 
 /**
@@ -36,9 +38,13 @@ export default function RegisterPage() {
   // Signed-in members skip account creation — one-click seat reservation instead.
   const [signedIn, setSignedIn] = useState(false);
   const [memberName, setMemberName] = useState("");
+  // 5-Day Investing Challenge (Lane C7): full-Club pass, no card. Read once on
+  // mount so the copy + the register payload both know it's a challenge signup.
+  const [challenge, setChallenge] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    setChallenge(getChallengeFlag());
     (async () => {
       const stored = getStoredFunnelId();
       if (!stored) {
@@ -121,6 +127,7 @@ export default function RegisterPage() {
           email: email.trim().toLowerCase(),
           password,
           quiz: answers,
+          challenge,
         }),
       });
       const data = await res.json();
@@ -135,7 +142,10 @@ export default function RegisterPage() {
         password,
       });
       clearStoredFunnelId();
-      router.push("/free-class/confirmed?welcome=1");
+      clearChallengeFlag();
+      // Challenge signups have full Club access immediately — send them into the
+      // onboarding wizard (account setup) rather than the free-class confirmation.
+      router.push(challenge ? "/onboarding" : "/free-class/confirmed?welcome=1");
     } catch {
       setSubmitting(false);
       setError("Network error. Please try again.");
@@ -200,9 +210,13 @@ export default function RegisterPage() {
           ) : (
           <>
           <div className="text-center mb-6">
-            <h2 className="font-display text-2xl font-bold text-ink">Save your seat</h2>
+            <h2 className="font-display text-2xl font-bold text-ink">
+              {challenge ? "Start the challenge" : "Save your seat"}
+            </h2>
             <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
-              Create your free account to lock in your spot. No card, ever.
+              {challenge
+                ? "Create your account — full Club access unlocks the moment you're in. No card required."
+                : "Create your free account to lock in your spot. No card, ever."}
             </p>
           </div>
 
@@ -239,11 +253,13 @@ export default function RegisterPage() {
           >
             {submitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Saving your seat…
+                <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                {challenge ? "Setting up your access…" : "Saving your seat…"}
               </>
             ) : (
               <>
-                Get my free seat <ArrowRight className="w-4 h-4" />
+                {challenge ? "Start the challenge" : "Get my free seat"}{" "}
+                <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>

@@ -50,9 +50,17 @@ export async function POST(req: NextRequest) {
     const email: string | undefined =
       s.customer_details?.email || s.customer_email;
     if (email) {
+      // FTA — Challenge Offer ($1,500): metadata kind=fta_challenge. Grants the
+      // FTA tier, which already bundles full Club access via TIER_ACCESS (fta =
+      // superset of fic). The "12 months Club then $99/mo" is marketing framing
+      // today — FTA includes everything with no time limit in the data model.
+      // See C7 report "year-1 FTA question" before adding a club_until clock.
+      // Any other checkout maps by amount ($99 → fic, ≥$1,000 → fta).
+      const program: "fic" | "fta" =
+        s.metadata?.kind === "fta_challenge" ? "fta" : programFor(s.amount_total);
       const result = await provisionMembership({
         email,
-        program: programFor(s.amount_total),
+        program,
         source: "stripe",
         stripeSession: s.id,
       });

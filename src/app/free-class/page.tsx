@@ -13,7 +13,12 @@ import {
 } from "lucide-react";
 import { formatClassWhen, type NextClassResponse } from "@/lib/free-class";
 import { TopBar } from "@/components/free-class/ui";
-import { startSession, getStoredFunnelId } from "@/lib/funnel";
+import {
+  startSession,
+  getStoredFunnelId,
+  setChallengeFlag,
+  getChallengeFlag,
+} from "@/lib/funnel";
 
 /**
  * Funnel landing / hook — step 0 of the multi-page free-class funnel.
@@ -30,9 +35,20 @@ export default function FreeClassLanding() {
   const [ready, setReady] = useState(false);
   const [meta, setMeta] = useState<NextClassResponse | null>(null);
   const [starting, setStarting] = useState(false);
+  const [challenge, setChallenge] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    // Detect the club-site Challenge CTA (?challenge=1) and persist it for the
+    // rest of the funnel. Sticky: a resumed challenge funnel stays challenge.
+    try {
+      const wantsChallenge =
+        new URLSearchParams(window.location.search).get("challenge") === "1";
+      if (wantsChallenge) setChallengeFlag(true);
+      setChallenge(wantsChallenge || getChallengeFlag());
+    } catch {
+      /* ignore */
+    }
     (async () => {
       const [status, nextRes] = await Promise.all([
         fetch("/api/free-class/status")
@@ -93,17 +109,41 @@ export default function FreeClassLanding() {
           className="w-full max-w-md text-center"
         >
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-[11px] font-display font-bold uppercase tracking-[0.14em] mb-5">
-            <Sparkles className="w-3 h-3" /> Free weekly class
+            {challenge ? (
+              <>
+                <Flame className="w-3 h-3" /> 5-Day Investing Challenge · Starts Sept 1
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3" /> Free weekly class
+              </>
+            )}
           </span>
-          <h1 className="font-display text-[1.75rem] leading-[1.12] sm:text-4xl font-bold text-ink">
-            Is your family raising <span className="text-gradient-gold">investors</span> — or
-            spenders?
-          </h1>
-          <p className="text-soft mt-4 text-[15px] leading-relaxed max-w-sm mx-auto">
-            Join a free live class with the Family Investing Club. In one session your family
-            learns how the market actually works — and how to start the habit together. Reserve
-            your seat in about a minute.
-          </p>
+          {challenge ? (
+            <>
+              <h1 className="font-display text-[1.75rem] leading-[1.12] sm:text-4xl font-bold text-ink">
+                The <span className="text-gradient-gold">5-Day Investing Challenge</span> — learn
+                the market in one week.
+              </h1>
+              <p className="text-soft mt-4 text-[15px] leading-relaxed max-w-sm mx-auto">
+                Five days, one clear step each day, inside the Cheat Code Club. Sign up now and
+                your full membership unlocks immediately — every tool, Kai, the community, live
+                classes — right through the challenge. No card required.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-[1.75rem] leading-[1.12] sm:text-4xl font-bold text-ink">
+                Is your family raising <span className="text-gradient-gold">investors</span> — or
+                spenders?
+              </h1>
+              <p className="text-soft mt-4 text-[15px] leading-relaxed max-w-sm mx-auto">
+                Join a free live class with the Family Investing Club. In one session your family
+                learns how the market actually works — and how to start the habit together. Reserve
+                your seat in about a minute.
+              </p>
+            </>
+          )}
 
           {session?.scheduled_at && (
             <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-sand bg-white/40 px-4 py-2 text-sm text-ink">
@@ -149,12 +189,15 @@ export default function FreeClassLanding() {
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                Reserve my seat <ArrowRight className="w-4 h-4" />
+                {challenge ? "Start the challenge" : "Reserve my seat"}{" "}
+                <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
           <p className="mt-3 text-xs text-soft">
-            Free · No card required · The whole family welcome
+            {challenge
+              ? "Full Club access now · No card required · Keep it for $99/mo or drop to free after"
+              : "Free · No card required · The whole family welcome"}
           </p>
         </m.div>
       </div>
