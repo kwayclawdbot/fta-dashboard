@@ -8,6 +8,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import type { FamilyTier } from "@/lib/tier";
+import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import BeltChip from "@/components/dashboard/BeltChip";
@@ -86,6 +87,7 @@ interface DashboardTopBarProps {
     role?: string;
     age_group?: string;
     tier?: FamilyTier;
+    isSolo?: boolean;
   };
   /** Lifetime XP for the belt chip (null while loading). */
   xp?: number | null;
@@ -101,6 +103,7 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
 
   const isKid = user.role === "child" && user.age_group === "kids";
   const pageTitle = resolveTitle(pathname, isKid);
+  const mode = modeFromSolo(user.isSolo);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -176,7 +179,7 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
                       <p className="text-sm font-medium text-midnight-100 truncate">
                         {user.display_name || "Trader"}
                       </p>
-                      {user.tier && <TierBadge tier={user.tier} size="xs" />}
+                      {user.tier && <TierBadge tier={user.tier} size="xs" mode={mode} />}
                     </div>
                     <p className="text-xs text-midnight-500 truncate">{user.email}</p>
                   </div>
