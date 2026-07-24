@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Flame } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp } from "@/lib/xp";
 import DashboardSidebar from "./DashboardSidebar";
@@ -10,6 +12,7 @@ import MobileTabBar from "./MobileTabBar";
 import FreeLocked from "./FreeLocked";
 import type { UpsellContext } from "./UpsellCard";
 import AppTour from "@/components/tour/AppTour";
+import ModeManager from "@/components/ModeManager";
 import NotificationOnboard from "@/components/notifications/NotificationOnboard";
 import { Toaster } from "@/components/ui/Toast";
 import { Suspense } from "react";
@@ -69,10 +72,16 @@ interface DashboardShellProps {
     tier?: FamilyTier;
     isSolo?: boolean;
   };
+  /** ISO expiry of an active 5-Day Challenge pass (Lane C7), else null. */
+  challengeExpiresAt?: string | null;
   children: React.ReactNode;
 }
 
-export default function DashboardShell({ user, children }: DashboardShellProps) {
+export default function DashboardShell({
+  user,
+  challengeExpiresAt,
+  children,
+}: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -110,8 +119,31 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
     LOCKED_CONTEXTS.find((l) => pathname.startsWith(l.prefix))?.context ??
     "generic";
 
+  // 5-Day Challenge pass (Lane C7) — a friendly days-left banner for pass
+  // holders. Full Club now; when it ends they drop to free (progress stays).
+  const challengeDaysLeft = challengeExpiresAt
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(challengeExpiresAt).getTime() - Date.now()) / 86_400_000
+        )
+      )
+    : null;
+
+  // MODE (Cheat Code Club redesign R1) — the brand/palette skin. FTA hub routes
+  // are the metallic-gold desk regardless of household; otherwise a solo member
+  // gets the Club skin (sand + volt orange), a household keeps Family (warm gold,
+  // unchanged). Stamped on the wrapper for the SSR subtree; ModeManager mirrors
+  // it onto <html> for body chrome + the tab favicon.
+  const mode: "club" | "family" | "fta" = pathname.startsWith("/fta")
+    ? "fta"
+    : user.isSolo
+      ? "club"
+      : "family";
+
   return (
-    <div className="min-h-screen bg-midnight-950">
+    <div data-mode={mode} className="min-h-screen bg-midnight-950">
+      <ModeManager mode={mode} />
       <DashboardSidebar
         user={user}
         collapsed={sidebarCollapsed}
@@ -134,6 +166,25 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
         {/* Bottom padding on phones so content never hides behind the tab bar
             (bar is 4rem + the iOS safe-area inset). Reverts at md+. */}
         <main className="px-4 lg:px-8 pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">
+          {challengeDaysLeft !== null && !freeLocked && (
+            <Link
+              href="/upgrade"
+              className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold-400/40 bg-gold-400/[0.08] px-4 py-3 transition hover:border-gold-400/70"
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2 py-0.5 text-[11px] font-display font-bold uppercase tracking-wide text-gold-700">
+                <Flame className="h-3 w-3" />
+                Challenge
+              </span>
+              <span className="text-sm font-semibold text-midnight-100">
+                {challengeDaysLeft <= 0
+                  ? "Your full Club access ends today"
+                  : `${challengeDaysLeft} day${challengeDaysLeft === 1 ? "" : "s"} of full Club access left`}
+              </span>
+              <span className="text-[13px] text-midnight-400">
+                — keep it for $99/mo, or drop to free (your progress stays) →
+              </span>
+            </Link>
+          )}
           {freeLocked ? <FreeLocked context={lockedContext} /> : children}
         </main>
       </div>
