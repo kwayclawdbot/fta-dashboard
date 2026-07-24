@@ -42,7 +42,8 @@ type NotifType =
   | "new_pick"
   | "new_lesson"
   | "recording_posted"
-  | "broadcast";
+  | "broadcast"
+  | "alert";
 
 /**
  * Map a notification type → the notification_prefs push-toggle key that gates
@@ -60,6 +61,10 @@ const PREF_KEY_FOR: Record<NotifType, string | null> = {
   new_pick: "push_picks",
   new_lesson: "push_lessons",
   recording_posted: "push_recordings",
+  // Trade alerts are already gated upstream (per-rule + alert_prefs briefing
+  // opt-in + daily cap decide whether a notification row is even created), so
+  // the dispatch layer sends every 'alert' row it sees.
+  alert: null,
   support_reply: null, // support replies always push (transactional)
 };
 
@@ -93,6 +98,8 @@ function titleFor(n: NotificationRow, actorName: string): string {
       return "New lesson";
     case "recording_posted":
       return "Class recording posted";
+    case "alert":
+      return "Trade alert";
     case "support_reply":
       return "FTA Support replied";
   }

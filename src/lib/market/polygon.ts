@@ -166,6 +166,42 @@ export async function getQuotes(symbols: string[]): Promise<Record<string, Quote
   return out;
 }
 
+/**
+ * FULL-MARKET snapshot — ONE Polygon call returns every US ticker's current
+ * (delayed ~15m) day bar: price, day %, and today's volume. Used by the alerts
+ * intraday engine (LANE C6) to evaluate price_cross / pct_move / vol_surge for
+ * ALL active rules from a single request rather than per-ticker quotes.
+ *
+ * Volume ratio (today's cumulative volume vs a 20-day average) is NOT in the
+ * snapshot payload; the caller joins screener_metrics.avg_vol_20 to derive it.
+ * Returns a Map keyed by ticker; empty map on any failure (engine degrades).
+ */
+export interface SnapshotRow {
+  price: number | null;
+  changePercent: number | null;
+  volume: number | null;
+}
+
+export async function getFullSnapshot(): Promise<Map<string, SnapshotRow>> {
+  const out = new Map<string, SnapshotRow>();
+  const data = await fetchJson<{
+    tickers?: (SnapshotTicker & { day?: { c?: number; v?: number } })[];
+  }>(
+    `/v2/snapshot/locale/us/markets/stocks/tickers`,
+    30_000 // ~30s — the engine runs every 10 min; this comfortably caches a run
+  );
+  for (const t of data?.tickers || []) {
+    const price =
+      t.lastTrade?.p ?? t.min?.c ?? (t.day?.c && t.day.c > 0 ? t.day.c : null);
+    out.set(t.ticker, {
+      price: price ?? null,
+      changePercent: t.todaysChangePerc ?? null,
+      volume: typeof t.day?.v === "number" ? t.day.v : null,
+    });
+  }
+  return out;
+}
+
 export interface Company {
   symbol: string;
   name: string | null;
