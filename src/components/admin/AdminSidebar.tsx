@@ -21,6 +21,7 @@ import {
   ShoppingBag,
   Filter,
   Activity,
+  MailPlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -56,6 +57,7 @@ const sections: AdminNavSection[] = [
       { label: "Leads", href: "/admin/crm/leads", icon: Megaphone },
       { label: "Pipeline", href: "/admin/crm/pipeline", icon: KanbanSquare },
       { label: "Campaigns", href: "/admin/crm/campaigns", icon: Send },
+      { label: "Welcome Drip", href: "/admin/crm/drips", icon: MailPlus },
       { label: "Funnel", href: "/admin/crm/funnel", icon: Filter },
       { label: "Support", href: "/admin/crm/support", icon: LifeBuoy },
     ],
