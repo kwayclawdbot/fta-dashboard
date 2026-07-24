@@ -3,6 +3,7 @@ import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import ThemeManager from "@/components/ThemeManager";
 import { MotionProvider } from "@/lib/motion";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Applied before first paint to avoid a light→dark flash on reload.
 const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'light';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#FBF7EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
@@ -59,6 +60,7 @@ export default function RootLayout({
       <body className={`${poppins.variable} ${inter.variable} antialiased`}>
         <ThemeManager />
         <MotionProvider>{children}</MotionProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
