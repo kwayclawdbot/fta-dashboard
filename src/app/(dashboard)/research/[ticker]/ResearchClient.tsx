@@ -32,6 +32,7 @@ import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import KaiReportSection from "@/components/kai/KaiReportSection";
 import type { KaiReport } from "@/lib/kai/report";
 import SocialBar from "@/components/research/SocialBar";
+import SetAlertButton, { type AlertLevel } from "@/components/alerts/SetAlertButton";
 import Scorecard from "@/components/research/Scorecard";
 import PriceTechnicals from "@/components/research/PriceTechnicals";
 import ResearchTabBar, { type ResearchTabKey, type ResearchTabDef } from "@/components/research/ResearchTabs";
@@ -153,6 +154,26 @@ function RangeBar({ low, high, price }: { low: number | null; high: number | nul
       </div>
     </div>
   );
+}
+
+/** Key-level prefills for the research-page "Set alert" — the 52-week extremes
+ *  the aggregate computed. Above the high / below the low are the levels members
+ *  most often want a heads-up on. */
+function researchLevels(
+  price: number | null,
+  keyStats: { week52Low: number | null; week52High: number | null } | null
+): AlertLevel[] {
+  const out: AlertLevel[] = [];
+  if (keyStats?.week52High && keyStats.week52High > 0) {
+    out.push({ label: "52w high", price: keyStats.week52High, op: "above" });
+  }
+  if (keyStats?.week52Low && keyStats.week52Low > 0) {
+    out.push({ label: "52w low", price: keyStats.week52Low, op: "below" });
+  }
+  if (price != null && price > 0) {
+    out.push({ label: "Current", price, op: "above" });
+  }
+  return out;
 }
 
 function resolveInitialTab(): ResearchTabKey {
@@ -485,6 +506,17 @@ export default function ResearchClient({
               >
                 <Sparkles className="h-3.5 w-3.5" /> Ask Kai
               </Link>
+              {ageGroup !== "kids" && ageGroup !== "teens" && (
+                <SetAlertButton
+                  ticker={ticker}
+                  surface="research"
+                  defaultKind="price_cross"
+                  seedPrice={quote?.price ?? null}
+                  levels={researchLevels(quote?.price ?? null, keyStats)}
+                  variant="chip"
+                  stopPropagation={false}
+                />
+              )}
             </div>
           </div>
 

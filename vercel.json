@@ -23,6 +23,18 @@
     {
       "path": "/api/cron/drip-welcome",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/evaluate-alerts",
+      "schedule": "5 22 * * 1-5"
+    },
+    {
+      "path": "/api/cron/evaluate-alerts-intraday",
+      "schedule": "*/10 14-20 * * 1-5"
+    },
+    {
+      "path": "/api/cron/alerts-digest",
+      "schedule": "0 21 * * 1-5"
     }
   ]
 }

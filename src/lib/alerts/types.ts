@@ -288,54 +288,61 @@ export function evalIntraday(
   }
 }
 
-/** Suggested rules seeded from a strategy profile (education-first framing). */
-export function suggestedRulesFor(sp: StrategyProfile): {
-  kind: AlertKind;
-  params: AlertParams;
+/**
+ * Suggested rules seeded from a strategy profile. Every suggestion is a
+ * universe-wide preset_match (a nightly diff of an existing screener preset), so
+ * a member with no watchlist yet still gets working alerts the moment they build
+ * a profile — no ticker required. Education-first framing throughout.
+ */
+export interface SuggestedRule {
+  key: string;
+  presetId: string;
+  presetLabel: string;
   label: string;
   reason: string;
-}[] {
-  const out: { kind: AlertKind; params: AlertParams; label: string; reason: string }[] = [];
-  const setups = sp.setup_prefs || [];
+}
 
-  if (setups.includes("breakout")) {
+const SETUP_TO_PRESET: Record<string, { id: string; label: string; reason: string }> = {
+  breakout: {
+    id: "big-brands-new-highs",
+    label: "Big brands at new highs",
+    reason: "Breakout traders watch large names clearing prior highs.",
+  },
+  pullback: {
+    id: "steady-climbers",
+    label: "Steady climbers",
+    reason: "Pullback setups look for durable uptrends to buy dips in.",
+  },
+  oversold: {
+    id: "oversold-quality",
+    label: "Oversold quality",
+    reason: "An oversold reading can mark a stretched, mean-reverting move.",
+  },
+  momentum: {
+    id: "momentum-movers",
+    label: "Momentum movers",
+    reason: "Momentum shows up first as strength and unusual volume.",
+  },
+  value: {
+    id: "oversold-quality",
+    label: "Oversold quality",
+    reason: "Value-leaning members watch quality names that get cheap.",
+  },
+};
+
+export function suggestedRulesFor(sp: StrategyProfile): SuggestedRule[] {
+  const out: SuggestedRule[] = [];
+  const seen = new Set<string>();
+  for (const setup of sp.setup_prefs || []) {
+    const p = SETUP_TO_PRESET[setup];
+    if (!p || seen.has(p.id)) continue;
+    seen.add(p.id);
     out.push({
-      kind: "w52_break",
-      params: { edge: "high" },
-      label: "A watchlist name reaches a new 52-week high",
-      reason: "Breakout traders watch for names clearing prior highs.",
-    });
-  }
-  if (setups.includes("pullback")) {
-    out.push({
-      kind: "ema_cross",
-      params: { ema: 20, side: "below" },
-      label: "A name pulls back below its 20-day average",
-      reason: "Pullback setups look for a dip toward a rising trend.",
-    });
-  }
-  if (setups.includes("oversold")) {
-    out.push({
-      kind: "rsi_cross",
-      params: { op: "below", level: 30 },
-      label: "A name becomes oversold (RSI under 30)",
-      reason: "An oversold reading can mark a stretched, mean-reverting move.",
-    });
-  }
-  if (setups.includes("momentum")) {
-    out.push({
-      kind: "vol_surge",
-      params: { ratio: 3 },
-      label: "A name trades on 3×+ its average volume",
-      reason: "Momentum shows up first as unusual volume.",
-    });
-  }
-  if (setups.includes("value")) {
-    out.push({
-      kind: "preset_match",
-      params: { presetId: "oversold-quality", presetLabel: "Oversold quality" },
-      label: 'New names enter the "Oversold quality" screen',
-      reason: "Value-leaning members watch quality names that get cheap.",
+      key: setup,
+      presetId: p.id,
+      presetLabel: p.label,
+      label: `New names in "${p.label}"`,
+      reason: p.reason,
     });
   }
   return out;

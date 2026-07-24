@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import SetAlertButton from "@/components/alerts/SetAlertButton";
 import LockedState from "@/components/dashboard/LockedState";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
@@ -422,18 +423,36 @@ export default function ScreenerPage() {
         })}
       </div>
       {activePresetId && (
-        <p className="flex items-start gap-2 rounded-xl border border-gold-300/40 bg-chip-amber/40 px-3.5 py-2.5 text-[13px] leading-snug text-ink/80">
+        <div className="rounded-xl border border-gold-300/40 bg-chip-amber/40 px-3.5 py-2.5">
           {(() => {
             const ap = getPreset(activePresetId)!;
             const Icon = ICONS[ap.icon] ?? Trophy;
             return (
               <>
-                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
-                <span>{ap.blurb} These filters are applied below — tweak any of them.</span>
+                <p className="flex items-start gap-2 text-[13px] leading-snug text-ink/80">
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
+                  <span>{ap.blurb} These filters are applied below — tweak any of them.</span>
+                </p>
+                {!isKid && (
+                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-gold-300/30 pt-2">
+                    <span className="text-[12px] font-medium text-soft">
+                      Want a heads-up when new names enter this screen?
+                    </span>
+                    <SetAlertButton
+                      ticker={null}
+                      surface="screener"
+                      defaultKind="preset_match"
+                      presetId={ap.id}
+                      presetLabel={ap.label}
+                      variant="chip"
+                      stopPropagation={false}
+                    />
+                  </div>
+                )}
               </>
             );
           })()}
-        </p>
+        </div>
       )}
 
       {/* Filter panel — primary interface */}
@@ -576,6 +595,7 @@ export default function ScreenerPage() {
                         canAct={!!familyId}
                         onAddFamily={() => addToFamily(r, false)}
                         onSuggest={() => addToFamily(r, true)}
+                        allowAlert={!isKid}
                         compact
                       />
                     </td>
@@ -596,6 +616,7 @@ export default function ScreenerPage() {
                 canAct={!!familyId}
                 onAddFamily={() => addToFamily(r, false)}
                 onSuggest={() => addToFamily(r, true)}
+                allowAlert={!isKid}
               />
             ))}
           </div>
@@ -668,6 +689,7 @@ function RowActions({
   onAddFamily,
   onSuggest,
   compact,
+  allowAlert = true,
 }: {
   r: ScreenerRow;
   busy: boolean;
@@ -676,6 +698,7 @@ function RowActions({
   onAddFamily: () => void;
   onSuggest: () => void;
   compact?: boolean;
+  allowAlert?: boolean;
 }) {
   if (added) {
     return (
@@ -705,6 +728,17 @@ function RowActions({
         <Users2 className="h-3.5 w-3.5" />
         {compact ? "" : "Suggest to community"}
       </button>
+      {allowAlert && (
+        <SetAlertButton
+          ticker={r.ticker}
+          surface="screener"
+          defaultKind="price_cross"
+          seedPrice={r.price}
+          levels={impliedLevels(r)}
+          variant={compact ? "icon" : "chip"}
+          stopPropagation={false}
+        />
+      )}
       <Link
         href={`/research/${encodeURIComponent(r.ticker)}`}
         title="Research"
@@ -717,6 +751,20 @@ function RowActions({
   );
 }
 
+/** Price levels prefilled into a screener-row alert (52-week high/low touches). */
+function impliedLevels(r: ScreenerRow): { label: string; price: number; op?: "above" | "below" }[] {
+  const out: { label: string; price: number; op?: "above" | "below" }[] = [];
+  if (r.price != null && r.dist_52w_high != null) {
+    const high = r.price / (1 + r.dist_52w_high / 100);
+    if (high > 0) out.push({ label: "52w high", price: high, op: "above" });
+  }
+  if (r.price != null && r.dist_52w_low != null) {
+    const low = r.price / (1 + r.dist_52w_low / 100);
+    if (low > 0) out.push({ label: "52w low", price: low, op: "below" });
+  }
+  return out;
+}
+
 /* ============================================================================
  * 390px card row.
  * ==========================================================================*/
@@ -727,6 +775,7 @@ function CardRow({
   canAct,
   onAddFamily,
   onSuggest,
+  allowAlert = true,
 }: {
   r: ScreenerRow;
   busy: boolean;
@@ -734,6 +783,7 @@ function CardRow({
   canAct: boolean;
   onAddFamily: () => void;
   onSuggest: () => void;
+  allowAlert?: boolean;
 }) {
   return (
     <div className="paper-card p-3.5">
@@ -762,7 +812,7 @@ function CardRow({
         {r.rsi14 != null && <Metric label="RSI" value={fmtRsi(r.rsi14)} tone="text-ink" />}
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
-        <RowActions r={r} busy={busy} added={added} canAct={canAct} onAddFamily={onAddFamily} onSuggest={onSuggest} />
+        <RowActions r={r} busy={busy} added={added} canAct={canAct} onAddFamily={onAddFamily} onSuggest={onSuggest} allowAlert={allowAlert} />
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import SetAlertButton from "@/components/alerts/SetAlertButton";
 import LivePrice from "@/components/fic/LivePrice";
 import ResearchLadder from "@/components/fic/ResearchLadder";
 import TrendGlyph from "@/components/fic/glyphs/TrendGlyph";
@@ -945,6 +946,16 @@ export default function WatchlistPage() {
                               Notes ({itemNotes.length})
                             </button>
                             <div className="flex items-center gap-2">
+                              {!isKid && (
+                                <SetAlertButton
+                                  ticker={item.ticker}
+                                  surface="watchlist"
+                                  defaultKind="price_cross"
+                                  seedPrice={quotes[item.ticker]?.price ?? null}
+                                  variant="icon"
+                                  stopPropagation
+                                />
+                              )}
                               <Link
                                 href={`/chart?symbol=${encodeURIComponent(item.ticker)}`}
                                 className="inline-flex items-center gap-1 text-xs font-medium text-gold-700 hover:text-gold-800"
