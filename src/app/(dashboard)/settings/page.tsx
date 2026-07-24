@@ -11,6 +11,7 @@ import PushDevices from "@/components/notifications/PushDevices";
 import Avatar from "@/components/Avatar";
 import AvatarPicker from "@/components/AvatarPicker";
 import ThemeToggle from "@/components/ThemeToggle";
+import AddFamily from "@/components/dashboard/AddFamily";
 
 interface NotificationPrefs {
   email_notifs: boolean;
@@ -319,6 +320,10 @@ export default function SettingsPage() {
           </div>
         </div>
       </m.div>
+
+      {/* Family Mode — solo owners only (self-gates to null otherwise). The
+          "Add your family" nav item links here (#family). */}
+      <AddFamily variant="settings" />
 
       {/* Billing — parent-only */}
       {!isChild && (

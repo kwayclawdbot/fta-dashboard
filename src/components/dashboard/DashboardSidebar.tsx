@@ -136,6 +136,9 @@ const SOLO_ACCOUNT_ITEM: NavItem = {
   parentOnly: true,
   subItems: [
     { label: "My Progress", href: "/progress" },
+    // Family Mode is included in every membership — the solo door surfaces the
+    // "Add your family" activation from their Account group (opens on Settings).
+    { label: "Add your family", href: "/settings#family" },
     { label: "Refer a friend", href: "/referrals" },
   ],
 };

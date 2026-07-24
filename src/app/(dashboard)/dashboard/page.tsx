@@ -44,6 +44,7 @@ import DashboardCommandCenter from "@/components/dashboard/DashboardCommandCente
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
+import AddFamily from "@/components/dashboard/AddFamily";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
 import { isSoloProfile } from "@/lib/register";
@@ -508,6 +509,13 @@ export default function DashboardHome() {
           time. Self-contained (renders null when there's nothing to show). */}
       {showProfileCard && familyId && (
         <FamilyProfileHome familyId={familyId} />
+      )}
+
+      {/* Family Mode activation — quiet Home card for solo owners. Family Mode
+          is included in their membership; this converts solo→family so the FIC
+          surfaces light up. Self-gates via the passed isSolo/familyId. */}
+      {isSolo && familyId && (
+        <AddFamily variant="card" isSolo={isSolo} familyId={familyId} />
       )}
 
       {/* FTA PREMIUM HOME RAIL (audit #3) — a distinct gold "Academy" module for
