@@ -225,14 +225,28 @@ export default function SocialBar({
           )}
         </button>
 
-        {threadHref && (
-          <a
-            href={threadHref}
-            className="inline-flex items-center gap-1.5 rounded-full border border-sand px-3 py-1.5 text-sm font-semibold text-soft hover:bg-paper"
+        {onCommentClick ? (
+          <button
+            type="button"
+            onClick={onCommentClick}
+            aria-pressed={commentActive}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
+              commentActive ? "border-gold-300/60 bg-chip-amber text-gold-800" : "border-sand text-soft hover:bg-paper"
+            }`}
           >
             <MessageCircle className="h-4 w-4" />
-            <span className="tabular-nums">{s.commentCount}</span>
-          </a>
+            <span className="tabular-nums">{commentCount ?? s.commentCount}</span>
+          </button>
+        ) : (
+          threadHref && (
+            <a
+              href={threadHref}
+              className="inline-flex items-center gap-1.5 rounded-full border border-sand px-3 py-1.5 text-sm font-semibold text-soft hover:bg-paper"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="tabular-nums">{commentCount ?? s.commentCount}</span>
+            </a>
+          )
         )}
 
         {s.contributors > 0 && (

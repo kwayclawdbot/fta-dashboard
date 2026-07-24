@@ -135,7 +135,7 @@ export default function NewsArticlePage() {
                   userId={userId}
                   ageGroup={ageGroup}
                   canVote={canVote && !!userId}
-                  threadHref={`/research/${t}`}
+                  threadHref={`/research/${t}?tab=community`}
                 />
               </div>
             ))}

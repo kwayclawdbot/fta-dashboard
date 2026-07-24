@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { m } from "@/lib/motion";
@@ -18,6 +18,7 @@ import {
   TriangleAlert,
   Newspaper,
   HelpCircle,
+  ChevronRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
@@ -33,7 +34,7 @@ import type { KaiReport } from "@/lib/kai/report";
 import SocialBar from "@/components/research/SocialBar";
 import Scorecard from "@/components/research/Scorecard";
 import PriceTechnicals from "@/components/research/PriceTechnicals";
-import Collapsible from "@/components/research/Collapsible";
+import ResearchTabBar, { type ResearchTabKey, type ResearchTabDef } from "@/components/research/ResearchTabs";
 import {
   KeyStatsGrid,
   CompanyProfileCard,
@@ -60,6 +61,16 @@ import {
 
 const COMMENT_SELECT =
   "id, ticker, user_id, body, contribution_type, created_at, author:profiles(display_name, avatar_url, age_group, username)";
+
+const SESSION_TAB_KEY = "fic-research-tab";
+const VALID_TABS: readonly ResearchTabKey[] = [
+  "overview",
+  "charts",
+  "financials",
+  "news",
+  "kai",
+  "community",
+];
 
 interface ThreadComment {
   id: string;
@@ -144,6 +155,26 @@ function RangeBar({ low, high, price }: { low: number | null; high: number | nul
   );
 }
 
+function resolveInitialTab(): ResearchTabKey {
+  if (typeof window === "undefined") return "overview";
+  let raw: string | null = null;
+  try {
+    raw = new URLSearchParams(window.location.search).get("tab");
+  } catch {
+    /* ignore */
+  }
+  if (!raw) {
+    try {
+      raw = sessionStorage.getItem(SESSION_TAB_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+  return raw && (VALID_TABS as readonly string[]).includes(raw)
+    ? (raw as ResearchTabKey)
+    : "overview";
+}
+
 export default function TickerResearchPage() {
   const supabase = createClient();
   const params = useParams<{ ticker: string }>();
@@ -161,13 +192,66 @@ export default function TickerResearchPage() {
   const [report, setReport] = useState<KaiReport | null>(null);
   const [research, setResearch] = useState<ResearchPayload | null>(null);
   const [bars, setBars] = useState<MarketBar[]>([]);
+  const [barsState, setBarsState] = useState<"idle" | "loading" | "done">("idle");
   const [news, setNews] = useState<NewsHeadline[]>([]);
   const [clubNews, setClubNews] = useState<NewsCardData[]>([]);
+  const [newsState, setNewsState] = useState<"idle" | "loading" | "done">("idle");
   const [draft, setDraft] = useState("");
   const [draftType, setDraftType] = useState<ContributionType>("note");
   const [filter, setFilter] = useState<string>("all");
   const [posting, setPosting] = useState(false);
   const [err, setErr] = useState("");
+
+  const [activeTab, setActiveTab] = useState<ResearchTabKey>(() => resolveInitialTab());
+  const barsReq = useRef(false);
+  const newsReq = useRef(false);
+  const initRef = useRef(false);
+
+  const ensureTabData = useCallback(
+    (tab: ResearchTabKey) => {
+      if (tab === "charts" && !barsReq.current) {
+        barsReq.current = true;
+        setBarsState("loading");
+        fetchBars(ticker, "2y").then((b) => {
+          setBars(b);
+          setBarsState("done");
+        });
+      }
+      if (tab === "news" && !newsReq.current) {
+        newsReq.current = true;
+        setNewsState("loading");
+        Promise.all([fetchNews(ticker, 6), fetchClubNewsForTicker(supabase, ticker, 4)]).then(
+          ([n, c]) => {
+            setNews(n);
+            setClubNews(c);
+            setNewsState("done");
+          }
+        );
+      }
+    },
+    [ticker, supabase]
+  );
+
+  const selectTab = useCallback(
+    (tab: ResearchTabKey) => {
+      setActiveTab(tab);
+      try {
+        sessionStorage.setItem(SESSION_TAB_KEY, tab);
+      } catch {
+        /* ignore */
+      }
+      try {
+        const url = new URL(window.location.href);
+        if (tab === "overview") url.searchParams.delete("tab");
+        else url.searchParams.set("tab", tab);
+        window.history.replaceState(null, "", url.toString());
+      } catch {
+        /* ignore */
+      }
+      ensureTabData(tab);
+    },
+    [ensureTabData]
+  );
 
   const load = useCallback(async () => {
     const {
@@ -203,16 +287,15 @@ export default function TickerResearchPage() {
       .order("created_at", { ascending: true });
     setComments((rows || []).map(normComment));
 
-    // Latest published Kai research report (if any).
+    // Latest published Kai research report (if any) — resolved before the tab
+    // row renders, so the Kai tab's presence is known on first paint.
     const { data: rep } = await supabase.rpc("get_latest_kai_report", { p_ticker: ticker });
     setReport((rep as KaiReport) ?? null);
 
     setLoading(false);
+    // Eager: hero + Overview data. Charts (bars) and News fetch lazily per-tab.
     fetchQuote(ticker).then(setQuote);
     fetchResearch(ticker).then(setResearch);
-    fetchNews(ticker, 6).then(setNews);
-    fetchClubNewsForTicker(supabase, ticker, 4).then(setClubNews);
-    fetchBars(ticker, "2y").then(setBars);
   }, [supabase, ticker]);
 
   useEffect(() => {
@@ -221,6 +304,20 @@ export default function TickerResearchPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  // Once data is ready: correct an invalid deep-linked tab (e.g. ?tab=kai on a
+  // ticker with no report) and kick off the active tab's lazy fetch. Runs once.
+  useEffect(() => {
+    if (loading || !tierResolved || initRef.current) return;
+    initRef.current = true;
+    let t = activeTab;
+    if (t === "kai" && !report) t = "overview";
+    if (t !== activeTab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveTab(t);
+    }
+    ensureTabData(t);
+  }, [loading, tierResolved, activeTab, report, ensureTabData]);
 
   const companyName = useMemo(
     () => research?.company.name || entries.find((e) => e.company_name)?.company_name || ticker,
@@ -232,8 +329,8 @@ export default function TickerResearchPage() {
   const canVote = tier !== "free";
 
   // True 52-week high/low from the last ~252 daily closes (accurate — the
-  // screener's trailing-window distance is only an approximation and can read
-  // below the live price). Falls back to the payload when bars aren't loaded.
+  // screener's trailing-window distance is only an approximation). Falls back to
+  // the payload until the Charts tab loads bars.
   const week52 = useMemo(() => {
     if (bars.length < 20) return null;
     const closes = bars.slice(-252).map((b) => b.c);
@@ -288,10 +385,19 @@ export default function TickerResearchPage() {
   }
 
   const adminEntry = entries.find((e) => e.kind === "admin") || null;
-  const threadHref = "#research-notes";
+  const ungraded = !!research && research.insufficient && research.grades.overall.graded === 0;
+
+  const tabDefs: ResearchTabDef[] = [
+    { key: "overview", label: "Overview" },
+    { key: "charts", label: "Charts & Technicals" },
+    { key: "financials", label: "Financials" },
+    { key: "news", label: "News" },
+    ...(report ? [{ key: "kai" as ResearchTabKey, label: "Kai Report" }] : []),
+    { key: "community", label: "Community" },
+  ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 pb-20 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
       <Link
         href="/watchlist/community"
         className="inline-flex items-center gap-1.5 pt-4 text-sm font-medium text-soft hover:text-ink"
@@ -299,97 +405,419 @@ export default function TickerResearchPage() {
         <ArrowLeft className="h-4 w-4" /> Community Watchlist
       </Link>
 
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <m.div
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <CompanyLogo symbol={ticker} name={companyName} size={52} />
-            <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-bold text-ink">{companyName}</h1>
-              <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-midnight-500">{ticker}</span>
-                {research?.company.exchange && (
-                  <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-soft">
-                    {research.company.exchange}
-                  </span>
-                )}
-                <LivePrice quote={quote} size="md" showDelayed />
+      {/* ── Permanent header (always above the tabs) ─────────────────────────
+          Hero (logo / price / social bar) + scorecard summary (gauge + rings).
+          Social-first: the social bar never gets buried in a tab. */}
+      <div className="mt-4 space-y-5">
+        <m.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <CompanyLogo symbol={ticker} name={companyName} size={52} />
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-2xl font-bold text-ink">{companyName}</h1>
+                <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-midnight-500">{ticker}</span>
+                  {research?.company.exchange && (
+                    <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-soft">
+                      {research.company.exchange}
+                    </span>
+                  )}
+                  <LivePrice quote={quote} size="md" showDelayed />
+                </div>
               </div>
             </div>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              <Link
+                href={`/chart?symbol=${encodeURIComponent(ticker)}`}
+                className="inline-flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
+              >
+                <LineChart className="h-3.5 w-3.5" /> Chart
+              </Link>
+              <Link
+                href={`/kai?ticker=${encodeURIComponent(ticker)}`}
+                className="inline-flex items-center gap-1 rounded-lg border border-gold-300/50 bg-chip-amber/30 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-chip-amber/50"
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Ask Kai
+              </Link>
+            </div>
           </div>
-          <div className="flex shrink-0 flex-col gap-1.5">
-            <Link
-              href={`/chart?symbol=${encodeURIComponent(ticker)}`}
-              className="inline-flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
-            >
-              <LineChart className="h-3.5 w-3.5" /> Chart
-            </Link>
-            <Link
-              href={`/kai?ticker=${encodeURIComponent(ticker)}`}
-              className="inline-flex items-center gap-1 rounded-lg border border-gold-300/50 bg-chip-amber/30 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-chip-amber/50"
-            >
-              <Sparkles className="h-3.5 w-3.5" /> Ask Kai
-            </Link>
-          </div>
-        </div>
 
-        {keyStats && (
-          <RangeBar
-            low={keyStats.week52Low}
-            high={keyStats.week52High}
-            price={quote?.price ?? keyStats.week52High}
+          {keyStats && (
+            <RangeBar
+              low={keyStats.week52Low}
+              high={keyStats.week52High}
+              price={quote?.price ?? keyStats.week52High}
+            />
+          )}
+
+          {/* Social bar — hero variant; comment count jumps to the Community tab */}
+          <div className="mt-4 border-t border-sand pt-4">
+            <SocialBar
+              supabase={supabase}
+              ticker={ticker}
+              variant="hero"
+              userId={userId}
+              ageGroup={ageGroup}
+              canVote={canVote}
+              onCommentClick={() => selectTab("community")}
+              commentActive={activeTab === "community"}
+              showConsensus
+            />
+          </div>
+        </m.div>
+
+        {/* Scorecard summary — gauge + rings, permanent anti-overload device */}
+        {research ? (
+          ungraded ? (
+            <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
+              <p className="text-sm text-soft">
+                We don&apos;t have enough published financials to grade {companyName} yet — many smaller
+                companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
+                news, and community research still work in the tabs below.
+              </p>
+            </section>
+          ) : (
+            <Scorecard grades={research.grades} locked={locked} mode="summary" />
+          )
+        ) : (
+          <div className="h-40 animate-pulse rounded-2xl bg-sand/40" />
+        )}
+      </div>
+
+      {/* ── Sticky tab bar ───────────────────────────────────────────────── */}
+      <div className="mt-5">
+        <ResearchTabBar tabs={tabDefs} active={activeTab} onSelect={selectTab} />
+      </div>
+
+      {/* ── Tab content ──────────────────────────────────────────────────── */}
+      <div className="mt-5 space-y-5">
+        {activeTab === "overview" && (
+          <OverviewTab
+            research={research}
+            keyStats={keyStats}
+            companyName={companyName}
+            ungraded={ungraded}
+            locked={locked}
+            isKid={isKid}
+            hasReport={!!report}
+            onOpenKai={() => selectTab("kai")}
           />
         )}
 
-        {/* Social bar — hero variant */}
-        <div className="mt-4 border-t border-sand pt-4">
-          <SocialBar
-            supabase={supabase}
-            ticker={ticker}
-            variant="hero"
-            userId={userId}
-            ageGroup={ageGroup}
-            canVote={canVote}
-            threadHref={threadHref}
-            showConsensus
-          />
-        </div>
-      </m.div>
-
-      {/* ── Scorecard (gauge + rings + strengths/weaknesses + checks) ─────── */}
-      {research ? (
-        research.insufficient && research.grades.overall.graded === 0 ? (
-          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
-            <p className="text-sm text-soft">
-              We don&apos;t have enough published financials to grade {companyName} yet — many smaller
-              companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
-              news, and community research below still work.
-            </p>
+        {activeTab === "charts" && (
+          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+            <h2 className="mb-4 font-display text-base font-bold text-ink">Price &amp; technicals</h2>
+            {research && barsState === "done" ? (
+              <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
+            ) : (
+              <div className="space-y-4">
+                <div className="h-8 w-48 animate-pulse rounded-lg bg-sand/40" />
+                <div className="h-[240px] animate-pulse rounded-xl bg-sand/40" />
+                <div className="h-20 animate-pulse rounded-xl bg-sand/40" />
+              </div>
+            )}
           </section>
-        ) : (
+        )}
+
+        {activeTab === "financials" && (
+          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+            <h2 className="mb-4 font-display text-base font-bold text-ink">Financials</h2>
+            {!research || !keyStats ? (
+              <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
+            ) : research.insufficient ? (
+              <p className="rounded-xl border border-dashed border-sand px-3 py-8 text-center text-sm text-soft">
+                We don&apos;t have enough published financials for {companyName} to chart yet — many
+                smaller companies and funds don&apos;t report the quarterly numbers these charts need.
+              </p>
+            ) : locked ? (
+              <UpsellCard context="watchlist" />
+            ) : (
+              <FinancialsSection
+                charts={research.charts}
+                keyStats={keyStats}
+                medians={research.sectorMedians}
+              />
+            )}
+          </section>
+        )}
+
+        {activeTab === "news" && (
+          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+            <h2 className="mb-1 font-display text-base font-bold text-ink">News</h2>
+            <p className="mb-4 text-xs text-soft">Club recaps + headlines from around the web</p>
+            {newsState !== "done" ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-14 animate-pulse rounded-xl bg-sand/40" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {clubNews.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
+                      <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
+                    </h3>
+                    <div className="space-y-2">
+                      {clubNews.map((a) => (
+                        <Link
+                          key={a.slug}
+                          href={`/news/${a.slug}`}
+                          className="block rounded-xl border border-sand bg-paper px-3 py-2.5 transition-colors hover:border-gold-400"
+                        >
+                          <div className="mb-1 flex items-center gap-2">
+                            <KindChip kind={a.kind} />
+                            <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
+                          </div>
+                          <p className="text-sm font-semibold leading-snug text-ink">{a.title}</p>
+                          {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  {clubNews.length > 0 && (
+                    <h3 className="mb-2 font-display text-xs font-bold uppercase tracking-wider text-soft">
+                      Around the web
+                    </h3>
+                  )}
+                  <NewsList news={news} />
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === "kai" && report && (
+          locked ? (
+            <UpsellCard context="watchlist" />
+          ) : (
+            <KaiReportSection report={report} ticker={ticker} companyName={companyName} quote={quote} />
+          )
+        )}
+
+        {activeTab === "community" && (
+          <div className="space-y-5">
+            {/* Admin thesis (if this is an "our research" pick) */}
+            {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
+              <section className="rounded-2xl border border-gold-300/40 bg-chip-amber/20 p-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-gold-700" />
+                  <span className="font-display text-xs font-bold uppercase tracking-wider text-gold-700">
+                    Our research
+                  </span>
+                </div>
+                {adminEntry.headline && (
+                  <h2 className="font-display text-lg font-bold text-ink">{adminEntry.headline}</h2>
+                )}
+                <div className="mt-2 space-y-3">
+                  {toParagraphs(adminEntry.thesis).map((p, i) => (
+                    <p key={i} className="text-sm leading-relaxed text-midnight-200">
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* On the board */}
+            {entries.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">On the board</h2>
+                {entries.map((e) => {
+                  const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
+                  const tone = pctTone(pct);
+                  return (
+                    <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-sand bg-midnight-900 p-3">
+                      <div className="flex min-w-0 items-center gap-2 text-sm">
+                        {e.kind === "admin" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
+                            <ShieldCheck className="h-3 w-3" /> Our research
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-soft">
+                            <Users2 className="h-3.5 w-3.5 text-gold-600" />
+                            <span className="truncate font-semibold text-ink">{e.family_name || "A family"}</span>
+                            {e.promoter_age_group && <AgeBadge ageGroup={e.promoter_age_group} />}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-soft">
+                        {e.snapshot_price != null && <span>added ${e.snapshot_price.toFixed(2)}</span>}
+                        <span className={`font-bold ${tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"}`}>
+                          {formatPct(pct)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+
+            {/* Research notes thread (typed contributions) */}
+            <section id="research-notes" className="scroll-mt-20 space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-gold-600" />
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
+                  Research notes ({comments.length})
+                </h2>
+              </div>
+              <p className="text-xs text-soft">
+                Study {companyName} together — what it makes, how it earns, what could go right or wrong.
+                Tag your note so the club can find theses, risks, and questions at a glance.
+              </p>
+
+              {/* type filter chips */}
+              {presentTypes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
+                  {presentTypes.map((t) => (
+                    <FilterChip key={t.key} label={t.label} active={filter === t.key} onClick={() => setFilter(t.key)} chip={t.chip} />
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {filteredComments.map((c) => {
+                  const meta = contributionMeta(c.contribution_type);
+                  const Icon = CONTRIB_ICON[meta.icon] ?? StickyNote;
+                  return (
+                    <div key={c.id} className="flex items-start gap-2.5">
+                      <Avatar name={c.author?.display_name} url={c.author?.avatar_url} />
+                      <div className="min-w-0 flex-1 rounded-xl border border-sand bg-midnight-900 px-3 py-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {c.author?.username ? (
+                            <Link href={`/u/${c.author.username}`} className="text-[13px] font-semibold text-ink hover:text-gold-700">
+                              {c.author?.display_name || "Member"}
+                            </Link>
+                          ) : (
+                            <span className="text-[13px] font-semibold text-ink">{c.author?.display_name || "Member"}</span>
+                          )}
+                          <AgeBadge ageGroup={c.author?.age_group} />
+                          {c.contribution_type !== "note" && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${meta.chip}`}>
+                              <Icon className="h-2.5 w-2.5" />
+                              {meta.label}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-midnight-500">· {timeAgo(c.created_at)}</span>
+                          {(c.user_id === userId || role === "admin") && (
+                            <button onClick={() => remove(c.id)} className="ml-auto text-midnight-500 hover:text-red-600" aria-label="Delete note">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">{c.body}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {filteredComments.length === 0 && (
+                  <p className="rounded-xl border border-dashed border-sand px-3 py-6 text-center text-sm text-midnight-500">
+                    {comments.length === 0
+                      ? "No research notes yet — be the first to share what you found."
+                      : "No notes of this type yet."}
+                  </p>
+                )}
+              </div>
+
+              {/* Composer with type picker — members only (free tier reads only) */}
+              {!canVote ? (
+                <p className="rounded-xl border border-dashed border-sand px-3 py-4 text-center text-sm text-soft">
+                  Join the Family Investing Club to add your own research notes.
+                </p>
+              ) : (
+                <div className="rounded-xl border border-sand bg-midnight-900 p-3">
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {CONTRIBUTION_TYPES.map((t) => {
+                      const Icon = CONTRIB_ICON[t.icon] ?? StickyNote;
+                      return (
+                        <button
+                          key={t.key}
+                          onClick={() => setDraftType(t.key)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold transition-colors ${
+                            draftType === t.key ? t.chip : "border border-sand text-soft hover:bg-paper"
+                          }`}
+                        >
+                          <Icon className="h-3 w-3" />
+                          {t.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <textarea
+                    value={draft}
+                    onChange={(e) => {
+                      setDraft(e.target.value);
+                      if (err) setErr("");
+                    }}
+                    rows={2}
+                    placeholder={`Add a ${contributionMeta(draftType).label.toLowerCase()} about ${companyName}…`}
+                    className="w-full resize-none rounded-lg border border-sand bg-paper px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                  />
+                  {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
+                  <div className="mt-2 flex justify-end">
+                    <button onClick={post} disabled={posting || !draft.trim()} className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60">
+                      <Send className="h-4 w-4" />
+                      {posting ? "Posting…" : "Post note"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </div>
+
+      <footer className="mt-8 border-t border-sand pt-5">
+        <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
+      </footer>
+    </div>
+  );
+}
+
+/* ─────────────────────────────── Overview tab ──────────────────────────── */
+
+function OverviewTab({
+  research,
+  keyStats,
+  companyName,
+  ungraded,
+  locked,
+  isKid,
+  hasReport,
+  onOpenKai,
+}: {
+  research: ResearchPayload | null;
+  keyStats: ResearchPayload["keyStats"] | null;
+  companyName: string;
+  ungraded: boolean;
+  locked: boolean;
+  isKid: boolean;
+  hasReport: boolean;
+  onOpenKai: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      {/* Strengths & weaknesses */}
+      {research && !ungraded && (
+        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+          <h2 className="mb-3 font-display text-base font-bold text-ink">Strengths &amp; weaknesses</h2>
           <Scorecard
             grades={research.grades}
             locked={locked}
             upsell={<UpsellCard context="watchlist" />}
+            mode="detail"
           />
-        )
-      ) : (
-        <div className="h-56 animate-pulse rounded-2xl bg-sand/40" />
-      )}
-
-      {/* ── Price + technicals (visible to everyone incl. free) ──────────── */}
-      {research && (
-        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-          <h2 className="mb-4 font-display text-base font-bold text-ink">Price & technicals</h2>
-          <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
         </section>
       )}
 
-      {/* ── Key stats grid ───────────────────────────────────────────────── */}
+      {/* Key stats */}
       {keyStats && (
         <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
           <h2 className="mb-3 font-display text-base font-bold text-ink">Key stats</h2>
@@ -397,249 +825,32 @@ export default function TickerResearchPage() {
         </section>
       )}
 
-      {/* ── Fundamentals (collapsed; gated for free) ─────────────────────── */}
-      {research && keyStats && !research.insufficient && (
-        <Collapsible
-          storageKey="fundamentals"
-          title="Fundamentals"
-          subtitle="Revenue, profit, balance sheet, and valuation charts"
-        >
-          {locked ? (
-            <UpsellCard context="watchlist" />
-          ) : (
-            <FinancialsSection
-              charts={research.charts}
-              keyStats={keyStats}
-              medians={research.sectorMedians}
-            />
-          )}
-        </Collapsible>
-      )}
-
-      {/* ── About (collapsed) ────────────────────────────────────────────── */}
+      {/* About */}
       {research?.company.description && (
-        <Collapsible storageKey="about" title={`About ${companyName}`} subtitle="What the company does">
+        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
+          <h2 className="mb-3 font-display text-base font-bold text-ink">About {companyName}</h2>
           <CompanyProfileCard company={research.company} kidsMode={isKid} />
-        </Collapsible>
-      )}
-
-      {/* ── News (collapsed) — two stacked groups (Lane 10) ──────────────── */}
-      <Collapsible
-        storageKey="news"
-        title="News"
-        subtitle="Club recaps + headlines from around the web"
-      >
-        <div className="space-y-5">
-          {clubNews.length > 0 && (
-            <div>
-              <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
-                <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
-              </h3>
-              <div className="space-y-2">
-                {clubNews.map((a) => (
-                  <Link
-                    key={a.slug}
-                    href={`/news/${a.slug}`}
-                    className="block rounded-xl border border-sand bg-paper px-3 py-2.5 transition-colors hover:border-gold-400"
-                  >
-                    <div className="mb-1 flex items-center gap-2">
-                      <KindChip kind={a.kind} />
-                      <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
-                    </div>
-                    <p className="text-sm font-semibold leading-snug text-ink">{a.title}</p>
-                    {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          <div>
-            {clubNews.length > 0 && (
-              <h3 className="mb-2 font-display text-xs font-bold uppercase tracking-wider text-soft">
-                Around the web
-              </h3>
-            )}
-            <NewsList news={news} />
-          </div>
-        </div>
-      </Collapsible>
-
-      {/* ── Kai Research Report (premium long-form, if generated) ─────────── */}
-      {report && (
-        <KaiReportSection report={report} ticker={ticker} companyName={companyName} quote={quote} />
-      )}
-
-      {/* ── Admin thesis (if this is an "our research" pick) ──────────────── */}
-      {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
-        <section className="rounded-2xl border border-gold-300/40 bg-chip-amber/20 p-5">
-          <div className="mb-2 flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-gold-700" />
-            <span className="font-display text-xs font-bold uppercase tracking-wider text-gold-700">
-              Our research
-            </span>
-          </div>
-          {adminEntry.headline && (
-            <h2 className="font-display text-lg font-bold text-ink">{adminEntry.headline}</h2>
-          )}
-          <div className="mt-2 space-y-3">
-            {toParagraphs(adminEntry.thesis).map((p, i) => (
-              <p key={i} className="text-sm leading-relaxed text-midnight-200">
-                {p}
-              </p>
-            ))}
-          </div>
         </section>
       )}
 
-      {/* ── On the board ─────────────────────────────────────────────────── */}
-      {entries.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">On the board</h2>
-          {entries.map((e) => {
-            const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
-            const tone = pctTone(pct);
-            return (
-              <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-sand bg-midnight-900 p-3">
-                <div className="flex min-w-0 items-center gap-2 text-sm">
-                  {e.kind === "admin" ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
-                      <ShieldCheck className="h-3 w-3" /> Our research
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-soft">
-                      <Users2 className="h-3.5 w-3.5 text-gold-600" />
-                      <span className="truncate font-semibold text-ink">{e.family_name || "A family"}</span>
-                      {e.promoter_age_group && <AgeBadge ageGroup={e.promoter_age_group} />}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-soft">
-                  {e.snapshot_price != null && <span>added ${e.snapshot_price.toFixed(2)}</span>}
-                  <span className={`font-bold ${tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"}`}>
-                    {formatPct(pct)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      )}
-
-      {/* ── Research notes thread (typed contributions) ──────────────────── */}
-      <section id="research-notes" className="scroll-mt-20 space-y-3">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-gold-600" />
-          <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
-            Research notes ({comments.length})
-          </h2>
-        </div>
-        <p className="text-xs text-soft">
-          Study {companyName} together — what it makes, how it earns, what could go right or wrong.
-          Tag your note so the club can find theses, risks, and questions at a glance.
-        </p>
-
-        {/* type filter chips */}
-        {presentTypes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
-            {presentTypes.map((t) => (
-              <FilterChip key={t.key} label={t.label} active={filter === t.key} onClick={() => setFilter(t.key)} chip={t.chip} />
-            ))}
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {filteredComments.map((c) => {
-            const meta = contributionMeta(c.contribution_type);
-            const Icon = CONTRIB_ICON[meta.icon] ?? StickyNote;
-            return (
-              <div key={c.id} className="flex items-start gap-2.5">
-                <Avatar name={c.author?.display_name} url={c.author?.avatar_url} />
-                <div className="min-w-0 flex-1 rounded-xl border border-sand bg-midnight-900 px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {c.author?.username ? (
-                      <Link href={`/u/${c.author.username}`} className="text-[13px] font-semibold text-ink hover:text-gold-700">
-                        {c.author?.display_name || "Member"}
-                      </Link>
-                    ) : (
-                      <span className="text-[13px] font-semibold text-ink">{c.author?.display_name || "Member"}</span>
-                    )}
-                    <AgeBadge ageGroup={c.author?.age_group} />
-                    {c.contribution_type !== "note" && (
-                      <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${meta.chip}`}>
-                        <Icon className="h-2.5 w-2.5" />
-                        {meta.label}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-midnight-500">· {timeAgo(c.created_at)}</span>
-                    {(c.user_id === userId || role === "admin") && (
-                      <button onClick={() => remove(c.id)} className="ml-auto text-midnight-500 hover:text-red-600" aria-label="Delete note">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">{c.body}</p>
-                </div>
-              </div>
-            );
-          })}
-          {filteredComments.length === 0 && (
-            <p className="rounded-xl border border-dashed border-sand px-3 py-6 text-center text-sm text-midnight-500">
-              {comments.length === 0
-                ? "No research notes yet — be the first to share what you found."
-                : "No notes of this type yet."}
+      {/* Kai report teaser → its own tab */}
+      {hasReport && (
+        <button
+          type="button"
+          onClick={onOpenKai}
+          className="flex w-full items-center gap-3 rounded-2xl border border-gold-300/50 bg-chip-amber/20 p-5 text-left transition-colors hover:bg-chip-amber/40"
+        >
+          <Sparkles className="h-5 w-5 shrink-0 text-gold-700" />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-sm font-bold text-ink">Kai Research Report available</p>
+            <p className="mt-0.5 text-xs text-soft">
+              A deep-dive on {companyName} — the business, the numbers, the thesis, and how to explain
+              it to your kids. Open the Kai Report tab.
             </p>
-          )}
-        </div>
-
-        {/* Composer with type picker — members only (free tier reads only) */}
-        {!canVote ? (
-          <p className="rounded-xl border border-dashed border-sand px-3 py-4 text-center text-sm text-soft">
-            Join the Family Investing Club to add your own research notes.
-          </p>
-        ) : (
-        <div className="rounded-xl border border-sand bg-midnight-900 p-3">
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {CONTRIBUTION_TYPES.map((t) => {
-              const Icon = CONTRIB_ICON[t.icon] ?? StickyNote;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setDraftType(t.key)}
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold transition-colors ${
-                    draftType === t.key ? t.chip : "border border-sand text-soft hover:bg-paper"
-                  }`}
-                >
-                  <Icon className="h-3 w-3" />
-                  {t.label}
-                </button>
-              );
-            })}
           </div>
-          <textarea
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              if (err) setErr("");
-            }}
-            rows={2}
-            placeholder={`Add a ${contributionMeta(draftType).label.toLowerCase()} about ${companyName}…`}
-            className="w-full resize-none rounded-lg border border-sand bg-paper px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
-          />
-          {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
-          <div className="mt-2 flex justify-end">
-            <button onClick={post} disabled={posting || !draft.trim()} className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60">
-              <Send className="h-4 w-4" />
-              {posting ? "Posting…" : "Post note"}
-            </button>
-          </div>
-        </div>
-        )}
-      </section>
-
-      <footer className="border-t border-sand pt-5">
-        <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
-      </footer>
+          <ChevronRight className="h-5 w-5 shrink-0 text-gold-700" />
+        </button>
+      )}
     </div>
   );
 }
