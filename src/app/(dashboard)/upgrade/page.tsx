@@ -24,11 +24,13 @@ import {
   Compass,
   HelpCircle,
   BookOpen,
-  Gamepad2,
+  Bot,
+  Telescope,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
 import { isSoloProfile } from "@/lib/register";
+import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
 
 const FIC_URL = "https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a";
@@ -108,27 +110,40 @@ const PILLARS = [
   },
 ];
 
-// ── FIC ($99/mo) value — what a FREE member unlocks by joining the club ───────
+// ── Cheat Code Club ($99/mo) value — what a FREE member unlocks by joining ────
+// The full umbrella membership: community + AI + research + live sessions +
+// Family Mode included. Copy stays umbrella-neutral so it reads right at either
+// door (Cheat Code Club / Family Investing Club).
 const FIC_PILLARS = [
   {
-    icon: BookOpen,
-    title: "Every course, every track",
-    body: "The full foundations library plus the kids, teens and adult tracks — one membership covers everyone under your roof.",
+    icon: Bot,
+    title: "Kai, your AI analyst",
+    body: "The investing intelligence built into the app — ask Kai anything, get plain-English research on any company, and learn as you go.",
+  },
+  {
+    icon: Telescope,
+    title: "Research & the screener",
+    body: "Full research pages on every ticker plus the stock screener — scan the market and study companies the way members do.",
   },
   {
     icon: MessagesSquare,
-    title: "The club community room",
-    body: "The private FIC room where families share picks, wins and questions. You're reading it free right now — joining lets you post.",
+    title: "The community room",
+    body: "The private club room where members share picks, wins and questions. You're reading it free right now — joining lets you post.",
   },
   {
-    icon: Trophy,
-    title: "Progress, XP & badges",
-    body: "Family progress tracking, XP and a credential shelf that turns learning into something the kids actually chase.",
+    icon: Video,
+    title: "Live classes every week",
+    body: "Real coached sessions you can join live, with every class recorded in-app so you're never locked out if life gets busy.",
   },
   {
-    icon: Gamepad2,
-    title: "Weekly club rhythm",
-    body: "A fresh focus each week, plus games and flashcards that make it stick — the habit that raises investors, not spenders.",
+    icon: BookOpen,
+    title: "Every course, every track",
+    body: "The full foundations library plus the kids, teens and adult tracks — one membership covers everyone you bring in.",
+  },
+  {
+    icon: Users,
+    title: "Family Mode included",
+    body: "Add your kids or partner any time and the family features switch on — report cards, kid missions, and a weekly rhythm. No extra cost.",
   },
 ];
 
@@ -273,6 +288,13 @@ export default function UpgradePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Umbrella brand door (Cheat Code Club). A solo/individual member joins "Cheat
+  // Code Club"; a family joins the "Family Investing Club" door of the SAME $99
+  // membership. The Stripe link is unchanged either way.
+  const mode = modeFromSolo(isSolo);
+  const clubName = mode === "individual" ? "Cheat Code Club" : "Family Investing Club";
+  const clubChip = mode === "individual" ? "Club" : "FIC";
+
   if (tier === null) {
     return (
       <div className="max-w-4xl mx-auto flex items-center justify-center py-20">
@@ -412,17 +434,18 @@ export default function UpgradePage() {
           <div className="relative">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/15 text-gold-300 text-[11px] font-display font-bold uppercase tracking-[0.14em]">
               <Sparkles className="w-3 h-3" />
-              Family Investing Club
+              {clubName}
             </span>
             <h1 className="mt-5 font-display text-3xl sm:text-5xl font-bold text-white leading-[1.05]">
-              Unlock the whole club
+              Join {clubName}
               <br className="hidden sm:block" /> for{" "}
               <span className="text-gradient-gold">$99/mo</span>.
             </h1>
             <p className="mt-5 text-white/70 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-              You&apos;re exploring free. Joining opens every course and track,
-              the club community room, weekly games, and family progress — for
-              everyone under your roof, one membership.
+              You&apos;re exploring free. Joining opens Kai, your AI analyst,
+              full research pages and the screener, the community room, live
+              classes, every course &mdash; and Family Mode is included the
+              moment you want it. One membership.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -432,7 +455,7 @@ export default function UpgradePage() {
                 rel="noopener noreferrer"
                 className="cta-button w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm"
               >
-                Join the club — $99/mo
+                Join {clubName} — $99/mo
                 <ArrowRight className="w-4 h-4" />
               </a>
               <a
@@ -452,10 +475,10 @@ export default function UpgradePage() {
         {/* ── FIC OUTCOME STRIP ────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           {[
-            { k: "Every course", v: "Kids, teens & adults" },
-            { k: "One price", v: "The whole family" },
-            { k: "Community", v: "Post in the club room" },
-            { k: "Weekly", v: "Games, flashcards & XP" },
+            { k: "Kai AI", v: "Your built-in analyst" },
+            { k: "Research", v: "Every ticker + screener" },
+            { k: "Live classes", v: "Coached, every week" },
+            { k: "Family Mode", v: "Included, no extra cost" },
           ].map((s) => (
             <div key={s.k} className="paper-card p-4 text-center">
               <div className="font-display text-base font-bold text-ink leading-snug">
@@ -470,8 +493,12 @@ export default function UpgradePage() {
         <section id="whats-included" className="mt-14 scroll-mt-6">
           <SectionHead
             eyebrow="What you unlock"
-            title="Everything the club opens up"
-            sub="You keep the free sampler either way — joining unlocks the full experience for the whole family."
+            title="Everything the Club opens up"
+            sub={
+              mode === "individual"
+                ? "You keep the free sampler either way — joining unlocks the full membership, and Family Mode is there the moment you want it."
+                : "You keep the free sampler either way — joining unlocks the full experience for the whole family."
+            }
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {FIC_PILLARS.map((p, i) => (
@@ -500,11 +527,13 @@ export default function UpgradePage() {
               <Users className="w-7 h-7" />
             </div>
             <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
-              Join the Family Investing Club
+              Join {clubName}
             </h2>
             <p className="text-soft text-sm mt-3 max-w-md mx-auto leading-relaxed">
-              One membership. Every course, every track, the community room and
-              the weekly rhythm — for your whole family.
+              One membership. Kai AI, research, live classes, the community room,
+              every course — {mode === "individual"
+                ? "and Family Mode the moment you want it."
+                : "for your whole family."}
             </p>
             <div className="mt-4 flex items-baseline justify-center gap-2">
               <span className="font-display text-4xl font-bold text-ink">
@@ -530,9 +559,9 @@ export default function UpgradePage() {
         {/* ── COMPARISON ───────────────────────────────────────────────── */}
         <section className="mt-14">
           <SectionHead
-            eyebrow="FIC vs FTA"
-            title="Where the club can take you"
-            sub="Start with the club at $99/mo. When you're ready to go all the way to trade ready, FTA is there."
+            eyebrow={`${clubChip} vs FTA`}
+            title="Where the Club can take you"
+            sub="Start with the Club at $99/mo. When you're ready to go all the way to trade ready, FTA is the advanced add-on."
           />
           <div className="paper-card overflow-hidden">
             <div className="grid grid-cols-[1fr_60px_60px] sm:grid-cols-[1fr_120px_120px] items-stretch border-b border-sand bg-paper">
@@ -540,7 +569,7 @@ export default function UpgradePage() {
                 Included
               </div>
               <div className="px-2 py-3 text-center text-xs font-display font-bold text-gold-800 bg-chip-amber flex items-center justify-center">
-                FIC
+                {clubChip}
               </div>
               <div className="px-2 py-3 text-center text-xs font-display font-bold text-soft flex items-center justify-center">
                 FTA
@@ -578,8 +607,8 @@ export default function UpgradePage() {
               </div>
               <p className="text-sm text-soft leading-relaxed mt-1">
                 Family Trading Academy is the live, 6-week trade-ready program —
-                a one-time upgrade for families who want to go beyond the club.
-                You can start with FIC and add it later.
+                the advanced add-on for {mode === "individual" ? "members" : "families"} who
+                want to go beyond the Club. Start with the Club and add it later.
               </p>
             </div>
             <a
@@ -741,9 +770,9 @@ export default function UpgradePage() {
       {/* ── COMPARISON ───────────────────────────────────────────────────── */}
       <section className="mt-14">
         <SectionHead
-          eyebrow="FIC vs FTA"
-          title="What actually changes when you upgrade"
-          sub="You keep everything in your club. FTA adds the advanced, live, trade-ready layer on top."
+          eyebrow={`${clubChip} vs FTA`}
+          title="What actually changes when you add FTA"
+          sub="You keep everything in your Club membership. FTA adds the advanced, live, trade-ready layer on top."
         />
         <div className="paper-card overflow-hidden">
           {/* header row */}
@@ -752,7 +781,7 @@ export default function UpgradePage() {
               Included
             </div>
             <div className="px-2 py-3 text-center text-xs font-display font-bold text-soft flex items-center justify-center">
-              FIC
+              {clubChip}
             </div>
             <div className="px-2 py-3 text-center text-xs font-display font-bold text-gold-800 bg-chip-amber flex items-center justify-center">
               FTA
