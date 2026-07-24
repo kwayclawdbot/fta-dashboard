@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
+import { modeFromSolo, modeBrand } from "@/lib/mode";
 import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
 import BeltChip from "./BeltChip";
 
@@ -75,6 +76,7 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
 
   const [flank1, flank2] = flanksFor(user.role, user.age_group, user.tier);
   const HOME: Tab = { label: "Home", href: "/dashboard", icon: Home };
+  const brand = modeBrand(modeFromSolo(user.isSolo));
 
   // Close the sheet whenever the route changes (e.g. after tapping an item).
   useEffect(() => {
@@ -370,6 +372,18 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
                   );
                 })}
               </nav>
+
+              {/* Umbrella wordmark — mode-aware brand footer. */}
+              <div className="shrink-0 px-5 pt-2 pb-3 border-t border-midnight-800/60">
+                <p className="text-[11px] font-display font-bold text-gold-600">
+                  {brand.wordmark}
+                </p>
+                {brand.tagline && (
+                  <p className="text-[9px] text-midnight-500 font-body">
+                    {brand.tagline}
+                  </p>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}

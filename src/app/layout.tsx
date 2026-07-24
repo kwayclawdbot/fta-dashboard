@@ -21,14 +21,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Family Investing Club | Dashboard",
-  description: "Your family's weekly investing club — learn one money concept, study one company, build the habit together.",
+  // Umbrella-neutral (Cheat Code Club architecture): static metadata can't be
+  // per-member mode-aware, so the base title/PWA name is the umbrella that
+  // CONTAINS Family Investing Club. The mode-aware wordmark lives in-app (shell
+  // header / More sheet); login + onboarding read neutral-umbrella here.
+  title: "Cheat Code Club | Dashboard",
+  description: "The investing community with an AI analyst built in — learn, research, and build the habit. Family Mode brings the whole household in.",
   // PWA — required for iOS "Add to Home Screen" (a prerequisite for iOS web push)
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "FTA",
+    title: "Cheat Code Club",
   },
   icons: {
     apple: "/icons/apple-touch-icon.png",

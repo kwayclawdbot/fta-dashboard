@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
+import { modeFromSolo, modeBrand } from "@/lib/mode";
 
 export interface SubNavItem {
   label: string;
@@ -354,9 +355,14 @@ export default function DashboardSidebar({
   const router = useRouter();
   const navItems = getNavItems(user.role, user.age_group, user.tier, user.isSolo);
   const footerItems = getFooterItems(user.role, user.tier);
-  // Free + FIC families both live under the Family Investing Club brand; only
-  // FTA flips the logo to the academy.
-  const isFic = (user.tier ?? "fic") !== "fta";
+  // Umbrella wordmark is MODE-driven, not tier-driven: an individual member
+  // (solo household) lives in "Cheat Code Club"; a family lives in "Family
+  // Investing Club — part of Cheat Code Club". FTA is an add-on tier on top of
+  // either door (its identity lives in the gold nav section + chip), so it no
+  // longer flips the whole logo.
+  const mode = modeFromSolo(user.isSolo);
+  const brand = modeBrand(mode);
+  const collapsedMark = mode === "individual" ? "CC" : "FIC";
   const supabase = createClient();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -378,13 +384,20 @@ export default function DashboardSidebar({
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-midnight-700/50">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="font-display text-lg font-bold text-gold-600">
-            {collapsed ? "F" : isFic ? "FIC" : "FTA"}
+        <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
+          <span className="font-display text-lg font-bold text-gold-600 shrink-0">
+            {collapsed ? collapsedMark : brand.wordmarkShort}
           </span>
           {!collapsed && (
-            <span className="text-[11px] text-midnight-400 font-body hidden lg:block">
-              {isFic ? "Family Investing Club" : "Family Trading Academy"}
+            <span className="hidden lg:flex flex-col leading-tight min-w-0">
+              <span className="text-[11px] text-midnight-300 font-body truncate">
+                {brand.wordmark}
+              </span>
+              {brand.tagline && (
+                <span className="text-[9px] text-midnight-500 font-body truncate">
+                  {brand.tagline}
+                </span>
+              )}
             </span>
           )}
         </Link>

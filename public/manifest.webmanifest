@@ -1,7 +1,7 @@
 {
-  "name": "Family Trading Academy",
-  "short_name": "FTA",
-  "description": "Your family trading learning dashboard.",
+  "name": "Cheat Code Club",
+  "short_name": "Cheat Code Club",
+  "description": "The investing community with an AI analyst built in. Family Mode brings the whole household in.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
