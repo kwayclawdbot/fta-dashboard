@@ -181,36 +181,51 @@ export default function ScreenerPage() {
     });
 
     // Full universe (~10k) — PostgREST caps a page at 1000, so fetch the count
-    // then pull all pages in parallel .range() calls. One burst on mount; from
-    // then on every filter / sort / search runs client-side → instant.
-    const { count } = await supabase
-      .from("screener_metrics")
-      .select("ticker", { count: "exact", head: true })
-      .not("price", "is", null);
-    const total = count ?? 0;
-    const pages = Math.max(1, Math.ceil(total / 1000));
-    const reqs = Array.from({ length: pages }, (_, i) =>
+    // then pull all pages via .range() calls. Every filter / sort / search then
+    // runs client-side → instant. To keep FIRST PAINT fast under a throttled
+    // connection we don't block on the whole universe: fetch page 1 (the top
+    // 1000 by mcap — exactly what the default mcap-desc view shows first) plus
+    // count + meta, render immediately, then stream the remaining pages in the
+    // background and append. The visible first page is correct from page 1
+    // alone; full-universe filtering lights up a beat later as the rest lands.
+    const pageQuery = (i: number) =>
       supabase
         .from("screener_metrics")
         .select(METRIC_COLS)
         .not("price", "is", null)
         .order("mcap", { ascending: false, nullsFirst: false })
         .order("ticker", { ascending: true })
-        .range(i * 1000, i * 1000 + 999)
-    );
-    const [metaRes, ...pageResults] = await Promise.all([
+        .range(i * 1000, i * 1000 + 999);
+
+    const [countRes, metaRes, firstRes] = await Promise.all([
+      supabase
+        .from("screener_metrics")
+        .select("ticker", { count: "exact", head: true })
+        .not("price", "is", null),
       supabase
         .from("screener_meta")
         .select("last_trading_day, universe_count, common_count, etf_count, mcap_count, history_days")
         .eq("id", true)
         .maybeSingle(),
-      ...reqs,
+      pageQuery(0),
     ]);
-    const all: ScreenerRow[] = [];
-    for (const r of pageResults) if (r.data) all.push(...(r.data as ScreenerRow[]));
-    setRows(all);
+
     setMeta((metaRes.data as Meta) ?? null);
-    setLoading(false);
+    setRows((firstRes.data as ScreenerRow[]) ?? []);
+    setLoading(false); // paint the top-of-universe page now
+
+    const total = countRes.count ?? 0;
+    const pages = Math.max(1, Math.ceil(total / 1000));
+    if (pages > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: pages - 1 }, (_, i) => pageQuery(i + 1))
+      );
+      setRows((prev) => {
+        const all = [...prev];
+        for (const r of rest) if (r.data) all.push(...(r.data as ScreenerRow[]));
+        return all;
+      });
+    }
   }, [supabase]);
 
   useEffect(() => {
