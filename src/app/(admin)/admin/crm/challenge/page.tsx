@@ -14,6 +14,8 @@ interface CohortMember {
   onboarding_complete: boolean | null;
   tier: string | null;
   expires_at: string | null;
+  /** Acquisition source (funnel vs organic) — from marketing_leads.custom.src. */
+  src: string | null;
   xp: number;
   alert_rules: number;
   posts: number;
@@ -33,6 +35,7 @@ interface CohortData {
   pass_active: number;
   downgraded_free: number;
   signups_by_day: { day: string; signups: number }[];
+  signups_by_source?: { source: string; signups: number }[];
   sequences?: SequenceStat[];
   members: CohortMember[];
 }
@@ -109,10 +112,11 @@ export default function ChallengeCohortPage() {
   function exportCsv() {
     if (!data) return;
     const rows = [
-      ["email", "first_name", "signed_up", "activated", "tier", "pass_expires", "xp", "alert_rules", "posts"],
+      ["email", "first_name", "source", "signed_up", "activated", "tier", "pass_expires", "xp", "alert_rules", "posts"],
       ...data.members.map((m) => [
         m.email || "",
         m.first_name || "",
+        m.src || "organic",
         m.created_at,
         m.onboarding_complete ? "yes" : "no",
         m.tier || "",
@@ -133,6 +137,21 @@ export default function ChallengeCohortPage() {
   }
 
   const maxDay = data?.signups_by_day.reduce((m, d) => Math.max(m, d.signups), 0) || 0;
+
+  // Acquisition split: funnel-attributed (any src) vs organic (no src). The RPC
+  // buckets no-src signups under the literal 'organic' source.
+  const sources = data?.signups_by_source ?? [];
+  const sourceTotal = sources.reduce((n, s) => n + s.signups, 0);
+  const funnelCount = sources
+    .filter((s) => s.source !== "organic")
+    .reduce((n, s) => n + s.signups, 0);
+  const organicCount = sources
+    .filter((s) => s.source === "organic")
+    .reduce((n, s) => n + s.signups, 0);
+  const SOURCE_LABELS: Record<string, string> = {
+    funnel: "Challenge funnel",
+    organic: "Organic / direct",
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -232,6 +251,61 @@ export default function ChallengeCohortPage() {
             )}
           </div>
 
+          {/* Acquisition source — funnel vs organic split */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-medium text-zinc-300">Acquisition source</span>
+              <span className="text-[11px] text-zinc-600">(funnel vs organic)</span>
+            </div>
+            {sourceTotal === 0 ? (
+              <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5" /> No attributed signups yet — the
+                club-site funnel stamps <code className="text-zinc-500">?src=funnel</code>;
+                everything else counts as organic.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <StatTile
+                    label="From the funnel"
+                    value={funnelCount}
+                    sub={`${pct(funnelCount, sourceTotal)}% of cohort`}
+                    accent="text-emerald-400"
+                  />
+                  <StatTile
+                    label="Organic / direct"
+                    value={organicCount}
+                    sub={`${pct(organicCount, sourceTotal)}% of cohort`}
+                    accent="text-zinc-300"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {sources.map((s) => (
+                    <div key={s.source} className="flex items-center gap-3">
+                      <span className="w-32 text-xs text-zinc-400 shrink-0 truncate">
+                        {SOURCE_LABELS[s.source] || s.source}
+                      </span>
+                      <div className="flex-1 h-5 rounded bg-zinc-800 overflow-hidden">
+                        <div
+                          className={`h-full rounded ${
+                            s.source === "organic"
+                              ? "bg-gradient-to-r from-zinc-600 to-zinc-500"
+                              : "bg-gradient-to-r from-emerald-600 to-emerald-400"
+                          }`}
+                          style={{ width: `${sourceTotal ? Math.max((s.signups / sourceTotal) * 100, 4) : 0}%` }}
+                        />
+                      </div>
+                      <span className="w-8 text-right text-xs text-zinc-300 tabular-nums">
+                        {s.signups}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           {/* Email sequence status */}
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
             <div className="flex items-center gap-2 mb-4">
@@ -323,6 +397,7 @@ export default function ChallengeCohortPage() {
                   <thead>
                     <tr className="text-left text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
                       <th className="py-2 pr-4 font-semibold">Member</th>
+                      <th className="py-2 px-3 font-semibold">Source</th>
                       <th className="py-2 px-3 font-semibold">Wizard</th>
                       <th className="py-2 px-3 font-semibold">Tier</th>
                       <th className="py-2 px-3 font-semibold text-right">XP</th>
@@ -337,6 +412,17 @@ export default function ChallengeCohortPage() {
                         <td className="py-2 pr-4 text-zinc-200">
                           {m.first_name || "—"}
                           <span className="text-zinc-600 ml-1.5 text-xs">{m.email}</span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                              m.src && m.src !== "organic"
+                                ? "bg-emerald-500/10 text-emerald-300"
+                                : "bg-zinc-700/30 text-zinc-500"
+                            }`}
+                          >
+                            {m.src && m.src !== "organic" ? m.src : "organic"}
+                          </span>
                         </td>
                         <td className="py-2 px-3">
                           <span

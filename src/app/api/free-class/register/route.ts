@@ -49,15 +49,23 @@ export async function POST(req: Request) {
   // (the multi-page flow captures it at /save, before this password step).
   let email = (body.email || "").trim().toLowerCase();
   let sessionAnswers: Record<string, unknown> = {};
+  // Attribution: the club-site funnel stamps ?src=funnel on its CTAs; the landing
+  // view captures it into funnel_sessions.utm (see captureUtm). Read it back here
+  // so cohort reporting can segment funnel vs organic. Empty/absent ⇒ 'organic'.
+  let src = "";
   if (sessionId) {
     const { data: fs } = await supabaseEarly
       .from("funnel_sessions")
-      .select("email, answers")
+      .select("email, answers, utm")
       .eq("id", sessionId)
       .maybeSingle();
     if (fs) {
       if (!email && fs.email) email = String(fs.email).trim().toLowerCase();
       if (fs.answers && typeof fs.answers === "object") sessionAnswers = fs.answers;
+      if (fs.utm && typeof fs.utm === "object") {
+        const raw = (fs.utm as Record<string, unknown>).src;
+        if (typeof raw === "string" && raw.trim()) src = raw.trim().slice(0, 64);
+      }
     }
   }
   const mergedQuiz = { ...sessionAnswers, ...quiz };
@@ -225,9 +233,14 @@ export async function POST(req: Request) {
     // Challenge signups get their own cohort source ('challenge') so the admin
     // challenge dashboard can isolate them; free-class signups stay 'free_class'.
     const leadSource = isChallenge ? "challenge" : "free_class";
+    // src is a cohort attribution lever (funnel vs organic). Persist it both as
+    // a queryable custom.src field (the admin split reads this) AND as a
+    // src:<value> tag for at-a-glance CRM filtering. Organic signups carry no
+    // src, so they naturally fall into the 'organic' bucket downstream.
+    const srcTag = src ? [`src:${src}`] : [];
     const baseTags = isChallenge
-      ? ["challenge", "funnel", "registered"]
-      : ["funnel", "registered"];
+      ? ["challenge", "funnel", "registered", ...srcTag]
+      : ["funnel", "registered", ...srcTag];
     const { data: lead } = await supabase
       .from("marketing_leads")
       .select("id, tags")
@@ -245,7 +258,7 @@ export async function POST(req: Request) {
           stage: "engaged",
           tags,
           converted_profile_id: userId,
-          custom: { quiz: mergedQuiz, phone: phone || null },
+          custom: { quiz: mergedQuiz, phone: phone || null, src: src || null },
           last_activity_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -265,7 +278,7 @@ export async function POST(req: Request) {
         tags: baseTags,
         consent_source: isChallenge ? "challenge_funnel" : "free_class_funnel",
         converted_profile_id: userId,
-        custom: { quiz: mergedQuiz, phone: phone || null },
+        custom: { quiz: mergedQuiz, phone: phone || null, src: src || null },
       });
     }
   } catch {

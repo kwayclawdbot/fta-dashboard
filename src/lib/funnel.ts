@@ -134,7 +134,11 @@ export function captureUtm(): Record<string, string> {
   if (typeof window === "undefined") return {};
   const p = new URLSearchParams(window.location.search);
   const utm: Record<string, string> = {};
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]) {
+  // `src` is the club-site funnel's cohort lever (e.g. ?src=funnel on the
+  // challenge CTAs) — captured alongside the standard utm_* set so the register
+  // route can stamp funnel-vs-organic onto the enrollment/lead for cohort
+  // reporting. See cheatcode-club-site/FUNNEL-NOTES.md (Attribution).
+  for (const k of ["src", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]) {
     const v = p.get(k);
     if (v) utm[k] = v;
   }
