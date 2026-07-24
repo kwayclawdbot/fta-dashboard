@@ -22,6 +22,11 @@ export function referralLink(origin: string, code: string): string {
 const SHARE_MESSAGE =
   "I'm learning to invest as a family with the Family Investing Club — real companies, kid-friendly, no jargon. Come join us:";
 
+/** Challenge-framed share copy for the thank-you loop. Capability-only, no
+ *  income/return language (compliance floor). */
+export const CHALLENGE_SHARE_MESSAGE =
+  "I just joined the free 5-Day Investing Challenge — one clear step a day to actually understand the market. It's better with a friend. Come do it with me:";
+
 export interface ShareTargets {
   message: string;
   whatsapp: string;
@@ -31,9 +36,10 @@ export interface ShareTargets {
   sms: string;
 }
 
-/** Build one-tap share URLs (plain share links, no SDKs). */
-export function shareTargets(link: string): ShareTargets {
-  const text = SHARE_MESSAGE;
+/** Build one-tap share URLs (plain share links, no SDKs). An optional custom
+ *  message overrides the default family copy (e.g. the challenge share loop). */
+export function shareTargets(link: string, message?: string): ShareTargets {
+  const text = message || SHARE_MESSAGE;
   const textAndLink = `${text} ${link}`;
   const subject = "Join our Family Investing Club";
   return {

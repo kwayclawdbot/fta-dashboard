@@ -143,9 +143,11 @@ export default function RegisterPage() {
       });
       clearStoredFunnelId();
       clearChallengeFlag();
-      // Challenge signups have full Club access immediately — send them into the
-      // onboarding wizard (account setup) rather than the free-class confirmation.
-      router.push(challenge ? "/onboarding" : "/free-class/confirmed?welcome=1");
+      // Challenge signups have full Club access immediately — land them on the
+      // dedicated challenge thank-you (celebration + timeline + referral loop +
+      // calendar + activation CTAs) rather than the free-class confirmation. The
+      // dashboard gate still routes them through /onboarding on first entry.
+      router.push(challenge ? "/free-class/challenge" : "/free-class/confirmed?welcome=1");
     } catch {
       setSubmitting(false);
       setError("Network error. Please try again.");
