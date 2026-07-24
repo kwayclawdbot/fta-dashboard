@@ -333,7 +333,11 @@ export default function AskKaiPage() {
   const capReached = cap > 0 && usedToday >= cap;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-5xl gap-0 px-0 sm:gap-4 sm:px-4">
+    // Fit the viewport EXACTLY: 100dvh minus the sticky TopBar (3.5rem), the
+    // main pt-6 (1.5rem) and the bottom padding the shell reserves (mobile tab
+    // bar 4.5rem + safe area; md+ collapses to 1.5rem). The thread scrolls
+    // inside; the composer stays pinned and visible without scrolling.
+    <div className="mx-auto flex max-w-5xl gap-0 px-0 sm:gap-4 sm:px-4 h-[calc(100dvh-9.5rem-env(safe-area-inset-bottom))] md:h-[calc(100dvh-6.5rem)]">
       {/* Sidebar */}
       <aside
         className={`${
@@ -383,7 +387,7 @@ export default function AskKaiPage() {
       </aside>
 
       {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Header */}
         <div className="flex items-center gap-2 border-b border-sand px-4 py-3">
           <button
