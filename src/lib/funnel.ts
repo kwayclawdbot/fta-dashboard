@@ -205,11 +205,28 @@ export function personalizedResult(
   classDay: string | null
 ): PersonalizedResult {
   const day = classDay || "this week's";
+  // Solo (adults-only, no kids) attendees get an individual-toned result — the
+  // funnel otherwise assumes "your family".
+  const solo = answers.ages === "adults";
   const bullets = [
     AGES_BULLET[answers.ages],
     GOAL_BULLET[answers.goal],
     EXP_BULLET[answers.experience],
   ].filter(Boolean) as string[];
+
+  if (solo) {
+    return {
+      headline: `Based on your answers, ${day}'s class was built for people starting exactly where you are.`,
+      subhead:
+        "Here's exactly what you'll take away — matched to what you told us matters most.",
+      bullets: bullets.length
+        ? bullets
+        : [
+            "A clear, beginner-friendly first step into investing — no experience needed.",
+            "The weekly habit that turns spenders into investors.",
+          ],
+    };
+  }
 
   return {
     headline: `Based on your answers, ${day}'s class was built for families like yours.`,
