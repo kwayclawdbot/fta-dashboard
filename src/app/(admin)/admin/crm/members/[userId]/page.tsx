@@ -288,6 +288,21 @@ export default function ContactDetailPage() {
                   {relativeTime(member.last_seen)}
                 </span>
               ) : null}
+              {/* FTA Club clock (migration 127) — the Challenge year-1 Club
+                  window. Lapsed = academy for life, Club gated to free. */}
+              {!isLead && member?.club_until ? (
+                <span
+                  className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded font-semibold ${
+                    member.club_lapsed
+                      ? "bg-red-400/10 text-red-400"
+                      : "bg-emerald-400/10 text-emerald-400"
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  {member.club_lapsed ? "Club lapsed " : "Club until "}
+                  {shortDate(member.club_until)}
+                </span>
+              ) : null}
             </div>
 
             {/* Member level / XP bar */}

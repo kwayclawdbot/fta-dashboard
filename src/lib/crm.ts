@@ -26,6 +26,10 @@ export interface MemberRow {
   family_id: string | null;
   family_name: string | null;
   tier: FamilyTier;
+  /** FTA Challenge year-1 Club clock end (migration 127); null = unlimited Club. */
+  club_until: string | null;
+  /** fta family past its Club window with no other Club source (academy stays). */
+  club_lapsed: boolean;
   onboarding_complete: boolean;
   joined_at: string;
   xp_total: number;
