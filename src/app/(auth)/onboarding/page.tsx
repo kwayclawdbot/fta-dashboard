@@ -330,6 +330,15 @@ export default function OnboardingWizard() {
           })
           .eq("id", user.id);
         if (fid) await saveFamilyProfile(supabase, fid, draft, true);
+        // Welcome email drip (Lane 13B): enroll the adult owner AFTER the family
+        // profile is saved so the variant (parent | solo | fta) is derived from
+        // current tier + household. Server-side + idempotent (one sequence per
+        // user ever); nothing sends until app_settings.drip_enabled is flipped.
+        try {
+          await supabase.rpc("enroll_welcome_drip");
+        } catch {
+          /* non-fatal — enrollment must never block landing on the dashboard */
+        }
       } else {
         await supabase
           .from("profiles")
