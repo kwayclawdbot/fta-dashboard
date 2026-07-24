@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Sora, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeManager from "@/components/ThemeManager";
 import { MotionProvider } from "@/lib/motion";
@@ -8,16 +8,26 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 // Applied before first paint to avoid a light→dark flash on reload.
 const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'light';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#FBF7EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+// Sora — geometric display face (Bold/ExtraBold headlines) for the Club system.
+// Mapped to --font-display at the token level so every existing headline flips
+// to Sora with no component edits.
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+// IBM Plex Mono — market/price data (font-mono token).
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -61,7 +71,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${poppins.variable} ${inter.variable} antialiased`}>
+      <body className={`${sora.variable} ${inter.variable} ${plexMono.variable} antialiased`}>
         <ThemeManager />
         <MotionProvider>{children}</MotionProvider>
         <SpeedInsights />
