@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
 import { getFamilyTier, getFamilyTierMap, type FamilyTier } from "@/lib/tier";
+import { fetchXpForUsers } from "@/lib/belts";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
@@ -124,6 +125,28 @@ export default function CommunityPage() {
     [supabase]
   );
 
+  // Batched belt XP for author belt rings (one RPC per batch, never N+1)
+  const [beltXp, setBeltXp] = useState<Record<string, number>>({});
+  const beltXpRef = useRef(beltXp);
+  beltXpRef.current = beltXp;
+  const loadXp = useCallback(
+    async (ids: Array<string | null | undefined>) => {
+      const missing = ids.filter((id): id is string => !!id && !(id in beltXpRef.current));
+      if (!missing.length) return;
+      const fetched = await fetchXpForUsers(supabase, missing);
+      setBeltXp((prev) => {
+        const next = { ...prev };
+        for (const id of missing) next[id] = fetched[id] ?? 0;
+        return next;
+      });
+    },
+    [supabase]
+  );
+  const xpOf = useCallback(
+    (userId: string | null | undefined): number => (userId && beltXp[userId]) || 0,
+    [beltXp]
+  );
+
   // Composer
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
@@ -213,6 +236,7 @@ export default function CommunityPage() {
       });
       setPosts(norm);
       await loadTiers(norm.map((p) => p.author?.family_id));
+      loadXp([me?.id, ...norm.map((p) => p.author?.id)]);
       resolveMentions(norm.map((p) => p.body));
 
       const ids = norm.map((p) => p.id);
@@ -439,6 +463,7 @@ export default function CommunityPage() {
         return { ...raw, author: normAuthor(raw.author) };
       });
       setCommentsByPost((prev) => ({ ...prev, [postId]: norm }));
+      loadXp(norm.map((c) => c.author?.id));
       resolveMentions(norm.map((c) => c.body));
     }
   }
@@ -616,14 +641,14 @@ export default function CommunityPage() {
                       post={p} me={me} readOnly={readOnly}
                       likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
                       commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
-                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
+                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
                     />
                   ) : (
                     <PostCard
                       post={p} me={me} tier={tierOf(p.author)} readOnly={readOnly}
                       likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
                       commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
-                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf}
+                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
                     />
                   )}
                 </m.div>
@@ -702,6 +727,7 @@ interface EngagementProps {
   comments?: PostComment[];
   onAddComment: (postId: string, body: string) => Promise<boolean>;
   tierOf: (a: FeedAuthor | null) => FamilyTier;
+  xpOf?: (userId: string | null | undefined) => number;
 }
 
 function LikeCommentBar({ liked, likeCount, onLike, commentCount, onToggleComments, readOnly }: {
@@ -755,7 +781,7 @@ function PostCard(props: EngagementProps & { tier: FamilyTier }) {
     <div className="paper-card p-4">
       <div className="flex items-start gap-3">
         <ProfileLink username={post.author?.username} variant="avatar">
-          <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} size="lg" />
+          <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} xp={props.xpOf?.(post.author?.id)} size="lg" />
         </ProfileLink>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -880,7 +906,7 @@ function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
 }
 
 function CommentThread(props: EngagementProps) {
-  const { post, me, comments, onAddComment, readOnly } = props;
+  const { post, me, comments, onAddComment, readOnly, xpOf } = props;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -906,7 +932,7 @@ function CommentThread(props: EngagementProps) {
         comments.map((c) => (
           <div key={c.id} className="flex items-start gap-2">
             <ProfileLink username={c.author?.username} variant="avatar">
-              <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} size="sm" />
+              <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} xp={xpOf?.(c.author?.id)} size="sm" />
             </ProfileLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">

@@ -22,7 +22,7 @@ import FtaHubHeader from "@/components/fta/FtaHubHeader";
 const FTA_ROOM_ID = "c0000000-0000-4000-a000-000000000002";
 
 export default function FtaChatRoom({ me }: { me: ChatMe }) {
-  const { messages, loading, posting, uploading, mentions, tierOf, send } = useChatRoom(
+  const { messages, loading, posting, uploading, mentions, tierOf, xpOf, send } = useChatRoom(
     FTA_ROOM_ID,
     me
   );
@@ -94,6 +94,7 @@ export default function FtaChatRoom({ me }: { me: ChatMe }) {
             messages={messages}
             loading={loading}
             tierOf={tierOf}
+            xpOf={xpOf}
             tone="dark"
             emptyText="No messages yet — kick off the conversation 📈"
           />

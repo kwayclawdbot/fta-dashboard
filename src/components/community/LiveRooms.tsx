@@ -50,7 +50,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
     tier === "free" ? FREE_LOUNGE_ROOM_ID : FIC_ROOM_ID
   );
 
-  const { messages, loading, posting, uploading, mentions, tierOf, send } = useChatRoom(
+  const { messages, loading, posting, uploading, mentions, tierOf, xpOf, send } = useChatRoom(
     activeRoomId,
     me
   );
@@ -117,7 +117,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
         </div>
 
         {/* Messages */}
-        <ChatMessageList messages={messages} loading={loading} tierOf={tierOf} tone="paper" />
+        <ChatMessageList messages={messages} loading={loading} tierOf={tierOf} xpOf={xpOf} tone="paper" />
 
         {/* Composer */}
         <ChatComposer me={me} onSend={send} posting={posting} uploading={uploading} tone="paper" />

@@ -1,5 +1,4 @@
 import type { FamilyTier } from "@/lib/tier";
-import { tierRingClass } from "@/components/TierBadge";
 import { BELTS, beltForXp, type BeltKey } from "@/lib/belts";
 
 /**
@@ -9,11 +8,15 @@ import { BELTS, beltForXp, type BeltKey } from "@/lib/belts";
  * pages, leaderboards, settings, badge case) so avatars upgrade centrally.
  *
  * Belt indicator: pass `beltKey` (or `xp` to resolve one) to render a subtle
- * belt-colored corner dot. It coexists with the gold tier ring by design — the
- * ring hugs the outer edge (purchased axis), the dot sits at the corner (earned
+ * belt-colored corner dot. It coexists with the FTA tier frame by design — the
+ * frame hugs the outer edge (purchased axis), the dot sits at the corner (earned
  * axis) — so the two never fight. No text chip is added next to names anywhere;
  * the dot is the universal cue and the full belt name lives on hover/profile/
  * leaderboards via <BeltBadge/>.
+ *
+ * FTA tier = a METALLIC double-ring frame (gradient gold band + a thin page-bg
+ * gap) — deliberately unmistakable from any single belt color, including the
+ * amber-honey yellow belt. FIC/free get no frame (present, never punished).
  */
 
 const SIZES = {
@@ -72,8 +75,8 @@ export default function Avatar({
   size?: keyof typeof SIZES;
   className?: string;
 }) {
-  const ring = tier ? tierRingClass(tier) : "";
-  const base = `${SIZES[size]} rounded-full shrink-0 ${ring} ${className}`;
+  const isFta = tier === "fta";
+  const base = `${SIZES[size]} rounded-full shrink-0 ${className}`;
 
   const resolvedBelt: BeltKey | null =
     beltKey ?? (typeof xp === "number" ? beltForXp(xp).belt.key : null);
@@ -94,12 +97,25 @@ export default function Avatar({
     </div>
   );
 
-  if (!resolvedBelt) return inner;
+  // Metallic FTA frame: a gradient gold band with a thin page-bg gap — a
+  // "double ring" that reads as premium metal, never a flat belt color.
+  const framed = isFta ? (
+    <span
+      title="Family Trading Academy"
+      className="inline-flex shrink-0 rounded-full bg-gradient-to-br from-gold-200 via-gold-500 to-gold-700 p-[2px] shadow-[0_0_0_1px_rgba(180,120,10,0.35)]"
+    >
+      <span className="inline-flex rounded-full bg-paper p-[1.5px]">{inner}</span>
+    </span>
+  ) : (
+    inner
+  );
+
+  if (!resolvedBelt) return framed;
 
   const belt = BELTS[resolvedBelt];
   return (
     <span className="relative inline-flex shrink-0">
-      {inner}
+      {framed}
       {/* Belt corner dot — ringed in the page background so it reads on any
           avatar; white/black belts carry their own border for contrast. */}
       <span

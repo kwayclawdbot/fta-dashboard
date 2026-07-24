@@ -11,6 +11,7 @@ import {
 } from "@/lib/feed";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
+import { fetchXpForUsers } from "@/lib/belts";
 
 /**
  * <ClubActivityStrip> — a compact "what's happening in the club" strip for the
@@ -40,6 +41,7 @@ interface Row {
 export default function ClubActivityStrip({ limit = 4 }: { limit?: number }) {
   const supabase = createClient();
   const [rows, setRows] = useState<Row[]>([]);
+  const [xpMap, setXpMap] = useState<Record<string, number>>({});
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -60,6 +62,8 @@ export default function ClubActivityStrip({ limit = 4 }: { limit?: number }) {
       });
       setRows(norm);
       setReady(true);
+      // Batched belt XP for the strip's avatars (one RPC).
+      fetchXpForUsers(supabase, norm.map((r) => r.author?.id)).then((m) => mounted && setXpMap(m));
     })();
     return () => {
       mounted = false;
@@ -98,7 +102,7 @@ export default function ClubActivityStrip({ limit = 4 }: { limit?: number }) {
           }
           return (
             <Link key={r.id} href="/community" className="flex items-center gap-2.5 group">
-              <Avatar name={r.author?.display_name} avatarUrl={r.author?.avatar_url} role={r.author?.role} size="sm" />
+              <Avatar name={r.author?.display_name} avatarUrl={r.author?.avatar_url} role={r.author?.role} xp={r.author?.id ? xpMap[r.author.id] : undefined} size="sm" />
               <p className="text-xs text-midnight-200 min-w-0 truncate">
                 <span className="font-semibold text-ink">{r.author?.display_name || "Member"}</span>{" "}
                 <AgeBadge role={r.author?.role} ageGroup={r.author?.age_group} className="align-middle" />{" "}

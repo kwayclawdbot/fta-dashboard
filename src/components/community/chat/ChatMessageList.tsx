@@ -22,6 +22,7 @@ export default function ChatMessageList({
   messages,
   loading,
   tierOf,
+  xpOf,
   tone = "paper",
   emptyText = "No messages yet — say hi 👋",
   className = "",
@@ -29,6 +30,8 @@ export default function ChatMessageList({
   messages: ChatMsg[];
   loading: boolean;
   tierOf: (a: ChatAuthor | null) => FamilyTier;
+  /** Batched belt XP per author id (never N+1). Undefined → no belt ring. */
+  xpOf?: (userId: string | null | undefined) => number;
   tone?: "paper" | "dark";
   emptyText?: string;
   className?: string;
@@ -50,7 +53,7 @@ export default function ChatMessageList({
         [...messages].reverse().map((m) => (
           <div key={m.id} className="flex items-start gap-2">
             <ProfileLink username={m.author?.username} variant="avatar">
-              <Avatar name={m.author?.display_name} avatarUrl={m.author?.avatar_url} role={m.author?.role} tier={tierOf(m.author)} size="sm" />
+              <Avatar name={m.author?.display_name} avatarUrl={m.author?.avatar_url} role={m.author?.role} tier={tierOf(m.author)} xp={xpOf?.(m.user_id)} size="sm" />
             </ProfileLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">

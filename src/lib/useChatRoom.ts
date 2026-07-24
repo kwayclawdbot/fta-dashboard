@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTierMap, type FamilyTier } from "@/lib/tier";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
+import { fetchXpForUsers } from "@/lib/belts";
 import { extractHandles, type MentionMap } from "@/lib/mentions";
 import { checkClean } from "@/lib/profanity";
 import type { Role } from "@/lib/feed";
@@ -73,6 +74,26 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
   const tiersRef = useRef(tiers);
   tiersRef.current = tiers;
   const authorCache = useRef<Record<string, ChatAuthor>>({});
+
+  // Batched belt XP per author (one RPC per batch, never N+1) so every chat
+  // avatar shows its earned belt ring.
+  const [beltXp, setBeltXp] = useState<Record<string, number>>({});
+  const beltXpRef = useRef(beltXp);
+  beltXpRef.current = beltXp;
+  const loadXp = useCallback(
+    async (ids: Array<string | null | undefined>) => {
+      const missing = ids.filter((id): id is string => !!id && !(id in beltXpRef.current));
+      if (!missing.length) return;
+      const fetched = await fetchXpForUsers(supabase, missing);
+      // Mark every requested id as resolved (0 → White) so we never refetch.
+      setBeltXp((prev) => {
+        const next = { ...prev };
+        for (const id of missing) next[id] = fetched[id] ?? 0;
+        return next;
+      });
+    },
+    [supabase]
+  );
 
   const [mentions, setMentions] = useState<MentionMap>({});
   const mentionsRef = useRef(mentions);
@@ -158,6 +179,7 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
       });
       setMessages(norm);
       await loadTiers([me?.family_id, ...norm.map((m) => m.author?.family_id)]);
+      loadXp(norm.map((m) => m.user_id));
       resolveMentions(norm.map((m) => m.content));
       setLoading(false);
     })();
@@ -189,6 +211,7 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
               attachment_url: string | null; attachment_type: "image" | "video" | null;
             };
             const author = await getAuthor(row.user_id);
+            loadXp([row.user_id]);
             resolveMentions([row.content]);
             setMessages((prev) =>
               prev.some((m) => m.id === row.id)
@@ -284,5 +307,7 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
     [tiers]
   );
 
-  return { messages, loading, posting, uploading, mentions, tierOf, send };
+  const xpOf = useCallback((userId: string | null | undefined): number => (userId && beltXp[userId]) || 0, [beltXp]);
+
+  return { messages, loading, posting, uploading, mentions, tierOf, xpOf, send };
 }
