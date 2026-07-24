@@ -51,18 +51,23 @@ export async function POST(req: NextRequest) {
       s.customer_details?.email || s.customer_email;
     if (email) {
       // FTA — Challenge Offer ($1,500): metadata kind=fta_challenge. Grants the
-      // FTA tier, which already bundles full Club access via TIER_ACCESS (fta =
-      // superset of fic). The "12 months Club then $99/mo" is marketing framing
-      // today — FTA includes everything with no time limit in the data model.
-      // See C7 report "year-1 FTA question" before adding a club_until clock.
-      // Any other checkout maps by amount ($99 → fic, ≥$1,000 → fta).
-      const program: "fic" | "fta" =
-        s.metadata?.kind === "fta_challenge" ? "fta" : programFor(s.amount_total);
+      // FTA tier (superset of Club via TIER_ACCESS) FOR LIFE, plus a 12-month
+      // Club window stamped onto enrollments.club_until (migration 127). After
+      // the year the family stays tier 'fta' but club_lapsed strips Club-level
+      // surfaces to free while FTA academy access stays forever; paying $99/mo
+      // (a fic enrollment) restores full Club. ONLY fta_challenge gets the clock
+      // — every regular fta ($2,997) / fic buyer keeps club_until NULL =
+      // unlimited. Any other checkout maps by amount ($99 → fic, ≥$1,000 → fta).
+      const isChallenge = s.metadata?.kind === "fta_challenge";
+      const program: "fic" | "fta" = isChallenge
+        ? "fta"
+        : programFor(s.amount_total);
       const result = await provisionMembership({
         email,
         program,
         source: "stripe",
         stripeSession: s.id,
+        clubMonths: isChallenge ? 12 : undefined,
       });
       if (!result.ok) {
         console.error("stripe provision failed:", result.error);

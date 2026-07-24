@@ -26,6 +26,13 @@ export async function provisionMembership(opts: {
   source: "stripe" | "admin";
   stripeSession?: string;
   invitedBy?: string;
+  /**
+   * FTA year-1 Club clock. When set (e.g. 12 for the $1,500 fta_challenge
+   * offer), the resulting fta enrollment gets club_until = provision + N months;
+   * after it, Club-level surfaces gate to free while FTA academy stays for life.
+   * Undefined = unlimited Club (every regular fta / fic purchase, admin grant).
+   */
+  clubMonths?: number;
 }) {
   const db = serviceClient();
   const email = opts.email.trim().toLowerCase();
@@ -49,6 +56,9 @@ export async function provisionMembership(opts: {
       source: opts.source,
       stripe_session: opts.stripeSession ?? null,
       invited_by: opts.invitedBy ?? null,
+      // Carries the Club clock to the onboarding claim (claim_pending_membership
+      // stamps club_until = claim + club_months). Null = unlimited Club.
+      club_months: opts.clubMonths ?? null,
     });
     if (pendErr) return { ok: false as const, error: pendErr.message };
   }
@@ -90,6 +100,21 @@ export async function provisionMembership(opts: {
       family_id: prof.family_id,
       program: opts.program,
       status: "active",
+      // Existing-member direct activation: stamp the Club clock now (claim path
+      // is skipped because the enrollment is created here). Null = unlimited.
+      club_until:
+        opts.clubMonths != null
+          ? new Date(
+              Date.UTC(
+                new Date().getUTCFullYear(),
+                new Date().getUTCMonth() + opts.clubMonths,
+                new Date().getUTCDate(),
+                new Date().getUTCHours(),
+                new Date().getUTCMinutes(),
+                new Date().getUTCSeconds()
+              )
+            ).toISOString()
+          : null,
     });
     await db
       .from("pending_memberships")
