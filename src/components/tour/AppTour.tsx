@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { AnimatePresence, m } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/client";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
@@ -31,6 +31,26 @@ const CURRENT_TOUR_VERSION = 2;
 // Per-device fast-path cache of the highest tour version seen (skips the DB
 // round trip once this device has seen the current tour).
 const LSV_KEY = "fic-tour-v";
+// Live-tour progress (step index + framing), persisted so a route change or a
+// hard reload mid-tour resumes exactly where it left off.
+const LS_PROGRESS = "fic-tour-progress";
+
+// Each tour step SHOWS a real page: the tour navigates here before spotlighting.
+// A step whose route is /dashboard stays put (welcome / done / belt chip).
+const STEP_ROUTE: Record<string, string> = {
+  welcome: "/dashboard",
+  starthere: "/start-here",
+  community: "/community",
+  watchlist: "/watchlist/community",
+  screener: "/screener",
+  kai: "/kai",
+  missions: "/missions",
+  practice: "/chart",
+  belts: "/leaderboard",
+  family: "/family/overview",
+  fta: "/fta/chat",
+  done: "/dashboard",
+};
 
 type Framing = "welcome" | "whatsnew";
 
@@ -122,8 +142,8 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
       title: "Community Watchlist",
       body: pick(
         "The club's shared list of companies we're all watching. See who's up and who's down.",
-        "The club's shared research board — add a company, champion it, and track how every pick does on the Pick Record.",
-        "The club's shared research board. Add a company, someone champions it, and the Pick Record tracks how the club's calls play out over time."
+        "The club's shared research board — add a company, champion it, and track how every pick does under Performance.",
+        "The club's shared research board. Add a company, someone champions it, and the Performance tab tracks how the club's calls play out over time."
       ),
     },
     screener: {
@@ -257,6 +277,7 @@ interface Rect { top: number; left: number; width: number; height: number }
 export default function AppTour({ user }: { user: TourUser }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const supabase = createClient();
 
   const [active, setActive] = useState(false);
@@ -265,10 +286,48 @@ export default function AppTour({ user }: { user: TourUser }) {
   const [celebrate, setCelebrate] = useState<CelebrateOptions | null>(null);
   const stepsRef = useRef<TourStep[]>([]);
   const framingRef = useRef<Framing>("welcome");
+
+  // Persist live progress so a route change or reload mid-tour resumes here.
+  const saveProgress = useCallback((i: number, on: boolean) => {
+    try {
+      if (on) {
+        localStorage.setItem(
+          LS_PROGRESS,
+          JSON.stringify({ v: CURRENT_TOUR_VERSION, idx: i, framing: framingRef.current })
+        );
+      } else {
+        localStorage.removeItem(LS_PROGRESS);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
   // The auto-run (non-forced) decision must happen at most once per mount, so a
   // benign re-render or query-param change can never restart the tour after the
   // user has seen/finished it. Forced replay (?tour=1) bypasses this guard.
   const autoDecidedRef = useRef(false);
+
+  // ── resume an in-progress tour after a route change / reload ──
+  // The tour navigates between pages; on any page it may need to pick up where
+  // it left off. Runs once on mount, before the auto-run decision.
+  useEffect(() => {
+    if (autoDecidedRef.current) return;
+    try {
+      const raw = localStorage.getItem(LS_PROGRESS);
+      if (!raw) return;
+      const p = JSON.parse(raw) as { v?: number; idx?: number; framing?: Framing };
+      if (p.v !== CURRENT_TOUR_VERSION || typeof p.idx !== "number") return;
+      autoDecidedRef.current = true; // we own the decision now
+      framingRef.current = p.framing === "whatsnew" ? "whatsnew" : "welcome";
+      stepsRef.current = buildSteps(user, framingRef.current);
+      const i = Math.max(0, Math.min(p.idx, stepsRef.current.length - 1));
+      setIdx(i);
+      setActive(true);
+    } catch {
+      /* ignore */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── should we run? ──
   useEffect(() => {
@@ -328,7 +387,13 @@ export default function AppTour({ user }: { user: TourUser }) {
   const finish = useCallback(async (completed: boolean) => {
     setActive(false);
     setRect(null);
-    try { localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION));
+      localStorage.removeItem(LS_PROGRESS);
+    } catch { /* ignore */ }
+    // Return to the home base so the celebration + everyday home is where the
+    // tour ends, regardless of which page the last step showed.
+    if (pathname !== "/dashboard") router.push("/dashboard");
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       // Stamp the version so the tour never re-imposes; keep tour_completed_at
@@ -353,12 +418,12 @@ export default function AppTour({ user }: { user: TourUser }) {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, pathname, router]);
 
-  // ── locate target for current step ──
-  const locate = useCallback(() => {
+  // ── locate target for current step (single attempt) ──
+  const locate = useCallback((): boolean => {
     const step = stepsRef.current[idx];
-    if (!step?.targets?.length) { setRect(null); return; }
+    if (!step?.targets?.length) { setRect(null); return true; }
     for (const sel of step.targets) {
       const el = document.querySelector(sel) as HTMLElement | null;
       if (!el) continue;
@@ -368,14 +433,39 @@ export default function AppTour({ user }: { user: TourUser }) {
       el.scrollIntoView({ block: "center", behavior: "smooth" });
       const rr = el.getBoundingClientRect();
       setRect({ top: rr.top, left: rr.left, width: rr.width, height: rr.height });
-      return;
+      return true;
     }
-    setRect(null);
+    return false; // not found yet
   }, [idx]);
 
+  // ── per-step: navigate to the step's page, persist progress, then spotlight ──
+  // The step declares a route; we push there (if not already there), poll for
+  // the anchor while the page renders, and spotlight it. If no anchor ever
+  // appears the coach card centers over the real (now-visible) page.
   useEffect(() => {
     if (!active) return;
-    locate();
+    const step = stepsRef.current[idx];
+    if (!step) return;
+    saveProgress(idx, true);
+
+    const route = STEP_ROUTE[step.key] ?? "/dashboard";
+    if (pathname !== route) {
+      setRect(null);
+      router.push(route);
+    }
+
+    // Poll for the anchor for a short window while the target page renders.
+    let tries = 0;
+    let raf = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const tick = () => {
+      if (locate()) return; // spotlighted
+      tries += 1;
+      if (tries > 20) { setRect(null); return; } // ~3s → center over the page
+      timer = setTimeout(() => { raf = requestAnimationFrame(tick); }, 150);
+    };
+    raf = requestAnimationFrame(tick);
+
     const onR = () => locate();
     addEventListener("resize", onR);
     const onKey = (e: KeyboardEvent) => {
@@ -384,9 +474,14 @@ export default function AppTour({ user }: { user: TourUser }) {
       if (e.key === "ArrowLeft") back();
     };
     addEventListener("keydown", onKey);
-    return () => { removeEventListener("resize", onR); removeEventListener("keydown", onKey); };
+    return () => {
+      cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+      removeEventListener("resize", onR);
+      removeEventListener("keydown", onKey);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, idx]);
+  }, [active, idx, pathname]);
 
   const steps = stepsRef.current;
   const step = steps[idx];
