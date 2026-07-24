@@ -30,6 +30,7 @@ import {
   Film,
   Bot,
   Telescope,
+  Newspaper,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -82,19 +83,21 @@ const CLUB_WATCHLIST: NavItem = {
 };
 const CLUB_SCREENER: NavItem = { label: "Screener", href: "/screener", icon: Telescope };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
-// Community is an umbrella group: the club Feed + the free-visible Club
-// Newsroom (Lane 10 — AI-narrated market recaps, funnel-bait so it stays
-// reachable on every tier). Parent links to the Feed; being on /news
-// highlights + expands the group. Zero extra top-level slots (Scheme B budget).
+// Community is now a plain row — the club Feed. (Lane 12A: the Club Newsroom
+// was promoted OUT to its own top-level "News" row below. On mobile Community
+// is a tab-bar button, so nesting News under it buried it; owner directive is
+// News = its own top-level row on every tier. With only Feed left, a group
+// wrapper is redundant, so Community flattens to a single row.)
 const CLUB_COMMUNITY: NavItem = {
   label: "Community",
   href: "/community",
   icon: MessageCircle,
-  subItems: [
-    { label: "Feed", href: "/community" },
-    { label: "Club Newsroom", href: "/news" },
-  ],
 };
+// News — the Club Newsroom (Lane 10 AI-narrated market recaps, funnel-bait so
+// it stays reachable on every tier incl. free + kids). Its own top-level row on
+// desktop sidebar AND the mobile More sheet (inherited from getNavItems);
+// tab-bar slots are unchanged (News is not a tab). Newspaper icon.
+const CLUB_NEWS: NavItem = { label: "News", href: "/news", icon: Newspaper };
 // The unified belts leaderboard — a proper nav row for every member role
 // (kids included; kid-vs-kid competition is owner-wanted). Was a near-orphan
 // linked only from /progress. Medal icon keeps it distinct from the Trophy used
@@ -243,6 +246,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
     return [
       { label: "Home", href: "/dashboard", icon: LayoutDashboard },
       CLUB_COMMUNITY,
+      CLUB_NEWS,
       { label: "Free Courses", href: "/courses", icon: BookOpen },
       practiceGroup(false), // chart + games (Candle Battle); simulator stays locked
       { label: "Community Watchlist", href: "/watchlist/community", icon: Eye },
@@ -257,6 +261,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
     return [
       { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
       CLUB_COMMUNITY,
+      CLUB_NEWS,
       KAI_ASK,
       CLUB_MISSIONS,
       CLUB_WATCHLIST,
@@ -274,6 +279,7 @@ export function getNavItems(role?: string, ageGroup?: string, tier: FamilyTier =
   const main: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     CLUB_COMMUNITY,
+    CLUB_NEWS,
     KAI_ASK,
     CLUB_WATCHLIST,
     CLUB_SCREENER,
