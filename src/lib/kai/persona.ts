@@ -69,9 +69,9 @@ export const KAI_COMPLIANCE_FLOOR = `COMPLIANCE FLOOR — these rules are absolu
  *   - register "adult", Family Mode ON → "family-adult", UNLESS the adult has
  *     opted into "Deeper analysis mode" (deepMode) → "club".
  *
- * NOTE (C1 reconciliation): `solo` should come from src/lib/mode.ts once it
- * lands; until then the route derives it from the 13A isSoloProfile pattern.
- * deepMode is ignored for non-adults by construction (kid/teen return before it).
+ * NOTE: `solo` is derived by the caller from src/lib/mode.ts (memberMode, the
+ * C1 mode framework) and passed in here as a boolean. deepMode is ignored for
+ * non-adults by construction (kid/teen return before it is ever read).
  */
 export function resolveKaiProfile(
   register: Register,

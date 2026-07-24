@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getFamilyTier } from "@/lib/tier";
-import { deriveRegister, isSoloHousehold } from "@/lib/register";
+import { deriveRegister } from "@/lib/register";
+import { memberMode } from "@/lib/mode";
 import {
   getQuote,
   getBars,
@@ -420,11 +421,15 @@ export async function POST(req: NextRequest) {
   });
 
   // Resolve the guardrail PROFILE server-side (Lane C2). Solo = a COMPLETED
-  // family-of-one (Family Mode off) — require hh_completed_at so a half-finished
-  // default-shaped draft is never mistaken for solo. (C1's src/lib/mode.ts will
-  // own this signal once it lands; this mirrors the 13A isSoloProfile pattern.)
+  // family-of-one (Family Mode off). The member-mode verdict is owned by
+  // src/lib/mode.ts (C1): memberMode() requires completed_at AND a solo
+  // household, so a half-finished default-shaped draft is never mistaken for
+  // solo — behavior-identical to the prior isSoloProfile derivation.
   const solo =
-    !!fam.hh_completed_at && isSoloHousehold(fam.household ?? null);
+    memberMode({
+      household: fam.household ?? null,
+      completed_at: fam.hh_completed_at ?? null,
+    }) === "individual";
   const profileTier = resolveKaiProfile(register, { solo, deepMode });
   const tools = chatToolsForProfile(profileTier);
   const toolCtx = { supabase, familyId: profile?.family_id ?? null };
