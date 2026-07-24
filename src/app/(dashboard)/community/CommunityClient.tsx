@@ -81,6 +81,13 @@ export default function CommunityClient({
   // the feed paints on first paint; the initial client load is skipped (polling
   // + badge eval still run). A null seed falls back to the original full load.
   const seeded = initialData != null;
+  // Posts present at first paint (server-seeded) render at their target state
+  // with NO entrance animation (initial={false}), so the LCP text isn't held at
+  // opacity:0 until hydration finishes. Posts that arrive later (polling /
+  // optimistic new post) aren't in this set and keep the fade-in entrance.
+  const seededPostIds = useRef<Set<string>>(
+    new Set((initialData?.posts ?? []).map((p) => p.id))
+  );
 
   const [me, setMe] = useState<Me | null>(initialData?.me ?? null);
   const [myTier, setMyTier] = useState<FamilyTier>(initialData?.myTier ?? "fic");
@@ -657,7 +664,7 @@ export default function CommunityClient({
           ) : (
             <div className="space-y-4">
               {feedList.map((p, i) => (
-                <m.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
+                <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
                   {p.kind === "announcement" ? (
                     <AnnouncementCard post={p} />
                   ) : p.kind === "activity" ? (
