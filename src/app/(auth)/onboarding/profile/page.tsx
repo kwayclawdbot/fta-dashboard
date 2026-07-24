@@ -46,6 +46,7 @@ export default function ProfileOnboardingPage() {
   const [ready, setReady] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [familyName, setFamilyName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [draft, setDraft] = useState<ProfileDraft>(emptyDraft());
   const [step, setStep] = useState(S_HOUSEHOLD);
   const [direction, setDirection] = useState(1);
@@ -61,7 +62,7 @@ export default function ProfileOnboardingPage() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("family_id, role")
+        .select("family_id, role, display_name")
         .eq("id", user.id)
         .single();
 
@@ -72,6 +73,7 @@ export default function ProfileOnboardingPage() {
       }
       const fid = profile.family_id as string;
       setFamilyId(fid);
+      setDisplayName((profile.display_name as string) || "");
 
       const [{ data: fam }, existing, { data: reg }] = await Promise.all([
         supabase.from("families").select("name").eq("id", fid).maybeSingle(),
@@ -124,7 +126,7 @@ export default function ProfileOnboardingPage() {
 
   const isWelcome = step === S_WELCOME;
   const isProfileStep = step >= S_HOUSEHOLD && step <= S_HEAR;
-  const welcome = isWelcome ? composeWelcome(draft, familyName) : null;
+  const welcome = isWelcome ? composeWelcome(draft, familyName, displayName) : null;
   const recommendations = isWelcome ? deriveRecommendations(draft) : [];
 
   return (

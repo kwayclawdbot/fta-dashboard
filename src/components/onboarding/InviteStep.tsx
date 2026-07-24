@@ -20,7 +20,7 @@ import { createClient } from "@/lib/supabase/client";
 import { referralLink, shareTargets, REFERRAL_SIGNUP_XP } from "@/lib/referral";
 import { StepHeading } from "@/components/onboarding/WizardSteps";
 
-export default function InviteStep() {
+export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
   const supabase = createClient();
   const [code, setCode] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -66,8 +66,12 @@ export default function InviteStep() {
     <div>
       <StepHeading
         eyebrow="Grow the circle"
-        title="Know another family?"
-        sub={`Invite a family you'd love to learn alongside. When they join, you earn ${REFERRAL_SIGNUP_XP} XP — and this is totally optional, you can do it later from Referrals.`}
+        title={isSolo ? "Invite a friend?" : "Know another family?"}
+        sub={
+          isSolo
+            ? `Know someone who'd love to learn this alongside you? When they join, you earn ${REFERRAL_SIGNUP_XP} XP — totally optional, and you can do it later from Referrals.`
+            : `Invite a family you'd love to learn alongside. When they join, you earn ${REFERRAL_SIGNUP_XP} XP — and this is totally optional, you can do it later from Referrals.`
+        }
       />
 
       <div className="rounded-2xl border-2 border-sand bg-card p-5">

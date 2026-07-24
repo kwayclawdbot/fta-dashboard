@@ -16,6 +16,7 @@ import { useState } from "react";
 import { m } from "@/lib/motion";
 import {
   Check,
+  User,
   Users,
   GraduationCap,
   Minus,
@@ -180,6 +181,24 @@ export function WhoIsJoiningStep({
   onChange: (patch: Partial<ProfileDraft>) => void;
 }) {
   const h = draft.household;
+  // "Just me" is a first-class path: a solo adult is stored as a family of one
+  // ({adults:1, kids:0}) — the data model never changes — but we surface no
+  // "family" wording to them and skip the kid/ages sub-questions entirely.
+  // Family-shaped if there are kids or more than one adult; otherwise solo.
+  const isFamily = h.kids > 0 || h.adults > 1 || h.kid_age_ranges.length > 0;
+  const [mode, setMode] = useState<"solo" | "family">(isFamily ? "family" : "solo");
+
+  function chooseSolo() {
+    setMode("solo");
+    onChange({ household: { adults: 1, kids: 0, kid_age_ranges: [] } });
+  }
+  function chooseFamily() {
+    setMode("family");
+    // Guarantee a non-solo shape so recommendations + copy read as a family:
+    // bump to two adults if we're coming from the solo default.
+    onChange({ household: { ...h, adults: h.adults > 1 ? h.adults : 2 } });
+  }
+
   function toggleRange(r: KidAgeRange) {
     const has = h.kid_age_ranges.includes(r);
     onChange({
@@ -192,56 +211,99 @@ export function WhoIsJoiningStep({
   return (
     <div>
       <StepHeading
-        eyebrow="Your family"
-        title="Who's joining the club?"
-        sub="This shapes the lessons, missions, and pace we put in front of you."
+        eyebrow="Getting started"
+        title="Who's joining?"
+        sub="This shapes the lessons, pace, and how the club talks with you."
       />
-      <div className="space-y-3">
-        <CountStepper
-          label="Grown-ups"
-          value={h.adults}
-          min={1}
-          icon={Users}
-          onChange={(n) => onChange({ household: { ...h, adults: n } })}
-        />
-        <CountStepper
-          label="Kids"
-          value={h.kids}
-          min={0}
-          icon={GraduationCap}
-          onChange={(n) =>
-            onChange({
-              household: { ...h, kids: n, kid_age_ranges: n === 0 ? [] : h.kid_age_ranges },
-            })
-          }
-        />
+
+      {/* First-class choice: solo vs family. */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={chooseSolo}
+          aria-pressed={mode === "solo"}
+          className={`p-5 rounded-2xl border-2 text-center transition-all ${
+            mode === "solo"
+              ? "border-gold-400 bg-gold-400/10 shadow-sm"
+              : "border-sand bg-card hover:border-gold-300"
+          }`}
+        >
+          <User className={`w-8 h-8 mx-auto mb-2.5 ${mode === "solo" ? "text-gold-700" : "text-soft"}`} />
+          <p className={`font-display font-bold ${mode === "solo" ? "text-gold-800" : "text-ink"}`}>Just me</p>
+          <p className="text-xs text-soft mt-1">Learning on my own</p>
+        </button>
+        <button
+          type="button"
+          onClick={chooseFamily}
+          aria-pressed={mode === "family"}
+          className={`p-5 rounded-2xl border-2 text-center transition-all ${
+            mode === "family"
+              ? "border-gold-400 bg-gold-400/10 shadow-sm"
+              : "border-sand bg-card hover:border-gold-300"
+          }`}
+        >
+          <Users className={`w-8 h-8 mx-auto mb-2.5 ${mode === "family" ? "text-gold-700" : "text-soft"}`} />
+          <p className={`font-display font-bold ${mode === "family" ? "text-gold-800" : "text-ink"}`}>My family</p>
+          <p className="text-xs text-soft mt-1">Us and our kids</p>
+        </button>
       </div>
-      {h.kids > 0 && (
-        <div className="mt-5">
-          <p className="text-sm font-semibold text-ink mb-2.5">
-            How old are they?{" "}
-            <span className="text-soft font-normal">Pick all that apply</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {KID_AGE_OPTIONS.map((o) => {
-              const on = h.kid_age_ranges.includes(o.value);
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => toggleRange(o.value)}
-                  className={`px-4 py-2.5 rounded-full text-sm font-semibold border-2 transition-colors ${
-                    on
-                      ? "bg-gold-400/15 border-gold-400 text-gold-800"
-                      : "bg-card border-sand text-soft hover:border-gold-300"
-                  }`}
-                >
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
+
+      {/* Family details — only when "My family" is chosen. */}
+      {mode === "family" && (
+        <div className="mt-5 space-y-3">
+          <CountStepper
+            label="Grown-ups"
+            value={h.adults}
+            min={1}
+            icon={Users}
+            onChange={(n) => onChange({ household: { ...h, adults: n } })}
+          />
+          <CountStepper
+            label="Kids"
+            value={h.kids}
+            min={0}
+            icon={GraduationCap}
+            onChange={(n) =>
+              onChange({
+                household: { ...h, kids: n, kid_age_ranges: n === 0 ? [] : h.kid_age_ranges },
+              })
+            }
+          />
+          {h.kids > 0 && (
+            <div className="pt-1">
+              <p className="text-sm font-semibold text-ink mb-2.5">
+                How old are they?{" "}
+                <span className="text-soft font-normal">Pick all that apply</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {KID_AGE_OPTIONS.map((o) => {
+                  const on = h.kid_age_ranges.includes(o.value);
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => toggleRange(o.value)}
+                      className={`px-4 py-2.5 rounded-full text-sm font-semibold border-2 transition-colors ${
+                        on
+                          ? "bg-gold-400/15 border-gold-400 text-gold-800"
+                          : "bg-card border-sand text-soft hover:border-gold-300"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      {mode === "solo" && (
+        <p className="mt-4 text-center text-sm text-soft">
+          Perfect — we&apos;ll set up your own investing home. You can always add
+          family later from Settings.
+        </p>
       )}
     </div>
   );
@@ -646,7 +708,7 @@ export function WelcomeSplash({
   const sub =
     register === "kid"
       ? "Let's set up your corner of the clubhouse. A few quick questions and you're in!"
-      : "Let's set up your family's investing home. It takes about two minutes — a few quick questions so we can build the club around you.";
+      : "Let's set up your investing home. It takes about two minutes — a few quick questions so we can build the club around you.";
   return (
     <div className="text-center">
       <m.div

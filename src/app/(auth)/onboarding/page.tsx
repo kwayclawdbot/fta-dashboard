@@ -54,7 +54,7 @@ import {
   comprehensionFromScore,
   composeKaiSeed,
 } from "@/lib/onboarding-knowledge";
-import { deriveRegister, type Register } from "@/lib/register";
+import { deriveRegister, isSoloHousehold, type Register } from "@/lib/register";
 
 type Mode = "loading" | "parent" | "child";
 
@@ -189,6 +189,11 @@ export default function OnboardingWizard() {
   }, [mode, ageBand]);
 
   const checks = useMemo(() => checksForRegister(register), [register]);
+
+  // Solo (individual, non-parent) member — a family of one. Drives the solo
+  // tone on the invite + celebration steps. Only meaningful for the parent flow
+  // (kids are never solo owners).
+  const isSolo = mode === "parent" && isSoloHousehold(draft.household);
 
   // ── Ordered step keys for this mode ────────────────────────────────────────
   const order = useMemo(() => {
@@ -489,12 +494,13 @@ export default function OnboardingWizard() {
                   </div>
                 )}
 
-                {key === "invite" && <InviteStep />}
+                {key === "invite" && <InviteStep isSolo={isSolo} />}
 
                 {key === "celebrate" && (
                   <CelebrationStep
                     register={register}
                     name={displayName.split(" ")[0]}
+                    isSolo={isSolo}
                     recommendations={mode === "parent" ? deriveRecommendations(draft) : []}
                   />
                 )}
@@ -586,10 +592,12 @@ export default function OnboardingWizard() {
 function CelebrationStep({
   register,
   name,
+  isSolo = false,
   recommendations,
 }: {
   register: Register;
   name?: string;
+  isSolo?: boolean;
   recommendations: { key: string; title: string; sub: string }[];
 }) {
   const title =
@@ -601,7 +609,9 @@ function CelebrationStep({
   const sub =
     register === "kid"
       ? "Your clubhouse is ready. Let's go explore!"
-      : "We've built the club around your answers. Here's where to start.";
+      : isSolo
+        ? "We've set up the club around your answers. Here's where to start."
+        : "We've built the club around your answers. Here's where to start.";
   return (
     <div className="text-center">
       <m.div
