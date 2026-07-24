@@ -13,10 +13,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * already have a password, Google OAuth users, family-member signups, and
  * invited users who already set one).
  *
- * Authoritative signal (service role): `invited_at` is set AND the user has no
- * password-based ("email" provider) identity AND we have not already stamped
- * `password_set` on their metadata. `invited_at` gates OAuth users out (theirs
- * is null), so a Google-only account is never asked for a password.
+ * Authoritative signal (service role): `invited_at` is set AND we have not
+ * already stamped `password_set` on their metadata. `invited_at` gates everyone
+ * else out — a Google-only account, a funnel/family signup that chose a password
+ * (both have a null `invited_at`) are never asked. NOTE: an invited user still
+ * carries an "email" provider identity even with no password, so the identity
+ * list is NOT a reliable "has a password" signal — `invited_at` is.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -38,11 +40,8 @@ export async function GET() {
     const u = data.user;
     const passwordSet = u.user_metadata?.password_set === true;
     const invited = !!u.invited_at;
-    const hasPasswordIdentity = (u.identities ?? []).some(
-      (i) => i.provider === "email"
-    );
 
-    const needsPassword = !passwordSet && invited && !hasPasswordIdentity;
+    const needsPassword = !passwordSet && invited;
     return NextResponse.json({ needsPassword });
   } catch {
     // Never block onboarding on a metadata read failure.
