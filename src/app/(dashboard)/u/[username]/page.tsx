@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Users2, Sparkles, ArrowLeft, Settings, Star } from "lucide-react";
+import { Users2, Sparkles, ArrowLeft, Settings, Star, Heart, TrendingUp, TrendingDown, MessageSquareText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicProfile, mergeBadgeRows } from "@/lib/public-profile";
 import { levelProgress } from "@/lib/xp";
@@ -10,6 +10,7 @@ import Avatar from "@/components/Avatar";
 import BeltBadge from "@/components/BeltBadge";
 import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
+import CompanyLogo from "@/components/fic/CompanyLogo";
 import BadgeCaseView from "@/components/BadgeCaseView";
 
 /**
@@ -149,6 +150,86 @@ export default async function PublicProfilePage({
           </p>
         </div>
       </div>
+
+      {/* Community footprint — likes, picks, contributions (public for all,
+          incl. kids: these are already-public community actions). */}
+      {profile.liked_tickers.length > 0 && (
+        <div className="paper-card p-6 mt-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+            <h2 className="font-display text-base font-bold text-ink">Favorite stocks</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {profile.liked_tickers.map((t) => (
+              <Link
+                key={t.ticker}
+                href={`/research/${encodeURIComponent(t.ticker)}`}
+                className="inline-flex items-center gap-2 rounded-full border border-sand bg-paper px-3 py-1.5 text-sm hover:border-gold-300"
+              >
+                <CompanyLogo symbol={t.ticker} name={t.company_name ?? t.ticker} size={20} />
+                <span className="font-semibold text-ink">{t.ticker}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {profile.community_picks.length > 0 && (
+        <div className="paper-card p-6 mt-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="w-4 h-4 text-gold-600" />
+            <h2 className="font-display text-base font-bold text-ink">Community picks</h2>
+          </div>
+          <p className="text-xs text-soft mb-3">
+            Companies {profile.display_name || "this member"} championed to the club&apos;s shared board — and how they&apos;ve done since.
+          </p>
+          <div className="space-y-2">
+            {profile.community_picks.map((p) => {
+              const up = p.pct_since != null && p.pct_since > 0;
+              const down = p.pct_since != null && p.pct_since < 0;
+              return (
+                <Link
+                  key={p.ticker}
+                  href={`/research/${encodeURIComponent(p.ticker)}`}
+                  className="flex items-center gap-3 rounded-xl border border-sand bg-paper p-3 transition-colors hover:border-gold-300"
+                >
+                  <CompanyLogo symbol={p.ticker} name={p.company_name ?? p.ticker} size={32} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-ink">{p.company_name ?? p.ticker}</p>
+                    <p className="text-[11px] text-soft">{p.ticker}</p>
+                  </div>
+                  {p.pct_since != null ? (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
+                        up ? "bg-green-500/10 text-green-600" : down ? "bg-red-500/10 text-red-600" : "bg-sand text-soft"
+                      }`}
+                      title="Change since it was added to the board"
+                    >
+                      {up ? <TrendingUp className="h-3 w-3" /> : down ? <TrendingDown className="h-3 w-3" /> : null}
+                      {up ? "+" : ""}
+                      {p.pct_since.toFixed(1)}%
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-soft">since added</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {profile.contributions > 0 && (
+        <div className="paper-card p-4 mt-4 flex items-center gap-3">
+          <span className="w-9 h-9 rounded-xl bg-chip-amber flex items-center justify-center shrink-0">
+            <MessageSquareText className="w-4 h-4 text-gold-700" />
+          </span>
+          <p className="text-sm text-ink">
+            <span className="font-display font-bold">{profile.contributions}</span>{" "}
+            research {profile.contributions === 1 ? "note" : "notes"} shared with the club
+          </p>
+        </div>
+      )}
 
       {/* Badge case — the centerpiece */}
       <div className="paper-card p-6 mt-4">

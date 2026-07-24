@@ -17,6 +17,21 @@ export interface PublicProfileBadge {
   awarded_at: string | null;
 }
 
+export interface ProfileLikedTicker {
+  ticker: string;
+  company_name: string | null;
+  liked_at: string | null;
+}
+export interface ProfileCommunityPick {
+  ticker: string;
+  company_name: string | null;
+  headline: string | null;
+  snapshot_price: number | null;
+  current_price: number | null;
+  pct_since: number | null;
+  created_at: string | null;
+}
+
 export interface PublicProfile {
   id: string;
   username: string;
@@ -28,6 +43,10 @@ export interface PublicProfile {
   badges: PublicProfileBadge[];
   member_since: string;
   is_minor: boolean;
+  // Community footprint (public for everyone incl. kids — already-public actions).
+  liked_tickers: ProfileLikedTicker[];
+  community_picks: ProfileCommunityPick[];
+  contributions: number;
   // Adults only — absent for minors (server-enforced).
   family_name?: string | null;
   role_kind?: "parent" | "member";
