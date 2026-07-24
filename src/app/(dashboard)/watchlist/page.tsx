@@ -604,7 +604,7 @@ export default function WatchlistPage() {
     );
   }
   if (loading || !tierResolved) {
-    return <DashboardSkeleton variant="board" title="Family Watchlist" />;
+    return <DashboardSkeleton variant="board" title="Watchlist" />;
   }
 
   // Solo member = a family of one (no other members on the board). They get a
