@@ -351,16 +351,36 @@ export async function GET(
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
 
+  // Screener data-version — the momentum half of the payload is derived from
+  // screener_metrics, refreshed by the nightly cron (and by any manual
+  // restore). Folding last_run_at into the cache key means a screener refresh
+  // invalidates this aggregate IMMEDIATELY instead of lingering up to the 1h
+  // revalidate window. Critically, it is also what retires the stale bad grades
+  // cached during the 2026-07-23 corruption the moment the restore stamps a new
+  // run. One tiny singleton read; negligible.
+  const { data: meta } = await db
+    .from("screener_meta")
+    .select("last_run_at")
+    .maybeSingle();
+  const metricsVersion = (meta?.last_run_at as string | null) ?? "0";
+
   // Compose the (user-agnostic) fundamentals+grades payload. The heavy part —
   // two DB reads (momentum + PE medians RPC) plus the grade recompute — is
-  // memoized per (ticker, fundamentals-version) for 1h across ALL users via
-  // unstable_cache. The auth check and the fundamentals read/refresh above stay
-  // per-request; the fundamentals row itself is already 24h DB-cached. Keying on
-  // row.fetched_at means a fundamentals refresh instantly invalidates the cache;
-  // the 1h revalidate lets a nightly screener/medians refresh flow through.
+  // memoized per (ticker, fundamentals-version, screener-version) for 1h across
+  // ALL users via unstable_cache. The auth check and the fundamentals
+  // read/refresh above stay per-request; the fundamentals row itself is already
+  // 24h DB-cached. Keying on row.fetched_at means a fundamentals refresh
+  // instantly invalidates the cache; keying on metricsVersion means a screener
+  // refresh does too.
   const payload = await unstable_cache(
     () => composeResearch(db, ticker, row!),
-    ["research-payload", ticker, row.fetched_at, String(row.grade_version ?? 0)],
+    [
+      "research-payload",
+      ticker,
+      row.fetched_at,
+      String(row.grade_version ?? 0),
+      metricsVersion,
+    ],
     { revalidate: 3600, tags: [`research:${ticker}`] }
   )();
 

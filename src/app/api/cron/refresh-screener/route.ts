@@ -146,6 +146,32 @@ async function enrichMcap(db: Db, budget: number): Promise<number> {
 }
 
 /* ---------------------------------------------------------------------------
+ * Paginated SELECT — PostgREST caps every response at db-max-rows (1000 on this
+ * project). Any `.select()` that can exceed 1000 rows MUST page with `.range()`
+ * or it silently truncates. This was the 2026-07-23 corruption: the incremental
+ * recompute read history with an unpaginated `.in(chunk).order(as_of)` (≈12.5k
+ * rows) and got only the 1000 OLDEST → every ticker computed from ~5 stale April
+ * closes → wrong price + null indicators universe-wide. Always route bulk reads
+ * through here.
+ * ------------------------------------------------------------------------- */
+async function selectAll<T>(
+  make: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+): Promise<T[]> {
+  const PAGE = 1000;
+  let from = 0;
+  const out: T[] = [];
+  for (;;) {
+    const { data, error } = await make(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) break;
+    out.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return out;
+}
+
+/* ---------------------------------------------------------------------------
  * Shared write helpers.
  * ------------------------------------------------------------------------- */
 async function upsertMetrics(db: Db, rows: Record<string, unknown>[]) {
@@ -288,13 +314,28 @@ async function bootstrap(db: Db, days: number, mcapBudget: number) {
 async function incremental(db: Db, mcapBudget: number) {
   const ref = await buildRefMap();
 
-  // Existing universe.
-  const { data: uni } = await db
-    .from("screener_metrics")
-    .select("ticker, name, exchange, type, sector, mcap");
-  const existing = new Map(
-    ((uni as { ticker: string }[]) || []).map((u) => [u.ticker, u])
+  // Existing universe. MUST paginate — the universe is ~11.5k rows and an
+  // unpaginated select returns only the first 1000 (PostgREST cap), which would
+  // make ~10k real tickers look like "new listings" and drop their preserved
+  // mcap/sector. price + rsi14 are pulled too so the post-recompute validation
+  // can compare new vs previous per row.
+  const uni = await selectAll<{
+    ticker: string;
+    name: string | null;
+    exchange: string | null;
+    type: string | null;
+    sector: string | null;
+    mcap: number | null;
+    price: number | null;
+    rsi14: number | null;
+  }>((f, t) =>
+    db
+      .from("screener_metrics")
+      .select("ticker, name, exchange, type, sector, mcap, price, rsi14")
+      .order("ticker", { ascending: true })
+      .range(f, t)
   );
+  const existing = new Map(uni.map((u) => [u.ticker, u]));
 
   // Latest trading day grouped-daily (walk back until a non-empty day).
   let bars: GroupedBar[] | null = null;
@@ -343,28 +384,47 @@ async function incremental(db: Db, mcapBudget: number) {
         name: cls.name,
         exchange: cls.exchange,
         type: cls.type,
-      } as { ticker: string });
+        sector: null,
+        mcap: null,
+        price: b.c, // stub carries today's close so the price-jump guard has a base
+        rsi14: null,
+      });
     }
   }
   if (newStubs.length > 0) await upsertMetrics(db, newStubs);
   await upsertHistory(db, histRows);
 
   // Recompute metrics for every universe ticker from its trailing history.
+  // Validation accumulators (see the guard below) — the recompute must not be
+  // allowed to overwrite good rows with worse data, so we measure two failure
+  // signatures of the 1000-cap bug: (a) a ticker that has enough closes to
+  // support RSI but comes back null (indicator collapse), and (b) a price that
+  // jumps > 35% vs the previous stored price (stale-day / misjoin). Either at
+  // scale ⇒ refuse the write and alert.
   const universeTickers = Array.from(existing.keys());
   const metricRows: Record<string, unknown>[] = [];
+  let rsiEligible = 0; // rows with > 14 closes (RSI is computable)
+  let rsiCollapsed = 0; // …of those, rsi came back null
+  let priceComparable = 0; // rows with an old + new price
+  let priceJumped = 0; // …of those, moved > 35%
   for (let i = 0; i < universeTickers.length; i += 200) {
     const chunk = universeTickers.slice(i, i + 200);
-    const { data: hist } = await db
-      .from("screener_history")
-      .select("ticker, as_of, close, volume")
-      .in("ticker", chunk)
-      .order("as_of", { ascending: true });
-    const byTicker = new Map<string, { closes: number[]; volumes: number[] }>();
-    for (const h of (hist || []) as {
+    // MUST paginate: 200 tickers × up to ~260 days ≫ 1000-row PostgREST cap.
+    const hist = await selectAll<{
       ticker: string;
       close: number;
       volume: number | null;
-    }[]) {
+    }>((f, t) =>
+      db
+        .from("screener_history")
+        .select("ticker, as_of, close, volume")
+        .in("ticker", chunk)
+        .order("ticker", { ascending: true })
+        .order("as_of", { ascending: true })
+        .range(f, t)
+    );
+    const byTicker = new Map<string, { closes: number[]; volumes: number[] }>();
+    for (const h of hist) {
       let s = byTicker.get(h.ticker);
       if (!s) {
         s = { closes: [], volumes: [] };
@@ -377,18 +437,21 @@ async function incremental(db: Db, mcapBudget: number) {
       const s = byTicker.get(ticker);
       if (!s || s.closes.length === 0) continue;
       const cls = ref.get(ticker);
-      const prev = existing.get(ticker) as {
-        name?: string | null;
-        exchange?: string | null;
-        type?: string | null;
-        sector?: string | null;
-        mcap?: number | null;
-      };
+      const prev = existing.get(ticker);
       const m = computeMetrics({
         closes: s.closes,
         volumes: s.volumes,
         latestOpen: todays.get(ticker)?.open ?? null,
       });
+      // Validation signatures.
+      if (s.closes.length > 14) {
+        rsiEligible++;
+        if (m.rsi14 == null) rsiCollapsed++;
+      }
+      if (prev?.price != null && m.price != null && prev.price > 0) {
+        priceComparable++;
+        if (Math.abs(m.price / prev.price - 1) > 0.35) priceJumped++;
+      }
       metricRows.push({
         ticker,
         // Reference wins for identity (handles reclassification / renames).
@@ -401,6 +464,42 @@ async function incremental(db: Db, mcapBudget: number) {
         updated_at: now,
       });
     }
+  }
+
+  // ── Write guard: refuse to overwrite good data with a broken recompute. ──
+  // Only enforced on a full run (enough rows to be statistically meaningful);
+  // a tiny early-life universe skips the guard. History append already happened
+  // above and is always safe (raw, sanity-filtered) — we gate ONLY the metric
+  // overwrite.
+  const rsiCollapseRate = rsiEligible > 0 ? rsiCollapsed / rsiEligible : 0;
+  const priceJumpRate = priceComparable > 0 ? priceJumped / priceComparable : 0;
+  const guardActive = metricRows.length >= 500;
+  const failed =
+    guardActive && (rsiCollapseRate > 0.05 || priceJumpRate > 0.2);
+  if (failed) {
+    await writeMetaCounts(db, {
+      last_run_at: now,
+      last_trading_day: usedDate,
+      bootstrap_done: true,
+      note:
+        `REFUSED ${usedDate}: recompute failed validation — ` +
+        `rsiCollapse=${(rsiCollapseRate * 100).toFixed(1)}% ` +
+        `priceJump=${(priceJumpRate * 100).toFixed(1)}% ` +
+        `(${metricRows.length} rows staged, NOT written; good data preserved)`,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        mode: "incremental",
+        refused: true,
+        reason: "recompute failed validation; metrics NOT overwritten",
+        rsi_collapse_rate: rsiCollapseRate,
+        price_jump_rate: priceJumpRate,
+        trading_day: usedDate,
+        history_appended: histRows.length,
+      },
+      { status: 200 }
+    );
   }
   await upsertMetrics(db, metricRows);
 
