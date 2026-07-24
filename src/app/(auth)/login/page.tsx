@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { authCallbackUrl } from "@/lib/site-url";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +17,33 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // "Invited but can't sign in?" — invited users have no password yet; send a
+  // fresh magic link that lands them in onboarding to set one.
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+
+  async function handleInviteLink(e: React.FormEvent) {
+    e.preventDefault();
+    setInviteError("");
+    setInviteLoading(true);
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: inviteEmail,
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: authCallbackUrl("/onboarding"),
+      },
+    });
+    setInviteLoading(false);
+    if (otpError) {
+      setInviteError(otpError.message);
+      return;
+    }
+    setInviteSent(true);
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -177,6 +205,56 @@ export default function LoginPage() {
         </svg>
         Continue with Google
       </button>
+
+      {/* Invited-user rescue: no-password accounts can't sign in above. */}
+      <div className="mt-6 border-t border-midnight-800 pt-5">
+        {inviteSent ? (
+          <div className="flex items-start gap-2.5 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3">
+            <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+            <p className="text-sm text-midnight-200">
+              Sign-in link sent to{" "}
+              <span className="text-midnight-50 font-medium">{inviteEmail}</span>.
+              Open it to finish setting up your account.
+            </p>
+          </div>
+        ) : inviteOpen ? (
+          <form onSubmit={handleInviteLink} className="space-y-3">
+            <p className="text-xs text-midnight-400">
+              Invited to the club but never set a password? Enter your email and
+              we&apos;ll send a fresh sign-in link.
+            </p>
+            {inviteError && (
+              <p className="text-xs text-red-500">{inviteError}</p>
+            )}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={inviteLoading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gold-400/40 bg-gold-400/10 text-gold-300 hover:bg-gold-400/15 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4" />
+              {inviteLoading ? "Sending…" : "Send me a sign-in link"}
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="w-full text-center text-sm text-midnight-400 hover:text-midnight-200 transition-colors"
+          >
+            Invited but can&apos;t sign in?
+          </button>
+        )}
+      </div>
 
       {/* Membership is purchase- or invite-only */}
       <p className="mt-6 text-center text-sm text-midnight-400">

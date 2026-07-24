@@ -23,14 +23,20 @@ export default function AuthCodeErrorPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
+    // A magic link (OTP) works for every account that can reach this page — a
+    // never-confirmed signup AND an admin-invited user who has no password yet
+    // (for whom `resend({type:"signup"})` would fail as "already confirmed").
+    // Lands them in onboarding; a fully set-up member is bounced to /dashboard.
+    const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: authCallbackUrl() },
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: authCallbackUrl("/onboarding"),
+      },
     });
     setLoading(false);
-    if (resendError) {
-      setError(resendError.message);
+    if (otpError) {
+      setError(otpError.message);
       return;
     }
     setSent(true);
