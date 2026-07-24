@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isSoloHousehold } from "@/lib/register";
 
 /**
  * Profile-building onboarding — the data model + the logic that makes the
@@ -236,6 +237,9 @@ export function deriveRecommendations(
   const recs: Recommendation[] = [];
   const kids = p.household?.kids ?? 0;
   const hasKids = kids > 0 || (p.household?.kid_age_ranges?.length ?? 0) > 0;
+  // Solo (individual) members: never surface kid/parent framing, and speak to
+  // "you", not "your family". A solo household is one adult, no kids.
+  const solo = isSoloHousehold(p.household);
   const exp = p.experience;
   const goals = p.goals ?? [];
   const interest = p.market_interest ?? null;
@@ -302,13 +306,23 @@ export function deriveRecommendations(
     });
   }
   if (hasKids || goals.includes("family_habit")) {
-    push({
-      key: "this-week",
-      title: "This Week in FIC — together",
-      sub: "One concept, one company, one family habit",
-      href: "/dashboard?tab=this-week",
-      icon: "CalendarDays",
-    });
+    push(
+      solo
+        ? {
+            key: "this-week",
+            title: "This Week in FIC",
+            sub: "One concept, one company, one weekly habit",
+            href: "/dashboard?tab=this-week",
+            icon: "CalendarDays",
+          }
+        : {
+            key: "this-week",
+            title: "This Week in FIC — together",
+            sub: "One concept, one company, one family habit",
+            href: "/dashboard?tab=this-week",
+            icon: "CalendarDays",
+          }
+    );
   }
 
   // Fallback so the card is never empty.
@@ -337,10 +351,12 @@ export function familyShortLabel(familyName: string | null | undefined): string 
 
 export function composeWelcome(
   p: Pick<FamilyProfile, "household" | "experience" | "goals">,
-  familyName: string | null | undefined
+  familyName: string | null | undefined,
+  displayName?: string | null
 ): { title: string; lines: string[] } {
   const kids = p.household?.kids ?? 0;
   const hasKids = kids > 0 || (p.household?.kid_age_ranges?.length ?? 0) > 0;
+  const solo = isSoloHousehold(p.household);
   const lines: string[] = [];
 
   if (hasKids) {
@@ -366,7 +382,21 @@ export function composeWelcome(
   if (p.goals?.includes("teach_kids"))
     lines.push("Here to raise money-smart kids.");
   else if (p.goals?.includes("build_wealth"))
-    lines.push("Here to build long-term family wealth.");
+    lines.push(
+      solo
+        ? "Here to build long-term wealth."
+        : "Here to build long-term family wealth."
+    );
+
+  // Solo members get a "just you" welcome — no "family" label, addressed by
+  // their own name, with an individual-toned fallback line.
+  if (solo) {
+    const first = (displayName || "").trim().split(" ")[0];
+    return {
+      title: first ? `Welcome, ${first}` : "Welcome",
+      lines: lines.length ? lines : ["Your investing home is ready."],
+    };
+  }
 
   return {
     title: `Welcome, ${familyShortLabel(familyName)}`,

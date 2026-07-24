@@ -54,6 +54,53 @@ export function celebrateRegister(r: Register): CelebrateRegister {
   return r === "adult" ? "parent" : r;
 }
 
+// ── Solo (individual, non-parent) members ────────────────────────────────────
+// The platform is family-first, but a solo adult is stored as a family of ONE
+// (the data model never changes): family_profiles.household = { adults:1,
+// kids:0, kid_age_ranges:[] }. Every surface should read "just you", not "your
+// family", for them. Derive it here so no page re-implements the check.
+
+/** The household block on family_profiles (migration 075) — minimal shape. */
+export interface SoloHousehold {
+  adults?: number | null;
+  kids?: number | null;
+  kid_age_ranges?: unknown[] | null;
+}
+
+/**
+ * Is this household SOLO — one adult, no kids?
+ *   • adults ≤ 1 AND kids === 0 AND no kid age ranges → solo.
+ *   • null / absent household → NOT solo. Unknown always keeps the family
+ *     framing (the safe default); we never guess "solo" from missing data.
+ *
+ * CAUTION: the wizard's emptyDraft() is itself {adults:1,kids:0}, so a family
+ * who simply hasn't answered yet is solo-SHAPED. To avoid mislabeling them,
+ * always resolve solo from a COMPLETED profile — use isSoloProfile(), or pass a
+ * household you know came from a finished family_profiles row.
+ */
+export function isSoloHousehold(h: SoloHousehold | null | undefined): boolean {
+  if (!h) return false;
+  const adults = typeof h.adults === "number" ? h.adults : 1;
+  const kids = typeof h.kids === "number" ? h.kids : 0;
+  const ranges = Array.isArray(h.kid_age_ranges) ? h.kid_age_ranges.length : 0;
+  return adults <= 1 && kids === 0 && ranges === 0;
+}
+
+/**
+ * Solo verdict for a member from their family_profiles row. Requires a
+ * COMPLETED profile (completed_at set) so an unfinished / default-shaped row is
+ * never mistaken for a deliberate solo household.
+ */
+export function isSoloProfile(
+  profile:
+    | { household?: SoloHousehold | null; completed_at?: string | null }
+    | null
+    | undefined
+): boolean {
+  if (!profile || !profile.completed_at) return false;
+  return isSoloHousehold(profile.household);
+}
+
 export function isKidRegister(
   profile: RegisterProfile | null | undefined
 ): boolean {
