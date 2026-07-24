@@ -46,6 +46,9 @@ export const CHALLENGE_SCHEDULE: Record<Exclude<ChallengeStep, "welcome">, strin
   day3: "2026-09-03T13:00:00Z",
   day4: "2026-09-04T13:00:00Z",
   day5: "2026-09-05T13:00:00Z",
+  // Mid-week "keep going together" continue pitch — Sept 3 PM, hours after the
+  // Day 3 mission so it lands on the back of a real win.
+  day3_offer: "2026-09-03T21:00:00Z",
   close_stats: "2026-09-05T23:00:00Z",
   close_offer: "2026-09-06T15:00:00Z",
   close_lastcall: "2026-09-08T15:00:00Z",

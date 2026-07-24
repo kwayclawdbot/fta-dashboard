@@ -22,6 +22,7 @@
  *   show_d1        show-up — 1 day out
  *   show_dayof     show-up — day-of orientation
  *   day1..day5     daily mission emails (Sept 1-5)
+ *   day3_offer     mid-week "keep going together" $99 continue pitch (Sept 3 PM)
  *   close_stats    close — "what you built this week" (live stats merge)
  *   close_offer    close — $99 continue + $1,500 FTA offer
  *   close_lastcall close — warm last call after expiry
@@ -41,6 +42,7 @@ export type ChallengeStep =
   | "day3"
   | "day4"
   | "day5"
+  | "day3_offer"
   | "close_stats"
   | "close_offer"
   | "close_lastcall";
@@ -464,7 +466,7 @@ export function renderChallengeSequenceEmail(
         rail(
           "The week ahead",
           "Foundations → Research → Community → Practice → Putting it together",
-          `Day 1 lays the groundwork. Day 2 you research with Kai. Day 3 you work the community watchlist. Day 4 you screen and practice. Day 5 you pull it all together.`,
+          `Day 1 you build your first practice watchlist. Day 2 you research with Kai. Day 3 you work the community watchlist. Day 4 you screen and practice. Day 5 you pull it all together.`,
           "orange"
         ) +
         paragraph(
@@ -482,7 +484,7 @@ export function renderChallengeSequenceEmail(
           [
             `Hi ${name},`,
             "Three days until the 5-Day Investing Challenge (starts Mon, Sept 1).",
-            "The arc: Day 1 foundations, Day 2 research with Kai, Day 3 community watchlist, Day 4 screener + practice, Day 5 putting it all together.",
+            "The arc: Day 1 build your first practice watchlist, Day 2 research with Kai, Day 3 community watchlist, Day 4 screener + practice, Day 5 putting it all together.",
             `Warm up now: ${u}/dashboard`,
             "Add Sept 1–5 mornings to your calendar — showing up is 80% of it.",
           ],
@@ -500,8 +502,8 @@ export function renderChallengeSequenceEmail(
         ) +
         rail(
           "Day 1 preview",
-          "Foundations — the vocabulary that unlocks everything else",
-          `We start with the handful of ideas that make every other day make sense. Fifteen focused minutes, no prior experience needed.`,
+          "Build your first practice watchlist — together if you can",
+          `We start by making something real you keep: a short list of companies you want to follow. About 30 minutes, no prior experience needed — do it with family, a friend, or solo.`,
           "orange"
         ) +
         paragraph(
@@ -519,7 +521,7 @@ export function renderChallengeSequenceEmail(
           [
             `Hi ${name},`,
             "Tomorrow the 5-Day Investing Challenge begins. Each day you'll get one short email with that day's mission and a direct link.",
-            "Day 1 is Foundations — the vocabulary that unlocks everything else. ~15 focused minutes.",
+            "Day 1 you build your first practice watchlist — a short list of companies you want to follow. ~30 minutes, no experience needed, together if you can.",
             `Tonight: confirm you can log in (${u}/dashboard) and decide WHEN tomorrow you'll do your mission.`,
             "See you in the morning.",
           ],
@@ -561,33 +563,40 @@ export function renderChallengeSequenceEmail(
 
     /* ── 4. DAILY CHALLENGE MISSIONS (Sept 1-5) ─────────────────────────── */
     case "day1": {
-      const subject = "Day 1 mission: Foundations";
+      const subject = "Day 1 mission: build your first practice watchlist";
       const inner =
-        sectionHead(`Day 1 — Foundations`) +
+        sectionHead(`Day 1 — Your first practice watchlist`) +
         dayStrip(1) +
         paragraph(
-          `Welcome to Day 1, ${esc(name)}. Today is about the ground floor: the handful of ideas that make everything else this week click. Skip these and later days feel like guesswork; nail them and the rest falls into place.`
+          `Welcome to Day 1, ${esc(name)}. No experience needed — we learn together, and we start by making something real you can keep. Today you'll build your very first <strong>practice watchlist</strong>: a short list of companies you want to follow. Grab whoever's around — a partner, a friend, the kids — or fly solo. However you do it, it's yours by the end of 30 minutes.`
         ) +
         rail(
-          "Today's mission (~15 min)",
-          "Complete the Foundations lesson in Start Here",
-          `Work through the first lesson track, then write one sentence in the community: the single idea that finally clicked for you.`,
+          "Today's mission (~30 min, together if you can)",
+          "Set up your practice watchlist — 3 to 5 companies",
+          `<strong>1.</strong> Open your <a href="${u}/watchlist" target="_blank" style="color:${C.accentInk};font-weight:700;text-decoration:none;">Watchlist</a>.<br /><strong>2.</strong> Add 3–5 companies you already know from real life — a store you shop at, a phone you use, a game you play.<br /><strong>3.</strong> For each one, jot a one-line reason you're curious. (No thesis required — "we buy this every week" counts.)<br /><strong>4.</strong> Not sure who to add? <a href="${u}/kai" target="_blank" style="color:${C.accentInk};font-weight:700;text-decoration:none;">Ask Kai</a> for a few beginner-friendly names.`,
+          "teal"
+        ) +
+        ctaRow(cta("Build your watchlist", `${u}/watchlist`, "teal")) +
+        rail(
+          "Then share it — the Day 1 artifact",
+          "Post your watchlist to the community",
+          `Drop your list in the <a href="${u}/community" target="_blank" style="color:${C.accentInk};font-weight:700;text-decoration:none;">community feed</a> with one line about why you picked them. Seeing everyone's first list — families, couples, friends, solo beginners — is where Day 1 really clicks.`,
           "orange"
         ) +
-        ctaRow(cta("Start Day 1", `${u}/start-here`)) +
         paragraph(
-          `Stuck on a term? <a href="${u}/kai" target="_blank" style="color:${C.accent};font-weight:700;text-decoration:none;">Ask Kai to explain it like you're new &rsaquo;</a> — that's exactly what it's for.`
+          `<span style="font-size:13px;color:${C.faint};">This is the foundation for the whole week: tomorrow you'll research one of these names with Kai, and by Friday you'll have a routine you can repeat for good.</span>`
         );
       return {
         subject,
-        html: shell("The ground-floor ideas that make the whole week click.", "DAY 1 OF 5", inner, unsubUrl),
+        html: shell("Build something real you can keep — your first practice watchlist, in 30 minutes.", "DAY 1 OF 5", inner, unsubUrl),
         text: plain(
           subject,
           [
-            `Day 1 — Foundations. Hi ${name},`,
-            "Today is the ground floor: the handful of ideas that make everything else this week click.",
-            `Mission (~15 min): complete the Foundations lesson in Start Here, then post the one idea that clicked. ${u}/start-here`,
-            `Stuck on a term? Ask Kai to explain it like you're new: ${u}/kai`,
+            `Day 1 — Your first practice watchlist. Hi ${name},`,
+            "No experience needed — we learn together. Today you build your first practice watchlist: a short list of companies you want to follow. Do it with family, a friend, or solo — 30 minutes, and it's yours.",
+            `Mission (~30 min): 1) Open your Watchlist (${u}/watchlist). 2) Add 3–5 companies you already know from real life. 3) Write a one-line reason for each. 4) Stuck on who to add? Ask Kai (${u}/kai).`,
+            `Then share it — the Day 1 artifact: post your watchlist to the community feed with why you picked them: ${u}/community`,
+            "This is the foundation for the week — tomorrow you research one of these names with Kai.",
           ],
           unsubUrl
         ),
@@ -723,6 +732,47 @@ export function renderChallengeSequenceEmail(
             "Today you connect the dots into a repeatable routine.",
             `Mission (~15 min): run your own loop — screen (${u}/screener) → research with Kai → add to watchlist with a reason → set one alert. Then post what you'll keep doing.`,
             "Tonight we'll send a recap of everything you built this week.",
+          ],
+          unsubUrl
+        ),
+      };
+    }
+
+    /* ── 4b. MID-WEEK CONTINUE PITCH (Sept 3 PM) ────────────────────────── */
+    case "day3_offer": {
+      const subject = "You're already doing the thing — keep going together?";
+      const inner =
+        sectionHead(`Look what you've already built, ${esc(name)}`) +
+        paragraph(
+          `It's only Wednesday and look back at your week so far: you set up a real practice watchlist, you researched a company with Kai, and today you plugged into what the whole room is watching. That's not "someday" — that's <strong>you, already investing your attention like someone who's serious about learning.</strong>`
+        ) +
+        paragraph(
+          `Here's the honest thing about a habit like this: the magic isn't in five days, it's in what comes after them. The people who keep a watchlist, keep asking questions, and keep showing up to a room that's doing the same — that's who this actually changes.`
+        ) +
+        rail(
+          "No pressure, just an open door",
+          "Keep the whole Club for $99/mo",
+          `Everything you've used this week — the watchlist, Kai, the screener, alerts, live classes, the community — stays yours, month to month. Cancel anytime; nothing was ever on a card, and whatever you decide, everything you've built this week stays put.`,
+          "orange"
+        ) +
+        ctaRow(cta("Keep going — $99/mo", continueUrl)) +
+        paragraph(
+          `Whether you're doing this as a family, with a friend, or on your own, the loop is better in a room. Finish the week strong first — but if you already know you want to keep going, the door's open now.`
+        ) +
+        paragraph(
+          `<span style="font-size:13px;color:${C.faint};">No rush at all — we'll send a full recap and your options again this weekend. This is education, not financial advice; no income or return is promised.</span>`
+        );
+      return {
+        subject,
+        html: shell("Mid-week check-in: you're already doing the thing. Want to keep going?", "KEEP GOING TOGETHER", inner, unsubUrl),
+        text: plain(
+          subject,
+          [
+            `Hi ${name},`,
+            "It's only Wednesday and look at what you've already built this week: a real practice watchlist, a company researched with Kai, and today the community watchlist. That's you, already investing your attention like someone serious about learning.",
+            "The magic of a habit like this isn't in five days — it's in what comes after. The people who keep a watchlist, keep asking questions, and keep showing up to a room doing the same: that's who this changes.",
+            `No pressure, just an open door: keep the whole Club for $99/mo — watchlist, Kai, screener, alerts, live classes, community. Cancel anytime, nothing on a card, everything you built stays: ${continueUrl}`,
+            "Family, friend, or solo — the loop is better in a room. Finish the week strong first, but if you already know you want to keep going, the door's open now. We'll send a full recap this weekend.",
           ],
           unsubUrl
         ),
@@ -880,6 +930,7 @@ export const CHALLENGE_STEPS: readonly ChallengeStep[] = [
   "day3",
   "day4",
   "day5",
+  "day3_offer",
   "close_stats",
   "close_offer",
   "close_lastcall",
