@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister, type Register } from "@/lib/register";
 import type { KaiChatSeed } from "@/lib/kai/chat-seed";
-import { KAI_CHAT_DAILY_CAP } from "@/lib/kai/persona";
+import { KAI_CHAT_DAILY_CAP, type KaiProfile } from "@/lib/kai/persona";
 import { PriceChart } from "@/components/kai/ReportCharts";
 import Markdown from "@/components/kai/Markdown";
 import {
@@ -108,6 +108,14 @@ export default function KaiChatClient({
   const seeded = initialData != null;
   const [ready, setReady] = useState(seeded);
   const [register, setRegister] = useState<Register>(initialData?.register ?? "adult");
+  // Server-resolved guardrail profile (drives the cosmetic suggestion chips —
+  // the actual guardrails are enforced server-side in the chat route).
+  const [profile, setProfile] = useState<KaiProfile>(
+    initialData?.profile ?? (initialData?.register === "kid" ? "kid" : "family-adult")
+  );
+  const [canToggleDeepMode] = useState(initialData?.canToggleDeepMode ?? false);
+  const [deepMode, setDeepMode] = useState(initialData?.deepMode ?? false);
+  const [deepModeSaving, setDeepModeSaving] = useState(false);
   const [tier, setTier] = useState<FamilyTier>(initialData?.tier ?? "fic");
   const [userId, setUserId] = useState(initialData?.userId ?? "");
 
@@ -151,6 +159,28 @@ export default function KaiChatClient({
     setMemorySummary("");
     setMemoryUpdatedAt(null);
     setMemoryClearing(false);
+  }
+
+  // "Deeper analysis mode" opt-in for Family-Mode adults (Lane C2). Persists
+  // server-side; the chat route re-resolves the profile from it on the next
+  // message, so we optimistically flip the local chips too.
+  async function toggleDeepMode(next: boolean) {
+    setDeepModeSaving(true);
+    try {
+      const res = await fetch("/api/kai/deep-mode", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      });
+      if (res.ok) {
+        setDeepMode(next);
+        setProfile(next ? "club" : "family-adult");
+      }
+    } catch {
+      /* best-effort; leave state unchanged on failure */
+    } finally {
+      setDeepModeSaving(false);
+    }
   }
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -199,7 +229,12 @@ export default function KaiChatClient({
         .select("role, age_group, track, family_id")
         .eq("id", user.id)
         .maybeSingle();
-      setRegister(deriveRegister(profile));
+      const reg = deriveRegister(profile);
+      setRegister(reg);
+      // Fallback path can't compute solo/mode client-side — approximate the
+      // profile conservatively (kid stays kid; everyone else education-first).
+      // The real guardrail is enforced server-side regardless of this value.
+      setProfile(reg === "kid" ? "kid" : "family-adult");
       setTier(await getFamilyTier(supabase, profile?.family_id));
       await Promise.all([loadThreads(), loadUsage(user.id), loadMemory(user.id)]);
       setReady(true);
@@ -467,9 +502,11 @@ export default function KaiChatClient({
                 </div>
               )}
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {(isKid
+                {(profile === "kid"
                   ? ["What does Apple make?", "Tell me about Disney", "How does Nintendo earn money?"]
-                  : ["Explain Apple's business", "Show me Nvidia's 1-year chart", "What are Costco's risks?"]
+                  : profile === "club"
+                    ? ["What changed today?", "Read the setup on NVDA", "What's setting up today?"]
+                    : ["Explain Apple's business", "Show me Nvidia's 1-year chart", "What are Costco's risks?"]
                 ).map((q) => (
                   <button
                     key={q}
@@ -602,6 +639,37 @@ export default function KaiChatClient({
               <p className="mt-2 text-[11px] text-soft">
                 Last updated {new Date(memoryUpdatedAt).toLocaleDateString()}
               </p>
+            )}
+
+            {canToggleDeepMode && (
+              <div className="mt-4 rounded-xl border border-sand bg-paper/40 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-ink">Deeper analysis mode</p>
+                    <p className="mt-0.5 text-[11px] leading-snug text-soft">
+                      Sharper, numbers-first market reads — key levels, setup structure,
+                      and &ldquo;what changed today&rdquo; briefings. Still education, never advice.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={deepMode}
+                    disabled={deepModeSaving}
+                    onClick={() => toggleDeepMode(!deepMode)}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                      deepMode ? "bg-gold-500" : "bg-sand"
+                    }`}
+                    aria-label="Toggle deeper analysis mode"
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                        deepMode ? "translate-x-[22px]" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             )}
 
             {memorySummary && (

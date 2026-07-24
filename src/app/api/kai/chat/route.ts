@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getFamilyTier } from "@/lib/tier";
-import { deriveRegister } from "@/lib/register";
+import { deriveRegister, isSoloHousehold } from "@/lib/register";
 import {
   getQuote,
   getBars,
@@ -14,7 +14,8 @@ import {
   buildChatSystemPrompt,
   buildPersonalizationBlock,
   buildMemorySummaryPrompt,
-  CHAT_TOOLS,
+  chatToolsForProfile,
+  resolveKaiProfile,
   KAI_CHAT_DAILY_CAP,
   KAI_MAX_TOOL_ROUNDS,
   KAI_MODEL,
@@ -44,12 +45,142 @@ function sse(obj: unknown): Uint8Array {
   return new TextEncoder().encode(`data: ${JSON.stringify(obj)}\n\n`);
 }
 
+/** Context the club-only tools need (member-scoped Supabase + their family). */
+interface ToolCtx {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  familyId: string | null;
+}
+
+/** Compact one screener_metrics row into the fields the briefing cares about. */
+function summarizeMetrics(m: Record<string, unknown>) {
+  const num = (v: unknown) => (typeof v === "number" ? v : v == null ? null : Number(v));
+  const round = (v: number | null, d = 1) => (v == null || Number.isNaN(v) ? null : Number(v.toFixed(d)));
+  const distHigh = round(num(m.dist_52w_high));
+  const distLow = round(num(m.dist_52w_low));
+  const events: string[] = [];
+  if (distHigh != null && distHigh >= -1.5) events.push("at/near 52-week high");
+  if (distLow != null && distLow >= 0 && distLow <= 3) events.push("at/near 52-week low");
+  const vr = round(num(m.vol_ratio), 2);
+  if (vr != null && vr >= 1.8) events.push(`volume surge (${vr}x avg)`);
+  const gap = round(num(m.gap_pct));
+  if (gap != null && Math.abs(gap) >= 2) events.push(`gap ${gap > 0 ? "up" : "down"} ${gap}%`);
+  return {
+    ticker: m.ticker,
+    name: m.name ?? null,
+    price: round(num(m.price), 2),
+    chg_1d_pct: round(num(m.chg_1d)),
+    chg_5d_pct: round(num(m.chg_5d)),
+    vol_ratio: vr,
+    gap_pct: gap,
+    rsi14: round(num(m.rsi14)),
+    ema20: m.ema20_state ?? null,
+    ema50: m.ema50_state ?? null,
+    dist_52w_high_pct: distHigh,
+    dist_52w_low_pct: distLow,
+    events: events.length ? events : null,
+  };
+}
+
+/**
+ * get_daily_changes — the club "what changed today" briefing (Lane C2). Pulls
+ * today's screener deltas + fresh Club Newsroom articles for one ticker or the
+ * member's watchlist. Uses the member-scoped client (screener/news are
+ * authenticated-read; family_watchlist is own-family under RLS).
+ */
+async function runDailyChanges(
+  input: Record<string, unknown>,
+  ctx: ToolCtx
+): Promise<{ result: string }> {
+  const METRIC_COLS =
+    "ticker, name, price, chg_1d, chg_5d, vol_ratio, gap_pct, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, updated_at";
+  const scope = String(input.scope || "").toLowerCase() === "watchlist" ? "watchlist" : "ticker";
+  const twoDaysAgo = new Date(Date.now() - 2 * 864e5).toISOString();
+
+  if (scope === "ticker") {
+    const sym = normalizeSymbol(String(input.symbol || ""));
+    if (!sym) return { result: "Provide a ticker symbol for a single-ticker briefing." };
+    const { data: m } = await ctx.supabase
+      .from("screener_metrics")
+      .select(METRIC_COLS)
+      .eq("ticker", sym)
+      .maybeSingle();
+    const { data: news } = await ctx.supabase
+      .from("news_articles")
+      .select("title, dek, kind, generated_at")
+      .eq("published", true)
+      .contains("tickers", [sym])
+      .gte("generated_at", twoDaysAgo)
+      .order("generated_at", { ascending: false })
+      .limit(5);
+    if (!m) {
+      return {
+        result: JSON.stringify({
+          ticker: sym,
+          note: "Not in the in-house screener universe — no daily-change snapshot. Use get_quote/get_bars for its price action.",
+          fresh_news: news || [],
+        }),
+      };
+    }
+    return {
+      result: JSON.stringify({
+        asof: (m as Record<string, unknown>).updated_at,
+        snapshot: summarizeMetrics(m as Record<string, unknown>),
+        fresh_news: news || [],
+        note: "Deltas are today's session vs. prior close; end-of-day / delayed ~15 min.",
+      }),
+    };
+  }
+
+  // scope === "watchlist"
+  if (!ctx.familyId) {
+    return { result: "No watchlist yet — this member isn't in a family/watchlist context." };
+  }
+  const { data: wl } = await ctx.supabase
+    .from("family_watchlist")
+    .select("ticker, company_name")
+    .eq("family_id", ctx.familyId);
+  const tickers = Array.from(
+    new Set((wl || []).map((r) => String(r.ticker || "").toUpperCase()).filter(Boolean))
+  );
+  if (!tickers.length) {
+    return { result: "The member's watchlist is empty. Suggest they add names on /watchlist." };
+  }
+  const { data: metrics } = await ctx.supabase
+    .from("screener_metrics")
+    .select(METRIC_COLS)
+    .in("ticker", tickers);
+  const { data: news } = await ctx.supabase
+    .from("news_articles")
+    .select("title, tickers, generated_at")
+    .eq("published", true)
+    .overlaps("tickers", tickers)
+    .gte("generated_at", twoDaysAgo)
+    .order("generated_at", { ascending: false })
+    .limit(8);
+  const rows = (metrics || []).map((m) => summarizeMetrics(m as Record<string, unknown>));
+  // Sort by absolute day move so the biggest movers lead the briefing.
+  rows.sort((a, b) => Math.abs((b.chg_1d_pct ?? 0) as number) - Math.abs((a.chg_1d_pct ?? 0) as number));
+  const covered = new Set(rows.map((r) => r.ticker));
+  const noData = tickers.filter((t) => !covered.has(t));
+  return {
+    result: JSON.stringify({
+      watchlist_count: tickers.length,
+      movers: rows,
+      not_in_screener: noData.length ? noData : null,
+      fresh_news: news || [],
+      note: "Deltas are today's session vs. prior close, sorted by biggest move; end-of-day / delayed ~15 min.",
+    }),
+  };
+}
+
 /** Execute one Kai tool → { toolResult (string for the model), block? (client render) }. */
 async function runTool(
   name: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  ctx: ToolCtx
 ): Promise<{ result: string; block?: Block }> {
   try {
+    if (name === "get_daily_changes") return runDailyChanges(input, ctx);
     if (name === "get_quote") {
       const sym = normalizeSymbol(String(input.symbol || ""));
       if (!sym) return { result: "Invalid ticker symbol." };
@@ -212,10 +343,11 @@ export async function POST(req: NextRequest) {
   // Profile → register (age-aware) + tier (cap).
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, age_group, track, family_id")
+    .select("role, age_group, track, family_id, kai_deep_mode")
     .eq("id", user.id)
     .maybeSingle();
   const register = deriveRegister(profile);
+  const deepMode = profile?.kai_deep_mode === true;
   const tier = await getFamilyTier(supabase, profile?.family_id);
 
   const cap = KAI_CHAT_DAILY_CAP[tier] ?? 0;
@@ -273,6 +405,7 @@ export async function POST(req: NextRequest) {
       goals?: string[] | null;
       market_interest?: string | null;
       household?: { adults?: number; kids?: number; kid_age_ranges?: string[] } | null;
+      hh_completed_at?: string | null;
     } | null;
   };
   const fam = pers.family || {};
@@ -285,6 +418,16 @@ export async function POST(req: NextRequest) {
     household: fam.household ?? null,
     memory: memRow?.summary ?? null,
   });
+
+  // Resolve the guardrail PROFILE server-side (Lane C2). Solo = a COMPLETED
+  // family-of-one (Family Mode off) — require hh_completed_at so a half-finished
+  // default-shaped draft is never mistaken for solo. (C1's src/lib/mode.ts will
+  // own this signal once it lands; this mirrors the 13A isSoloProfile pattern.)
+  const solo =
+    !!fam.hh_completed_at && isSoloHousehold(fam.household ?? null);
+  const profileTier = resolveKaiProfile(register, { solo, deepMode });
+  const tools = chatToolsForProfile(profileTier);
+  const toolCtx = { supabase, familyId: profile?.family_id ?? null };
 
   // Ensure a thread (own-row).
   if (!threadId) {
@@ -322,7 +465,7 @@ export async function POST(req: NextRequest) {
     messages.push({ role: "user", content: text });
   }
 
-  const system = buildChatSystemPrompt(register, personalizationBlock);
+  const system = buildChatSystemPrompt(register, profileTier, personalizationBlock);
   const tid = threadId;
 
   const stream = new ReadableStream({
@@ -347,7 +490,7 @@ export async function POST(req: NextRequest) {
               max_tokens: 1600,
               thinking: { type: "disabled" },
               system,
-              tools: CHAT_TOOLS,
+              tools,
               stream: true,
               messages,
             }),
@@ -445,7 +588,7 @@ export async function POST(req: NextRequest) {
           const toolResults: unknown[] = [];
           for (const tu of toolUses) {
             emit({ type: "tool", name: tu.name, input: tu.input });
-            const { result, block } = await runTool(tu.name, tu.input);
+            const { result, block } = await runTool(tu.name, tu.input, toolCtx);
             if (block) {
               collectedBlocks.push(block);
               emit({ type: "block", block });

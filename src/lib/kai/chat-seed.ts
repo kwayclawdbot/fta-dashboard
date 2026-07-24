@@ -1,7 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
-import { deriveRegister, type Register } from "@/lib/register";
+import { deriveRegister, isSoloHousehold, type Register } from "@/lib/register";
+import { resolveKaiProfile, type KaiProfile } from "@/lib/kai/persona";
 
 export interface KaiThread {
   id: string;
@@ -13,6 +14,12 @@ export interface KaiThread {
 export interface KaiChatSeed {
   userId: string;
   register: Register;
+  /** Server-resolved guardrail profile — drives the (cosmetic) suggestion chips. */
+  profile: KaiProfile;
+  /** Whether this member is a Family-Mode adult who MAY toggle "Deeper analysis". */
+  canToggleDeepMode: boolean;
+  /** Current state of that opt-in. */
+  deepMode: boolean;
   tier: FamilyTier;
   threads: KaiThread[];
   usedToday: number;
@@ -38,12 +45,29 @@ export async function getKaiChatSeed(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, age_group, track, family_id")
+    .select("role, age_group, track, family_id, kai_deep_mode")
     .eq("id", user.id)
     .maybeSingle();
 
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
+
+  // Solo signal for profile resolution (mirrors the chat route; C1's mode.ts will
+  // own this once it lands). kai_personalization is SECURITY DEFINER so it returns
+  // the household past the parent-only family_profiles RLS, hard-scoped to caller.
+  const { data: persData } = await supabase.rpc("kai_personalization");
+  const persFam = ((persData || {}) as {
+    family?: {
+      household?: { adults?: number; kids?: number; kid_age_ranges?: string[] } | null;
+      hh_completed_at?: string | null;
+    } | null;
+  }).family;
+  const register = deriveRegister(profile);
+  const deepMode = profile?.kai_deep_mode === true;
+  const solo = !!persFam?.hh_completed_at && isSoloHousehold(persFam?.household ?? null);
+  const kaiProfile = resolveKaiProfile(register, { solo, deepMode });
+  // A Family-Mode adult (not already solo/club) is the only one who may opt in.
+  const canToggleDeepMode = register === "adult" && !solo;
 
   const [tier, threadsRes, usageRes, memoryRes] = await Promise.all([
     getFamilyTier(supabase, profile?.family_id),
@@ -66,7 +90,10 @@ export async function getKaiChatSeed(
 
   return {
     userId: user.id,
-    register: deriveRegister(profile),
+    register,
+    profile: kaiProfile,
+    canToggleDeepMode,
+    deepMode,
     tier,
     threads: (threadsRes.data as KaiThread[]) || [],
     usedToday: usageRes.count ?? 0,
