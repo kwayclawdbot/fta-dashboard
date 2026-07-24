@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Flame, Users, RefreshCw, Download, Activity, TrendingUp } from "lucide-react";
+import { Flame, Users, RefreshCw, Download, Activity, TrendingUp, Mail } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 /** Cohort shape returned by the admin_challenge_cohort RPC (migration 126). */
@@ -18,6 +18,13 @@ interface CohortMember {
   alert_rules: number;
   posts: number;
 }
+interface SequenceStat {
+  step: string;
+  sent: number;
+  pending: number;
+  other: number;
+  first_scheduled: string;
+}
 interface CohortData {
   total: number;
   activated: number;
@@ -26,8 +33,30 @@ interface CohortData {
   pass_active: number;
   downgraded_free: number;
   signups_by_day: { day: string; signups: number }[];
+  sequences?: SequenceStat[];
   members: CohortMember[];
 }
+
+/** Human labels for challenge_sequences steps (mirrors CHALLENGE_STEPS order). */
+const STEP_LABELS: Record<string, string> = {
+  welcome: "Registration welcome",
+  aug_watchlist: "Aug · Community Watchlist",
+  aug_kai: "Aug · Ask Kai + research",
+  aug_screener: "Aug · Screener + alerts",
+  aug_belts: "Aug · Belts + leaderboard",
+  show_d3: "Show-up · D-3",
+  show_d1: "Show-up · D-1",
+  show_dayof: "Show-up · day-of",
+  day1: "Day 1 · Foundations",
+  day2: "Day 2 · Research with Kai",
+  day3: "Day 3 · Community Watchlist",
+  day4: "Day 4 · Screener + practice",
+  day5: "Day 5 · Putting it together",
+  close_stats: "Close · Week recap",
+  close_offer: "Close · $99 + $1,500 offer",
+  close_lastcall: "Close · Last call",
+};
+const STEP_ORDER = Object.keys(STEP_LABELS);
 
 function pct(n: number, d: number): number {
   return d > 0 ? Math.round((n / d) * 100) : 0;
@@ -201,6 +230,67 @@ export default function ChallengeCohortPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Email sequence status */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Mail className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-medium text-zinc-300">Email sequence</span>
+              <span className="text-[11px] text-zinc-600">
+                (owner-directed; gated by challenge_emails_enabled)
+              </span>
+            </div>
+            {(() => {
+              const seq = data.sequences ?? [];
+              const byStep = new Map(seq.map((s) => [s.step, s]));
+              const totalSent = seq.reduce((n, s) => n + s.sent, 0);
+              const totalPending = seq.reduce((n, s) => n + s.pending, 0);
+              if (data.total === 0) {
+                return (
+                  <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5" /> No cohort yet — steps schedule per signup.
+                    16 templates ready: instant welcome, 4 August value emails, 3 show-up emails,
+                    5 daily missions, 3 close emails.
+                  </p>
+                );
+              }
+              return (
+                <>
+                  <div className="flex gap-4 mb-3 text-xs text-zinc-400">
+                    <span>
+                      <span className="text-emerald-400 font-semibold tabular-nums">{totalSent}</span> sent
+                    </span>
+                    <span>
+                      <span className="text-amber-400 font-semibold tabular-nums">{totalPending}</span> scheduled
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {STEP_ORDER.map((step) => {
+                      const s = byStep.get(step);
+                      return (
+                        <div key={step} className="flex items-center gap-3 text-xs">
+                          <span className="w-52 text-zinc-400 shrink-0 truncate">
+                            {STEP_LABELS[step]}
+                          </span>
+                          <span className="w-16 text-right tabular-nums text-emerald-400">
+                            {s ? s.sent : 0} sent
+                          </span>
+                          <span className="w-20 text-right tabular-nums text-amber-400">
+                            {s ? s.pending : 0} pending
+                          </span>
+                          {s && s.other > 0 && (
+                            <span className="text-right tabular-nums text-zinc-600">
+                              {s.other} skip/supp
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* Members */}

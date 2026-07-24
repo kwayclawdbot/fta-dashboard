@@ -39,6 +39,22 @@
     {
       "path": "/api/cron/expire-challenge-passes",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/club-clock",
+      "schedule": "30 16 * * *"
+    },
+    {
+      "path": "/api/cron/challenge-sequences",
+      "schedule": "10 12 * * *"
+    },
+    {
+      "path": "/api/cron/challenge-sequences",
+      "schedule": "10 15 * * *"
+    },
+    {
+      "path": "/api/cron/challenge-sequences",
+      "schedule": "10 23 * * *"
     }
   ]
 }

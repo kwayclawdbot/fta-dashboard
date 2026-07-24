@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enrollChallengeSequence } from "@/lib/server/challenge-sequence";
 
 export const dynamic = "force-dynamic";
 
@@ -167,6 +168,19 @@ export async function POST(req: Request) {
       onboarding_complete: false,
     })
     .eq("id", userId);
+
+  // 4b. Challenge cohort email machine (Lane C8): schedule the fixed-calendar
+  //     sequence and fire the registration welcome immediately. Best-effort —
+  //     a mailer or scheduling hiccup must never block the signup. The generic
+  //     welcome drip is suppressed for this cohort inside enroll_welcome_drip().
+  if (isChallenge) {
+    await enrollChallengeSequence(supabase, {
+      userId,
+      familyId,
+      email,
+      firstName,
+    }).catch(() => {});
+  }
 
   // 5. RSVP to the free class (if one is scheduled).
   if (session?.id) {

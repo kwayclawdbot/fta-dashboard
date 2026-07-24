@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
   }
 
   const rows = passes ?? [];
-  const counts = { warn_3d: 0, warn_1d: 0, expired: 0, skipped: 0, failed: 0 };
+  const counts = { warn_3d: 0, warn_1d: 0, expired: 0, skipped: 0, failed: 0, ceded_to_c8: 0 };
 
   for (const p of rows) {
     const exp = new Date(p.expires_at as string).getTime();
@@ -136,6 +136,23 @@ export async function GET(req: NextRequest) {
 
     if (!owner?.email) {
       counts.skipped++;
+      continue;
+    }
+
+    // ── Lane C8 dedupe: if this member is enrolled in the dedicated challenge
+    // sequence, that machine OWNS all end-of-challenge comms (its close_stats /
+    // close_offer / close_lastcall emails REPLACE these generic warn/expiry
+    // notices). Cede to it — never double-email. Any legacy/manual challenge
+    // pass created WITHOUT going through the sequence enrollment (no rows) still
+    // falls through to these generic notices as a safety net.
+    const { data: seqOwned } = await db
+      .from("challenge_sequences")
+      .select("user_id")
+      .eq("user_id", owner.id)
+      .limit(1)
+      .maybeSingle();
+    if (seqOwned) {
+      counts.ceded_to_c8++;
       continue;
     }
 
@@ -185,6 +202,7 @@ export async function GET(req: NextRequest) {
     scanned: rows.length,
     sent: { warn_3d: counts.warn_3d, warn_1d: counts.warn_1d, expired: counts.expired },
     skipped: counts.skipped,
+    ceded_to_c8: counts.ceded_to_c8,
     failed: counts.failed,
   });
 }
