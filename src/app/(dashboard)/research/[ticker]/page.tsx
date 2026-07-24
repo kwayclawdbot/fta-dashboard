@@ -191,6 +191,7 @@ export default function TickerResearchPage() {
   const [quote, setQuote] = useState<MarketQuote | null>(null);
   const [report, setReport] = useState<KaiReport | null>(null);
   const [research, setResearch] = useState<ResearchPayload | null>(null);
+  const [researchResolved, setResearchResolved] = useState(false);
   const [bars, setBars] = useState<MarketBar[]>([]);
   const [barsState, setBarsState] = useState<"idle" | "loading" | "done">("idle");
   const [news, setNews] = useState<NewsHeadline[]>([]);
@@ -254,48 +255,73 @@ export default function TickerResearchPage() {
   );
 
   const load = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // FAIL-SOFT: every data source loads independently. A single failing query
+    // must never leave the whole page stuck on the skeleton — so the gating
+    // reads sit in their own try/catch and `loading`/`tierResolved` always clear
+    // in `finally`. Each section then renders from whatever resolved (or its own
+    // honest placeholder) rather than the page blanking out.
+    let user: { id: string } | null = null;
+    try {
+      const res = await supabase.auth.getUser();
+      user = res.data.user;
+    } catch {
+      /* auth read failed — treated as signed-out below */
+    }
     if (!user) {
       setLoading(false);
       setTierResolved(true);
       return;
     }
     setUserId(user.id);
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("family_id, role, age_group")
-      .eq("id", user.id)
-      .maybeSingle();
-    setRole(profile?.role || "parent");
-    setAgeGroup(profile?.age_group ?? null);
-    const t = await getFamilyTier(supabase, profile?.family_id);
-    setTier(t);
-    setTierResolved(true);
 
-    // Board entries for this ticker (attribution + snapshot + latest close).
-    const { data: board } = await supabase.rpc("get_community_board");
-    const all = ((board || {}) as { entries?: CommunityEntry[] }).entries || [];
-    setEntries(all.filter((e) => e.ticker.toUpperCase() === ticker));
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("family_id, role, age_group")
+        .eq("id", user.id)
+        .maybeSingle();
+      setRole(profile?.role || "parent");
+      setAgeGroup(profile?.age_group ?? null);
+      const t = await getFamilyTier(supabase, profile?.family_id);
+      setTier(t);
+    } catch {
+      /* keep defaults (parent / fic) — page still renders, gating stays safe */
+    } finally {
+      setTierResolved(true);
+      setLoading(false);
+    }
 
-    // Canonical per-ticker wiki thread (typed contributions).
-    const { data: rows } = await supabase
+    // Secondary reads — each isolated so one failure can't sink the others.
+    // Supabase builders are PromiseLike (thenable, no .catch), so failures are
+    // absorbed via the 2-arg then(onOk, onErr).
+    const swallow = () => {};
+    supabase.rpc("get_community_board").then(({ data: board }) => {
+      const all = ((board || {}) as { entries?: CommunityEntry[] }).entries || [];
+      setEntries(all.filter((e) => e.ticker.toUpperCase() === ticker));
+    }, swallow);
+
+    supabase
       .from("community_ticker_comments")
       .select(COMMENT_SELECT)
       .eq("ticker", ticker)
-      .order("created_at", { ascending: true });
-    setComments((rows || []).map(normComment));
+      .order("created_at", { ascending: true })
+      .then(({ data: rows }) => setComments((rows || []).map(normComment)), swallow);
 
-    // Latest published Kai research report (if any) — resolved before the tab
-    // row renders, so the Kai tab's presence is known on first paint.
-    const { data: rep } = await supabase.rpc("get_latest_kai_report", { p_ticker: ticker });
-    setReport((rep as KaiReport) ?? null);
+    supabase
+      .rpc("get_latest_kai_report", { p_ticker: ticker })
+      .then(({ data: rep }) => setReport((rep as KaiReport) ?? null), swallow);
 
-    setLoading(false);
     // Eager: hero + Overview data. Charts (bars) and News fetch lazily per-tab.
-    fetchQuote(ticker).then(setQuote);
-    fetchResearch(ticker).then(setResearch);
+    // Both helpers already swallow errors (return null); mark research resolved
+    // either way so the scorecard can show an honest state instead of pulsing.
+    fetchQuote(ticker).then(setQuote, swallow);
+    fetchResearch(ticker).then(
+      (r) => {
+        setResearch(r);
+        setResearchResolved(true);
+      },
+      () => setResearchResolved(true)
+    );
   }, [supabase, ticker]);
 
   useEffect(() => {
@@ -470,7 +496,9 @@ export default function TickerResearchPage() {
           </div>
         </m.div>
 
-        {/* Scorecard summary — gauge + rings, permanent anti-overload device */}
+        {/* Scorecard summary — gauge + rings, permanent anti-overload device.
+            Three states: graded → Scorecard; ungraded/failed → honest note;
+            still-loading → skeleton. Never a permanent pulse. */}
         {research ? (
           ungraded ? (
             <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
@@ -483,6 +511,13 @@ export default function TickerResearchPage() {
           ) : (
             <Scorecard grades={research.grades} locked={locked} mode="summary" />
           )
+        ) : researchResolved ? (
+          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
+            <p className="text-sm text-soft">
+              The scorecard for {companyName} is updating and will be back shortly. The price,
+              charts, news, and community research below still work.
+            </p>
+          </section>
         ) : (
           <div className="h-40 animate-pulse rounded-2xl bg-sand/40" />
         )}
