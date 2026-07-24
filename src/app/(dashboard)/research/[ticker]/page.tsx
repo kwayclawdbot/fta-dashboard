@@ -41,6 +41,9 @@ import {
   FinancialsSection,
 } from "@/components/research/ResearchSections";
 import { fetchResearch, type ResearchPayload } from "@/lib/research/types";
+import { fetchClubNewsForTicker } from "@/lib/news/client";
+import { KindChip } from "@/components/news/NewsCard";
+import { timeAgo as newsTimeAgo, type NewsCardData } from "@/lib/news/types";
 import {
   CONTRIBUTION_TYPES,
   contributionMeta,
@@ -159,6 +162,7 @@ export default function TickerResearchPage() {
   const [research, setResearch] = useState<ResearchPayload | null>(null);
   const [bars, setBars] = useState<MarketBar[]>([]);
   const [news, setNews] = useState<NewsHeadline[]>([]);
+  const [clubNews, setClubNews] = useState<NewsCardData[]>([]);
   const [draft, setDraft] = useState("");
   const [draftType, setDraftType] = useState<ContributionType>("note");
   const [filter, setFilter] = useState<string>("all");
@@ -207,6 +211,7 @@ export default function TickerResearchPage() {
     fetchQuote(ticker).then(setQuote);
     fetchResearch(ticker).then(setResearch);
     fetchNews(ticker, 6).then(setNews);
+    fetchClubNewsForTicker(supabase, ticker, 4).then(setClubNews);
     fetchBars(ticker, "2y").then(setBars);
   }, [supabase, ticker]);
 
@@ -418,9 +423,45 @@ export default function TickerResearchPage() {
         </Collapsible>
       )}
 
-      {/* ── News (collapsed) ─────────────────────────────────────────────── */}
-      <Collapsible storageKey="news" title="News" subtitle="Recent headlines from around the web">
-        <NewsList news={news} />
+      {/* ── News (collapsed) — two stacked groups (Lane 10) ──────────────── */}
+      <Collapsible
+        storageKey="news"
+        title="News"
+        subtitle="Club recaps + headlines from around the web"
+      >
+        <div className="space-y-5">
+          {clubNews.length > 0 && (
+            <div>
+              <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
+                <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
+              </h3>
+              <div className="space-y-2">
+                {clubNews.map((a) => (
+                  <Link
+                    key={a.slug}
+                    href={`/news/${a.slug}`}
+                    className="block rounded-xl border border-sand bg-paper px-3 py-2.5 transition-colors hover:border-gold-400"
+                  >
+                    <div className="mb-1 flex items-center gap-2">
+                      <KindChip kind={a.kind} />
+                      <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
+                    </div>
+                    <p className="text-sm font-semibold leading-snug text-ink">{a.title}</p>
+                    {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+          <div>
+            {clubNews.length > 0 && (
+              <h3 className="mb-2 font-display text-xs font-bold uppercase tracking-wider text-soft">
+                Around the web
+              </h3>
+            )}
+            <NewsList news={news} />
+          </div>
+        </div>
       </Collapsible>
 
       {/* ── Kai Research Report (premium long-form, if generated) ─────────── */}
