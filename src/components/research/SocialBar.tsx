@@ -42,6 +42,9 @@ export default function SocialBar({
   ageGroup,
   canVote = false,
   threadHref,
+  onCommentClick,
+  commentActive = false,
+  commentCount,
   showConsensus = false,
 }: {
   supabase?: SupabaseClient;
@@ -54,6 +57,12 @@ export default function SocialBar({
   canVote?: boolean;
   /** Where the comment affordance links / jumps to. */
   threadHref?: string;
+  /** When provided (card variant), the comment affordance toggles an INLINE
+   *  thread instead of navigating. Takes precedence over threadHref. */
+  onCommentClick?: () => void;
+  commentActive?: boolean;
+  /** Live override for the comment count (e.g. an inline thread's current size). */
+  commentCount?: number;
   showConsensus?: boolean;
 }) {
   const [s, setS] = useState<TickerSocial>({
@@ -147,14 +156,28 @@ export default function SocialBar({
           <Heart className={`h-3.5 w-3.5 ${s.myVote === 1 ? "fill-red-500" : ""}`} />
           {s.likes}
         </button>
-        {threadHref && (
-          <Link
-            href={threadHref}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold text-soft hover:bg-paper"
+        {onCommentClick ? (
+          <button
+            type="button"
+            onClick={onCommentClick}
+            aria-pressed={commentActive}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold transition-colors ${
+              commentActive ? "bg-chip-amber text-gold-800" : "text-soft hover:bg-paper"
+            }`}
           >
             <MessageCircle className="h-3.5 w-3.5" />
-            {s.commentCount}
-          </Link>
+            {commentCount ?? s.commentCount}
+          </button>
+        ) : (
+          threadHref && (
+            <Link
+              href={threadHref}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold text-soft hover:bg-paper"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              {commentCount ?? s.commentCount}
+            </Link>
+          )
         )}
       </div>
     );

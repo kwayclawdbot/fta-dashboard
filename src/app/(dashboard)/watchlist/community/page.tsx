@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { m } from "@/lib/motion";
 import {
   Users2,
@@ -25,6 +26,7 @@ import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import SocialBar from "@/components/research/SocialBar";
+import TickerThread from "@/components/research/TickerThread";
 import { fetchFavorites, type Favorite, type Vote } from "@/lib/research/social";
 import {
   pctSinceAdded,
@@ -46,7 +48,7 @@ import {
   HintDismiss,
 } from "@/components/hints/useNewMemberHints";
 
-type Tab = "board" | "record";
+type Tab = "board" | "favorites" | "record";
 
 /** Best "current" price for a ticker: live/delayed quote, else latest daily close. */
 function currentPrice(
@@ -95,6 +97,7 @@ export default function CommunityWatchlistPage() {
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [userId, setUserId] = useState("");
   const [ageGroup, setAgeGroup] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("board");
   // The "how to use the board" hint expires after the new-member window; the
   // delayed-price / not-advice compliance line below it stays permanent (Lane 7A).
@@ -114,10 +117,11 @@ export default function CommunityWatchlistPage() {
     // Resolve tier for the members-only gate (never flash the board to free).
     const { data: profile } = await supabase
       .from("profiles")
-      .select("family_id, age_group")
+      .select("family_id, age_group, role")
       .eq("id", user.id)
       .maybeSingle();
     setAgeGroup(profile?.age_group ?? null);
+    setRole(profile?.role ?? null);
     const t = await getFamilyTier(supabase, profile?.family_id);
     setTier(t);
     setTierResolved(true);
@@ -168,8 +172,8 @@ export default function CommunityWatchlistPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (tab !== "board" || tier === "free") return;
-    fetchFavorites(supabase, favWindow, 5).then(setFavorites);
+    if (tab !== "favorites" || tier === "free") return;
+    fetchFavorites(supabase, favWindow, 10).then(setFavorites);
   }, [favWindow, tab, tier, supabase]);
 
   useEffect(() => {
@@ -260,7 +264,8 @@ export default function CommunityWatchlistPage() {
       <div className="flex items-center gap-1.5">
         {[
           { id: "board" as Tab, label: "The board", icon: Users2 },
-          { id: "record" as Tab, label: "Pick Record", icon: Trophy },
+          { id: "favorites" as Tab, label: "Community Favorites", icon: Heart },
+          { id: "record" as Tab, label: "Performance", icon: Trophy },
         ].map((t) => {
           const Icon = t.icon;
           return (
@@ -282,49 +287,6 @@ export default function CommunityWatchlistPage() {
 
       {tab === "board" ? (
         <>
-          {/* Community Favorites strip (top by net likes) */}
-          {favorites.length > 0 && (
-            <section className="rounded-2xl border border-sand bg-midnight-900 p-4 shadow-soft">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 fill-red-500 text-red-500" />
-                  <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
-                    Community favorites
-                  </h2>
-                </div>
-                <div className="inline-flex rounded-lg border border-sand p-0.5">
-                  {(["all", "7d"] as const).map((w) => (
-                    <button
-                      key={w}
-                      onClick={() => setFavWindow(w)}
-                      className={`rounded-md px-2 py-0.5 text-[11px] font-semibold transition-colors ${
-                        favWindow === w ? "bg-gold-500 text-white" : "text-soft hover:text-ink"
-                      }`}
-                    >
-                      {w === "all" ? "All time" : "This week"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {favorites.map((f) => (
-                  <Link
-                    key={f.ticker}
-                    href={`/research/${encodeURIComponent(f.ticker)}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-sand bg-paper px-3 py-1.5 text-sm hover:border-gold-300"
-                  >
-                    <CompanyLogo symbol={f.ticker} name={f.company_name} size={20} />
-                    <span className="font-semibold text-ink">{f.ticker}</span>
-                    <span className="inline-flex items-center gap-0.5 text-xs font-bold text-red-500">
-                      <Heart className="h-3 w-3 fill-red-500" />
-                      {favWindow === "7d" ? f.score : f.net}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
           {entries.length === 0 && (
             <div className="rounded-2xl border border-dashed border-sand bg-paper/60 py-16 text-center">
               <Gem className="mx-auto mb-3 h-10 w-10 text-gold-400/60" />
@@ -360,6 +322,7 @@ export default function CommunityWatchlistPage() {
                     supabase={supabase}
                     userId={userId}
                     ageGroup={ageGroup}
+                    role={role}
                     canVote={tier !== "free"}
                     like={likeCounts[e.ticker]}
                     myVote={myVotes[e.ticker] ?? null}
@@ -402,6 +365,7 @@ export default function CommunityWatchlistPage() {
                     supabase={supabase}
                     userId={userId}
                     ageGroup={ageGroup}
+                    role={role}
                     canVote={tier !== "free"}
                     like={likeCounts[e.ticker]}
                     myVote={myVotes[e.ticker] ?? null}
@@ -411,6 +375,12 @@ export default function CommunityWatchlistPage() {
             </section>
           )}
         </>
+      ) : tab === "favorites" ? (
+        <FavoritesTab
+          favorites={favorites}
+          favWindow={favWindow}
+          setFavWindow={setFavWindow}
+        />
       ) : (
         <PickRecord best={best} worst={worst} quotes={quotes} />
       )}
@@ -431,6 +401,7 @@ function EntryCard({
   supabase,
   userId,
   ageGroup,
+  role,
   canVote = false,
   like,
   myVote = null,
@@ -441,16 +412,29 @@ function EntryCard({
   supabase?: ReturnType<typeof createClient>;
   userId?: string;
   ageGroup?: string | null;
+  role?: string | null;
   canVote?: boolean;
   like?: LikeCount;
   myVote?: Vote | null;
 }) {
+  const router = useRouter();
   const pct = pctSinceAdded(entry.snapshot_price, currentPrice(entry, quotes));
+  const researchHref = `/research/${encodeURIComponent(entry.ticker)}`;
+  const [threadOpen, setThreadOpen] = useState(false);
+  const [count, setCount] = useState<number>(entry.comment_count ?? 0);
+  // Inner interactive controls must not trigger the whole-card navigation.
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
   return (
     <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-2xl border border-sand bg-midnight-900 p-4 shadow-soft"
+      onClick={() => router.push(researchHref)}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") router.push(researchHref);
+      }}
+      className="group relative cursor-pointer overflow-hidden rounded-2xl border border-sand bg-midnight-900 p-4 shadow-soft transition-colors hover:border-gold-300"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -508,7 +492,10 @@ function EntryCard({
         <Sparkline symbol={entry.ticker} height={52} />
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-sand pt-2.5">
+      <div
+        className="mt-3 flex items-center justify-between gap-2 border-t border-sand pt-2.5"
+        onClick={stop}
+      >
         <SocialBar
           supabase={supabase}
           ticker={entry.ticker}
@@ -516,7 +503,9 @@ function EntryCard({
           userId={userId}
           ageGroup={ageGroup}
           canVote={canVote}
-          threadHref={`/research/${encodeURIComponent(entry.ticker)}#research-notes`}
+          commentActive={threadOpen}
+          commentCount={count}
+          onCommentClick={() => setThreadOpen((v) => !v)}
           initial={{
             likes: like?.likes ?? 0,
             unlikes: like?.unlikes ?? 0,
@@ -526,13 +515,27 @@ function EntryCard({
           }}
         />
         <Link
-          href={`/research/${encodeURIComponent(entry.ticker)}`}
+          href={researchHref}
           className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-gold-700 hover:text-gold-800"
         >
           Research
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
+
+      {/* Inline canonical thread — lazy-mounted on expand, no navigation. */}
+      {threadOpen && supabase && (
+        <div className="mt-3 border-t border-sand pt-3" onClick={stop}>
+          <TickerThread
+            supabase={supabase}
+            ticker={entry.ticker}
+            userId={userId}
+            role={role}
+            canPost={canVote}
+            onCountChange={setCount}
+          />
+        </div>
+      )}
     </m.div>
   );
 }
@@ -568,6 +571,77 @@ function RecordRow({
       <LivePrice quote={quotes[entry.ticker]} />
       <PerfPill pct={pct} />
     </Link>
+  );
+}
+
+function FavoritesTab({
+  favorites,
+  favWindow,
+  setFavWindow,
+}: {
+  favorites: Favorite[];
+  favWindow: "all" | "7d";
+  setFavWindow: (w: "all" | "7d") => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+          <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
+            Community favorites
+          </h2>
+        </div>
+        <div className="inline-flex rounded-lg border border-sand p-0.5">
+          {(["all", "7d"] as const).map((w) => (
+            <button
+              key={w}
+              onClick={() => setFavWindow(w)}
+              className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                favWindow === w ? "bg-gold-500 text-white" : "text-soft hover:text-ink"
+              }`}
+            >
+              {w === "all" ? "All time" : "This week"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="text-xs text-soft">
+        The companies the club likes most, by net 👍 votes. Tap any to open its research.
+      </p>
+      {favorites.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-sand bg-paper/60 py-16 text-center">
+          <Heart className="mx-auto mb-3 h-10 w-10 text-gold-400/60" />
+          <h3 className="font-display text-lg font-bold text-ink">No favorites yet</h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-soft">
+            As members like companies on the board, the club&apos;s favorites rise here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {favorites.map((f, i) => (
+            <Link
+              key={f.ticker}
+              href={`/research/${encodeURIComponent(f.ticker)}`}
+              className="flex items-center gap-3 rounded-xl border border-sand bg-midnight-900 p-3 transition-colors hover:border-gold-300"
+            >
+              <span className="w-5 shrink-0 text-center font-display text-sm font-bold text-soft">
+                {i + 1}
+              </span>
+              <CompanyLogo symbol={f.ticker} name={f.company_name} size={32} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-ink">{f.company_name}</p>
+                <p className="text-[11px] text-soft">{f.ticker}</p>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-bold text-red-500">
+                <Heart className="h-3.5 w-3.5 fill-red-500" />
+                {favWindow === "7d" ? f.score : f.net}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
