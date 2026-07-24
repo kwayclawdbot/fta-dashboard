@@ -82,7 +82,19 @@ const CLUB_WATCHLIST: NavItem = {
 };
 const CLUB_SCREENER: NavItem = { label: "Screener", href: "/screener", icon: Telescope };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
-const CLUB_COMMUNITY: NavItem = { label: "Community", href: "/community", icon: MessageCircle };
+// Community is an umbrella group: the club Feed + the free-visible Club
+// Newsroom (Lane 10 — AI-narrated market recaps, funnel-bait so it stays
+// reachable on every tier). Parent links to the Feed; being on /news
+// highlights + expands the group. Zero extra top-level slots (Scheme B budget).
+const CLUB_COMMUNITY: NavItem = {
+  label: "Community",
+  href: "/community",
+  icon: MessageCircle,
+  subItems: [
+    { label: "Feed", href: "/community" },
+    { label: "Club Newsroom", href: "/news" },
+  ],
+};
 // The unified belts leaderboard — a proper nav row for every member role
 // (kids included; kid-vs-kid competition is owner-wanted). Was a near-orphan
 // linked only from /progress. Medal icon keeps it distinct from the Trophy used
