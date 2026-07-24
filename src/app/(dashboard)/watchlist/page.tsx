@@ -29,6 +29,9 @@ import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
+import KaiWatch from "@/components/kai/KaiWatch";
+import WatchlistPerformance from "@/components/fic/WatchlistPerformance";
+import SentimentDots from "@/components/fic/SentimentDots";
 import LivePrice from "@/components/fic/LivePrice";
 import ResearchLadder from "@/components/fic/ResearchLadder";
 import TrendGlyph from "@/components/fic/glyphs/TrendGlyph";
@@ -135,6 +138,13 @@ export default function WatchlistPage() {
   const [members, setMembers] = useState<Record<string, Member>>({});
   const [notes, setNotes] = useState<Record<string, WatchlistNote[]>>({});
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  // R4 — community sentiment + discussion enrichments, keyed by ticker.
+  const [likeCounts, setLikeCounts] = useState<
+    Record<string, { net: number; votes: number }>
+  >({});
+  const [discussCounts, setDiscussCounts] = useState<Record<string, number>>({});
+  // R4 — per-row "Watch with Kai" prefilled modal.
+  const [kaiTicker, setKaiTicker] = useState<string | null>(null);
   const [register, setRegister] = useState<Register>("parent");
   const [xp, setXp] = useState(0);
   const [queue, setQueue] = useState<CelebrateOptions[]>([]);
@@ -252,6 +262,41 @@ export default function WatchlistPage() {
     const tickers = Array.from(new Set(list.map((i) => i.ticker).filter(Boolean)));
     if (tickers.length > 0) {
       fetchQuotes(tickers).then((q) => setQuotes((prev) => ({ ...prev, ...q })));
+
+      // R4 — community sentiment + discussion counts (adult board only; the kid
+      // board keeps its pure research flow, no bull/bear framing).
+      if (!kid) {
+        supabase
+          .from("ticker_like_counts")
+          .select("ticker, net, likes, unlikes")
+          .in("ticker", tickers)
+          .then(({ data }) => {
+            const m: Record<string, { net: number; votes: number }> = {};
+            for (const r of (data || []) as {
+              ticker: string;
+              net: number | null;
+              likes: number | null;
+              unlikes: number | null;
+            }[]) {
+              m[r.ticker] = {
+                net: r.net ?? 0,
+                votes: (r.likes ?? 0) + (r.unlikes ?? 0),
+              };
+            }
+            setLikeCounts(m);
+          });
+        supabase
+          .from("community_ticker_comments")
+          .select("ticker")
+          .in("ticker", tickers)
+          .then(({ data }) => {
+            const m: Record<string, number> = {};
+            for (const r of (data || []) as { ticker: string }[]) {
+              m[r.ticker] = (m[r.ticker] || 0) + 1;
+            }
+            setDiscussCounts(m);
+          });
+      }
     }
   }, [supabase]);
 
@@ -601,6 +646,18 @@ export default function WatchlistPage() {
         </div>
       </m.div>
 
+      {/* R4 — Watchlist Performance + Kai Watch (adult board only; kids keep the
+          pure research flow with no alerts/Kai surface). */}
+      {!isKid && items.length > 0 && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <WatchlistPerformance
+            tickers={items.map((i) => i.ticker)}
+            familyId={familyId}
+          />
+          <KaiWatch userId={userId} surface="watchlist" />
+        </div>
+      )}
+
       {/* Filters */}
       {items.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-sand bg-midnight-900 p-3 shadow-soft">
@@ -791,6 +848,25 @@ export default function WatchlistPage() {
                             <Sparkline symbol={item.ticker} height={56} />
                           </div>
 
+                          {/* R4 — community sentiment + discussion (adult board) */}
+                          {!isKid && (
+                            <div className="mt-2.5 flex items-center justify-between gap-2">
+                              <SentimentDots
+                                net={likeCounts[item.ticker]?.net ?? 0}
+                                votes={likeCounts[item.ticker]?.votes ?? 0}
+                              />
+                              {discussCounts[item.ticker] ? (
+                                <Link
+                                  href={`/research/${encodeURIComponent(item.ticker)}`}
+                                  className="inline-flex items-center gap-1 text-[11px] font-medium text-soft hover:text-ink"
+                                >
+                                  <MessageCircle className="h-3 w-3" />
+                                  {discussCounts[item.ticker]} discussing
+                                </Link>
+                              ) : null}
+                            </div>
+                          )}
+
                           {/* research summary chips when studying/verdict */}
                           {item.status !== "watch" && (
                             <div className="mt-3 space-y-1.5 text-[12px]">
@@ -947,6 +1023,16 @@ export default function WatchlistPage() {
                             </button>
                             <div className="flex items-center gap-2">
                               {!isKid && (
+                                <button
+                                  onClick={() => setKaiTicker(item.ticker)}
+                                  title="Watch with Kai"
+                                  aria-label="Watch with Kai"
+                                  className="inline-flex items-center justify-center rounded-lg border border-kai-blue/40 bg-kai-blue-soft p-1.5 text-kai-blue transition hover:brightness-110"
+                                >
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                              {!isKid && (
                                 <SetAlertButton
                                   ticker={item.ticker}
                                   surface="watchlist"
@@ -1054,6 +1140,19 @@ export default function WatchlistPage() {
           })}
         </div>
       )}
+
+      {/* ── Watch with Kai (per-row, prefilled) ────────────────────────────── */}
+      <AnimatePresence>
+        {kaiTicker && !isKid && (
+          <KaiWatch
+            userId={userId}
+            defaultTicker={kaiTicker}
+            surface="watchlist"
+            variant="modal"
+            onClose={() => setKaiTicker(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Add modal ──────────────────────────────────────────────────────── */}
       <AnimatePresence>

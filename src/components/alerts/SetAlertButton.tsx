@@ -53,6 +53,9 @@ const KIND_LABEL: Record<AlertKind, string> = {
   ema_cross: "Above/below its average",
   w52_break: "New 52-week high/low",
   preset_match: "New names in a screen",
+  // Kai-Watch NL kinds — created via Kai Watch, not the manual builder below.
+  sentiment_velocity: "Community sentiment turns",
+  news_event: "Major news breaks",
 };
 
 export default function SetAlertButton(props: SetAlertButtonProps) {

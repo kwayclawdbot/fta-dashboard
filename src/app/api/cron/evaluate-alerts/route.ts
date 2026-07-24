@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   evalNightly,
+  evalSentimentVelocity,
+  evalNewsEvent,
+  KAI_WATCH_KINDS,
   type AlertRule,
   type MetricsRow,
   type AlertParams,
@@ -52,7 +55,15 @@ export async function GET(req: NextRequest) {
     .from("alert_rules")
     .select("id, user_id, kind, ticker, params, label, active, digest, state, last_fired_at, created_at, surface")
     .eq("active", true)
-    .in("kind", ["rsi_cross", "ema_cross", "w52_break", "pct_move", "preset_match"]);
+    .in("kind", [
+      "rsi_cross",
+      "ema_cross",
+      "w52_break",
+      "pct_move",
+      "preset_match",
+      "sentiment_velocity",
+      "news_event",
+    ]);
 
   const rules = (ruleData || []) as unknown as AlertRule[];
   if (rules.length === 0) {
@@ -64,9 +75,17 @@ export async function GET(req: NextRequest) {
     r.last_fired_at != null && new Date(r.last_fired_at) >= todayStart;
 
   const tickerRules = rules.filter(
-    (r) => r.kind !== "preset_match" && r.ticker && !firedToday(r)
+    (r) =>
+      r.kind !== "preset_match" &&
+      !KAI_WATCH_KINDS.includes(r.kind) &&
+      r.ticker &&
+      !firedToday(r)
   );
   const presetRules = rules.filter((r) => r.kind === "preset_match");
+  // R4 Kai-Watch kinds evaluate off community/newsroom data, not screener price.
+  const kaiRules = rules.filter(
+    (r) => KAI_WATCH_KINDS.includes(r.kind) && r.ticker && !firedToday(r)
+  );
 
   let fired = 0;
   let held = 0;
@@ -135,11 +154,107 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Kai-Watch kinds: community sentiment velocity + fresh news events ──────
+  if (kaiRules.length > 0) {
+    const kaiTickers = [...new Set(kaiRules.map((r) => r.ticker!.toUpperCase()))];
+
+    // Current net community sentiment (precomputed) + latest chg / price.
+    const netByTicker = new Map<string, number>();
+    const chgByTicker = new Map<string, number | null>();
+    const priceByTicker = new Map<string, number | null>();
+    const { data: lc } = await db
+      .from("ticker_like_counts")
+      .select("ticker, net")
+      .in("ticker", kaiTickers);
+    for (const r of (lc || []) as { ticker: string; net: number | null }[])
+      netByTicker.set(r.ticker, r.net ?? 0);
+    const { data: mx } = await db
+      .from("screener_metrics")
+      .select("ticker, chg_1d, price")
+      .in("ticker", kaiTickers);
+    for (const m of (mx || []) as {
+      ticker: string;
+      chg_1d: number | null;
+      price: number | null;
+    }[]) {
+      chgByTicker.set(m.ticker, m.chg_1d);
+      priceByTicker.set(m.ticker, m.price);
+    }
+
+    // Latest fresh ticker-event per ticker (last 3 days).
+    const newsCut = new Date(Date.now() - 3 * 864e5).toISOString();
+    const { data: news } = await db
+      .from("news_articles")
+      .select("tickers, generated_at")
+      .eq("kind", "ticker_event")
+      .eq("published", true)
+      .gte("generated_at", newsCut);
+    const newsByTicker = new Map<string, string>();
+    for (const n of (news || []) as {
+      tickers: string[] | null;
+      generated_at: string;
+    }[]) {
+      for (const t of n.tickers || []) {
+        const cur = newsByTicker.get(t);
+        if (!cur || n.generated_at > cur) newsByTicker.set(t, n.generated_at);
+      }
+    }
+
+    for (const r of kaiRules) {
+      const tk = r.ticker!.toUpperCase();
+      if (r.kind === "sentiment_velocity") {
+        const cur = netByTicker.has(tk) ? netByTicker.get(tk)! : null;
+        const st = (r.state || {}) as { base_net?: number };
+        const base = typeof st.base_net === "number" ? st.base_net : null;
+        const hit = evalSentimentVelocity(r, cur, base);
+        if (!hit) {
+          // Seed the baseline on first sighting so future swings are measurable.
+          if (base === null && cur !== null)
+            await db
+              .from("alert_rules")
+              .update({ state: { ...st, base_net: cur } })
+              .eq("id", r.id);
+          continue;
+        }
+        const mode = await fire(db, r.id, {
+          ticker: r.ticker,
+          message: hit.message,
+          condition: hit.condition,
+          snapshot_price: priceByTicker.get(tk) ?? null,
+        });
+        await db
+          .from("alert_rules")
+          .update({ state: { ...st, base_net: hit.newBase } })
+          .eq("id", r.id);
+        if (mode === "push") fired++;
+        else if (mode === "digest") held++;
+      } else {
+        // news_event
+        const evtIso = newsByTicker.get(tk);
+        const fresh =
+          !!evtIso &&
+          (r.last_fired_at == null || evtIso > r.last_fired_at) &&
+          (r.created_at == null || evtIso >= r.created_at);
+        const hit = evalNewsEvent(r, fresh, chgByTicker.get(tk) ?? null);
+        if (!hit) continue;
+        const mode = await fire(db, r.id, {
+          ticker: r.ticker,
+          message: hit.message,
+          condition: hit.condition,
+          snapshot_price: priceByTicker.get(tk) ?? null,
+        });
+        if (mode === "push") fired++;
+        else if (mode === "digest") held++;
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     rules: rules.length,
     ticker_rules: tickerRules.length,
     preset_rules: presetRules.length,
+    kai_rules: kaiRules.length,
     fired_push: fired,
     held_digest: held,
   });

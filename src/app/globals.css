@@ -187,6 +187,12 @@
   --grad-hero: linear-gradient(135deg, #FF5A00 0%, #FF8A00 45%, #00C389 100%);
   --grad-kai: linear-gradient(135deg, #00C389 0%, #00B4D8 100%);
   --grad-metal: linear-gradient(135deg, #FFF3C4 0%, #E6B84D 32%, #B8860B 60%, #E6B84D 85%, #FFF6CE 100%);
+  /* Kai identity blue (#2563FF) — solid accent for the Kai/AI premium surfaces
+     (Kai Watch card icon, borders, NL affordances). R4 adds this token; the
+     Kai-alerts HEADER still uses the .kai-gradient fill from the mock. */
+  --kai-blue: #2563FF;
+  --kai-blue-soft: rgba(37, 99, 255, 0.10);
+  --grad-kai-header: linear-gradient(135deg, #FF7A1A 0%, #00B4D8 100%);
 
   --m50: #101828;
   --m100: #1D2939;
@@ -443,6 +449,24 @@ body {
 /* Kai surface fill (teal→green) — Kai Alerts / AI surfaces (R4). */
 .kai-gradient {
   background: var(--grad-kai);
+}
+/* Kai Alerts card HEADER (orange→teal) — matches the owner mockup's gradient
+   header band on the Kai Alerts card (R4). */
+.kai-header-gradient {
+  background: var(--grad-kai-header);
+}
+/* Kai-blue accents (identity color for the NL / AI premium surfaces). */
+.text-kai-blue {
+  color: var(--kai-blue);
+}
+.bg-kai-blue {
+  background-color: var(--kai-blue);
+}
+.border-kai-blue {
+  border-color: var(--kai-blue);
+}
+.bg-kai-blue-soft {
+  background-color: var(--kai-blue-soft);
 }
 /* Metallic gold sheen — FTA chips / rails / headers (R5 density pass). */
 .metal-gold,

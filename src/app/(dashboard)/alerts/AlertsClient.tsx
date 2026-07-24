@@ -9,8 +9,6 @@ import {
   SlidersHorizontal,
   Compass,
   ArrowRight,
-  Pause,
-  Play,
   Trash2,
   Plus,
   Sparkles,
@@ -22,6 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
+import KaiWatch from "@/components/kai/KaiWatch";
 import {
   MAX_ACTIVE_RULES,
   ruleLabel,
@@ -73,17 +72,19 @@ export default function AlertsClient({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6">
-      {/* Header */}
-      <div className="mb-4 flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-b from-gold-400 to-gold-600 text-white shadow-soft">
-          <Bell className="h-5 w-5" />
-        </span>
-        <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold text-ink">Trade Alerts</h1>
-          <p className="text-[13px] leading-snug text-soft">
-            Kai&apos;s daily briefing plus your own watchlist alerts. Every alert is
-            market analysis for you to research — never advice to buy or sell.
-          </p>
+      {/* Header — Kai Alerts gradient band (matches the owner mockup). */}
+      <div className="mb-4 overflow-hidden rounded-2xl border border-sand shadow-soft">
+        <div className="kai-header-gradient flex items-center gap-3 px-4 py-3.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white backdrop-blur">
+            <Bell className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-display text-xl font-bold text-white">Kai Alerts</h1>
+            <p className="text-[12px] leading-snug text-white/85">
+              Kai&apos;s daily briefing plus your own alerts — analysis to research,
+              never advice to buy or sell.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -401,12 +402,19 @@ function RulesTab({
 
   return (
     <div className="space-y-4">
+      {/* Kai Watch — the natural-language entry point (R4). */}
+      <KaiWatch
+        userId={userId}
+        surface="strategy"
+        onCreated={(created) => setRules((rs) => [...created, ...rs])}
+      />
+
       <DeliveryPrefs isSolo={isSolo} prefs={prefs} />
 
-      {/* Create */}
+      {/* Create (manual) */}
       <div className="rounded-2xl border border-sand bg-paper/60 p-4">
         <div className="mb-1 flex items-center justify-between">
-          <p className="text-[13px] font-bold text-ink">Create an alert</p>
+          <p className="text-[13px] font-bold text-ink">Or build one by hand</p>
           <span className="text-[11px] font-semibold text-soft">
             {activeCount}/{MAX_ACTIVE_RULES} active
           </span>
@@ -476,15 +484,24 @@ function RulesTab({
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => toggle(r)}
                 title={r.active ? "Pause" : "Resume"}
-                className="rounded-lg border border-sand p-1.5 text-soft transition hover:border-gold-300 hover:text-gold-700"
+                aria-label={r.active ? "Pause alert" : "Resume alert"}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                  r.active ? "kai-gradient" : "bg-sand"
+                }`}
               >
-                {r.active ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                    r.active ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
               </button>
               <button
                 onClick={() => remove(r)}
                 title="Delete"
+                aria-label="Delete alert"
                 className="rounded-lg border border-sand p-1.5 text-soft transition hover:border-red-300 hover:text-red-600"
               >
                 <Trash2 className="h-3.5 w-3.5" />

@@ -14,7 +14,11 @@ export type AlertKind =
   | "rsi_cross"
   | "ema_cross"
   | "w52_break"
-  | "preset_match";
+  | "preset_match"
+  // R4 — Kai Watch NL-layer kinds (see migration 131). Both are honest proxies,
+  // never thesis-omniscience (owner decision 7).
+  | "sentiment_velocity"
+  | "news_event";
 
 export type AlertSurface = "screener" | "watchlist" | "research" | "strategy" | "manual";
 
@@ -42,6 +46,14 @@ export interface AlertParams {
   // preset_match
   presetId?: string;
   presetLabel?: string;
+  // sentiment_velocity — the club's net community sentiment swings this many net
+  // votes (delta) in the given direction over a rolling window of days.
+  sentiment?: "bullish" | "bearish";
+  delta?: number; // net-vote swing that trips it (default 5)
+  days?: number; // rolling window (default 7)
+  // news_event — a fresh ticker-tagged newsroom event, optionally paired with a
+  // notable daily move (move omitted = any material event for the ticker).
+  move?: number; // |daily %| that must accompany the event (optional)
 }
 
 export interface AlertRule {
@@ -123,6 +135,9 @@ export const NIGHTLY_KINDS: AlertKind[] = [
 /** Kinds evaluated by the INTRADAY cron (one full-market snapshot, delayed). */
 export const INTRADAY_KINDS: AlertKind[] = ["price_cross", "pct_move", "vol_surge"];
 
+/** R4 Kai-Watch kinds evaluated NIGHTLY off community/newsroom data (not price). */
+export const KAI_WATCH_KINDS: AlertKind[] = ["sentiment_velocity", "news_event"];
+
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
 
@@ -148,6 +163,12 @@ export function ruleLabel(
       return `${t} reaches a new 52-week ${p.edge === "low" ? "low" : "high"}`;
     case "preset_match":
       return `New names in "${p.presetLabel ?? "screen"}"`;
+    case "sentiment_velocity":
+      return `The club turns ${p.sentiment === "bearish" ? "more bearish" : "more bullish"} on ${t}`;
+    case "news_event":
+      return p.move
+        ? `Major news on ${t} with a ${p.move}%+ move`
+        : `Major news breaks on ${t}`;
     default:
       return t || "Alert";
   }
@@ -286,6 +307,59 @@ export function evalIntraday(
     default:
       return null;
   }
+}
+
+/**
+ * Evaluate a sentiment_velocity rule. `curNet` is the ticker's current
+ * ticker_like_counts.net; `baseNet` is the rule's stored baseline (state.base_net).
+ * Fires when the net community stance has swung by the rule's delta in the wanted
+ * direction. Returns the fire payload + the new baseline the caller should store.
+ */
+export function evalSentimentVelocity(
+  rule: Pick<AlertRule, "ticker" | "params" | "state">,
+  curNet: number | null,
+  baseNet: number | null
+): { message: string; condition: string; newBase: number } | null {
+  if (curNet == null) return null;
+  const p = rule.params || {};
+  const delta = Math.max(1, p.delta ?? 5);
+  const wantBull = p.sentiment !== "bearish";
+  // First sighting: just seed the baseline (no fire).
+  if (baseNet == null) return null;
+  const swing = curNet - baseNet;
+  const tripped = wantBull ? swing >= delta : swing <= -delta;
+  if (!tripped) return null;
+  return {
+    message: `The club has turned ${wantBull ? "more bullish" : "more bearish"} on ${rule.ticker} — net community sentiment moved ${swing > 0 ? "+" : ""}${swing}`,
+    condition: `net sentiment ${wantBull ? "+" : "−"}${delta} in ${p.days ?? 7}d`,
+    newBase: curNet,
+  };
+}
+
+/**
+ * Evaluate a news_event rule. `hasFreshEvent` = a ticker_event published since the
+ * rule last fired (or in the lookback window); `chg1d` = today's % move. Fires when
+ * a fresh material event lands (and, if the rule sets `move`, the day's move clears
+ * it). Honest proxy for "thesis-changing news" — a heads-up, never a verdict.
+ */
+export function evalNewsEvent(
+  rule: Pick<AlertRule, "ticker" | "params">,
+  hasFreshEvent: boolean,
+  chg1d: number | null
+): { message: string; condition: string } | null {
+  if (!hasFreshEvent) return null;
+  const p = rule.params || {};
+  if (p.move != null) {
+    if (chg1d == null || Math.abs(chg1d) < p.move) return null;
+    return {
+      message: `${rule.ticker} has fresh news and moved ${chg1d > 0 ? "+" : ""}${chg1d.toFixed(1)}% today — worth a look`,
+      condition: `news + |chg| ≥ ${p.move}%`,
+    };
+  }
+  return {
+    message: `${rule.ticker} has fresh news worth a look`,
+    condition: `news event`,
+  };
 }
 
 /**
