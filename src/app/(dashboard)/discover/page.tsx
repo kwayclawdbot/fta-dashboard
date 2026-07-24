@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchNewsFeed } from "@/lib/news/client";
 import { getCommunityBoardSeed } from "@/lib/community-watchlist-board";
+import { getDiscoverExtras } from "@/lib/discover";
 import DiscoverClient from "./DiscoverClient";
 
 /**
@@ -23,9 +24,10 @@ export const dynamic = "force-dynamic";
 
 export default async function DiscoverPage() {
   const supabase = await createClient();
-  const [initialNews, board] = await Promise.all([
+  const [initialNews, board, extras] = await Promise.all([
     fetchNewsFeed(supabase, { kind: null, limit: 30 }).catch(() => null),
     getCommunityBoardSeed(supabase).catch(() => null),
+    getDiscoverExtras(supabase).catch(() => null),
   ]);
-  return <DiscoverClient initialNews={initialNews} board={board} />;
+  return <DiscoverClient initialNews={initialNews} board={board} extras={extras} />;
 }
