@@ -35,6 +35,8 @@ import {
   FocusStep,
   KnowledgeCheckStep,
   UsernameStep,
+  PasswordStep,
+  MIN_PASSWORD_LEN,
   StepHeading,
 } from "@/components/onboarding/WizardSteps";
 import InviteStep from "@/components/onboarding/InviteStep";
@@ -81,6 +83,15 @@ export default function OnboardingWizard() {
   const [kcAnswers, setKcAnswers] = useState<Record<string, boolean>>({});
   const nameSeq = useRef(0);
 
+  // Invited users arrive with no password — they must set one before anything
+  // else (see /api/auth/password-status). Skipped for everyone else.
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [pwError, setPwError] = useState("");
+
   // ── Detect entry path: family owner (parent) vs invited child ──────────────
   useEffect(() => {
     (async () => {
@@ -93,9 +104,29 @@ export default function OnboardingWizard() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("family_id, role, display_name, avatar_url, age_group")
+        .select("family_id, role, display_name, avatar_url, age_group, onboarding_complete")
         .eq("id", user.id)
         .single();
+
+      // Already finished (e.g. a returning member sent to /onboarding via an
+      // invite re-request link) — never re-run the wizard.
+      if (profile?.onboarding_complete) {
+        router.replace("/dashboard");
+        return;
+      }
+
+      // Does this (invited) user still need to choose a password? Authoritative
+      // check runs server-side with the service role.
+      setEmail(user.email ?? null);
+      try {
+        const res = await fetch("/api/auth/password-status");
+        if (res.ok) {
+          const { needsPassword: np } = await res.json();
+          setNeedsPassword(!!np);
+        }
+      } catch {
+        /* non-fatal — default to no password step */
+      }
 
       setDisplayName(profile?.display_name || user.user_metadata?.display_name || "");
       setAvatarUrl(profile?.avatar_url ?? null);
@@ -162,9 +193,14 @@ export default function OnboardingWizard() {
   // ── Ordered step keys for this mode ────────────────────────────────────────
   const order = useMemo(() => {
     const kc = checks.map((_, i) => `kc-${i}`);
-    if (mode === "child") return ["welcome", "age", ...kc, "username", "avatar", "celebrate"];
+    // "password" is a preamble for invited users — first interactive step, right
+    // after the welcome splash, before we ask anything else.
+    const pw = needsPassword ? ["password"] : [];
+    if (mode === "child")
+      return ["welcome", ...pw, "age", ...kc, "username", "avatar", "celebrate"];
     return [
       "welcome",
+      ...pw,
       "household",
       "experience",
       ...kc,
@@ -175,7 +211,7 @@ export default function OnboardingWizard() {
       "invite",
       "celebrate",
     ];
-  }, [mode, checks]);
+  }, [mode, checks, needsPassword]);
 
   const key = order[step] ?? "welcome";
   const isFirst = step === 0;
@@ -191,6 +227,33 @@ export default function OnboardingWizard() {
   function goBack() {
     setDir(-1);
     setStep((s) => Math.max(0, s - 1));
+  }
+
+  // Invited-user preamble: set the password they'll use to sign in later, then
+  // stamp metadata so this step is never shown again, and advance the wizard.
+  async function submitPassword() {
+    setPwError("");
+    if (password.length < MIN_PASSWORD_LEN) {
+      setPwError(`Use at least ${MIN_PASSWORD_LEN} characters.`);
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setPwError("Those passwords don't match.");
+      return;
+    }
+    setLoading(true);
+    const { error: upErr } = await supabase.auth.updateUser({
+      password,
+      data: { password_set: true },
+    });
+    setLoading(false);
+    if (upErr) {
+      setPwError(upErr.message);
+      return;
+    }
+    // Keep the step in `order` for this session (so indices don't shift); the
+    // metadata stamp means it's simply never shown on a future load.
+    goNext();
   }
 
   // Create the family + claim any pending membership (fresh/claim path). Funnel
@@ -300,13 +363,15 @@ export default function OnboardingWizard() {
     key === "invite" ||
     kcIndex >= 0;
   const canProceed =
-    key === "age"
-      ? ageBand !== ""
-      : key === "username"
-        ? displayName.trim().length > 0
-        : kcIndex >= 0
-          ? kcAnswers[currentCheck!.id] !== undefined
-          : true;
+    key === "password"
+      ? password.length >= MIN_PASSWORD_LEN && password === passwordConfirm
+      : key === "age"
+        ? ageBand !== ""
+        : key === "username"
+          ? displayName.trim().length > 0
+          : kcIndex >= 0
+            ? kcAnswers[currentCheck!.id] !== undefined
+            : true;
 
   if (mode === "loading") {
     return (
@@ -359,6 +424,20 @@ export default function OnboardingWizard() {
                     name={displayName.split(" ")[0]}
                     register={register}
                     onStart={goNext}
+                  />
+                )}
+
+                {key === "password" && (
+                  <PasswordStep
+                    value={password}
+                    confirm={passwordConfirm}
+                    onChange={setPassword}
+                    onConfirmChange={setPasswordConfirm}
+                    show={showPassword}
+                    onToggleShow={() => setShowPassword((s) => !s)}
+                    error={pwError}
+                    register={register}
+                    email={email ?? undefined}
                   />
                 )}
 
@@ -464,6 +543,15 @@ export default function OnboardingWizard() {
                   className="cta-button flex items-center gap-2 px-6 py-3 rounded-2xl text-sm disabled:opacity-50"
                 >
                   {loading ? "Setting up…" : "Go to my dashboard"}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </button>
+              ) : key === "password" ? (
+                <button
+                  onClick={submitPassword}
+                  disabled={!canProceed || loading}
+                  className="cta-button flex items-center gap-2 px-6 py-3 rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Saving…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
                 </button>
               ) : key === "username" ? (

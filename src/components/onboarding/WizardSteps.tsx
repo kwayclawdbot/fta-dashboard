@@ -26,6 +26,10 @@ import {
   LineChart,
   Landmark,
   Compass,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -513,6 +517,110 @@ export function UsernameStep({
       {warning && (
         <p className="mt-3 text-xs text-gold-800 text-center max-w-sm mx-auto">{warning}</p>
       )}
+    </div>
+  );
+}
+
+// ── Set password (invited-user preamble) ─────────────────────────────────────
+
+export const MIN_PASSWORD_LEN = 8;
+
+/**
+ * Shown only to admin-invited users (who arrive with no password) as the first
+ * interactive step of the wizard. Sets the credential they'll use to sign in
+ * from /login afterwards. Warm-paper / gold register, token palette (both
+ * themes), 390px-first.
+ */
+export function PasswordStep({
+  value,
+  confirm,
+  onChange,
+  onConfirmChange,
+  show,
+  onToggleShow,
+  error,
+  register,
+  email,
+}: {
+  value: string;
+  confirm: string;
+  onChange: (v: string) => void;
+  onConfirmChange: (v: string) => void;
+  show: boolean;
+  onToggleShow: () => void;
+  error?: string;
+  register: Register;
+  email?: string;
+}) {
+  const tooShort = value.length > 0 && value.length < MIN_PASSWORD_LEN;
+  const mismatch = confirm.length > 0 && confirm !== value;
+  return (
+    <div>
+      <StepHeading
+        eyebrow="Secure your account"
+        title={register === "kid" ? "Create a password" : "Set your password"}
+        sub={
+          register === "kid"
+            ? "Pick a secret password so only you can get into your clubhouse."
+            : "You were invited in — create a password so you can sign back in anytime."
+        }
+      />
+
+      {email && (
+        <div className="mb-4 flex items-center justify-center gap-2 text-sm text-soft">
+          <ShieldCheck className="w-4 h-4 text-gold-700" />
+          <span className="text-ink font-medium">{email}</span>
+        </div>
+      )}
+
+      <div className="space-y-3 max-w-sm mx-auto">
+        <div className="relative">
+          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-soft" />
+          <input
+            type={show ? "text" : "password"}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="New password"
+            autoFocus
+            autoComplete="new-password"
+            className="w-full pl-12 pr-12 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-base focus:outline-none focus:border-gold-400 transition-colors"
+          />
+          <button
+            type="button"
+            onClick={onToggleShow}
+            aria-label={show ? "Hide password" : "Show password"}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-soft hover:text-ink transition-colors"
+          >
+            {show ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
+
+        <div className="relative">
+          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-soft" />
+          <input
+            type={show ? "text" : "password"}
+            value={confirm}
+            onChange={(e) => onConfirmChange(e.target.value)}
+            placeholder="Confirm password"
+            autoComplete="new-password"
+            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-card border-2 border-sand text-ink text-base focus:outline-none focus:border-gold-400 transition-colors"
+          />
+        </div>
+
+        {tooShort && (
+          <p className="text-xs text-soft text-center">
+            Use at least {MIN_PASSWORD_LEN} characters.
+          </p>
+        )}
+        {mismatch && (
+          <p className="text-xs text-gold-800 text-center">
+            Those don&apos;t match yet.
+          </p>
+        )}
+        {error && (
+          <p className="text-xs text-red-600 text-center">{error}</p>
+        )}
+      </div>
     </div>
   );
 }
