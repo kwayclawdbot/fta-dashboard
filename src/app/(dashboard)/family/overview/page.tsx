@@ -48,6 +48,13 @@ interface ActivityEntry {
   completed_at: string;
 }
 
+interface WeeklyResearch {
+  class_title: string;
+  company_name: string | null;
+  company_ticker: string | null;
+  teaching: string | null;
+}
+
 function formatRelativeTime(dateStr: string) {
   const date = new Date(dateStr);
   const now = new Date();
@@ -87,6 +94,7 @@ export default function FamilyOverviewPage() {
   const [overview, setOverview] = useState<FamilyOverview | null>(null);
   const [beltXp, setBeltXp] = useState<Record<string, number>>({});
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
+  const [weekly, setWeekly] = useState<WeeklyResearch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -114,15 +122,44 @@ export default function FamilyOverviewPage() {
     }
 
     try {
-      // Get family + membership tier (FIC/FTA)
-      const [{ data: family }, familyTier] = await Promise.all([
+      // Get family + membership tier (FIC/FTA) + this week's research focus.
+      const [{ data: family }, familyTier, { data: week }] = await Promise.all([
         supabase
           .from("families")
           .select("name")
           .eq("id", profile.family_id)
           .single(),
         getFamilyTier(supabase, profile.family_id),
+        supabase
+          .from("fic_weeks")
+          .select(
+            "class_title, company_name, company_ticker, cotw_why_investors_watch, parent_explain_simply, cotw_discussion_question"
+          )
+          .eq("is_current", true)
+          .eq("published", true)
+          .maybeSingle(),
       ]);
+
+      if (week) {
+        const w = week as {
+          class_title: string;
+          company_name: string | null;
+          company_ticker: string | null;
+          cotw_why_investors_watch: string | null;
+          parent_explain_simply: string | null;
+          cotw_discussion_question: string | null;
+        };
+        setWeekly({
+          class_title: w.class_title,
+          company_name: w.company_name,
+          company_ticker: w.company_ticker,
+          teaching:
+            w.parent_explain_simply ||
+            w.cotw_why_investors_watch ||
+            w.cotw_discussion_question ||
+            null,
+        });
+      }
 
       // Get family members
       const { data: members } = await supabase
@@ -268,23 +305,105 @@ export default function FamilyOverviewPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Header */}
+      {/* Family header card — name, crown, member avatars (mock panel 4, warm
+          gold). Keeps the existing Family Mode identity (no purple). */}
       <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="mb-8"
+        className="mb-8 rounded-2xl border border-gold-400/30 bg-gradient-to-br from-gold-400/[0.1] via-gold-400/[0.03] to-transparent p-5"
       >
-        <div className="flex items-center gap-3 mb-1">
-          <h2 className="font-display text-2xl font-bold text-midnight-100">
-            {overview.family_name}
-          </h2>
-          <TierBadge tier={overview.tier} size="md" />
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+              <Crown className="w-6 h-6 text-gold-400" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="font-display text-2xl font-bold text-midnight-50 truncate">
+                  {overview.family_name}
+                </h2>
+                <TierBadge tier={overview.tier} size="md" />
+              </div>
+              <p className="text-midnight-400 text-sm font-body">
+                {overview.members.length}{" "}
+                {overview.members.length === 1 ? "member" : "members"}
+              </p>
+            </div>
+          </div>
+          {/* Member avatars strip */}
+          <div className="flex items-center -space-x-2">
+            {overview.members.slice(0, 6).map((member) => (
+              <div key={member.id} className="ring-2 ring-paper rounded-full">
+                <Avatar
+                  name={member.display_name}
+                  avatarUrl={member.avatar_url}
+                  role={member.role}
+                  tier={overview.tier}
+                  xp={beltXp[member.id]}
+                  size="md"
+                />
+              </div>
+            ))}
+            {overview.members.length > 6 && (
+              <div className="w-9 h-9 rounded-full bg-gold-400/15 ring-2 ring-paper flex items-center justify-center text-xs font-display font-bold text-gold-500">
+                +{overview.members.length - 6}
+              </div>
+            )}
+          </div>
         </div>
-        <p className="text-midnight-400 text-sm font-body">
-          Parent overview dashboard
-        </p>
       </mm.div>
+
+      {/* Weekly Family Research — Teaching-Moment treatment (mock panel 4). */}
+      {weekly && (
+        <mm.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.04, duration: 0.3 }}
+          className="mb-10"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider">
+              Weekly Family Research
+            </h3>
+            <Link
+              href="/dashboard?tab=this-week"
+              className="text-xs font-display font-semibold text-gold-400 hover:text-gold-300 inline-flex items-center gap-1"
+            >
+              See all <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="rounded-2xl border border-gold-400/30 bg-gradient-to-br from-gold-400/[0.08] to-transparent p-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+                <Sparkles className="w-6 h-6 text-gold-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="inline-block text-[10px] font-display font-bold uppercase tracking-wider text-gold-500 mb-1">
+                  Teaching Moment
+                </span>
+                <h4 className="font-display text-lg font-bold text-midnight-50 leading-snug">
+                  {weekly.class_title}
+                </h4>
+                {weekly.teaching && (
+                  <p className="text-sm text-midnight-300 font-body leading-relaxed mt-1.5 line-clamp-3">
+                    {weekly.teaching}
+                  </p>
+                )}
+                {weekly.company_ticker && (
+                  <Link
+                    href={`/research/${encodeURIComponent(weekly.company_ticker)}`}
+                    className="inline-flex items-center gap-1.5 mt-3 text-sm font-display font-semibold text-gold-400 hover:text-gold-300"
+                  >
+                    Research {weekly.company_name || weekly.company_ticker}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </mm.section>
+      )}
 
       {/* First-week warm empty state — a brand-new family whose every stat is
           still zero gets a story-starts-here treatment instead of a stark row
@@ -331,13 +450,17 @@ export default function FamilyOverviewPage() {
           </div>
         </mm.div>
       ) : (
-      /* Stats row -- inline, no cards */
+      /* Family Progress tiles (mock panel 4) */
       <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05, duration: 0.3 }}
-        className="flex flex-wrap items-center gap-x-0 gap-y-4 mb-10 py-5 border-y border-midnight-800"
+        className="mb-10"
       >
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">
+          Family Progress
+        </h3>
+        <div className="flex flex-wrap items-center gap-x-0 gap-y-4 py-5 border-y border-midnight-800">
         <div className="flex items-center gap-3 pr-8">
           <BookOpen className="w-4 h-4 text-midnight-400" />
           <div>
@@ -382,6 +505,7 @@ export default function FamilyOverviewPage() {
               Active this week
             </p>
           </div>
+        </div>
         </div>
       </mm.div>
       )}

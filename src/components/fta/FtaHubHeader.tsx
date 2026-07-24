@@ -39,21 +39,21 @@ export default function FtaHubHeader({
       animate={{ opacity: 1, y: 0 }}
       className={`relative overflow-hidden rounded-2xl border ${
         dark
-          ? "border-gold-400/30 bg-gradient-to-br from-night-900 via-night-900 to-night-950"
-          : "border-gold-400/40 bg-gradient-to-br from-gold-400/[0.14] via-gold-400/[0.05] to-transparent"
+          ? "border-ftagold-400/30 bg-gradient-to-br from-night-900 via-night-900 to-night-950"
+          : "border-ftagold-400/40 bg-gradient-to-br from-ftagold-400/[0.14] via-ftagold-400/[0.05] to-transparent"
       }`}
     >
       <div className="p-4 lg:p-5">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
             <GraduationCap className="w-6 h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-[11px] font-display font-bold uppercase tracking-[0.14em] text-gold-600">
+              <p className="text-[11px] font-display font-bold uppercase tracking-[0.14em] text-ftagold-600">
                 FTA — Trading Academy
               </p>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-gold-400 to-gold-600 text-white">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white">
                 PRO
               </span>
             </div>
@@ -77,10 +77,10 @@ export default function FtaHubHeader({
                 href={t.href}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold whitespace-nowrap transition-colors border ${
                   active
-                    ? "bg-gradient-to-b from-gold-400 to-gold-600 text-white border-transparent shadow-soft"
+                    ? "bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white border-transparent shadow-soft"
                     : dark
-                      ? "bg-night-950/60 text-night-200 border-night-700 hover:text-gold-400 hover:border-gold-400/40"
-                      : "bg-paper/70 text-soft border-sand hover:text-gold-700 hover:border-gold-300"
+                      ? "bg-night-950/60 text-night-200 border-night-700 hover:text-ftagold-400 hover:border-ftagold-400/40"
+                      : "bg-paper/70 text-soft border-sand hover:text-ftagold-700 hover:border-ftagold-300"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

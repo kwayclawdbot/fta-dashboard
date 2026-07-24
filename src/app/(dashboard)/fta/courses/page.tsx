@@ -124,7 +124,10 @@ export default function FtaCoursesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-5">
+        <>
+        {/* R5 — dense metallic-gold stats strip over the FTA hub. */}
+        <FtaStatStrip cards={cards} />
+        <div className="grid md:grid-cols-2 gap-4">
           {cards.map(({ course, total, done, next, firstModuleId }, i) => {
             const href = next
               ? `/courses/${course.slug}/${next.moduleId}/${next.lessonId}`
@@ -141,25 +144,25 @@ export default function FtaCoursesPage() {
               >
                 <Link
                   href={href}
-                  className="group relative block overflow-hidden rounded-2xl border border-gold-400/40 bg-gradient-to-br from-gold-400/[0.1] via-gold-400/[0.03] to-transparent hover:border-gold-400/70 transition-colors h-full"
+                  className="group relative block overflow-hidden rounded-2xl border border-ftagold-400/40 bg-gradient-to-br from-ftagold-400/[0.1] via-ftagold-400/[0.03] to-transparent hover:border-ftagold-400/70 transition-colors h-full"
                 >
-                  <div className="relative h-32">
+                  <div className="relative h-28">
                     <Image src="/art/fd-open.jpg" alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-night-950/70 to-transparent" />
-                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-b from-gold-400 to-gold-600 text-white text-[10px] font-display font-bold uppercase tracking-wider">
+                    <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white text-[10px] font-display font-bold uppercase tracking-wider">
                       <Sparkles className="w-3 h-3" /> FTA
                     </span>
                   </div>
-                  <div className="p-5">
+                  <div className="p-4">
                     <h3 className="font-display text-base font-bold text-ink leading-snug">{course.title}</h3>
-                    <p className="text-soft text-sm mt-1.5 leading-relaxed line-clamp-2">{course.description}</p>
-                    <div className="flex items-center justify-between gap-3 mt-4">
+                    <p className="text-soft text-sm mt-1 leading-relaxed line-clamp-2">{course.description}</p>
+                    <div className="flex items-center justify-between gap-3 mt-3">
                       {complete ? (
                         <span className="inline-flex items-center gap-1.5 text-green-600 text-sm font-medium">
                           <CheckCircle2 className="w-4 h-4" /> Complete
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-700 group-hover:text-gold-800">
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ftagold-700 group-hover:text-ftagold-600">
                           {next && done > 0 ? <PlayCircle className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
                           {done > 0 ? "Continue" : "Start"}
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -173,7 +176,33 @@ export default function FtaCoursesPage() {
             );
           })}
         </div>
+        </>
       )}
+    </div>
+  );
+}
+
+// R5 — compact metallic-gold data strip: courses, lessons done, overall %.
+function FtaStatStrip({ cards }: { cards: { total: number; done: number }[] }) {
+  const courses = cards.length;
+  const totalLessons = cards.reduce((s, c) => s + c.total, 0);
+  const doneLessons = cards.reduce((s, c) => s + c.done, 0);
+  const completeCourses = cards.filter((c) => c.total > 0 && c.done >= c.total).length;
+  const pct = totalLessons > 0 ? Math.round((doneLessons / totalLessons) * 100) : 0;
+  const STATS: { label: string; value: string }[] = [
+    { label: "Courses", value: String(courses) },
+    { label: "Lessons done", value: `${doneLessons}/${totalLessons}` },
+    { label: "Completed", value: `${completeCourses}/${courses}` },
+    { label: "Overall", value: `${pct}%` },
+  ];
+  return (
+    <div className="grid grid-cols-4 gap-px overflow-hidden rounded-xl border border-ftagold-400/40 bg-ftagold-400/25">
+      {STATS.map((s) => (
+        <div key={s.label} className="bg-paper px-3 py-2.5 text-center">
+          <p className="font-mono text-lg font-bold leading-none text-ftagold-700">{s.value}</p>
+          <p className="mt-1 text-[10px] font-display font-semibold uppercase tracking-wider text-soft">{s.label}</p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -183,7 +212,7 @@ function ProgressPill({ done, total }: { done: number; total: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="w-20 h-1.5 rounded-full bg-sand overflow-hidden">
-        <div className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-600" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-gradient-to-r from-ftagold-400 to-ftagold-600" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-soft whitespace-nowrap">{done}/{total}</span>
     </div>
