@@ -33,10 +33,13 @@ import {
   Telescope,
   Newspaper,
   Bell,
+  Compass,
+  Gift,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
 import { modeFromSolo, modeBrand } from "@/lib/mode";
+import { ClubMark, ClubWordmark } from "@/components/brand/ClubMark";
 
 export interface SubNavItem {
   label: string;
@@ -60,6 +63,10 @@ export interface NavItem {
   /** FIC-only teaser variant of the FTA section — a single locked row that
    *  links to /upgrade instead of expanding into the hub. */
   locked?: boolean;
+  /** Persistent accent treatment (volt-orange icon) even when inactive — used to
+   *  keep Community prominent in the club (individual) five-item scheme, the
+   *  desktop counterpart of the elevated center tab on mobile. */
+  accent?: boolean;
 }
 
 // ── Family Investing Club items ──────────────────────────────────────────────
@@ -95,6 +102,36 @@ const CLUB_COMMUNITY: NavItem = {
   label: "Community",
   href: "/community",
   icon: MessageCircle,
+};
+
+// ── Cheat Code Club — five-item scheme (individual/club mode, R2) ─────────────
+// The individual (solo adult) member runs the redesigned five-item nav:
+//   Home · Discover · Community (prominent) · Watchlist · Profile/More.
+// Discover is the NEW discovery hub (news + trending + research + stock finder);
+// Community carries a persistent accent so it reads prominent (the desktop
+// counterpart of the elevated center tab on mobile).
+const CLUB_DISCOVER: NavItem = { label: "Discover", href: "/discover", icon: Compass };
+const CLUB_COMMUNITY_PROMINENT: NavItem = { ...CLUB_COMMUNITY, accent: true };
+// Individual watchlist umbrella: the flagship Community Board + the member's own
+// private watchlist ("My Watchlist" — the solo counterpart of "My Family").
+const CLUB_WATCHLIST_SOLO: NavItem = {
+  label: "Watchlist",
+  href: "/watchlist/community",
+  icon: Eye,
+  subItems: [
+    { label: "Community Board", href: "/watchlist/community" },
+    { label: "My Watchlist", href: "/watchlist" },
+  ],
+};
+const CLUB_REFER: NavItem = { label: "Refer a friend", href: "/referrals", icon: Gift };
+const CLUB_PROGRESS: NavItem = { label: "My Progress", href: "/progress", icon: Trophy };
+// A non-clickable section label that opens the secondary "More" cluster in the
+// club sidebar (mobile surfaces the same rows inside the Profile/More sheet).
+const CLUB_MORE_HEADER: NavItem = {
+  label: "More",
+  href: "#club-more",
+  icon: MessageCircle,
+  sectionHeader: true,
 };
 // News — the Club Newsroom (Lane 10 AI-narrated market recaps, funnel-bait so
 // it stays reachable on every tier incl. free + kids). Its own top-level row on
@@ -286,6 +323,34 @@ export function getNavItems(
     ];
   }
 
+  // ── Cheat Code Club — five-item scheme (individual/club mode, R2). Applies to
+  //    a solo ADULT member (isSolo ⇒ one adult, no kids). Family / kid / teen
+  //    navs are unchanged below. Primary five: Home · Discover · Community ·
+  //    Watchlist · Profile(More). Everything else lives under a "More" section
+  //    (desktop) / the Profile-More sheet (mobile). Kai left the primary nav —
+  //    it's the floating FAB now — so it is intentionally absent here. FTA solo
+  //    members keep the gold FTA hub section at the tail. ──
+  if (isSolo) {
+    // (Free tier already returned above; a solo member here is fic or fta.)
+    return [
+      { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+      CLUB_DISCOVER,
+      CLUB_COMMUNITY_PROMINENT,
+      CLUB_WATCHLIST_SOLO,
+      CLUB_MORE_HEADER,
+      LEADERBOARD,
+      CLUB_PROGRESS,
+      learnGroup(false),
+      practiceGroup(true),
+      CLUB_NEWS,
+      CLUB_ALERTS,
+      CLUB_REFER,
+      // Individual members can add a family later (Family Mode ships with every
+      // membership) — surfaced via Settings#family, so no Family group is pushed.
+      isFta ? FTA_SECTION : FTA_LOCKED,
+    ];
+  }
+
   // ── Young kids (7 top-level): surface the play/earn loop flat, nest lessons.
   //    Community now appears on the kid DESKTOP nav too (it was mobile-only). ──
   if (isKid) {
@@ -307,8 +372,13 @@ export function getNavItems(
 
   // ── Teens + parents (both tiers). High-frequency club surfaces stay flat;
   //    Learn + Family nest. ──
+  // Family / teen / parent nav — the current structure is preserved (families
+  // expect their layout). Discover is added as a single row (R2 judgment call:
+  // cheap, keeps parity with the club's new hub) right after Home; Kai stays a
+  // nav row here (the FAB is additive, not a replacement, in family mode).
   const main: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+    CLUB_DISCOVER,
     CLUB_COMMUNITY,
     CLUB_NEWS,
     KAI_ASK,
@@ -397,20 +467,32 @@ export default function DashboardSidebar({
       {/* Logo */}
       <div className="flex items-center justify-between px-4 py-5 border-b border-midnight-700/50">
         <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
-          <span className="font-display text-lg font-bold text-gold-600 shrink-0">
-            {collapsed ? collapsedMark : brand.wordmarkShort}
-          </span>
-          {!collapsed && (
-            <span className="hidden lg:flex flex-col leading-tight min-w-0">
-              <span className="text-[11px] text-midnight-300 font-body truncate">
-                {brand.wordmark}
+          {mode === "individual" ? (
+            // Cheat Code Club — the R1 infinity brand. Collapsed rail gets the
+            // solid mono mark; expanded gets the full mark + wordmark lockup.
+            collapsed ? (
+              <ClubMark solid size={26} solidColor="var(--accent-solid)" className="shrink-0" />
+            ) : (
+              <ClubWordmark size={26} />
+            )
+          ) : (
+            <>
+              <span className="font-display text-lg font-bold text-gold-600 shrink-0">
+                {collapsed ? collapsedMark : brand.wordmarkShort}
               </span>
-              {brand.tagline && (
-                <span className="text-[9px] text-midnight-500 font-body truncate">
-                  {brand.tagline}
+              {!collapsed && (
+                <span className="hidden lg:flex flex-col leading-tight min-w-0">
+                  <span className="text-[11px] text-midnight-300 font-body truncate">
+                    {brand.wordmark}
+                  </span>
+                  {brand.tagline && (
+                    <span className="text-[9px] text-midnight-500 font-body truncate">
+                      {brand.tagline}
+                    </span>
+                  )}
                 </span>
               )}
-            </span>
+            </>
           )}
         </Link>
         {/* Mobile close */}
@@ -455,7 +537,7 @@ export default function DashboardSidebar({
               "/fta/recordings": Film,
             };
             return (
-              <div key={item.href} className="mt-3 pt-3 border-t border-gold-400/25">
+              <div key={item.href} className="mt-3 pt-3 border-t border-ftagold-400/25">
                 <Link
                   href={item.href}
                   data-tour={"nav:" + item.href}
@@ -465,29 +547,29 @@ export default function DashboardSidebar({
                     relative flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
                     ${collapsed ? "justify-center" : ""}
                     ${onFta && !item.locked
-                      ? "text-gold-700 bg-gold-400/15"
-                      : "text-gold-700/90 hover:text-gold-700 hover:bg-gold-400/10"
+                      ? "text-ftagold-700 bg-ftagold-400/15"
+                      : "text-ftagold-700/90 hover:text-ftagold-700 hover:bg-ftagold-400/10"
                     }
                   `}
                 >
                   {onFta && !item.locked && (
-                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-500" />
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-ftagold-500" />
                   )}
                   <Icon className="w-[18px] h-[18px] shrink-0" />
                   {!collapsed && (
                     <span className="truncate font-semibold font-display">{item.label}</span>
                   )}
                   {!collapsed && item.locked && (
-                    <Lock className="ml-auto w-3.5 h-3.5 shrink-0 text-gold-600/80" />
+                    <Lock className="ml-auto w-3.5 h-3.5 shrink-0 text-ftagold-600/80" />
                   )}
                   {!collapsed && !item.locked && item.badge && (
-                    <span className="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-gold-400 to-gold-600 text-white">
+                    <span className="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white">
                       {item.badge}
                     </span>
                   )}
                 </Link>
                 {item.locked && !collapsed && (
-                  <p className="px-3 pt-0.5 text-[10px] text-gold-700/60 leading-snug">
+                  <p className="px-3 pt-0.5 text-[10px] text-ftagold-700/60 leading-snug">
                     Unlock the traders chat, course library & recordings.
                   </p>
                 )}
@@ -505,8 +587,8 @@ export default function DashboardSidebar({
                           className={`
                             flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors
                             ${subActive
-                              ? "text-gold-700 font-medium"
-                              : "text-gold-700/70 hover:text-gold-700"
+                              ? "text-ftagold-700 font-medium"
+                              : "text-ftagold-700/70 hover:text-ftagold-700"
                             }
                           `}
                         >
@@ -555,7 +637,11 @@ export default function DashboardSidebar({
                 {active && (
                   <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-gold-500" />
                 )}
-                <Icon className="w-[18px] h-[18px] shrink-0" />
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 ${
+                    item.accent && !active ? "text-gold-600" : ""
+                  }`}
+                />
                 {!collapsed && (
                   <span className="truncate font-medium">{item.label}</span>
                 )}

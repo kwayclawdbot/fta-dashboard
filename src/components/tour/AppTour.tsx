@@ -27,7 +27,14 @@ import type { FamilyTier } from "@/lib/tier";
 
 // Bump this when the tour materially changes so existing members see it once
 // more. Kept in sync with profiles.tour_version (migration 107).
-const CURRENT_TOUR_VERSION = 2;
+//
+// v3 (Cheat Code Club redesign, R2): the five-item nav. Club (individual)
+// members get the refreshed tour ONCE with "what's new" framing — the nav is a
+// real change for them (Discover, elevated Community, Kai moved to a floating
+// button, Profile/More). FAMILY members' nav is essentially unchanged (a single
+// Discover row was added), so re-touring them would be noise: they are silently
+// advanced to v3 without re-firing (see the auto-run decision below).
+const CURRENT_TOUR_VERSION = 3;
 // Per-device fast-path cache of the highest tour version seen (skips the DB
 // round trip once this device has seen the current tour).
 const LSV_KEY = "fic-tour-v";
@@ -40,14 +47,19 @@ const LS_PROGRESS = "fic-tour-progress";
 const STEP_ROUTE: Record<string, string> = {
   welcome: "/dashboard",
   starthere: "/start-here",
+  discover: "/discover",
   community: "/community",
   watchlist: "/watchlist/community",
   screener: "/screener",
   kai: "/kai",
+  // The club "meet Kai" step spotlights the floating FAB, which is HIDDEN on
+  // /kai — so it stays on /dashboard where the FAB is visible.
+  kaifloat: "/dashboard",
   missions: "/missions",
   practice: "/chart",
   belts: "/leaderboard",
   family: "/family/overview",
+  profile: "/dashboard",
   fta: "/fta/chat",
   done: "/dashboard",
 };
@@ -132,6 +144,13 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
         ? "A short checklist that gets you fully set up — watch the quick orientation, add your first companies, join your first class. Finish it and celebrate."
         : "A short checklist that gets your family fully set up — watch the quick orientation, add your first companies, join your first class. Finish it and celebrate.",
     },
+    discover: {
+      key: "discover",
+      targets: ['[data-tour="nav:/discover"]', '[data-tour="tab:/discover"]', '[data-tour="tab:more"]'],
+      emoji: "🧭",
+      title: "Discover",
+      body: "Your window into the whole Club — what's trending, the top research, the most-discussed ideas, and the day's news. The AI Stock Finder lives here too.",
+    },
     community: {
       key: "community",
       targets: ['[data-tour="nav:/community"]', '[data-tour="tab:/community"]'],
@@ -175,6 +194,20 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
         "Your AI research analyst. Ask about any company — Kai explains the business, walks the numbers, and pulls headlines. Research and teaching, not buy/sell calls.",
         "Your AI research analyst. Ask about any company and Kai explains the business, charts the numbers, and surfaces news — educational, never advice."
       ),
+    },
+    kaifloat: {
+      key: "kaifloat",
+      targets: ['[data-tour="kai-float"]'],
+      emoji: "🤖",
+      title: "Meet Kai",
+      body: "Your AI research co-pilot now lives on this floating button — tap it from anywhere to ask about a company, walk the numbers, or make sense of the news. Research and teaching, never buy/sell calls.",
+    },
+    profile: {
+      key: "profile",
+      targets: ['[data-tour="tab:more"]', '[data-tour="nav:/progress"]', '[data-tour="belt"]'],
+      emoji: "👤",
+      title: "Profile & everything else",
+      body: "Your belt and progress, the leaderboard, Learn, Practice, News, Alerts, referrals and settings all live one tap away here. The essentials are on the bar; everything else is tucked in neatly.",
     },
     missions: {
       key: "missions",
@@ -271,19 +304,33 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
       ...(isFta ? ["fta"] : []),
       "done",
     ],
-    adult: [
-      "welcome",
-      "starthere",
-      "community",
-      "watchlist",
-      "screener",
-      "kai",
-      "practice",
-      solo ? "account" : "family",
-      "belts",
-      ...(isFta ? ["fta"] : []),
-      "done",
-    ],
+    // Solo (individual/club) adults walk the five-item scheme in nav order:
+    // Home → Discover → Community → Watchlist → Kai (floating) → Profile. Family
+    // adults keep the pre-redesign flow (their nav is unchanged).
+    adult: solo
+      ? [
+          "welcome",
+          "discover",
+          "community",
+          "watchlist",
+          "kaifloat",
+          ...(isFta ? ["fta"] : []),
+          "profile",
+          "done",
+        ]
+      : [
+          "welcome",
+          "starthere",
+          "community",
+          "watchlist",
+          "screener",
+          "kai",
+          "practice",
+          "family",
+          "belts",
+          ...(isFta ? ["fta"] : []),
+          "done",
+        ],
   };
 
   return order[register].map((k) => S[k]);
@@ -382,11 +429,28 @@ export default function AppTour({ user }: { user: TourUser }) {
       if (!mounted || !data) return;
       const seen = data.tour_version ?? 0;
       // Brand-new members get the welcome tour; members who finished an older
-      // tour version (e.g. the pre-redesign v1) get the refreshed tour ONCE with
-      // "what's new" framing. Everyone at the current version is left alone.
+      // tour version get the refreshed tour ONCE with "what's new" framing.
+      // Everyone at the current version is left alone.
+      //
+      // v3 gating (per-mode): the redesign's "what's new" pass is a real change
+      // only for CLUB (individual) members. FAMILY members' nav is essentially
+      // unchanged, so we advance their version silently (no re-tour) — a stored
+      // version bump instead of another walkthrough.
       let framing: Framing | null = null;
       if (!data.tour_completed_at) framing = "welcome";
-      else if (seen < CURRENT_TOUR_VERSION) framing = "whatsnew";
+      else if (seen < CURRENT_TOUR_VERSION) {
+        if (user.isSolo) {
+          framing = "whatsnew";
+        } else {
+          // Family: silently mark them current so the tour never re-imposes.
+          try { localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION)); } catch { /* ignore */ }
+          await supabase
+            .from("profiles")
+            .update({ tour_version: CURRENT_TOUR_VERSION })
+            .eq("id", session.user.id);
+          return;
+        }
+      }
       if (framing) {
         framingRef.current = framing;
         stepsRef.current = buildSteps(user, framing);

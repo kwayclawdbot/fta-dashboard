@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Flame } from "lucide-react";
+import { Flame, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp } from "@/lib/xp";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
+import FloatingKaiButton from "./FloatingKaiButton";
 import FreeLocked from "./FreeLocked";
 import type { UpsellContext } from "./UpsellCard";
 import AppTour from "@/components/tour/AppTour";
@@ -74,12 +75,22 @@ interface DashboardShellProps {
   };
   /** ISO expiry of an active 5-Day Challenge pass (Lane C7), else null. */
   challengeExpiresAt?: string | null;
+  /**
+   * FTA Club clock (migration 127): the family's 12-month Challenge Club window
+   * has ended. Still tier 'fta' (FTA hub open), but Club-level pages gate at
+   * free and the shell shows a tasteful renewal banner.
+   */
+  clubLapsed?: boolean;
+  /** ISO date the Club window closed (for the renewal banner copy). */
+  clubUntil?: string | null;
   children: React.ReactNode;
 }
 
 export default function DashboardShell({
   user,
   challengeExpiresAt,
+  clubLapsed,
+  clubUntil,
   children,
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -185,12 +196,41 @@ export default function DashboardShell({
               </span>
             </Link>
           )}
+          {clubLapsed &&
+            !pathname.startsWith("/upgrade") &&
+            !pathname.startsWith("/fta") && (
+              <Link
+                href="/upgrade"
+                className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold-400/40 bg-gold-400/[0.08] px-4 py-3 transition hover:border-gold-400/70"
+              >
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2 py-0.5 text-[11px] font-display font-bold uppercase tracking-wide text-gold-700">
+                  <GraduationCap className="h-3 w-3" />
+                  FTA
+                </span>
+                <span className="text-sm font-semibold text-midnight-100">
+                  Your Academy access stays for life
+                </span>
+                <span className="text-[13px] text-midnight-400">
+                  — keep the Club (community, Kai, watchlist &amp; alerts) for
+                  $99/mo →
+                </span>
+              </Link>
+            )}
           {freeLocked ? <FreeLocked context={lockedContext} /> : children}
         </main>
       </div>
 
       {/* App-style bottom tab bar — phones only, dashboard routes only. */}
       <MobileTabBar user={user} xp={xp} />
+
+      {/* Floating Kai FAB — Kai's home now that it left the primary nav.
+          Adults only; component self-gates on role/tier/route. */}
+      <FloatingKaiButton
+        role={user.role}
+        ageGroup={user.age_group}
+        tier={user.tier}
+        isSolo={user.isSolo}
+      />
 
       <Suspense fallback={null}>
         <AppTour user={user} />

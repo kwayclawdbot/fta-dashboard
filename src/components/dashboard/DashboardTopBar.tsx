@@ -35,6 +35,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/onboarding/profile", "About Your Family"],
   ["/onboarding", "Welcome"],
   ["/dashboard", "Home"],
+  ["/discover", "Discover"],
   ["/community", "Community"],
   ["/research", "Research"],
   ["/watchlist/community", "Community Watchlist"],

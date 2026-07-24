@@ -50,6 +50,17 @@
   --color-gold-800: var(--g800);
   --color-gold-900: var(--g900);
 
+  /* CONSTANT metallic-gold ramp — NEVER flips with mode. The `gold-*` ramp above
+     remaps to volt orange in club mode, which turned the FTA hub section orange
+     for solo FTA members (R1 flag). The FTA rail/section pins to `ftagold-*`
+     instead so it stays gold in every mode. Text end (600/700) lifts in dark for
+     readability on charcoal/obsidian. */
+  --color-ftagold-300: var(--fg300);
+  --color-ftagold-400: var(--fg400);
+  --color-ftagold-500: var(--fg500);
+  --color-ftagold-600: var(--fg600);
+  --color-ftagold-700: var(--fg700);
+
   /* Club palette — CONSTANT across modes/themes (explicit club-surface use in
      R3–R5; the automatic recolor rides the gold ramp + surface vars above). */
   --color-volt-50: #FFF3EA;
@@ -155,6 +166,13 @@
   --g800: #92400E;
   --g900: #78350F;
 
+  /* Constant metallic-gold ramp — mode-invariant (see @theme note). */
+  --fg300: #FCD34D;
+  --fg400: #FBBF24;
+  --fg500: #F59E0B;
+  --fg600: #D97706;
+  --fg700: #B45309;
+
   /* Accent (brand action) — FAMILY = gold gradient. */
   --accent-a: #FBBF24;
   --accent-b: #F59E0B;
@@ -210,6 +228,11 @@
 /* ------------------------------------------------------------------ */
 :root[data-theme="dark"] {
   color-scheme: dark;
+
+  /* Lift the FTA gold text-end so the gold hub section reads on dark charcoal /
+     obsidian (both family-dark and club-dark inherit this). */
+  --fg600: #E6B84D;
+  --fg700: #F0C264;
 
   /* text cluster (50 brightest heading → 600 faintest) */
   --m50: #F7F2E6;

@@ -14,10 +14,13 @@ import {
   ChevronRight,
   BookOpen,
   Lock,
+  Compass,
+  User,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
 import { modeFromSolo, modeBrand } from "@/lib/mode";
+import { ClubWordmark } from "@/components/brand/ClubMark";
 import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
 import BeltChip from "./BeltChip";
 
@@ -35,7 +38,12 @@ interface Tab {
  *   teens   → Watchlist + Missions  (research + gamified engagement)
  *   kids    → Missions + Games      (earn-rewards loop + play)
  */
-function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, Tab] {
+function flanksFor(
+  role?: string,
+  ageGroup?: string,
+  tier?: FamilyTier,
+  isSolo?: boolean
+): [Tab, Tab] {
   // Free tier: surface the two "give the tools" value pages — the free courses
   // sampler and the gated Community Watchlist door — flanking Community. Free
   // Class + Join FIC live one tap away in the More sheet.
@@ -46,13 +54,18 @@ function flanksFor(role?: string, ageGroup?: string, tier?: FamilyTier): [Tab, T
     ];
   const isChild = role === "child";
   const isKid = isChild && ageGroup === "kids";
-  // Watchlist tab lands on the flagship Community Board; My Family is one tap
-  // deeper via the Watchlist group in the More sheet.
+  // Watchlist tab lands on the flagship Community Board; My Family / My Watchlist
+  // is one tap deeper via the Watchlist group in the More/Profile sheet.
   const Watchlist: Tab = { label: "Watchlist", href: "/watchlist/community", icon: Eye };
   const Missions: Tab = { label: "Missions", href: "/missions", icon: Target };
   const Games: Tab = { label: "Games", href: "/games", icon: Gamepad2 };
+  const Discover: Tab = { label: "Discover", href: "/discover", icon: Compass };
+  // Cheat Code Club — five-item scheme (individual/club mode): the flanks are
+  // Discover + Watchlist around the elevated Community center. Solo ⇒ adult.
+  if (isSolo && !isKid) return [Discover, Watchlist];
   if (isKid) return [Missions, Games];
-  // Teens + parents share the same pair under Scheme B.
+  // Family teens + parents keep their current pair (Scheme B) — families expect
+  // their layout. Discover is still reachable from the More sheet + sidebar.
   return [Watchlist, Missions];
 }
 
@@ -74,9 +87,15 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const [flank1, flank2] = flanksFor(user.role, user.age_group, user.tier);
+  const [flank1, flank2] = flanksFor(user.role, user.age_group, user.tier, user.isSolo);
   const HOME: Tab = { label: "Home", href: "/dashboard", icon: Home };
-  const brand = modeBrand(modeFromSolo(user.isSolo));
+  const mode = modeFromSolo(user.isSolo);
+  const individual = mode === "individual";
+  const brand = modeBrand(mode);
+  // The 5th slot: "Profile" (user glyph) in the club five-item scheme, "More"
+  // (menu glyph) everywhere else. Both open the same full-nav sheet.
+  const MoreIcon = individual ? User : Menu;
+  const moreLabel = individual ? "Profile" : "More";
 
   // Close the sheet whenever the route changes (e.g. after tapping an item).
   useEffect(() => {
@@ -186,16 +205,16 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
 
           <TabSlot tab={flank2} />
 
-          {/* More — opens the full-nav bottom sheet */}
+          {/* Profile / More — opens the full-nav bottom sheet */}
           <button
             type="button"
             data-tour="tab:more"
             onClick={() => setMoreOpen(true)}
-            aria-label="More"
+            aria-label={moreLabel}
             aria-expanded={moreOpen}
             className="flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5"
           >
-            <Menu
+            <MoreIcon
               className={`w-[22px] h-[22px] ${
                 moreOpen ? "text-gold-600" : "text-midnight-400"
               }`}
@@ -205,7 +224,7 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
                 moreOpen ? "text-gold-700" : "text-midnight-400"
               }`}
             >
-              More
+              {moreLabel}
             </span>
           </button>
         </div>
@@ -291,22 +310,22 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
                   // More sheet too: a divider, gold text, PRO badge or lock.
                   if (item.fta) {
                     return (
-                      <div key={item.href} className="mt-2 pt-2 border-t border-gold-400/25">
+                      <div key={item.href} className="mt-2 pt-2 border-t border-ftagold-400/25">
                         <Link
                           href={item.href}
                           onClick={() => setMoreOpen(false)}
                           className={`flex items-center gap-3 px-2 py-2.5 rounded-xl transition-colors ${
                             active && !item.locked
-                              ? "text-gold-700 bg-gold-400/15"
-                              : "text-gold-700/90 hover:bg-gold-400/10"
+                              ? "text-ftagold-700 bg-ftagold-400/15"
+                              : "text-ftagold-700/90 hover:bg-ftagold-400/10"
                           }`}
                         >
                           <Icon className="w-[18px] h-[18px] shrink-0" />
                           <span className="text-sm font-semibold font-display flex-1">{item.label}</span>
                           {item.locked ? (
-                            <Lock className="w-3.5 h-3.5 shrink-0 text-gold-600/80" />
+                            <Lock className="w-3.5 h-3.5 shrink-0 text-ftagold-600/80" />
                           ) : item.badge ? (
-                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-gold-400 to-gold-600 text-white">
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white">
                               {item.badge}
                             </span>
                           ) : null}
@@ -321,7 +340,7 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
                                   href={sub.href}
                                   onClick={() => setMoreOpen(false)}
                                   className={`block px-2 py-2 rounded-lg text-[13px] transition-colors ${
-                                    subActive ? "text-gold-700 font-medium" : "text-gold-700/70 hover:text-gold-700"
+                                    subActive ? "text-ftagold-700 font-medium" : "text-ftagold-700/70 hover:text-ftagold-700"
                                   }`}
                                 >
                                   {sub.label}
@@ -373,15 +392,23 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
                 })}
               </nav>
 
-              {/* Umbrella wordmark — mode-aware brand footer. */}
+              {/* Umbrella wordmark — mode-aware brand footer. Individual/club mode
+                  gets the infinity ClubWordmark lockup (R1 brand); family keeps
+                  the FIC text wordmark + "part of Cheat Code Club" attribution. */}
               <div className="shrink-0 px-5 pt-2 pb-3 border-t border-midnight-800/60">
-                <p className="text-[11px] font-display font-bold text-gold-600">
-                  {brand.wordmark}
-                </p>
-                {brand.tagline && (
-                  <p className="text-[9px] text-midnight-500 font-body">
-                    {brand.tagline}
-                  </p>
+                {individual ? (
+                  <ClubWordmark size={22} />
+                ) : (
+                  <>
+                    <p className="text-[11px] font-display font-bold text-gold-600">
+                      {brand.wordmark}
+                    </p>
+                    {brand.tagline && (
+                      <p className="text-[9px] text-midnight-500 font-body">
+                        {brand.tagline}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>
