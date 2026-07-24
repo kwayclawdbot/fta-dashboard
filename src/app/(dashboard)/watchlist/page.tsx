@@ -719,7 +719,10 @@ export default function WatchlistPage() {
                         <div className="p-4">
                           {/* Top row: real logo + name + live price */}
                           <div className="flex items-start justify-between gap-2">
-                            <div className="flex min-w-0 items-center gap-2.5">
+                            <Link
+                              href={`/research/${encodeURIComponent(item.ticker)}`}
+                              className="group flex min-w-0 items-center gap-2.5"
+                            >
                               <CompanyLogo
                                 symbol={item.ticker}
                                 name={item.company_name}
@@ -727,21 +730,18 @@ export default function WatchlistPage() {
                               />
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5">
-                                  <h4 className="truncate font-display text-base font-bold text-ink">
+                                  <h4 className="truncate font-display text-base font-bold text-ink group-hover:text-gold-700">
                                     {item.company_name}
                                   </h4>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Link
-                                    href={`/research/${encodeURIComponent(item.ticker)}`}
-                                    className="text-xs font-medium text-midnight-500 hover:text-gold-700"
-                                  >
+                                  <span className="text-xs font-medium text-midnight-500 group-hover:text-gold-700">
                                     {item.ticker}
-                                  </Link>
+                                  </span>
                                   <LivePrice quote={quotes[item.ticker]} />
                                 </div>
                               </div>
-                            </div>
+                            </Link>
                             <span
                               className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.chip}`}
                             >

@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { fetchXpForUsers } from "@/lib/belts";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import ReportCard from "@/components/dashboard/ReportCard";
@@ -84,6 +85,7 @@ export default function FamilyOverviewPage() {
   const router = useRouter();
   const supabase = createClient();
   const [overview, setOverview] = useState<FamilyOverview | null>(null);
+  const [beltXp, setBeltXp] = useState<Record<string, number>>({});
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -202,6 +204,9 @@ export default function FamilyOverviewPage() {
         active_members: activeCount,
         members: memberSummaries,
       });
+
+      // Batched belt XP for member avatars (one RPC).
+      fetchXpForUsers(supabase, memberIds).then(setBeltXp);
 
       // Get recent activities
       const { data: recentProgress } = await supabase
@@ -408,6 +413,7 @@ export default function FamilyOverviewPage() {
                     avatarUrl={member.avatar_url}
                     role={member.role}
                     tier={overview.tier}
+                    xp={beltXp[member.id]}
                     size="md"
                   />
 
