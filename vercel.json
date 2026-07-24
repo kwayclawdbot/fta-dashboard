@@ -7,6 +7,18 @@
     {
       "path": "/api/cron/refresh-screener",
       "schedule": "0 23 * * 1-5"
+    },
+    {
+      "path": "/api/cron/news-market-wrap?slot=preopen",
+      "schedule": "0 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/news-market-wrap?slot=postclose",
+      "schedule": "30 21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/news-ticker-events",
+      "schedule": "35 21 * * 1-5"
     }
   ]
 }
