@@ -28,7 +28,7 @@ import {
   Telescope,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getFamilyTier, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
+import { getFamilyTierState, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
 import { isSoloProfile } from "@/lib/register";
 import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
@@ -196,6 +196,9 @@ export default function UpgradePage() {
   const supabase = createClient();
   const reduce = useReducedMotion();
   const [tier, setTier] = useState<FamilyTier | null>(null);
+  // FTA Club clock (migration 127): a lapsed FTA family keeps academy access for
+  // life but its Club membership has ended — the fta panel shows a $99/mo renewal.
+  const [clubLapsed, setClubLapsed] = useState(false);
   const [nextClass, setNextClass] = useState<NextClass>(null);
   // Solo (individual, non-parent) member — a family of one. Softens the
   // family-assuming pitch copy without touching the data model.
@@ -248,8 +251,12 @@ export default function UpgradePage() {
           .maybeSingle();
         if (!cancelled) setIsSolo(isSoloProfile(fp));
       }
-      const t = await getFamilyTier(supabase, profile?.family_id);
+      const { tier: t, clubLapsed: lapsed } = await getFamilyTierState(
+        supabase,
+        profile?.family_id
+      );
       if (cancelled) return;
+      setClubLapsed(lapsed);
       // FTA families get a "next live class" pointer beneath their panel —
       // one cheap query, only for the tier that shows it.
       if (t === "fta") {
@@ -307,6 +314,41 @@ export default function UpgradePage() {
   if (tier === "fta") {
     return (
       <div className="max-w-2xl mx-auto">
+        {/* Lapsed Club window (migration 127) — academy stays for life; Club
+            continues at $99/mo. Honest, non-nagging, above the premium panel. */}
+        {clubLapsed && (
+          <m.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="paper-card p-6 sm:p-7 mb-4 border-l-4 border-gold-400"
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <ShieldCheck className="w-4 h-4 text-gold-600" />
+              <span className="text-[11px] font-display font-bold uppercase tracking-[0.14em] text-gold-700">
+                Your Academy access is safe — forever
+              </span>
+            </div>
+            <h2 className="font-display text-xl font-bold text-ink">
+              Keep your Club membership
+            </h2>
+            <p className="text-sm text-soft leading-relaxed mt-2">
+              Your 12 months of Cheat Code Club that came with the Academy have
+              wrapped. Family Trading Academy — every course, recording and the
+              FTA room — stays yours for life. Keep the Club layer (Kai, the
+              community, the watchlist, alerts and the screener) going for
+              $99/mo whenever you&apos;re ready.
+            </p>
+            <a
+              href={FIC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cta-button mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm"
+            >
+              Keep your Club membership — $99/mo
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </m.div>
+        )}
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

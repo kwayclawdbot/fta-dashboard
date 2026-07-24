@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFamilyTier } from "@/lib/tier";
+import { getFamilyTierState } from "@/lib/tier";
 import { isSoloProfile } from "@/lib/register";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
@@ -30,8 +30,31 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
-  // Family membership tier (FIC/FTA) — kids inherit the family's tier.
-  const tier = await getFamilyTier(supabase, profile?.family_id);
+  // Family membership tier (FIC/FTA) — kids inherit the family's tier. The
+  // Club clock (migration 127): an fta family may be `clubLapsed` (past its
+  // 12-month Challenge Club window) — still tier 'fta' for the FTA hub, but the
+  // shell surfaces a renewal banner and Club-level pages gate at free.
+  const { tier, clubLapsed } = await getFamilyTierState(
+    supabase,
+    profile?.family_id
+  );
+
+  // FTA renewal date for the lapsed banner copy (min Club window across active
+  // fta enrollments). Only read when actually lapsed — cheap + rarely true.
+  let clubUntil: string | null = null;
+  if (clubLapsed && profile?.family_id) {
+    const { data: en } = await supabase
+      .from("enrollments")
+      .select("club_until")
+      .eq("family_id", profile.family_id)
+      .eq("program", "fta")
+      .eq("status", "active")
+      .not("club_until", "is", null)
+      .order("club_until", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    clubUntil = (en?.club_until as string | null) ?? null;
+  }
 
   // Challenge-pass window (Lane C7): a family whose tier is 'fic' MAY actually
   // be a 5-Day Challenge pass-holder (full Club until expires_at, then free).
@@ -83,7 +106,12 @@ export default async function DashboardLayout({
   };
 
   return (
-    <DashboardShell user={userData} challengeExpiresAt={challengeExpiresAt}>
+    <DashboardShell
+      user={userData}
+      challengeExpiresAt={challengeExpiresAt}
+      clubLapsed={clubLapsed}
+      clubUntil={clubUntil}
+    >
       {children}
     </DashboardShell>
   );
