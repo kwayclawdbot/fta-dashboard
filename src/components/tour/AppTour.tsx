@@ -69,6 +69,8 @@ interface TourUser {
   age_group?: string;
   track?: string;
   tier?: FamilyTier;
+  /** Solo (individual, non-parent) member — a family of one. De-parents copy. */
+  isSolo?: boolean;
 }
 
 /**
@@ -87,6 +89,8 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
   const first = (u.display_name || "").split(" ")[0];
   const isFta = u.tier === "fta";
   const whatsnew = framing === "whatsnew";
+  // Solo only applies to adult owners; kids/teens always belong to a family.
+  const solo = !!u.isSolo && register === "adult";
   const pick = <T,>(k: T, t: T, a: T): T =>
     register === "kid" ? k : register === "teen" ? t : a;
 
@@ -114,7 +118,9 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
         : pick(
             "This is your family's money clubhouse. Let me show you around — it's quick, and there's a surprise at the end!",
             "Your family's home base for learning to invest. A quick tour so you know where everything lives.",
-            "Your family's home for learning money together. One minute and you'll know exactly where everything lives."
+            solo
+              ? "Your home for learning to invest. One minute and you'll know exactly where everything lives."
+              : "Your family's home for learning money together. One minute and you'll know exactly where everything lives."
           ),
     },
     starthere: {
@@ -122,7 +128,9 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
       targets: ['[data-tour="start-here"]', '[data-tour="nav:/start-here"]', '[data-tour="tab:more"]'],
       emoji: "🧭",
       title: "Start Here is your setup trail",
-      body: "A short checklist that gets your family fully set up — watch the quick orientation, add your first companies, join your first class. Finish it and celebrate.",
+      body: solo
+        ? "A short checklist that gets you fully set up — watch the quick orientation, add your first companies, join your first class. Finish it and celebrate."
+        : "A short checklist that gets your family fully set up — watch the quick orientation, add your first companies, join your first class. Finish it and celebrate.",
     },
     community: {
       key: "community",
@@ -208,6 +216,13 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
       title: "Your family, your view",
       body: "Report cards for every child, Parent Corner with this week's dinner-table questions, and invites to bring the rest of the family in — all in one place.",
     },
+    account: {
+      key: "account",
+      targets: ['[data-tour="nav:/progress"]', '[data-tour="tab:more"]'],
+      emoji: "👤",
+      title: "Your account, your view",
+      body: "Your progress and badges live here, plus a link to refer a friend and earn XP. Want to add family later? You can do that from Settings anytime.",
+    },
     fta: {
       key: "fta",
       targets: ['[data-tour="nav:/fta/chat"]', '[data-tour="tab:more"]'],
@@ -234,7 +249,9 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
         : pick(
             "Time to earn your first XP. Head to This Week and start your first adventure!",
             "Jump in and start stacking XP toward your first belt.",
-            "Head to Start Here to finish setting up your family — it takes about ten minutes."
+            solo
+              ? "Head to Start Here to finish setting up your account — it takes about ten minutes."
+              : "Head to Start Here to finish setting up your family — it takes about ten minutes."
           ),
     },
   };
@@ -262,7 +279,7 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
       "screener",
       "kai",
       "practice",
-      "family",
+      solo ? "account" : "family",
       "belts",
       ...(isFta ? ["fta"] : []),
       "done",
