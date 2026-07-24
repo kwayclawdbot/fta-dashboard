@@ -32,6 +32,7 @@ import {
   Bot,
   Telescope,
   Newspaper,
+  Bell,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -108,6 +109,11 @@ const LEADERBOARD: NavItem = { label: "Leaderboard", href: "/leaderboard", icon:
 // "Ask Kai" — CheatCode's AI research analyst. All member roles (kids get an
 // age-aware Kai); NEVER free tier (chat is members-only, gated server-side).
 const KAI_ASK: NavItem = { label: "Ask Kai", href: "/kai", icon: Bot };
+// Trade Alerts hub (Lane C6) — an ADULTS-ONLY surface. The /alerts page hard
+// redirects kids/teens and shows a LockedState to free tier, so this row is
+// pushed ONLY inside the canParent (parent/admin = adult) branch below. Never
+// added to the shared `main` array (reused by teens) or the free/kid returns.
+const CLUB_ALERTS: NavItem = { label: "Alerts", href: "/alerts", icon: Bell };
 
 // Family group (parents only) — absorbs Parent Corner, Invite Families and My
 // Progress alongside the family surfaces so parent tools live in one place.
@@ -314,6 +320,9 @@ export function getNavItems(
   ];
 
   if (canParent) {
+    // Alerts — adults only (parent/admin); kids/teens never see it, free never
+    // reaches here. High-frequency, so it sits right below the club surfaces.
+    main.push(CLUB_ALERTS);
     // Solo owners get the slim "My Account" group (no family/kid surfaces);
     // parents-with-family keep the full Family group.
     main.push(isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM);

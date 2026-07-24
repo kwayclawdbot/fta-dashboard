@@ -40,6 +40,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/watchlist/community", "Community Watchlist"],
   ["/watchlist", "Family Watchlist"],
   ["/screener", "Stock Screener"],
+  ["/alerts", "Alerts"],
   ["/missions", "Kid Missions"],
   ["/courses", "Courses"],
   ["/live-sessions", "Live Classes"],

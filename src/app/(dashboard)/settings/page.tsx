@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { m } from "@/lib/motion";
-import { LogOut, Save, CreditCard, AtSign, ImagePlus } from "lucide-react";
+import { LogOut, Save, CreditCard, AtSign, ImagePlus, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { deriveRegister } from "@/lib/register";
+import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import EnablePushButton from "@/components/notifications/EnablePushButton";
 import PushDevices from "@/components/notifications/PushDevices";
 import Avatar from "@/components/Avatar";
@@ -48,6 +50,7 @@ export default function SettingsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string>("");
   const [ageGroup, setAgeGroup] = useState<string | null>(null);
+  const [tier, setTier] = useState<FamilyTier>("fic");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -72,7 +75,7 @@ export default function SettingsPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, role, age_group, avatar_url, notification_prefs")
+        .select("display_name, role, age_group, avatar_url, notification_prefs, family_id")
         .eq("id", user.id)
         .single();
 
@@ -85,6 +88,10 @@ export default function SettingsPage() {
       setRole(profile?.role || "");
       setAgeGroup(profile?.age_group ?? null);
       setAvatarUrl(profile?.avatar_url ?? null);
+      // Tier drives the adults-only Trade Alerts pointer below (non-free only).
+      getFamilyTier(supabase, profile?.family_id ?? null)
+        .then(setTier)
+        .catch(() => {});
       if (profile?.notification_prefs) {
         setPrefs({ ...DEFAULT_PREFS, ...(profile.notification_prefs as Partial<NotificationPrefs>) });
       }
@@ -144,6 +151,7 @@ export default function SettingsPage() {
   }
 
   const isChild = role === "child";
+  const isAdult = deriveRegister({ role, age_group: ageGroup }) === "adult";
 
   const toggles: { key: keyof NotificationPrefs; label: string; desc: string }[] = [
     { key: "email_notifs", label: "Email Notifications", desc: "Receive updates about courses and community" },
@@ -318,6 +326,26 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
+
+          {/* Trade alerts — adults only, non-free tier. Delivery prefs
+              (briefing on/off, digest, daily cap, quiet hours) live inside the
+              /alerts hub → My Rules → Delivery; this is just the pointer. */}
+          {isAdult && tier !== "free" && (
+            <div className="pt-4 mt-4 border-t border-sand">
+              <Link
+                href="/alerts"
+                className="flex items-center justify-between rounded-xl border border-sand bg-paper p-4 transition hover:border-gold-400/50"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-midnight-200">Trade alerts</p>
+                  <p className="text-xs text-midnight-500">
+                    Kai briefing push, your custom alerts, digest &amp; daily limit
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-midnight-500 shrink-0" />
+              </Link>
+            </div>
+          )}
         </div>
       </m.div>
 

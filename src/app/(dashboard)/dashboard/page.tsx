@@ -25,6 +25,7 @@ import {
   Video,
   Radio,
   Film,
+  Bell,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -157,6 +158,13 @@ export default function DashboardHome() {
   // rail so it never takes over the club-first layout.
   const [isFta, setIsFta] = useState(false);
   const [ftaNextClass, setFtaNextClass] = useState<NextClass>(null);
+  // Latest Kai briefing alert (Lane C6) — an adults-only home card. Null unless
+  // an alert exists AND the viewer is a non-free adult (parent/admin).
+  const [latestAlert, setLatestAlert] = useState<{
+    ticker: string;
+    direction: string;
+    setup_label: string | null;
+  } | null>(null);
   // Onboarding-prompt orchestration: whether the parent has dismissed the one
   // setup card (Start Here checklist). Persisted per family so it stays
   // dismissed, and it gates whether the profile-questions card may appear.
@@ -289,6 +297,21 @@ export default function DashboardHome() {
       // secondary chrome that hydrates progressively into already-visible cards,
       // so it must not gate the page. Each call is timeout-capped.
       setLoading(false);
+
+      // Adults-only (parent/admin) Kai briefing card — newest trade alert.
+      // Non-free is guaranteed here (free short-circuits above). Kids/teens
+      // (role 'child') never fetch it. Best-effort; hides if the feed is empty.
+      if (profile?.role === "parent" || profile?.role === "admin") {
+        void (async () => {
+          const { data: alertRow } = await supabase
+            .from("trade_alerts")
+            .select("ticker, direction, setup_label")
+            .order("issued_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (alertRow) setLatestAlert(alertRow);
+        })().catch(() => {});
+      }
 
       // FTA families: hydrate the premium Academy rail after paint. One cheap
       // query for the next scheduled class, only for the tier that shows it —
@@ -460,6 +483,27 @@ export default function DashboardHome() {
 
       {/* Belt/XP hero — always-visible progress toward the next belt. */}
       <BeltHeroStrip xp={xp} isKid={isKid} />
+
+      {/* Kai briefing card (Lane C6) — adults only (parents), renders only when
+          the trade-alerts feed has a row. Free tier never reaches this page. */}
+      {isParent && latestAlert && (
+        <Link
+          href="/alerts"
+          className="block rounded-2xl border border-gold-400/40 bg-chip-amber/30 p-4 transition hover:bg-chip-amber/50"
+        >
+          <div className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-gold-600" />
+            <span className="text-[11px] font-display font-bold uppercase tracking-wide text-gold-700">
+              Kai briefing
+            </span>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-ink">
+            {latestAlert.ticker} {latestAlert.direction}
+            {latestAlert.setup_label ? ` — ${latestAlert.setup_label}` : ""}
+          </p>
+          <p className="text-[12px] text-soft">See today&apos;s alerts →</p>
+        </Link>
+      )}
 
       {/* Setup card #1 — the Start Here checklist, demoted from a nav row to a
           dismissible Home card. Parents only; auto-hides at 6/6. */}
