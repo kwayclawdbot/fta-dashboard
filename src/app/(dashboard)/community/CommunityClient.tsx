@@ -7,6 +7,7 @@ import {
   AtSign, Send, Trophy, Heart, MessageCircle, Sparkles,
   ArrowRight, Paperclip, X, Film, Loader2, Link2,
   Award, Eye, CheckCircle2, Target, Calendar, Pin,
+  Tag, TrendingUp, TrendingDown, Minus, MessageSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
@@ -19,8 +20,8 @@ import { fetchXpForUsers } from "@/lib/belts";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
-  activityLine, isWatchlistShare, timeAgo,
-  type WatchlistSharePayload,
+  activityLine, isWatchlistShare, timeAgo, parseTickerTags, POSITION_META,
+  type WatchlistSharePayload, type PostPosition,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
   type AnchorPayload, type Role,
 } from "@/lib/feed";
@@ -180,6 +181,22 @@ export default function CommunityClient({
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // R5 composer additions: ticker tags + optional bull/neutral/bear stance.
+  const [tickerDraft, setTickerDraft] = useState("");
+  const [tickerTags, setTickerTags] = useState<string[]>([]);
+  const [position, setPosition] = useState<PostPosition | null>(null);
+  const [showTagger, setShowTagger] = useState(false);
+  function commitTicker(raw: string) {
+    const parsed = parseTickerTags(raw + " " + tickerTags.join(" "));
+    setTickerTags(parsed);
+    setTickerDraft("");
+  }
+  function removeTicker(t: string) {
+    setTickerTags((prev) => prev.filter((x) => x !== t));
+  }
+
+  // R5 feed tabs
+  const [tab, setTab] = useState<"foryou" | "following" | "research" | "discussions">("foryou");
 
   // Mobile Live Rooms drawer
 
@@ -250,7 +267,7 @@ export default function CommunityClient({
       const { data } = await supabase
         .from("feed_posts")
         .select(
-          `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at, ${AUTHOR_SEL}`
+          `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at, ${AUTHOR_SEL}`
         )
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
@@ -435,8 +452,13 @@ export default function CommunityClient({
 
     const { data, error } = await supabase
       .from("feed_posts")
-      .insert({ author_id: me.id, family_id: me.family_id, kind: "post", body, ...(attachmentFields || {}) })
-      .select(`id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at`)
+      .insert({
+        author_id: me.id, family_id: me.family_id, kind: "post", body,
+        ticker_tags: tickerTags,
+        position: tickerTags.length ? position : null,
+        ...(attachmentFields || {}),
+      })
+      .select(`id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at`)
       .single();
 
     if (!error && data) {
@@ -451,6 +473,10 @@ export default function CommunityClient({
       setPosts((prev) => [newPost, ...prev]);
       resolveMentions([body]);
       setText("");
+      setTickerTags([]);
+      setTickerDraft("");
+      setPosition(null);
+      setShowTagger(false);
       clearAttachment();
       const todayPosts = await countXpToday(supabase, me.id, "community");
       if (todayPosts < 3) await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
@@ -541,6 +567,77 @@ export default function CommunityClient({
   const feedList = posts.filter(
     (p) => p.kind !== "anchor" && p.id !== pinnedAnnouncement?.id
   );
+
+  // ── R5 tabs ──────────────────────────────────────────────────────────────
+  // Following = authors whose posts the viewer has liked ("members whose picks
+  // they liked"). Derived honestly from the like state already in memory.
+  const followedAuthorIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const p of posts) {
+      if (likedByMe.has(p.id) && p.author?.id && p.author.id !== me?.id) {
+        s.add(p.author.id);
+      }
+    }
+    return s;
+  }, [posts, likedByMe, me?.id]);
+
+  const hasTicker = (p: FeedPost) => (p.ticker_tags?.length ?? 0) > 0;
+
+  const displayList = useMemo(() => {
+    switch (tab) {
+      case "following":
+        return feedList.filter((p) => p.author?.id && followedAuthorIds.has(p.author.id));
+      case "research":
+        // Typed contributions stream: posts that tag a ticker or share a pick.
+        return feedList.filter((p) => hasTicker(p) || isWatchlistShare(p.activity_payload));
+      case "discussions":
+        return feedList.filter(hasTicker);
+      default:
+        return feedList;
+    }
+  }, [tab, feedList, followedAuthorIds]);
+
+  // Discussions view groups the ticker-tagged posts into per-ticker threads.
+  const discussionThreads = useMemo(() => {
+    if (tab !== "discussions") return [];
+    const byTicker = new Map<string, FeedPost[]>();
+    for (const p of displayList) {
+      for (const t of p.ticker_tags ?? []) {
+        const arr = byTicker.get(t) ?? [];
+        arr.push(p);
+        byTicker.set(t, arr);
+      }
+    }
+    return Array.from(byTicker.entries())
+      .map(([ticker, list]) => ({ ticker, list }))
+      .sort((a, b) => b.list.length - a.list.length);
+  }, [tab, displayList]);
+
+  const TABS = [
+    { key: "foryou", label: "For You" },
+    { key: "following", label: "Following" },
+    { key: "research", label: "Research" },
+    { key: "discussions", label: "Discussions" },
+  ] as const;
+
+  const EMPTY_COPY: Record<typeof tab, { title: string; body: string }> = {
+    foryou: {
+      title: "The club is just getting started",
+      body: "Share a win, ask a question, or post your family's pick. Every badge, mission, and watchlist add shows up here too.",
+    },
+    following: {
+      title: "You're not following anyone yet",
+      body: "Like a member's post and their updates gather here — a quieter feed of the people whose picks you trust.",
+    },
+    research: {
+      title: "No research shared yet",
+      body: "Tag a ticker on your next post to add it here — the club's running stream of ideas, notes, and theses.",
+    },
+    discussions: {
+      title: "No ticker discussions yet",
+      body: "Tag a ticker like $NVDA on a post to start a thread. Every tagged post joins that ticker's conversation.",
+    },
+  };
 
   return (
     <MentionProvider map={mentions}>
@@ -633,11 +730,63 @@ export default function CommunityClient({
                 )}
                 {composerError && <p className="mt-2 text-xs text-red-600 font-body">{composerError}</p>}
 
+                {/* R5 ticker tagger + positioning */}
+                {showTagger && (
+                  <div className="mt-2 rounded-lg border border-sand bg-paper p-2.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {tickerTags.map((t) => (
+                        <span key={t} className="inline-flex items-center gap-1 bg-chip-amber text-gold-800 text-[11px] font-mono font-bold px-1.5 py-0.5 rounded">
+                          ${t}
+                          <button type="button" onClick={() => removeTicker(t)} aria-label={`Remove ${t}`} className="hover:text-gold-900">
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                      {tickerTags.length < 4 && (
+                        <input
+                          value={tickerDraft}
+                          onChange={(e) => setTickerDraft(e.target.value.replace(/[^A-Za-z ,]/g, ""))}
+                          onKeyDown={(e) => {
+                            if ((e.key === "Enter" || e.key === " " || e.key === ",") && tickerDraft.trim()) {
+                              e.preventDefault();
+                              commitTicker(tickerDraft);
+                            }
+                          }}
+                          onBlur={() => tickerDraft.trim() && commitTicker(tickerDraft)}
+                          placeholder={tickerTags.length ? "add another…" : "Tag a ticker — e.g. NVDA"}
+                          className="flex-1 min-w-[120px] bg-transparent text-xs text-ink placeholder:text-soft font-mono uppercase focus:outline-none"
+                        />
+                      )}
+                    </div>
+                    {tickerTags.length > 0 && (
+                      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-sand">
+                        <span className="text-[10px] text-soft font-display uppercase tracking-wider mr-0.5">Leaning</span>
+                        {(["bull", "neutral", "bear"] as PostPosition[]).map((p) => {
+                          const meta = POSITION_META[p];
+                          const Icon = p === "bull" ? TrendingUp : p === "bear" ? TrendingDown : Minus;
+                          const active = position === p;
+                          return (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setPosition(active ? null : p)}
+                              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? meta.chip + " ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
+                            >
+                              <Icon className="w-3 h-3" />{meta.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <input ref={fileRef} type="file" accept={[...IMAGE_MIMES, ...VIDEO_MIMES].join(",")} className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
                     <button type="button" onClick={() => fileRef.current?.click()} disabled={posting} aria-label="Attach a photo or video" title="Attach a photo or video" className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 disabled:opacity-40"><Paperclip className="w-4 h-4" /></button>
                     <button type="button" onClick={insertLink} disabled={posting} aria-label="Add a link" title="Add a link" className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 disabled:opacity-40"><Link2 className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => setShowTagger((v) => !v)} disabled={posting} aria-label="Tag a ticker" title="Tag a ticker" className={`flex items-center justify-center w-8 h-8 rounded-lg border disabled:opacity-40 ${showTagger || tickerTags.length ? "border-gold-300 text-gold-700 bg-chip-amber/40" : "border-sand text-soft hover:text-gold-700 hover:border-gold-300"}`}><Tag className="w-4 h-4" /></button>
                   </div>
                   <button onClick={submitPost} disabled={(!text.trim() && !attachment) || posting || !me} className="cta-button flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed">
                     <Send className="w-3.5 h-3.5" />{uploading ? "Uploading…" : posting ? "Posting…" : "Post"}
@@ -647,6 +796,21 @@ export default function CommunityClient({
             </div>
           </div>
           )}
+
+          {/* R5 feed tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={() => setTab(t.key)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-display font-semibold transition-colors ${tab === t.key ? "bg-gold-500 text-white" : "text-soft hover:text-ink hover:bg-sand/60"}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
           {/* Feed */}
           {loading ? (
@@ -659,15 +823,34 @@ export default function CommunityClient({
                 </div>
               ))}
             </div>
-          ) : feedList.length === 0 ? (
+          ) : displayList.length === 0 ? (
             <div className="paper-card p-10 text-center">
-              <Sparkles className="w-7 h-7 text-gold-500 mx-auto mb-3" />
-              <p className="font-display text-base font-semibold text-ink mb-1">The club is just getting started</p>
-              <p className="text-sm text-soft font-body max-w-sm mx-auto">Share a win, ask a question, or post your family&apos;s pick. Every badge, mission, and watchlist add shows up here too.</p>
+              {tab === "discussions" ? <MessageSquare className="w-7 h-7 text-gold-500 mx-auto mb-3" /> : <Sparkles className="w-7 h-7 text-gold-500 mx-auto mb-3" />}
+              <p className="font-display text-base font-semibold text-ink mb-1">{EMPTY_COPY[tab].title}</p>
+              <p className="text-sm text-soft font-body max-w-sm mx-auto">{EMPTY_COPY[tab].body}</p>
+            </div>
+          ) : tab === "discussions" ? (
+            <div className="space-y-4">
+              {discussionThreads.map(({ ticker, list }) => (
+                <div key={ticker} className="paper-card p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Link href={`/research/${encodeURIComponent(ticker)}`} className="inline-flex items-center gap-1.5 font-mono font-bold text-ink hover:text-gold-700">
+                      <span className="text-gold-600">$</span>{ticker}
+                    </Link>
+                    <span className="text-[11px] text-soft font-body">{list.length} {list.length === 1 ? "post" : "posts"}</span>
+                    <Link href={`/research/${encodeURIComponent(ticker)}`} className="ml-auto text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">Research <ArrowRight className="w-3.5 h-3.5" /></Link>
+                  </div>
+                  <div className="space-y-3">
+                    {list.slice(0, 4).map((p) => (
+                      <DiscussionRow key={p.id} post={p} tier={tierOf(p.author)} xpOf={xpOf} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="space-y-4">
-              {feedList.map((p, i) => (
+              {displayList.map((p, i) => (
                 <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
                   {p.kind === "announcement" ? (
                     <AnnouncementCard post={p} />
@@ -809,6 +992,47 @@ function FreeComposerUpsell() {
   );
 }
 
+// R5 — ticker-tag chips + optional positioning stance beneath a post body.
+function TickerRow({ tags, position }: { tags?: string[] | null; position?: PostPosition | null }) {
+  if (!tags?.length) return null;
+  const pmeta = position ? POSITION_META[position] : null;
+  const PIcon = position === "bull" ? TrendingUp : position === "bear" ? TrendingDown : Minus;
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap mt-2">
+      {tags.map((t) => (
+        <Link key={t} href={`/research/${encodeURIComponent(t)}`} className="inline-flex items-center bg-chip-amber text-gold-800 text-[11px] font-mono font-bold px-1.5 py-0.5 rounded hover:bg-gold-400/30">
+          ${t}
+        </Link>
+      ))}
+      {pmeta && (
+        <span className={`inline-flex items-center gap-1 text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${pmeta.chip}`}>
+          <PIcon className="w-3 h-3" />{pmeta.label}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// R5 — compact post row inside a Discussions ticker thread.
+function DiscussionRow({ post, tier, xpOf }: { post: FeedPost; tier: FamilyTier; xpOf?: (id: string | null | undefined) => number }) {
+  const pmeta = post.position ? POSITION_META[post.position] : null;
+  return (
+    <div className="flex items-start gap-2.5">
+      <ProfileLink username={post.author?.username} variant="avatar">
+        <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={post.author?.role} tier={tier} xp={xpOf?.(post.author?.id)} size="sm" />
+      </ProfileLink>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <ProfileLink username={post.author?.username} className="font-display text-xs font-semibold text-ink">{post.author?.display_name || "Member"}</ProfileLink>
+          {pmeta && <span className={`inline-flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider px-1 py-0.5 rounded ${pmeta.chip}`}><span className={`w-1.5 h-1.5 rounded-full ${pmeta.dot}`} />{pmeta.label}</span>}
+          <span className="text-[10px] text-soft">{timeAgo(post.created_at)}</span>
+        </div>
+        {post.body && <p className="text-xs text-midnight-200 mt-0.5 line-clamp-3 whitespace-pre-wrap break-words"><RichBody body={post.body} /></p>}
+      </div>
+    </div>
+  );
+}
+
 function PostCard(props: EngagementProps & { tier: FamilyTier }) {
   const { post, tier } = props;
   const role = post.author?.role || "parent";
@@ -829,6 +1053,7 @@ function PostCard(props: EngagementProps & { tier: FamilyTier }) {
             <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
           </div>
           <PostBody body={post.body} />
+          <TickerRow tags={post.ticker_tags} position={post.position} />
           {isWatchlistShare(post.activity_payload) && (
             <WatchlistShareCard payload={post.activity_payload} />
           )}

@@ -607,6 +607,10 @@ export default function WatchlistPage() {
     return <DashboardSkeleton variant="board" title="Family Watchlist" />;
   }
 
+  // Solo member = a family of one (no other members on the board). They get a
+  // plain "Watchlist" H1 + solo copy instead of the family-framed heading.
+  const isSolo = Object.keys(members).length <= 1;
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <Celebrate opts={queue[0] ?? null} onDone={() => setQueue((q) => q.slice(1))} />
@@ -620,10 +624,12 @@ export default function WatchlistPage() {
       >
         <div>
           <h1 className="font-display text-2xl font-bold text-ink">
-            Family Watchlist
+            {isSolo ? "Watchlist" : "Family Watchlist"}
           </h1>
           <p className="mt-1 text-sm text-soft">
-            {isKid
+            {isSolo
+              ? "Your research board. Add companies you know, study them, then decide with conviction."
+              : isKid
               ? "Your family's research board. Add companies you know, study them, then decide together."
               : "The family research board — anyone adds, everyone studies, verdicts come only after the homework."}
           </p>
@@ -710,7 +716,21 @@ export default function WatchlistPage() {
       )}
 
       {/* Empty state */}
-      {items.length === 0 && <EmptyWatchlist onAdd={() => openAdd()} />}
+      {items.length === 0 && (
+        <div className="space-y-4">
+          <EmptyWatchlist onAdd={() => openAdd()} />
+          {/* R4/R5 debt — Kai Watch stays available with an empty board: an adult
+              member can ask Kai to watch any ticker before adding one here. */}
+          {!isKid && (
+            <div className="mx-auto max-w-md">
+              <p className="mb-2 text-center text-xs text-soft">
+                Or have Kai keep an eye on something while you decide what to add.
+              </p>
+              <KaiWatch userId={userId} surface="watchlist" />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Board — columns by status */}
       {items.length > 0 && (

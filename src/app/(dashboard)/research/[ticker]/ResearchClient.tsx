@@ -19,7 +19,9 @@ import {
   Newspaper,
   HelpCircle,
   ChevronRight,
+  TrendingUp,
 } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote, fetchNews, fetchBars, type MarketQuote, type MarketBar, type NewsHeadline } from "@/lib/market/client";
@@ -542,6 +544,10 @@ export default function ResearchClient({
               showConsensus
             />
           </div>
+
+          {/* R5 — community aggregation header. Hidden entirely when every count
+              is below its sane threshold, so a cold ticker shows no sad zeros. */}
+          <CommunityAggBar supabase={supabase} ticker={ticker} />
         </m.div>
 
         {/* Scorecard summary — gauge + rings, permanent anti-overload device.
@@ -959,5 +965,59 @@ function FilterChip({
     >
       {label}
     </button>
+  );
+}
+
+// R5 — ticker community aggregation header. One RPC (get_ticker_community_stats).
+// Counts hide below sane thresholds; the whole strip hides when nothing qualifies
+// so a cold ticker never shows sad zeros.
+interface CommunityStats {
+  watching: number;
+  discussions_week: number;
+  bull: number;
+  neutral: number;
+  bear: number;
+  positioned: number;
+}
+function CommunityAggBar({ supabase, ticker }: { supabase: SupabaseClient; ticker: string }) {
+  const [stats, setStats] = useState<CommunityStats | null>(null);
+  useEffect(() => {
+    let on = true;
+    supabase
+      .rpc("get_ticker_community_stats", { p_ticker: ticker })
+      .then(({ data }) => {
+        if (!on) return;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) setStats(row as CommunityStats);
+      });
+    return () => {
+      on = false;
+    };
+  }, [supabase, ticker]);
+  if (!stats) return null;
+
+  const showWatching = stats.watching >= 3;
+  const showDiscussions = stats.discussions_week >= 1;
+  const showBullish = stats.positioned >= 4;
+  const bullishPct = showBullish ? Math.round((stats.bull / stats.positioned) * 100) : 0;
+  if (!showWatching && !showDiscussions && !showBullish) return null;
+
+  const items: { icon: React.ElementType; text: React.ReactNode }[] = [];
+  if (showWatching) items.push({ icon: Users2, text: <><span className="font-bold text-ink">{stats.watching}</span> watching</> });
+  if (showDiscussions) items.push({ icon: MessageCircle, text: <><span className="font-bold text-ink">{stats.discussions_week}</span> {stats.discussions_week === 1 ? "discussion" : "discussions"} this week</> });
+  if (showBullish) items.push({ icon: TrendingUp, text: <><span className="font-bold text-ink">{bullishPct}%</span> leaning bullish</> });
+
+  return (
+    <div className="mt-3 flex items-center gap-x-4 gap-y-1.5 flex-wrap rounded-xl bg-chip-amber/25 border border-gold-300/60 px-3 py-2">
+      {items.map((it, i) => {
+        const Icon = it.icon;
+        return (
+          <span key={i} className="inline-flex items-center gap-1.5 text-xs text-soft font-body">
+            <Icon className="w-3.5 h-3.5 text-gold-600" />
+            {it.text}
+          </span>
+        );
+      })}
+    </div>
   );
 }

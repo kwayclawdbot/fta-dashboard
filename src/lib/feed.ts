@@ -107,6 +107,33 @@ export interface FeedPost {
   title?: string | null;
   link?: string | null;
   audience?: string | null;
+  // R5 (migration 132): optional ticker tags + education-first positioning.
+  ticker_tags?: string[] | null;
+  position?: PostPosition | null;
+}
+
+/** Education-first stance on a tagged ticker. Never a trade instruction. */
+export type PostPosition = "bull" | "neutral" | "bear";
+
+export const POSITION_META: Record<
+  PostPosition,
+  { label: string; chip: string; dot: string }
+> = {
+  // Bull/bear use standard green/red (sentiment, not price data — teal rule
+  // only bars teal on price/performance). Neutral is a warm slate.
+  bull: { label: "Bullish", chip: "bg-chip-green text-green-700", dot: "bg-green-500" },
+  neutral: { label: "Neutral", chip: "bg-sand text-soft", dot: "bg-soft" },
+  bear: { label: "Bearish", chip: "bg-red-500/10 text-red-700", dot: "bg-red-500" },
+};
+
+/** Parse free-typed "$NVDA MSFT, tsla" into a clean uppercase ticker list. */
+export function parseTickerTags(raw: string, max = 4): string[] {
+  const out: string[] = [];
+  for (const tok of raw.toUpperCase().match(/[A-Z]{1,6}/g) ?? []) {
+    if (!out.includes(tok)) out.push(tok);
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 export interface PostComment {
