@@ -103,6 +103,70 @@ export function isPremium(tier: FamilyTier): boolean {
   return TIER_CONFIG[tier].premium;
 }
 
+// ── FTA year-1 Club clock (Challenge $1,500 offer) ───────────────────────────
+// The $1,500 Challenge grants FTA academy access for LIFE + Cheat Code Club for
+// 12 months (enrollments.club_until). When that window closes with no other Club
+// source (no paid fic, no unexpired challenge_pass), the family stays tier 'fta'
+// but `club_lapsed` is true: FTA hub access (/fta/**, FTA courses, recordings,
+// FTA chat) is PRESERVED while every fic-level Club surface (community write,
+// watchlist, Kai chat, alerts, screener) is stripped down to the free tier.
+//
+// One central derivation — effectiveClubTier — is the single knob every
+// Club-level gate reads. FTA-hub gates keep reading the real tier. Never scatter
+// `if (clubLapsed)` conditionals across consumers; funnel them through here.
+
+export interface FamilyTierState {
+  /** Real membership tier (fta stays fta even when the Club window has lapsed). */
+  tier: FamilyTier;
+  /** fta family past its 12-month Club window with no other Club source. */
+  clubLapsed: boolean;
+}
+
+/**
+ * The tier a CLUB-LEVEL surface should gate against. For a lapsed FTA member the
+ * real tier is still 'fta' but Club access is revoked, so this collapses to
+ * 'free' — driving every existing `tier === 'free'` / cap-by-tier lock without
+ * touching FTA-hub gates (which keep using the real tier). A no-op for everyone
+ * whose Club is active (clubLapsed false ⇒ returns the tier unchanged).
+ */
+export function effectiveClubTier(
+  tier: FamilyTier,
+  clubLapsed: boolean | null | undefined
+): FamilyTier {
+  return clubLapsed ? "free" : tier;
+}
+
+/**
+ * Program access with the Club clock applied. FTA-program content is PRESERVED
+ * for a lapsed member (they own FTA for life); fic-program content follows the
+ * effective Club tier (free ⇒ locked). Use at course call-sites that must honor
+ * the "keep FTA academy, drop Club" split.
+ */
+export function canAccessProgramEffective(
+  tier: FamilyTier,
+  clubLapsed: boolean | null | undefined,
+  program: ProgramKey | null | undefined
+): boolean {
+  if (!program) return true;
+  if (program === "fta") return canAccessProgram(tier, "fta"); // lifetime FTA
+  return canAccessProgram(effectiveClubTier(tier, clubLapsed), program);
+}
+
+/**
+ * Live-session access with the Club clock applied. 'academy' (FTA) sessions +
+ * recordings stay open for a lapsed member; 'challenge' (fic) sessions follow
+ * the effective Club tier.
+ */
+export function canAccessSessionEffective(
+  tier: FamilyTier,
+  clubLapsed: boolean | null | undefined,
+  minTier: SessionTier | null | undefined
+): boolean {
+  if (!minTier) return true;
+  if (minTier === "academy") return canAccessSession(tier, "academy");
+  return canAccessSession(effectiveClubTier(tier, clubLapsed), minTier);
+}
+
 // ── Mode-aware display relabel (Cheat Code Club umbrella) ────────────────────
 // The DB program (free|fic|fta) is fixed; how its NAME renders depends on the
 // viewer's member mode (src/lib/mode.ts). The same fic membership reads as
@@ -196,6 +260,43 @@ export async function getFamilyTier(
     .eq("family_id", familyId)
     .maybeSingle();
   return normalizeTier(data?.tier);
+}
+
+/**
+ * Real tier + Club-clock lapse for one family, in ONE query. Use this anywhere
+ * the Club renewal banner / lapsed gating needs to be surfaced. FTA-hub gates
+ * read `state.tier`; Club-level gates read `effectiveClubTier(state)` (or the
+ * getClubTier convenience below).
+ */
+export async function getFamilyTierState(
+  supabase: SupabaseClient,
+  familyId: string | null | undefined
+): Promise<FamilyTierState> {
+  if (!familyId) return { tier: "fic", clubLapsed: false };
+  const { data } = await supabase
+    .from("family_tiers")
+    .select("tier, club_lapsed")
+    .eq("family_id", familyId)
+    .maybeSingle();
+  return {
+    tier: normalizeTier(data?.tier),
+    clubLapsed: data?.club_lapsed === true,
+  };
+}
+
+/**
+ * The tier a CLUB-LEVEL surface should gate against — real tier folded through
+ * the Club clock, so a lapsed FTA family reads 'free'. Drop-in replacement for
+ * getFamilyTier at every fic-level gate (community write, watchlist, Kai chat,
+ * alerts, screener, games, news, research, settings). Identical to getFamilyTier
+ * for anyone whose Club is active.
+ */
+export async function getClubTier(
+  supabase: SupabaseClient,
+  familyId: string | null | undefined
+): Promise<FamilyTier> {
+  const { tier, clubLapsed } = await getFamilyTierState(supabase, familyId);
+  return effectiveClubTier(tier, clubLapsed);
 }
 
 /**
