@@ -13,30 +13,31 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { renderDrip, DRIP_STEPS } from "../src/lib/server/drip-templates";
+import { sendDripEmail, dripUnsubUrl, APP_ORIGIN } from "../src/lib/server/drips";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── load .env.local into process.env (before the send path reads the key) ────
-try {
-  const raw = readFileSync(join(__dirname, "..", ".env.local"), "utf8");
-  for (const line of raw.split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/i);
-    if (!m) continue;
-    let val = m[2].trim();
-    if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
-      val = val.slice(1, -1);
+function loadEnv() {
+  try {
+    const raw = readFileSync(join(__dirname, "..", ".env.local"), "utf8");
+    for (const line of raw.split("\n")) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/i);
+      if (!m) continue;
+      let val = m[2].trim();
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
+        val = val.slice(1, -1);
+      }
+      if (!(m[1] in process.env)) process.env[m[1]] = val;
     }
-    if (!(m[1] in process.env)) process.env[m[1]] = val;
+  } catch {
+    /* env already provided */
   }
-} catch {
-  /* env already provided */
 }
-
-const { renderDrip, DRIP_STEPS } = await import("../src/lib/server/drip-templates");
-const { sendDripEmail, dripUnsubUrl, APP_ORIGIN } = await import("../src/lib/server/drips");
 
 const TO = process.env.DRIP_TEST_TO || "kwayclawdbot@gmail.com";
 const FAKE_USER = "00000000-0000-4000-8000-000000000001"; // signs a real (test) unsub token
@@ -53,6 +54,7 @@ const STATS: Record<(typeof VARIANTS)[number], { xp: number; beltLabel: string; 
 const FIRST_NAME = "Kway";
 
 async function main() {
+  loadEnv();
   console.log(`Sending 15 test drips to ${TO} (app origin: ${APP_ORIGIN})\n`);
   const results: { key: string; ok: boolean; id?: string; error?: string }[] = [];
 
