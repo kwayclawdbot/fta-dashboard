@@ -72,6 +72,8 @@ interface DashboardShellProps {
     avatar_url?: string;
     tier?: FamilyTier;
     isSolo?: boolean;
+    isChallenge?: boolean;
+    isVip?: boolean;
   };
   /** ISO expiry of an active 5-Day Challenge pass (Lane C7), else null. */
   challengeExpiresAt?: string | null;

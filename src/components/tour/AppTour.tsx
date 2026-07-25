@@ -62,7 +62,19 @@ const STEP_ROUTE: Record<string, string> = {
   profile: "/dashboard",
   fta: "/fta/chat",
   done: "/dashboard",
+  // ── Challenge walkthrough (Lane C9b) ──
+  ch_welcome: "/dashboard",
+  ch_sessions: "/courses",
+  ch_progress: "/progress",
+  vip_room: "/vip-room",
+  ch_done: "/dashboard",
 };
+
+// The intro-post micro-commitment (mirrors the C7 thank-you). Completing the
+// challenge tour lands the member on the community composer, pre-seeded.
+const CHALLENGE_INTRO =
+  "Hi everyone — just joined the 5-Day Investing Challenge! 👋 A bit about me (or my family / crew): \n\nOne money habit I want to build by Day 5: ";
+const CHALLENGE_INTRO_HREF = `/community?compose=${encodeURIComponent(CHALLENGE_INTRO)}`;
 
 type Framing = "welcome" | "whatsnew";
 
@@ -83,6 +95,10 @@ interface TourUser {
   tier?: FamilyTier;
   /** Solo (individual, non-parent) member — a family of one. De-parents copy. */
   isSolo?: boolean;
+  /** 5-Day Challenge pass holder → the challenge-flavored walkthrough. */
+  isChallenge?: boolean;
+  /** VIP ticket holder → adds the VIP-room stop to the challenge tour. */
+  isVip?: boolean;
 }
 
 /**
@@ -96,7 +112,88 @@ interface TourUser {
  * swaps only the first/last step copy (welcome vs. "what's new" for returning
  * members). Register comes from the shared register.ts derivation.
  */
+/**
+ * Challenge-flavored walkthrough (Lane C9b) for 5-Day Challenge pass holders.
+ * Warm, zero-jargon, compliance floor. Frames the app around the cohort and
+ * routes: Community → Watchlist (Day-1 quick-win seed) → Kai → sessions/materials
+ * → progress/belts, plus a VIP-room stop for VIPs, ending on the intro-post
+ * micro-commitment. Register-agnostic (challenge registrants are adults).
+ */
+function buildChallengeSteps(u: TourUser): TourStep[] {
+  const first = (u.display_name || "").split(" ")[0];
+  const S: Record<string, TourStep> = {
+    ch_welcome: {
+      key: "ch_welcome",
+      emoji: "👋",
+      title: first ? `Welcome to the Club, ${first}!` : "Welcome to the Club!",
+      body: "You're in the 5-Day Investing Challenge — and your full access is already open. Your cohort kicks off Sept 1, with live sessions Wed–Sun at 7 PM ET. Let me show you the five places you'll actually use this week — takes about a minute.",
+    },
+    community: {
+      key: "community",
+      targets: ['[data-tour="nav:/community"]', '[data-tour="tab:/community"]'],
+      emoji: "💬",
+      title: "This is where your cohort lives",
+      body: "The Community is home base all week — say hi, share what you're finding, and cheer each other on. At the end of this tour we'll help you post a quick intro so the room knows you're here.",
+    },
+    watchlist: {
+      key: "watchlist",
+      targets: ['[data-tour="nav:/watchlist/community"]', '[data-tour="tab:/watchlist/community"]', '[data-tour="tab:more"]'],
+      emoji: "🔎",
+      title: "Add your first company",
+      body: "The Watchlist is the club's shared board of companies we're following. Adding one company you already know — a store you shop at, a phone you use — is the perfect way to walk into Day 1 ready. It's for learning, never a buy list.",
+    },
+    kai: {
+      key: "kai",
+      targets: ['[data-tour="nav:/kai"]', '[data-tour="kai-float"]', '[data-tour="tab:more"]'],
+      emoji: "🤖",
+      title: "Meet Kai — ask your first question",
+      body: "Kai is your friendly research helper. Ask what a company does, and Kai explains it in plain English. Try one question about the company you just watched. Kai teaches and researches — it never gives buy/sell advice.",
+    },
+    ch_sessions: {
+      key: "ch_sessions",
+      targets: ['[data-tour="nav:/courses"]', '[data-tour="tab:more"]'],
+      emoji: "🎓",
+      title: "Where your sessions & materials live",
+      body: "Your live sessions run Wed–Sun at 7 PM ET, and the recordings plus each day's materials show up right here. Miss one? It'll be waiting for you — nothing to lose.",
+    },
+    ch_progress: {
+      key: "ch_progress",
+      targets: ['[data-tour="nav:/progress"]', '[data-tour="belt"]', '[data-tour="tab:more"]'],
+      emoji: "🥋",
+      title: "How your progress works",
+      body: "Everything you do earns XP, which fills your belt — White on up. It's a simple, no-pressure way to see how far you've come through the week. Show up, do the small daily thing, watch it climb.",
+    },
+    vip_room: {
+      key: "vip_room",
+      targets: ['[data-tour="nav:/vip-room"]', '[data-tour="tab:more"]'],
+      emoji: "🎟️",
+      title: "Your VIP room & replays",
+      body: "As a VIP, you've got a private room and replays of every live session right here. It's a quieter space to ask questions and share what you're working on. Your printed textbook is on its way too.",
+    },
+    ch_done: {
+      key: "ch_done",
+      emoji: "🚀",
+      title: first ? `You're all set, ${first}.` : "You're all set!",
+      body: "That's the whole map. One last thing that really helps — let's post a quick intro so your cohort can say hi back. It takes 20 seconds, and people who introduce themselves on day one are far more likely to finish strong.",
+    },
+  };
+
+  const order = [
+    "ch_welcome",
+    "community",
+    "watchlist",
+    "kai",
+    "ch_sessions",
+    ...(u.isVip ? ["vip_room"] : []),
+    "ch_progress",
+    "ch_done",
+  ];
+  return order.map((k) => S[k]);
+}
+
 function buildSteps(u: TourUser, framing: Framing): TourStep[] {
+  // Challenge pass holders get the dedicated challenge walkthrough (Lane C9b).
+  if (u.isChallenge) return buildChallengeSteps(u);
   const register = deriveRegister(u);
   const first = (u.display_name || "").split(" ")[0];
   const isFta = u.tier === "fta";
@@ -472,9 +569,14 @@ export default function AppTour({ user }: { user: TourUser }) {
       localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION));
       localStorage.removeItem(LS_PROGRESS);
     } catch { /* ignore */ }
-    // Return to the home base so the celebration + everyday home is where the
-    // tour ends, regardless of which page the last step showed.
-    if (pathname !== "/dashboard") router.push("/dashboard");
+    // Where the tour ends: a completed CHALLENGE tour lands on the community
+    // composer, pre-seeded with the intro-post (the micro-commitment). Everyone
+    // else returns to the home base.
+    const destination =
+      completed && user.isChallenge ? CHALLENGE_INTRO_HREF : "/dashboard";
+    if (destination !== "/dashboard" || pathname !== "/dashboard") {
+      router.push(destination);
+    }
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       // Stamp the version so the tour never re-imposes; keep tour_completed_at
@@ -487,7 +589,8 @@ export default function AppTour({ user }: { user: TourUser }) {
         })
         .eq("id", session.user.id);
     }
-    if (completed) {
+    // Challenge tours skip the celebration — the intro composer IS the reward.
+    if (completed && !user.isChallenge) {
       const whatsnew = framingRef.current === "whatsnew";
       setCelebrate({
         variant: "setup",

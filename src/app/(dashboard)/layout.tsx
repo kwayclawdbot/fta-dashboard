@@ -74,6 +74,18 @@ export default async function DashboardLayout({
     challengeExpiresAt = (pass?.expires_at as string | null) ?? null;
   }
 
+  // VIP ticket holder? (Lane C9b tour) — used to add the VIP-room stop to the
+  // challenge walkthrough. Cheap own-family lookup.
+  let isVip = false;
+  if (profile?.family_id) {
+    const { data: vip } = await supabase
+      .from("challenge_vips")
+      .select("id")
+      .eq("family_id", profile.family_id)
+      .maybeSingle();
+    isVip = !!vip;
+  }
+
   // Solo (individual, non-parent) member — a family of one. Only owners
   // (parent/admin) can be solo; kids/teens always belong to a parent's family.
   // Derived from a COMPLETED family_profiles household so unfinished/default
@@ -103,6 +115,10 @@ export default async function DashboardLayout({
     avatar_url: profile?.avatar_url ?? undefined,
     tier,
     isSolo,
+    // Challenge walkthrough signals (Lane C9b): a challenge_pass holder gets the
+    // challenge-flavored tour; VIPs additionally get the VIP-room stop.
+    isChallenge: !!challengeExpiresAt,
+    isVip,
   };
 
   return (

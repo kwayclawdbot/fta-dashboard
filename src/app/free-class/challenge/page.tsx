@@ -76,7 +76,7 @@ export default function ChallengeThankYouPage() {
       isVip={isVip}
       vipIntent={vipIntent}
       vipEnabled={vipEnabled}
-      onExplore={() => router.push("/dashboard")}
+      onExplore={() => router.push("/dashboard?tour=1")}
     />
   );
 }
