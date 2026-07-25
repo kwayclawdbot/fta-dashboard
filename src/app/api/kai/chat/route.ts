@@ -337,7 +337,10 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const key = process.env.ANTHROPIC_API_KEY;
+  // Trim the key defensively: a pasted Vercel env value can carry a trailing
+  // newline, which makes the x-api-key header malformed and every Anthropic
+  // call fail with 401 — surfacing as a blanket "temporarily unavailable".
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
   if (!key)
     return Response.json({ error: "Kai is offline right now." }, { status: 503 });
 
