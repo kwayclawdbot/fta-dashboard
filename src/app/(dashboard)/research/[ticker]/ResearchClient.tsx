@@ -65,6 +65,39 @@ import {
 const COMMENT_SELECT =
   "id, ticker, user_id, body, contribution_type, created_at, author:profiles(display_name, avatar_url, age_group, username)";
 
+/** Dynamic back-breadcrumb (J2 fix) — reflect the true referrer instead of
+ *  always claiming "Community Watchlist". Keyed by an explicit `?from=` param
+ *  (deep-links set it) with a same-origin referrer fallback. */
+type BackTarget = { href: string; label: string };
+const BACK_MAP: Record<string, BackTarget> = {
+  screener: { href: "/screener", label: "Stock Finder" },
+  community: { href: "/watchlist/community", label: "Community Watchlist" },
+  watchlist: { href: "/watchlist", label: "My Watchlist" },
+  discover: { href: "/discover", label: "Discover" },
+  news: { href: "/news", label: "Newsroom" },
+};
+const BACK_DEFAULT: BackTarget = BACK_MAP.community;
+
+function backFromReferrer(): BackTarget | null {
+  try {
+    const from = new URLSearchParams(window.location.search).get("from");
+    if (from && BACK_MAP[from]) return BACK_MAP[from];
+    if (!document.referrer) return null;
+    const ref = new URL(document.referrer);
+    if (ref.origin !== window.location.origin) return null;
+    const p = ref.pathname;
+    if (p.startsWith("/screener")) return BACK_MAP.screener;
+    if (p.startsWith("/watchlist/community")) return BACK_MAP.community;
+    if (p.startsWith("/watchlist")) return BACK_MAP.watchlist;
+    if (p.startsWith("/discover")) return BACK_MAP.discover;
+    if (p.startsWith("/news")) return BACK_MAP.news;
+    if (p.startsWith("/community")) return { href: "/community", label: "Community" };
+  } catch {
+    /* ignore — keep default */
+  }
+  return null;
+}
+
 const SESSION_TAB_KEY = "fic-research-tab";
 const VALID_TABS: readonly ResearchTabKey[] = [
   "overview",
@@ -236,6 +269,7 @@ export default function ResearchClient({
   const [err, setErr] = useState("");
 
   const [activeTab, setActiveTab] = useState<ResearchTabKey>(() => resolveInitialTab());
+  const [back, setBack] = useState<BackTarget>(BACK_DEFAULT);
   const barsReq = useRef(false);
   const newsReq = useRef(false);
   const initRef = useRef(false);
@@ -363,6 +397,14 @@ export default function ResearchClient({
     load();
   }, [load]);
 
+  // Resolve the back-breadcrumb from the referrer/param (client-only, so it
+  // can't cause a hydration mismatch — defaults to Community Watchlist).
+  useEffect(() => {
+    const next = backFromReferrer();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (next) setBack(next);
+  }, []);
+
   // Once data is ready: correct an invalid deep-linked tab (e.g. ?tab=kai on a
   // ticker with no report) and kick off the active tab's lazy fetch. Runs once.
   useEffect(() => {
@@ -464,21 +506,22 @@ export default function ResearchClient({
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
       <Link
-        href="/watchlist/community"
+        href={back.href}
         className="inline-flex items-center gap-1.5 pt-4 text-sm font-medium text-soft hover:text-ink"
       >
-        <ArrowLeft className="h-4 w-4" /> Community Watchlist
+        <ArrowLeft className="h-4 w-4" /> {back.label}
       </Link>
 
-      {/* ── Permanent header (always above the tabs) ─────────────────────────
-          Hero (logo / price / social bar) + scorecard summary (gauge + rings).
-          Social-first: the social bar never gets buried in a tab. */}
-      <div className="mt-4 mb-5 space-y-5">
-        <m.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft"
-        >
+      {/* ── Masthead — the page's signature object ───────────────────────────
+          Company identity, the VERDICT GAUGE lifted out of its old card to be
+          the hero, then the social band. ONE surface, no card-in-card. */}
+      <m.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4 mb-5 overflow-hidden rounded-2xl border border-sand bg-midnight-900 shadow-soft"
+      >
+        {/* Identity band */}
+        <div className="p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo symbol={ticker} name={companyName} size={52} />
@@ -529,53 +572,53 @@ export default function ResearchClient({
               price={quote?.price ?? keyStats.week52High}
             />
           )}
+        </div>
 
-          {/* Social bar — hero variant; comment count jumps to the Community tab */}
-          <div className="mt-4 border-t border-sand pt-4">
-            <SocialBar
-              supabase={supabase}
-              ticker={ticker}
-              variant="hero"
-              userId={userId}
-              ageGroup={ageGroup}
-              canVote={canVote}
-              onCommentClick={() => selectTab("community")}
-              commentActive={activeTab === "community"}
-              showConsensus
-            />
-          </div>
-
-          {/* R5 — community aggregation header. Hidden entirely when every count
-              is below its sane threshold, so a cold ticker shows no sad zeros. */}
-          <CommunityAggBar supabase={supabase} ticker={ticker} />
-        </m.div>
-
-        {/* Scorecard summary — gauge + rings, permanent anti-overload device.
-            Three states: graded → Scorecard; ungraded/failed → honest note;
-            still-loading → skeleton. Never a permanent pulse. */}
-        {research ? (
-          ungraded ? (
-            <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
+        {/* Verdict — the hero. Gauge + rings sit directly under the ticker
+            header (not in a separate card). Three honest states. */}
+        <div className="border-t border-sand px-5 py-6">
+          {research ? (
+            ungraded ? (
               <p className="text-sm text-soft">
                 We don&apos;t have enough published financials to grade {companyName} yet — many smaller
                 companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
                 news, and community research still work in the tabs below.
               </p>
-            </section>
-          ) : (
-            <Scorecard grades={research.grades} locked={locked} mode="summary" />
-          )
-        ) : researchResolved ? (
-          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 text-center shadow-soft">
+            ) : (
+              <>
+                <p className="mb-4 font-display text-[11px] font-bold uppercase tracking-[0.16em] text-soft">
+                  The verdict
+                </p>
+                <Scorecard grades={research.grades} locked={locked} mode="summary" />
+              </>
+            )
+          ) : researchResolved ? (
             <p className="text-sm text-soft">
               The scorecard for {companyName} is updating and will be back shortly. The price,
               charts, news, and community research below still work.
             </p>
-          </section>
-        ) : (
-          <div className="h-40 animate-pulse rounded-2xl bg-sand/40" />
-        )}
-      </div>
+          ) : (
+            <div className="h-40 animate-pulse rounded-xl bg-sand/40" />
+          )}
+        </div>
+
+        {/* Social band — hero social bar + community aggregation. The comment
+            count jumps to the Community tab; cold tickers show no sad zeros. */}
+        <div className="border-t border-sand px-5 py-4">
+          <SocialBar
+            supabase={supabase}
+            ticker={ticker}
+            variant="hero"
+            userId={userId}
+            ageGroup={ageGroup}
+            canVote={canVote}
+            onCommentClick={() => selectTab("community")}
+            commentActive={activeTab === "community"}
+            showConsensus
+          />
+          <CommunityAggBar supabase={supabase} ticker={ticker} />
+        </div>
+      </m.div>
 
       {/* ── Sticky tab bar ───────────────────────────────────────────────────
           Rendered as a DIRECT child of the tall page container (not inside a
@@ -599,8 +642,7 @@ export default function ResearchClient({
         )}
 
         {activeTab === "charts" && (
-          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-            <h2 className="mb-4 font-display text-base font-bold text-ink">Price &amp; technicals</h2>
+          <Section title="Price & technicals">
             {research && barsState === "done" ? (
               <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
             ) : (
@@ -610,16 +652,15 @@ export default function ResearchClient({
                 <div className="h-20 animate-pulse rounded-xl bg-sand/40" />
               </div>
             )}
-          </section>
+          </Section>
         )}
 
         {activeTab === "financials" && (
-          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-            <h2 className="mb-4 font-display text-base font-bold text-ink">Financials</h2>
+          <Section title="Financials">
             {!research || !keyStats ? (
               <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
             ) : research.insufficient ? (
-              <p className="rounded-xl border border-dashed border-sand px-3 py-8 text-center text-sm text-soft">
+              <p className="border-y border-sand py-8 text-center text-sm text-soft">
                 We don&apos;t have enough published financials for {companyName} to chart yet — many
                 smaller companies and funds don&apos;t report the quarterly numbers these charts need.
               </p>
@@ -632,13 +673,11 @@ export default function ResearchClient({
                 medians={research.sectorMedians}
               />
             )}
-          </section>
+          </Section>
         )}
 
         {activeTab === "news" && (
-          <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-            <h2 className="mb-1 font-display text-base font-bold text-ink">News</h2>
-            <p className="mb-4 text-xs text-soft">Club recaps + headlines from around the web</p>
+          <Section title="News" subtitle="Club recaps + headlines from around the web">
             {newsState !== "done" ? (
               <div className="space-y-2">
                 {[0, 1, 2].map((i) => (
@@ -646,24 +685,24 @@ export default function ResearchClient({
                 ))}
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {clubNews.length > 0 && (
                   <div>
                     <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
                       <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
                     </h3>
-                    <div className="space-y-2">
+                    <div className="border-y border-sand">
                       {clubNews.map((a) => (
                         <Link
                           key={a.slug}
                           href={`/news/${a.slug}`}
-                          className="block rounded-xl border border-sand bg-paper px-3 py-2.5 transition-colors hover:border-gold-400"
+                          className="group block border-t border-sand py-3 first:border-t-0"
                         >
                           <div className="mb-1 flex items-center gap-2">
                             <KindChip kind={a.kind} />
                             <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
                           </div>
-                          <p className="text-sm font-semibold leading-snug text-ink">{a.title}</p>
+                          <p className="text-sm font-semibold leading-snug text-ink group-hover:text-gold-700">{a.title}</p>
                           {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
                         </Link>
                       ))}
@@ -680,7 +719,7 @@ export default function ResearchClient({
                 </div>
               </div>
             )}
-          </section>
+          </Section>
         )}
 
         {activeTab === "kai" && report && (
@@ -715,15 +754,16 @@ export default function ResearchClient({
               </section>
             )}
 
-            {/* On the board */}
+            {/* On the board — dense hairline rows, not cards */}
             {entries.length > 0 && (
-              <section className="space-y-2">
-                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">On the board</h2>
+              <section>
+                <h2 className="mb-1 font-display text-sm font-bold uppercase tracking-wider text-ink">On the board</h2>
+                <div className="border-y border-sand">
                 {entries.map((e) => {
                   const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
                   const tone = pctTone(pct);
                   return (
-                    <div key={e.id} className="flex items-center justify-between gap-3 rounded-xl border border-sand bg-midnight-900 p-3">
+                    <div key={e.id} className="flex items-center justify-between gap-3 border-t border-sand py-2.5 first:border-t-0">
                       <div className="flex min-w-0 items-center gap-2 text-sm">
                         {e.kind === "admin" ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
@@ -739,13 +779,14 @@ export default function ResearchClient({
                       </div>
                       <div className="flex items-center gap-2 text-xs text-soft">
                         {e.snapshot_price != null && <span>added ${e.snapshot_price.toFixed(2)}</span>}
-                        <span className={`font-bold ${tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"}`}>
+                        <span className={`font-mono font-bold tabular-nums ${tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"}`}>
                           {formatPct(pct)}
                         </span>
                       </div>
                     </div>
                   );
                 })}
+                </div>
               </section>
             )}
 
@@ -871,6 +912,29 @@ export default function ResearchClient({
   );
 }
 
+/* ─────────────────────────── Editorial section ─────────────────────────── */
+// Un-boxed tab body: a confident heading, content flows on the page. The
+// content's own hairlines (ledger rows, stat table, definition list) carry
+// the structure — no bordered white card wrapping.
+
+function Section({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h2 className="font-display text-lg font-bold text-ink">{title}</h2>
+      {subtitle && <p className="mt-0.5 text-xs text-soft">{subtitle}</p>}
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
 /* ─────────────────────────────── Overview tab ──────────────────────────── */
 
 function OverviewTab({
@@ -892,35 +956,34 @@ function OverviewTab({
   hasReport: boolean;
   onOpenKai: () => void;
 }) {
+  // Editorial one-pager: verdict detail → the numbers → about, each an
+  // un-boxed section reading top-to-bottom. No card-in-card.
   return (
-    <div className="space-y-5">
-      {/* Strengths & weaknesses */}
+    <div className="space-y-8">
+      {/* Strengths & weaknesses — two-column editorial ledger */}
       {research && !ungraded && (
-        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-          <h2 className="mb-3 font-display text-base font-bold text-ink">Strengths &amp; weaknesses</h2>
+        <Section title="Strengths & weaknesses">
           <Scorecard
             grades={research.grades}
             locked={locked}
             upsell={<UpsellCard context="watchlist" />}
             mode="detail"
           />
-        </section>
+        </Section>
       )}
 
-      {/* Key stats */}
+      {/* Key stats — designed data table */}
       {keyStats && (
-        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-          <h2 className="mb-3 font-display text-base font-bold text-ink">Key stats</h2>
+        <Section title="Key stats">
           <KeyStatsGrid k={keyStats} />
-        </section>
+        </Section>
       )}
 
-      {/* About */}
+      {/* About — description + definition list */}
       {research?.company.description && (
-        <section className="rounded-2xl border border-sand bg-midnight-900 p-5 shadow-soft">
-          <h2 className="mb-3 font-display text-base font-bold text-ink">About {companyName}</h2>
+        <Section title={`About ${companyName}`}>
           <CompanyProfileCard company={research.company} kidsMode={isKid} />
-        </section>
+        </Section>
       )}
 
       {/* Kai report teaser → its own tab */}

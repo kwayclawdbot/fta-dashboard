@@ -122,12 +122,12 @@ export function VerdictGauge({
   letter: Letter | null;
   graded: number;
 }) {
-  const W = 220;
-  const H = 132;
+  const W = 240;
+  const H = 142;
   const cx = W / 2;
   const cy = H - 14;
-  const rr = 92;
-  const stroke = 15;
+  const rr = 100;
+  const stroke = 16;
 
   // 5 arc segments across 180°.
   const segColors = ["#dc2626", "#ea580c", "#d97706", "#65a30d", "#16a34a"];
@@ -174,19 +174,19 @@ export function VerdictGauge({
           </>
         )}
       </svg>
-      <div className="-mt-3 flex flex-col items-center">
+      <div className="-mt-4 flex flex-col items-center">
         {label && letter ? (
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <span
-                className="flex h-7 w-7 items-center justify-center rounded-full font-display text-sm font-bold text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full font-display text-lg font-bold text-white"
                 style={{ backgroundColor: letterColor(letter) }}
               >
                 {letter}
               </span>
-              <span className="font-display text-xl font-bold text-ink">{label}</span>
+              <span className="font-display text-2xl font-extrabold tracking-tight text-ink">{label}</span>
             </div>
-            <span className="mt-0.5 text-[11px] text-soft">
+            <span className="mt-1 text-[11px] text-soft">
               overall read · {graded} of 4 areas graded
             </span>
           </>

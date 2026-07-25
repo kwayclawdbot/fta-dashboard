@@ -37,16 +37,18 @@ export function KeyStatsGrid({ k }: { k: ResearchPayload["keyStats"] }) {
     { label: "Market cap", value: k.marketCapText ?? "—" },
     { label: "Dividend yield", value: k.divYield == null ? "—" : `${k.divYield.toFixed(2)}%` },
   ];
+  // A designed data table, not chip salad: label above value (mono numerics),
+  // cells divided by hairlines. Two columns on mobile, four on desktop.
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <dl className="grid grid-cols-2 sm:grid-cols-4">
       {stats.map((s) => (
-        <div key={s.label} className="rounded-xl border border-sand bg-paper px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-soft">{s.label}</div>
-          <div className="font-display text-base font-bold text-ink">{s.value}</div>
-          {s.hint && <div className="text-[10px] text-soft/80">{s.hint}</div>}
+        <div key={s.label} className="border-b border-sand py-3 pr-5">
+          <dt className="text-[10px] font-semibold uppercase tracking-wider text-soft">{s.label}</dt>
+          <dd className="mt-1 font-mono text-lg font-bold tabular-nums text-ink">{s.value}</dd>
+          {s.hint && <dd className="mt-0.5 text-[10px] text-soft/80">{s.hint}</dd>}
         </div>
       ))}
-    </div>
+    </dl>
   );
 }
 
@@ -90,14 +92,14 @@ export function CompanyProfileCard({
         </div>
       )}
       {rows.length > 0 && (
-        <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <dl className="border-y border-sand">
           {rows.map((r) => (
-            <div key={r.label} className="flex items-center gap-2 rounded-lg border border-sand bg-paper px-3 py-2">
-              <r.icon className="h-4 w-4 shrink-0 text-soft" />
-              <div className="min-w-0">
-                <dt className="text-[10px] font-semibold uppercase tracking-wider text-soft">{r.label}</dt>
-                <dd className="truncate text-sm font-semibold text-ink">{r.value}</dd>
-              </div>
+            <div key={r.label} className="flex items-baseline justify-between gap-4 border-t border-sand py-2.5 first:border-t-0">
+              <dt className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-wider text-soft">
+                <r.icon className="h-3.5 w-3.5 shrink-0" />
+                {r.label}
+              </dt>
+              <dd className="min-w-0 flex-1 truncate text-right text-sm font-semibold text-ink">{r.value}</dd>
             </div>
           ))}
         </dl>
@@ -136,25 +138,27 @@ export function NewsList({ news }: { news: NewsHeadline[] }) {
     );
   }
   return (
-    <div className="space-y-2">
-      {news.map((n, i) => (
-        <a
-          key={i}
-          href={n.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block rounded-xl border border-sand bg-paper px-3 py-2.5 hover:border-gold-300"
-        >
-          <p className="text-sm font-semibold leading-snug text-ink">{n.title}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-[11px] text-soft">
-            {n.publisher && <span>{n.publisher}</span>}
-            {n.publisher && n.published && <span>·</span>}
-            <span>{timeAgo(n.published)}</span>
-            <ExternalLink className="h-3 w-3" />
-          </p>
-        </a>
-      ))}
-      <p className="pt-1 text-[10px] text-soft/80">
+    <div>
+      <div className="border-y border-sand">
+        {news.map((n, i) => (
+          <a
+            key={i}
+            href={n.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group block border-t border-sand py-3 first:border-t-0"
+          >
+            <p className="text-sm font-semibold leading-snug text-ink group-hover:text-gold-700">{n.title}</p>
+            <p className="mt-1 flex items-center gap-1.5 text-[11px] text-soft">
+              {n.publisher && <span>{n.publisher}</span>}
+              {n.publisher && n.published && <span>·</span>}
+              <span>{timeAgo(n.published)}</span>
+              <ExternalLink className="h-3 w-3" />
+            </p>
+          </a>
+        ))}
+      </div>
+      <p className="pt-2 text-[10px] text-soft/80">
         Headlines from third-party publishers, shown as links for context only.
       </p>
     </div>
