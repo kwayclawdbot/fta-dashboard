@@ -16,6 +16,10 @@ import {
   TrendingDown,
   Info,
   Check,
+  Trophy,
+  Target,
+  Crosshair,
+  Loader2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -28,14 +32,18 @@ import {
   SETUP_OPTIONS,
   TIMEFRAME_OPTIONS,
   RISK_OPTIONS,
+  STRATEGY_PLAYS,
   type TradeAlert,
   type AlertEvent,
   type AlertRule,
   type StrategyProfile,
   type AlertPrefs,
+  type SampleAlert,
+  type StrategyPlay,
 } from "@/lib/alerts/types";
+import type { TrackRecord, AlertOutcome } from "@/lib/alerts/history";
 
-type Tab = "feed" | "rules" | "strategy";
+type Tab = "feed" | "history" | "rules" | "strategy";
 
 interface Props {
   userId: string;
@@ -47,10 +55,14 @@ interface Props {
   prefs: AlertPrefs;
   priceMap: Record<string, number>;
   marketEvents: { ticker: string; title: string; dek: string | null; slug: string }[];
+  sampleAlert: SampleAlert | null;
+  trackRecord: TrackRecord;
+  watchlistTickers: { ticker: string; company_name: string }[];
 }
 
 const TABS: { id: Tab; label: string; icon: typeof Bell }[] = [
   { id: "feed", label: "Feed", icon: Radio },
+  { id: "history", label: "Track record", icon: Trophy },
   { id: "rules", label: "My Rules", icon: SlidersHorizontal },
   { id: "strategy", label: "Strategy", icon: Compass },
 ];
@@ -65,6 +77,9 @@ export default function AlertsClient({
   prefs: initialPrefs,
   priceMap,
   marketEvents,
+  sampleAlert,
+  trackRecord,
+  watchlistTickers,
 }: Props) {
   const [tab, setTab] = useState<Tab>("feed");
   const [rules, setRules] = useState(initialRules);
@@ -135,8 +150,10 @@ export default function AlertsClient({
               events={events}
               priceMap={priceMap}
               marketEvents={marketEvents}
+              sampleAlert={sampleAlert}
             />
           )}
+          {tab === "history" && <HistoryTab track={trackRecord} sampleAlert={sampleAlert} />}
           {tab === "rules" && (
             <RulesTab userId={userId} rules={rules} setRules={setRules} isSolo={isSolo} prefs={initialPrefs} />
           )}
@@ -146,6 +163,7 @@ export default function AlertsClient({
               strategy={initialStrategy}
               rules={rules}
               setRules={setRules}
+              watchlistTickers={watchlistTickers}
               onGoToRules={() => setTab("rules")}
             />
           )}
@@ -175,11 +193,13 @@ function FeedTab({
   events,
   priceMap,
   marketEvents,
+  sampleAlert,
 }: {
   broadcasts: TradeAlert[];
   events: AlertEvent[];
   priceMap: Record<string, number>;
   marketEvents: Props["marketEvents"];
+  sampleAlert: SampleAlert | null;
 }) {
   const items = useMemo<FeedItem[]>(() => {
     const bs: FeedItem[] = broadcasts.map((b) => ({ type: "broadcast", at: b.issued_at, b }));
@@ -194,7 +214,8 @@ function FeedTab({
   if (items.length === 0) {
     return (
       <div>
-        <div className="rounded-2xl border border-dashed border-sand bg-paper/60 px-5 py-10 text-center">
+        {sampleAlert && <SampleAlertCard s={sampleAlert} />}
+        <div className="mt-4 rounded-2xl border border-dashed border-sand bg-paper/60 px-5 py-10 text-center">
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-chip-amber text-gold-700">
             <Radio className="h-6 w-6" />
           </span>
@@ -236,6 +257,7 @@ function FeedTab({
 
   return (
     <div className="space-y-2.5">
+      {sampleAlert && <SampleAlertCard s={sampleAlert} />}
       {items.map((it, i) =>
         it.type === "broadcast" ? (
           <BroadcastCard key={`b-${it.b.id}`} b={it.b} current={priceMap[it.b.ticker] ?? null} />
@@ -243,6 +265,119 @@ function FeedTab({
           <EventCard key={`e-${it.e.id}`} e={it.e} current={priceMap[it.e.ticker] ?? null} index={i} />
         )
       )}
+    </div>
+  );
+}
+
+/* ---------- SAMPLE alert (directive 1) ---------- */
+function money(n: number): string {
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function money0(n: number): string {
+  return Math.round(n).toLocaleString();
+}
+
+function SampleAlertCard({ s }: { s: SampleAlert }) {
+  const L = s.levels;
+  return (
+    <div className="overflow-hidden rounded-2xl border-2 border-dashed border-teal-500/50 bg-paper">
+      {/* SAMPLE banner */}
+      <div className="flex items-center justify-between gap-2 bg-teal-500/10 px-4 py-2">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-teal-700">
+          <Info className="h-3.5 w-3.5" />
+          Sample — what a Kai alert looks like
+        </span>
+        <span className="text-[10px] font-medium text-soft/70">example only</span>
+      </div>
+
+      <div className="p-4">
+        {/* head */}
+        <div className="flex items-start gap-3">
+          <CompanyLogo symbol={s.ticker} name={s.name} size={44} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-display text-base font-bold text-ink">{s.ticker}</span>
+              <DirChip dir={s.direction} />
+              <span className="rounded-full bg-chip-amber px-1.5 py-0.5 text-[9px] font-bold text-gold-700">
+                KAI · BRIEFING
+              </span>
+            </div>
+            <p className="text-[13px] font-semibold text-ink/90">{s.setup_label}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[15px] font-bold tabular-nums text-ink">${money(s.price)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-teal-700">{s.tier}</p>
+          </div>
+        </div>
+
+        {/* thesis */}
+        <p className="mt-3 text-[13px] leading-relaxed text-ink/80">{s.thesis}</p>
+
+        {/* levels ledger — hairline rows, not boxes */}
+        <div className="mt-3 divide-y divide-sand/70 border-y border-sand/70">
+          <LevelRow
+            tone="entry"
+            label="Entry zone"
+            value={`$${money0(L.entryLow)} – $${money0(L.entryHigh)}`}
+            note={`reclaim & hold the $${money0(L.pivot)} pivot`}
+          />
+          {L.targets.map((t) => (
+            <LevelRow
+              key={t.label}
+              tone="target"
+              label={t.label.split(" · ")[0]}
+              value={`$${money0(t.price)}`}
+              note={t.label.split(" · ")[1] ?? "target"}
+            />
+          ))}
+          <LevelRow
+            tone="invalid"
+            label="Invalidation"
+            value={`$${money0(L.invalidation)}`}
+            note={`close below the $${money0(L.shelfLow)} shelf`}
+          />
+        </div>
+
+        {/* Kai's read */}
+        <p className="mt-3 flex gap-2 rounded-xl bg-teal-500/5 px-3 py-2.5 text-[12px] leading-relaxed text-ink/75">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-600" />
+          <span>{s.kaiRead}</span>
+        </p>
+
+        {/* compliance */}
+        <p className="mt-2.5 text-[11px] leading-relaxed text-soft/70">
+          Kai&apos;s read is educational analysis of price levels — not a recommendation to
+          buy or sell, and not personalized advice. Levels are drawn from recent prices;
+          you decide what to do with them.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LevelRow({
+  tone,
+  label,
+  value,
+  note,
+}: {
+  tone: "entry" | "target" | "invalid";
+  label: string;
+  value: string;
+  note: string;
+}) {
+  const dot =
+    tone === "target" ? "bg-emerald-500" : tone === "invalid" ? "bg-red-500" : "bg-teal-500";
+  const val =
+    tone === "target" ? "text-emerald-700" : tone === "invalid" ? "text-red-600" : "text-ink";
+  return (
+    <div className="flex items-center gap-2.5 py-2">
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+      <span className="w-24 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-soft/80">
+        {label}
+      </span>
+      <span className={`text-[13px] font-bold tabular-nums ${val}`}>{value}</span>
+      <span className="ml-auto truncate text-right text-[11px] text-soft/70">{note}</span>
     </div>
   );
 }
@@ -344,6 +479,184 @@ function EventCard({ e, current }: { e: AlertEvent; current: number | null; inde
         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-gold-700">
           Research <ArrowRight className="h-3.5 w-3.5" />
         </span>
+      </div>
+    </Link>
+  );
+}
+
+/* ============================================================================
+ * TRACK RECORD (directive 2) — peak-favorable-move ledger + winners/losers.
+ * ==========================================================================*/
+function pctStr(n: number | null): string {
+  if (n == null) return "—";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+}
+
+function HistoryTab({ track, sampleAlert }: { track: TrackRecord; sampleAlert: SampleAlert | null }) {
+  const empty = track.total === 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Track-record masthead — typographic stat strip, hairline rules, no boxes */}
+      <div>
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soft/70">
+          <Trophy className="h-3.5 w-3.5 text-gold-600" /> Kai&apos;s track record
+        </p>
+        <p className="mt-1 text-[12px] leading-snug text-soft">
+          Every past briefing alert, graded by its <span className="font-semibold text-ink">peak
+          move in its favor</span> since it was issued — the best run after the call, not where
+          it sits today.
+        </p>
+        <div className="mt-3 grid grid-cols-4 divide-x divide-sand border-y border-sand py-3 text-center">
+          <Stat label="Alerts" value={empty ? "—" : String(track.total)} />
+          <Stat label="Avg peak" value={empty ? "—" : pctStr(track.avgPeak)} tone="up" />
+          <Stat
+            label="Worked"
+            value={track.hitRate == null ? "—" : `${Math.round(track.hitRate * 100)}%`}
+            sub="≥ +5%"
+          />
+          <Stat label="Best" value={empty ? "—" : pctStr(track.bestPeak)} tone="up" />
+        </div>
+      </div>
+
+      {empty ? (
+        <div className="rounded-2xl border border-dashed border-sand bg-paper/60 px-5 py-10 text-center">
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-chip-amber text-gold-700">
+            <Trophy className="h-6 w-6" />
+          </span>
+          <p className="font-display text-lg font-bold text-ink">The ledger starts soon</p>
+          <p className="mx-auto mt-1 max-w-sm text-[13px] leading-relaxed text-soft">
+            Once Kai&apos;s daily briefing alerts start going out, each one is tracked here by its
+            peak favorable move — with the top winners and the ones that didn&apos;t work, in the
+            open.
+          </p>
+          {sampleAlert && (
+            <p className="mx-auto mt-3 max-w-sm text-[12px] text-soft/70">
+              See the <span className="font-semibold text-ink">Feed</span> tab for a sample of what
+              a tracked alert looks like.
+            </p>
+          )}
+        </div>
+      ) : (
+        <>
+          {track.winners.length > 0 && (
+            <LedgerSection
+              title="Top winners"
+              icon={<TrendingUp className="h-3.5 w-3.5 text-emerald-600" />}
+              outcomes={track.winners}
+              rank="win"
+            />
+          )}
+          {track.losers.length > 0 && (
+            <LedgerSection
+              title="Didn't work"
+              icon={<TrendingDown className="h-3.5 w-3.5 text-red-500" />}
+              outcomes={track.losers}
+              rank="lose"
+            />
+          )}
+
+          {/* Full chronological ledger */}
+          <div>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-soft/70">
+              Every alert
+            </p>
+            <div className="divide-y divide-sand/70 border-y border-sand/70">
+              {track.outcomes.map((o) => (
+                <LedgerRow key={o.id} o={o} />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <p className="text-[11px] leading-relaxed text-soft/70">
+        Peak favorable move is educational performance tracking of past analysis, measured from
+        the alert&apos;s issue price to its best subsequent close. It is not a claim of realized
+        gains and past performance never guarantees future results.
+      </p>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "up";
+}) {
+  return (
+    <div className="px-1">
+      <p className={`font-display text-lg font-bold tabular-nums ${tone === "up" ? "text-emerald-600" : "text-ink"}`}>
+        {value}
+      </p>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-soft/70">{label}</p>
+      {sub && <p className="text-[9px] text-soft/50">{sub}</p>}
+    </div>
+  );
+}
+
+function LedgerSection({
+  title,
+  icon,
+  outcomes,
+  rank,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  outcomes: AlertOutcome[];
+  rank: "win" | "lose";
+}) {
+  return (
+    <div>
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soft/70">
+        {icon} {title}
+      </p>
+      <div className="divide-y divide-sand/70 border-y border-sand/70">
+        {outcomes.map((o, i) => (
+          <LedgerRow key={o.id} o={o} badge={rank === "win" ? `#${i + 1}` : undefined} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LedgerRow({ o, badge }: { o: AlertOutcome; badge?: string }) {
+  const up = (o.peakPct ?? 0) >= 0;
+  return (
+    <Link
+      href={`/research/${encodeURIComponent(o.ticker)}`}
+      className="flex items-center gap-3 py-2.5 transition hover:bg-chip-amber/20"
+    >
+      {badge ? (
+        <span className="w-6 shrink-0 text-center font-display text-[13px] font-bold text-gold-600">
+          {badge}
+        </span>
+      ) : (
+        <span className="w-6 shrink-0" />
+      )}
+      <CompanyLogo symbol={o.ticker} name={o.ticker} size={28} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="font-display text-[13px] font-bold text-ink">{o.ticker}</span>
+          <DirChip dir={o.direction} />
+        </div>
+        {o.setup_label && (
+          <p className="truncate text-[11px] text-soft/80">{o.setup_label}</p>
+        )}
+      </div>
+      <div className="shrink-0 text-right">
+        <p className={`text-[14px] font-bold tabular-nums ${up ? "text-emerald-600" : "text-red-600"}`}>
+          {pctStr(o.peakPct)}
+        </p>
+        <p className="text-[10px] text-soft/60">
+          {o.daysToPeak != null ? `peak in ${o.daysToPeak}d` : "tracking…"}
+        </p>
       </div>
     </Link>
   );
@@ -633,17 +946,195 @@ function Row({
 /* ============================================================================
  * STRATEGY
  * ==========================================================================*/
+const PLAY_ICON: Record<string, typeof Bell> = {
+  breakout: TrendingUp,
+  oversold: TrendingDown,
+  momentum: Crosshair,
+  pullback: Target,
+};
+
+function WatchlistPlays({
+  userId,
+  watchlistTickers,
+  rules,
+  setRules,
+}: {
+  userId: string;
+  watchlistTickers: { ticker: string; company_name: string }[];
+  rules: AlertRule[];
+  setRules: React.Dispatch<React.SetStateAction<AlertRule[]>>;
+}) {
+  const [selected, setSelected] = useState<string | null>(
+    watchlistTickers[0]?.ticker ?? null
+  );
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Which (ticker:kind) plays already exist, so we can mark them "Set".
+  const existing = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rules) {
+      if (r.ticker) set.add(`${r.ticker.toUpperCase()}:${r.kind}`);
+    }
+    return set;
+  }, [rules]);
+
+  const create = useCallback(
+    async (play: StrategyPlay) => {
+      if (!selected) return;
+      setBusy(play.id);
+      setError(null);
+      const supabase = createClient();
+      const label = ruleLabel(play.kind, selected, play.params);
+      const { data, error: err } = await supabase
+        .from("alert_rules")
+        .insert({
+          user_id: userId,
+          kind: play.kind,
+          ticker: selected,
+          params: play.params,
+          label,
+          surface: "watchlist",
+          active: true,
+        })
+        .select("*")
+        .single();
+      setBusy(null);
+      if (err) {
+        setError(
+          /cap reached/i.test(err.message)
+            ? `You've hit the ${MAX_ACTIVE_RULES}-alert limit. Pause one in My Rules first.`
+            : "Could not set that play. Try again."
+        );
+        return;
+      }
+      if (data) setRules((rs) => [data as AlertRule, ...rs]);
+    },
+    [selected, userId, setRules]
+  );
+
+  return (
+    <div className="rounded-2xl border border-teal-500/30 bg-teal-500/5 p-4">
+      <p className="flex items-center gap-1.5 text-[13px] font-bold text-ink">
+        <Crosshair className="h-4 w-4 text-teal-600" /> Set a play on a watchlist stock
+      </p>
+      <p className="mt-1 text-[12px] leading-snug text-soft">
+        Pick a stock you follow and attach a play — Kai watches for the setup and alerts you when
+        it triggers. Every play is a plain, rules-based signal to study, never advice.
+      </p>
+
+      {watchlistTickers.length === 0 ? (
+        <div className="mt-3 rounded-xl border border-dashed border-teal-500/30 bg-paper/60 px-4 py-6 text-center">
+          <p className="text-[13px] font-semibold text-ink">Your watchlist is empty</p>
+          <p className="mx-auto mt-1 max-w-xs text-[12px] leading-relaxed text-soft">
+            Add a few stocks you want to follow, then come back to set plays on them.
+          </p>
+          <div className="mt-3 flex justify-center gap-2">
+            <Link
+              href="/watchlist"
+              className="inline-flex items-center gap-1 rounded-lg border border-teal-500/40 bg-paper px-3 py-1.5 text-[12px] font-semibold text-teal-700 hover:bg-teal-500/10"
+            >
+              My watchlist <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href="/screener"
+              className="inline-flex items-center gap-1 rounded-lg border border-sand bg-paper px-3 py-1.5 text-[12px] font-semibold text-soft hover:border-teal-500/40"
+            >
+              Find stocks
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Ticker selector — chips from the member's own watchlist. */}
+          <div className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+            {watchlistTickers.map((w) => {
+              const on = selected === w.ticker;
+              return (
+                <button
+                  key={w.ticker}
+                  onClick={() => setSelected(w.ticker)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-bold transition ${
+                    on
+                      ? "border-teal-500 bg-teal-500/15 text-teal-700"
+                      : "border-sand bg-paper text-soft hover:border-teal-500/40"
+                  }`}
+                >
+                  <CompanyLogo symbol={w.ticker} name={w.company_name} size={18} />
+                  {w.ticker}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Plays — small labeled functional data objects (not icon+title cards). */}
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {STRATEGY_PLAYS.map((play) => {
+              const Icon = PLAY_ICON[play.id] ?? Bell;
+              const set = selected ? existing.has(`${selected}:${play.kind}`) : false;
+              const isBusy = busy === play.id;
+              return (
+                <button
+                  key={play.id}
+                  disabled={set || isBusy || !selected}
+                  onClick={() => create(play)}
+                  className={`group relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition ${
+                    set
+                      ? "border-emerald-300 bg-emerald-50/60"
+                      : "border-sand bg-paper hover:border-teal-500/50 hover:bg-teal-500/5"
+                  } disabled:cursor-default`}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink">
+                      <Icon className="h-3.5 w-3.5 text-teal-600" />
+                      {play.name}
+                    </span>
+                    {set ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : isBusy ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5 text-soft/60 group-hover:text-teal-600" />
+                    )}
+                  </div>
+                  <p className="text-[11px] font-medium text-soft">{play.tagline}</p>
+                  <p className="text-[10px] leading-snug text-soft/70">
+                    Alerts when {selected ?? "it"} {play.watchLine}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          {error && (
+            <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700">
+              {error}
+            </p>
+          )}
+          <p className="mt-2 text-[10px] leading-snug text-soft/60">
+            Plays run on the same schedule as Kai&apos;s alerts — trend and technical plays are
+            checked after each close; the volume play is checked through the trading day (prices
+            delayed ~15 min). Manage them in My Rules.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function StrategyTab({
   userId,
   strategy,
   rules,
   setRules,
+  watchlistTickers,
   onGoToRules,
 }: {
   userId: string;
   strategy: StrategyProfile | null;
   rules: AlertRule[];
   setRules: React.Dispatch<React.SetStateAction<AlertRule[]>>;
+  watchlistTickers: { ticker: string; company_name: string }[];
   onGoToRules: () => void;
 }) {
   const [timeframe, setTimeframe] = useState<StrategyProfile["timeframe"]>(
@@ -703,6 +1194,14 @@ function StrategyTab({
 
   return (
     <div className="space-y-5">
+      {/* Watchlist-driven plays (directive 3) — the no-LLM front door. */}
+      <WatchlistPlays
+        userId={userId}
+        watchlistTickers={watchlistTickers}
+        rules={rules}
+        setRules={setRules}
+      />
+
       <div className="rounded-2xl border border-gold-300/40 bg-chip-amber/30 p-4">
         <p className="flex items-center gap-1.5 text-[13px] font-bold text-ink">
           <Sparkles className="h-4 w-4 text-gold-600" /> Build your strategy profile

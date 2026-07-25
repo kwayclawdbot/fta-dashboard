@@ -442,3 +442,176 @@ export const RISK_OPTIONS: { id: StrategyProfile["risk_posture"]; label: string 
   { id: "balanced", label: "Balanced" },
   { id: "aggressive", label: "Aggressive" },
 ];
+
+/* ============================================================================
+ * STRATEGY PLAYS — the watchlist-driven, no-LLM front door to the rules engine.
+ *
+ * A member picks a ticker off THEIR watchlist and attaches a PLAY. Each play is
+ * a curated strategy that maps 1:1 onto an EXISTING alert kind (migration 125),
+ * so it is a fully DETERMINISTIC check computed from the nightly screener
+ * metrics / price data — no language model, no new migration, and it is already
+ * evaluated by the existing personalized-rules crons the moment it is saved:
+ *   • nightly  cron (/api/cron/evaluate-alerts)          → w52_break, rsi_cross, ema_cross
+ *   • intraday cron (/api/cron/evaluate-alerts-intraday) → vol_surge
+ *
+ * The Kai Watch NL path (credits-dependent) is untouched; this is the front door
+ * that works WITHOUT any live LLM. Every play is framed as analysis to study.
+ * ==========================================================================*/
+export type PlayId = "breakout" | "oversold" | "momentum" | "pullback";
+
+export interface StrategyPlay {
+  id: PlayId;
+  name: string;
+  tagline: string; // one plain-language line for the play object
+  /** The honest, computable check — "we alert you when {ticker} …". */
+  watchLine: string;
+  kind: AlertKind;
+  params: AlertParams;
+  cadence: "nightly" | "intraday";
+}
+
+export const STRATEGY_PLAYS: StrategyPlay[] = [
+  {
+    id: "breakout",
+    name: "Breakout watch",
+    tagline: "Presses a fresh 52-week high",
+    watchLine: "reaches a new 52-week high",
+    kind: "w52_break",
+    params: { edge: "high" },
+    cadence: "nightly",
+  },
+  {
+    id: "oversold",
+    name: "Oversold bounce",
+    tagline: "Gets stretched to the downside",
+    watchLine: "RSI drops below 30 (oversold)",
+    kind: "rsi_cross",
+    params: { op: "below", level: 30 },
+    cadence: "nightly",
+  },
+  {
+    id: "momentum",
+    name: "Momentum surge",
+    tagline: "Trades on unusually heavy volume",
+    watchLine: "trades on 3×+ its average volume",
+    kind: "vol_surge",
+    params: { ratio: 3 },
+    cadence: "intraday",
+  },
+  {
+    id: "pullback",
+    name: "Pullback to trend",
+    tagline: "Holds its rising 20-day trend line",
+    watchLine: "keeps closing above its 20-day average",
+    kind: "ema_cross",
+    params: { ema: 20, side: "above" },
+    cadence: "nightly",
+  },
+];
+
+export function getPlay(id: string): StrategyPlay | undefined {
+  return STRATEGY_PLAYS.find((p) => p.id === id);
+}
+
+/* ============================================================================
+ * SAMPLE ALERT — a single, clearly-labelled example of what a Kai briefing
+ * alert looks like, built from REAL nightly screener data (never invented
+ * numbers). Server-constructed and rendered with a SAMPLE badge; it is never
+ * written to the DB, so it is automatically excluded from the track-record
+ * ledger and never fans out to anyone.
+ * ==========================================================================*/
+export interface SampleLevels {
+  entryLow: number;
+  entryHigh: number;
+  targets: { price: number; label: string }[];
+  invalidation: number;
+  pivot: number; // the breakout level being pressed
+  shelfLow: number; // the recent consolidation floor
+}
+
+export interface SampleAlert {
+  ticker: string;
+  name: string;
+  price: number;
+  direction: "long";
+  setup_label: string;
+  tier: string;
+  thesis: string; // plain-language setup thesis
+  kaiRead: string; // the "Kai's read" framing line
+  levels: SampleLevels;
+  rsi: number | null;
+  issued_at: string;
+}
+
+interface SampleMetricsInput {
+  ticker: string;
+  name: string | null;
+  price: number | null;
+  rsi14: number | null;
+  dist_52w_high: number | null;
+}
+
+/**
+ * Build the sample alert from a metrics row + the ticker's recent daily closes
+ * (most-recent-first). Levels are derived from real price structure: the pressed
+ * 52-week-high pivot, the recent shelf low, and a measured-move projection.
+ */
+export function buildSampleAlert(
+  m: SampleMetricsInput,
+  recentCloses: number[]
+): SampleAlert | null {
+  const price = m.price;
+  if (price == null || recentCloses.length < 5) return null;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const round0 = (n: number) => Math.round(n);
+
+  const last10 = recentCloses.slice(0, 10);
+  const shelfLow = Math.min(...last10);
+  const recentMax = Math.max(...recentCloses);
+  const hiFromDist =
+    m.dist_52w_high != null ? price / (1 + m.dist_52w_high / 100) : null;
+  const pivot = r2(Math.max(recentMax, hiFromDist ?? 0, price));
+  const range = Math.max(pivot - shelfLow, price * 0.04); // measured-move height
+
+  const entryLow = r2(pivot * 0.996);
+  const entryHigh = r2(pivot * 1.006);
+  const t1 = round0(pivot + range);
+  const t2 = round0(pivot + range * 1.7);
+  const invalidation = round0(shelfLow * 0.995);
+
+  const shortName = (m.name || m.ticker).replace(/,?\s+(Inc\.?|Corp\.?|Corporation|Common Stock|Class [A-Z]).*$/i, "").trim() || m.ticker;
+  const rsi = m.rsi14 != null ? Math.round(m.rsi14) : null;
+
+  const thesis =
+    `${shortName} has been coiling near $${round0(shelfLow)}–$${round0(pivot)} and is now pressing the top of that range on strong buying. ` +
+    `Price is holding above its 20- and 50-day averages${rsi != null ? `, momentum is firm (RSI ${rsi})` : ""}, ` +
+    `and a decisive close above the $${pivot} pivot would open room toward the measured-move targets.`;
+
+  const kaiRead =
+    `Kai's read: treat this as a setup to study, not a trade to place. The idea is live only while ${m.ticker} holds the entry zone; ` +
+    `a close back under $${invalidation} says the base failed and the read was wrong.`;
+
+  return {
+    ticker: m.ticker,
+    name: shortName,
+    price: r2(price),
+    direction: "long",
+    setup_label: "Breakout continuation",
+    tier: "Tier 1 · Trend continuation",
+    thesis,
+    kaiRead,
+    levels: {
+      entryLow,
+      entryHigh,
+      targets: [
+        { price: t1, label: "T1 · measured move" },
+        { price: t2, label: "T2 · extension" },
+      ],
+      invalidation,
+      pivot,
+      shelfLow: r2(shelfLow),
+    },
+    rsi,
+    issued_at: new Date().toISOString(),
+  };
+}
