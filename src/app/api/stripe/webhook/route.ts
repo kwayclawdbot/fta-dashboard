@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { provisionMembership } from "@/lib/server/membership";
+import { provisionChallengeVip } from "@/lib/server/challenge-vip";
 
 /**
  * Stripe checkout.session.completed → provision membership + send the
@@ -46,6 +47,17 @@ export async function POST(req: NextRequest) {
     // endpoint, so guard by our metadata tag before any provisioning.
     if (s.metadata?.kind === "shop") {
       return NextResponse.json({ received: true, skipped: "shop" });
+    }
+    // Challenge VIP ticket ($197, Lane C9): tier=vip marker + Club (fic)
+    // enrollment + textbook order + VIP emails. Its own handler; never falls
+    // through to the generic amount-mapped membership provisioning below.
+    if (s.metadata?.kind === "challenge_vip") {
+      const result = await provisionChallengeVip(s);
+      if (!result.ok) {
+        console.error("challenge_vip provision failed:", result.error);
+        return NextResponse.json({ error: "vip provision failed" }, { status: 500 });
+      }
+      return NextResponse.json({ received: true, vip: result.vipId, created: result.created });
     }
     const email: string | undefined =
       s.customer_details?.email || s.customer_email;
