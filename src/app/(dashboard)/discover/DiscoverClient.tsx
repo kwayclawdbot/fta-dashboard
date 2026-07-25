@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Sparkles,
   TrendingUp,
@@ -16,6 +17,7 @@ import {
   Heart,
 } from "lucide-react";
 import NewsClient from "../news/NewsClient";
+import ScreenerSurface from "@/components/screener/ScreenerSurface";
 import type { NewsCardData } from "@/lib/news/types";
 import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
 import type { DiscoverExtras } from "@/lib/discover";
@@ -42,15 +44,18 @@ import { contributionMeta } from "@/lib/research/social";
  * row navigates to /research/[ticker].
  */
 
-type TabKey = "for-you" | "trending" | "research" | "discussed" | "news";
+type TabKey = "for-you" | "trending" | "screener" | "research" | "discussed" | "news";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "for-you", label: "For You", icon: Sparkles },
   { key: "trending", label: "Trending", icon: TrendingUp },
+  { key: "screener", label: "Screener", icon: Telescope },
   { key: "research", label: "Top Research", icon: FileText },
   { key: "discussed", label: "Most Discussed", icon: MessageSquare },
   { key: "news", label: "News", icon: Newspaper },
 ];
+
+const TAB_KEYS = new Set<string>(TABS.map((t) => t.key));
 
 interface DiscoverClientProps {
   initialNews: NewsCardData[] | null;
@@ -62,7 +67,15 @@ type LikeCounts = CommunityBoardSeed["likeCounts"];
 type Entries = CommunityBoardSeed["entries"];
 
 export default function DiscoverClient({ initialNews, board, extras }: DiscoverClientProps) {
-  const [tab, setTab] = useState<TabKey>("for-you");
+  // Deep-linkable tab: /discover?tab=screener (and any other tab key) opens on
+  // that tab. Falls back to "For You". Read once for the initial state; the tab
+  // strip owns it from there.
+  const searchParams = useSearchParams();
+  const initialTab = ((): TabKey => {
+    const t = searchParams.get("tab");
+    return t && TAB_KEYS.has(t) ? (t as TabKey) : "for-you";
+  })();
+  const [tab, setTab] = useState<TabKey>(initialTab);
 
   const entries: Entries = board?.entries ?? [];
   const likeCounts: LikeCounts = board?.likeCounts ?? {};
@@ -97,43 +110,62 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
   }, [allTickers]);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      {/* Tab strip — horizontally scrollable on phones so all five fit. */}
-      <div className="mb-5 -mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-        <div className="flex min-w-max gap-1.5">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                data-tour={`discover:${t.key}`}
-                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                  active
-                    ? "bg-gold-400/15 text-gold-700"
-                    : "text-midnight-400 hover:bg-midnight-800/40 hover:text-midnight-200"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                {t.label}
-              </button>
-            );
-          })}
+    <div>
+      {/* Tab strip — horizontally scrollable on phones so all six fit. Kept in
+          the narrow column so the nav stays put; the Screener tab below breaks
+          out wider for its data table. */}
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-5 -mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+          <div className="flex min-w-max gap-1.5">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  data-tour={`discover:${t.key}`}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                    active
+                      ? "bg-gold-400/15 text-gold-700"
+                      : "text-midnight-400 hover:bg-midnight-800/40 hover:text-midnight-200"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {tab === "for-you" && <ForYouTab extras={extras} quotes={quotes} byDiscussion={byDiscussion} likeCounts={likeCounts} />}
-      {tab === "trending" && <TrendingTab rows={byDiscussion.slice(0, 12)} quotes={quotes} likeCounts={likeCounts} />}
-      {tab === "research" && <ResearchTab extras={extras} />}
-      {tab === "discussed" && <DiscussedTab rows={byLikes.slice(0, 12)} quotes={quotes} likeCounts={likeCounts} />}
-      {tab === "news" && <NewsClient initialArticles={initialNews} />}
+      {tab === "screener" ? (
+        // Full-universe screener — the same surface as /screener, embedded. It
+        // brings its own tier gating (free members see the join-the-Club lock),
+        // filters and 11k-security load; only the outer page chrome is trimmed.
+        // Wider column so the dense data table has room to breathe.
+        <div className="mx-auto max-w-6xl">
+          <ScreenerSurface embedded />
+        </div>
+      ) : (
+        <div className="mx-auto max-w-3xl">
+          {tab === "for-you" && <ForYouTab extras={extras} quotes={quotes} byDiscussion={byDiscussion} likeCounts={likeCounts} onOpenScreener={() => setTab("screener")} />}
+          {tab === "trending" && <TrendingTab rows={byDiscussion.slice(0, 12)} quotes={quotes} likeCounts={likeCounts} onOpenScreener={() => setTab("screener")} />}
+          {tab === "research" && <ResearchTab extras={extras} />}
+          {tab === "discussed" && <DiscussedTab rows={byLikes.slice(0, 12)} quotes={quotes} likeCounts={likeCounts} />}
+          {tab === "news" && <NewsClient initialArticles={initialNews} />}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Stock Finder CTA (screener lives inside Discover now) ────────────────────
-function StockFinderCard() {
+// ── Stock Finder CTA (the screener is its own Discover tab now) ──────────────
+// Launch switches to the in-hub Screener tab rather than navigating away, so the
+// finder opens right here. The standalone /screener route still exists for deep
+// links and the sidebar.
+function StockFinderCard({ onLaunch }: { onLaunch: () => void }) {
   return (
     <div
       data-tour="discover:stock-finder"
@@ -155,13 +187,13 @@ function StockFinderCard() {
           </p>
         </div>
       </div>
-      <Link
-        href="/screener"
-        className="flex items-center justify-center gap-2 bg-[var(--accent-solid)] px-4 py-3 font-display text-sm font-bold text-[var(--accent-on)] transition-opacity hover:opacity-90"
+      <button
+        onClick={onLaunch}
+        className="flex w-full items-center justify-center gap-2 bg-[var(--accent-solid)] px-4 py-3 font-display text-sm font-bold text-[var(--accent-on)] transition-opacity hover:opacity-90"
       >
         <Telescope className="h-4 w-4" />
         Launch Stock Finder
-      </Link>
+      </button>
     </div>
   );
 }
@@ -255,11 +287,13 @@ function ForYouTab({
   quotes,
   byDiscussion,
   likeCounts,
+  onOpenScreener,
 }: {
   extras: DiscoverExtras | null;
   quotes: Record<string, MarketQuote>;
   byDiscussion: Entries;
   likeCounts: LikeCounts;
+  onOpenScreener: () => void;
 }) {
   const movers = extras?.forYouMovers ?? [];
   const hasWatched = movers.length > 0;
@@ -324,7 +358,7 @@ function ForYouTab({
         <QuickLink href="/community" icon={MessagesSquare} title="Community" body="See what the Club is sharing right now." />
         <QuickLink href="/kai" icon={Bot} title="Ask Kai" body="Your AI research co-pilot. Ask anything." />
       </div>
-      <StockFinderCard />
+      <StockFinderCard onLaunch={onOpenScreener} />
     </div>
   );
 }
@@ -359,14 +393,16 @@ function TrendingTab({
   rows,
   quotes,
   likeCounts,
+  onOpenScreener,
 }: {
   rows: Entries;
   quotes: Record<string, MarketQuote>;
   likeCounts: LikeCounts;
+  onOpenScreener: () => void;
 }) {
   return (
     <div className="space-y-4">
-      <StockFinderCard />
+      <StockFinderCard onLaunch={onOpenScreener} />
       <div className="rounded-2xl border border-sand bg-card p-2 shadow-soft">
         <p className="px-3 pb-1 pt-2 font-display text-sm font-bold text-ink">Trending stocks</p>
         <DelayedNote />

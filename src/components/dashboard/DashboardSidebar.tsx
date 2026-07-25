@@ -351,6 +351,11 @@ export function getNavItems(
       CLUB_PROGRESS,
       learnGroup(false),
       practiceGroup(true),
+      // Screener (Stock Finder) — the R2 five-item regroup dropped it from the
+      // solo nav entirely. Restored here under More, grouped with the market /
+      // discovery tools. It points at the standalone /screener route (also the
+      // Discover hub's "Screener" tab) so the active state + app tour resolve.
+      CLUB_SCREENER,
       CLUB_NEWS,
       CLUB_ALERTS,
       CLUB_REFER,
