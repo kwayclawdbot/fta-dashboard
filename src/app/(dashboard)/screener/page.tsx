@@ -343,7 +343,7 @@ export default function ScreenerPage() {
           eyebrow="Members discover here"
           title="The Stock Screener"
           body="Search every stock on the NYSE, Nasdaq and AMEX and filter the whole market down to companies worth studying — by size, sector, momentum, volume and more. It opens the moment you join."
-          cta={{ label: "Unlock the screener — join FIC", href: FIC_CHECKOUT_URL, external: true }}
+          cta={{ label: "Unlock the screener — join the Club", href: FIC_CHECKOUT_URL, external: true }}
         />
       </div>
     );

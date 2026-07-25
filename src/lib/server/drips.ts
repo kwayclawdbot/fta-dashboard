@@ -20,7 +20,7 @@ export const APP_ORIGIN = (
 /** From/reply identity for drip mail (verified Resend domain). */
 export const DRIP_FROM =
   process.env.MARKETING_FROM_EMAIL?.trim() ||
-  "Family Investing Club <hello@familyinvestingclub.com>";
+  "Cheat Code Club <hello@familyinvestingclub.com>";
 export const DRIP_REPLY_TO =
   process.env.MARKETING_REPLY_TO?.trim() || "hello@familyinvestingclub.com";
 

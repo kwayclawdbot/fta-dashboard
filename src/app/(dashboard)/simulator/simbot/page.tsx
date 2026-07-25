@@ -133,8 +133,8 @@ export default function SimbotPage() {
           title={isKid ? "Simbot unlocks with your club" : "Practice with Simbot"}
           body={
             isKid
-              ? "Simbot is a hands-on trading practice room. Ask a grown-up to open your Family Investing Club to jump in."
-              : "Simbot is a full price-action practice terminal — learn to read charts and place practice trades with zero real risk. It opens up when you join the Family Investing Club."
+              ? "Simbot is a hands-on trading practice room. Ask a grown-up to open your Club to jump in."
+              : "Simbot is a full price-action practice terminal — learn to read charts and place practice trades with zero real risk. It opens up when you join the Club."
           }
           {...(isKid
             ? { lockBadge: false as const, tone: "amber" as const }

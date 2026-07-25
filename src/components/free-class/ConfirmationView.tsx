@@ -75,7 +75,7 @@ export default function ConfirmationView({
                 {session ? "Your class" : "Next class"}
               </p>
               <h2 className="font-display text-lg font-bold text-ink leading-snug mt-0.5">
-                {session?.title || "Family Investing Club — Free Class"}
+                {session?.title || "Cheat Code Club — Free Class"}
               </h2>
               <div className="flex items-center gap-2 text-sm text-soft mt-1.5">
                 <Clock className="w-4 h-4 text-gold-600 shrink-0" />

@@ -64,13 +64,13 @@ function subjectFor(type: string, body: string): string {
   switch (type) {
     case "announcement":
     case "broadcast":
-      return "New announcement from Family Investing Club";
+      return "New announcement from Cheat Code Club";
     case "new_lesson":
       return "A new lesson just dropped";
     case "recording_posted":
       return "Your class recording is ready";
     default:
-      return body.slice(0, 80) || "Family Investing Club";
+      return body.slice(0, 80) || "Cheat Code Club";
   }
 }
 
@@ -83,7 +83,7 @@ function emailHtml(title: string, body: string, url: string): string {
 <a href="${url}" style="display:inline-block;background:#c9a227;color:#1a1a1a;text-decoration:none;font-weight:600;padding:11px 20px;border-radius:8px">Open in the app</a>
 <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0">
 <p style="font-size:12px;color:#a1a1aa;line-height:1.5;margin:0">
-Family Investing Club · You're receiving this because notifications aren't set up on any of your devices. Turn on push in the app to get these instantly instead.
+Cheat Code Club · You're receiving this because notifications aren't set up on any of your devices. Turn on push in the app to get these instantly instead.
 </p></div></body></html>`;
 }
 

@@ -5,7 +5,7 @@ import { BookOpen } from "lucide-react";
 export const metadata: Metadata = {
   title: "Shop | The Cheat Code Guides",
   description:
-    "Physical books, workbooks, and lesson plans from the Family Investing Club — money stuff, minus the snooze.",
+    "Physical books, workbooks, and lesson plans from the Cheat Code Club — money stuff, minus the snooze.",
 };
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
             </span>
             <span className="font-display text-[15px] font-extrabold leading-none tracking-tight">
               The Cheat Code Guides
-              <span className="block text-[11px] font-medium text-soft">Family Investing Club</span>
+              <span className="block text-[11px] font-medium text-soft">Cheat Code Club</span>
             </span>
           </Link>
           <nav className="flex items-center gap-1.5 text-sm">
@@ -45,11 +45,11 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
         <div className="mx-auto max-w-6xl px-5 py-8 text-sm text-soft">
           <p className="font-display font-semibold text-ink">Money stuff, minus the snooze.</p>
           <p className="mt-1 max-w-xl">
-            Printed on demand and shipped to your door. Every title traces back to the Family
-            Investing Club curriculum your family already learns from.
+            Printed on demand and shipped to your door. Every title traces back to the Cheat Code
+            Club curriculum your family already learns from.
           </p>
           <p className="mt-4 text-xs text-soft/80">
-            © {new Date().getFullYear()} Family Investing Club · The Cheat Code Guides
+            © {new Date().getFullYear()} Cheat Code Club · The Cheat Code Guides
           </p>
         </div>
       </footer>

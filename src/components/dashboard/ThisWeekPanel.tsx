@@ -70,7 +70,7 @@ export default function ThisWeekPanel({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold uppercase tracking-wider text-soft">
-            This Week in FIC · Week of {weekLabel}
+            {isSolo ? "This Week in the Club" : "This Week in FIC"} · Week of {weekLabel}
           </p>
           <h2 className="font-display text-base sm:text-lg font-bold text-ink leading-snug truncate">
             {week.class_title}

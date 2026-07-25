@@ -319,7 +319,7 @@ export function getNavItems(
       practiceGroup(false), // chart + games (Candle Battle); simulator stays locked
       { label: "Community Watchlist", href: "/watchlist/community", icon: Eye },
       { label: "Free Class", href: "/free-class", icon: Video },
-      { label: "Join FIC", href: "/upgrade", icon: Sparkles },
+      { label: "Join the Club", href: "/upgrade", icon: Sparkles },
     ];
   }
 

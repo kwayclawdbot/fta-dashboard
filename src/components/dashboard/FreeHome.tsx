@@ -163,7 +163,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
               Your free class
             </p>
             <h2 className="font-display text-lg font-bold text-ink leading-snug mt-0.5">
-              {session?.title || "Family Investing Club — Free Class"}
+              {session?.title || "Cheat Code Club — Free Class"}
             </h2>
             <div className="flex items-center gap-2 text-sm text-soft mt-1.5">
               <Clock className="w-4 h-4 text-gold-600 shrink-0" />
@@ -214,7 +214,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
             </p>
             <p className="text-sm text-soft">
               Say hi in the Free Lounge and see what real families are learning.
-              Join FIC to post in the members&apos; room.
+              Join the Club to post in the members&apos; room.
             </p>
           </div>
           <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />

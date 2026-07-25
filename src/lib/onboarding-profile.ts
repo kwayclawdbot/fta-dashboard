@@ -310,7 +310,7 @@ export function deriveRecommendations(
       solo
         ? {
             key: "this-week",
-            title: "This Week in FIC",
+            title: "This Week in the Club",
             sub: "One concept, one company, one weekly habit",
             href: "/dashboard?tab=this-week",
             icon: "CalendarDays",

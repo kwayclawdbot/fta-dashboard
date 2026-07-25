@@ -111,7 +111,7 @@ export default function FtaRecordingsPage() {
         body={
           isChild
             ? "FTA class recordings are part of your family's Family Trading Academy. Ask a parent about joining — your family's class recordings are on the Live Classes page."
-            : "Every FTA live class recording — always waiting, grouped by series — opens with the Family Trading Academy. FIC class recordings stay on the Live Classes page."
+            : "Every FTA live class recording — always waiting, grouped by series — opens with the Family Trading Academy. Club class recordings stay on the Live Classes page."
         }
         cta={isChild ? undefined : { label: "Unlock FTA", href: "/upgrade", icon: Lock }}
       />

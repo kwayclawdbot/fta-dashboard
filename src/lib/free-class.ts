@@ -59,7 +59,7 @@ export function buildClassIcs(session: FreeClassSession): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Family Investing Club//Free Class//EN",
+    "PRODID:-//Cheat Code Club//Free Class//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
@@ -67,7 +67,7 @@ export function buildClassIcs(session: FreeClassSession): string {
     `DTSTAMP:${icsStamp(new Date())}`,
     `DTSTART:${icsStamp(start)}`,
     `DTEND:${icsStamp(end)}`,
-    `SUMMARY:${icsEscape(session.title || "Family Investing Club — Free Class")}`,
+    `SUMMARY:${icsEscape(session.title || "Cheat Code Club — Free Class")}`,
     desc ? `DESCRIPTION:${icsEscape(desc)}` : "",
     url ? `URL:${icsEscape(url)}` : "",
     "END:VEVENT",
@@ -150,7 +150,7 @@ export function buildChallengeIcs(includeDailyMissions = true): string {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Family Investing Club//5-Day Investing Challenge//EN",
+    "PRODID:-//Cheat Code Club//5-Day Investing Challenge//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
   ];

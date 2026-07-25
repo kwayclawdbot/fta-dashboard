@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   await suppress(userId);
   return page(
     "You're unsubscribed",
-    "You won't receive any more welcome emails from the Family Investing Club. You can close this window.",
+    "You won't receive any more welcome emails from the Cheat Code Club. You can close this window.",
     true
   );
 }

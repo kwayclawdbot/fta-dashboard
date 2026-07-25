@@ -183,7 +183,7 @@ function TwinCard({
           {locked && items.length > 1 && (
             <li className="flex items-center gap-1.5 text-xs text-soft">
               <Lock className="h-3 w-3" />
-              {items.length - 1} more — join FIC to read the full breakdown
+              {items.length - 1} more — join the Club to read the full breakdown
             </li>
           )}
         </ul>

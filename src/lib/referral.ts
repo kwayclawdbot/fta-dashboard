@@ -20,7 +20,7 @@ export function referralLink(origin: string, code: string): string {
 }
 
 const SHARE_MESSAGE =
-  "I'm learning to invest as a family with the Family Investing Club — real companies, kid-friendly, no jargon. Come join us:";
+  "I'm learning to invest with the Cheat Code Club — real companies, kid-friendly, no jargon. Come join us:";
 
 /** Challenge-framed share copy for the thank-you loop. Capability-only, no
  *  income/return language (compliance floor). */
@@ -41,7 +41,7 @@ export interface ShareTargets {
 export function shareTargets(link: string, message?: string): ShareTargets {
   const text = message || SHARE_MESSAGE;
   const textAndLink = `${text} ${link}`;
-  const subject = "Join our Family Investing Club";
+  const subject = "Join me in the Cheat Code Club";
   return {
     message: text,
     whatsapp: `https://wa.me/?text=${encodeURIComponent(textAndLink)}`,

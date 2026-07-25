@@ -187,9 +187,9 @@ export function normArticleLinks(raw: unknown): ArticleLink[] {
 }
 
 export const PICKS_DISCLAIMER =
-  "The Family Investing Club studies real companies to learn how investing works. " +
+  "The Cheat Code Club studies real companies to learn how investing works. " +
   "Nothing here is investment advice or a recommendation to buy or sell any security. " +
   "Prices are delayed ~15 minutes. Always do your own research.";
 
 export const PICKS_EDUCATION_LINE =
-  "Why we study this company — a look at how the FIC team thinks. Not investment advice.";
+  "Why we study this company — a look at how the Club team thinks. Not investment advice.";

@@ -819,7 +819,7 @@ export default function ResearchClient({
               {/* Composer with type picker — members only (free tier reads only) */}
               {!canVote ? (
                 <p className="rounded-xl border border-dashed border-sand px-3 py-4 text-center text-sm text-soft">
-                  Join the Family Investing Club to add your own research notes.
+                  Join the Club to add your own research notes.
                 </p>
               ) : (
                 <div className="rounded-xl border border-sand bg-midnight-900 p-3">

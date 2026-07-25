@@ -10,7 +10,7 @@ export default function AuthLayout({
       {/* Logo */}
       <div className="mb-8 text-center">
         <h1 className="font-display text-2xl font-bold tracking-tight text-gold-600">
-          Family Investing Club
+          Cheat Code Club
         </h1>
         <p className="mt-1.5 text-midnight-400 text-sm font-body">
           Raise investors, not spenders.
@@ -24,7 +24,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <p className="mt-8 text-midnight-500 text-xs font-body">
-        &copy; {new Date().getFullYear()} Family Investing Club. All rights reserved.
+        &copy; {new Date().getFullYear()} Cheat Code Club. All rights reserved.
       </p>
     </div>
   );

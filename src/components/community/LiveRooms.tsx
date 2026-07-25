@@ -24,7 +24,7 @@ interface Room {
   id: string;
   name: string;
 }
-const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "FIC Club" };
+const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "Members Club" };
 const FREE_LOUNGE: Room = { id: FREE_LOUNGE_ROOM_ID, name: "Free Lounge" };
 
 /**
@@ -95,7 +95,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
                 <Link
                   key={r.id}
                   href="/upgrade"
-                  title="Members chat — join FIC"
+                  title="Members chat — join the Club"
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-display font-semibold border border-sand bg-paper text-soft/80 hover:text-gold-700 hover:border-gold-300 transition-colors"
                 >
                   <Lock className="w-3 h-3" />
@@ -107,9 +107,9 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
           {tier === "free" && (
             <p className="text-[11px] text-soft/80 mt-1.5">
               <Lock className="inline w-3 h-3 -mt-0.5 mr-0.5" />
-              FIC Club is the members&apos; room —{" "}
+              Members Club is the members&apos; room —{" "}
               <Link href="/upgrade" className="text-gold-700 font-semibold">
-                join FIC
+                join the Club
               </Link>{" "}
               to chat there.
             </p>

@@ -132,7 +132,7 @@ export async function sendEmail(opts: {
   if (!key) return { ok: false, error: "RESEND_API_KEY not configured" };
   const from =
     process.env.MARKETING_FROM_EMAIL?.trim() ||
-    "Family Investing Club <hello@familyinvestingclub.com>";
+    "Cheat Code Club <hello@familyinvestingclub.com>";
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",

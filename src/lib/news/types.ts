@@ -87,7 +87,7 @@ export function kindLabel(kind: NewsKind): string {
 
 /** Permanent compliance line shown in every article footer. */
 export const NEWS_DISCLAIMER =
-  "This is an AI-generated educational recap for the Family Investing Club — it narrates publicly available market data to teach how to read the market, and is NOT investment advice, a recommendation, or a prediction. Market data is delayed and figures can change. Always do your own research and talk to a licensed professional before making any financial decision.";
+  "This is an AI-generated educational recap for the Cheat Code Club — it narrates publicly available market data to teach how to read the market, and is NOT investment advice, a recommendation, or a prediction. Market data is delayed and figures can change. Always do your own research and talk to a licensed professional before making any financial decision.";
 
 /** Short AI-generated tag shown on cards + article header. */
 export const AI_GENERATED_TAG = "AI-generated · educational";

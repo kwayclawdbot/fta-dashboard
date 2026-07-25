@@ -52,7 +52,7 @@ p{color:#a1a1aa;font-size:14px;line-height:1.6;margin:0}</style></head>
 
   return page(
     "You're unsubscribed",
-    "You won't receive any more marketing emails from the Family Investing Club. You can close this window.",
+    "You won't receive any more marketing emails from the Cheat Code Club. You can close this window.",
     true
   );
 }

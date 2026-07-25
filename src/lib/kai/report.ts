@@ -54,4 +54,4 @@ export function abbreviateMoney(v: number | null | undefined): string {
 }
 
 export const KAI_REPORT_DISCLAIMER =
-  "This Kai Research Report is AI-generated educational analysis for the Family Investing Club — it teaches how to think about a company, and is NOT investment advice, a recommendation, or a prediction. Market data is delayed ~15 minutes. Always do your own research and talk to a licensed professional before making any financial decision.";
+  "This Kai Research Report is AI-generated educational analysis for the Cheat Code Club — it teaches how to think about a company, and is NOT investment advice, a recommendation, or a prediction. Market data is delayed ~15 minutes. Always do your own research and talk to a licensed professional before making any financial decision.";

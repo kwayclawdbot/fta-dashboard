@@ -38,7 +38,7 @@ const FTA_URL = "https://buy.stripe.com/9B6aEXdbt9pH2Sw8hlbEA0b";
 
 // What moving up to FTA actually unlocks — mirrors the TIER_ACCESS matrix.
 const FTA_UPGRADE_BENEFITS = [
-  "Everything in Family Investing Club",
+  "Everything in the Club",
   "All tracks for the whole family",
   "Advanced 6-week live trading curriculum",
   "Priority live classes, Q&A, and recordings",
@@ -101,7 +101,7 @@ const PILLARS = [
   {
     icon: MessagesSquare,
     title: "The FTA community room",
-    body: "Unlock the private FTA room alongside your FIC club — a smaller room for families going all the way to trade ready.",
+    body: "Unlock the private FTA room alongside your Club — a smaller room for families going all the way to trade ready.",
   },
   {
     icon: Users,
@@ -153,7 +153,7 @@ const COMPARE: Row[] = [
   { label: "Kids, teens & adult tracks", fic: true, fta: true },
   { label: "Weekly club rhythm, games & flashcards", fic: true, fta: true },
   { label: "Family progress, XP & badges", fic: true, fta: true },
-  { label: "FIC community club room", fic: true, fta: true },
+  { label: "Club community room", fic: true, fta: true },
   { label: "6-week live trading curriculum", fic: false, fta: true },
   { label: "Priority live classes, Q&A & recordings", fic: false, fta: true },
   { label: "Trading simulator drills + coach feedback", fic: false, fta: true },
@@ -176,8 +176,8 @@ const FAQ = [
     a: "Yes. FTA is family-wide — one upgrade covers every member. Kids and teens inherit FTA automatically and each stays on the track built for their age. Nothing extra to buy per child.",
   },
   {
-    q: "What happens to my FIC membership?",
-    a: "It keeps going, right alongside FTA. Your Family Investing Club billing and everything in it stays exactly as it is — FTA simply adds the advanced program on top. You lose nothing.",
+    q: "What happens to my Club membership?",
+    a: "It keeps going, right alongside FTA. Your Club billing and everything in it stays exactly as it is — FTA simply adds the advanced program on top. You lose nothing.",
   },
   {
     q: "Is it really live, or just videos?",
@@ -365,7 +365,7 @@ export default function UpgradePage() {
           </div>
           <p className="text-soft text-sm max-w-md mx-auto">
             {TIER_CONFIG.fta.name} — your whole family has full access to
-            everything, including all of the Family Investing Club.
+            everything, including all of {clubName}.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-2.5 text-left mt-6 mb-8">
@@ -669,7 +669,7 @@ export default function UpgradePage() {
         <p className="mt-10 mb-2 text-center text-xs text-soft max-w-2xl mx-auto leading-relaxed flex items-start justify-center gap-2">
           <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
-            Family Investing Club is an education platform. Nothing in the app or
+            {clubName} is an education platform. Nothing in the app or
             community is financial advice or a promise of results. All in-app
             portfolio activity uses practice money — no live trading, ever.
           </span>
@@ -731,7 +731,7 @@ export default function UpgradePage() {
             </a>
           </div>
           <p className="mt-4 text-xs text-white/45">
-            One-time payment · Your $99/mo Family Investing Club keeps going ·
+            One-time payment · Your $99/mo {clubName} keeps going ·
             Whole family included
           </p>
         </div>
@@ -757,7 +757,7 @@ export default function UpgradePage() {
         <SectionHead
           eyebrow="What you get"
           title="A real program, not another video dump"
-          sub="Everything below is on top of the Family Investing Club you already have."
+          sub={`Everything below is on top of the ${clubName} you already have.`}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {PILLARS.map((p, i) => (
@@ -903,7 +903,7 @@ export default function UpgradePage() {
           </h2>
           <p className="text-soft text-sm mt-3 max-w-md mx-auto leading-relaxed">
             One payment. Six weeks, live. Everyone under your roof — and your
-            Family Investing Club keeps running right alongside it.
+            {" "}{clubName} keeps running right alongside it.
           </p>
           <div className="mt-4 flex items-baseline justify-center gap-2">
             <span className="font-display text-4xl font-bold text-ink">
@@ -930,7 +930,7 @@ export default function UpgradePage() {
               rel="noopener noreferrer"
               className="text-gold-700 hover:text-gold-800 font-semibold"
             >
-              Manage FIC billing
+              Manage {clubChip} billing
             </a>
           </p>
         </m.div>

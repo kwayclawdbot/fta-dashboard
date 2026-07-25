@@ -540,7 +540,7 @@ function FreeCoursesView({
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gold-700 mt-2">
                       <Lock className="w-3.5 h-3.5" />
                       {c.lockedCount} more lesson{c.lockedCount === 1 ? "" : "s"} in
-                      FIC
+                      the Club
                     </span>
                   </div>
                 </Link>

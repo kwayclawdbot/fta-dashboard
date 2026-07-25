@@ -147,7 +147,7 @@ export default function FreeClassLanding() {
                 spenders?
               </h1>
               <p className="text-soft mt-4 text-[15px] leading-relaxed max-w-sm mx-auto">
-                Join a free live class with the Family Investing Club. In one session your family
+                Join a free live class with the Cheat Code Club. In one session your family
                 learns how the market actually works — and how to start the habit together. Reserve
                 your seat in about a minute.
               </p>

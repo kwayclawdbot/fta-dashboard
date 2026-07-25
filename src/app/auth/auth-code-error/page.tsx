@@ -46,7 +46,7 @@ export default function AuthCodeErrorPage() {
     <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-12">
       <div className="mb-8 text-center">
         <h1 className="font-display text-2xl font-bold tracking-tight text-gold-600">
-          Family Investing Club
+          Cheat Code Club
         </h1>
         <p className="mt-1.5 text-soft text-sm">
           Build Generational Wealth Together
@@ -141,7 +141,7 @@ export default function AuthCodeErrorPage() {
       </m.div>
 
       <p className="mt-8 text-soft/70 text-xs">
-        &copy; {new Date().getFullYear()} Family Investing Club. All rights reserved.
+        &copy; {new Date().getFullYear()} Cheat Code Club. All rights reserved.
       </p>
     </div>
   );

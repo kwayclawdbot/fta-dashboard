@@ -41,11 +41,11 @@ function emailHtml(bodyText: string, unsub?: string): string {
   const footer = unsub
     ? `<hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0">
 <p style="font-size:12px;color:#a1a1aa;line-height:1.5;margin:0">
-Family Investing Club<br>
+Cheat Code Club<br>
 <a href="${unsub}" style="color:#a1a1aa">Unsubscribe</a>
 </p>`
     : `<hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0">
-<p style="font-size:12px;color:#a1a1aa;line-height:1.5;margin:0">Family Investing Club</p>`;
+<p style="font-size:12px;color:#a1a1aa;line-height:1.5;margin:0">Cheat Code Club</p>`;
   return `<!doctype html><html><body style="margin:0;background:#f4f4f5;padding:24px;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#18181b">
 <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px">
 ${paragraphs}
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
     const unsub = record === "lead" ? unsubUrl(contactId) : undefined;
     result = await sendEmail({
       to: email!,
-      subject: renderMerge(subject || "A note from Family Investing Club", mergeCtx),
+      subject: renderMerge(subject || "A note from Cheat Code Club", mergeCtx),
       html: emailHtml(renderedBody, unsub),
     });
   } else {

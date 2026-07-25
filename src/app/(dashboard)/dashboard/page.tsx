@@ -686,7 +686,7 @@ export default function DashboardHome() {
       <div className="flex items-center gap-1 border-b border-sand">
         {[
           { id: "home" as const, label: isKid ? "Home" : "Home" },
-          { id: "week" as const, label: "This Week in FIC" },
+          { id: "week" as const, label: isSolo ? "This Week in the Club" : "This Week in FIC" },
         ].map((t) => (
           <button
             key={t.id}
@@ -728,7 +728,7 @@ export default function DashboardHome() {
           </h2>
           <p className="text-soft max-w-md mx-auto mb-5">
             {isSolo
-              ? "The Family Investing Club is where you learn one money concept, study one company, and build the habit every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."
+              ? "The Cheat Code Club is where you learn one money concept, study one company, and build the habit every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."
               : "The Family Investing Club is where your family learns one money concept, studies one company, and builds the habit together every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."}
           </p>
           <Link

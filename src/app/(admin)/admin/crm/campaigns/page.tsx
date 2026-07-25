@@ -195,7 +195,7 @@ export default function CampaignsPage() {
               {channel === "email" && <p className="text-xs text-zinc-500 mb-1">Subject: <span className="text-zinc-300">{subject || "—"}</span></p>}
               <p className="text-sm text-zinc-200 whitespace-pre-wrap">{previewBody}</p>
               {channel === "sms" && <p className="text-sm text-zinc-500 mt-2">Reply STOP to opt out.</p>}
-              {channel === "email" && <p className="text-[11px] text-zinc-600 mt-3 pt-2 border-t border-zinc-800">Footer: Family Investing Club · Unsubscribe link (per-recipient signed token)</p>}
+              {channel === "email" && <p className="text-[11px] text-zinc-600 mt-3 pt-2 border-t border-zinc-800">Footer: Cheat Code Club · Unsubscribe link (per-recipient signed token)</p>}
             </div>
           )}
 

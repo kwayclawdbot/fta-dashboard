@@ -47,7 +47,7 @@ function emailHtml(bodyText: string, leadId: string): string {
 ${paragraphs}
 <hr style="border:none;border-top:1px solid #e4e4e7;margin:24px 0">
 <p style="font-size:12px;color:#a1a1aa;line-height:1.5;margin:0">
-Family Investing Club · You're receiving this because you joined one of our lists.<br>
+Cheat Code Club · You're receiving this because you joined one of our lists.<br>
 <a href="${unsub}" style="color:#a1a1aa">Unsubscribe</a>
 </p></div></body></html>`;
 }

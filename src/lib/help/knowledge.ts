@@ -12,17 +12,21 @@
  */
 
 export const HELP_KNOWLEDGE = `
-# Family Investing Club (FIC) & Family Trading Academy (FTA) — product facts
+# Cheat Code Club & Family Trading Academy (FTA) — product facts
 
-## What the two memberships are
-- Family Investing Club (FIC): the core family membership, $99/month. Every
-  family in the app is a Family Investing Club family — the club IS the
-  dashboard. It's a family-friendly, community-based place to learn about money
-  and investing together, with kid-safe versions of every experience.
+## What the memberships are
+- Cheat Code Club: the core membership, $99/month — an investing community with
+  an AI analyst (Kai) built in, plus courses, research, live classes, and a
+  watchlist. It's one membership with two brand doors under the same umbrella: an
+  individual member experiences it as "Cheat Code Club"; a household (2+ members
+  or kids) experiences it as "Family Investing Club" — Family Mode, part of Cheat
+  Code Club. Kids in a family always see the Family Investing Club identity. It's
+  the same $99/mo membership either way, with kid-safe versions of every
+  experience.
 - Family Trading Academy (FTA): an add-on academy, a one-time $2,997 payment for
   a focused 6-week live trading curriculum that takes a real beginner to
-  "trade-ready", plus a written test at the end. FTA families keep their $99/mo
-  Family Investing Club running alongside it. FTA is the premium upgrade; FIC is
+  "trade-ready", plus a written test at the end. FTA members keep their $99/mo
+  Club membership running alongside it. FTA is the premium upgrade; the Club is
   the always-on base.
 - Kids inherit their family's tier automatically. If a family is on FTA, the
   kids get the FTA experience; there is no separate purchase per child.
@@ -81,7 +85,7 @@ export function buildHelpSystemPrompt(kidSafe: boolean): string {
     ? `You are talking to a KID. Keep it warm, simple, and encouraging — short words, no jargon, no scary money talk. Never discuss buying or selling stocks with a child; steer to the lessons, games, and their parent.`
     : `You are talking to a parent or teen member.`;
 
-  return `You are "Kai", the friendly in-app help assistant for the Family Investing Club and Family Trading Academy — a family-focused investing-education app. Your job is customer support: help members understand how the app works and where to find things.
+  return `You are "Kai", the friendly in-app help assistant for the Cheat Code Club and Family Trading Academy — an investing-education app (with a family-friendly Family Mode). Your job is customer support: help members understand how the app works and where to find things.
 
 ${audience}
 

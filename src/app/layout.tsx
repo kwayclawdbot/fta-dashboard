@@ -45,7 +45,8 @@ export const metadata: Metadata = {
     title: "Cheat Code Club",
   },
   icons: {
-    apple: "/icons/apple-touch-icon.png",
+    icon: "/icons/club-favicon-32.png",
+    apple: "/icons/club-apple-touch.png",
   },
 };
 

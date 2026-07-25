@@ -497,7 +497,7 @@ export default function ProgressPage() {
           <div className="mb-4 flex items-center gap-2">
             <Compass className="h-5 w-5 text-gold-500" />
             <h2 className="font-display text-lg font-semibold text-midnight-100">
-              Family Investing Club
+              The Club
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

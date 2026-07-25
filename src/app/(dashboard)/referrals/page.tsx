@@ -112,7 +112,7 @@ export default function ReferralsPage() {
     if (!link || !targets) return;
     try {
       await navigator.share({
-        title: "Family Investing Club",
+        title: "Cheat Code Club",
         text: targets.message,
         url: link,
       });

@@ -236,7 +236,7 @@ export default function StartHerePage() {
           </span>
         </div>
         <h1 className="font-display text-2xl font-bold text-ink">
-          Welcome to the Family Investing Club
+          Welcome to the Club
         </h1>
         <p className="text-soft mt-1 max-w-2xl leading-relaxed">
           We learn first and practice with pretend money. There is no pressure
@@ -256,7 +256,7 @@ export default function StartHerePage() {
       {allDone && (
         <p className="text-sm text-green-600 flex items-center gap-1.5">
           <Sparkles className="w-4 h-4" />
-          Head to your home page for This Week in FIC.
+          Head to your home page for This Week in the Club.
         </p>
       )}
 

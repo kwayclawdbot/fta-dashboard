@@ -404,7 +404,7 @@ export default function OnboardingWizard() {
       <div className="shrink-0 px-4 sm:px-6 pt-4 pb-3">
         <div className="max-w-lg mx-auto">
           <p className="font-display text-sm font-bold tracking-tight text-gold-700 text-center mb-3">
-            Family Investing Club
+            Cheat Code Club
           </p>
           {showChrome && (
             <div className="h-1.5 rounded-full bg-sand overflow-hidden">

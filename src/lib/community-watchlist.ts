@@ -93,7 +93,7 @@ export function agePosture(ageGroup: string | null | undefined): AgePosture {
 }
 
 export const COMMUNITY_DISCLAIMER =
-  "The Family Investing Club studies real companies to learn how investing works. " +
+  "The Cheat Code Club studies real companies to learn how investing works. " +
   "Nothing here is investment advice or a recommendation to buy or sell any security. " +
   "Prices are delayed ~15 minutes. Always do your own research.";
 

@@ -34,7 +34,7 @@ const MAX_CHAT_MESSAGES = 20;
 const GREETING: ChatMsg = {
   role: "assistant",
   content:
-    "Hi! I'm Kai, your Family Investing Club help assistant. Ask me how anything in the app works — courses, live classes, your family, billing, and more. (I can't give trading advice — for that, stick with the lessons!)",
+    "Hi! I'm Kai, your Cheat Code Club help assistant. Ask me how anything in the app works — courses, live classes, your family, billing, and more. (I can't give trading advice — for that, stick with the lessons!)",
 };
 
 const STATUS_STYLES: Record<TicketStatus, string> = {

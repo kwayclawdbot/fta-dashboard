@@ -86,7 +86,7 @@ const THEMES: Record<DripVariant, Theme> = {
     accentSoft: "#E0F2FE",
     accentInk: "#0C4A6E",
     onAccent: "#FFFFFF",
-    brandLine1: "Family Investing Club",
+    brandLine1: "Cheat Code Club",
     brandLine2: "Your seat at the table starts now",
     badge: "MEMBER",
     ctaGradient: "linear-gradient(180deg,#2F6BF0 0%,#2563EB 100%)",
@@ -258,7 +258,7 @@ function shell(t: Theme, preheader: string, inner: string, ctx: DripCtx): string
           <div style="height:1px;background-color:${C.sand};line-height:1px;font-size:1px;margin-bottom:18px;">&nbsp;</div>
           <div style="font-family:${FONT};font-size:12px;color:${C.faint};line-height:1.7;">
             You're getting this because you just created your ${esc(t.brandLine1)} account. These few welcome notes help you get the most out of your first week — then they stop.<br /><br />
-            <strong style="color:${C.soft};">Family Investing Club</strong><br />
+            <strong style="color:${C.soft};">${esc(t.brandLine1)}</strong><br />
             Mailing address on file &middot; <em>[physical address to be added]</em><br /><br />
             <a href="${ctx.unsubUrl}" target="_blank" style="color:${C.faint};text-decoration:underline;">Unsubscribe from welcome emails</a>
           </div>
@@ -283,7 +283,7 @@ function plain(subject: string, lines: string[], ctx: DripCtx): string {
   return (
     `${subject}\n\n` +
     lines.join("\n\n") +
-    `\n\n—\nFamily Investing Club\nUnsubscribe: ${ctx.unsubUrl}\n`
+    `\n\n—\nCheat Code Club\nUnsubscribe: ${ctx.unsubUrl}\n`
   );
 }
 
