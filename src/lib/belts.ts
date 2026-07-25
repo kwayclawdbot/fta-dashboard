@@ -48,6 +48,36 @@ export const BELTS: Record<BeltKey, Belt> = {
 export const BELT_ORDER: BeltKey[] = ["white", "yellow", "blue", "purple", "black"];
 
 /**
+ * Dark-background-safe username colors for the FTA (true-dark) Traders chat,
+ * keyed by belt. Each was measured against the night-950 (#04060C) channel
+ * surface and clears WCAG AA (~4.5:1): white 16.8, yellow 8.6, blue 8.0,
+ * purple 7.4, black 14.3. Blue and Purple are LIFTED from their swatch hex
+ * (#3B82F6 / #8B5CF6 read too dim as small text), and Black — which can never be
+ * black-on-black — renders as champagne/metallic gold for the prestige read.
+ */
+export const BELT_NAME_ON_DARK: Record<BeltKey, string> = {
+  white: "#E8EAF0",
+  yellow: "#E39A2B",
+  blue: "#60A5FA",
+  purple: "#A78BFA",
+  black: "#EAD8A0",
+};
+
+export interface BeltNameStyle {
+  color: string;
+  /** Metallic glow — Black belt only, for the champagne / prestige read. */
+  textShadow?: string;
+}
+
+/** Belt-colored username style for a member's lifetime XP, dark-bg-safe. */
+export function beltNameStyleOnDark(xp: number): BeltNameStyle {
+  const key = beltForXp(xp).belt.key;
+  const color = BELT_NAME_ON_DARK[key];
+  if (key === "black") return { color, textShadow: "0 0 6px rgba(230,200,120,0.45)" };
+  return { color };
+}
+
+/**
  * Level → belt + degree mapping (OWNER-SET 2026-07-23). Each of the 7 XP levels
  * maps to exactly one belt degree; belts with a single level render no degree
  * numeral. Black = level 7 only (top threshold, 3200 XP) so it stays hard.

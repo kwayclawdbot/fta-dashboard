@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { timeAgo } from "@/lib/feed";
 import { RichBody } from "@/lib/mentions";
 import type { FamilyTier } from "@/lib/tier";
+import { beltNameStyleOnDark } from "@/lib/belts";
 import Avatar from "@/components/Avatar";
 import ProfileLink from "@/components/ProfileLink";
 import TierBadge from "@/components/TierBadge";
@@ -50,15 +51,24 @@ export default function ChatMessageList({
       ) : messages.length === 0 ? (
         <p className={`text-center text-xs py-8 ${metaClass}`}>{emptyText}</p>
       ) : (
-        [...messages].reverse().map((m) => (
+        [...messages].reverse().map((m) => {
+          // On the dark FTA surface, color each username by the member's earned
+          // belt (dark-bg-safe hues; Black belt reads as champagne, never
+          // black-on-black). Paper (Club drawer) keeps the flat ink name.
+          const beltStyle = dark ? beltNameStyleOnDark(xpOf?.(m.user_id) ?? 0) : undefined;
+          return (
           <div key={m.id} className="flex items-start gap-2">
             <ProfileLink username={m.author?.username} variant="avatar">
               <Avatar name={m.author?.display_name} avatarUrl={m.author?.avatar_url} role={m.author?.role} tier={tierOf(m.author)} xp={xpOf?.(m.user_id)} size="sm" />
             </ProfileLink>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <ProfileLink username={m.author?.username} className={`font-display text-xs font-semibold ${nameClass}`}>
-                  {m.author?.display_name || "Member"}
+                <ProfileLink username={m.author?.username} className={`font-display text-xs font-semibold ${beltStyle ? "" : nameClass}`}>
+                  {beltStyle ? (
+                    <span style={beltStyle}>{m.author?.display_name || "Member"}</span>
+                  ) : (
+                    m.author?.display_name || "Member"
+                  )}
                 </ProfileLink>
                 <AgeBadge role={m.author?.role} ageGroup={m.author?.age_group} />
                 {tierOf(m.author) === "free" && <TierBadge tier="free" size="xs" />}
@@ -78,7 +88,8 @@ export default function ChatMessageList({
               )}
             </div>
           </div>
-        ))
+          );
+        })
       )}
     </div>
   );

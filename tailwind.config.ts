@@ -36,6 +36,12 @@ const config: Config = {
         },
         night: {
           50: "#F0F2F5",
+          // 100/200 fill the top of the true-dark ramp so text-night-100 (chat
+          // body) and text-night-200 (FTA hub tabs) resolve to a real ivory —
+          // without them the utilities emitted no CSS and body copy inherited
+          // the page ink → black-on-black on the night-950 channel surface.
+          100: "#DDE2EA",
+          200: "#B4BED0",
           300: "#75819D",
           500: "#192D5C",
           700: "#0F1B37",
