@@ -140,7 +140,15 @@ export function buildTrackRecord(
   const graded = outcomes.filter((o) => o.peakPct != null);
   const byPeakDesc = [...graded].sort((a, b) => (b.peakPct ?? 0) - (a.peakPct ?? 0));
   const winners = byPeakDesc.slice(0, 5);
-  const losers = byPeakDesc.slice(-5).reverse();
+  const winnerIds = new Set(winners.map((o) => o.id));
+  // Losers = alerts that genuinely never got going (peak favorable move never
+  // cleared the +5% bar), weakest first — and NEVER a name already listed as a
+  // winner, so a strong batch shows a short (or empty) "didn't work" column
+  // instead of mislabeling a +8% peak as a failure.
+  const losers = byPeakDesc
+    .filter((o) => !winnerIds.has(o.id) && (o.peakPct ?? 0) < HIT_THRESHOLD)
+    .slice(-5)
+    .reverse();
 
   const avgPeak =
     graded.length > 0
