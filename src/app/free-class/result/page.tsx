@@ -13,6 +13,7 @@ import {
   logEvent,
   personalizedResult,
   classDayName,
+  getChallengeFlag,
   type PersonalizedResult,
 } from "@/lib/funnel";
 
@@ -27,6 +28,7 @@ export default function ResultPage() {
   const [ready, setReady] = useState(false);
   const [result, setResult] = useState<PersonalizedResult | null>(null);
   const [session, setSession] = useState<NextClassResponse["session"] | null>(null);
+  const [challenge, setChallenge] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -52,8 +54,10 @@ export default function ResultPage() {
         router.replace("/free-class/save");
         return;
       }
+      const isChallenge = getChallengeFlag();
       const day = classDayName(nextRes?.session?.scheduled_at ?? null);
-      setResult(personalizedResult(state.answers || {}, day));
+      setChallenge(isChallenge);
+      setResult(personalizedResult(state.answers || {}, day, { challenge: isChallenge }));
       setSession(nextRes?.session ?? null);
       logEvent(stored, "result", "view");
       setReady(true);
@@ -112,11 +116,20 @@ export default function ResultPage() {
             ))}
           </div>
 
-          {session?.scheduled_at && (
+          {/* Weekly-class date — SUPPRESSED for the challenge variant (fixed
+              Sept 1 cohort; no weekly date leak — Review P1 #1). */}
+          {!challenge && session?.scheduled_at && (
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-sand bg-white/40 px-4 py-2.5 text-sm text-ink">
               <CalendarDays className="w-4 h-4 text-gold-600 shrink-0" />
               <span className="font-semibold">Your class:</span>
               <span className="text-soft">{formatClassWhen(session.scheduled_at)}</span>
+            </div>
+          )}
+          {challenge && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-sand bg-white/40 px-4 py-2.5 text-sm text-ink">
+              <CalendarDays className="w-4 h-4 text-gold-600 shrink-0" />
+              <span className="font-semibold">The challenge:</span>
+              <span className="text-soft">Starts Sept 1 · your Club access opens the moment you join</span>
             </div>
           )}
 

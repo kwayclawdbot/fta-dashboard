@@ -11,6 +11,7 @@ import {
   getStoredFunnelId,
   fetchSession,
   logEvent,
+  getChallengeFlag,
 } from "@/lib/funnel";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,6 +33,8 @@ export default function SavePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExit, setShowExit] = useState(false);
+  const [challenge, setChallenge] = useState(false);
+  const [solo, setSolo] = useState(false);
   const exitFired = useRef(false);
 
   useEffect(() => {
@@ -52,6 +55,8 @@ export default function SavePage() {
       if (state.email) setEmail(state.email);
       if (state.phone) setPhone(state.phone);
       setSmsOptin(state.sms_optin);
+      setChallenge(getChallengeFlag());
+      setSolo(state.answers?.ages === "adults");
       logEvent(stored, "save", "view");
       setReady(true);
     })();
@@ -131,11 +136,16 @@ export default function SavePage() {
               <Sparkles className="w-3 h-3" /> Almost there
             </span>
             <h2 className="font-display text-2xl font-bold text-ink leading-snug">
-              See your family&apos;s result
+              {challenge
+                ? "See your challenge plan"
+                : solo
+                  ? "See your result"
+                  : "See your family's result"}
             </h2>
             <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
-              Enter your email to unlock your personalized result and hold your seat for this
-              week&apos;s class.
+              {challenge
+                ? "Enter your email to unlock your personalized challenge plan and lock in your spot for Sept 1."
+                : "Enter your email to unlock your personalized result and hold your seat for this week's class."}
             </p>
           </div>
 
@@ -156,7 +166,9 @@ export default function SavePage() {
                 className="mt-0.5 w-4 h-4 rounded border-sand text-gold-500 focus:ring-gold-400/30"
               />
               <span className="text-sm text-soft leading-snug">
-                Text me a reminder before class starts.
+                {challenge
+                  ? "Text me challenge reminders so I don't miss a day."
+                  : "Text me a reminder before class starts."}
               </span>
             </label>
           </div>
@@ -214,7 +226,11 @@ export default function SavePage() {
               </h3>
               <p className="text-soft text-sm mt-2 max-w-xs mx-auto leading-relaxed">
                 You&apos;ve already answered the questions — add your email and we&apos;ll show you
-                the class built for your family (and save your seat).
+                {challenge
+                  ? " the plan built for how you're starting (and lock in your spot)."
+                  : solo
+                    ? " the plan built for how you're starting (and save your seat)."
+                    : " the class built for your family (and save your seat)."}
               </p>
               <button
                 onClick={() => setShowExit(false)}

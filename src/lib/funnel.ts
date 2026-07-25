@@ -26,7 +26,7 @@ export const QUIZ: QuizStep[] = [
       { value: "young", label: "Younger kids", sub: "Ages 5–12" },
       { value: "teens", label: "Teens", sub: "Ages 13–17" },
       { value: "mixed", label: "A mix of ages", sub: "Little ones and teens" },
-      { value: "adults", label: "Just us adults", sub: "No kids yet" },
+      { value: "adults", label: "Just me", sub: "Adults only" },
     ],
   },
   {
@@ -124,6 +124,40 @@ export function getChallengeFlag(): boolean {
 export function clearChallengeFlag(): void {
   try {
     window.localStorage.removeItem(CHALLENGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+// ── VIP intent flag (Lane C9) ────────────────────────────────────────────────
+// Set on the landing view when the club-site VIP CTA lands with ?vip=1. Read at
+// the thank-you so the VIP upsell is surfaced prominently (VIP registers as a
+// normal free challenge user first, then pays at the thank-you). Same-device
+// localStorage carries it across the multi-page funnel, mirroring the challenge
+// flag. Cleared with the challenge flag at register.
+const VIP_KEY = "fic_vip";
+
+export function setVipFlag(on: boolean): void {
+  try {
+    if (on) window.localStorage.setItem(VIP_KEY, "1");
+    else window.localStorage.removeItem(VIP_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getVipFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(VIP_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearVipFlag(): void {
+  try {
+    window.localStorage.removeItem(VIP_KEY);
   } catch {
     /* ignore */
   }
@@ -236,11 +270,15 @@ export interface PersonalizedResult {
   bullets: string[];
 }
 
-/** Build the tailored result copy from answers + the class weekday label. */
+/** Build the tailored result copy from answers + the class weekday label.
+ *  `opts.challenge` swaps the weekly-class framing for the 5-Day Challenge (no
+ *  date/session leaks; the challenge is a fixed Sept 1 cohort, not "this week"). */
 export function personalizedResult(
   answers: Record<string, string>,
-  classDay: string | null
+  classDay: string | null,
+  opts?: { challenge?: boolean }
 ): PersonalizedResult {
+  const challenge = opts?.challenge === true;
   const day = classDay || "this week's";
   // Solo (adults-only, no kids) attendees get an individual-toned result — the
   // funnel otherwise assumes "your family".
@@ -251,27 +289,31 @@ export function personalizedResult(
     EXP_BULLET[answers.experience],
   ].filter(Boolean) as string[];
 
+  // Subject phrasing: challenge → "the 5-Day Investing Challenge"; weekly →
+  // "{day}'s class". Never leak a weekly date into the challenge variant.
+  const subject = challenge ? "the 5-Day Investing Challenge" : `${day}'s class`;
+
   if (solo) {
     return {
-      headline: `Based on your answers, ${day}'s class was built for people starting exactly where you are.`,
+      headline: `Based on your answers, ${subject} was built for people starting exactly where you are.`,
       subhead:
         "Here's exactly what you'll take away — matched to what you told us matters most.",
       bullets: bullets.length
         ? bullets
         : [
             "A clear, beginner-friendly first step into investing — no experience needed.",
-            "The weekly habit that turns spenders into investors.",
+            "The habit that turns spenders into investors.",
           ],
     };
   }
 
   return {
-    headline: `Based on your answers, ${day}'s class was built for families like yours.`,
+    headline: `Based on your answers, ${subject} was built for families like yours.`,
     subhead:
       "Here's exactly what you'll take away — matched to what you told us matters most.",
     bullets: bullets.length ? bullets : [
       "A clear, beginner-friendly first step into investing as a family.",
-      "The weekly habit that turns spenders into investors.",
+      "The habit that turns spenders into investors.",
     ],
   };
 }

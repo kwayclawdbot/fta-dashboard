@@ -18,6 +18,7 @@ import {
   getStoredFunnelId,
   setChallengeFlag,
   getChallengeFlag,
+  setVipFlag,
 } from "@/lib/funnel";
 
 /**
@@ -42,10 +43,17 @@ export default function FreeClassLanding() {
     // Detect the club-site Challenge CTA (?challenge=1) and persist it for the
     // rest of the funnel. Sticky: a resumed challenge funnel stays challenge.
     try {
-      const wantsChallenge =
-        new URLSearchParams(window.location.search).get("challenge") === "1";
+      const params = new URLSearchParams(window.location.search);
+      const wantsChallenge = params.get("challenge") === "1";
       if (wantsChallenge) setChallengeFlag(true);
       setChallenge(wantsChallenge || getChallengeFlag());
+      // VIP intent (?vip=1) — persisted for the thank-you upsell. VIP entrants
+      // are also challenge entrants, so ensure the challenge flag is set too.
+      if (params.get("vip") === "1") {
+        setVipFlag(true);
+        setChallengeFlag(true);
+        setChallenge(true);
+      }
     } catch {
       /* ignore */
     }
@@ -90,10 +98,11 @@ export default function FreeClassLanding() {
   const session = meta?.session ?? null;
   const registered = meta?.registered_count ?? 0;
   const seats = meta?.seats_left ?? null;
-  // Honest threshold lowered 5 -> 2 so an early cohort still shows a real
-  // count; below that, a soft always-on line carries the trust signal instead
-  // of leaving the hook with zero (UX audit #10).
-  const showSocial = registered >= 2;
+  // Honest threshold: only show a hard numeric count once it's a genuinely
+  // impressive social signal (>= 50). Below that, the soft always-on line
+  // carries the trust signal instead of exposing a tiny "2 families" number
+  // (Challenge Funnel Review P1 #3).
+  const showSocial = registered >= 50;
   const showSeats = typeof seats === "number" && seats > 0;
   const showSoft = !showSocial;
 
@@ -145,7 +154,10 @@ export default function FreeClassLanding() {
             </>
           )}
 
-          {session?.scheduled_at && (
+          {/* Weekly-class date — SUPPRESSED for the challenge variant, which is a
+              fixed Sept 1 cohort. Showing "this week: Wed Jul 29" under a
+              "Starts Sept 1" hook is the date-leak bug (Review P1 #1). */}
+          {!challenge && session?.scheduled_at && (
             <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-sand bg-white/40 px-4 py-2 text-sm text-ink">
               <CalendarDays className="w-4 h-4 text-gold-600" />
               <span className="font-semibold">This week:</span>

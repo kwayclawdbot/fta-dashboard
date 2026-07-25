@@ -1,17 +1,36 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { m } from "@/lib/motion";
 import { ArrowLeft, Check } from "lucide-react";
-import type { QuizStep } from "@/lib/funnel";
+import { getChallengeFlag, type QuizStep } from "@/lib/funnel";
 
-/** Warm-paper top bar — brand + log-in. Shared across every funnel page. */
+/**
+ * Warm-paper top bar — brand + log-in. Shared across every funnel page.
+ *
+ * Brand is variant-aware (Review P1 #2): the 5-Day Challenge funnel is a Cheat
+ * Code Club offer, so the challenge variant renders the CHEAT CODE CLUB wordmark
+ * end-to-end instead of FAMILY INVESTING CLUB (until cheatcode.com DNS lands and
+ * the challenge lives on its own domain). Read client-side from the sticky
+ * challenge flag so every step is coherent.
+ */
 export function TopBar() {
+  const [challenge, setChallenge] = useState(false);
+  useEffect(() => setChallenge(getChallengeFlag()), []);
   return (
     <div className="w-full border-b border-sand">
       <div className="max-w-lg mx-auto px-5 h-14 flex items-center justify-between">
         <Link href="/free-class" className="font-display text-sm font-bold tracking-wide text-ink">
-          FAMILY <span className="text-gold-700">INVESTING</span> CLUB
+          {challenge ? (
+            <>
+              CHEAT <span className="text-gold-700">CODE</span> CLUB
+            </>
+          ) : (
+            <>
+              FAMILY <span className="text-gold-700">INVESTING</span> CLUB
+            </>
+          )}
         </Link>
         <Link
           href="/login"
