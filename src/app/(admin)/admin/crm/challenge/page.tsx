@@ -110,9 +110,15 @@ function computeTicketSplit(leads: LeadRow[]): TicketSplit {
   const bySrc = new Map<string, number>(); // key = `${ticket}|${src}`
   for (const l of rows) {
     const tags = l.tags || [];
+    // Email-first registrants (Lane C9b) get an account at email capture, so a
+    // raw converted_profile_id check would mislabel them 'free'. They stay
+    // 'partial' (registered-not-onboarded) until they finish account setup
+    // (tag 'account-complete').
+    const emailFirstIncomplete =
+      tags.includes("email-first") && !tags.includes("account-complete");
     const ticket = tags.includes("ticket-vip")
       ? "vip"
-      : l.converted_profile_id
+      : l.converted_profile_id && !emailFirstIncomplete
         ? "free"
         : "partial";
     counts[ticket as keyof typeof counts]++;
