@@ -174,7 +174,7 @@ export function VerdictGauge({
           </>
         )}
       </svg>
-      <div className="-mt-4 flex flex-col items-center">
+      <div className="-mt-1 flex flex-col items-center">
         {label && letter ? (
           <>
             <div className="flex items-center gap-2.5">
