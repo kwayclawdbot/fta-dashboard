@@ -133,6 +133,15 @@ const CLUB_MORE_HEADER: NavItem = {
   icon: MessageCircle,
   sectionHeader: true,
 };
+// Same secondary-cluster header for the FAMILY (teen/parent) nav — parity with
+// the club's primary+More grouping so the family sidebar no longer renders one
+// long flat list. Distinct href keeps its React key unique.
+const FAMILY_MORE_HEADER: NavItem = {
+  label: "More",
+  href: "#family-more",
+  icon: MessageCircle,
+  sectionHeader: true,
+};
 // News — the Club Newsroom (Lane 10 AI-narrated market recaps, funnel-bait so
 // it stays reachable on every tier incl. free + kids). Its own top-level row on
 // desktop sidebar AND the mobile More sheet (inherited from getNavItems);
@@ -370,19 +379,24 @@ export function getNavItems(
     // curated (the day-trading traders chat / recordings are teen+adult).
   }
 
-  // ── Teens + parents (both tiers). High-frequency club surfaces stay flat;
-  //    Learn + Family nest. ──
-  // Family / teen / parent nav — the current structure is preserved (families
-  // expect their layout). Discover is added as a single row (R2 judgment call:
-  // cheap, keeps parity with the club's new hub) right after Home; Kai stays a
-  // nav row here (the FAB is additive, not a replacement, in family mode).
-  const main: NavItem[] = [
+  // ── Teens + parents (both tiers). Primary+More grouping, matching the club
+  //    (individual) sidebar so the family nav no longer reads as ~13 flat rows.
+  //    PRIMARY: the household's daily doors — Home · Community · Watchlist ·
+  //    Family (parents). Everything else (Discover, News, Kai, Screener, Kid
+  //    Missions, Learn, Practice, Alerts, Progress, Leaderboard) drops under a
+  //    "More" header. Warm-gold register + kid-relevant ordering unchanged; no
+  //    routes move. The gold FTA hub stays at the tail with its own treatment. ──
+  const primary: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
-    CLUB_DISCOVER,
     CLUB_COMMUNITY,
+    CLUB_WATCHLIST,
+  ];
+
+  // Secondary cluster (browse-not-daily), preserving the prior relative order.
+  const more: NavItem[] = [
+    CLUB_DISCOVER,
     CLUB_NEWS,
     KAI_ASK,
-    CLUB_WATCHLIST,
     CLUB_SCREENER,
     CLUB_MISSIONS,
     learnGroup(false),
@@ -390,25 +404,25 @@ export function getNavItems(
   ];
 
   if (canParent) {
-    // Alerts — adults only (parent/admin); kids/teens never see it, free never
-    // reaches here. High-frequency, so it sits right below the club surfaces.
-    main.push(CLUB_ALERTS);
-    // Solo owners get the slim "My Account" group (no family/kid surfaces);
-    // parents-with-family keep the full Family group.
-    main.push(isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM);
-    main.push(LEADERBOARD);
+    // Family is a PRIMARY door for parents. (Solo owners returned above, so a
+    // parent here always has a family; the slim SOLO group never applies.)
+    primary.push(isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM);
+    // Alerts — adults only (parent/admin); kids/teens never see it. Now grouped
+    // under More alongside the rest of the secondary surfaces.
+    more.push(CLUB_ALERTS);
+    more.push(LEADERBOARD);
     // The FTA section closes the nav as a hard-split gold hub for FTA families;
     // FIC-only parents get the compact locked teaser in its place (→ /upgrade).
-    main.push(isFta ? FTA_SECTION : FTA_LOCKED);
-  } else {
-    // Teens: My Progress flat (no Family group). FTA teens still get the hub;
-    // FIC teens see nothing here (billing/upsell stays parent-gated).
-    main.push({ label: "My Progress", href: "/progress", icon: Trophy });
-    main.push(LEADERBOARD);
-    if (isFta) main.push(FTA_SECTION);
+    return [...primary, FAMILY_MORE_HEADER, ...more, isFta ? FTA_SECTION : FTA_LOCKED];
   }
 
-  return main;
+  // Teens: no Family primary. My Progress + Leaderboard live under More. FTA
+  // teens still get the hub; FIC teens see nothing here (upsell stays parent-gated).
+  more.push({ label: "My Progress", href: "/progress", icon: Trophy });
+  more.push(LEADERBOARD);
+  return isFta
+    ? [...primary, FAMILY_MORE_HEADER, ...more, FTA_SECTION]
+    : [...primary, FAMILY_MORE_HEADER, ...more];
 }
 
 interface DashboardSidebarProps {

@@ -116,13 +116,17 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
 
   // Numeral columns — real counts, each a door to its surface. Kids get the two
   // warm community counts; adults also get the Kai alerts count.
+  // Each slot carries a warm `empty` invitation used INSTEAD of a bare "0" when
+  // the count is zero — a dead-room numeral on the first screen defeats the
+  // masthead's purpose, so an empty day reads as an open door, not a void.
   const stats = [
     {
       key: "posts",
       value: pulse?.newPostsToday ?? 0,
-      label: isKid ? "New posts" : "New posts",
+      label: "New posts",
       sub: "today",
       href: "/community",
+      empty: { title: "Be the first", sub: "post today →" },
     },
     {
       key: "ideas",
@@ -130,6 +134,7 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
       label: "Ideas shared",
       sub: "this week",
       href: "/watchlist/community",
+      empty: { title: "Share an idea", sub: "start the week →" },
     },
     ...(isKid
       ? []
@@ -140,11 +145,11 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
             label: "Kai alerts",
             sub: "today",
             href: "/alerts",
+            empty: { title: "Kai is watching", sub: "11,000+ stocks →" },
           },
         ]),
   ];
 
-  const totalActivity = stats.reduce((n, s) => n + s.value, 0);
   const loading = pulse == null;
 
   return (
@@ -206,29 +211,26 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
           >
             {loading ? (
               <span className="h-8 w-10 animate-pulse rounded bg-sand" />
+            ) : s.value > 0 ? (
+              <>
+                <span className="font-mono text-3xl font-bold leading-none tabular-nums text-ink transition-colors group-hover:text-gold-700">
+                  {s.value.toLocaleString()}
+                </span>
+                <span className="mt-1.5 text-[12px] font-semibold text-ink">{s.label}</span>
+                <span className="text-[11px] text-soft">{s.sub}</span>
+              </>
             ) : (
-              <span
-                className={`font-mono text-3xl font-bold leading-none tabular-nums transition-colors ${
-                  s.value > 0 ? "text-ink group-hover:text-gold-700" : "text-midnight-500"
-                }`}
-              >
-                {s.value.toLocaleString()}
-              </span>
+              // Empty slot → warm invitation in the same type system (never a bare 0).
+              <>
+                <span className="font-display text-[13px] font-bold leading-tight text-gold-700 transition-colors group-hover:text-gold-800">
+                  {s.empty.title}
+                </span>
+                <span className="mt-1 text-[11px] leading-snug text-soft">{s.empty.sub}</span>
+              </>
             )}
-            <span className="mt-1.5 text-[12px] font-semibold text-ink">{s.label}</span>
-            <span className="text-[11px] text-soft">{s.sub}</span>
           </Link>
         ))}
       </div>
-
-      {/* Alive-when-empty: a warm first-mover line instead of a barren screen. */}
-      {!loading && totalActivity === 0 && (
-        <p className="mt-3 border-t border-sand pt-3 text-[12px] text-soft">
-          {isKid
-            ? "It's quiet so far today — be the first to share something!"
-            : "The Club is just waking up today. Post an idea and get the conversation going."}
-        </p>
-      )}
     </section>
   );
 }

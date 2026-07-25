@@ -526,7 +526,12 @@ export default function ResearchClient({
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo symbol={ticker} name={companyName} size={52} />
               <div className="min-w-0">
-                <h1 className="truncate font-display text-2xl font-bold text-ink">{companyName}</h1>
+                {/* Long company names wrap to 2 lines (and scale down on mobile)
+                    instead of truncating to "Apple In…"; the ticker below always
+                    stays visible on its own line. */}
+                <h1 className="font-display text-xl font-bold leading-tight text-ink line-clamp-2 sm:text-2xl sm:leading-snug">
+                  {companyName}
+                </h1>
                 <div className="mt-0.5 flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-midnight-500">{ticker}</span>
                   {research?.company.exchange && (

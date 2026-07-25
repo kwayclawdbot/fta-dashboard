@@ -198,48 +198,99 @@ export default function ClubHome({
               See all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {trending.map((row) => {
-              const q = quotes[row.ticker];
-              const tone = changeTone(q?.changePercent);
-              return (
-                <Link
-                  key={row.ticker}
-                  href={`/research/${encodeURIComponent(row.ticker)}`}
-                  className="paper-card group flex flex-col gap-2 p-3.5 transition-colors hover:border-gold-400/50"
-                >
-                  <div className="flex items-center gap-2">
-                    <CompanyLogo symbol={row.ticker} name={row.company_name} size={22} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-display text-sm font-bold text-ink">{row.ticker}</p>
-                      <p className="truncate text-[11px] text-soft">{row.company_name}</p>
+          {/* 3+ trending → the balanced card grid. 1–2 → a full-width ledger
+              (hairline ticker rows) so a lone item never floats in empty space. */}
+          {trending.length >= 3 ? (
+            <div className="grid gap-3 sm:grid-cols-3">
+              {trending.map((row) => {
+                const q = quotes[row.ticker];
+                const tone = changeTone(q?.changePercent);
+                return (
+                  <Link
+                    key={row.ticker}
+                    href={`/research/${encodeURIComponent(row.ticker)}`}
+                    className="paper-card group flex flex-col gap-2 p-3.5 transition-colors hover:border-gold-400/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CompanyLogo symbol={row.ticker} name={row.company_name} size={22} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-display text-sm font-bold text-ink">{row.ticker}</p>
+                        <p className="truncate text-[11px] text-soft">{row.company_name}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-mono text-sm font-semibold text-ink">
-                      {formatPrice(q?.price)}
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-mono text-sm font-semibold text-ink">
+                        {formatPrice(q?.price)}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${
+                          tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"
+                        }`}
+                      >
+                        {tone === "up" ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : tone === "down" ? (
+                          <TrendingDown className="h-3 w-3" />
+                        ) : null}
+                        {formatChangePct(q?.changePercent) || "—"}
+                      </span>
+                    </div>
+                    <Sparkline symbol={row.ticker} height={40} />
+                    <span className="text-[10px] text-midnight-500">
+                      {row.comment_count ?? 0} in discussion · price delayed
                     </span>
-                    <span
-                      className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${
-                        tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"
-                      }`}
-                    >
-                      {tone === "up" ? (
-                        <TrendingUp className="h-3 w-3" />
-                      ) : tone === "down" ? (
-                        <TrendingDown className="h-3 w-3" />
-                      ) : null}
-                      {formatChangePct(q?.changePercent) || "—"}
-                    </span>
-                  </div>
-                  <Sparkline symbol={row.ticker} height={40} />
-                  <span className="text-[10px] text-midnight-500">
-                    {row.comment_count ?? 0} in discussion · price delayed
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-sand bg-card">
+              {trending.map((row) => {
+                const q = quotes[row.ticker];
+                const tone = changeTone(q?.changePercent);
+                return (
+                  <Link
+                    key={row.ticker}
+                    href={`/research/${encodeURIComponent(row.ticker)}`}
+                    className="group flex items-center gap-3 border-t border-sand px-4 py-3 transition-colors first:border-t-0 hover:bg-paper"
+                  >
+                    <CompanyLogo symbol={row.ticker} name={row.company_name} size={30} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-display text-sm font-bold text-ink group-hover:text-gold-700">
+                          {row.ticker}
+                        </p>
+                        <p className="truncate text-[11px] text-soft">{row.company_name}</p>
+                      </div>
+                      <p className="text-[10px] text-midnight-500">
+                        {row.comment_count ?? 0} in discussion · price delayed
+                      </p>
+                    </div>
+                    <div className="hidden w-24 shrink-0 sm:block">
+                      <Sparkline symbol={row.ticker} height={32} />
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end">
+                      <span className="font-mono text-sm font-semibold text-ink">
+                        {formatPrice(q?.price)}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${
+                          tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"
+                        }`}
+                      >
+                        {tone === "up" ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : tone === "down" ? (
+                          <TrendingDown className="h-3 w-3" />
+                        ) : null}
+                        {formatChangePct(q?.changePercent) || "—"}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
