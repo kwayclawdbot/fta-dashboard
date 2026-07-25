@@ -1,8 +1,9 @@
 /**
  * Challenge cohort sequence scheduling + enrollment (Lane C8 part 3).
  *
- * The 5-Day Investing Challenge is a SINGLE fixed-date cohort (starts Sept 1,
- * ends Sept 6, 2026). Every non-welcome step is pinned to a fixed calendar slot;
+ * The 5-Day Investing Challenge is a SINGLE fixed-date cohort: access opens
+ * Sept 1, 2026; the five LIVE sessions run Wed Sept 2 -> Sun Sept 6 at 7:00 PM
+ * ET; access ends end-of-day Sept 8, 2026 ET. Every non-welcome step is pinned to a fixed calendar slot;
  * the daily cron only sends rows whose scheduled_at has passed. A late signup
  * (e.g. someone joining Aug 20) is scheduled ONLY for the still-future steps, so
  * past August emails never back-fire in a blast.
@@ -30,7 +31,7 @@ import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "./drips";
  * sent immediately at registration, not scheduled. A future cohort just needs
  * these dates bumped.
  *
- * Note: show_dayof (12:00) and day1 (15:00) both land Sept 1 by design —
+ * Note: show_dayof (12:00) and day1 (13:00) both land Sept 2 (first session day) by design —
  * show_dayof is the morning orientation ("it's here, week overview"), day1 is
  * the actual mission, deliberately spaced ~3h apart.
  */
@@ -45,19 +46,25 @@ export const CHALLENGE_SCHEDULE: Record<
   // (the cron skips anyone who already bought VIP). Fixed-calendar like the rest.
   vip_upsell: "2026-08-21T15:00:00Z",
   aug_belts: "2026-08-25T15:00:00Z",
-  show_d3: "2026-08-29T15:00:00Z",
-  show_d1: "2026-08-31T15:00:00Z",
-  show_dayof: "2026-09-01T12:00:00Z",
-  day1: "2026-09-01T15:00:00Z",
-  day2: "2026-09-02T13:00:00Z",
-  day3: "2026-09-03T13:00:00Z",
-  day4: "2026-09-04T13:00:00Z",
-  day5: "2026-09-05T13:00:00Z",
-  // Mid-week "keep going together" continue pitch — Sept 3 PM, hours after the
-  // Day 3 mission so it lands on the back of a real win.
-  day3_offer: "2026-09-03T21:00:00Z",
-  close_stats: "2026-09-05T23:00:00Z",
-  close_offer: "2026-09-06T15:00:00Z",
+  // Live sessions run WED Sept 2 → SUN Sept 6, 7:00 PM ET each evening (owner-
+  // set). Daily reminders send that morning (~9 AM ET = 13:00 UTC) so people
+  // plan their evening; show-up emails lead into the first session (Sept 2).
+  show_d3: "2026-08-30T15:00:00Z",
+  show_d1: "2026-09-01T15:00:00Z",
+  show_dayof: "2026-09-02T12:00:00Z",
+  day1: "2026-09-02T13:00:00Z",
+  day2: "2026-09-03T13:00:00Z",
+  day3: "2026-09-04T13:00:00Z",
+  day4: "2026-09-05T13:00:00Z",
+  day5: "2026-09-06T13:00:00Z",
+  // Mid-challenge "keep going together" continue pitch — the night of the middle
+  // session (Fri Sept 4), landing on the back of a real win.
+  day3_offer: "2026-09-05T00:30:00Z",
+  // Close sequence: recap the morning after the final (Sun) session, then the
+  // two-path offer, then a last call the day access ends (EOD Sept 8 ET). This
+  // gives the ~48h decision window after the final live session.
+  close_stats: "2026-09-07T13:00:00Z",
+  close_offer: "2026-09-07T15:00:00Z",
   close_lastcall: "2026-09-08T15:00:00Z",
 };
 

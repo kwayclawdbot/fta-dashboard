@@ -18,7 +18,8 @@
  *      $99 charge (both gated by challenge_emails_enabled + drip_optouts).
  */
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createOrderFromSession, attemptFulfillment, normalizeShipping } from "@/lib/server/shop";
+import { createOrderFromSession, normalizeShipping } from "@/lib/server/shop";
+import { createShopifyTextbookOrder } from "@/lib/server/shopify";
 import { renderChallengeSequenceEmail } from "@/lib/server/challenge-sequence-emails";
 import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "@/lib/server/drips";
 
@@ -34,6 +35,15 @@ export interface VipProvisionResult {
   vipId?: string;
   textbookOrderId?: string | null;
   enrollment?: "created" | "exists" | "no_family";
+  /**
+   * How the buyer's account was resolved:
+   *   'created'  — a brand-new account was made from the checkout email (guest
+   *                checkout) and still needs a password (vip-success prompts one);
+   *   'existing' — the email already had an account (VIP attached; log in);
+   *   'linked'   — an authed in-app buyer (client_reference_id present);
+   *   'none'     — no user/email could be resolved (should not happen).
+   */
+  account?: "created" | "existing" | "linked" | "none";
   receipt?: { sent: boolean; skipped?: string; error?: string };
   error?: string;
 }
@@ -69,10 +79,14 @@ export async function provisionChallengeVip(session: Session): Promise<VipProvis
     typeof session.subscription === "string" ? session.subscription : null;
   const shipping = normalizeShipping(session);
   const clubUntil = daysFromNow(FIRST_MONTH_DAYS);
+  const src = cleanSrc(session.metadata?.src);
+  const firstName = shipping.name?.split(/\s+/)[0] || "there";
+  const phone = shipping.phone || null;
 
   // Resolve the family from the buyer (client_reference_id = app user id).
   let familyId: string | null = null;
   let resolvedUserId: string | null = userId;
+  let account: VipProvisionResult["account"] = userId ? "linked" : "none";
   if (userId) {
     const { data: prof } = await db
       .from("profiles")
@@ -91,10 +105,27 @@ export async function provisionChallengeVip(session: Session): Promise<VipProvis
     if (prof) {
       resolvedUserId = resolvedUserId || prof.id;
       familyId = prof.family_id ?? null;
+      account = "existing";
     }
   }
+  // Guest checkout — the marketing-site "Go VIP" button paid with no account.
+  // Create one now (email-confirmed, NO password — vip-success prompts a password
+  // via magic link) plus the family/profile so the fic enrollment below has a
+  // family to attach to and the buyer lands as a full member.
+  if (!resolvedUserId && email) {
+    const guest = await ensureGuestAccount(db, email, firstName);
+    resolvedUserId = guest.userId;
+    familyId = guest.familyId ?? familyId;
+    account = guest.created ? "created" : "existing";
+  }
 
-  // 1. Textbook order (best-effort) — through the existing Lulu shop lane.
+  // 1. Textbook fulfillment (best-effort) — via the LIVE Shopify store
+  //    (shop.cheatcode.com), whose Lulu integration prints & ships the book. We
+  //    keep an app-side shop_orders row as the tracking record and stamp the
+  //    Shopify order id on it. If the Shopify Admin token isn't configured (or
+  //    the call fails), the order stays in the /admin/shop queue for manual
+  //    fulfillment — the FIRST real purchase doubles as the live fulfillment
+  //    test. Never throws upward.
   let textbookOrderId: string | null = null;
   try {
     const { data: product } = await db
@@ -105,11 +136,20 @@ export async function provisionChallengeVip(session: Session): Promise<VipProvis
     if (product) {
       const { orderId } = await createOrderFromSession({ session, productId: product.id, quantity: 1 });
       textbookOrderId = orderId;
-      // Degrades to 'awaiting_fulfillment_setup' (manual queue in /admin/shop)
-      // when Lulu creds / print files aren't set up. Never throws upward here.
-      await attemptFulfillment(orderId).catch((e) =>
-        console.error("vip textbook fulfillment error:", orderId, e)
-      );
+      const shop = await createShopifyTextbookOrder({ email: email || undefined, shipping });
+      if (shop.ok && shop.orderId) {
+        await db
+          .from("shop_orders")
+          .update({
+            // Tracking pointer to the Shopify order (its Lulu app fulfills).
+            lulu_job_id: `shopify:${shop.orderName || shop.orderId}`,
+            status: "submitted",
+          })
+          .eq("id", orderId);
+      } else if (shop.error) {
+        // Not configured / failed → row stays 'paid' for the manual queue.
+        console.error("vip shopify order not created:", orderId, shop.error);
+      }
     } else {
       console.error("vip: textbook shop_product missing (slug=%s)", TEXTBOOK_SLUG);
     }
@@ -174,9 +214,62 @@ export async function provisionChallengeVip(session: Session): Promise<VipProvis
     userId: resolvedUserId,
     familyId,
     email: email || null,
-    firstName: shipping.name?.split(/\s+/)[0] || "there",
+    firstName,
     clubUntil,
   });
+
+  // 5. CRM (the app's built-in marketing_leads) — surface the VIP buyer in the
+  //    same challenge cohort as free tickets. Guest buyers never touch the quiz
+  //    funnel, so without this they'd be invisible in /admin/crm/challenge.
+  //    source='challenge' is what admin_challenge_cohort keys off; tag ticket-vip
+  //    + custom.ticket='vip' drive the free/vip/partial split. Best-effort.
+  if (email) {
+    try {
+      const leadTags = ["challenge", "ticket-vip", "registered", ...(src ? [`src:${src}`] : [])];
+      const leadCustom = {
+        src: src || null,
+        ticket: "vip",
+        city: shipping.address.city || null,
+        state: shipping.address.state || null,
+      };
+      const { data: lead } = await db
+        .from("marketing_leads")
+        .select("id, tags")
+        .eq("email", email)
+        .eq("source", "challenge")
+        .maybeSingle();
+      if (lead) {
+        const tags = Array.from(new Set([...(lead.tags || []), ...leadTags]));
+        await db
+          .from("marketing_leads")
+          .update({
+            first_name: firstName !== "there" ? firstName : undefined,
+            phone: phone || undefined,
+            stage: "engaged",
+            tags,
+            converted_profile_id: resolvedUserId,
+            custom: leadCustom,
+            last_activity_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", lead.id);
+      } else {
+        await db.from("marketing_leads").insert({
+          email,
+          first_name: firstName !== "there" ? firstName : null,
+          phone: phone || null,
+          source: "challenge",
+          stage: "engaged",
+          tags: leadTags,
+          consent_source: "challenge_vip",
+          converted_profile_id: resolvedUserId,
+          custom: leadCustom,
+        });
+      }
+    } catch (e) {
+      console.error("vip marketing_leads upsert error:", e);
+    }
+  }
 
   return {
     ok: true,
@@ -184,8 +277,93 @@ export async function provisionChallengeVip(session: Session): Promise<VipProvis
     vipId: vip.id,
     textbookOrderId,
     enrollment,
+    account,
     receipt,
   };
+}
+
+function cleanSrc(raw: unknown): string {
+  return typeof raw === "string" ? raw.trim().slice(0, 64) : "";
+}
+
+/**
+ * Ensure an app account exists for a guest VIP buyer (checkout with no prior
+ * login). Creates the auth user email-confirmed with NO password (a magic-link
+ * set-password preamble runs on vip-success) plus the family + parent profile,
+ * mirroring the free-class register route. If the email already has an auth user
+ * (rare — profile missing but auth row present), links to it instead.
+ *
+ * Returns the resolved user id, the family id (may be null if family creation
+ * failed — the caller's enrollment step then no-ops), and whether it was created.
+ */
+async function ensureGuestAccount(
+  db: ReturnType<typeof createAdminClient>,
+  email: string,
+  firstName: string
+): Promise<{ userId: string | null; familyId: string | null; created: boolean }> {
+  const displayName = firstName && firstName !== "there" ? firstName : "Friend";
+
+  const { data: created, error: createErr } = await db.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: {
+      display_name: displayName,
+      role: "parent",
+      // Guest VIP buyers have no password yet; onboarding's password preamble
+      // keys off this marker (see /api/auth/password-status).
+      needs_password: true,
+      password_set: false,
+    },
+  });
+
+  if (createErr || !created?.user) {
+    // Already-registered (auth row exists) — link to it and read any family.
+    const { data: list } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const existing = list?.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    if (!existing) {
+      console.error("vip guest account: create failed and no existing user:", createErr?.message);
+      return { userId: null, familyId: null, created: false };
+    }
+    const { data: prof } = await db
+      .from("profiles")
+      .select("family_id")
+      .eq("id", existing.id)
+      .maybeSingle();
+    return { userId: existing.id, familyId: prof?.family_id ?? null, created: false };
+  }
+
+  const userId = created.user.id;
+
+  // Family (Club access derives from the fic enrollment the caller adds next).
+  const { data: fam, error: famErr } = await db
+    .from("families")
+    .insert({ name: `${displayName}'s Family` })
+    .select("id")
+    .single();
+  if (famErr || !fam) {
+    console.error("vip guest account: family create failed:", famErr?.message);
+    return { userId, familyId: null, created: true };
+  }
+  const familyId = fam.id as string;
+
+  // Link the parent profile (handle_new_user already inserted the row). Leave
+  // onboarding_complete false so the buyer runs the short wizard (which includes
+  // the set-password preamble) after the vip-success magic link signs them in.
+  await db
+    .from("profiles")
+    .update({
+      family_id: familyId,
+      role: "parent",
+      age_group: "adults",
+      track: "adults",
+      display_name: displayName,
+      onboarding_complete: false,
+    })
+    .eq("id", userId);
+
+  return { userId, familyId, created: true };
 }
 
 /**

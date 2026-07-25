@@ -95,6 +95,7 @@ export default function SavePage() {
           email: email.trim().toLowerCase(),
           phone: phone.trim(),
           smsOptin,
+          challenge,
         }),
       });
       const data = await res.json();

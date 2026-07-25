@@ -137,8 +137,10 @@ export async function POST(req: Request) {
   //    access per owner), and family_tiers resolves it to 'fic' until expiry,
   //    then 'free'. Everyone else gets the plain 'free' enrollment.
   if (isChallenge) {
-    // challenge_end from app_settings (jsonb ISO string); default 2026-09-06.
-    let challengeEnd = "2026-09-06T00:00:00Z";
+    // challenge_end from app_settings (jsonb ISO string). Default = end-of-day
+    // Sept 8, 2026 ET (midnight ET Sept 9 = 04:00 UTC) — the 48h decision window
+    // after the final live session (Sun Sept 6 evening). Owner-directed extension.
+    let challengeEnd = "2026-09-09T04:00:00Z";
     const { data: setting } = await supabase
       .from("app_settings")
       .select("value")
@@ -238,9 +240,17 @@ export async function POST(req: Request) {
     // src:<value> tag for at-a-glance CRM filtering. Organic signups carry no
     // src, so they naturally fall into the 'organic' bucket downstream.
     const srcTag = src ? [`src:${src}`] : [];
+    // ticket-free tags the challenge cohort's FREE-ticket path (vs ticket-vip,
+    // stamped by provisionChallengeVip) so /admin/crm/challenge can split them.
     const baseTags = isChallenge
-      ? ["challenge", "funnel", "registered", ...srcTag]
+      ? ["challenge", "funnel", "registered", "ticket-free", ...srcTag]
       : ["funnel", "registered", ...srcTag];
+    const leadCustom = {
+      quiz: mergedQuiz,
+      phone: phone || null,
+      src: src || null,
+      ...(isChallenge ? { ticket: "free" } : {}),
+    };
     const { data: lead } = await supabase
       .from("marketing_leads")
       .select("id, tags")
@@ -258,7 +268,7 @@ export async function POST(req: Request) {
           stage: "engaged",
           tags,
           converted_profile_id: userId,
-          custom: { quiz: mergedQuiz, phone: phone || null, src: src || null },
+          custom: leadCustom,
           last_activity_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -278,7 +288,7 @@ export async function POST(req: Request) {
         tags: baseTags,
         consent_source: isChallenge ? "challenge_funnel" : "free_class_funnel",
         converted_profile_id: userId,
-        custom: { quiz: mergedQuiz, phone: phone || null, src: src || null },
+        custom: leadCustom,
       });
     }
   } catch {

@@ -21,7 +21,7 @@
  *   show_d3        show-up — 3 days out
  *   show_d1        show-up — 1 day out
  *   show_dayof     show-up — day-of orientation
- *   day1..day5     daily mission emails (Sept 1-5)
+ *   day1..day5     daily LIVE-session emails (Sept 2-6, 7:00 PM ET)
  *   day3_offer     mid-week "keep going together" $99 continue pitch (Sept 3 PM)
  *   close_stats    close — "what you built this week" (live stats merge)
  *   close_offer    close — $99 continue + $1,500 FTA offer
@@ -164,7 +164,7 @@ function rail(kicker: string, heading: string, body: string, tint: "orange" | "t
   </td></tr>`;
 }
 
-/** A compact "day N of 5" progress strip for the daily mission emails. */
+/** A compact "day N of 5" progress strip for the daily live-session emails. */
 function dayStrip(active: number): string {
   const cells = [1, 2, 3, 4, 5]
     .map((n) => {
@@ -301,7 +301,7 @@ export function renderChallengeSequenceEmail(
         ) +
         ctaRow(cta("Start exploring the Club", `${u}/dashboard`)) +
         paragraph(
-          `<span style="font-size:13px;color:${C.faint};">We'll send you a short note each week in August to help you get the most out of it, then a mission each morning of the challenge. See you in there.</span>`
+          `<span style="font-size:13px;color:${C.faint};">We'll send you a short note each week in August to help you get the most out of it, then we go live together each evening of the challenge at 7:00 PM ET. See you in there.</span>`
         );
       return {
         subject,
@@ -469,34 +469,34 @@ export function renderChallengeSequenceEmail(
     case "show_d3": {
       const subject = "3 days out — let's get you ready";
       const inner =
-        sectionHead(`${esc(name)}, the challenge starts Monday, Sept 1`) +
+        sectionHead(`${esc(name)}, the challenge starts Wednesday, Sept 2`) +
         paragraph(
-          `Three days to go. Here's the shape of the week — five mornings, one clear mission each, all inside the product you already have access to:`
+          `Three days to go. Here's the shape of the week — five live sessions, one each evening at <strong>7:00 PM ET</strong>, that we work through together in the room:`
         ) +
         rail(
-          "The week ahead",
+          "The week ahead — live, 7:00 PM ET daily",
           "Foundations → Research → Community → Practice → Putting it together",
-          `Day 1 you build your first practice watchlist. Day 2 you research with Kai. Day 3 you work the community watchlist. Day 4 you screen and practice. Day 5 you pull it all together.`,
+          `Day 1 we build your first practice watchlist together. Day 2 we research with Kai. Day 3 we work the community watchlist. Day 4 we screen and practice. Day 5 we pull it all together.`,
           "orange"
         ) +
         paragraph(
-          `Nothing to buy, nothing to install. Just show up each morning, do the day's mission, and lean on the community when you're stuck — that's the whole method.`
+          `Nothing to buy, nothing to install. Just join us live each evening at 7:00 PM ET and lean on the community between sessions. That's the whole method.`
         ) +
         ctaRow(cta("Warm up in the Club", `${u}/dashboard`)) +
         paragraph(
-          `<span style="font-size:13px;color:${C.faint};">Tip: add Sept 1–5 mornings to your calendar now. Showing up is 80% of it.</span>`
+          `<span style="font-size:13px;color:${C.faint};">Tip: add the Sept 2–6 sessions (7:00 PM ET) to your calendar now. Showing up is 80% of it.</span>`
         );
       return {
         subject,
-        html: shell("Five mornings, one mission each — here's the week ahead.", "3 DAYS TO GO", inner, unsubUrl),
+        html: shell("Five live sessions, one each evening at 7:00 PM ET — here's the week ahead.", "3 DAYS TO GO", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Hi ${name},`,
-            "Three days until the 5-Day Investing Challenge (starts Mon, Sept 1).",
+            "Three days until the 5-Day Investing Challenge (starts Wed, Sept 2). Five live sessions, 7:00 PM ET each evening — we do them together in the room.",
             "The arc: Day 1 build your first practice watchlist, Day 2 research with Kai, Day 3 community watchlist, Day 4 screener + practice, Day 5 putting it all together.",
             `Warm up now: ${u}/dashboard`,
-            "Add Sept 1–5 mornings to your calendar — showing up is 80% of it.",
+            "Add the Sept 2–6 sessions (7:00 PM ET) to your calendar — showing up is 80% of it.",
           ],
           unsubUrl
         ),
@@ -504,36 +504,36 @@ export function renderChallengeSequenceEmail(
     }
 
     case "show_d1": {
-      const subject = "Tomorrow: Day 1 of the challenge";
+      const subject = "Tomorrow: Day 1 of the challenge — live at 7:00 PM ET";
       const inner =
         sectionHead(`It's almost here, ${esc(name)}`) +
         paragraph(
-          `Tomorrow morning the <strong>5-Day Investing Challenge</strong> begins. You'll get one short email each day with that day's mission and a direct link to do it.`
+          `Tomorrow morning the <strong>5-Day Investing Challenge</strong> begins — live at <strong>7:00 PM ET</strong>. Each evening we meet in the room and do that day's work together.`
         ) +
         rail(
-          "Day 1 preview",
-          "Build your first practice watchlist — together if you can",
-          `We start by making something real you keep: a short list of companies you want to follow. About 30 minutes, no prior experience needed — do it with family, a friend, or solo.`,
+          "Day 1 preview — live at 7:00 PM ET",
+          "Build your first practice watchlist — together in the room",
+          `We start by making something real you keep: a short list of companies you want to follow. Join live and we build it together — no prior experience needed.`,
           "orange"
         ) +
         paragraph(
-          `Two things tonight: make sure you can log in, and decide <em>when</em> tomorrow you'll do your mission. A specific time beats "sometime today" every time.`
+          `Two things tonight: make sure you can log in, and add tomorrow's 7:00 PM ET session to your calendar. Showing up live is where it clicks.`
         ) +
         ctaRow(cta("Make sure you can log in", `${u}/dashboard`)) +
         paragraph(
-          `<span style="font-size:13px;color:${C.faint};">See you in the morning. We're smarter together.</span>`
+          `<span style="font-size:13px;color:${C.faint};">See you in the room tomorrow evening. We're smarter together.</span>`
         );
       return {
         subject,
-        html: shell("Day 1 starts tomorrow — here's what it covers.", "1 DAY TO GO", inner, unsubUrl),
+        html: shell("Day 1 is live tomorrow at 7:00 PM ET — here's what we'll do.", "1 DAY TO GO", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Hi ${name},`,
-            "Tomorrow the 5-Day Investing Challenge begins. Each day you'll get one short email with that day's mission and a direct link.",
-            "Day 1 you build your first practice watchlist — a short list of companies you want to follow. ~30 minutes, no experience needed, together if you can.",
-            `Tonight: confirm you can log in (${u}/dashboard) and decide WHEN tomorrow you'll do your mission.`,
-            "See you in the morning.",
+            "Tomorrow the 5-Day Investing Challenge begins — live at 7:00 PM ET. Each evening we meet in the room and do that day's work together.",
+            "Day 1 we build your first practice watchlist together — a short list of companies you want to follow. No experience needed.",
+            `Tonight: confirm you can log in (${u}/dashboard) and add tomorrow's 7:00 PM ET session to your calendar.`,
+            "See you in the room tomorrow evening.",
           ],
           unsubUrl
         ),
@@ -543,13 +543,13 @@ export function renderChallengeSequenceEmail(
     case "show_dayof": {
       const subject = "It's here — the challenge starts today";
       const inner =
-        sectionHead(`Day 1 is live, ${esc(name)} 🚀`) +
+        sectionHead(`Day 1 is here, ${esc(name)} 🚀`) +
         paragraph(
-          `The <strong>5-Day Investing Challenge</strong> officially starts today. Over the next five mornings you'll build a real, repeatable way to look at the market — one mission at a time.`
+          `The <strong>5-Day Investing Challenge</strong> officially starts today, live at <strong>7:00 PM ET</strong>. Over the next five evenings we'll build a real, repeatable way to look at the market — together in the room, one live session at a time.`
         ) +
         dayStrip(1) +
         paragraph(
-          `Your Day 1 mission email is landing shortly with the exact link. Between now and then, pop into the community and say you're starting — the room is more fun when you're in it.`
+          `We go live at 7:00 PM ET. Before then, pop into the community and say you're starting — the room is more fun when you're in it. Your session link is in the Club.`
         ) +
         ctaRow(cta("Say hi in the community", `${u}/community`, "teal")) +
         paragraph(
@@ -557,13 +557,13 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Day 1 is live — your mission link is on its way.", "DAY 1 · IT'S HERE", inner, unsubUrl),
+        html: shell("Day 1 goes live today at 7:00 PM ET.", "DAY 1 · IT'S HERE", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Hi ${name},`,
-            "The 5-Day Investing Challenge starts today. Five mornings, one mission each — you'll build a real, repeatable way to look at the market.",
-            `Your Day 1 mission email is landing shortly. Meanwhile, say you're starting in the community: ${u}/community`,
+            "The 5-Day Investing Challenge starts today, live at 7:00 PM ET. Five live sessions, one each evening — we build a real, repeatable way to look at the market, together in the room.",
+            `We go live at 7:00 PM ET; your session link is in the Club. Meanwhile, say you're starting in the community: ${u}/community`,
             "This is education, not advice — we're building judgment, not chasing tips.",
           ],
           unsubUrl
@@ -571,17 +571,17 @@ export function renderChallengeSequenceEmail(
       };
     }
 
-    /* ── 4. DAILY CHALLENGE MISSIONS (Sept 1-5) ─────────────────────────── */
+    /* ── 4. DAILY LIVE CHALLENGE SESSIONS (Sept 2-6, 7:00 PM ET) ─────────── */
     case "day1": {
-      const subject = "Day 1 mission: build your first practice watchlist";
+      const subject = "Day 1 is live at 7:00 PM ET: your first practice watchlist";
       const inner =
         sectionHead(`Day 1 — Your first practice watchlist`) +
         dayStrip(1) +
         paragraph(
-          `Welcome to Day 1, ${esc(name)}. No experience needed — we learn together, and we start by making something real you can keep. Today you'll build your very first <strong>practice watchlist</strong>: a short list of companies you want to follow. Grab whoever's around — a partner, a friend, the kids — or fly solo. However you do it, it's yours by the end of 30 minutes.`
+          `Welcome to Day 1, ${esc(name)}. We go live at <strong>7:00 PM ET</strong> — no experience needed, we learn together in the room. Today we build something real you keep: your very first <strong>practice watchlist</strong>, a short list of companies you want to follow. Join live and follow along right here.`
         ) +
         rail(
-          "Today's mission (~30 min, together if you can)",
+          "In today's live session · 7:00 PM ET",
           "Set up your practice watchlist — 3 to 5 companies",
           `<strong>1.</strong> Open your <a href="${u}/watchlist" target="_blank" style="color:${C.accentInk};font-weight:700;text-decoration:none;">Watchlist</a>.<br /><strong>2.</strong> Add 3–5 companies you already know from real life — a store you shop at, a phone you use, a game you play.<br /><strong>3.</strong> For each one, jot a one-line reason you're curious. (No thesis required — "we buy this every week" counts.)<br /><strong>4.</strong> Not sure who to add? <a href="${u}/kai" target="_blank" style="color:${C.accentInk};font-weight:700;text-decoration:none;">Ask Kai</a> for a few beginner-friendly names.`,
           "teal"
@@ -598,15 +598,15 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Build something real you can keep — your first practice watchlist, in 30 minutes.", "DAY 1 OF 5", inner, unsubUrl),
+        html: shell("Day 1 live at 7:00 PM ET — we build your first practice watchlist together.", "DAY 1 OF 5", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Day 1 — Your first practice watchlist. Hi ${name},`,
-            "No experience needed — we learn together. Today you build your first practice watchlist: a short list of companies you want to follow. Do it with family, a friend, or solo — 30 minutes, and it's yours.",
-            `Mission (~30 min): 1) Open your Watchlist (${u}/watchlist). 2) Add 3–5 companies you already know from real life. 3) Write a one-line reason for each. 4) Stuck on who to add? Ask Kai (${u}/kai).`,
+            "We go live at 7:00 PM ET — no experience needed, we learn together in the room. Today we build your first practice watchlist: a short list of companies you want to follow. Join us live.",
+            `In the session: 1) Open your Watchlist (${u}/watchlist). 2) Add 3–5 companies you already know from real life. 3) Write a one-line reason for each. 4) Stuck on who to add? Ask Kai (${u}/kai).`,
             `Then share it — the Day 1 artifact: post your watchlist to the community feed with why you picked them: ${u}/community`,
-            "This is the foundation for the week — tomorrow you research one of these names with Kai.",
+            "This is the foundation for the week — tomorrow we research one of these names with Kai.",
           ],
           unsubUrl
         ),
@@ -614,15 +614,15 @@ export function renderChallengeSequenceEmail(
     }
 
     case "day2": {
-      const subject = "Day 2 mission: Research with Kai";
+      const subject = "Day 2 is live at 7:00 PM ET: Research with Kai";
       const inner =
         sectionHead(`Day 2 — Research with Kai`) +
         dayStrip(2) +
         paragraph(
-          `Nice work yesterday, ${esc(name)}. Today you turn curiosity into understanding. You'll pick one company and actually get to know it — with Kai speeding up the boring parts so you can focus on the thinking.`
+          `Nice work yesterday, ${esc(name)}. We're live again at <strong>7:00 PM ET</strong>. Today, together in the room, we turn curiosity into understanding: we pick one company and actually get to know it — with Kai speeding up the boring parts so we can focus on the thinking.`
         ) +
         rail(
-          "Today's mission (~15 min)",
+          "In today's live session · 7:00 PM ET",
           "Research one company with Kai + its research page",
           `Pick a company you use in real life. Ask Kai three questions about it, then open its research page and see what you'd add or push back on. Kai multiplies your judgment — you're still the one deciding.`,
           "orange"
@@ -633,13 +633,13 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Pick one company and actually get to know it — with Kai on your team.", "DAY 2 OF 5", inner, unsubUrl),
+        html: shell("Day 2 live at 7:00 PM ET — we get to know one company together, with Kai.", "DAY 2 OF 5", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Day 2 — Research with Kai. Hi ${name},`,
-            "Today you turn curiosity into understanding: pick one company you use in real life.",
-            `Mission (~15 min): ask Kai three questions about it (${u}/kai), then compare with its research page (${u}/research).`,
+            "We're live at 7:00 PM ET. Today, together in the room, we turn curiosity into understanding: pick one company you use in real life.",
+            `In the session: ask Kai three questions about it (${u}/kai), then compare with its research page (${u}/research).`,
             "Kai multiplies your judgment — you're still the one deciding.",
           ],
           unsubUrl
@@ -648,15 +648,15 @@ export function renderChallengeSequenceEmail(
     }
 
     case "day3": {
-      const subject = "Day 3 mission: The Community Watchlist";
+      const subject = "Day 3 is live at 7:00 PM ET: The Community Watchlist";
       const inner =
         sectionHead(`Day 3 — The Community Watchlist`) +
         dayStrip(3) +
         paragraph(
-          `Halfway, ${esc(name)}. Today is the "we're smarter together" day. Yesterday you learned to research one company alone — today you plug into what the whole room is watching, and add your own.`
+          `Halfway, ${esc(name)}. We're live at <strong>7:00 PM ET</strong>, and today is the "we're smarter together" day. Yesterday we researched one company; today, in the room, we plug into what the whole community is watching and add our own.`
         ) +
         rail(
-          "Today's mission (~15 min)",
+          "In today's live session · 7:00 PM ET",
           "Add your company to the Community Watchlist — with your reason",
           `Post the company you researched yesterday, with a one-line reason. Then read three other members' picks and react to the one that taught you something.`,
           "teal"
@@ -667,13 +667,13 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Plug into what the room is watching — and add your own.", "DAY 3 OF 5", inner, unsubUrl),
+        html: shell("Day 3 live at 7:00 PM ET — we plug into what the room is watching, together.", "DAY 3 OF 5", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Day 3 — The Community Watchlist. Hi ${name},`,
-            "Today is the 'we're smarter together' day.",
-            `Mission (~15 min): add the company you researched to the watchlist with a one-line reason, then react to three other members' picks. ${u}/watchlist`,
+            "We're live at 7:00 PM ET — today is the 'we're smarter together' day.",
+            `In the session: add the company you researched to the watchlist with a one-line reason, then react to three other members' picks. ${u}/watchlist`,
             "Watch the performance tracker update over the coming days — that feedback loop is the point.",
           ],
           unsubUrl
@@ -682,15 +682,15 @@ export function renderChallengeSequenceEmail(
     }
 
     case "day4": {
-      const subject = "Day 4 mission: Screen & practice";
+      const subject = "Day 4 is live at 7:00 PM ET: Screen & practice";
       const inner =
         sectionHead(`Day 4 — Screener & practice`) +
         dayStrip(4) +
         paragraph(
-          `Day 4, ${esc(name)}. So far you've researched names you already knew. Today you learn to <em>find</em> new ones — and practice acting on an idea with zero real money at risk.`
+          `Day 4, ${esc(name)}. We're live at <strong>7:00 PM ET</strong>. So far we've researched names you already knew — today, in the room, we learn to <em>find</em> new ones and practice acting on an idea with zero real money at risk.`
         ) +
         rail(
-          "Today's mission (~15 min)",
+          "In today's live session · 7:00 PM ET",
           "Run a screen, then practice in the simulator",
           `Use the Screener to surface a company you'd never have thought of. Add it to your watchlist, then open the simulator and place a practice trade to feel the mechanics — no real money, all learning.`,
           "orange"
@@ -701,13 +701,13 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Find a name you'd never have thought of — then practice, risk-free.", "DAY 4 OF 5", inner, unsubUrl),
+        html: shell("Day 4 live at 7:00 PM ET — find a name you'd never have thought of, then practice risk-free.", "DAY 4 OF 5", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Day 4 — Screener & practice. Hi ${name},`,
-            "Today you learn to FIND new ideas and practice acting on one with zero real money at risk.",
-            `Mission (~15 min): run a screen (${u}/screener), add a surprising name to your watchlist, then place a practice trade in the simulator (${u}/simulator).`,
+            "We're live at 7:00 PM ET. Today, in the room, we learn to FIND new ideas and practice acting on one with zero real money at risk.",
+            `In the session: run a screen (${u}/screener), add a surprising name to your watchlist, then place a practice trade in the simulator (${u}/simulator).`,
           ],
           unsubUrl
         ),
@@ -715,15 +715,15 @@ export function renderChallengeSequenceEmail(
     }
 
     case "day5": {
-      const subject = "Day 5 mission: Putting it all together";
+      const subject = "Day 5 is live at 7:00 PM ET: Putting it all together";
       const inner =
         sectionHead(`Day 5 — Putting it all together`) +
         dayStrip(5) +
         paragraph(
-          `Final day, ${esc(name)} 👏. This week you learned the foundations, researched with Kai, joined the community watchlist, and practiced in the screener and simulator. Today you connect the dots into a routine you can actually repeat.`
+          `Final day, ${esc(name)} 👏. We're live one last time at <strong>7:00 PM ET</strong>. This week we learned the foundations, researched with Kai, joined the community watchlist, and practiced in the screener and simulator. Today, together in the room, we connect the dots into a routine you can actually repeat.`
         ) +
         rail(
-          "Today's mission (~15 min)",
+          "In today's live session · 7:00 PM ET",
           "Run your own end-to-end loop",
           `Screen → research with Kai → add to the watchlist with a reason → set one alert. That five-step loop is the whole method, and now it's yours. Post in the community what you'll keep doing after this week.`,
           "teal"
@@ -734,13 +734,13 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Connect the dots into a routine you can repeat for good.", "DAY 5 OF 5", inner, unsubUrl),
+        html: shell("Day 5 live at 7:00 PM ET — we connect the dots into a routine you keep.", "DAY 5 OF 5", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Day 5 — Putting it all together. Hi ${name},`,
-            "Today you connect the dots into a repeatable routine.",
-            `Mission (~15 min): run your own loop — screen (${u}/screener) → research with Kai → add to watchlist with a reason → set one alert. Then post what you'll keep doing.`,
+            "We're live one last time at 7:00 PM ET. Today, in the room, we connect the dots into a repeatable routine.",
+            `In the session: run your own loop — screen (${u}/screener) → research with Kai → add to watchlist with a reason → set one alert. Then post what you'll keep doing.`,
             "Tonight we'll send a recap of everything you built this week.",
           ],
           unsubUrl
@@ -754,7 +754,7 @@ export function renderChallengeSequenceEmail(
       const inner =
         sectionHead(`Look what you've already built, ${esc(name)}`) +
         paragraph(
-          `It's only Wednesday and look back at your week so far: you set up a real practice watchlist, you researched a company with Kai, and today you plugged into what the whole room is watching. That's not "someday" — that's <strong>you, already investing your attention like someone who's serious about learning.</strong>`
+          `We're already mid-week — look back at what you've built so far: you set up a real practice watchlist, you researched a company with Kai, and tonight you plugged into what the whole room is watching. That's not "someday" — that's <strong>you, already investing your attention like someone who's serious about learning.</strong>`
         ) +
         paragraph(
           `Here's the honest thing about a habit like this: the magic isn't in five days, it's in what comes after them. The people who keep a watchlist, keep asking questions, and keep showing up to a room that's doing the same — that's who this actually changes.`
@@ -779,7 +779,7 @@ export function renderChallengeSequenceEmail(
           subject,
           [
             `Hi ${name},`,
-            "It's only Wednesday and look at what you've already built this week: a real practice watchlist, a company researched with Kai, and today the community watchlist. That's you, already investing your attention like someone serious about learning.",
+            "We're already mid-week and look at what you've built: a real practice watchlist, a company researched with Kai, and tonight the community watchlist. That's you, already investing your attention like someone serious about learning.",
             "The magic of a habit like this isn't in five days — it's in what comes after. The people who keep a watchlist, keep asking questions, and keep showing up to a room doing the same: that's who this changes.",
             `No pressure, just an open door: keep the whole Club for $99/mo — watchlist, Kai, screener, alerts, live classes, community. Cancel anytime, nothing on a card, everything you built stays: ${continueUrl}`,
             "Family, friend, or solo — the loop is better in a room. Finish the week strong first, but if you already know you want to keep going, the door's open now. We'll send a full recap this weekend.",
@@ -832,9 +832,9 @@ export function renderChallengeSequenceEmail(
     case "close_offer": {
       const subject = "Keep going? Here are your two paths";
       const inner =
-        sectionHead(`${esc(name)}, your challenge access ends today`) +
+        sectionHead(`${esc(name)}, your challenge access is wrapping up`) +
         paragraph(
-          `Your free challenge pass wraps up today. Because we never put a card on file, nothing charges and nothing renews — your account simply drops to the free tier unless you choose to continue. And whatever you choose, your XP, belts, watchlists, and posts all stay.`
+          `Your free challenge pass wraps up end of day tomorrow (Sept 8). Because we never put a card on file, nothing charges and nothing renews — your account simply drops to the free tier unless you choose to continue. And whatever you choose, your XP, belts, watchlists, and posts all stay.`
         ) +
         divider() +
         rail(
@@ -862,7 +862,7 @@ export function renderChallengeSequenceEmail(
           subject,
           [
             `Hi ${name},`,
-            "Your free challenge pass ends today. No card was on file, so nothing charges — your account just drops to free unless you continue. Either way, your XP, belts, watchlists, and posts all stay.",
+            "Your free challenge pass wraps up end of day tomorrow (Sept 8). No card was on file, so nothing charges — your account just drops to free unless you continue. Either way, your XP, belts, watchlists, and posts all stay.",
             `Path 1 — Keep the full Club for $99/mo (cancel anytime): ${continueUrl}`,
             `Path 2 — The FTA Challenge Offer, $1,500 once: Family Trading Academy for life + a year of Club bundled (Club renews $99/mo after): ${ftaUrl}`,
             "No pressure — the free tier keeps everything you built. This is education, not financial advice.",
@@ -877,7 +877,7 @@ export function renderChallengeSequenceEmail(
       const inner =
         sectionHead(`No hard sell, ${esc(name)}`) +
         paragraph(
-          `Your challenge access ended a couple of days ago and your account is on the free tier now — exactly as promised, with nothing charged. This is just a warm last note, not a countdown.`
+          `Your challenge access ends end of day today — after that your account moves to the free tier, exactly as promised, with nothing charged. This is a warm last call, not a hard sell.`
         ) +
         paragraph(
           `If the week stuck with you and you've been meaning to keep going, both doors are still open whenever you're ready:`
@@ -897,12 +897,12 @@ export function renderChallengeSequenceEmail(
         );
       return {
         subject,
-        html: shell("Your pass has ended — no charge, and the door stays open.", "LAST CALL", inner, unsubUrl),
+        html: shell("Last call — your pass ends today, no charge, and the door stays open.", "LAST CALL", inner, unsubUrl),
         text: plain(
           subject,
           [
             `Hi ${name},`,
-            "Your challenge access ended a couple of days ago and your account is on the free tier now — nothing was charged. This is a warm last note, not a countdown.",
+            "Your challenge access ends end of day today — after that your account moves to the free tier, nothing charged. A warm last call, not a hard sell.",
             `If you'd like to keep going: Club is $99/mo, cancel anytime (${continueUrl}). Or the FTA Challenge Offer, $1,500 once — FTA for life + a year of Club (${ftaUrl}).`,
             "Everything you built stays on your free account. Thank you for spending your week with us.",
           ],
@@ -942,9 +942,18 @@ export function renderChallengeSequenceEmail(
           `A quieter space to ask questions and share what you're working on through the challenge. <a href="${vipRoomUrl}" target="_blank" style="color:${C.accent};font-weight:700;text-decoration:none;">Step into the VIP room &rsaquo;</a>`,
           "orange"
         ) +
+        rail(
+          "4 · Session replays",
+          "Every live session, recorded for you",
+          `Can't make a live session, or want to rewatch one? Your replays appear in the VIP room after each evening — yours to revisit anytime through the challenge. (Replays are a VIP perk.)`,
+          "teal"
+        ) +
         ctaRow(cta("Open your VIP room", vipRoomUrl)) +
         paragraph(
-          `<span style="font-size:13px;color:${C.faint};">Billing, in plain terms: your first month of Club is included in today's $197. After 30 days it continues at $99/mo — we'll email you 3 days before that first charge, and you can cancel in one click anytime. This is education, not financial advice.</span>`
+          `<span style="font-size:13px;color:${C.faint};">The honest value: your $197 is simply the textbook's normal price — the included month of Club, your VIP room, and your session replays all come on top. This is education, not financial advice.</span>`
+        ) +
+        paragraph(
+          `<span style="font-size:13px;color:${C.faint};">Billing, in plain terms: your first month of Club is included in today's $197. After 30 days it continues at $99/mo — we'll email you 3 days before that first charge, and you can cancel in one click anytime.</span>`
         );
       return {
         subject,
@@ -957,6 +966,8 @@ export function renderChallengeSequenceEmail(
             "1) Your printed textbook — shipping to the address you entered (printed-to-order; we'll email tracking).",
             `2) Your first month of Cheat Code Club — already on. Open your dashboard: ${u}/dashboard`,
             `3) Your private VIP room: ${vipRoomUrl}`,
+            "4) Session replays — every live session recorded, in your VIP room after each evening (a VIP perk).",
+            "The honest value: your $197 is simply the textbook's normal price — the month of Club, VIP room, and replays all come on top.",
             "Billing in plain terms: your first month is included in today's $197. After 30 days it continues at $99/mo — we'll email you 3 days before that first charge, and you can cancel in one click. Education, not financial advice.",
           ],
           unsubUrl
@@ -1019,7 +1030,7 @@ export function renderChallengeSequenceEmail(
         rail(
           "The VIP ticket — $197",
           "A printed textbook + more hands-on support",
-          `You get a physical, printed textbook mailed to you, your first month of Club included, and a private VIP room during the challenge. It's for people who like something to hold and a smaller room to learn in — not a "missing half".`,
+          `You get a physical, printed textbook mailed to you, your first month of Club included, a private VIP room, and replays of every live session. The $197 is just the textbook's normal price — the Club month, VIP room, and replays come on top. It's for people who like something to hold and a smaller room to learn in — not a "missing half".`,
           "orange"
         ) +
         ctaRow(cta("See the VIP ticket", vipRoomUrl)) +
@@ -1034,7 +1045,7 @@ export function renderChallengeSequenceEmail(
           [
             `Hi ${name},`,
             "First: your free challenge is complete on its own — full Club access, every tool, the whole community. Nothing is held back.",
-            "This is just to let you know a VIP ticket exists ($197): a printed textbook mailed to you, your first month of Club included, and a private VIP room during the challenge. For people who like something to hold and a smaller room — never a 'missing half'.",
+            "This is just to let you know a VIP ticket exists ($197): a printed textbook mailed to you, your first month of Club included, a private VIP room, and replays of every live session. The $197 is just the textbook's normal price — the rest comes on top. For people who like something to hold and a smaller room — never a 'missing half'.",
             `See the VIP ticket: ${vipRoomUrl}`,
             "No pressure — the free challenge stays exactly as it is either way. Education, not financial advice.",
           ],

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Lock, Ticket, BookOpen, Sparkles, Loader2, Send, ShieldCheck, ArrowRight } from "lucide-react";
+import { Lock, Ticket, BookOpen, Sparkles, Loader2, Send, ShieldCheck, ArrowRight, PlayCircle } from "lucide-react";
 
 /**
  * VIP Room (Lane C9) — a private, gated space for Challenge VIP ticket holders,
@@ -116,13 +116,15 @@ export default function VipRoomPage() {
           <h1 className="font-display text-2xl font-bold text-ink">The VIP Room is for VIP members</h1>
           <p className="text-soft text-sm mt-2 leading-relaxed max-w-sm mx-auto">
             Your free challenge is complete on its own — this is an optional extra.
-            The VIP ticket adds a printed textbook, your first month of Club, and
-            this private room during the challenge.
+            The VIP ticket adds a printed textbook, your first month of Club, this
+            private room, and replays of every live session. The $197 is just the
+            textbook&apos;s normal price — the rest comes on top.
           </p>
           <div className="mt-5 space-y-2.5 text-left max-w-xs mx-auto">
             <Perk icon={BookOpen}>A printed textbook mailed to you</Perk>
             <Perk icon={Sparkles}>Your first month of Club included</Perk>
             <Perk icon={Lock}>This private VIP room during the challenge</Perk>
+            <Perk icon={PlayCircle}>Replays of every live session</Perk>
           </div>
           <button
             onClick={startVipCheckout}
@@ -163,7 +165,8 @@ export default function VipRoomPage() {
       <h1 className="font-display text-2xl font-bold text-ink mt-1">Welcome to the VIP room</h1>
       <p className="text-soft text-sm mt-2 leading-relaxed">
         A quieter space, just for VIP members, to ask questions and share what
-        you&apos;re working on through the challenge.
+        you&apos;re working on through the challenge. Your session replays land
+        here after each live session — yours to rewatch anytime.
         {windowOpen
           ? " It's open now through the end of the challenge."
           : " The challenge window has closed — thanks for being here."}

@@ -129,7 +129,7 @@ export default function ResultPage() {
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-sand bg-white/40 px-4 py-2.5 text-sm text-ink">
               <CalendarDays className="w-4 h-4 text-gold-600 shrink-0" />
               <span className="font-semibold">The challenge:</span>
-              <span className="text-soft">Starts Sept 1 · your Club access opens the moment you join</span>
+              <span className="text-soft">Five live sessions, Sept 1&ndash;5 at 9:30 AM ET · your Club access opens the moment you join</span>
             </div>
           )}
 

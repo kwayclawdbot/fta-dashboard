@@ -4,12 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { m } from "@/lib/motion";
 import { Mail, ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { authCallbackUrl } from "@/lib/site-url";
 
 export default function ForgotPasswordPage() {
-  const supabase = createClient();
-
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,17 +16,17 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email,
-      {
-        redirectTo: authCallbackUrl("/settings"),
-      }
-    );
-
-    if (resetError) {
-      setError(resetError.message);
-      setLoading(false);
-      return;
+    // Routed through our Resend-backed endpoint (not GoTrue's SMTP, which has
+    // been failing). Always neutral — the server never reveals if the account
+    // exists, and delivers the reset link itself over Resend.
+    try {
+      await fetch("/api/auth/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch {
+      /* neutral — still show the check-your-email state */
     }
 
     setSuccess(true);

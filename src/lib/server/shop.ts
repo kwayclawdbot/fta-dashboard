@@ -20,7 +20,7 @@ export function shopDb() {
   return createAdminClient();
 }
 
-interface NormalizedShipping {
+export interface NormalizedShipping {
   name: string;
   address: {
     line1?: string;

@@ -19,6 +19,8 @@ interface SaveBody {
   email?: string;
   phone?: string;
   smsOptin?: boolean;
+  /** Challenge-funnel partial lead → GHL "challenge-lead-partial" tag. */
+  challenge?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,13 +44,25 @@ export async function POST(req: Request) {
 
   const supabase = createAdminClient();
 
-  // Load current session (need answers for the lead custom + guard registered).
+  // Load current session (need answers + utm for the lead custom, guard registered).
   const { data: session } = await supabase
     .from("funnel_sessions")
-    .select("id, status, answers")
+    .select("id, status, answers, utm")
     .eq("id", id)
     .maybeSingle();
   if (!session) return NextResponse.json({ error: "Session not found." }, { status: 404 });
+
+  // Challenge-cohort partial leads live under source='challenge' (what the
+  // /admin/crm/challenge cohort keys off) so the owner sees email-captured-but-
+  // unfinished challenge leads alongside free + vip tickets. Non-challenge saves
+  // stay 'free_class'. src (funnel attribution) rides along in custom.
+  const isChallenge = body.challenge === true;
+  const leadSource = isChallenge ? "challenge" : "free_class";
+  let src = "";
+  if (session.utm && typeof session.utm === "object") {
+    const raw = (session.utm as Record<string, unknown>).src;
+    if (typeof raw === "string" && raw.trim()) src = raw.trim().slice(0, 64);
+  }
 
   // Persist email on the session (don't downgrade a registered session).
   const nextStatus = session.status === "registered" ? "registered" : "email_captured";
@@ -70,13 +84,25 @@ export async function POST(req: Request) {
     meta: { sms_optin: smsOptin, has_phone: !!phone },
   });
 
-  // Partial-lead sweep — non-destructive upsert into marketing_leads.
+  // Partial-lead sweep — non-destructive upsert into marketing_leads. The
+  // 'partial' tag + stage 'new' (no converted_profile_id) mark an email-captured
+  // but unfinished lead; full registration later flips stage → 'engaged' and
+  // swaps 'partial' for 'registered' + ticket-free.
   try {
+    const partialTags = isChallenge
+      ? ["challenge", "funnel", "partial", ...(src ? [`src:${src}`] : [])]
+      : ["funnel", "partial"];
+    const partialCustom = {
+      answers: session.answers || {},
+      phone: phone || null,
+      sms_optin: smsOptin,
+      ...(isChallenge ? { ticket: "partial", src: src || null } : {}),
+    };
     const { data: existing } = await supabase
       .from("marketing_leads")
       .select("id, tags, stage")
       .eq("email", email)
-      .eq("source", "free_class")
+      .eq("source", leadSource)
       .maybeSingle();
 
     if (!existing) {
@@ -85,11 +111,11 @@ export async function POST(req: Request) {
         .insert({
           email,
           phone: phone || null,
-          source: "free_class",
+          source: leadSource,
           stage: "new",
-          tags: ["funnel", "partial"],
-          consent_source: "free_class_funnel",
-          custom: { answers: session.answers || {}, phone: phone || null, sms_optin: smsOptin },
+          tags: partialTags,
+          consent_source: isChallenge ? "challenge_funnel" : "free_class_funnel",
+          custom: partialCustom,
         })
         .select("id")
         .single();
@@ -97,12 +123,12 @@ export async function POST(req: Request) {
         await supabase.from("marketing_lead_events").insert({
           lead_id: lead.id,
           type: "imported",
-          meta: { source: "free_class", partial: true },
+          meta: { source: leadSource, partial: true },
         });
       }
     } else {
       // Keep whatever stage it has; just union tags + refresh activity.
-      const tags = Array.from(new Set([...(existing.tags || []), "funnel", "partial"]));
+      const tags = Array.from(new Set([...(existing.tags || []), ...partialTags]));
       await supabase
         .from("marketing_leads")
         .update({

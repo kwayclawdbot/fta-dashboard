@@ -3,6 +3,7 @@
  * webhook and the admin invite API. Never import from client components.
  */
 import { createClient } from "@supabase/supabase-js";
+import { sendInviteEmailViaResend } from "@/lib/server/auth-email";
 
 export function serviceClient() {
   return createClient(
@@ -74,17 +75,39 @@ export async function provisionMembership(opts: {
   const user = userList?.users?.find((u) => u.email?.toLowerCase() === email);
 
   if (!user) {
-    const { error } = await db.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${SITE}/auth/callback?next=/onboarding`,
+    // Supabase Auth's SMTP pipeline is unreliable (GoTrue inviteUserByEmail /
+    // recover have returned HTTP 500), which would leave a PAID buyer with no
+    // account and no email — and the webhook would 200 and never retry. So we
+    // never rely on GoTrue to send: admin.generateLink(type='invite') CREATES
+    // the user AND returns the confirmation link WITHOUT sending anything, then
+    // we deliver the branded invite ourselves via Resend (verified working).
+    const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: { redirectTo: `${SITE}/auth/callback?next=/onboarding` },
     });
-    // Invite-send failure is NON-FATAL. The pending_memberships row is the
-    // durable source of truth; the user can still be provisioned later (admin
-    // resend, or the claim path once they create an account). Returning ok
-    // keeps the Stripe webhook from 500ing and triggering a retry storm during
-    // mailer rate-limiting (Supabase built-in mailer caps ~2/hr).
-    if (error && !/already/i.test(error.message)) {
-      console.error("inviteUserByEmail failed:", email, error.message);
-      return { ok: true as const, mode: "invite_email_failed" as const };
+    const actionLink = linkData?.properties?.action_link;
+    if (linkErr || !actionLink) {
+      // Could not even CREATE the account. Return a hard failure so the webhook
+      // responds non-200 and Stripe retries — never a silent paid-but-no-account.
+      console.error("provisionMembership generateLink(invite) FAILED:", email, linkErr?.message);
+      return { ok: false as const, error: linkErr?.message || "invite link generation failed" };
+    }
+    // The account EXISTS now. Deliver the invite via Resend. If the email fails,
+    // do NOT fail the webhook (no retry storm, and the buyer can still get in via
+    // the Resend-backed password reset) — but log loudly so ops can resend.
+    const sent = await sendInviteEmailViaResend({
+      to: email,
+      actionLink,
+      program: opts.program,
+    });
+    if (!sent.ok) {
+      console.error(
+        "provisionMembership: account CREATED but invite email FAILED (resend):",
+        email,
+        sent.error
+      );
+      return { ok: true as const, mode: "invited_email_failed" as const };
     }
     return { ok: true as const, mode: "invited" as const };
   }

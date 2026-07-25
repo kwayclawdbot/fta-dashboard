@@ -40,8 +40,13 @@ export async function GET() {
     const u = data.user;
     const passwordSet = u.user_metadata?.password_set === true;
     const invited = !!u.invited_at;
+    // Guest VIP buyers (Lane C9 guest checkout) are created via admin.createUser
+    // with NO password and NO invite email, so `invited_at` is null. They carry
+    // an explicit needs_password marker instead — honor it so the onboarding
+    // password preamble runs and they can log in from /login afterward.
+    const guestNeedsPassword = u.user_metadata?.needs_password === true;
 
-    const needsPassword = !passwordSet && invited;
+    const needsPassword = !passwordSet && (invited || guestNeedsPassword);
     return NextResponse.json({ needsPassword });
   } catch {
     // Never block onboarding on a metadata read failure.

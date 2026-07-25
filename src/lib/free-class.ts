@@ -90,11 +90,20 @@ export function downloadClassIcs(session: FreeClassSession): void {
 }
 
 // ── 5-Day Investing Challenge calendar (Lane C7 thank-you) ───────────────────
-// Fixed cohort: kickoff Sept 1, 2026 at 9:30 AM ET (EDT = UTC-4 in September),
-// then one daily mission each morning Sept 1–5. Mirrors app_settings
-// challenge_start; kept as a constant so the thank-you .ics needs no round-trip.
+// The challenge is FIVE LIVE WEBINAR SESSIONS, WED Sept 2 → SUN Sept 6, 2026 at
+// 7:00 PM ET (EDT = UTC-4 in September) — we do each session together in the
+// room. (Club/cohort ACCESS opens Sept 1.) Kept as constants so the thank-you
+// .ics needs no round-trip. NOTE (owner): the canonical session time lives ONLY
+// here (and is mirrored in copy strings that import CHALLENGE_SESSION_TIME_LABEL).
+// To move the webinar time, change kickoffStart below AND the label constant.
+// Replays/recordings are a VIP-only perk — never promised on free surfaces.
 
-/** Day-by-day mission themes (mirror the challenge_sequences day steps). */
+/** The live-session start time, shown in copy. Mirrors the .ics DTSTART below. */
+export const CHALLENGE_SESSION_TIME_LABEL = "7:00 PM ET";
+/** The live-session date range (Wed–Sun), shown in copy. */
+export const CHALLENGE_DATES_LABEL = "Sept 2–6";
+
+/** Day-by-day live-session themes (mirror the challenge_sequences day steps). */
 const CHALLENGE_DAYS: { title: string; capability: string }[] = [
   { title: "Day 1 · Foundations", capability: "Learn how the market actually works." },
   { title: "Day 2 · Research with Kai", capability: "Look up any company and understand it." },
@@ -129,14 +138,14 @@ function challengeEventLines(
 }
 
 /**
- * Build the challenge .ics: the Sept 1 kickoff plus the five daily missions.
+ * Build the challenge .ics: the Sept 1 kickoff plus the five daily live sessions.
  * `includeDailyMissions=false` emits only the kickoff event. Education-only copy
  * throughout — capability language, never any income/return framing.
  */
 export function buildChallengeIcs(includeDailyMissions = true): string {
-  // Sept 1, 2026 · 9:30 AM ET (EDT, UTC-4) → 13:30 UTC. 45-minute blocks.
-  const kickoffStart = new Date("2026-09-01T13:30:00Z");
-  const kickoffEnd = new Date(kickoffStart.getTime() + 45 * 60 * 1000);
+  // Wed Sept 2, 2026 · 7:00 PM ET (EDT, UTC-4) → 23:00 UTC. 60-minute blocks.
+  const kickoffStart = new Date("2026-09-02T23:00:00Z");
+  const kickoffEnd = new Date(kickoffStart.getTime() + 60 * 60 * 1000);
 
   const lines: string[] = [
     "BEGIN:VCALENDAR",
@@ -144,31 +153,25 @@ export function buildChallengeIcs(includeDailyMissions = true): string {
     "PRODID:-//Family Investing Club//5-Day Investing Challenge//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    ...challengeEventLines(
-      "challenge-kickoff-2026",
-      kickoffStart,
-      kickoffEnd,
-      "5-Day Investing Challenge — Day 1 kickoff",
-      "The challenge begins. Your full Club access is already open — hop in and start Day 1. Education only; nothing here is financial advice."
-    ),
   ];
 
-  if (includeDailyMissions) {
-    for (let i = 0; i < CHALLENGE_DAYS.length; i++) {
-      // Same 9:30 AM ET slot, i days after Sept 1.
-      const start = new Date(kickoffStart.getTime() + i * 24 * 60 * 60 * 1000);
-      const end = new Date(start.getTime() + 45 * 60 * 1000);
-      const d = CHALLENGE_DAYS[i];
-      lines.push(
-        ...challengeEventLines(
-          `challenge-day-${i + 1}-2026`,
-          start,
-          end,
-          `${d.title} — 5-Day Investing Challenge`,
-          `${d.capability} Do today's mission inside the Club. Education only, practice money always.`
-        )
-      );
-    }
+  // Session 1 always; sessions 2–5 only when the full set is requested. Wed→Sun,
+  // Sept 2–6, 7:00 PM ET each evening. (kickoffStart/End are the Session-1 slot.)
+  void kickoffEnd;
+  const count = includeDailyMissions ? CHALLENGE_DAYS.length : 1;
+  for (let i = 0; i < count; i++) {
+    const start = new Date(kickoffStart.getTime() + i * 24 * 60 * 60 * 1000);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const d = CHALLENGE_DAYS[i];
+    lines.push(
+      ...challengeEventLines(
+        `challenge-session-${i + 1}-2026`,
+        start,
+        end,
+        `${d.title} (live) — 5-Day Investing Challenge`,
+        `${d.capability} Join us live at 7:00 PM ET — we work through it together in the room. Education only, practice money always.`
+      )
+    );
   }
 
   lines.push("END:VCALENDAR");

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Flame, Users, RefreshCw, Download, Activity, TrendingUp, Mail } from "lucide-react";
+import { Flame, Users, RefreshCw, Download, Activity, TrendingUp, Mail, Ticket } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 /** Cohort shape returned by the admin_challenge_cohort RPC (migration 126). */
@@ -85,9 +85,55 @@ function StatTile({
   );
 }
 
+/** Ticket split, computed client-side from the challenge marketing_leads. */
+interface TicketSplit {
+  total: number;
+  free: number;
+  vip: number;
+  partial: number;
+  by_src: { ticket: string; src: string; signups: number }[];
+}
+
+/** Minimal lead shape needed for the ticket split (admin_marketing_leads). */
+interface LeadRow {
+  source: string;
+  tags: string[] | null;
+  converted_profile_id: string | null;
+}
+
+/** Derive the free/vip/partial ticket split (with src) from challenge leads.
+ *  ticket: 'ticket-vip' tag → vip; else has account → free; else → partial.
+ *  src rides in a `src:<value>` tag (no src ⇒ organic). */
+function computeTicketSplit(leads: LeadRow[]): TicketSplit {
+  const rows = leads.filter((l) => l.source === "challenge");
+  const counts = { free: 0, vip: 0, partial: 0 };
+  const bySrc = new Map<string, number>(); // key = `${ticket}|${src}`
+  for (const l of rows) {
+    const tags = l.tags || [];
+    const ticket = tags.includes("ticket-vip")
+      ? "vip"
+      : l.converted_profile_id
+        ? "free"
+        : "partial";
+    counts[ticket as keyof typeof counts]++;
+    const srcTag = tags.find((t) => t.startsWith("src:"));
+    const src = srcTag ? srcTag.slice(4) || "organic" : "organic";
+    const key = `${ticket}|${src}`;
+    bySrc.set(key, (bySrc.get(key) || 0) + 1);
+  }
+  const by_src = Array.from(bySrc.entries())
+    .map(([k, signups]) => {
+      const [ticket, src] = k.split("|");
+      return { ticket, src, signups };
+    })
+    .sort((a, b) => a.ticket.localeCompare(b.ticket) || b.signups - a.signups);
+  return { total: rows.length, ...counts, by_src };
+}
+
 export default function ChallengeCohortPage() {
   const supabase = useMemo(() => createClient(), []);
   const [data, setData] = useState<CohortData | null>(null);
+  const [tickets, setTickets] = useState<TicketSplit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,9 +141,13 @@ export default function ChallengeCohortPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data: rpc, error: rpcErr } = await supabase.rpc("admin_challenge_cohort");
+      const [{ data: rpc, error: rpcErr }, { data: leads }] = await Promise.all([
+        supabase.rpc("admin_challenge_cohort"),
+        supabase.rpc("admin_marketing_leads"),
+      ]);
       if (rpcErr) throw new Error(rpcErr.message);
       setData(rpc as CohortData);
+      if (Array.isArray(leads)) setTickets(computeTicketSplit(leads as LeadRow[]));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load challenge cohort");
     } finally {
@@ -223,6 +273,81 @@ export default function ChallengeCohortPage() {
               sub="dropped to free"
               accent="text-zinc-400"
             />
+          </div>
+
+          {/* Ticket split — free vs VIP vs partial (with src attribution) */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Ticket className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-medium text-zinc-300">Ticket cohort</span>
+              <span className="text-[11px] text-zinc-600">(free · VIP · partial)</span>
+            </div>
+            {!tickets || tickets.total === 0 ? (
+              <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5" /> No challenge leads yet — free
+                registrations, VIP purchases, and email-captured partial leads land
+                here as they come in.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <StatTile
+                    label="Free tickets"
+                    value={tickets.free}
+                    sub={`${pct(tickets.free, tickets.total)}% of cohort`}
+                    accent="text-sky-400"
+                  />
+                  <StatTile
+                    label="VIP tickets"
+                    value={tickets.vip}
+                    sub={`${pct(tickets.vip, tickets.total)}% · $197`}
+                    accent="text-amber-400"
+                  />
+                  <StatTile
+                    label="Partial leads"
+                    value={tickets.partial}
+                    sub={`${pct(tickets.partial, tickets.total)}% · email only`}
+                    accent="text-zinc-400"
+                  />
+                </div>
+                {tickets.by_src.length > 0 && (
+                  <div className="space-y-1.5">
+                    {tickets.by_src.map((r) => (
+                      <div
+                        key={`${r.ticket}-${r.src}`}
+                        className="flex items-center gap-3 text-xs"
+                      >
+                        <span className="w-16 shrink-0">
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                              r.ticket === "vip"
+                                ? "bg-amber-500/15 text-amber-300"
+                                : r.ticket === "partial"
+                                  ? "bg-zinc-700/30 text-zinc-400"
+                                  : "bg-sky-500/10 text-sky-300"
+                            }`}
+                          >
+                            {r.ticket}
+                          </span>
+                        </span>
+                        <span className="w-28 text-zinc-500 shrink-0 truncate">
+                          {r.src === "organic" ? "organic / direct" : r.src}
+                        </span>
+                        <div className="flex-1 h-4 rounded bg-zinc-800 overflow-hidden">
+                          <div
+                            className="h-full rounded bg-gradient-to-r from-amber-600 to-amber-400"
+                            style={{ width: `${Math.max((r.signups / tickets.total) * 100, 4)}%` }}
+                          />
+                        </div>
+                        <span className="w-8 text-right text-zinc-300 tabular-nums">
+                          {r.signups}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Signups over time */}
@@ -388,7 +513,7 @@ export default function ChallengeCohortPage() {
             </div>
             {data.members.length === 0 ? (
               <p className="text-xs text-zinc-600 flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5" /> No challenge signups yet — they'll appear here
+                <Activity className="w-3.5 h-3.5" /> No challenge signups yet — they&apos;ll appear here
                 as the funnel drives them in.
               </p>
             ) : (

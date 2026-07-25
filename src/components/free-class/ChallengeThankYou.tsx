@@ -24,6 +24,7 @@ import {
   Lock,
   Loader2,
   Baby,
+  PlayCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { downloadChallengeIcs } from "@/lib/free-class";
@@ -173,8 +174,8 @@ export default function ChallengeThankYou({
     },
     {
       when: "Sept 1",
-      title: "The challenge begins",
-      body: "Five days, one clear step a day — starting 9:30 AM ET. Do each mission right here in the Club.",
+      title: "The challenge begins — live",
+      body: "Five live sessions, one each morning at 9:30 AM ET. We do it together in the room — and if you can't make it live, the replay's waiting in the Club.",
       tone: "bg-chip-amber text-gold-800",
     },
   ];
@@ -405,27 +406,27 @@ export default function ChallengeThankYou({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-                Don&apos;t miss Day 1
+                Don&apos;t miss a session
               </p>
               <h2 className="font-display text-lg font-bold text-ink leading-snug mt-0.5">
-                Add the challenge to your calendar
+                Add the live sessions to your calendar
               </h2>
               <p className="text-sm text-soft mt-1 leading-relaxed">
-                Sept 1 kickoff at 9:30 AM ET, plus a daily reminder for each of
-                the five missions.
+                Five live sessions, Sept 1&ndash;5 at 9:30 AM ET each morning —
+                one reminder for every day we meet in the room.
               </p>
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <button
                   onClick={() => downloadChallengeIcs(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
                 >
-                  <CalendarPlus className="w-3.5 h-3.5" /> Add all 5 days
+                  <CalendarPlus className="w-3.5 h-3.5" /> Add all 5 sessions
                 </button>
                 <button
                   onClick={() => downloadChallengeIcs(false)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
                 >
-                  <CalendarPlus className="w-3.5 h-3.5" /> Just the kickoff
+                  <CalendarPlus className="w-3.5 h-3.5" /> Just Day 1
                 </button>
               </div>
             </div>
@@ -457,8 +458,9 @@ export default function ChallengeThankYou({
               <p className="text-soft text-sm mt-2 leading-relaxed">
                 Your printed textbook is being prepared and will ship to the
                 address you entered — we&apos;ll email tracking when it&apos;s on
-                the way. Your first month of Club is already included, and your
-                private VIP room is open.
+                the way. Your first month of Club is already included, your private
+                VIP room is open, and replays of every live session land there
+                after each evening.
               </p>
               <a
                 href="/vip-room"
@@ -498,7 +500,15 @@ export default function ChallengeThankYou({
                 <VipPerk icon={Lock}>
                   A private VIP room during the challenge
                 </VipPerk>
+                <VipPerk icon={PlayCircle}>
+                  Replays of every live session
+                </VipPerk>
               </div>
+              <p className="mt-3 text-[13px] text-soft leading-relaxed">
+                The <span className="font-semibold text-ink">$197</span> is just the
+                textbook&apos;s normal price — the Club month, VIP room, and replays
+                come on top.
+              </p>
               <button
                 onClick={startVipCheckout}
                 disabled={vipLoading}
