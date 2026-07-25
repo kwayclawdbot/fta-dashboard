@@ -41,7 +41,7 @@ import {
 import ThisWeekPanel from "@/components/dashboard/ThisWeekPanel";
 import Avatar from "@/components/Avatar";
 import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
-import DashboardCommandCenter from "@/components/dashboard/DashboardCommandCenter";
+import ClubPulseMasthead from "@/components/dashboard/ClubPulseMasthead";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import ClubHome from "@/components/dashboard/ClubHome";
 import FreeHome from "@/components/dashboard/FreeHome";
@@ -716,8 +716,9 @@ export default function DashboardHome() {
       {tab === "home" && (
         <>
 
-      {/* Daily command center — market pulse, community heat, Ask Kai. */}
-      <DashboardCommandCenter isKid={isKid} />
+      {/* Live "Today in the Club" pulse masthead (D1) — replaces the old
+          three-equal-card row (market pulse / community heat / Ask Kai). */}
+      <ClubPulseMasthead isKid={isKid} />
 
       {/* No program yet */}
       {!home?.program && (

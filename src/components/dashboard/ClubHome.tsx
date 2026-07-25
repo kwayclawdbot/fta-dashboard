@@ -5,17 +5,11 @@ import Link from "next/link";
 import {
   ArrowRight,
   Bell,
-  Bot,
   Flame,
-  MessageSquare,
-  Lightbulb,
-  Newspaper,
   PlayCircle,
-  Sparkles,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import { m } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import {
@@ -28,35 +22,27 @@ import {
 import Sparkline from "@/components/fic/Sparkline";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
+import ClubPulseMasthead from "@/components/dashboard/ClubPulseMasthead";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 
 /**
  * ClubHome — the community-first Home for CLUB (individual / solo) members
- * (Cheat Code Club redesign, R3). Family-mode households keep the existing
- * academy-first Home in dashboard/page.tsx; this surface only renders for solo
- * owners (mode === "club").
+ * (Cheat Code Club redesign, D1). Family-mode households keep the academy-first
+ * Home in dashboard/page.tsx; this surface renders for solo owners (mode="club").
  *
- * Community-first order per the owner mockup: warm greeting + streak/belt, a
- * "Today in the Club" real-stat strip, Trending-in-the-Club ticker cards with
- * local sparklines + delayed prices, the Ask-Kai hero gradient card, the latest
- * Kai briefing slot, a Recent Club Activity slice, and a DEMOTED "keep learning"
- * block (education is secondary here, not deleted).
- *
- * HONESTY: every stat is a real count. "Members online" is not tracked, so it is
- * never shown. A chip with a zero count is hidden rather than faked, and the
- * whole strip hides if the Club has had no activity in its window.
+ * D1 rebuild: the first screen answers "what's happening in the Club right now"
+ * in one glance via the <ClubPulseMasthead> live-pulse signature (dateline +
+ * market ticker + big mono numerals on hairline rules) — NOT the old grid of
+ * equal stat/entry cards. Duplicate entry-point cards (Ask Kai, Newsroom) are
+ * removed: Kai lives in the nav + floating button, News under Discover. What
+ * stays are functional data objects — trending ticker rows, the real activity
+ * slice, one Kai briefing line, and a single "keep learning" pickup.
  */
 
 interface TrendingRow {
   ticker: string;
   company_name: string;
   comment_count: number;
-}
-
-interface ClubStats {
-  newPostsToday: number;
-  ideasThisWeek: number;
-  alertsToday: number;
 }
 
 interface Briefing {
@@ -76,20 +62,6 @@ function greeting() {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
-}
-
-function startOfTodayISO(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
-
-function startOfWeekISO(): string {
-  const d = new Date();
-  const day = (d.getDay() + 6) % 7; // Monday-based
-  d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
 }
 
 /** Consecutive-day activity streak from distinct XP-earning dates (real). */
@@ -125,7 +97,6 @@ export default function ClubHome({
   learning: LearningToday | null;
 }) {
   const supabase = createClient();
-  const [stats, setStats] = useState<ClubStats | null>(null);
   const [trending, setTrending] = useState<TrendingRow[] | null>(null);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [briefing, setBriefing] = useState<Briefing | null>(null);
@@ -139,34 +110,6 @@ export default function ClubHome({
       } = await supabase.auth.getSession();
       const user = session?.user;
       if (!user) return;
-
-      const todayISO = startOfTodayISO();
-      const weekISO = startOfWeekISO();
-
-      // ── Real "Today in the Club" counts (head-only counts, no rows) ──────────
-      void (async () => {
-        const [posts, ideas, alerts] = await Promise.all([
-          supabase
-            .from("feed_posts")
-            .select("id", { count: "exact", head: true })
-            .neq("kind", "anchor")
-            .gte("created_at", todayISO),
-          supabase
-            .from("community_ticker_comments")
-            .select("id", { count: "exact", head: true })
-            .gte("created_at", weekISO),
-          supabase
-            .from("trade_alerts")
-            .select("id", { count: "exact", head: true })
-            .gte("issued_at", todayISO),
-        ]);
-        if (!mounted) return;
-        setStats({
-          newPostsToday: posts.count ?? 0,
-          ideasThisWeek: ideas.count ?? 0,
-          alertsToday: alerts.count ?? 0,
-        });
-      })().catch(() => mounted && setStats({ newPostsToday: 0, ideasThisWeek: 0, alertsToday: 0 }));
 
       // ── Trending in the Club — community board top by discussion ─────────────
       void (async () => {
@@ -219,14 +162,6 @@ export default function ClubHome({
     };
   }, [supabase]);
 
-  const chips = stats
-    ? [
-        { key: "posts", value: stats.newPostsToday, label: "New posts", sub: "today", icon: MessageSquare, href: "/community" },
-        { key: "ideas", value: stats.ideasThisWeek, label: "Ideas shared", sub: "this week", icon: Lightbulb, href: "/watchlist/community" },
-        { key: "alerts", value: stats.alertsToday, label: "Kai alerts", sub: "today", icon: Bell, href: "/alerts" },
-      ].filter((c) => c.value > 0)
-    : [];
-
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
       {/* ── Greeting + streak ─────────────────────────────────────────────── */}
@@ -245,41 +180,13 @@ export default function ClubHome({
         )}
       </div>
 
+      {/* ── Signature: the live "Today in the Club" pulse masthead ─────────── */}
+      <ClubPulseMasthead />
+
       {/* Belt/XP hero — earned progress toward the next belt (real). */}
       <BeltHeroStrip xp={xp} />
 
-      {/* ── Today in the Club — real stat chips (hidden when empty) ─────────── */}
-      {chips.length > 0 && (
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold text-ink">Today in the Club</h2>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {chips.map((c) => {
-              const Icon = c.icon;
-              return (
-                <Link
-                  key={c.key}
-                  href={c.href}
-                  className="paper-card flex flex-col gap-1 p-3.5 transition-colors hover:border-gold-400/50"
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400/15 text-gold-700">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="font-display text-xl font-bold leading-none text-ink">
-                    {c.value.toLocaleString()}
-                  </span>
-                  <span className="text-[11px] leading-tight text-soft">
-                    {c.label} · {c.sub}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Trending in the Club — ticker cards w/ sparkline + delayed price ── */}
+      {/* ── Trending in the Club — ticker rows w/ sparkline + delayed price ── */}
       {trending && trending.length > 0 && (
         <div>
           <div className="mb-2 flex items-center justify-between">
@@ -336,61 +243,29 @@ export default function ClubHome({
         </div>
       )}
 
-      {/* ── Ask Kai hero — the mockup's gradient co-pilot card ──────────────── */}
-      <Link
-        href="/kai"
-        data-tour="ask-kai"
-        className="club-hero-gradient group relative block overflow-hidden rounded-2xl p-5 shadow-lift"
-      >
-        <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white ring-1 ring-white/30 backdrop-blur">
-            <Bot className="h-7 w-7" strokeWidth={2.1} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-white/90" />
-              <p className="font-display text-[11px] font-bold uppercase tracking-wider text-white/90">
-                Ask Kai
-              </p>
-            </div>
-            <p className="font-display text-lg font-bold leading-snug text-white">
-              Your AI investing co-pilot
-            </p>
-            <p className="mt-0.5 text-[13px] leading-snug text-white/85">
-              Ask anything about markets, a company&apos;s numbers, or your watchlist.
-            </p>
-          </div>
-        </div>
-        <span className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-display font-bold text-[#C24400] shadow-soft transition-transform group-hover:translate-x-0.5">
-          Ask Kai Anything <ArrowRight className="h-4 w-4" />
-        </span>
-      </Link>
-
-      {/* ── Kai morning briefing slot (latest trade alert) ─────────────────── */}
+      {/* ── Kai morning briefing — one editorial line (Kai lives in nav+FAB) ── */}
       {briefing && (
         <Link
           href="/alerts"
-          className="block rounded-2xl border border-kai-500/30 bg-kai-500/[0.06] p-4 transition hover:border-kai-500/50"
+          className="flex items-center gap-3 rounded-xl border border-kai-500/30 bg-kai-500/[0.06] px-4 py-3 transition hover:border-kai-500/50"
         >
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-kai-500" />
-            <span className="font-display text-[11px] font-bold uppercase tracking-wide text-kai-600">
-              Kai briefing
-            </span>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-ink">
+          <Bell className="h-4 w-4 shrink-0 text-kai-500" />
+          <span className="font-display text-[11px] font-bold uppercase tracking-wide text-kai-600 shrink-0">
+            Kai briefing
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
             {briefing.ticker} {briefing.direction}
             {briefing.setup_label ? ` — ${briefing.setup_label}` : ""}
-          </p>
-          <p className="text-[12px] text-soft">See today&apos;s alerts →</p>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-kai-500" />
         </Link>
       )}
 
       {/* ── Recent Club Activity — real feed slice w/ avatars + belt dots ───── */}
       <ClubActivityStrip limit={4} />
 
-      {/* ── Keep learning — education DEMOTED to a compact secondary block ──── */}
-      {learning && (
+      {/* ── Keep learning — education DEMOTED to one compact pickup line ────── */}
+      {learning ? (
         <Link
           href={learning.href}
           className="paper-card group flex items-center gap-4 p-4 transition-colors hover:border-gold-400/50"
@@ -409,36 +284,23 @@ export default function ClubHome({
           </div>
           <ArrowRight className="h-5 w-5 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5" />
         </Link>
-      )}
-      {!learning && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link
-            href="/courses"
-            className="paper-card group flex items-center gap-3 p-4 transition-colors hover:border-gold-400/50"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold-400/15 text-gold-700">
-              <PlayCircle className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-ink">Keep learning</p>
-              <p className="text-[12px] text-soft">Foundations and the live program.</p>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-gold-700" />
-          </Link>
-          <Link
-            href="/news"
-            className="paper-card group flex items-center gap-3 p-4 transition-colors hover:border-gold-400/50"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold-400/15 text-gold-700">
-              <Newspaper className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-ink">The Newsroom</p>
-              <p className="text-[12px] text-soft">AI-narrated market recaps, daily.</p>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-gold-700" />
-          </Link>
-        </div>
+      ) : (
+        <Link
+          href="/courses"
+          className="paper-card group flex items-center gap-4 p-4 transition-colors hover:border-gold-400/50"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-400/15 text-gold-700">
+            <PlayCircle className="h-6 w-6" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[11px] font-bold uppercase tracking-wider text-gold-700">
+              Keep learning
+            </p>
+            <p className="font-semibold text-ink">Pick up the Foundations</p>
+            <p className="text-[12px] text-soft">One concept, one company, every week.</p>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5" />
+        </Link>
       )}
     </div>
   );
