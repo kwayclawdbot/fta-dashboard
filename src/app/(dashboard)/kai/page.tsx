@@ -13,11 +13,21 @@ import KaiChatClient from "./KaiChatClient";
  * memory-clear action all stay client-side. A failed seed passes null and the
  * client runs its original bootstrap. Auth is already enforced by the
  * (dashboard) layout.
+ *
+ * `?thread=<id>` deep-links a conversation (the Kai FAB panel's "Open full
+ * view →" uses it so the full page opens the same thread).
  */
 export const dynamic = "force-dynamic";
 
-export default async function AskKaiPage() {
+export default async function AskKaiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ thread?: string }>;
+}) {
   const supabase = await createClient();
-  const initialData = await getKaiChatSeed(supabase).catch(() => null);
-  return <KaiChatClient initialData={initialData} />;
+  const [initialData, sp] = await Promise.all([
+    getKaiChatSeed(supabase).catch(() => null),
+    searchParams,
+  ]);
+  return <KaiChatClient initialData={initialData} autoThreadId={sp?.thread ?? null} />;
 }
