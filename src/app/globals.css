@@ -106,6 +106,12 @@
 
   /* True darks — deliberate islands (charts, film moments). Constant. */
   --color-night-50: #F0F2F5;
+  /* 100/200 fill the light end of the ramp so text-night-100 (FTA chat body)
+     and text-night-200 (FTA hub tabs) resolve to a real ivory. Without them the
+     utilities emitted no CSS and body copy inherited the page ink → black-on-
+     black on the night-950 channel surface. Both clear AA on #04060C. */
+  --color-night-100: #DDE2EA;
+  --color-night-200: #B4BED0;
   --color-night-300: #75819D;
   --color-night-500: #192D5C;
   --color-night-700: #0F1B37;
