@@ -4,6 +4,7 @@ import {
   createPaymentElementSubscription,
   type PeShipping,
 } from "@/lib/server/payment-element";
+import { verifyContinuationToken } from "@/lib/server/challenge-token";
 import { bumpNeedsShipping } from "@/lib/checkout-bumps";
 import type { BumpChoice, CheckoutFlow } from "@/lib/checkout-bumps";
 
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
     email?: string;
     name?: string;
     shipping?: PeShipping;
+    token?: string;
   };
 
   const flow = (body.flow === "vip" ? "vip" : "club") as CheckoutFlow;
@@ -45,7 +47,12 @@ export async function POST(req: NextRequest) {
   const requested = (body.bump || "none") as BumpChoice;
   const bump = VALID_BUMPS[flow].includes(requested) ? requested : "none";
 
-  const email = (body.email || "").trim().toLowerCase();
+  // Email-first OTO continuation token — server-trusted. When present it fixes
+  // the email + attaches the purchase to the already-created account (we never
+  // trust a client-supplied email/userId to attach to an account).
+  const cont = body.token ? verifyContinuationToken(body.token) : null;
+  const email = (cont?.email || body.email || "").trim().toLowerCase();
+  const userId = cont?.userId || null;
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 });
   }
@@ -76,6 +83,7 @@ export async function POST(req: NextRequest) {
     email,
     name: body.name?.trim() || shipping?.name?.trim(),
     shipping: needsShipping ? shipping : undefined,
+    userId,
   });
 
   if (result.error || !result.clientSecret) {

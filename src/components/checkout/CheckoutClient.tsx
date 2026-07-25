@@ -8,7 +8,7 @@ import { ArrowLeft, ShieldCheck, Lock } from "lucide-react";
 import { ClubWordmark } from "@/components/brand/ClubMark";
 import OrderPanel from "@/components/checkout/OrderPanel";
 import PaymentForm from "@/components/checkout/PaymentForm";
-import { buildAppearance, STRIPE_FONTS } from "@/lib/checkout-appearance";
+import { buildAppearance } from "@/lib/checkout-appearance";
 import {
   BASE_TODAY_CENTS,
   bumpsForFlow,
@@ -36,6 +36,8 @@ export default function CheckoutClient({
   flow,
   src,
   publishableKey,
+  prefillEmail = "",
+  token = "",
   eyebrow,
   title,
   subtitle,
@@ -45,6 +47,8 @@ export default function CheckoutClient({
   flow: CheckoutFlow;
   src: string;
   publishableKey: string | null;
+  prefillEmail?: string;
+  token?: string;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -54,6 +58,22 @@ export default function CheckoutClient({
   const reduce = useReducedMotion();
   const [bump, setBump] = useState<BumpChoice>("none");
   const [dark, setDark] = useState(false);
+  // Mount the Payment Element only AFTER first layout — mounting it before the
+  // container has its final width makes Stripe measure ~0 and render collapsed
+  // card fields. A rAF defers the mount until layout has settled.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    // Nudge Stripe to re-measure after the layout (incl. the sibling
+    // AddressElement) fully settles — Stripe re-lays-out its iframes on resize.
+    const nudges = [180, 500, 1000].map((ms) =>
+      setTimeout(() => window.dispatchEvent(new Event("resize")), ms)
+    );
+    return () => {
+      cancelAnimationFrame(id);
+      nudges.forEach(clearTimeout);
+    };
+  }, []);
 
   useEffect(() => {
     const read = () => {
@@ -91,12 +111,18 @@ export default function CheckoutClient({
     ? {}
     : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } };
 
+  // Deferred PAYMENT mode (matches confirming the invoice's PaymentIntent).
+  // setupFutureUsage saves the card so the day-30 VIP charge + monthly renewals
+  // succeed. Toggling a bump updates `amount` in place — no remount.
+  // Card-only for brand coherence — no Link inline signup, no Cash App / Amazon
+  // Pay tabs. The page reads as ours; Stripe renders only the card-field internals.
   const elementsOptions = {
-    mode: "subscription" as const,
+    mode: "payment" as const,
     amount: total,
     currency: "usd",
+    setupFutureUsage: "off_session" as const,
+    paymentMethodTypes: ["card"],
     appearance,
-    fonts: STRIPE_FONTS,
   };
 
   return (
@@ -130,7 +156,7 @@ export default function CheckoutClient({
           </p>
         </m.div>
 
-        <div className="mt-7 grid grid-cols-1 gap-6 lg:mt-9 lg:grid-cols-[1.5fr_0.9fr] lg:gap-10">
+        <div className="mt-7 grid grid-cols-1 gap-6 lg:mt-9 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,0.9fr)] lg:gap-10">
           {/* Order summary — subordinate (right on desktop, slim bar on mobile) */}
           <div className="lg:order-2">
             <div className="lg:sticky lg:top-6">
@@ -138,19 +164,13 @@ export default function CheckoutClient({
             </div>
           </div>
 
-          {/* PAYMENT — dominant (left on desktop, fills screen on mobile) */}
-          <m.div
-            {...(reduce
-              ? {}
-              : {
-                  initial: { opacity: 0, y: 16 },
-                  animate: { opacity: 1, y: 0 },
-                  transition: { delay: 0.06 },
-                })}
-            className="lg:order-1"
-          >
+          {/* PAYMENT — dominant (left on desktop, fills screen on mobile).
+              NOTE: plain div (not m.div) + min-w-0 — animating the wrapper or a
+              content-sized grid track made Stripe's Payment Element mismeasure
+              its width and render collapsed. */}
+          <div className="min-w-0 lg:order-1">
             <div className="rounded-2xl border border-sand bg-card p-5 shadow-lift sm:p-7">
-              {stripePromise ? (
+              {stripePromise && mounted ? (
                 <Elements stripe={stripePromise} options={elementsOptions}>
                   <PaymentForm
                     flow={flow}
@@ -160,8 +180,21 @@ export default function CheckoutClient({
                     totalCents={total}
                     returnPath={returnPath}
                     fallbackHref={fallbackHref}
+                    prefillEmail={prefillEmail}
+                    token={token}
                   />
                 </Elements>
+              ) : stripePromise ? (
+                // Valid key, deferring mount one frame → brief sized skeleton.
+                <div className="min-h-[280px] animate-pulse space-y-4 py-2">
+                  <div className="h-11 rounded-xl bg-sand" />
+                  <div className="h-11 rounded-xl bg-sand" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="h-11 rounded-xl bg-sand" />
+                    <div className="h-11 rounded-xl bg-sand" />
+                  </div>
+                  <div className="mt-2 h-12 rounded-xl bg-gold-400/30" />
+                </div>
               ) : (
                 // No publishable key → straight to the hosted escape hatch.
                 <div className="text-center">
@@ -191,7 +224,7 @@ export default function CheckoutClient({
               </span>
               <span className="opacity-80">Education, not financial advice.</span>
             </div>
-          </m.div>
+          </div>
         </div>
       </main>
     </div>
