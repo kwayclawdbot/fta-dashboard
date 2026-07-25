@@ -6,8 +6,9 @@ import { m, AnimatePresence } from "@/lib/motion";
 import {
   AtSign, Send, Trophy, Heart, MessageCircle, Sparkles,
   ArrowRight, Paperclip, X, Film, Loader2, Link2,
-  Award, Eye, CheckCircle2, Target, Calendar, Pin,
+  Award, Eye, CheckCircle2, Target, Calendar,
   Tag, TrendingUp, TrendingDown, Minus, MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
@@ -423,6 +424,14 @@ export default function CommunityClient({
     });
   }
 
+  // Reveal + focus the composer — used by warm empty states to invite a post.
+  const focusComposer = useCallback(() => {
+    const el = taRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.focus();
+  }, []);
+
   // ── Create post ──
   async function submitPost() {
     const body = text.trim();
@@ -645,6 +654,25 @@ export default function CommunityClient({
       .sort((a, b) => b.list.length - a.list.length);
   }, [tab, displayList]);
 
+  // ── Two-lane split (D1) ────────────────────────────────────────────────────
+  // The editorial lane = human posts (the dominant conversation). The ambient
+  // lane = auto-generated activity ("is now researching / going to class"),
+  // collapsed into one quiet strip instead of ~25 interchangeable cards. Only
+  // the For You feed mixes activity in; the other tabs are already post-only.
+  const isForYou = tab === "foryou";
+  const threadPosts = useMemo(
+    () => displayList.filter((p) => p.kind === "post"),
+    [displayList]
+  );
+  const feedAnnouncements = useMemo(
+    () => displayList.filter((p) => p.kind === "announcement"),
+    [displayList]
+  );
+  const activityItems = useMemo(
+    () => (isForYou ? displayList.filter((p) => p.kind === "activity") : []),
+    [displayList, isForYou]
+  );
+
   const TABS = [
     { key: "foryou", label: "For You" },
     { key: "following", label: "Following" },
@@ -680,8 +708,9 @@ export default function CommunityClient({
           {/* VIP Room entry — gated: only renders for Challenge VIP members. */}
           <VipRoomBanner />
 
-          {/* Pinned This Week — one-line strip into the academy This Week tab */}
-          {anchor && <ThisWeekStrip post={anchor} />}
+          {/* Weekly anchor — editorial masthead. Leads the room so a thin feed
+              still opens on the week's teaching thesis, not a barren card. */}
+          {anchor && <AnchorMasthead post={anchor} expanded={threadPosts.length < 4} />}
 
           {/* Pinned latest announcement (first 7 days) */}
           {pinnedAnnouncement && <AnnouncementCard post={pinnedAnnouncement} pinned />}
@@ -847,65 +876,81 @@ export default function CommunityClient({
             ))}
           </div>
 
-          {/* Feed */}
+          {/* ── Feed ─────────────────────────────────────────────────────────
+              Two lanes. The ambient strip carries the auto-activity as a quiet
+              pulse; the editorial thread carries the real conversation as the
+              dominant, typography-led lane. Discussions keeps its per-ticker
+              aggregation. */}
           {loading ? (
-            <div className="space-y-4">
+            <div className="paper-card divide-y divide-sand/70">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="paper-card p-4 animate-pulse">
-                  <div className="h-4 w-40 bg-sand/70 rounded mb-3" />
-                  <div className="h-3 w-full bg-sand/50 rounded mb-1.5" />
-                  <div className="h-3 w-2/3 bg-sand/50 rounded" />
+                <div key={i} className="p-4 animate-pulse">
+                  <div className="flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-sand/60 shrink-0" />
+                    <div className="flex-1">
+                      <div className="h-3.5 w-32 bg-sand/70 rounded mb-3" />
+                      <div className="h-3 w-full bg-sand/50 rounded mb-1.5" />
+                      <div className="h-3 w-2/3 bg-sand/50 rounded" />
+                    </div>
+                  </div>
                 </div>
               ))}
-            </div>
-          ) : displayList.length === 0 ? (
-            <div className="paper-card p-10 text-center">
-              {tab === "discussions" ? <MessageSquare className="w-7 h-7 text-gold-500 mx-auto mb-3" /> : <Sparkles className="w-7 h-7 text-gold-500 mx-auto mb-3" />}
-              <p className="font-display text-base font-semibold text-ink mb-1">{EMPTY_COPY[tab].title}</p>
-              <p className="text-sm text-soft font-body max-w-sm mx-auto">{EMPTY_COPY[tab].body}</p>
             </div>
           ) : tab === "discussions" ? (
-            <div className="space-y-4">
-              {discussionThreads.map(({ ticker, list }) => (
-                <div key={ticker} className="paper-card p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Link href={`/research/${encodeURIComponent(ticker)}`} className="inline-flex items-center gap-1.5 font-mono font-bold text-ink hover:text-gold-700">
-                      <span className="text-gold-600">$</span>{ticker}
-                    </Link>
-                    <span className="text-[11px] text-soft font-body">{list.length} {list.length === 1 ? "post" : "posts"}</span>
-                    <Link href={`/research/${encodeURIComponent(ticker)}`} className="ml-auto text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">Research <ArrowRight className="w-3.5 h-3.5" /></Link>
+            discussionThreads.length === 0 ? (
+              <EmptyRoom tab={tab} copy={EMPTY_COPY[tab]} />
+            ) : (
+              <div className="space-y-4">
+                {discussionThreads.map(({ ticker, list }) => (
+                  <div key={ticker} className="paper-card p-4">
+                    {/* ticker aggregation header */}
+                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-sand/70">
+                      <Link href={`/research/${encodeURIComponent(ticker)}`} className="inline-flex items-center gap-1.5 font-mono text-base font-bold text-ink hover:text-gold-700">
+                        <span className="text-gold-600">$</span>{ticker}
+                      </Link>
+                      <span className="text-[11px] text-soft font-body">{list.length} {list.length === 1 ? "post" : "posts"}</span>
+                      <Link href={`/research/${encodeURIComponent(ticker)}`} className="ml-auto text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">Research <ArrowRight className="w-3.5 h-3.5" /></Link>
+                    </div>
+                    <div className="space-y-3.5">
+                      {list.slice(0, 4).map((p) => (
+                        <DiscussionRow key={p.id} post={p} tier={tierOf(p.author)} xpOf={xpOf} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    {list.slice(0, 4).map((p) => (
-                      <DiscussionRow key={p.id} post={p} tier={tierOf(p.author)} xpOf={xpOf} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )
           ) : (
             <div className="space-y-4">
-              {displayList.map((p, i) => (
-                <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.02, 0.2) }}>
-                  {p.kind === "announcement" ? (
-                    <AnnouncementCard post={p} />
-                  ) : p.kind === "activity" ? (
-                    <ActivityCard
-                      post={p} me={me} readOnly={readOnly}
-                      likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
-                      commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
-                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
-                    />
-                  ) : (
-                    <PostCard
-                      post={p} me={me} tier={tierOf(p.author)} readOnly={readOnly}
-                      likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
-                      commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
-                      comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
-                    />
-                  )}
-                </m.div>
+              {/* In-feed announcements (rare — pinned ones live above) */}
+              {feedAnnouncements.map((p) => (
+                <AnnouncementCard key={p.id} post={p} />
               ))}
+
+              {/* Ambient activity — collapsed grouped strip (For You only) */}
+              {activityItems.length > 0 && <AmbientActivityStrip items={activityItems} xpOf={xpOf} />}
+
+              {/* Editorial thread — the dominant conversation lane */}
+              {threadPosts.length === 0 ? (
+                activityItems.length > 0 || feedAnnouncements.length > 0 ? (
+                  <QuietThreadPrompt readOnly={readOnly} onStart={focusComposer} />
+                ) : (
+                  <EmptyRoom tab={tab} copy={EMPTY_COPY[tab]} onStart={!readOnly && isForYou ? focusComposer : undefined} />
+                )
+              ) : (
+                <div className="paper-card divide-y divide-sand/70 overflow-hidden">
+                  {threadPosts.map((p, i) => (
+                    <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.2) }}>
+                      <PostEntry
+                        post={p} me={me} tier={tierOf(p.author)} readOnly={readOnly}
+                        likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
+                        commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
+                        comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
+                      />
+                    </m.div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -922,8 +967,10 @@ export default function CommunityClient({
 
 function PostBody({ body }: { body: string }) {
   if (!body) return null;
+  // Editorial weight: the post body is the substance of the room, so it reads a
+  // notch larger and darker than chrome text — author + substance forward.
   return (
-    <p className="text-sm text-midnight-200 font-body leading-relaxed mt-2 whitespace-pre-wrap break-words">
+    <p className="text-[15px] text-ink font-body leading-relaxed mt-1.5 whitespace-pre-wrap break-words">
       <RichBody body={body} />
     </p>
   );
@@ -1068,24 +1115,32 @@ function DiscussionRow({ post, tier, xpOf }: { post: FeedPost; tier: FamilyTier;
   );
 }
 
-function PostCard(props: EngagementProps & { tier: FamilyTier }) {
+// One post as an editorial thread entry — NOT a bordered card. The parent
+// container owns the surface + hairline dividers, so entries read as a
+// continuous conversation (a living room), not a wall of interchangeable cards.
+// Coach/admin keep an authority chip; parent/child are already covered by the
+// age badge, so their redundant role chip is dropped to quiet the byline.
+function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
   const { post, tier } = props;
   const role = post.author?.role || "parent";
+  const showRoleChip = role === "coach" || role === "admin";
   return (
-    <div className="paper-card p-4">
+    <div className="p-4 sm:p-5 transition-colors hover:bg-sand/15">
       <div className="flex items-start gap-3">
         <ProfileLink username={post.author?.username} variant="avatar">
           <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} xp={props.xpOf?.(post.author?.id)} size="lg" />
         </ProfileLink>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <ProfileLink username={post.author?.username} className="font-display text-sm font-semibold text-ink">
+          <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap leading-tight">
+            <ProfileLink username={post.author?.username} className="font-display text-[15px] font-bold text-ink">
               {post.author?.display_name || "Member"}
             </ProfileLink>
             <AgeBadge role={post.author?.role} ageGroup={post.author?.age_group} />
             <TierBadge tier={tier} size="xs" />
-            <span className={`text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role] || "bg-sand text-soft"}`}>{role}</span>
-            <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
+            {showRoleChip && (
+              <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role]}`}>{role}</span>
+            )}
+            <span className="text-[11px] text-soft font-body">· {timeAgo(post.created_at)}</span>
           </div>
           <PostBody body={post.body} />
           <TickerRow tags={post.ticker_tags} position={post.position} />
@@ -1094,45 +1149,143 @@ function PostCard(props: EngagementProps & { tier: FamilyTier }) {
           )}
           <PostAttachment url={post.attachment_url} type={post.attachment_type} name={post.attachment_meta?.name} />
           <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} readOnly={props.readOnly} />
+          {props.commentsOpen && <CommentThread {...props} />}
         </div>
       </div>
-      {props.commentsOpen && <CommentThread {...props} />}
     </div>
   );
 }
 
-function ActivityCard(props: EngagementProps) {
-  const { post } = props;
-  const payload = post.activity_payload as ActivityPayload;
-  const line = activityLine(payload);
-  const Icon = ACTIVITY_ICONS[line.iconKey] || Sparkles;
+// ── Ambient activity strip (D1 collapse) ─────────────────────────────────────
+// The auto-generated activity ("is now researching / going to class / earned a
+// badge") used to render as ~25 identical cards that buried the ~3 real posts.
+// Here it collapses into ONE quiet strip: a live pulse + a grouped summary line,
+// expandable into a compact ledger. Visible pulse, zero noise — the real
+// conversation below stays dominant.
+function AmbientActivityStrip({
+  items,
+  xpOf,
+}: {
+  items: FeedPost[];
+  xpOf?: (id: string | null | undefined) => number;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Grouped summary: how many updates + the standout tickers/companies moving
+  // through the club right now.
+  const tickers: string[] = [];
+  for (const p of items) {
+    const pay = p.activity_payload as ActivityPayload | null;
+    const t = pay?.ticker || pay?.company_name;
+    if (t && !tickers.includes(t)) tickers.push(t);
+    if (tickers.length >= 3) break;
+  }
+  const summary =
+    tickers.length > 0
+      ? `researching ${tickers.join(", ")}${tickers.length >= 3 ? "…" : ""}`
+      : "badges, missions, and picks moving through the club";
+
   return (
-    <div className="paper-card p-4 border-l-2 border-l-gold-300">
-      <div className="flex items-start gap-3">
-        <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${line.accent}`}><Icon className="w-5 h-5" /></span>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-midnight-200 font-body leading-relaxed">
-            <ProfileLink username={post.author?.username} className="font-display font-semibold text-ink">
-              {line.subject}
-            </ProfileLink>
-            {payload.actor_age_group || payload.actor_role ? (
-              <> <AgeBadge role={payload.actor_role} ageGroup={payload.actor_age_group} className="align-middle" /></>
-            ) : null}{" "}
-            {line.verb}{" "}
-            {payload.type === "ticker_like_milestone" && payload.ticker ? (
-              <Link href={`/research/${encodeURIComponent(payload.ticker)}`} className="font-semibold text-gold-700 hover:text-gold-800">
-                {line.target}
-              </Link>
-            ) : (
-              <span className="font-semibold text-ink">{line.target}</span>
-            )}
-            {payload.family_name ? <span className="text-soft"> · {payload.family_name}</span> : null}
-          </p>
-          <span className="text-[11px] text-soft font-body">{timeAgo(post.created_at)}</span>
-          <LikeCommentBar liked={props.liked} likeCount={props.likeCount} onLike={props.onLike} commentCount={props.commentCount} onToggleComments={props.onToggleComments} readOnly={props.readOnly} />
-        </div>
-      </div>
-      {props.commentsOpen && <CommentThread {...props} />}
+    <div className="rounded-xl bg-sand/25 border border-sand/70">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left"
+      >
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-60 animate-ping" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500" />
+        </span>
+        <span className="text-xs text-soft font-body min-w-0 truncate">
+          <span className="font-display font-semibold text-ink">{items.length} update{items.length === 1 ? "" : "s"}</span>{" "}
+          <span className="hidden xs:inline">· </span>{summary}
+        </span>
+        <ChevronDown className={`ml-auto w-4 h-4 text-soft shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <m.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+            className="overflow-hidden"
+          >
+            <ul className="px-3.5 pb-3 pt-0.5 space-y-2 max-h-72 overflow-y-auto">
+              {items.map((p) => {
+                const pay = p.activity_payload as ActivityPayload;
+                const line = activityLine(pay);
+                const Icon = ACTIVITY_ICONS[line.iconKey] || Sparkles;
+                return (
+                  <li key={p.id} className="flex items-center gap-2.5">
+                    <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${line.accent}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </span>
+                    <p className="text-xs text-soft min-w-0 truncate">
+                      <ProfileLink username={p.author?.username} className="font-semibold text-ink">
+                        {line.subject}
+                      </ProfileLink>{" "}
+                      {line.verb}{" "}
+                      {pay.type === "ticker_like_milestone" && pay.ticker ? (
+                        <Link href={`/research/${encodeURIComponent(pay.ticker)}`} className="font-medium text-gold-700 hover:text-gold-800">{line.target}</Link>
+                      ) : (
+                        <span className="font-medium text-ink">{line.target}</span>
+                      )}
+                    </p>
+                    <span className="text-[10px] text-soft ml-auto shrink-0">{timeAgo(p.created_at)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Warm empty-thread prompt — shown when the room has ambient activity but no
+// real posts yet, so it never reads as barren.
+function QuietThreadPrompt({ readOnly, onStart }: { readOnly?: boolean; onStart: () => void }) {
+  return (
+    <div className="rounded-xl border border-dashed border-sand px-5 py-6 text-center">
+      <p className="font-display text-[15px] font-semibold text-ink">The floor is open</p>
+      <p className="text-sm text-soft font-body mt-1 max-w-sm mx-auto">
+        The club is active today. Be the first to start the conversation — share a win, a question, or your family&apos;s pick.
+      </p>
+      {!readOnly && (
+        <button type="button" onClick={onStart} className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs mt-3">
+          Start a post <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Per-tab empty state — composed, warm, and directive (never a bare card).
+function EmptyRoom({
+  tab,
+  copy,
+  onStart,
+}: {
+  tab: string;
+  copy: { title: string; body: string };
+  onStart?: () => void;
+}) {
+  return (
+    <div className="paper-card px-6 py-10 text-center">
+      <span className="inline-flex w-11 h-11 rounded-xl bg-gold-400/15 items-center justify-center mb-3">
+        {tab === "discussions" ? <MessageSquare className="w-5 h-5 text-gold-600" /> : <Sparkles className="w-5 h-5 text-gold-600" />}
+      </span>
+      <p className="font-display text-base font-semibold text-ink mb-1">{copy.title}</p>
+      <p className="text-sm text-soft font-body max-w-sm mx-auto">{copy.body}</p>
+      {onStart && (
+        <button type="button" onClick={onStart} className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs mt-4">
+          Share the first post <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
@@ -1270,27 +1423,55 @@ function CommentThread(props: EngagementProps) {
 }
 
 /**
- * One-line pinned "This Week" strip (was the full AnchorCard). The academy This
- * Week detail lives on the Home tab — this just points there so the feed stays
- * the star of /community.
+ * AnchorMasthead — the weekly "This Week" anchor as an editorial masthead that
+ * opens the room. Collapsed (`expanded={false}`) it's a confident one-line
+ * banner; when the feed is thin (`expanded`) it leads with the teaching thesis
+ * so a near-empty community still feels warm and purposeful, not barren. Links
+ * into the academy This Week detail on the Home tab (route preserved).
  */
-function ThisWeekStrip({ post }: { post: FeedPost }) {
+function AnchorMasthead({ post, expanded }: { post: FeedPost; expanded: boolean }) {
   const a = post.activity_payload as AnchorPayload;
+  const title = a.class_title || "This week in the club";
+  const thesis = a.discussion_question;
   return (
     <Link
       href="/dashboard?tab=this-week"
-      className="paper-card bg-chip-amber/30 border-gold-300 px-4 py-3 flex items-center gap-3 hover:border-gold-400 transition-colors group"
+      className="group block relative overflow-hidden rounded-2xl border border-gold-300/70 bg-gradient-to-br from-chip-amber/60 via-paper to-paper shadow-soft transition-colors hover:border-gold-400"
     >
-      <span className="w-7 h-7 rounded-lg bg-gold-500/20 text-gold-700 flex items-center justify-center shrink-0">
-        <Pin className="w-3.5 h-3.5" />
-      </span>
-      <p className="text-sm text-ink min-w-0 truncate">
-        <span className="font-display font-bold text-gold-700">This Week:</span>{" "}
-        <span className="font-semibold">{a.class_title || "This week in the club"}</span>
-      </p>
-      <span className="ml-auto shrink-0 text-xs font-semibold text-gold-700 inline-flex items-center gap-1 group-hover:text-gold-600">
-        Open <ArrowRight className="w-3.5 h-3.5" />
-      </span>
+      <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold-400 to-gold-600" />
+      <div className="p-4 sm:p-5 pl-5 sm:pl-6">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="font-display text-[11px] font-bold uppercase tracking-[0.14em] text-gold-700">
+            This Week in the Club
+          </span>
+        </div>
+        <div className="flex items-start gap-3.5">
+          {a.company_ticker && (
+            <span className="shrink-0 mt-0.5">
+              <CompanyLogo symbol={a.company_ticker} name={a.company_name || undefined} size={expanded ? 44 : 36} />
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <h2 className={`font-display font-extrabold text-ink leading-tight ${expanded ? "text-xl sm:text-2xl" : "text-base sm:text-lg"}`}>
+              {title}
+            </h2>
+            {a.company_name && (
+              <p className="text-xs font-body text-soft mt-0.5">
+                {a.company_name}
+                {a.company_ticker && <span className="font-mono text-soft"> · {a.company_ticker}</span>}
+              </p>
+            )}
+            {expanded && thesis && (
+              <p className="text-sm sm:text-[15px] text-ink/80 font-body leading-relaxed mt-2.5 border-l-2 border-gold-300 pl-3">
+                {thesis}
+              </p>
+            )}
+            <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-600">
+              Open this week&apos;s class <ArrowRight className="w-3.5 h-3.5" />
+            </span>
+          </div>
+        </div>
+      </div>
     </Link>
   );
 }

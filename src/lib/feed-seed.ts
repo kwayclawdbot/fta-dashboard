@@ -84,7 +84,7 @@ export async function getCommunityFeedSeed(
   const feedP = supabase
     .from("feed_posts")
     .select(
-      `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, created_at, ${AUTHOR_SEL}`
+      `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at, ${AUTHOR_SEL}`
     )
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false })
