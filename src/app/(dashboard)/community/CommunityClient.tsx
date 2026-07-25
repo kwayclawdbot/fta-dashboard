@@ -677,6 +677,9 @@ export default function CommunityClient({
       <div className="space-y-4">
         {/* Main feed — full width now that Club Chat lives in a drawer */}
         <div className="min-w-0 space-y-4">
+          {/* VIP Room entry — gated: only renders for Challenge VIP members. */}
+          <VipRoomBanner />
+
           {/* Pinned This Week — one-line strip into the academy This Week tab */}
           {anchor && <ThisWeekStrip post={anchor} />}
 
@@ -1288,6 +1291,45 @@ function ThisWeekStrip({ post }: { post: FeedPost }) {
       <span className="ml-auto shrink-0 text-xs font-semibold text-gold-700 inline-flex items-center gap-1 group-hover:text-gold-600">
         Open <ArrowRight className="w-3.5 h-3.5" />
       </span>
+    </Link>
+  );
+}
+
+// ── VIP Room banner (Lane C9) ────────────────────────────────────────────────
+// Self-contained, gated entry point into the private VIP room. Fetches VIP
+// status once; renders nothing for non-VIP members (visible only to tier=vip).
+function VipRoomBanner() {
+  const [vip, setVip] = useState(false);
+  useEffect(() => {
+    let on = true;
+    fetch("/api/challenge/vip-room")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (on && d?.vip) setVip(true);
+      })
+      .catch(() => {});
+    return () => {
+      on = false;
+    };
+  }, []);
+  if (!vip) return null;
+  return (
+    <Link
+      href="/vip-room"
+      className="paper-card ring-1 ring-gold-300 p-4 flex items-center gap-3 hover:ring-gold-400 transition-colors"
+    >
+      <span className="w-10 h-10 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
+        <Sparkles className="w-5 h-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-display font-bold text-ink text-[15px] leading-snug">
+          Your VIP Room
+        </span>
+        <span className="block text-xs text-soft">
+          A private space for VIP members — open through the challenge.
+        </span>
+      </span>
+      <ArrowRight className="w-4 h-4 text-gold-600 shrink-0" />
     </Link>
   );
 }

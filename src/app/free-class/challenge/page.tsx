@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { getVipFlag, clearVipFlag, clearChallengeFlag } from "@/lib/funnel";
 import ChallengeThankYou from "@/components/free-class/ChallengeThankYou";
 
 /**
@@ -18,9 +19,15 @@ export default function ChallengeThankYouPage() {
   const supabase = createClient();
   const [ready, setReady] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [ages, setAges] = useState<string | null>(null);
+  const [isVip, setIsVip] = useState(false);
+  const [vipIntent, setVipIntent] = useState(false);
+  const [vipEnabled, setVipEnabled] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    // Read the VIP intent flag before it's cleared, so the upsell can lead.
+    setVipIntent(getVipFlag());
     (async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!mounted) return;
@@ -30,6 +37,22 @@ export default function ChallengeThankYouPage() {
       }
       const meta = auth.user.user_metadata as { display_name?: string } | null;
       setFirstName(meta?.display_name || "");
+      // Thank-you context: ages (family-mode surfacing) + paid-VIP status + gate.
+      try {
+        const ctx = await fetch("/api/challenge/context").then((r) =>
+          r.ok ? r.json() : null
+        );
+        if (mounted && ctx) {
+          setAges(ctx.ages ?? null);
+          setIsVip(!!ctx.isVip);
+          setVipEnabled(!!ctx.vipEnabled);
+        }
+      } catch {
+        /* non-blocking */
+      }
+      // One-shot flags — clear now that the thank-you has read them.
+      clearVipFlag();
+      clearChallengeFlag();
       setReady(true);
     })();
     return () => {
@@ -49,6 +72,10 @@ export default function ChallengeThankYouPage() {
   return (
     <ChallengeThankYou
       firstName={firstName}
+      ages={ages}
+      isVip={isVip}
+      vipIntent={vipIntent}
+      vipEnabled={vipEnabled}
       onExplore={() => router.push("/dashboard")}
     />
   );

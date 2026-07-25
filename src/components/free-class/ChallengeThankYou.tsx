@@ -19,6 +19,11 @@ import {
   LineChart,
   ArrowRight,
   PenLine,
+  Ticket,
+  BookOpen,
+  Lock,
+  Loader2,
+  Baby,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { downloadChallengeIcs } from "@/lib/free-class";
@@ -55,9 +60,21 @@ const INTRO_TEMPLATE =
 const INTRO_HREF = `/community?compose=${encodeURIComponent(INTRO_TEMPLATE)}`;
 export default function ChallengeThankYou({
   firstName,
+  ages = null,
+  isVip = false,
+  vipIntent = false,
+  vipEnabled = false,
   onExplore,
 }: {
   firstName: string;
+  /** Step-1 "who's learning with you" answer — drives Family Mode surfacing. */
+  ages?: string | null;
+  /** Family already holds a paid VIP ticket → show confirmation, not upsell. */
+  isVip?: boolean;
+  /** Arrived via the VIP CTA (?vip=1) → lead with the VIP offer. */
+  vipIntent?: boolean;
+  /** Live VIP checkout path is open (app_settings gate). */
+  vipEnabled?: boolean;
   onExplore: () => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -65,6 +82,32 @@ export default function ChallengeThankYou({
   const [code, setCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
+  const [vipLoading, setVipLoading] = useState(false);
+  const [vipMsg, setVipMsg] = useState<string | null>(null);
+
+  // Family Mode surfacing: kids in the step-1 answer → this is a family; show
+  // the kids-subaccount setup prompt. 'adults' (Just me) → solo, no prompt.
+  const hasKids = ages === "young" || ages === "teens" || ages === "mixed";
+
+  async function startVipCheckout() {
+    setVipMsg(null);
+    setVipLoading(true);
+    try {
+      const res = await fetch("/api/challenge/vip-checkout", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.url) {
+        window.location.href = data.url as string;
+        return;
+      }
+      setVipMsg(
+        data?.message || "VIP tickets aren't open just yet — we'll email you the moment they are."
+      );
+    } catch {
+      setVipMsg("Something went wrong opening checkout. Please try again in a moment.");
+    } finally {
+      setVipLoading(false);
+    }
+  }
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -162,6 +205,43 @@ export default function ChallengeThankYou({
             don&apos;t have to wait to start looking around.
           </p>
         </m.div>
+
+        {/* Family Mode — kids-subaccount setup prompt (Lane C9). Shown only when
+            step-1 said kids are learning too; solo ("Just me") sees nothing. */}
+        {hasKids && (
+          <m.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.04 }}
+            className="paper-card ring-1 ring-gold-300 p-6 mt-7"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
+                <Baby className="w-6 h-6 text-gold-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+                  Family Mode is on
+                </p>
+                <h2 className="font-display text-lg font-bold text-ink leading-snug mt-0.5">
+                  Set up a login for each kid
+                </h2>
+                <p className="text-sm text-soft mt-1.5 leading-relaxed">
+                  You told us the kids are learning too — so your account is in
+                  Family Mode. Give each child their own safe, kid-friendly login
+                  and you can all do the challenge together.
+                </p>
+                <a
+                  href="/family"
+                  className="cta-button mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm"
+                >
+                  <Baby className="w-4 h-4" /> Set up my kids{" "}
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </m.div>
+        )}
 
         {/* What happens next */}
         <m.div
@@ -352,6 +432,106 @@ export default function ChallengeThankYou({
           </div>
         </m.div>
 
+        {/* VIP ticket (Lane C9) — non-blocking, below calendar + referral. If
+            they already bought VIP, this is a confirmation; otherwise a single,
+            honest upsell that never implies the free challenge is incomplete. */}
+        <m.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className={`paper-card p-6 mt-6 ${
+            isVip ? "ring-2 ring-gold-400" : vipIntent ? "ring-2 ring-gold-400" : "ring-1 ring-sand"
+          }`}
+        >
+          {isVip ? (
+            <div>
+              <div className="flex items-center gap-2 text-gold-700">
+                <Ticket className="w-5 h-5" />
+                <p className="text-[11px] font-display font-bold uppercase tracking-wider">
+                  You&apos;re VIP
+                </p>
+              </div>
+              <h3 className="font-display text-xl font-bold text-ink mt-1">
+                Your textbook is on the way
+              </h3>
+              <p className="text-soft text-sm mt-2 leading-relaxed">
+                Your printed textbook is being prepared and will ship to the
+                address you entered — we&apos;ll email tracking when it&apos;s on
+                the way. Your first month of Club is already included, and your
+                private VIP room is open.
+              </p>
+              <a
+                href="/vip-room"
+                className="cta-button mt-4 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm"
+              >
+                <Lock className="w-4 h-4" /> Enter your VIP room{" "}
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              <p className="mt-3 text-[12px] text-soft leading-relaxed flex items-start gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                First month included in your $197 · $99/mo after · we&apos;ll
+                remind you 3 days before · cancel in one click.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 text-gold-700">
+                <Ticket className="w-5 h-5" />
+                <p className="text-[11px] font-display font-bold uppercase tracking-wider">
+                  Optional · VIP ticket
+                </p>
+              </div>
+              <h3 className="font-display text-xl font-bold text-ink mt-1">
+                Want the textbook version?
+              </h3>
+              <p className="text-soft text-sm mt-2 leading-relaxed">
+                Your free challenge is complete on its own — nothing is held back.
+                The VIP ticket just adds a few extras for people who like them:
+              </p>
+              <div className="mt-4 space-y-2.5">
+                <VipPerk icon={BookOpen}>
+                  A printed textbook mailed to you
+                </VipPerk>
+                <VipPerk icon={Sparkles}>
+                  Your first month of Club included
+                </VipPerk>
+                <VipPerk icon={Lock}>
+                  A private VIP room during the challenge
+                </VipPerk>
+              </div>
+              <button
+                onClick={startVipCheckout}
+                disabled={vipLoading}
+                className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-[15px] disabled:opacity-60"
+              >
+                {vipLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Ticket className="w-4 h-4" /> Get the VIP ticket — $197{" "}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+              {vipMsg && (
+                <p className="mt-3 text-sm text-soft text-center">{vipMsg}</p>
+              )}
+              {!vipEnabled && !vipMsg && (
+                <p className="mt-3 text-[12px] text-soft text-center">
+                  VIP tickets open soon — grab your free spot now and you&apos;ll
+                  be first to know.
+                </p>
+              )}
+              <p className="mt-3 text-[12px] text-soft leading-relaxed flex items-start gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                $197 today · includes your first month of Club · $99/mo after —
+                we&apos;ll remind you 3 days before, cancel in one click. Education,
+                not financial advice.
+              </p>
+            </div>
+          )}
+        </m.div>
+
         {/* Immediate-activation CTAs */}
         <m.div
           initial={{ opacity: 0, y: 12 }}
@@ -416,6 +596,24 @@ function ActivationLink({
       <Icon className="w-4 h-4 text-gold-600" />
       {children}
     </a>
+  );
+}
+
+// ── VIP perk row ─────────────────────────────────────────────────────────────
+function VipPerk({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-7 h-7 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-gold-700" />
+      </span>
+      <span className="text-[15px] text-ink leading-snug">{children}</span>
+    </div>
   );
 }
 
