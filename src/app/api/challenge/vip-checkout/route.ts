@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyContinuationToken } from "@/lib/server/challenge-token";
 
 export const dynamic = "force-dynamic";
 
@@ -133,10 +134,18 @@ export async function GET(req: NextRequest) {
   if (!(await vipGateOpen())) return NextResponse.redirect(CANCEL_URL, 302);
 
   const src = cleanSrc(req.nextUrl.searchParams.get("src")) || "funnel";
+
+  // Email-first OTO hand-off (C9b): a continuation token (?t=) prefills the
+  // buyer's email + links the checkout to their already-created account, so the
+  // webhook lands the VIP grant on the existing family. No token ⇒ plain guest.
+  const cont = verifyContinuationToken(req.nextUrl.searchParams.get("t") || "");
+
   const { url, error } = await createVipSession({
     sk,
     origin: req.nextUrl.origin,
     src,
+    userId: cont?.userId ?? null,
+    email: cont?.email ?? null,
   });
   if (error || !url) return NextResponse.redirect(CANCEL_URL, 302);
   return NextResponse.redirect(url, 302);
