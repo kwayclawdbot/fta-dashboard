@@ -447,13 +447,20 @@ export async function POST(req: NextRequest) {
     threadId = t.id;
   }
 
-  // Persist the user's message.
-  await supabase.from("kai_chat_messages").insert({
-    thread_id: threadId,
-    user_id: user.id,
-    role: "user",
-    content: text,
-  });
+  // Persist the user's message. Capture its id so a failed turn (API/billing
+  // error or empty generation) can remove it — otherwise the member is charged
+  // a daily-cap message for a reply they never got (the cap counts user rows).
+  const { data: userMsgRow } = await supabase
+    .from("kai_chat_messages")
+    .insert({
+      thread_id: threadId,
+      user_id: user.id,
+      role: "user",
+      content: text,
+    })
+    .select("id")
+    .single();
+  const userMsgId = userMsgRow?.id ?? null;
 
   // Build history for the model (own-row read; trim to the last N turns).
   const { data: hist } = await supabase
@@ -480,6 +487,7 @@ export async function POST(req: NextRequest) {
 
       let finalText = "";
       const collectedBlocks: Block[] = [];
+      let apiFailed = false; // model/API call failed (billing, auth, 5xx, …)
 
       try {
         for (let round = 0; round < KAI_MAX_TOOL_ROUNDS; round++) {
@@ -505,7 +513,14 @@ export async function POST(req: NextRequest) {
           if (!res.ok || !res.body) {
             const errText = await res.text().catch(() => "");
             console.error("[KaiChat] anthropic error:", res.status, errText);
-            emit({ type: "error", error: "Kai had trouble answering. Try again." });
+            apiFailed = true;
+            emit({
+              type: "error",
+              error:
+                register === "kid"
+                  ? "Kai is taking a quick break — try again in a little while!"
+                  : "Kai is temporarily unavailable. Please try again in a bit.",
+            });
             break;
           }
 
@@ -603,17 +618,40 @@ export async function POST(req: NextRequest) {
           messages.push({ role: "user", content: toolResults });
         }
 
+        const replyText = finalText.trim();
+
+        // A turn that produced no usable answer — an API/billing failure, or an
+        // empty generation — must NOT consume the member's daily quota or leave
+        // a junk assistant message in the thread. Remove the user row inserted
+        // before the model call (the cap counts user rows) and surface a clear
+        // error instead of the old generic "I couldn't find an answer" fallback,
+        // which the client's `done` handler used to paint over the real error.
+        if (apiFailed || !replyText) {
+          if (userMsgId) {
+            await supabase.from("kai_chat_messages").delete().eq("id", userMsgId);
+          }
+          if (!apiFailed) {
+            emit({
+              type: "error",
+              error:
+                register === "kid"
+                  ? "Kai didn't have an answer for that — try asking a different way!"
+                  : "Kai couldn't generate a reply. Please try again.",
+            });
+          }
+          return; // finally { controller.close() } still runs
+        }
+
         // Persist the assistant reply.
-        const safeText = finalText.trim() || "I couldn't find an answer to that.";
         await supabase.from("kai_chat_messages").insert({
           thread_id: tid,
           user_id: user.id,
           role: "assistant",
-          content: safeText,
+          content: replyText,
           blocks: collectedBlocks,
         });
 
-        emit({ type: "done", threadId: tid, content: safeText, blocks: collectedBlocks });
+        emit({ type: "done", threadId: tid, content: replyText, blocks: collectedBlocks });
 
         // Cross-thread memory refresh (Lane 8B). Cheap trigger: on a new-thread
         // start (the previous session just ended), or once ≥8 user messages have
@@ -649,7 +687,14 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         console.error("[KaiChat] stream error:", err);
-        emit({ type: "error", error: "Kai had trouble answering. Try again." });
+        try {
+          if (userMsgId) {
+            await supabase.from("kai_chat_messages").delete().eq("id", userMsgId);
+          }
+        } catch {
+          /* best-effort quota refund */
+        }
+        emit({ type: "error", error: "Kai is temporarily unavailable. Please try again in a bit." });
       } finally {
         controller.close();
       }
