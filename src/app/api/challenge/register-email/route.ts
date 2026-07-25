@@ -170,6 +170,11 @@ export async function POST(req: NextRequest) {
       age_group: "adults",
       track: "adults",
       email,
+      // Blank the trigger's default (email-prefix) name: its emptiness is the
+      // "registered-not-onboarded" signal, and it keeps the finish_setup email
+      // greeting a friendly "there" rather than the raw email prefix. (Column is
+      // NOT NULL, so empty string — not null.) Set for real at account completion.
+      display_name: "",
       onboarding_complete: false,
     })
     .eq("id", userId);
