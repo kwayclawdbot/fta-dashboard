@@ -12,6 +12,8 @@
  *   come from cached ticker-details calls (refreshed weekly / when missing).
  */
 
+import { classifySector } from "./screener-sectors";
+
 export type EmaState = "above" | "below" | "unknown";
 export type SecurityType = "common" | "etf";
 
@@ -224,7 +226,8 @@ export interface CustomFilters {
   q?: string | null; // ticker / name search
   exchange?: string | null; // 'NYSE' | 'NASDAQ' | 'AMEX' | 'NYSE Arca' | 'Cboe'
   type?: SecurityType | null; // 'common' | 'etf'
-  sector?: string | null;
+  sector?: string | null; // one of the 11 major sectors (see screener-sectors)
+  subsector?: string | null; // curated subsector within the selected sector
   minMcap?: number | null; // USD
   maxMcap?: number | null;
   minPrice?: number | null;
@@ -275,7 +278,12 @@ export function matchesCustom(r: ScreenerRow, f: CustomFilters): boolean {
   }
   if (f.exchange && r.exchange !== f.exchange) return false;
   if (f.type && r.type !== f.type) return false;
-  if (f.sector && r.sector !== f.sector) return false;
+  // Sector / subsector match against the mapped taxonomy (raw SIC → 11 majors).
+  if (f.sector || f.subsector) {
+    const cls = classifySector(r.sector);
+    if (f.sector && cls?.sector !== f.sector) return false;
+    if (f.subsector && cls?.subsector !== f.subsector) return false;
+  }
   if (f.minMcap != null && (r.mcap == null || r.mcap < f.minMcap)) return false;
   if (f.maxMcap != null && (r.mcap == null || r.mcap > f.maxMcap)) return false;
   if (f.minPrice != null && (r.price == null || r.price < f.minPrice)) return false;

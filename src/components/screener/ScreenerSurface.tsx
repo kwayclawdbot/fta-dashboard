@@ -49,6 +49,8 @@ import {
   type CustomFilters,
   type SortDir,
 } from "@/lib/screener";
+import { SECTORS, SUBSECTORS, type Sector } from "@/lib/screener-sectors";
+import { formatExchange } from "@/lib/market/exchange";
 
 const ICONS: Record<string, LucideIcon> = { Trophy, TrendingUp, Rocket, Waves, BarChart3 };
 const PAGE_SIZE = 100;
@@ -256,11 +258,6 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     load();
   }, [load]);
 
-  const sectors = useMemo(() => {
-    const s = new Set<string>();
-    for (const r of rows) if (r.sector) s.add(r.sector);
-    return Array.from(s).sort();
-  }, [rows]);
   const exchanges = useMemo(() => {
     const s = new Set<string>();
     for (const r of rows) if (r.exchange) s.add(r.exchange);
@@ -312,6 +309,8 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setCustom((c) => {
       const next = { ...c };
       delete next[key];
+      // Clearing a sector also drops any subsector chosen under it.
+      if (key === "sector") delete next.subsector;
       return next;
     });
   }
@@ -507,7 +506,6 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
               <FilterPanel
                 isFTA={isFTA}
                 isKid={isKid}
-                sectors={sectors}
                 exchanges={exchanges}
                 value={custom}
                 patch={patchFilter}
@@ -865,7 +863,7 @@ function CardRow({
             {r.type === "etf" && (
               <span className="rounded bg-sand px-1 py-px text-[9px] font-bold uppercase text-soft">ETF</span>
             )}
-            {r.exchange && <span className="text-[10px] text-soft/70">{r.exchange}</span>}
+            {r.exchange && <span className="text-[10px] text-soft/70">{formatExchange(r.exchange)}</span>}
           </div>
           <p className="truncate text-xs text-soft">{r.name || "—"}</p>
         </div>
@@ -906,9 +904,10 @@ function Metric({ label, value, tone }: { label: string; value: string; tone: st
 function activeChips(f: CustomFilters): { key: keyof CustomFilters; label: string }[] {
   const out: { key: keyof CustomFilters; label: string }[] = [];
   const cap = (v: number) => fmtMcap(v);
-  if (f.exchange) out.push({ key: "exchange", label: f.exchange });
+  if (f.exchange) out.push({ key: "exchange", label: formatExchange(f.exchange) ?? f.exchange });
   if (f.type) out.push({ key: "type", label: f.type === "etf" ? "ETFs" : "Common stocks" });
   if (f.sector) out.push({ key: "sector", label: f.sector });
+  if (f.subsector) out.push({ key: "subsector", label: f.subsector });
   if (f.minMcap != null) out.push({ key: "minMcap", label: `Cap ≥ ${cap(f.minMcap)}` });
   if (f.maxMcap != null) out.push({ key: "maxMcap", label: `Cap ≤ ${cap(f.maxMcap)}` });
   if (f.minPrice != null) out.push({ key: "minPrice", label: `Price ≥ $${f.minPrice}` });
@@ -951,26 +950,26 @@ const MCAP_STEPS: { label: string; value: number }[] = [
 function FilterPanel({
   isFTA,
   isKid,
-  sectors,
   exchanges,
   value,
   patch,
 }: {
   isFTA: boolean;
   isKid: boolean;
-  sectors: string[];
   exchanges: string[];
   value: CustomFilters;
   patch: (p: Partial<CustomFilters>) => void;
 }) {
+  const selectedSector = (value.sector as Sector | null) ?? null;
+  const subsectorOptions = selectedSector ? SUBSECTORS[selectedSector] : [];
   return (
     <div className="space-y-4 px-4 pb-4">
-      {/* Exchange + type + sector */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Exchange + type + sector + dependent subsector */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Select label="Exchange" value={value.exchange ?? ""} onChange={(v) => patch({ exchange: v || null })}>
           <option value="">Any exchange</option>
           {exchanges.map((e) => (
-            <option key={e} value={e}>{e}</option>
+            <option key={e} value={e}>{formatExchange(e)}</option>
           ))}
         </Select>
         <Select label="Type" value={value.type ?? ""} onChange={(v) => patch({ type: (v as CustomFilters["type"]) || null })}>
@@ -978,9 +977,25 @@ function FilterPanel({
           <option value="common">Common stocks</option>
           <option value="etf">ETFs</option>
         </Select>
-        <Select label="Sector" value={value.sector ?? ""} onChange={(v) => patch({ sector: v || null })}>
+        <Select
+          label="Sector"
+          value={value.sector ?? ""}
+          // Changing the sector clears any subsector chosen under the old one.
+          onChange={(v) => patch({ sector: v || null, subsector: null })}
+        >
           <option value="">Any sector</option>
-          {sectors.map((s) => (
+          {SECTORS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </Select>
+        <Select
+          label="Subsector"
+          value={value.subsector ?? ""}
+          onChange={(v) => patch({ subsector: v || null })}
+          disabled={!selectedSector}
+        >
+          <option value="">{selectedSector ? "Any subsector" : "Pick a sector first"}</option>
+          {subsectorOptions.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
         </Select>
@@ -1062,11 +1077,13 @@ function Select({
   value,
   onChange,
   children,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -1074,7 +1091,8 @@ function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-sand bg-paper px-2.5 py-2 text-xs text-ink"
+        disabled={disabled}
+        className="w-full rounded-lg border border-sand bg-paper px-2.5 py-2 text-xs text-ink disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {children}
       </select>

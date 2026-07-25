@@ -136,6 +136,25 @@ export function parseTickerTags(raw: string, max = 4): string[] {
   return out;
 }
 
+/**
+ * Extract $CASHTAGS from a post body ("$TSLA to the moon" → ["TSLA"]). Only
+ * `$` immediately followed by 1-6 letters counts, so "$5" / "$1,500" are never
+ * tickers. Uppercased + de-duped, order preserved. Used on submit to fold
+ * in-body cashtags into the post's ticker_tags (then validated against the
+ * securities table) — the same convention the server-side feed-seed writes.
+ */
+export function parseCashtags(body: string | null | undefined): string[] {
+  if (!body) return [];
+  const out: string[] = [];
+  const re = /\$([A-Za-z]{1,6})(?![A-Za-z])/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) {
+    const t = m[1].toUpperCase();
+    if (!out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
 export interface PostComment {
   id: string;
   post_id: string;

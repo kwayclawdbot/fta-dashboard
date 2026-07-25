@@ -25,6 +25,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote, fetchNews, fetchBars, type MarketQuote, type MarketBar, type NewsHeadline } from "@/lib/market/client";
+import { formatExchange } from "@/lib/market/exchange";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import LivePrice from "@/components/fic/LivePrice";
@@ -535,8 +536,8 @@ export default function ResearchClient({
                 <div className="mt-0.5 flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-midnight-500">{ticker}</span>
                   {research?.company.exchange && (
-                    <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-soft">
-                      {research.company.exchange}
+                    <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold tracking-wider text-soft">
+                      {formatExchange(research.company.exchange)}
                     </span>
                   )}
                   <LivePrice quote={quote} size="md" showDelayed />

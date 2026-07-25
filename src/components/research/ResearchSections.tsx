@@ -10,6 +10,7 @@ import { useState } from "react";
 import { ExternalLink, Building2, Users, MapPin, Calendar, Globe } from "lucide-react";
 import type { ResearchPayload } from "@/lib/research/types";
 import type { NewsHeadline } from "@/lib/market/client";
+import { formatExchange } from "@/lib/market/exchange";
 import {
   RevenueMarginChart,
   AssetsLiabilitiesChart,
@@ -67,7 +68,7 @@ export function CompanyProfileCard({
 
   const rows: { icon: React.ElementType; label: string; value: string | null }[] = [
     { icon: Building2, label: "Industry", value: company.sector },
-    { icon: Globe, label: "Exchange", value: company.exchange },
+    { icon: Globe, label: "Exchange", value: formatExchange(company.exchange) },
     { icon: Users, label: "Employees", value: company.employees ? company.employees.toLocaleString() : null },
     { icon: MapPin, label: "Headquarters", value: company.address },
     { icon: Calendar, label: "Trading since", value: company.listDate },

@@ -35,6 +35,10 @@ export interface MarketBar {
 export interface TickerHit {
   ticker: string;
   name: string;
+  /** Canonical exchange label ("Nasdaq") — present from the suggest route. */
+  exchange?: string | null;
+  /** 'common' | 'etf' — lets suggest UIs badge ETFs. */
+  type?: string | null;
 }
 
 /** Client-safe mirror of the server FinancialPeriod (Kai report charts). */

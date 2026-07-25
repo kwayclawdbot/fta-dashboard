@@ -14,8 +14,10 @@ import React, { createContext, useContext } from "react";
 
 // Handle token in body text: whitespace-free run of the chars the composer allows.
 const HANDLE_CHARS = "A-Za-z0-9_.'-";
+// Three alternatives: URL | @mention (lead ws + handle) | $cashtag (lead ws +
+// 1-6 letters, not followed by another letter so "$5"/"$1,500" never match).
 const TOKEN_RE = new RegExp(
-  `(https?:\\/\\/[^\\s]+)|((?:^|\\s))@([${HANDLE_CHARS}]+)`,
+  `(https?:\\/\\/[^\\s]+)|((?:^|\\s))@([${HANDLE_CHARS}]+)|((?:^|\\s))\\$([A-Za-z]{1,6})(?![A-Za-z])`,
   "g"
 );
 
@@ -74,7 +76,7 @@ export default function RichText({
           {m[1]}
         </a>
       );
-    } else {
+    } else if (m[3] != null) {
       // @mention — m[2] = leading whitespace (preserve), m[3] = handle
       const lead = m[2] ?? "";
       const handle = m[3] ?? "";
@@ -93,6 +95,22 @@ export default function RichText({
       } else {
         parts.push(<span key={key++} className="font-semibold text-gold-700">@{handle}</span>);
       }
+    } else {
+      // $cashtag — m[4] = leading whitespace (preserve), m[5] = symbol.
+      // Renders as the designed inline ticker chip (same token idiom the
+      // ticker-tag row uses) linking to the research page.
+      const lead = m[4] ?? "";
+      const sym = (m[5] ?? "").toUpperCase();
+      if (lead) parts.push(<span key={key++}>{lead}</span>);
+      parts.push(
+        <Link
+          key={key++}
+          href={`/research/${encodeURIComponent(sym)}?from=community`}
+          className="inline-flex items-center rounded bg-chip-amber px-1.5 py-0.5 font-mono text-[0.9em] font-bold text-gold-800 hover:bg-gold-400/30"
+        >
+          ${sym}
+        </Link>
+      );
     }
     last = m.index + m[0].length;
   }

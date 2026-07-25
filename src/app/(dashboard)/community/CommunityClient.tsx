@@ -21,7 +21,7 @@ import { fetchXpForUsers } from "@/lib/belts";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
-  activityLine, isWatchlistShare, timeAgo, parseTickerTags, POSITION_META,
+  activityLine, isWatchlistShare, timeAgo, parseTickerTags, parseCashtags, POSITION_META,
   type WatchlistSharePayload, type PostPosition,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
   type AnchorPayload, type Role,
@@ -464,12 +464,31 @@ export default function CommunityClient({
       };
     }
 
+    // Fold any in-body $cashtags into the tag set, then validate the whole set
+    // against the securities universe (screener_metrics) so only real symbols
+    // are stored. Manual tags keep priority (listed first); cap at 4. If the
+    // validation query fails, degrade to the raw merge so a post never silently
+    // loses its tags.
+    const mergedTags = [...tickerTags];
+    for (const t of parseCashtags(body)) if (!mergedTags.includes(t)) mergedTags.push(t);
+    let finalTags = mergedTags.slice(0, 4);
+    if (mergedTags.length) {
+      const { data: valid } = await supabase
+        .from("screener_metrics")
+        .select("ticker")
+        .in("ticker", mergedTags);
+      if (valid) {
+        const ok = new Set((valid as { ticker: string }[]).map((r) => r.ticker));
+        finalTags = mergedTags.filter((t) => ok.has(t)).slice(0, 4);
+      }
+    }
+
     const { data, error } = await supabase
       .from("feed_posts")
       .insert({
         author_id: me.id, family_id: me.family_id, kind: "post", body,
-        ticker_tags: tickerTags,
-        position: tickerTags.length ? position : null,
+        ticker_tags: finalTags,
+        position: finalTags.length ? position : null,
         ...(attachmentFields || {}),
       })
       .select(`id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at`)
