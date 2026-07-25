@@ -480,7 +480,36 @@ export async function POST(req: NextRequest) {
     messages.push({ role: "user", content: text });
   }
 
-  const system = buildChatSystemPrompt(register, profileTier, personalizationBlock);
+  // PROMPT CACHING (biggest per-message cost lever on claude-sonnet-5: cached
+  // input reads bill ~0.1x). The Anthropic render order is tools -> system ->
+  // messages, so the cacheable prefix is [tools + system]. We split `system`
+  // into two blocks so the cache is layered and byte-stable:
+  //
+  //   block 1 = the register/profile base prompt with NO personalization. This
+  //     is GLOBAL — identical for every member on the same (register, profile),
+  //     with no timestamps/IDs/per-request data anywhere in it (guardrail floor
+  //     + club/education register are static string constants). A cache_control
+  //     breakpoint here freezes tools + base prompt, so it hits across turns AND
+  //     across members. This is the dominant win.
+  //   block 2 = the per-member personalization (name, belt, memory summary).
+  //     Placed AFTER block 1 (global before user-specific) with its own
+  //     breakpoint so it caches within a member's session; it only invalidates
+  //     when the rolling memory summary is rewritten (after a turn, not during).
+  //
+  // Everything volatile (history, the current user turn, tool_result payloads,
+  // market data) lives in `messages`, which is AFTER both breakpoints — so a new
+  // turn never disturbs the cached prefix.
+  const baseSystem = buildChatSystemPrompt(register, profileTier, "");
+  const system: { type: "text"; text: string; cache_control?: { type: "ephemeral" } }[] = [
+    { type: "text", text: baseSystem, cache_control: { type: "ephemeral" } },
+  ];
+  if (personalizationBlock) {
+    system.push({
+      type: "text",
+      text: personalizationBlock,
+      cache_control: { type: "ephemeral" },
+    });
+  }
   const tid = threadId;
 
   const stream = new ReadableStream({
