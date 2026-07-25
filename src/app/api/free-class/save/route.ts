@@ -19,7 +19,7 @@ interface SaveBody {
   email?: string;
   phone?: string;
   smsOptin?: boolean;
-  /** Challenge-funnel partial lead → GHL "challenge-lead-partial" tag. */
+  /** Challenge-funnel partial lead → source='challenge' + 'partial' tag in CRM. */
   challenge?: boolean;
 }
 
