@@ -258,6 +258,29 @@ export default function SettingsPage() {
 
       <div className="border-t border-sand mb-8" />
 
+      {/* Getting started — replay first-run moments anytime */}
+      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.085, duration: 0.3 }} className="mb-10">
+        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Getting started</h3>
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <button
+            onClick={() => router.push("/dashboard?tour=1")}
+            className="flex-1 rounded-xl border border-sand bg-midnight-800/40 hover:bg-midnight-800 px-4 py-3 text-left transition-colors"
+          >
+            <p className="text-sm font-semibold text-midnight-100">Replay the walkthrough</p>
+            <p className="text-xs text-midnight-400 mt-0.5">Take the guided tour again</p>
+          </button>
+          <button
+            onClick={() => { try { window.dispatchEvent(new CustomEvent("fic:firstrun-install")); } catch {} }}
+            className="flex-1 rounded-xl border border-sand bg-midnight-800/40 hover:bg-midnight-800 px-4 py-3 text-left transition-colors"
+          >
+            <p className="text-sm font-semibold text-midnight-100">Add to Home Screen</p>
+            <p className="text-xs text-midnight-400 mt-0.5">Install the app on this device</p>
+          </button>
+        </div>
+      </m.div>
+
+      <div className="border-t border-sand mb-8" />
+
       {/* Appearance */}
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.09, duration: 0.3 }} className="mb-10">
         <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">Appearance</h3>
