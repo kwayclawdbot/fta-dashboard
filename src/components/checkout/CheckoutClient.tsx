@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { m, useReducedMotion } from "@/lib/motion";
@@ -58,20 +58,41 @@ export default function CheckoutClient({
   const reduce = useReducedMotion();
   const [bump, setBump] = useState<BumpChoice>("none");
   const [dark, setDark] = useState(false);
-  // Mount the Payment Element only AFTER first layout — mounting it before the
-  // container has its final width makes Stripe measure ~0 and render collapsed
-  // card fields. A rAF defers the mount until layout has settled.
-  const [mounted, setMounted] = useState(false);
+  // Mount the Payment Element ONLY after its container has a stable, non-trivial
+  // width. Stripe measures the element's width once at mount; mounting before the
+  // grid/fonts settle makes it cache ~0 and render collapsed card fields — and a
+  // later resize does NOT recover it. We poll the container width via rAF and
+  // mount only once it's >200px and unchanged for 3 frames (with a safety
+  // timeout so we never hang).
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [containerReady, setContainerReady] = useState(false);
   useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    // Nudge Stripe to re-measure after the layout (incl. the sibling
-    // AddressElement) fully settles — Stripe re-lays-out its iframes on resize.
-    const nudges = [180, 500, 1000].map((ms) =>
-      setTimeout(() => window.dispatchEvent(new Event("resize")), ms)
-    );
+    const el = cardRef.current;
+    if (!el) {
+      setContainerReady(true);
+      return;
+    }
+    let raf = 0;
+    let lastW = -1;
+    let stable = 0;
+    const tick = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 200 && w === lastW) {
+        if (++stable >= 3) {
+          setContainerReady(true);
+          return;
+        }
+      } else {
+        stable = 0;
+      }
+      lastW = w;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    const safety = setTimeout(() => setContainerReady(true), 3000);
     return () => {
-      cancelAnimationFrame(id);
-      nudges.forEach(clearTimeout);
+      cancelAnimationFrame(raf);
+      clearTimeout(safety);
     };
   }, []);
 
@@ -169,8 +190,11 @@ export default function CheckoutClient({
               content-sized grid track made Stripe's Payment Element mismeasure
               its width and render collapsed. */}
           <div className="min-w-0 lg:order-1">
-            <div className="rounded-2xl border border-sand bg-card p-5 shadow-lift sm:p-7">
-              {stripePromise && mounted ? (
+            <div
+              ref={cardRef}
+              className="rounded-2xl border border-sand bg-card p-5 shadow-lift sm:p-7"
+            >
+              {stripePromise && containerReady ? (
                 <Elements stripe={stripePromise} options={elementsOptions}>
                   <PaymentForm
                     flow={flow}
