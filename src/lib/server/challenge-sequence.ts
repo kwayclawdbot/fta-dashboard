@@ -20,6 +20,7 @@ import {
   CLUB_CONTINUE_URL,
   FTA_CHALLENGE_URL,
   CHALLENGE_STEPS,
+  VIP_EVENT_STEPS,
   type ChallengeStep,
 } from "./challenge-sequence-emails";
 import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "./drips";
@@ -33,10 +34,16 @@ import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "./drips";
  * show_dayof is the morning orientation ("it's here, week overview"), day1 is
  * the actual mission, deliberately spaced ~3h apart.
  */
-export const CHALLENGE_SCHEDULE: Record<Exclude<ChallengeStep, "welcome">, string> = {
+export const CHALLENGE_SCHEDULE: Record<
+  Exclude<ChallengeStep, "welcome" | "vip_receipt" | "vip_precharge">,
+  string
+> = {
   aug_watchlist: "2026-08-04T15:00:00Z",
   aug_kai: "2026-08-11T15:00:00Z",
   aug_screener: "2026-08-18T15:00:00Z",
+  // vip_upsell — a single optional VIP nudge to FREE registrants, mid-August
+  // (the cron skips anyone who already bought VIP). Fixed-calendar like the rest.
+  vip_upsell: "2026-08-21T15:00:00Z",
   aug_belts: "2026-08-25T15:00:00Z",
   show_d3: "2026-08-29T15:00:00Z",
   show_d1: "2026-08-31T15:00:00Z",
@@ -59,15 +66,19 @@ export function futureScheduledRows(
   now: Date = new Date()
 ): { step: ChallengeStep; scheduled_at: string }[] {
   const nowMs = now.getTime();
-  return (Object.keys(CHALLENGE_SCHEDULE) as Exclude<ChallengeStep, "welcome">[])
-    .map((step) => ({ step, scheduled_at: CHALLENGE_SCHEDULE[step] }))
+  return (Object.keys(CHALLENGE_SCHEDULE) as (keyof typeof CHALLENGE_SCHEDULE)[])
+    .map((step) => ({ step: step as ChallengeStep, scheduled_at: CHALLENGE_SCHEDULE[step] }))
     .filter((r) => new Date(r.scheduled_at).getTime() > nowMs);
 }
 
-/** Sanity guard: the schedule must cover every non-welcome step exactly once. */
+/** Sanity guard: the schedule must cover every fixed-calendar step exactly once.
+ *  welcome is sent at registration; the VIP event steps (vip_receipt /
+ *  vip_precharge) are scheduled off the VIP purchase, not this calendar. */
 export function scheduleCoversAllSteps(): boolean {
   const scheduled = new Set(Object.keys(CHALLENGE_SCHEDULE));
-  return CHALLENGE_STEPS.filter((s) => s !== "welcome").every((s) => scheduled.has(s));
+  return CHALLENGE_STEPS.filter(
+    (s) => s !== "welcome" && !VIP_EVENT_STEPS.has(s)
+  ).every((s) => scheduled.has(s));
 }
 
 export interface EnrollResult {

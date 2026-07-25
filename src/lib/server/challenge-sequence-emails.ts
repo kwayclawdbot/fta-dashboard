@@ -45,7 +45,15 @@ export type ChallengeStep =
   | "day3_offer"
   | "close_stats"
   | "close_offer"
-  | "close_lastcall";
+  | "close_lastcall"
+  // ── VIP ticket steps (Lane C9) ──
+  // vip_receipt / vip_precharge are EVENT-relative (scheduled off the VIP
+  // purchase, not the fixed cohort calendar) and only ever exist for VIP buyers.
+  // vip_upsell is a fixed-calendar step sent to FREE registrants (the cron skips
+  // it for anyone who already bought VIP).
+  | "vip_receipt"
+  | "vip_precharge"
+  | "vip_upsell";
 
 /** Live member stats, merged at send time (close_stats only needs them). */
 export interface ChallengeStats {
@@ -62,6 +70,7 @@ export interface ChallengeSeqCtx {
   continueUrl: string; // $99/mo Club checkout (close_offer)
   ftaUrl: string; // $1,500 FTA Challenge Offer checkout (close_offer)
   stats?: ChallengeStats; // required for close_stats
+  vipRoomUrl?: string; // VIP room / VIP upsell surface (vip_* steps)
 }
 
 /* ── palette (mirrors drip-templates, + teal energy accent) ───────────────── */
@@ -257,6 +266,7 @@ export function renderChallengeSequenceEmail(
   ctx: ChallengeSeqCtx
 ): RenderedChallengeSeq {
   const { appUrl: u, unsubUrl, continueUrl, ftaUrl } = ctx;
+  const vipRoomUrl = ctx.vipRoomUrl || `${u}/vip-room`;
   const name = ctx.firstName || "there";
 
   switch (step) {
@@ -900,6 +910,138 @@ export function renderChallengeSequenceEmail(
         ),
       };
     }
+
+    /* ── 6. VIP TICKET STEPS (Lane C9) ──────────────────────────────────── */
+
+    // vip_receipt — instant, on VIP purchase. Confirms the order, sets the
+    // textbook-shipping expectation, links the private VIP room, and restates
+    // the honest billing promise (first month included, $99/mo after, reminder
+    // + one-click cancel).
+    case "vip_receipt": {
+      const subject = "You're VIP — textbook on the way + your private room";
+      const inner =
+        sectionHead(`Welcome to VIP, ${esc(name)} 🎟️`) +
+        paragraph(
+          `Your <strong>VIP ticket</strong> is confirmed. Here's exactly what that includes — nothing hidden:`
+        ) +
+        rail(
+          "1 · Your printed textbook",
+          "Shipping to the address you entered",
+          `A physical companion to the whole challenge is being prepared for print and will ship to you. We'll email tracking as soon as it's on the way — printed-to-order, so give it a little time.`,
+          "orange"
+        ) +
+        rail(
+          "2 · Your first month of Club — already on",
+          "Full Cheat Code Club access",
+          `Everything is unlocked right now: Kai, the community watchlist, the screener, alerts, live classes. <a href="${u}/dashboard" target="_blank" style="color:${C.accent};font-weight:700;text-decoration:none;">Open your dashboard &rsaquo;</a>`,
+          "teal"
+        ) +
+        rail(
+          "3 · Your private VIP room",
+          "A smaller room, just for VIP members",
+          `A quieter space to ask questions and share what you're working on through the challenge. <a href="${vipRoomUrl}" target="_blank" style="color:${C.accent};font-weight:700;text-decoration:none;">Step into the VIP room &rsaquo;</a>`,
+          "orange"
+        ) +
+        ctaRow(cta("Open your VIP room", vipRoomUrl)) +
+        paragraph(
+          `<span style="font-size:13px;color:${C.faint};">Billing, in plain terms: your first month of Club is included in today's $197. After 30 days it continues at $99/mo — we'll email you 3 days before that first charge, and you can cancel in one click anytime. This is education, not financial advice.</span>`
+        );
+      return {
+        subject,
+        html: shell("Your VIP ticket is confirmed — textbook, first month of Club, and your private room.", "VIP · YOU'RE IN", inner, unsubUrl),
+        text: plain(
+          subject,
+          [
+            `Hi ${name},`,
+            "Your VIP ticket is confirmed. Here's everything it includes:",
+            "1) Your printed textbook — shipping to the address you entered (printed-to-order; we'll email tracking).",
+            `2) Your first month of Cheat Code Club — already on. Open your dashboard: ${u}/dashboard`,
+            `3) Your private VIP room: ${vipRoomUrl}`,
+            "Billing in plain terms: your first month is included in today's $197. After 30 days it continues at $99/mo — we'll email you 3 days before that first charge, and you can cancel in one click. Education, not financial advice.",
+          ],
+          unsubUrl
+        ),
+      };
+    }
+
+    // vip_precharge — 3 days before the first $99/mo charge (day 27 of the trial).
+    // The honesty promise made concrete: a clear heads-up + one-click cancel.
+    case "vip_precharge": {
+      const subject = "Heads up: your Club continues in 3 days ($99/mo)";
+      const inner =
+        sectionHead(`A quick, honest heads-up, ${esc(name)}`) +
+        paragraph(
+          `When you grabbed your VIP ticket, your first month of Cheat Code Club came included. That month is almost up — <strong>in 3 days your membership continues at $99/mo</strong>, exactly as it said at checkout.`
+        ) +
+        rail(
+          "Nothing to do if you're staying",
+          "Keep everything you've been using",
+          `Kai, the community, the watchlist, the screener, alerts, live classes — it all just keeps going, month to month.`,
+          "teal"
+        ) +
+        rail(
+          "Changed your mind? One click.",
+          "Cancel before the charge — no questions",
+          `You can cancel in one click and you won't be charged. Whatever you decide, everything you built this challenge stays on your free account. <a href="${u}/settings" target="_blank" style="color:${C.accent};font-weight:700;text-decoration:none;">Manage your membership &rsaquo;</a>`,
+          "orange"
+        ) +
+        ctaRow(cta("Manage or cancel — one click", `${u}/settings`)) +
+        paragraph(
+          `<span style="font-size:13px;color:${C.faint};">We send this on purpose — we never want a surprise charge. This is education, not financial advice; no income or return is promised.</span>`
+        );
+      return {
+        subject,
+        html: shell("Your included first month is almost up — Club continues at $99/mo in 3 days, or cancel in one click.", "3 DAYS TO RENEWAL", inner, unsubUrl),
+        text: plain(
+          subject,
+          [
+            `Hi ${name},`,
+            "When you grabbed your VIP ticket, your first month of Club came included. That month is almost up — in 3 days your membership continues at $99/mo, exactly as it said at checkout.",
+            "Staying? Nothing to do — Kai, the community, watchlist, screener, alerts and live classes all keep going.",
+            `Changed your mind? Cancel in one click before the charge, no questions: ${u}/settings`,
+            "We send this on purpose — we never want a surprise charge. Education, not financial advice.",
+          ],
+          unsubUrl
+        ),
+      };
+    }
+
+    // vip_upsell — to FREE registrants only (the cron skips VIP buyers). A single,
+    // no-pressure nudge that the VIP ticket exists; never implies the free
+    // challenge is incomplete.
+    case "vip_upsell": {
+      const subject = "Want the textbook version? (totally optional)";
+      const inner =
+        sectionHead(`One optional extra, ${esc(name)}`) +
+        paragraph(
+          `First: your free challenge is complete on its own. You have full Club access, every tool, and the whole community — nothing is being held back. This is just letting you know a <strong>VIP ticket</strong> exists, in case it's your thing.`
+        ) +
+        rail(
+          "The VIP ticket — $197",
+          "A printed textbook + more hands-on support",
+          `You get a physical, printed textbook mailed to you, your first month of Club included, and a private VIP room during the challenge. It's for people who like something to hold and a smaller room to learn in — not a "missing half".`,
+          "orange"
+        ) +
+        ctaRow(cta("See the VIP ticket", vipRoomUrl)) +
+        paragraph(
+          `<span style="font-size:13px;color:${C.faint};">No pressure at all — the free challenge stays exactly as it is either way. This is education, not financial advice; no income or return is promised.</span>`
+        );
+      return {
+        subject,
+        html: shell("Optional: a printed textbook + a private room. Your free challenge is complete either way.", "OPTIONAL · VIP", inner, unsubUrl),
+        text: plain(
+          subject,
+          [
+            `Hi ${name},`,
+            "First: your free challenge is complete on its own — full Club access, every tool, the whole community. Nothing is held back.",
+            "This is just to let you know a VIP ticket exists ($197): a printed textbook mailed to you, your first month of Club included, and a private VIP room during the challenge. For people who like something to hold and a smaller room — never a 'missing half'.",
+            `See the VIP ticket: ${vipRoomUrl}`,
+            "No pressure — the free challenge stays exactly as it is either way. Education, not financial advice.",
+          ],
+          unsubUrl
+        ),
+      };
+    }
   }
 }
 
@@ -934,9 +1076,23 @@ export const CHALLENGE_STEPS: readonly ChallengeStep[] = [
   "close_stats",
   "close_offer",
   "close_lastcall",
+  "vip_receipt",
+  "vip_precharge",
+  "vip_upsell",
 ] as const;
 
 /** Steps whose copy merges live member stats at send time. */
 export const CHALLENGE_STEPS_NEEDING_STATS: ReadonlySet<ChallengeStep> = new Set([
   "close_stats",
+]);
+
+/**
+ * VIP purchase-relative steps (Lane C9). These are scheduled off the VIP
+ * checkout event (not the fixed cohort calendar) and only ever exist for VIP
+ * buyers, so scheduleCoversAllSteps() must NOT require them in CHALLENGE_SCHEDULE.
+ * vip_upsell is deliberately NOT here — it lives on the fixed calendar.
+ */
+export const VIP_EVENT_STEPS: ReadonlySet<ChallengeStep> = new Set([
+  "vip_receipt",
+  "vip_precharge",
 ]);

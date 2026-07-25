@@ -150,6 +150,24 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // vip_upsell dedupe (Lane C9): the optional VIP nudge goes to FREE
+    // registrants only — never to someone who already bought a VIP ticket.
+    if (step === "vip_upsell" && r.family_id) {
+      const { data: vip } = await db
+        .from("challenge_vips")
+        .select("id")
+        .eq("family_id", r.family_id)
+        .maybeSingle();
+      if (vip) {
+        await db
+          .from("challenge_sequences")
+          .update({ status: "skipped", error: "already vip" })
+          .eq("id", r.id);
+        skipped++;
+        continue;
+      }
+    }
+
     const firstName = (prof.display_name || "").trim().split(/\s+/)[0] || "there";
     const unsubUrl = dripUnsubUrl(r.user_id);
 
