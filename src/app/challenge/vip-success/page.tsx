@@ -1,10 +1,27 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { provisionChallengeVip } from "@/lib/server/challenge-vip";
+import { peSessionFromPaymentIntent } from "@/lib/server/pe-session";
 import { normalizeShipping } from "@/lib/server/shop";
 import { APP_ORIGIN } from "@/lib/server/drips";
 import VipSuccess from "@/components/challenge/VipSuccess";
 
 export const dynamic = "force-dynamic";
+
+/** Retrieve a raw Stripe object by path (session or payment_intent). */
+async function stripeGet(path: string): Promise<Record<string, unknown> | null> {
+  const sk = process.env.STRIPE_SECRET_KEY;
+  if (!sk) return null;
+  try {
+    const res = await fetch(`https://api.stripe.com/v1/${path}`, {
+      headers: { Authorization: `Bearer ${sk}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * /challenge/vip-success — the landing after a $197 Challenge VIP checkout
@@ -42,12 +59,22 @@ async function retrieveStripeSession(
 export default async function VipSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; payment_intent?: string }>;
 }) {
-  const { session_id } = await searchParams;
+  const { session_id, payment_intent } = await searchParams;
   const sessionId = (session_id || "").trim();
+  const piId = (payment_intent || "").trim();
 
-  const session = await retrieveStripeSession(sessionId);
+  // Legacy hosted/embedded Checkout returns ?session_id; the custom Payment
+  // Element flow returns ?payment_intent.
+  let session: Record<string, unknown> | null = null;
+  if (sessionId) {
+    session = await retrieveStripeSession(sessionId);
+  } else if (piId) {
+    const sk = process.env.STRIPE_SECRET_KEY;
+    const pi = await stripeGet(`payment_intents/${encodeURIComponent(piId)}`);
+    if (sk && pi) session = await peSessionFromPaymentIntent(sk, pi);
+  }
 
   // Bogus / missing / non-VIP session → graceful "not found".
   const meta = (session?.metadata as Record<string, unknown> | undefined) || {};

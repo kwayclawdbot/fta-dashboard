@@ -20,6 +20,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createOrderFromSession, normalizeShipping } from "@/lib/server/shop";
 import { createShopifyTextbookOrder } from "@/lib/server/shopify";
+import { fulfillOrderBump } from "@/lib/server/order-bumps";
 import { renderChallengeSequenceEmail } from "@/lib/server/challenge-sequence-emails";
 import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "@/lib/server/drips";
 
@@ -59,6 +60,15 @@ export async function provisionChallengeVip(session: Session): Promise<VipProvis
   const db = createAdminClient();
   const sessionId = String(session.id || "");
   if (!sessionId) return { ok: false, created: false, error: "no session id" };
+
+  // Order-bump fulfillment (independently idempotent on the session) — run before
+  // the VIP idempotency early-return so a webhook retry / page safety-net still
+  // ships a bump even after the VIP itself was already provisioned.
+  try {
+    await fulfillOrderBump(session);
+  } catch (e) {
+    console.error("vip order-bump fulfillment error:", e);
+  }
 
   // Idempotency — a VIP row for this session already exists ⇒ done.
   const { data: existing } = await db

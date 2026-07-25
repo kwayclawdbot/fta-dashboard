@@ -20,6 +20,7 @@
  */
 import { createAdminClient } from "@/lib/supabase/admin";
 import { provisionMembership } from "@/lib/server/membership";
+import { fulfillOrderBump } from "@/lib/server/order-bumps";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Session = Record<string, any>;
@@ -47,6 +48,15 @@ export async function provisionClubMembership(session: Session): Promise<ClubPro
     .trim()
     .toLowerCase();
   if (!email) return { ok: false, created: false, error: "no email" };
+
+  // Order-bump fulfillment (independently idempotent on the session) — run before
+  // the membership idempotency early-return so a webhook retry / page safety-net
+  // still ships a bump even after the membership itself was already provisioned.
+  try {
+    await fulfillOrderBump(session);
+  } catch (e) {
+    console.error("club order-bump fulfillment error:", e);
+  }
 
   // Idempotency — a pending_memberships row already stamped with this session id
   // means provisioning ran (webhook or an earlier safety-net). Treat as done.
