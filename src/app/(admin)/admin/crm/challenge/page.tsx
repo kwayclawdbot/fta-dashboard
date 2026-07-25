@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 interface CohortMember {
   email: string | null;
   first_name: string | null;
+  phone: string | null;
   created_at: string;
   user_id: string | null;
   onboarding_complete: boolean | null;
@@ -168,10 +169,11 @@ export default function ChallengeCohortPage() {
   function exportCsv() {
     if (!data) return;
     const rows = [
-      ["email", "first_name", "source", "signed_up", "activated", "tier", "pass_expires", "xp", "alert_rules", "posts"],
+      ["email", "first_name", "phone", "source", "signed_up", "activated", "tier", "pass_expires", "xp", "alert_rules", "posts"],
       ...data.members.map((m) => [
         m.email || "",
         m.first_name || "",
+        m.phone || "",
         m.src || "organic",
         m.created_at,
         m.onboarding_complete ? "yes" : "no",
@@ -543,6 +545,9 @@ export default function ChallengeCohortPage() {
                         <td className="py-2 pr-4 text-zinc-200">
                           {m.first_name || "—"}
                           <span className="text-zinc-600 ml-1.5 text-xs">{m.email}</span>
+                          {m.phone && (
+                            <span className="block text-zinc-500 text-xs mt-0.5">{m.phone}</span>
+                          )}
                         </td>
                         <td className="py-2 px-3">
                           <span

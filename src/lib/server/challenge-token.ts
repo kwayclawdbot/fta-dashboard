@@ -34,18 +34,27 @@ export interface ChallengeContinuation {
   userId: string;
   email: string;
   src: string;
+  /** Optional name captured on the marketing form — pre-fills account setup. */
+  name?: string;
 }
 
 interface Payload {
   u: string;
   e: string;
   s: string;
+  n?: string;
   x: number; // expiry epoch ms
 }
 
 /** Mint a continuation token for a freshly-registered email-first challenger. */
 export function makeContinuationToken(c: ChallengeContinuation, ttlMs = TTL_MS): string {
-  const payload: Payload = { u: c.userId, e: c.email, s: c.src || "", x: Date.now() + ttlMs };
+  const payload: Payload = {
+    u: c.userId,
+    e: c.email,
+    s: c.src || "",
+    ...(c.name ? { n: c.name.slice(0, 80) } : {}),
+    x: Date.now() + ttlMs,
+  };
   const body = b64url(JSON.stringify(payload));
   const sig = crypto.createHmac("sha256", tokenSecret()).update(`chal:${body}`).digest("hex");
   return `${body}.${sig}`;
@@ -67,5 +76,5 @@ export function verifyContinuationToken(token: string): ChallengeContinuation | 
     return null;
   }
   if (!p?.u || !p?.e || typeof p.x !== "number" || Date.now() > p.x) return null;
-  return { userId: p.u, email: p.e, src: p.s || "" };
+  return { userId: p.u, email: p.e, src: p.s || "", name: p.n || "" };
 }

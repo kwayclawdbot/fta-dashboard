@@ -50,6 +50,8 @@ export default function ChallengeSetupPage() {
         if (!mounted) return;
         setValid(!!r.valid);
         if (r.email) setEmail(String(r.email));
+        if (r.name) setFirstName(String(r.name)); // pre-fill from the site form
+
       } catch {
         /* invalid */
       } finally {

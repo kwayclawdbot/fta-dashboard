@@ -29,6 +29,23 @@ export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Loose phone normalization → E.164, US-default. NEVER hard-fails: an odd number
+ * is stored raw and flagged (valid:false) rather than rejecting the signup.
+ */
+function normalizePhone(raw: string): { e164: string | null; raw: string | null; valid: boolean } {
+  const input = (raw || "").trim();
+  if (!input) return { e164: null, raw: null, valid: false };
+  const digits = input.replace(/\D/g, "");
+  if (digits.length === 10) return { e164: `+1${digits}`, raw: input, valid: true };
+  if (digits.length === 11 && digits.startsWith("1")) return { e164: `+${digits}`, raw: input, valid: true };
+  if (input.startsWith("+") && digits.length >= 10 && digits.length <= 15)
+    return { e164: `+${digits}`, raw: input, valid: true };
+  if (digits.length >= 10 && digits.length <= 15)
+    return { e164: `+${digits}`, raw: input, valid: false }; // loose-parsed, flag it
+  return { e164: null, raw: input, valid: false };
+}
+
 const ALLOWED_ORIGINS = new Set([
   "https://cheatcode-club.vercel.app",
   "https://cheatcode.com",
@@ -79,7 +96,7 @@ export async function POST(req: NextRequest) {
   const cors = corsHeaders(req.headers.get("origin"));
   const json = (b: unknown, status = 200) => NextResponse.json(b, { status, headers: cors });
 
-  let body: { email?: string; src?: string; website?: string };
+  let body: { email?: string; name?: string; phone?: string; src?: string; website?: string };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -98,6 +115,11 @@ export async function POST(req: NextRequest) {
 
   const email = (body.email || "").trim().toLowerCase();
   const src = (body.src || "").trim().slice(0, 64) || "funnel";
+  const name = (body.name || "").trim().slice(0, 80);
+  const phone = normalizePhone(body.phone || "");
+  // The site form carries reminder (SMS) consent microcopy next to the phone
+  // field, so a supplied phone IS the consent. Twilio sends come later.
+  const smsConsent = !!phone.raw;
   if (!EMAIL_RE.test(email)) return json({ error: "Please enter a valid email." }, 400);
 
   const db = createAdminClient();
@@ -110,7 +132,7 @@ export async function POST(req: NextRequest) {
     .eq("email", email)
     .maybeSingle();
   if (existingProfile?.id) {
-    const token = makeContinuationToken({ userId: existingProfile.id, email, src });
+    const token = makeContinuationToken({ userId: existingProfile.id, email, src, name });
     return json({ redirect: otoRedirect(token) });
   }
 
@@ -122,13 +144,13 @@ export async function POST(req: NextRequest) {
     email,
     password: randomPassword,
     email_confirm: true,
-    user_metadata: { role: "parent" },
+    user_metadata: name ? { role: "parent", display_name: name } : { role: "parent" },
   });
   if (createErr || !created?.user) {
     // Race: created between our check and now → treat as idempotent.
     const { data: prof } = await db.from("profiles").select("id").eq("email", email).maybeSingle();
     if (prof?.id) {
-      const token = makeContinuationToken({ userId: prof.id, email, src });
+      const token = makeContinuationToken({ userId: prof.id, email, src, name });
       return json({ redirect: otoRedirect(token) });
     }
     return json({ error: "Could not start your registration." }, 500);
@@ -170,11 +192,11 @@ export async function POST(req: NextRequest) {
       age_group: "adults",
       track: "adults",
       email,
-      // Blank the trigger's default (email-prefix) name: its emptiness is the
-      // "registered-not-onboarded" signal, and it keeps the finish_setup email
-      // greeting a friendly "there" rather than the raw email prefix. (Column is
-      // NOT NULL, so empty string — not null.) Set for real at account completion.
-      display_name: "",
+      // Name if the form provided one (so account setup pre-fills); otherwise
+      // blank (NOT NULL column ⇒ empty string, not null) — its emptiness is the
+      // "registered-not-onboarded" signal and keeps the finish_setup greeting a
+      // friendly "there". Either way, confirmed/changeable at account completion.
+      display_name: name || "",
       onboarding_complete: false,
     })
     .eq("id", userId);
@@ -203,7 +225,11 @@ export async function POST(req: NextRequest) {
   await db.from("free_class_registrations").insert({
     user_id: userId,
     email,
-    quiz: { flow: "email_first" },
+    quiz: {
+      flow: "email_first",
+      ...(name ? { first_name: name } : {}),
+      ...(phone.raw ? { phone: phone.e164 || phone.raw, phone_raw: phone.raw } : {}),
+    },
     source: "challenge",
   });
 
@@ -212,8 +238,23 @@ export async function POST(req: NextRequest) {
   //    (registered-not-onboarded) cohort. ──
   try {
     const srcTag = src ? [`src:${src}`] : [];
-    const tags = ["challenge", "registered", "ticket-free", "email-first", ...srcTag];
-    const custom = { src, ticket: "free", flow: "email_first", onboarded: false };
+    const smsTag = smsConsent ? ["sms-consent"] : [];
+    const tags = ["challenge", "registered", "ticket-free", "email-first", ...srcTag, ...smsTag];
+    const nowIso = new Date().toISOString();
+    const custom = {
+      src,
+      ticket: "free",
+      flow: "email_first",
+      onboarded: false,
+      // Consent FACT + timestamp (Twilio sends come later). phone_valid flags a
+      // loose-parsed number for a human to eyeball.
+      sms_consent: smsConsent,
+      sms_consent_at: smsConsent ? nowIso : null,
+      phone_e164: phone.e164,
+      phone_raw: phone.raw,
+      phone_valid: phone.raw ? phone.valid : null,
+    };
+    const leadPhone = phone.e164 || phone.raw || null;
     const { data: lead } = await db
       .from("marketing_leads")
       .select("id, tags")
@@ -226,16 +267,20 @@ export async function POST(req: NextRequest) {
         .from("marketing_leads")
         .update({
           stage: "engaged",
+          ...(name ? { first_name: name } : {}),
+          ...(leadPhone ? { phone: leadPhone } : {}),
           tags: merged,
           converted_profile_id: userId,
           custom,
-          last_activity_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          last_activity_at: nowIso,
+          updated_at: nowIso,
         })
         .eq("id", lead.id);
     } else {
       await db.from("marketing_leads").insert({
         email,
+        first_name: name || null,
+        phone: leadPhone,
         source: "challenge",
         stage: "engaged",
         tags,
@@ -248,6 +293,6 @@ export async function POST(req: NextRequest) {
     /* marketing schema drift — never block registration */
   }
 
-  const token = makeContinuationToken({ userId, email, src });
+  const token = makeContinuationToken({ userId, email, src, name });
   return json({ redirect: otoRedirect(token) });
 }

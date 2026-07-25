@@ -32,5 +32,5 @@ export async function GET(req: NextRequest) {
     isVip = !!vip;
   }
 
-  return NextResponse.json({ valid: true, email: c.email, src: c.src, isVip });
+  return NextResponse.json({ valid: true, email: c.email, src: c.src, name: c.name || "", isVip });
 }
