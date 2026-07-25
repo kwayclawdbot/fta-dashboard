@@ -53,7 +53,11 @@ export type ChallengeStep =
   // it for anyone who already bought VIP).
   | "vip_receipt"
   | "vip_precharge"
-  | "vip_upsell";
+  | "vip_upsell"
+  // ── Email-first finish-registration nurture (Lane C9b) ──
+  // Event-relative (scheduled ~20h after email capture); cancelled the moment the
+  // account is completed. Nudges email-first registrants to set a password.
+  | "finish_setup";
 
 /** Live member stats, merged at send time (close_stats only needs them). */
 export interface ChallengeStats {
@@ -71,6 +75,7 @@ export interface ChallengeSeqCtx {
   ftaUrl: string; // $1,500 FTA Challenge Offer checkout (close_offer)
   stats?: ChallengeStats; // required for close_stats
   vipRoomUrl?: string; // VIP room / VIP upsell surface (vip_* steps)
+  setupUrl?: string; // token-bearing finish-setup link (finish_setup only)
 }
 
 /* ── palette (mirrors drip-templates, + teal energy accent) ───────────────── */
@@ -267,6 +272,7 @@ export function renderChallengeSequenceEmail(
 ): RenderedChallengeSeq {
   const { appUrl: u, unsubUrl, continueUrl, ftaUrl } = ctx;
   const vipRoomUrl = ctx.vipRoomUrl || `${u}/vip-room`;
+  const setupUrl = ctx.setupUrl || `${u}/free-class`;
   const name = ctx.firstName || "there";
 
   switch (step) {
@@ -1053,6 +1059,43 @@ export function renderChallengeSequenceEmail(
         ),
       };
     }
+
+    /* ── 7. EMAIL-FIRST FINISH-REGISTRATION NUDGE (Lane C9b) ─────────────── */
+
+    // finish_setup — ~20h after email capture, only for people who registered by
+    // email but haven't set a password yet (cancelled the moment they finish).
+    case "finish_setup": {
+      const subject = "You're registered — one quick step to finish";
+      const inner =
+        sectionHead(`You're in, ${esc(name)} — let's finish setting up`) +
+        paragraph(
+          `You joined the <strong>5-Day Investing Challenge</strong> and your spot is saved. There's just one quick step left: set a password so you can log in and get your full Club access.`
+        ) +
+        rail(
+          "Takes about a minute",
+          "Set your password and you're all set",
+          `Your account, your family space, and all your Club tools are waiting. Finish setting up and hop in whenever you like — the challenge starts September 1.`,
+          "orange"
+        ) +
+        ctaRow(cta("Finish setting up my account", setupUrl)) +
+        paragraph(
+          `<span style="font-size:13px;color:${C.faint};">If you've already finished, you can ignore this. This is education, not financial advice; no income or return is promised.</span>`
+        );
+      return {
+        subject,
+        html: shell("Your challenge spot is saved — set a password to finish and get your Club access.", "FINISH SETUP", inner, unsubUrl),
+        text: plain(
+          subject,
+          [
+            `Hi ${name},`,
+            "You joined the 5-Day Investing Challenge and your spot is saved. One quick step left: set a password so you can log in and get your full Club access.",
+            `Finish setting up (about a minute): ${setupUrl}`,
+            "If you've already finished, ignore this. Education, not financial advice.",
+          ],
+          unsubUrl
+        ),
+      };
+    }
   }
 }
 
@@ -1090,6 +1133,7 @@ export const CHALLENGE_STEPS: readonly ChallengeStep[] = [
   "vip_receipt",
   "vip_precharge",
   "vip_upsell",
+  "finish_setup",
 ] as const;
 
 /** Steps whose copy merges live member stats at send time. */
@@ -1106,4 +1150,14 @@ export const CHALLENGE_STEPS_NEEDING_STATS: ReadonlySet<ChallengeStep> = new Set
 export const VIP_EVENT_STEPS: ReadonlySet<ChallengeStep> = new Set([
   "vip_receipt",
   "vip_precharge",
+]);
+
+/**
+ * All event-relative steps (scheduled off an event, not the fixed cohort
+ * calendar): the VIP steps plus the email-first finish_setup nurture. Used by
+ * scheduleCoversAllSteps() so the coverage guard doesn't require them.
+ */
+export const EVENT_RELATIVE_STEPS: ReadonlySet<ChallengeStep> = new Set([
+  ...VIP_EVENT_STEPS,
+  "finish_setup",
 ]);

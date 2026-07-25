@@ -21,7 +21,7 @@ import {
   CLUB_CONTINUE_URL,
   FTA_CHALLENGE_URL,
   CHALLENGE_STEPS,
-  VIP_EVENT_STEPS,
+  EVENT_RELATIVE_STEPS,
   type ChallengeStep,
 } from "./challenge-sequence-emails";
 import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "./drips";
@@ -36,7 +36,7 @@ import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "./drips";
  * the actual mission, deliberately spaced ~3h apart.
  */
 export const CHALLENGE_SCHEDULE: Record<
-  Exclude<ChallengeStep, "welcome" | "vip_receipt" | "vip_precharge">,
+  Exclude<ChallengeStep, "welcome" | "vip_receipt" | "vip_precharge" | "finish_setup">,
   string
 > = {
   aug_watchlist: "2026-08-04T15:00:00Z",
@@ -84,7 +84,7 @@ export function futureScheduledRows(
 export function scheduleCoversAllSteps(): boolean {
   const scheduled = new Set(Object.keys(CHALLENGE_SCHEDULE));
   return CHALLENGE_STEPS.filter(
-    (s) => s !== "welcome" && !VIP_EVENT_STEPS.has(s)
+    (s) => s !== "welcome" && !EVENT_RELATIVE_STEPS.has(s)
   ).every((s) => scheduled.has(s));
 }
 

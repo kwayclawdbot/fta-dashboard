@@ -11,6 +11,7 @@ import {
   type ChallengeStats,
 } from "@/lib/server/challenge-sequence-emails";
 import { APP_ORIGIN, dripUnsubUrl, sendDripEmail } from "@/lib/server/drips";
+import { makeContinuationToken } from "@/lib/server/challenge-token";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -183,6 +184,15 @@ export async function GET(req: NextRequest) {
       stats = { xp, beltLabel: beltForXp(xp).label, rules: ruleCount ?? 0, posts: postCount ?? 0 };
     }
 
+    // finish_setup (email-first): mint a fresh continuation token so the CTA
+    // deep-links straight into account completion (the original capture token
+    // has long since expired by the +20h send).
+    let setupUrl: string | undefined;
+    if (step === "finish_setup" && prof.email) {
+      const t = makeContinuationToken({ userId: r.user_id, email: prof.email, src: "" });
+      setupUrl = `${APP_ORIGIN}/free-class/setup?t=${encodeURIComponent(t)}`;
+    }
+
     const { subject, html, text } = renderChallengeSequenceEmail(step, {
       firstName,
       appUrl: APP_ORIGIN,
@@ -190,6 +200,7 @@ export async function GET(req: NextRequest) {
       continueUrl: CLUB_CONTINUE_URL,
       ftaUrl: FTA_CHALLENGE_URL,
       stats,
+      setupUrl,
     });
 
     const result = await sendDripEmail({ to: prof.email, subject, html, text, unsubUrl });
