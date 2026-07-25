@@ -506,13 +506,13 @@ export default function AppTour({ user }: { user: TourUser }) {
     // Auto-run is a one-shot per mount: once we've decided (fired or suppressed),
     // never re-evaluate — this is what stops the "re-fires every load" bug.
     if (autoDecidedRef.current) return;
-    // Fast path: this device has already seen the CURRENT tour version.
-    try {
-      if (Number(localStorage.getItem(LSV_KEY) || "0") >= CURRENT_TOUR_VERSION) {
-        autoDecidedRef.current = true;
-        return;
-      }
-    } catch { /* ignore */ }
+    // NOTE: the old per-DEVICE fast-path (localStorage LSV_KEY) was REMOVED — it
+    // suppressed the tour for a second account on a device that had already seen
+    // it, which is exactly the invite case (an invitee signing up on a family
+    // member's phone got no walkthrough). First-run is now keyed per-PROFILE via
+    // profiles.tour_completed_at (checked below), so the tour fires on any device
+    // for anyone who has never actually seen it. Toured users have the marker set
+    // and are never re-toured.
     autoDecidedRef.current = true;
     let mounted = true;
     (async () => {
@@ -568,6 +568,11 @@ export default function AppTour({ user }: { user: TourUser }) {
     try {
       localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION));
       localStorage.removeItem(LS_PROGRESS);
+    } catch { /* ignore */ }
+    // Signal the FirstRun orchestrator that the walkthrough is done so it can
+    // advance to the install + push steps (which come AFTER the tour).
+    try {
+      window.dispatchEvent(new CustomEvent("fic:tour-finished", { detail: { completed } }));
     } catch { /* ignore */ }
     // Where the tour ends: a completed CHALLENGE tour lands on the community
     // composer, pre-seeded with the intro-post (the micro-commitment). Everyone

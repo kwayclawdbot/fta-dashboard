@@ -15,6 +15,7 @@ import type { UpsellContext } from "./UpsellCard";
 import AppTour from "@/components/tour/AppTour";
 import ModeManager from "@/components/ModeManager";
 import NotificationOnboard from "@/components/notifications/NotificationOnboard";
+import FirstRun from "@/components/first-run/FirstRun";
 import { Toaster } from "@/components/ui/Toast";
 import { Suspense } from "react";
 
@@ -238,7 +239,15 @@ export default function DashboardShell({
         <AppTour user={user} />
       </Suspense>
 
-      {/* Silent push self-heal + platform-aware zero-friction enrollment. */}
+      {/* Unified per-profile first-run layer: sequences walkthrough → add-to-home
+          -screen → push pre-prompt on a user's first session, every signup path.
+          Converges here so the invite path (and every other) gets first-run. */}
+      <Suspense fallback={null}>
+        <FirstRun user={user} />
+      </Suspense>
+
+      {/* Silent push self-heal + platform-aware re-prompts (FirstRun owns the
+          initial prompt and silences this during first-run to avoid doubling). */}
       <NotificationOnboard />
 
       {/* Global toast host (enrollment confirmations, etc.). */}
