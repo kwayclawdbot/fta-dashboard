@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { provisionMembership } from "@/lib/server/membership";
 import { provisionChallengeVip } from "@/lib/server/challenge-vip";
+import { provisionClubMembership } from "@/lib/server/club-membership";
 
 /**
  * Stripe checkout.session.completed → provision membership + send the
@@ -58,6 +59,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "vip provision failed" }, { status: 500 });
       }
       return NextResponse.json({ received: true, vip: result.vipId, created: result.created });
+    }
+    // Cheat Code Club $99/mo membership (marketing-site guest checkout): explicit
+    // kind branch so a subscription-mode Club session provisions the $99 membership
+    // + creates/links the account + CRM. Session-idempotent (keyed on stripe_session
+    // in pending_memberships) so it never double-provisions with the /club/welcome
+    // safety-net, a Stripe retry, or the legacy amount-mapped payment-link path.
+    if (s.metadata?.kind === "club_membership") {
+      const result = await provisionClubMembership(s);
+      if (!result.ok) {
+        console.error("club_membership provision failed:", result.error);
+        return NextResponse.json({ error: "club provision failed" }, { status: 500 });
+      }
+      return NextResponse.json({ received: true, club: true, created: result.created });
     }
     const email: string | undefined =
       s.customer_details?.email || s.customer_email;
