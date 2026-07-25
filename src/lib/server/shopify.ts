@@ -48,20 +48,48 @@ export async function createShopifyTextbookOrder(opts: {
   email?: string;
   shipping: NormalizedShipping;
 }): Promise<ShopifyOrderResult> {
+  return createShopifyOrder({
+    email: opts.email,
+    shipping: opts.shipping,
+    lineItems: [{ variantId: TEXTBOOK_VARIANT_ID, quantity: 1 }],
+    tags: "challenge-vip, stripe-paid",
+    note: "Cheat Code Club — Challenge VIP textbook (paid via Stripe).",
+  });
+}
+
+/**
+ * General paid-order creator for any set of live-store variants (used by the
+ * order-bump fulfillment: adults textbook, kids curriculum bundle, parents
+ * bundle). The Stripe payment already happened, so the Shopify order is created
+ * PAID purely to hand the shipping address to the store's Lulu fulfillment.
+ * Best-effort — returns { ok:false } (never throws) when the token is missing or
+ * the API errors, so callers degrade to the /admin/shop manual queue.
+ */
+export async function createShopifyOrder(opts: {
+  email?: string;
+  shipping: NormalizedShipping;
+  lineItems: { variantId: string | number; quantity: number }[];
+  tags?: string;
+  note?: string;
+}): Promise<ShopifyOrderResult> {
   const token = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim();
   if (!token) return { ok: false, error: "SHOPIFY_ADMIN_ACCESS_TOKEN not configured" };
+  if (!opts.lineItems.length) return { ok: false, error: "no line items" };
 
   const { first, last } = splitName(opts.shipping.name);
   const a = opts.shipping.address || {};
   const order: Record<string, unknown> = {
-    line_items: [{ variant_id: Number(TEXTBOOK_VARIANT_ID), quantity: 1 }],
+    line_items: opts.lineItems.map((li) => ({
+      variant_id: Number(li.variantId),
+      quantity: Math.max(1, li.quantity),
+    })),
     email: opts.email || undefined,
     financial_status: "paid", // already paid via Stripe
     inventory_behaviour: "bypass",
     send_receipt: false,
     send_fulfillment_receipt: false,
-    tags: "challenge-vip, stripe-paid",
-    note: "Cheat Code Club — Challenge VIP textbook (paid via Stripe).",
+    tags: opts.tags || "stripe-paid",
+    note: opts.note || "Cheat Code Club — paid via Stripe.",
     shipping_address: {
       first_name: first,
       last_name: last,

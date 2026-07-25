@@ -3,6 +3,10 @@ import crypto from "crypto";
 import { provisionMembership } from "@/lib/server/membership";
 import { provisionChallengeVip } from "@/lib/server/challenge-vip";
 import { provisionClubMembership } from "@/lib/server/club-membership";
+import {
+  peSessionFromInvoice,
+  peSessionFromPaymentIntent,
+} from "@/lib/server/pe-session";
 
 /**
  * Stripe checkout.session.completed → provision membership + send the
@@ -33,6 +37,25 @@ function programFor(amountTotal: number | null | undefined): "fic" | "fta" {
   return amountTotal != null && amountTotal >= 100000 ? "fta" : "fic";
 }
 
+/**
+ * Route a reconstructed Payment-Element session to the same provisioning as the
+ * legacy Checkout flows (both call idempotent provisioners, now keyed on the
+ * subscription id). Only flow=pe sessions reach here (peSession* returns null
+ * otherwise), so legacy subscriptions' invoice.paid events are ignored — they
+ * provision via checkout.session.completed and never double-fire.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function dispatchPeProvision(session: any): Promise<void> {
+  const kind = session?.metadata?.kind;
+  if (kind === "challenge_vip") {
+    const r = await provisionChallengeVip(session);
+    if (!r.ok) console.error("pe challenge_vip provision failed:", r.error);
+  } else if (kind === "club_membership") {
+    const r = await provisionClubMembership(session);
+    if (!r.ok) console.error("pe club provision failed:", r.error);
+  }
+}
+
 export async function POST(req: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) return NextResponse.json({ error: "not configured" }, { status: 500 });
@@ -41,6 +64,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "bad signature" }, { status: 400 });
 
   const event = JSON.parse(payload);
+
+  // ── Payment Element (custom checkout) flow ──────────────────────────────────
+  // These subscriptions are paid via an inline invoice PaymentIntent, so
+  // provisioning triggers on invoice.paid (primary) + payment_intent.succeeded
+  // (fallback), keyed on the subscription id. peSession* returns null for legacy
+  // (non-pe) subscriptions so those are left to checkout.session.completed.
+  if (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded") {
+    const sk = process.env.STRIPE_SECRET_KEY;
+    if (sk) {
+      const session = await peSessionFromInvoice(sk, event.data?.object ?? {});
+      if (session) await dispatchPeProvision(session);
+    }
+    return NextResponse.json({ received: true });
+  }
+  if (event.type === "payment_intent.succeeded") {
+    const sk = process.env.STRIPE_SECRET_KEY;
+    const pi = event.data?.object ?? {};
+    if (sk && pi.invoice) {
+      const session = await peSessionFromPaymentIntent(sk, pi);
+      if (session) await dispatchPeProvision(session);
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (event.type === "checkout.session.completed") {
     const s = event.data?.object ?? {};
     // Shop (physical book) purchases are handled by /api/shop/webhook — never
