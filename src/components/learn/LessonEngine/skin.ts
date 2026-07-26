@@ -122,7 +122,7 @@ export function getLessonSkin(register: Register): LessonSkin {
         body: "font-body text-[16px] leading-relaxed sm:text-[17px]",
         figureStat: "font-display text-[52px] leading-none font-black tracking-tight sm:text-[68px]",
       },
-      mascot: { guide: 56, completion: 104 },
+      mascot: { guide: 56, completion: 168 },
       reask: {
         choice: "Almost! Let's try that one more time.",
         tf: "Take another look, then pick.",
@@ -171,7 +171,7 @@ export function getLessonSkin(register: Register): LessonSkin {
         body: "font-body text-[16px] leading-relaxed sm:text-[17px]",
         figureStat: "font-display text-[54px] leading-none font-black tracking-tight sm:text-[72px]",
       },
-      mascot: { guide: 46, completion: 88 },
+      mascot: { guide: 46, completion: 148 },
       reask: {
         choice: "Not quite — run it back.",
         tf: "Read it once more, then call it.",
@@ -219,7 +219,7 @@ export function getLessonSkin(register: Register): LessonSkin {
       body: "font-body text-[16px] leading-relaxed sm:text-[17px]",
       figureStat: "font-display text-[56px] leading-none font-black tracking-tight sm:text-[76px]",
     },
-    mascot: { guide: 40, completion: 76 },
+    mascot: { guide: 40, completion: 132 },
     reask: {
       choice: "Not the one — here's why, then try again.",
       tf: "Read it once more, then decide.",

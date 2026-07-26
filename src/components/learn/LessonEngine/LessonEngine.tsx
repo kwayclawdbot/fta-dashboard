@@ -245,10 +245,19 @@ export default function LessonEngine({
             </div>
           )}
 
-          {/* Celebrating Kai + node-unlock ring */}
-          <div className="relative mx-auto mb-5 grid place-items-center" style={{ width: skin.mascot.completion, height: skin.mascot.completion }}>
-            {!reduce && <span className={styles.unlockRing} style={{ width: "100%", height: "100%" }} />}
-            <KaiGuide pose="celebrating" size={skin.mascot.completion} />
+          {/* Celebrating Kai on a lit stage + node-unlock ring at the base */}
+          <div
+            className={styles.completionStage}
+            style={{ height: skin.mascot.completion }}
+          >
+            <span className={styles.completionGlow} aria-hidden />
+            {!reduce && <span className={styles.unlockRing} aria-hidden />}
+            <KaiGuide
+              pose="celebrating"
+              variant="hero"
+              size={skin.mascot.completion}
+              float={skin.motion.guideFloat}
+            />
           </div>
 
           <div className={`${skin.type.eyebrow}`} style={{ color: "var(--l-accent)" }}>
