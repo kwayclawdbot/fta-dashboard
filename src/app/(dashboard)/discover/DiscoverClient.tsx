@@ -2,24 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  Sparkles,
   TrendingUp,
   TrendingDown,
   FileText,
   MessageSquare,
-  Newspaper,
-  Telescope,
   ArrowRight,
   MessagesSquare,
   Bot,
   Heart,
+  Telescope,
+  Search,
 } from "lucide-react";
 import NewsClient from "../news/NewsClient";
-import Tabs from "@/components/ui/Tabs";
 import TickerRow from "@/components/ui/TickerRow";
-import ScreenerSurface from "@/components/screener/ScreenerSurface";
+import { PageIntro, EditorialSection } from "@/components/grammar";
 import type { NewsCardData } from "@/lib/news/types";
 import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
 import type { DiscoverExtras } from "@/lib/discover";
@@ -38,26 +36,17 @@ import { timeAgo } from "@/lib/feed";
 import { contributionMeta } from "@/lib/research/social";
 
 /**
- * DiscoverClient — the five-tab discovery hub (Cheat Code Club redesign). R3
- * makes the shell rich: For You is a real personalized mix (the viewer's
- * watched-ticker movers + a nudge when thin), Top Research surfaces real typed
- * contributions + published Kai reports, and Trending / Most Discussed rows now
- * carry a local sparkline + a delayed price + the discussion count. Every ticker
- * row navigates to /research/[ticker].
+ * Discover — DE-TABBED (CONVERGENCE S2). The six-tab switcher (Trending / Most
+ * Discussed / Top Research … were only ranking filters on one universe) is gone.
+ * Discover is now ONE editorial page on the sand canvas:
+ *
+ *   search anchor → For You → Trending Now → Best Research → News Moving the Club
+ *
+ * with "Open Stock Finder →" (the screener is a full-screen tool ROUTE now, not
+ * an embedded tab) and "Explore stocks →" as the page's opening actions. News
+ * keeps its own detail view (rows → /news/[slug]). Every ticker row is the shared
+ * TickerRow signal-row primitive and navigates to /research/[ticker].
  */
-
-type TabKey = "for-you" | "trending" | "screener" | "research" | "discussed" | "news";
-
-const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "for-you", label: "For You", icon: Sparkles },
-  { key: "trending", label: "Trending", icon: TrendingUp },
-  { key: "screener", label: "Screener", icon: Telescope },
-  { key: "research", label: "Top Research", icon: FileText },
-  { key: "discussed", label: "Most Discussed", icon: MessageSquare },
-  { key: "news", label: "News", icon: Newspaper },
-];
-
-const TAB_KEYS = new Set<string>(TABS.map((t) => t.key));
 
 interface DiscoverClientProps {
   initialNews: NewsCardData[] | null;
@@ -69,33 +58,15 @@ type LikeCounts = CommunityBoardSeed["likeCounts"];
 type Entries = CommunityBoardSeed["entries"];
 
 export default function DiscoverClient({ initialNews, board, extras }: DiscoverClientProps) {
-  // Deep-linkable tab: /discover?tab=screener (and any other tab key) opens on
-  // that tab. Falls back to "For You". Read once for the initial state; the tab
-  // strip owns it from there.
-  const searchParams = useSearchParams();
-  const initialTab = ((): TabKey => {
-    const t = searchParams.get("tab");
-    return t && TAB_KEYS.has(t) ? (t as TabKey) : "for-you";
-  })();
-  const [tab, setTab] = useState<TabKey>(initialTab);
-
   const entries: Entries = board?.entries ?? [];
   const likeCounts: LikeCounts = board?.likeCounts ?? {};
 
-  const byLikes = useMemo(
-    () =>
-      [...entries].sort(
-        (a, b) => (likeCounts[b.ticker]?.net ?? 0) - (likeCounts[a.ticker]?.net ?? 0)
-      ),
-    [entries, likeCounts]
-  );
   const byDiscussion = useMemo(
     () => [...entries].sort((a, b) => (b.comment_count ?? 0) - (a.comment_count ?? 0)),
     [entries]
   );
 
-  // Batch one quote request for every ticker any tab might show — no N+1. The
-  // Sparkline components fetch their own (cached) daily bars lazily on scroll.
+  // Batch one quote request for every ticker any section might show — no N+1.
   const allTickers = useMemo(() => {
     const s = new Set<string>();
     entries.forEach((e) => s.add(e.ticker));
@@ -111,95 +82,233 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
     return () => ctrl.abort();
   }, [allTickers]);
 
+  const movers = extras?.forYouMovers ?? [];
+  const hasWatched = movers.length > 0;
+  const trending = byDiscussion.slice(0, 12);
+  const contributions = extras?.contributions ?? [];
+  const reports = extras?.reports ?? [];
+
   return (
-    <div>
-      {/* Tab strip — horizontally scrollable on phones so all six fit. Kept in
-          the narrow column so the nav stays put; the Screener tab below breaks
-          out wider for its data table. */}
-      <div className="mx-auto max-w-3xl">
-        <Tabs
-          ariaLabel="Discover sections"
-          size="sm"
-          className="mb-5"
-          tabs={TABS.map((t) => ({
-            key: t.key,
-            label: t.label,
-            icon: t.icon,
-            dataAttrs: { "data-tour": `discover:${t.key}` },
-          }))}
-          active={tab}
-          onSelect={setTab}
+    <div className="mx-auto max-w-3xl space-y-10 pb-16">
+      {/* Search anchor — Discover's opening composition */}
+      <div>
+        <PageIntro
+          eyebrow="Discover"
+          title="Find your next idea"
+          context="Search any stock, follow what the Club is watching, and read the best thinking."
         />
+        <SearchAnchor />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Link
+            href="/screener"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-solid)] px-3.5 py-1.5 text-sm font-bold text-[var(--accent-on)] transition-opacity hover:opacity-90"
+          >
+            <Telescope className="h-4 w-4" /> Open Stock Finder
+          </Link>
+          <Link
+            href="/watchlist/community"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-soft transition-colors hover:text-ink"
+          >
+            Explore stocks <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
 
-      {tab === "screener" ? (
-        // Full-universe screener — the same surface as /screener, embedded. It
-        // brings its own tier gating (free members see the join-the-Club lock),
-        // filters and 11k-security load; only the outer page chrome is trimmed.
-        // Wider column so the dense data table has room to breathe.
-        <div className="mx-auto max-w-6xl">
-          <ScreenerSurface embedded />
+      {/* For You */}
+      <EditorialSection
+        title={hasWatched ? "For you" : "Personalize your feed"}
+        lead={
+          hasWatched
+            ? "Moving on the stocks you follow · prices delayed ~15 min"
+            : undefined
+        }
+        divide
+      >
+        {hasWatched ? (
+          <div className="-mx-2">
+            {movers.map((mv) => (
+              <RankedTickerRow
+                key={mv.ticker}
+                ticker={mv.ticker}
+                name={mv.name ?? mv.ticker}
+                quote={quotes[mv.ticker]}
+                likes={likeCounts[mv.ticker]?.net}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="max-w-[60ch] text-base leading-relaxed text-soft">
+            Like a few stocks (👍 on any research page) and this fills with the ones you
+            follow — their moves, and what the Club is saying. Until then, here&apos;s what&apos;s
+            hot right now.
+          </p>
+        )}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <QuickLink href="/community" icon={MessagesSquare} title="The Club" body="See what the Club is sharing right now." />
+          <QuickLink href="/kai" icon={Bot} title="Ask Kai" body="Your AI research co-pilot. Ask anything." />
         </div>
-      ) : (
-        <div className="mx-auto max-w-3xl">
-          {tab === "for-you" && <ForYouTab extras={extras} quotes={quotes} byDiscussion={byDiscussion} likeCounts={likeCounts} onOpenScreener={() => setTab("screener")} />}
-          {tab === "trending" && <TrendingTab rows={byDiscussion.slice(0, 12)} quotes={quotes} likeCounts={likeCounts} onOpenScreener={() => setTab("screener")} />}
-          {tab === "research" && <ResearchTab extras={extras} />}
-          {tab === "discussed" && <DiscussedTab rows={byLikes.slice(0, 12)} quotes={quotes} likeCounts={likeCounts} />}
-          {tab === "news" && <NewsClient initialArticles={initialNews} />}
+      </EditorialSection>
+
+      {/* Trending Now */}
+      <EditorialSection
+        title="Trending now"
+        lead="What the Club is discussing most · prices delayed ~15 min"
+        action={
+          <Link href="/watchlist/community" className="font-semibold text-[var(--accent-strong)]">
+            See all →
+          </Link>
+        }
+        divide
+      >
+        {trending.length ? (
+          <div className="-mx-2">
+            {trending.map((e, i) => (
+              <RankedTickerRow
+                key={e.id}
+                rank={i + 1}
+                ticker={e.ticker}
+                name={e.company_name}
+                quote={quotes[e.ticker]}
+                discussion={e.comment_count ?? 0}
+                likes={likeCounts[e.ticker]?.net ?? 0}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyHint>
+            Nothing trending yet. Be the first to champion an idea on the{" "}
+            <Link href="/watchlist/community" className="font-semibold text-[var(--accent-strong)]">
+              Community Watchlist
+            </Link>
+            .
+          </EmptyHint>
+        )}
+      </EditorialSection>
+
+      {/* Best Research */}
+      <EditorialSection
+        title="Best research"
+        lead="The Club's best deep-dives — author, thesis, reactions."
+        divide
+      >
+        {contributions.length === 0 && reports.length === 0 ? (
+          <div className="space-y-3">
+            <p className="max-w-[60ch] text-base leading-relaxed text-soft">
+              The best deep-dives land here as members post them. Be the first: drop a thesis
+              on any idea&apos;s research page.
+            </p>
+            <QuickLink
+              href="/community"
+              icon={MessagesSquare}
+              title="Browse the Club feed"
+              body="Every idea the Club has shared, newest first."
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {contributions.map((c) => {
+              const meta = contributionMeta(c.contribution_type);
+              return (
+                <Link
+                  key={c.id}
+                  href={`/research/${encodeURIComponent(c.ticker)}`}
+                  className="paper-card block p-4 transition hover:shadow-lift"
+                >
+                  <div className="flex items-start gap-3">
+                    <CompanyLogo symbol={c.ticker} name={c.ticker} size={40} />
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="font-display text-sm font-bold text-ink">{c.ticker}</span>
+                        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${meta.chip}`}>
+                          {meta.label}
+                        </span>
+                      </div>
+                      <p className="line-clamp-2 text-[15px] leading-snug text-ink/90">{c.snippet}</p>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} size="xs" />
+                        <span className="text-[11px] font-medium text-soft">
+                          {c.author?.username ? `@${c.author.username}` : c.author?.display_name || "Member"}
+                        </span>
+                        <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} className="align-middle" />
+                        <span className="ml-auto text-[10px] text-midnight-500">{timeAgo(c.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+
+            {reports.length > 0 && (
+              <div className="pt-1">
+                <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-soft">
+                  <Bot className="h-3.5 w-3.5 text-kai-blue" /> Kai research reports
+                </p>
+                <div className="-mx-2">
+                  {reports.map((r) => (
+                    <Link
+                      key={r.ticker}
+                      href={`/research/${encodeURIComponent(r.ticker)}`}
+                      className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-sand/50"
+                    >
+                      <CompanyLogo symbol={r.ticker} name={r.company_name ?? r.ticker} size={30} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink">{r.ticker}</p>
+                        <p className="truncate text-[11px] text-soft">{r.company_name ?? "Kai deep-dive"}</p>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-midnight-500">{timeAgo(r.generated_at)}</span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[var(--accent-strong)]" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </EditorialSection>
+
+      {/* News Moving the Club — keeps its own detail view (rows → /news/[slug]) */}
+      <EditorialSection title="News moving the Club" divide>
+        <div className="flex items-center gap-1.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-soft">
+          <FileText className="h-3.5 w-3.5" /> Newsroom
         </div>
-      )}
+        <NewsClient initialArticles={initialNews} />
+      </EditorialSection>
     </div>
   );
 }
 
-// ── Stock Finder CTA (the screener is its own Discover tab now) ──────────────
-// Launch switches to the in-hub Screener tab rather than navigating away, so the
-// finder opens right here. The standalone /screener route still exists for deep
-// links and the sidebar.
-function StockFinderCard({ onLaunch }: { onLaunch: () => void }) {
+// ── Search anchor ────────────────────────────────────────────────────────────
+function SearchAnchor() {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const t = q.trim().toUpperCase().replace(/[^A-Z.]/g, "");
+    if (t) router.push(`/research/${encodeURIComponent(t)}`);
+  }
   return (
-    <div
-      data-tour="discover:stock-finder"
-      className="overflow-hidden rounded-2xl border border-sand bg-card shadow-soft"
-    >
-      <div className="flex items-center gap-3 p-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-400/15 text-gold-700">
-          <Telescope className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-display text-sm font-bold text-ink">Stock Finder</p>
-            <span className="rounded-full bg-teal-400/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-teal-700">
-              AI
-            </span>
-          </div>
-          <p className="mt-0.5 text-[13px] leading-snug text-soft">
-            Find high-potential stocks that fit your strategy with AI-powered filters.
-          </p>
-        </div>
-      </div>
-      <button
-        onClick={onLaunch}
-        className="flex w-full items-center justify-center gap-2 bg-[var(--accent-solid)] px-4 py-3 font-display text-sm font-bold text-[var(--accent-on)] transition-opacity hover:opacity-90"
-      >
-        <Telescope className="h-4 w-4" />
-        Launch Stock Finder
-      </button>
-    </div>
+    <form onSubmit={onSubmit} role="search" className="group relative mt-4">
+      <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-soft transition-colors group-focus-within:text-volt-600" />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search any stock — NVDA, Apple, a theme…"
+        aria-label="Search stocks"
+        className="h-14 w-full rounded-2xl border border-sand bg-card py-3.5 pl-12 pr-4 text-base text-ink placeholder:text-soft outline-none transition-colors focus:border-volt-400"
+      />
+    </form>
   );
 }
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-sand bg-midnight-900/40 px-4 py-6 text-center text-[13px] text-soft">
+    <p className="rounded-xl border border-dashed border-sand px-4 py-6 text-center text-[15px] text-soft">
       {children}
     </p>
   );
 }
 
 // ── Enriched ranked ticker row (sparkline + delayed price + discussion) ──────
-// Wraps the shared ui/TickerRow primitive with Discover's metric slot.
 function RankedTickerRow({
   rank,
   ticker,
@@ -229,7 +338,6 @@ function RankedTickerRow({
         ) : undefined
       }
     >
-      {/* Local price sparkline (lazy), narrow on phones. */}
       <div className="w-12 shrink-0 sm:w-24">
         <Sparkline symbol={ticker} height={28} />
       </div>
@@ -268,92 +376,6 @@ function RankedTickerRow({
   );
 }
 
-function DelayedNote() {
-  return <p className="px-3 pb-1 text-[10px] text-midnight-500">Prices delayed ~15 min.</p>;
-}
-
-// ── For You — real personalized mix (watched movers + nudge) ─────────────────
-function ForYouTab({
-  extras,
-  quotes,
-  byDiscussion,
-  likeCounts,
-  onOpenScreener,
-}: {
-  extras: DiscoverExtras | null;
-  quotes: Record<string, MarketQuote>;
-  byDiscussion: Entries;
-  likeCounts: LikeCounts;
-  onOpenScreener: () => void;
-}) {
-  const movers = extras?.forYouMovers ?? [];
-  const hasWatched = movers.length > 0;
-
-  return (
-    <div className="space-y-4">
-      {hasWatched ? (
-        <div className="rounded-2xl border border-sand bg-card p-2 shadow-soft">
-          <p className="px-3 pb-1 pt-2 font-display text-sm font-bold text-ink">
-            Moving on your watchlist
-          </p>
-          <DelayedNote />
-          <div className="space-y-0.5">
-            {movers.map((mv) => (
-              <RankedTickerRow
-                key={mv.ticker}
-                ticker={mv.ticker}
-                name={mv.name ?? mv.ticker}
-                quote={quotes[mv.ticker]}
-                likes={likeCounts[mv.ticker]?.net}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-sand bg-card p-5 shadow-soft">
-          <div className="mb-2 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-gold-600" />
-            <p className="font-display text-sm font-bold text-ink">Personalize your feed</p>
-          </div>
-          <p className="text-[13px] leading-relaxed text-soft">
-            Like a few stocks (👍 on any research page) and this tab fills with the ones you
-            follow — their moves, and what the Club is saying. Until then, here&apos;s what&apos;s
-            hot right now.
-          </p>
-        </div>
-      )}
-
-      {/* Suggested from the Club — trending the viewer may not follow yet. */}
-      {byDiscussion.length > 0 && (
-        <div className="rounded-2xl border border-sand bg-card p-2 shadow-soft">
-          <p className="px-3 pb-1 pt-2 font-display text-sm font-bold text-ink">
-            {hasWatched ? "More the Club is watching" : "Trending in the Club"}
-          </p>
-          <DelayedNote />
-          <div className="space-y-0.5">
-            {byDiscussion.slice(0, 5).map((e) => (
-              <RankedTickerRow
-                key={e.id}
-                ticker={e.ticker}
-                name={e.company_name}
-                quote={quotes[e.ticker]}
-                discussion={e.comment_count ?? 0}
-                likes={likeCounts[e.ticker]?.net ?? 0}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <QuickLink href="/community" icon={MessagesSquare} title="Community" body="See what the Club is sharing right now." />
-        <QuickLink href="/kai" icon={Bot} title="Ask Kai" body="Your AI research co-pilot. Ask anything." />
-      </div>
-      <StockFinderCard onLaunch={onOpenScreener} />
-    </div>
-  );
-}
-
 function QuickLink({
   href,
   icon: Icon,
@@ -368,206 +390,13 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="group rounded-2xl border border-sand bg-card p-4 shadow-soft transition hover:shadow-lift"
+      className="paper-card group p-4 transition hover:shadow-lift"
     >
-      <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gold-400/12 text-gold-700">
+      <span className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--accent-solid)_12%,transparent)] text-[var(--accent-strong)]">
         <Icon className="h-4 w-4" />
       </span>
       <p className="font-display text-sm font-bold text-ink">{title}</p>
       <p className="mt-0.5 text-[12px] leading-snug text-soft">{body}</p>
     </Link>
-  );
-}
-
-// ── Trending — community board sorted by discussion, enriched rows ───────────
-function TrendingTab({
-  rows,
-  quotes,
-  likeCounts,
-  onOpenScreener,
-}: {
-  rows: Entries;
-  quotes: Record<string, MarketQuote>;
-  likeCounts: LikeCounts;
-  onOpenScreener: () => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <StockFinderCard onLaunch={onOpenScreener} />
-      <div className="rounded-2xl border border-sand bg-card p-2 shadow-soft">
-        <p className="px-3 pb-1 pt-2 font-display text-sm font-bold text-ink">Trending stocks</p>
-        <DelayedNote />
-        {rows.length ? (
-          <div className="space-y-0.5">
-            {rows.map((e, i) => (
-              <RankedTickerRow
-                key={e.id}
-                rank={i + 1}
-                ticker={e.ticker}
-                name={e.company_name}
-                quote={quotes[e.ticker]}
-                discussion={e.comment_count ?? 0}
-                likes={likeCounts[e.ticker]?.net ?? 0}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="p-2">
-            <EmptyHint>
-              Nothing trending yet. Be the first to champion an idea on the{" "}
-              <Link href="/watchlist/community" className="font-semibold text-gold-700">
-                Community Watchlist
-              </Link>
-              .
-            </EmptyHint>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Top Research — real typed contributions + published Kai reports ──────────
-function ResearchTab({ extras }: { extras: DiscoverExtras | null }) {
-  const contributions = extras?.contributions ?? [];
-  const reports = extras?.reports ?? [];
-
-  return (
-    <div className="space-y-4">
-      {contributions.length === 0 && reports.length === 0 ? (
-        <>
-          <div className="rounded-2xl border border-sand bg-card p-5 shadow-soft">
-            <div className="mb-2 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-gold-600" />
-              <p className="font-display text-sm font-bold text-ink">Top research, ranked</p>
-            </div>
-            <p className="text-[13px] leading-relaxed text-soft">
-              The Club&apos;s best deep-dives — author, thesis, and reactions — land here as members
-              post them. Be the first: drop a thesis on any idea&apos;s research page.
-            </p>
-          </div>
-          <QuickLink
-            href="/community"
-            icon={MessagesSquare}
-            title="Browse the Community feed"
-            body="Every idea the Club has shared, newest first."
-          />
-        </>
-      ) : (
-        <>
-          {contributions.length > 0 && (
-            <div className="space-y-2">
-              {contributions.map((c) => {
-                const meta = contributionMeta(c.contribution_type);
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/research/${encodeURIComponent(c.ticker)}`}
-                    className="block rounded-2xl border border-sand bg-card p-4 shadow-soft transition hover:shadow-lift"
-                  >
-                    <div className="flex items-start gap-3">
-                      <CompanyLogo symbol={c.ticker} name={c.ticker} size={40} />
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="font-display text-sm font-bold text-ink">{c.ticker}</span>
-                          <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${meta.chip}`}>
-                            {meta.label}
-                          </span>
-                        </div>
-                        <p className="line-clamp-2 text-[13px] leading-snug text-midnight-200">
-                          {c.snippet}
-                        </p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <Avatar
-                            name={c.author?.display_name}
-                            avatarUrl={c.author?.avatar_url}
-                            role={c.author?.role}
-                            size="xs"
-                          />
-                          <span className="text-[11px] font-medium text-soft">
-                            {c.author?.username ? `@${c.author.username}` : c.author?.display_name || "Member"}
-                          </span>
-                          <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} className="align-middle" />
-                          <span className="ml-auto text-[10px] text-midnight-500">{timeAgo(c.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
-          {reports.length > 0 && (
-            <div className="rounded-2xl border border-sand bg-card p-2 shadow-soft">
-              <div className="flex items-center gap-1.5 px-3 pb-1 pt-2">
-                <Bot className="h-4 w-4 text-kai-500" />
-                <p className="font-display text-sm font-bold text-ink">Kai research reports</p>
-              </div>
-              <div className="space-y-0.5">
-                {reports.map((r) => (
-                  <Link
-                    key={r.ticker}
-                    href={`/research/${encodeURIComponent(r.ticker)}`}
-                    className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-midnight-800/40"
-                  >
-                    <CompanyLogo symbol={r.ticker} name={r.company_name ?? r.ticker} size={30} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink">{r.ticker}</p>
-                      <p className="truncate text-[11px] text-soft">{r.company_name ?? "Kai deep-dive"}</p>
-                    </div>
-                    <span className="shrink-0 text-[10px] text-midnight-500">{timeAgo(r.generated_at)}</span>
-                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gold-600" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ── Most Discussed — community board sorted by net likes, enriched rows ──────
-function DiscussedTab({
-  rows,
-  quotes,
-  likeCounts,
-}: {
-  rows: Entries;
-  quotes: Record<string, MarketQuote>;
-  likeCounts: LikeCounts;
-}) {
-  return (
-    <div className="rounded-2xl border border-sand bg-card p-2 shadow-soft">
-      <p className="px-3 pb-1 pt-2 font-display text-sm font-bold text-ink">Most discussed ideas</p>
-      <DelayedNote />
-      {rows.length ? (
-        <div className="space-y-0.5">
-          {rows.map((e, i) => (
-            <RankedTickerRow
-              key={e.id}
-              rank={i + 1}
-              ticker={e.ticker}
-              name={e.company_name}
-              quote={quotes[e.ticker]}
-              discussion={e.comment_count ?? 0}
-              likes={likeCounts[e.ticker]?.net ?? 0}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="p-2">
-          <EmptyHint>
-            No ideas on the board yet. Head to the{" "}
-            <Link href="/watchlist/community" className="font-semibold text-gold-700">
-              Community Watchlist
-            </Link>{" "}
-            to add the first.
-          </EmptyHint>
-        </div>
-      )}
-    </div>
   );
 }
