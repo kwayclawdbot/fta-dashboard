@@ -66,6 +66,8 @@ export default function KaiWatch({
   variant = "panel",
   onClose,
   onCreated,
+  presetText,
+  presetNonce,
 }: {
   userId: string;
   defaultTicker?: string;
@@ -73,6 +75,9 @@ export default function KaiWatch({
   variant?: "panel" | "modal";
   onClose?: () => void;
   onCreated?: (rules: AlertRule[]) => void;
+  /** Intention chips seed the box with a ready sentence (Kai Watch hub). */
+  presetText?: string;
+  presetNonce?: number;
 }) {
   const [text, setText] = useState(
     defaultTicker ? `Watch ${defaultTicker} for me — ` : ""
@@ -85,6 +90,24 @@ export default function KaiWatch({
   useEffect(() => {
     if (variant === "modal") inputRef.current?.focus();
   }, [variant]);
+
+  // Intention chip → seed the box (deterministic prefill; parse stays opt-in so
+  // it degrades gracefully if credits are dead — the sentence is still editable).
+  useEffect(() => {
+    if (presetNonce == null || presetText == null) return;
+    setText(presetText);
+    setPhase("idle");
+    setResult(null);
+    setError(null);
+    inputRef.current?.focus();
+    // place caret at end
+    const el = inputRef.current;
+    if (el) {
+      const len = presetText.length;
+      requestAnimationFrame(() => el.setSelectionRange(len, len));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetNonce]);
 
   const parse = useCallback(async () => {
     const q = text.trim();

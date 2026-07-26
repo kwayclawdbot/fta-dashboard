@@ -23,6 +23,8 @@ import {
   type DailyClose,
   type TrackRecord,
 } from "@/lib/alerts/history";
+import type { WatchCurrentState, AlertSetup } from "@/lib/alerts/types";
+import { observationalOutcome, type ObservationalRow } from "@/lib/alerts/watch-ui";
 
 /**
  * /alerts — the Trade Alerts Hub (LANE C6).
@@ -130,6 +132,89 @@ export default async function AlertsPage() {
       .in("ticker", feedTickers);
     for (const r of (mx || []) as { ticker: string; price: number | null }[]) {
       if (r.price != null) priceMap[r.ticker] = r.price;
+    }
+  }
+
+  // ── Kai Watch (Lane B) reads ───────────────────────────────────────────────
+  // Current machine-state per active watch (Lane A watch_current_state view;
+  // security_invoker RLS scopes it to the member's own rules). This is what makes
+  // the "N watches active · what Kai sees right now" board honest.
+  const ruleIds = rules.map((r) => r.id);
+  let watchStates: WatchCurrentState[] = [];
+  if (ruleIds.length > 0) {
+    const { data: ws } = await supabase
+      .from("watch_current_state")
+      .select("rule_id, state, entered_at, detail")
+      .in("rule_id", ruleIds);
+    watchStates = (ws || []) as WatchCurrentState[];
+  }
+
+  // Kai Daily SETUP lifecycle objects + this member's follow (opt-in) set.
+  let setups: AlertSetup[] = [];
+  {
+    const { data: su } = await supabase
+      .from("alert_setups")
+      .select(
+        "id, alert_id, ticker, direction, thesis, entry, levels, snapshot_price, state, state_entered_at, expires_at, created_at"
+      )
+      .order("created_at", { ascending: false })
+      .limit(40);
+    const rows = (su || []) as AlertSetup[];
+    if (rows.length > 0) {
+      const { data: subs } = await supabase
+        .from("setup_subscriptions")
+        .select("setup_id")
+        .in(
+          "setup_id",
+          rows.map((r) => r.id)
+        );
+      const subSet = new Set(((subs || []) as { setup_id: string }[]).map((s) => s.setup_id));
+      setups = rows.map((r) => ({ ...r, subscribed: subSet.has(r.id) }));
+    }
+  }
+
+  // Observational follow-through (track-record honest split): the member's OWN
+  // fired personal alerts have no graded levels, so they are NEVER W/L — instead
+  // we show "what happened after" from stored daily closes.
+  let observational: ObservationalRow[] = [];
+  {
+    const obsEvents = events.filter(
+      (e) => e.kind === "rule" && e.payload?.snapshot_price != null
+    );
+    if (obsEvents.length > 0) {
+      const earliest = obsEvents.reduce(
+        (min, e) => (e.fired_at < min ? e.fired_at : min),
+        obsEvents[0].fired_at
+      );
+      const obsTickers = [...new Set(obsEvents.map((e) => e.ticker))];
+      const byT = new Map<string, { as_of: string; close: number }[]>();
+      for (let i = 0; i < obsTickers.length; i += 200) {
+        const chunk = obsTickers.slice(i, i + 200);
+        const { data: closes } = await supabase
+          .from("screener_history")
+          .select("ticker, as_of, close")
+          .in("ticker", chunk)
+          .gte("as_of", earliest.slice(0, 10));
+        for (const c of (closes || []) as { ticker: string; as_of: string; close: number }[]) {
+          const arr = byT.get(c.ticker) || [];
+          arr.push({ as_of: c.as_of, close: c.close });
+          byT.set(c.ticker, arr);
+        }
+      }
+      observational = obsEvents.map((e) => {
+        const o = observationalOutcome(
+          e.payload.snapshot_price ?? null,
+          e.fired_at,
+          byT.get(e.ticker) || []
+        );
+        return {
+          id: e.id,
+          ticker: e.ticker,
+          firedAt: e.fired_at,
+          message: e.payload.message || "Kai flagged something",
+          ...o,
+        };
+      });
     }
   }
 
@@ -299,6 +384,9 @@ export default async function AlertsPage() {
       sampleAlert={sampleAlert}
       trackRecord={trackRecord}
       watchlistTickers={watchlistTickers}
+      watchStates={watchStates}
+      setups={setups}
+      observational={observational}
     />
   );
 }

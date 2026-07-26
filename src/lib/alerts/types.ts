@@ -68,6 +68,8 @@ export interface AlertRule {
   surface: AlertSurface;
   state: Record<string, unknown>;
   last_fired_at: string | null;
+  /** Stamped every evaluation cycle (migration 157) — honest freshness. */
+  last_checked_at: string | null;
   created_at: string;
 }
 
@@ -87,12 +89,15 @@ export interface TradeAlert {
   created_at: string;
 }
 
+/** Feed-event kinds. Lane A added kai_update (watch progress) + setup_update. */
+export type AlertEventKind = "rule" | "broadcast" | "kai_update" | "setup_update";
+
 export interface AlertEvent {
   id: string;
   user_id: string;
   rule_id: string | null;
   alert_id: string | null;
-  kind: "rule" | "broadcast";
+  kind: AlertEventKind;
   ticker: string;
   payload: {
     message?: string;
@@ -102,10 +107,46 @@ export interface AlertEvent {
     condition?: string;
     delayed?: boolean;
     source?: string;
+    /** kai_update / setup_update carry the machine state that fired them. */
+    state?: string;
+    setup_id?: string;
+    watch_update?: boolean;
+    setup_update?: boolean;
   };
   delivered: DeliveryMode;
   digest_sent_at: string | null;
   fired_at: string;
+}
+
+/** Current watch state per rule (from the watch_current_state view). */
+export interface WatchCurrentState {
+  rule_id: string;
+  state: string;
+  entered_at: string;
+  detail: {
+    progress?: number;
+    condition?: string;
+    metric?: string;
+    price?: number | null;
+    [k: string]: unknown;
+  };
+}
+
+/** A Kai Daily setup lifecycle object (from /api/alerts/setups). */
+export interface AlertSetup {
+  id: string;
+  alert_id: string;
+  ticker: string;
+  direction: AlertDirection;
+  thesis: string | null;
+  entry: number | null;
+  levels: Record<string, number | null>;
+  snapshot_price: number | null;
+  state: "waiting" | "confirmed" | "triggered" | "invalidated" | "expired";
+  state_entered_at: string;
+  expires_at: string;
+  created_at: string;
+  subscribed?: boolean;
 }
 
 export interface StrategyProfile {
