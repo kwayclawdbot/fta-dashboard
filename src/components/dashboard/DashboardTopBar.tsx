@@ -7,6 +7,7 @@ import { Menu, ChevronDown, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
+import CommandSearch from "@/components/search/CommandSearch";
 import type { FamilyTier } from "@/lib/tier";
 import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
@@ -36,7 +37,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/onboarding", "Welcome"],
   ["/dashboard", "Home"],
   ["/discover", "Discover"],
-  ["/community", "Community"],
+  ["/community", "The Club"],
   ["/research", "Research"],
   ["/watchlist/community", "Community Watchlist"],
   ["/watchlist", "Family Watchlist"],
@@ -139,13 +140,18 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="font-display text-base font-semibold text-midnight-100">
+          {/* Compact page title — mobile + tablet only. On desktop (lg+) the shell
+              stops duplicating the title the surface already announces via its own
+              PageIntro; global search takes its place. */}
+          <h1 className="font-display text-base font-semibold text-midnight-100 lg:hidden">
             {pageTitle}
           </h1>
         </div>
 
-        {/* Right: belt chip, notifications, avatar */}
-        <div className="flex items-center gap-3">
+        {/* Right: universal search, belt chip, notifications, avatar */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Universal ⌘K command surface — search + Ask Kai + Stock Finder. */}
+          <CommandSearch />
           {/* Belt chip — persistent self-visibility (sm+; phones use the More
               sheet header). Links to the Leaderboard. */}
           <span data-tour="belt" className="inline-flex">

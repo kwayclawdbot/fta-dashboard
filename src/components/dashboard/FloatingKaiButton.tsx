@@ -5,18 +5,18 @@ import { usePathname } from "next/navigation";
 import { Bot, ChevronRight, ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
-import KaiPanel from "@/components/kai/KaiPanel";
 
 /**
  * FloatingKaiButton — the persistent Kai entry point (Cheat Code Club redesign,
  * R2). Kai left the primary nav when the five-item scheme landed; this Kai-blue
  * FAB is its always-reachable replacement.
  *
- * The FAB now OPENS A PANEL (a Kai slide-over — <KaiPanel>) inline instead of
- * navigating to /kai, so members talk to Kai without leaving the page they're on.
- * The conversation lives in the same thread/usage/streaming APIs as the full
- * page (the panel and /kai both render <KaiChatShared>), so nothing is a
- * throwaway.
+ * The FAB OPENS THE CONTEXTUAL KAI SHEET (owned by <KaiSheetProvider>) inline
+ * instead of navigating to /kai, so members talk to Kai without leaving the page
+ * they're on. The conversation lives in the same thread/usage/streaming APIs as
+ * the full page (the sheet and /kai both render <KaiChatShared>), so nothing is a
+ * throwaway. The FAB is the no-context entry point; contextual "Ask Kai" actions
+ * and search rows call useKaiSheet().openKai({ chip, query }) directly.
  *
  * It is also COLLAPSIBLE: a small tuck control on the FAB's edge slides it away
  * to a slim edge sliver (still discoverable, tap to restore). The preference
@@ -41,20 +41,19 @@ interface FloatingKaiButtonProps {
   ageGroup?: string;
   tier?: FamilyTier;
   isSolo?: boolean;
+  /** Open the contextual Kai sheet (owned by KaiSheetProvider). */
+  onOpen: () => void;
 }
 
 const GENERIC_KEY = "cc:kai-fab-collapsed";
 
 export default function FloatingKaiButton({
   tier,
+  onOpen,
 }: FloatingKaiButtonProps) {
   const pathname = usePathname();
 
   const [collapsed, setCollapsed] = useState(false);
-  const [open, setOpen] = useState(false);
-  // The panel is mounted only after the FAB's first open, then kept mounted so
-  // the conversation persists across open/close.
-  const [mounted, setMounted] = useState(false);
   const uidRef = useRef<string>("");
 
   // Resolve the persisted collapse preference on the client (per user id, with a
@@ -92,12 +91,6 @@ export default function FloatingKaiButton({
       /* ignore */
     }
   }, []);
-
-  const openPanel = useCallback(() => {
-    setMounted(true);
-    setOpen(true);
-  }, []);
-  const closePanel = useCallback(() => setOpen(false), []);
 
   const collapse = useCallback(() => {
     setCollapsed(true);
@@ -149,7 +142,7 @@ export default function FloatingKaiButton({
             <button
               type="button"
               data-tour="kai-float"
-              onClick={openPanel}
+              onClick={onOpen}
               aria-label="Ask Kai"
               title="Ask Kai — your AI research co-pilot"
               className="flex h-14 w-14 items-center justify-center rounded-full bg-kai-500 text-white shadow-[0_6px_20px_rgba(37,99,255,0.45)] ring-4 ring-[var(--paper)] transition-transform hover:scale-105 active:scale-95"
@@ -172,8 +165,6 @@ export default function FloatingKaiButton({
           </div>
         </div>
       )}
-
-      {mounted && <KaiPanel open={open} onClose={closePanel} />}
     </>
   );
 }

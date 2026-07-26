@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { PlayCircle, ArrowRight } from "lucide-react";
 import { useClubData } from "@/lib/clubhome/client";
+import ContinuePath from "@/components/learn/ContinuePath";
 import type { ClubScale } from "@/lib/clubhome/contract";
 import type { Register } from "@/lib/register";
 
@@ -153,30 +152,9 @@ export default function ClubHomeV2({
       {/* §10 People worth following (kid-walled) */}
       {canDiscoverPeople && <People people={data.people} />}
 
-      {/* Keep learning — one compact pickup line (personal continuity) */}
-      <KeepLearning learning={learning} />
+      {/* Keep learning — the shared ContinuePath object (amendment #3): Learn
+          stays visible for adults through this contextual object, not primary nav. */}
+      <ContinuePath pickup={learning} />
     </div>
-  );
-}
-
-function KeepLearning({ learning }: { learning: LearningPickup | null }) {
-  const href = learning?.href ?? "/courses";
-  const title = learning?.title ?? "Pick up the Foundations";
-  const context = learning?.context ?? "One concept, one company, every week.";
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-4 rounded-2xl border border-sand bg-card p-4 shadow-soft transition-colors hover:border-volt-400/50"
-    >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-volt-500/12 text-volt-700">
-        <PlayCircle className="h-6 w-6" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-[11px] font-bold uppercase tracking-wider text-volt-700">Keep learning</p>
-        <p className="truncate font-semibold text-ink">{title}</p>
-        <p className="truncate text-[12px] text-soft">{context}</p>
-      </div>
-      <ArrowRight className="h-5 w-5 shrink-0 text-volt-700 transition-transform group-hover:translate-x-0.5" />
-    </Link>
   );
 }
