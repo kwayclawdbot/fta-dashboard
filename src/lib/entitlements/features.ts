@@ -49,10 +49,11 @@ export type Feature =
   | "screener_full" // full screener + AI search (free = basic filters)
   | "news_personalized" // personalized to watchlist/holdings (free = general)
   | "simulator_advanced" // advanced stats / unlimited portfolios / family portfolios
-  // ── Learning / live / picks ────────────────────────────────────────────────
+  // ── Learning / live ─────────────────────────────────────────────────────────
   | "learning_full" // full library + live classes + recordings
   | "live_sessions_full" // live + archive (free = preview/replay clips)
-  | "weekly_picks_full" // full weekly Club research/picks (free = preview/delayed)
+  // (weekly_picks_full retired: Team/Weekly Picks superseded by the Community
+  //  Watchlist — no live member surface. STALE-1.)
   // ── Family ──────────────────────────────────────────────────────────────────
   | "family_activation" // family watchlist / report cards / family challenges
   // ── FTA ─────────────────────────────────────────────────────────────────────
@@ -80,7 +81,6 @@ export const FEATURE_ACCESS: Record<Feature, FeatureLevel> = {
   simulator_advanced: "club",
   learning_full: "club",
   live_sessions_full: "club",
-  weekly_picks_full: "club",
   family_activation: "club",
   fta_section: "fta",
 };
@@ -168,7 +168,6 @@ export const PRICING_MATRIX: PricingRow[] = [
     free: "Preview / replay clips",
     club: "Live + full archive",
   },
-  { surface: "Weekly Club research & picks", free: "Preview", club: "Full" },
   {
     surface: "Family Mode",
     free: "Create your family (activation locked)",

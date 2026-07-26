@@ -147,6 +147,11 @@ export default function DashboardHome() {
   const [xp, setXp] = useState(0);
   const [dueCount, setDueCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  // Deterministic fallback (visual audit repro): if round-1 resolution fails or
+  // times out — no session, a thrown query, or the profile never resolving so no
+  // persona branch can be chosen — we render a safe empty state instead of sitting
+  // on the skeleton forever. A member must NEVER hang on an infinite skeleton.
+  const [loadError, setLoadError] = useState(false);
   const [tab, setTab] = useState<"home" | "week">("home");
   const [ficWeek, setFicWeek] = useState<FicWeek | null>(null);
   const [orientationDone, setOrientationDone] = useState(0);
@@ -188,6 +193,18 @@ export default function DashboardHome() {
     setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
   }, [searchParams]);
 
+  // Last-resort watchdog: even if some await outside the per-call timeouts hangs,
+  // never leave the member on the skeleton past this hard ceiling. Cleared the
+  // instant `loading` flips false on any resolution path.
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => {
+      setLoadError(true);
+      setLoading(false);
+    }, LOAD_TIMEOUT_MS * 3);
+    return () => clearTimeout(t);
+  }, [loading]);
+
   useEffect(() => {
     if (!familyId) return;
     try {
@@ -211,6 +228,7 @@ export default function DashboardHome() {
 
   useEffect(() => {
     async function load() {
+     try {
       // getSession() reads the cached session locally (no network round trip);
       // RLS still enforces every query server-side. The dashboard layout has
       // already validated the user server-side before this renders.
@@ -218,7 +236,12 @@ export default function DashboardHome() {
         data: { session },
       } = await supabase.auth.getSession();
       const user = session?.user;
-      if (!user) return;
+      if (!user) {
+        // No client session (cache miss / expired) despite the server-side layout
+        // guard — fall into the empty state rather than an infinite skeleton.
+        setLoadError(true);
+        return;
+      }
 
       // Round trip 1: everything that only needs the user id, in parallel.
       // (get_home_state, profile, current FIC week, and lifetime XP were four
@@ -252,6 +275,16 @@ export default function DashboardHome() {
           withTimeout(getCurrentFicWeek(supabase), LOAD_TIMEOUT_MS, null),
           withTimeout(getUserXp(supabase, user.id), LOAD_TIMEOUT_MS, 0),
         ]);
+
+      if (!profile) {
+        // Round-1 core (the profile row) didn't resolve — timed out or failed —
+        // so we can't determine the member's persona (kid/teen/parent/solo) or
+        // tier. Render the deterministic empty state instead of mislabeling them
+        // (e.g. "not enrolled") or hanging the skeleton. See loadError render.
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
 
       const hs = state as HomeState;
       setHome(hs);
@@ -433,6 +466,15 @@ export default function DashboardHome() {
             }
         })().catch(() => {});
       }
+     } catch (err) {
+       // Any unhandled failure in round-1 resolution falls into the deterministic
+       // empty state rather than hanging the skeleton.
+       console.error("[dashboard] home load failed:", err);
+       setLoadError(true);
+     } finally {
+       // Guarantee the skeleton always resolves, on every path.
+       setLoading(false);
+     }
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -440,6 +482,13 @@ export default function DashboardHome() {
 
   if (loading) {
     return <DashboardSkeleton variant="default" />;
+  }
+
+  // Deterministic fallback: round-1 resolution failed/timed out (no session, a
+  // thrown query, an unresolved profile, or the hard watchdog). Show a calm empty
+  // state with a retry — never an infinite skeleton, never a misleading persona.
+  if (loadError) {
+    return <DashboardLoadError firstName={firstName} />;
   }
 
   if (isFree) {
@@ -1072,6 +1121,42 @@ export default function DashboardHome() {
       )}
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Deterministic empty state when round-1 home resolution fails or times out. A
+ * member never sits on the skeleton — they get a calm card, a reload, and doors
+ * to the surfaces that don't depend on the home payload.
+ */
+function DashboardLoadError({ firstName }: { firstName: string }) {
+  return (
+    <div className="max-w-xl mx-auto pt-10">
+      <div className="paper-card p-8 text-center">
+        <Sparkles className="w-8 h-8 text-gold-500 mx-auto mb-3" />
+        <h2 className="font-display text-xl font-semibold text-ink mb-2">
+          {firstName ? `We couldn't load your home, ${firstName}` : "We couldn't load your home"}
+        </h2>
+        <p className="text-soft max-w-md mx-auto mb-5">
+          Something took too long on our side. Your progress is safe — give it another try, or
+          jump straight into the Club.
+        </p>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <button
+            onClick={() => window.location.reload()}
+            className="cta-button inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm"
+          >
+            Reload <ArrowRight className="w-4 h-4" />
+          </button>
+          <Link
+            href="/community"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-gold-700 hover:text-gold-800"
+          >
+            <Users className="w-4 h-4" /> Go to the community
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

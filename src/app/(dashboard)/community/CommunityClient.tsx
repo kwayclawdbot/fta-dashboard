@@ -28,6 +28,11 @@ import {
   type AnchorPayload, type Role,
 } from "@/lib/feed";
 import { MentionProvider, RichBody, extractHandles, type MentionMap } from "@/lib/mentions";
+import { deriveRegister } from "@/lib/register";
+import {
+  isSharedFeedReadOnly,
+  KID_FEED_READONLY_NOTE,
+} from "@/lib/social/kid-posting";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
@@ -601,6 +606,13 @@ export default function CommunityClient({
   // comment. Every write affordance is swapped for a tasteful "Join FIC" nudge.
   const readOnly = myTier === "free";
 
+  // KID FEED READ-ONLY (SOCIAL-OBJECTS + FIC-LEARNING-WORLD P8): kids READ + REACT
+  // in the shared adult feed but do not post top-level entries into it. Structured,
+  // cohort-scoped kid social is coming. The composer slot shows a warm note instead;
+  // migration 161 enforces the same server-side. Single flip in src/lib/social/
+  // kid-posting.ts (KID_FEED_READONLY) + its SQL pair. Teens/adults unaffected.
+  const feedReadOnlyKid = isSharedFeedReadOnly(me ? deriveRegister(me) : "adult");
+
   // ?compose= deep-link → seed the composer once (member composer only).
   useEffect(() => {
     if (composeSeeded.current || !tierResolved || readOnly) return;
@@ -757,6 +769,8 @@ export default function CommunityClient({
             </div>
           ) : readOnly ? (
             <FreeComposerUpsell />
+          ) : feedReadOnlyKid ? (
+            <KidFeedReadOnlyNote />
           ) : (
           <div className="paper-card p-4">
             <div className="flex gap-3">
@@ -1129,6 +1143,23 @@ function FreeComposerUpsell() {
       >
         Join FIC <ArrowRight className="w-3.5 h-3.5" />
       </a>
+    </div>
+  );
+}
+
+// KID FEED READ-ONLY — kids read + react in the shared feed but don't post into it
+// (SOCIAL-OBJECTS + FIC-LEARNING-WORLD P8; enforced server-side by migration 161).
+// A warm, non-punishing note in place of the composer — no upsell shown to a child.
+function KidFeedReadOnlyNote() {
+  return (
+    <div className="paper-card p-5 flex items-center gap-4">
+      <div className="w-11 h-11 rounded-xl bg-chip-green flex items-center justify-center shrink-0">
+        <Sparkles className="w-6 h-6 text-green-700" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-display font-semibold text-ink">Your space is coming!</p>
+        <p className="text-sm text-soft">{KID_FEED_READONLY_NOTE}</p>
+      </div>
     </div>
   );
 }

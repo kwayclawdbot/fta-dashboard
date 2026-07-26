@@ -16,7 +16,6 @@ import {
   LineChart,
   GraduationCap,
   Video,
-  Gem,
   Users,
   Trophy,
   type LucideIcon,
@@ -59,7 +58,6 @@ const ICONS: Record<Feature, LucideIcon> = {
   simulator_advanced: LineChart,
   learning_full: GraduationCap,
   live_sessions_full: Video,
-  weekly_picks_full: Gem,
   family_activation: Users,
   fta_section: Trophy,
 };

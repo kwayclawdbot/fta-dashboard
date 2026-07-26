@@ -137,12 +137,6 @@ export const FEATURE_WALL: Record<Feature, WallCopy> = {
     body: "Club members join the weekly live sessions and get the full recording archive. Free members get preview clips.",
     cta: "Join the live sessions",
   },
-  weekly_picks_full: {
-    eyebrow: "Weekly Club research",
-    title: "See the full weekly research",
-    body: "Club members get the full weekly Club research and picks. Free members get a delayed preview.",
-    cta: "Unlock weekly research",
-  },
   family_activation: {
     eyebrow: "Family Mode",
     title: "Bring your family into the Club",
