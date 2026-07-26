@@ -39,7 +39,7 @@ export default function People({ people }: { people: PeopleResponse | null }) {
       <div className="mt-3 flex items-stretch gap-0">
         <div
           ref={railRef}
-          className="-mx-1 flex flex-1 gap-0 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="-mx-1 flex min-w-0 flex-1 gap-0 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {members.map((mbr, i) => {
             const hasFollowers = typeof mbr.followers === "number" && mbr.followers! > 0;
