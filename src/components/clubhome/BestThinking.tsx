@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Heart, MessageCircle, Bookmark, BadgeCheck, PenLine } from "lucide-react";
+import CompanyLogo from "@/components/fic/CompanyLogo";
 import { Card, CardHead, Badge, Thumb } from "./parts";
 import type { ThinkingPost, ThinkingResponse } from "@/lib/clubhome/contract";
 
@@ -71,7 +72,10 @@ export default function BestThinking({ thinking }: { thinking: ThinkingResponse 
             <Thumb series={seriesFor(0)} tone="teal" size={64} className="mt-0.5" />
             <div className="min-w-0 flex-1">
               {lead.ticker && (
-                <span className="font-mono text-[11px] font-bold text-soft">{lead.ticker}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CompanyLogo symbol={lead.ticker} name={lead.company} size={16} rounded="rounded-md" />
+                  <span className="font-mono text-[11px] font-bold text-soft">{lead.ticker}</span>
+                </span>
               )}
               <h4 className="mt-0.5 font-display text-lg font-extrabold leading-snug tracking-tight text-ink group-hover:text-volt-700">
                 {lead.title}
@@ -96,7 +100,12 @@ export default function BestThinking({ thinking }: { thinking: ThinkingResponse 
                   <Thumb series={seriesFor(i + 1)} tone={i % 2 ? "volt" : "teal"} size={46} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      {p.ticker && <span className="font-mono text-[11px] font-bold text-soft">{p.ticker}</span>}
+                      {p.ticker && (
+                        <span className="inline-flex shrink-0 items-center gap-1">
+                          <CompanyLogo symbol={p.ticker} name={p.company} size={14} rounded="rounded" />
+                          <span className="font-mono text-[11px] font-bold text-soft">{p.ticker}</span>
+                        </span>
+                      )}
                       <h5 className="truncate font-semibold text-ink group-hover:text-volt-700">{p.title}</h5>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">

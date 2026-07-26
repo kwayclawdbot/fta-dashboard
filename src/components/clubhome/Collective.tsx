@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Flame, Heart, MessageCircle, Bookmark, Sparkles } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import { Card, CardHead, Badge, CountUp } from "./parts";
+import { useMemberHandles, type MemberHandleMap } from "@/lib/clubhome/handles";
 import type { CollectiveResponse } from "@/lib/clubhome/contract";
 
 /**
@@ -20,9 +22,11 @@ import type { CollectiveResponse } from "@/lib/clubhome/contract";
 function Constellation({
   avatars,
   faces,
+  handles,
 }: {
   avatars: CollectiveResponse["avatars"];
   faces: boolean;
+  handles: MemberHandleMap;
 }) {
   const real = avatars.slice(0, 12);
   const decorative = real.length === 0 || !faces;
@@ -69,22 +73,48 @@ function Constellation({
         <span className="text-gradient-teal font-display text-xl font-black leading-none">∞</span>
       </div>
 
-      {positions.map((p, i) => (
-        <div
-          key={p.id}
-          className="club-node absolute -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${(i % 6) * 0.5}s` }}
-        >
-          {!decorative && p.name ? (
-            <Avatar name={p.name} size="sm" className="ring-2 ring-card shadow-soft" />
-          ) : (
-            <span
-              className="club-node-dot block h-3.5 w-3.5 rounded-full bg-teal-400 ring-2 ring-card club-livedot-teal"
-              style={{ opacity: 0.6 + (i % 3) * 0.13, animationDelay: `${(i % 5) * 0.4}s` }}
-            />
-          )}
-        </div>
-      ))}
+      {positions.map((p, i) => {
+        const h = handles[p.id];
+        const name = h?.name ?? p.name ?? null;
+        const username = decorative ? null : h?.username ?? null;
+        const wrapClass = "club-node absolute -translate-x-1/2 -translate-y-1/2";
+        const wrapStyle = { left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${(i % 6) * 0.5}s` };
+
+        // KID viewers (faces=false) or a purely decorative fallback keep the
+        // faceless teal dot — the kid wall is unchanged.
+        const node = decorative ? (
+          <span
+            className="club-node-dot block h-3.5 w-3.5 rounded-full bg-teal-400 ring-2 ring-card club-livedot-teal"
+            style={{ opacity: 0.6 + (i % 3) * 0.13, animationDelay: `${(i % 5) * 0.4}s` }}
+          />
+        ) : (
+          // Real avatar image (Avatar falls back to initials when there's no
+          // photo or the image breaks).
+          <Avatar
+            name={name || "Member"}
+            avatarUrl={p.url ?? undefined}
+            size="sm"
+            className="ring-2 ring-card shadow-soft transition-transform group-hover:scale-110"
+          />
+        );
+
+        return username ? (
+          <Link
+            key={p.id}
+            href={`/u/${encodeURIComponent(username)}`}
+            className={`${wrapClass} group cursor-pointer`}
+            style={wrapStyle}
+            aria-label={`View ${name || "member"}'s profile`}
+            title={name || undefined}
+          >
+            {node}
+          </Link>
+        ) : (
+          <div key={p.id} className={wrapClass} style={wrapStyle} title={name || undefined}>
+            {node}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -129,13 +159,21 @@ export default function Collective({
   collective,
   isKid,
   invite,
+  fixtures = false,
 }: {
   collective: CollectiveResponse | null;
   isKid: boolean;
   invite?: React.ReactNode;
+  /** fixture/preview data → skip the real handle resolver (fake ids) */
+  fixtures?: boolean;
 }) {
   const floorMet = collective?.floorMet ?? false;
   const avatars = collective?.avatars ?? [];
+
+  // Resolve avatar ids → { username, name } so nodes link to /u/[username].
+  // Skipped for KID viewers (faceless nodes) and fixtures (ids aren't real).
+  const nodeIds = avatars.slice(0, 12).map((a) => a.id);
+  const handles = useMemberHandles(nodeIds, !isKid && !fixtures);
 
   // ── FOUNDING — the growth engine ─────────────────────────────────────────
   if (!floorMet) {
@@ -158,7 +196,7 @@ export default function Collective({
               </p>
             )}
           </div>
-          <Constellation avatars={avatars} faces={!isKid} />
+          <Constellation avatars={avatars} faces={!isKid} handles={handles} />
         </div>
       </Card>
     );
@@ -178,7 +216,7 @@ export default function Collective({
             {collective!.connectedMinds.toLocaleString()} minds, moving together in real time.
           </p>
         </div>
-        <Constellation avatars={avatars} faces={!isKid} />
+        <Constellation avatars={avatars} faces={!isKid} handles={handles} />
       </div>
       <Breakdown b={collective!.breakdown} />
     </Card>

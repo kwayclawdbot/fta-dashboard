@@ -5,6 +5,7 @@ import Link from "next/link";
 import Avatar from "@/components/Avatar";
 import { BadgeCheck, ChevronRight } from "lucide-react";
 import { Card, CardHead, formatFollowers } from "./parts";
+import { useMemberHandles } from "@/lib/clubhome/handles";
 import type { PeopleResponse } from "@/lib/clubhome/contract";
 
 /**
@@ -18,6 +19,10 @@ import type { PeopleResponse } from "@/lib/clubhome/contract";
 export default function People({ people }: { people: PeopleResponse | null }) {
   const members = people?.members ?? [];
   const railRef = useRef<HTMLDivElement>(null);
+  // Real endpoint omits href (no username leak); resolve id → username so
+  // "View profile" links work. Fixtures already carry href, so skip the fetch.
+  const needResolve = members.some((m) => !m.href);
+  const handles = useMemberHandles(needResolve ? members.map((m) => m.id) : [], needResolve);
   if (members.length === 0) return null;
 
   return (
@@ -38,14 +43,13 @@ export default function People({ people }: { people: PeopleResponse | null }) {
         >
           {members.map((mbr, i) => {
             const hasFollowers = typeof mbr.followers === "number" && mbr.followers! > 0;
-            return (
-              <Link
-                key={mbr.id}
-                href={mbr.href}
-                className={`group flex w-[210px] shrink-0 snap-start items-center gap-3 px-4 py-1 ${
-                  i === 0 ? "" : "border-l border-sand"
-                }`}
-              >
+            const username = handles[mbr.id]?.username;
+            const href = mbr.href || (username ? `/u/${encodeURIComponent(username)}` : null);
+            const cls = `group flex w-[210px] shrink-0 snap-start items-center gap-3 px-4 py-1 ${
+              i === 0 ? "" : "border-l border-sand"
+            }`;
+            const inner = (
+              <>
                 <Avatar name={mbr.name} avatarUrl={mbr.avatar} size="md" />
                 <div className="min-w-0">
                   <span className="inline-flex items-center gap-1 font-display text-sm font-bold text-ink group-hover:text-volt-700">
@@ -58,7 +62,16 @@ export default function People({ people }: { people: PeopleResponse | null }) {
                     <p className="line-clamp-1 text-[12px] text-soft">{mbr.reason}</p>
                   )}
                 </div>
+              </>
+            );
+            return href ? (
+              <Link key={mbr.id} href={href} className={cls}>
+                {inner}
               </Link>
+            ) : (
+              <div key={mbr.id} className={cls}>
+                {inner}
+              </div>
             );
           })}
         </div>

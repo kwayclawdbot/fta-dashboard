@@ -104,6 +104,7 @@ export default function ClubHomeV2({
           <Collective
             collective={data.collective}
             isKid={isKid}
+            fixtures={usingFixtures}
             invite={
               canInvite && !collectiveFloorMet ? (
                 <BuildTheClub invite={data.invite} embedded />

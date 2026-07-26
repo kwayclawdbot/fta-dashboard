@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Bot } from "lucide-react";
+import CompanyLogo from "@/components/fic/CompanyLogo";
 import { Card } from "./parts";
 import type { BriefResponse } from "@/lib/clubhome/contract";
 
@@ -47,7 +48,17 @@ export default function KaiBrief({ brief }: { brief: BriefResponse | null }) {
           {items.map((it, i) => {
             const row = (
               <>
-                <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-kai-500" aria-hidden />
+                {it.ticker ? (
+                  <CompanyLogo
+                    symbol={it.ticker}
+                    name={it.ticker}
+                    size={20}
+                    rounded="rounded-md"
+                    className="mt-[1px] shrink-0"
+                  />
+                ) : (
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-kai-500" aria-hidden />
+                )}
                 <span className="text-[13.5px] leading-relaxed text-ink">
                   {it.ticker && (
                     <span className="mr-1 font-mono text-[13px] font-bold text-kai-600">{it.ticker}</span>
