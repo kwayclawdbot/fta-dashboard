@@ -12,6 +12,7 @@ import {
   type AlertParams,
 } from "@/lib/alerts/types";
 import { getPreset, type ScreenerRow } from "@/lib/screener";
+import { runWatchStateCycle, stampLastChecked, type WatchEntry } from "@/lib/alerts/watch-state-cron";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,6 +93,11 @@ export async function GET(req: NextRequest) {
   let fired = 0;
   let held = 0;
 
+  // Watch-state machine (LANE A): derive how CLOSE each watch is this cycle and
+  // emit state TRANSITIONS the fire path would otherwise discard. Populated
+  // alongside the fire loops below, then run once at the end.
+  const stateEntries: WatchEntry[] = [];
+
   // ── ticker rules: one batched metrics read ────────────────────────────────
   const tickers = [...new Set(tickerRules.map((r) => r.ticker!.toUpperCase()))];
   const metricsByTicker = new Map<string, MetricsRow>();
@@ -106,6 +112,19 @@ export async function GET(req: NextRequest) {
 
   for (const r of tickerRules) {
     const m = metricsByTicker.get(r.ticker!.toUpperCase());
+    // Watch state for this ticker rule (uses the same metrics row).
+    stateEntries.push({
+      rule: r,
+      inputs: {
+        price: m?.price ?? null,
+        changePercent: (r.params?.window === "5d" ? m?.chg_5d : m?.chg_1d) ?? null,
+        rsi14: m?.rsi14 ?? null,
+        ema20State: m?.ema20_state ?? null,
+        ema50State: m?.ema50_state ?? null,
+        dist52wHigh: m?.dist_52w_high ?? null,
+        dist52wLow: m?.dist_52w_low ?? null,
+      },
+    });
     const hit = evalNightly(r, m);
     if (!hit) continue;
     const mode = await fire(db, r.id, {
@@ -217,6 +236,10 @@ export async function GET(req: NextRequest) {
         const cur = netByTicker.has(tk) ? netByTicker.get(tk)! : null;
         const st = (r.state || {}) as { base_net?: number };
         const base = typeof st.base_net === "number" ? st.base_net : null;
+        stateEntries.push({
+          rule: r,
+          inputs: { sentimentNet: cur, sentimentBase: base },
+        });
         // ABSOLUTE FLOOR (§2c): a swing only counts once enough community votes
         // back it — otherwise a 1–2 vote ticker fakes a "the club turned" signal.
         const totalVotes = votesByTicker.get(tk) ?? 0;
@@ -262,6 +285,10 @@ export async function GET(req: NextRequest) {
           !!evtIso &&
           (r.last_fired_at == null || evtIso > r.last_fired_at) &&
           (r.created_at == null || evtIso >= r.created_at);
+        stateEntries.push({
+          rule: r,
+          inputs: { hasFreshEvent: fresh, changePercent: chgByTicker.get(tk) ?? null },
+        });
         const hit = evalNewsEvent(r, fresh, chgByTicker.get(tk) ?? null);
         if (!hit) continue;
         const mode = await fire(db, r.id, {
@@ -276,6 +303,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Watch-state machine + honest freshness ────────────────────────────────
+  // Stamp last_checked_at for EVERY active rule the cron loaded (freshness is
+  // honest even for preset rules that carry no per-watch state), then run the
+  // state transitions gathered above.
+  await stampLastChecked(db, rules.map((r) => r.id));
+  const watch = await runWatchStateCycle(db, stateEntries);
+
   return NextResponse.json({
     ok: true,
     rules: rules.length,
@@ -284,6 +318,7 @@ export async function GET(req: NextRequest) {
     kai_rules: kaiRules.length,
     fired_push: fired,
     held_digest: held,
+    watch,
   });
 }
 

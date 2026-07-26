@@ -134,11 +134,16 @@ export async function POST(req: NextRequest) {
   // RPC handles kid-exclusion, mode-based default, and per-user daily caps.
   let totalPushed = 0;
   let totalHeld = 0;
+  let setupsCreated = 0;
   for (const a of inserted || []) {
     const { data: res } = await db.rpc("fanout_trade_alert", { p_alert_id: a.id });
     const r = (res as { pushed?: number; held?: number }) || {};
     totalPushed += r.pushed ?? 0;
     totalHeld += r.held ?? 0;
+    // Promote each broadcast to a followable SETUP lifecycle object (LANE A).
+    // Idempotent (one setup per alert); members opt in via /api/alerts/setups.
+    const { data: setupId } = await db.rpc("create_setup_from_alert", { p_alert_id: a.id });
+    if (setupId) setupsCreated++;
   }
 
   return NextResponse.json({
@@ -147,5 +152,6 @@ export async function POST(req: NextRequest) {
     alerts_ingested: inserted?.length ?? 0,
     pushed: totalPushed,
     held_for_digest: totalHeld,
+    setups_created: setupsCreated,
   });
 }

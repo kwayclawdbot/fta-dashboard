@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:grades": "node --test src/lib/research/grades.test.ts"
+    "test:grades": "node --test src/lib/research/grades.test.ts",
+    "test:watch": "node --test src/lib/alerts/watch-state.test.ts",
+    "test:setups": "node --test src/lib/alerts/setup-lifecycle.test.ts"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.8.0",
