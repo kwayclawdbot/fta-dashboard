@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { m, AnimatePresence } from "@/lib/motion";
 import {
@@ -86,8 +87,16 @@ function normAuthor(a: FeedAuthor | FeedAuthor[] | null): FeedAuthor | null {
 
 export default function CommunityClient({
   initialData = null,
+  embedded = false,
+  leadSlot = null,
 }: {
   initialData?: CommunityFeedSeed | null;
+  /** Rendered inside The Club's Feed mode — the mode shell owns the Lounge chat,
+   *  so the always-on ClubChatDrawer is suppressed to avoid a duplicate chat. */
+  embedded?: boolean;
+  /** Rich objects (live_event cards) injected at the top of the ranked stream so
+   *  the Feed reads as one stream with object rhythm, not a post wall. */
+  leadSlot?: ReactNode;
 }) {
   const supabase = createClient();
   // Server-first: when the feed is seeded, the states below start populated so
@@ -746,6 +755,9 @@ export default function CommunityClient({
       <div className="space-y-4">
         {/* Main feed — full width now that Club Chat lives in a drawer */}
         <div className="min-w-0 space-y-4">
+          {/* Rich objects lead the stream (live_event cards from the mode shell). */}
+          {leadSlot}
+
           {/* VIP Room entry — gated: only renders for Challenge VIP members. */}
           <VipRoomBanner />
 
@@ -1029,8 +1041,9 @@ export default function CommunityClient({
         </div>
       </div>
 
-      {/* Club Chat — always one tap away via the shared drawer */}
-      <ClubChatDrawer key={myTier} me={me} tier={myTier} />
+      {/* Club Chat — always one tap away via the shared drawer. Suppressed when
+          embedded in The Club shell, where the Lounge mode owns chat. */}
+      {!embedded && <ClubChatDrawer key={myTier} me={me} tier={myTier} />}
     </div>
     </MentionProvider>
   );

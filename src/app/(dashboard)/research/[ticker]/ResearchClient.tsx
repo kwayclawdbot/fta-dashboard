@@ -18,9 +18,12 @@ import {
   TriangleAlert,
   Newspaper,
   HelpCircle,
-  ChevronRight,
   TrendingUp,
   FileText,
+  Eye,
+  Share2,
+  GraduationCap,
+  Check,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -38,7 +41,9 @@ import type { KaiReport } from "@/lib/kai/report";
 import SetAlertButton, { type AlertLevel } from "@/components/alerts/SetAlertButton";
 import Scorecard from "@/components/research/Scorecard";
 import PriceTechnicals from "@/components/research/PriceTechnicals";
-import ResearchTabBar, { type ResearchTabKey, type ResearchTabDef } from "@/components/research/ResearchTabs";
+import { type ResearchTabKey } from "@/components/research/ResearchTabs";
+import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
+import ContinuePath from "@/components/learn/ContinuePath";
 import {
   KeyStatsGrid,
   CompanyProfileCard,
@@ -105,16 +110,6 @@ function backFromReferrer(): BackTarget | null {
   }
   return null;
 }
-
-const SESSION_TAB_KEY = "fic-research-tab";
-const VALID_TABS: readonly ResearchTabKey[] = [
-  "overview",
-  "charts",
-  "financials",
-  "news",
-  "kai",
-  "community",
-];
 
 interface ThreadComment {
   id: string;
@@ -219,26 +214,6 @@ function researchLevels(
   return out;
 }
 
-function resolveInitialTab(): ResearchTabKey {
-  if (typeof window === "undefined") return "overview";
-  let raw: string | null = null;
-  try {
-    raw = new URLSearchParams(window.location.search).get("tab");
-  } catch {
-    /* ignore */
-  }
-  if (!raw) {
-    try {
-      raw = sessionStorage.getItem(SESSION_TAB_KEY);
-    } catch {
-      /* ignore */
-    }
-  }
-  return raw && (VALID_TABS as readonly string[]).includes(raw)
-    ? (raw as ResearchTabKey)
-    : "overview";
-}
-
 export default function ResearchClient({
   initialResearch = null,
 }: {
@@ -248,6 +223,7 @@ export default function ResearchClient({
 }) {
   const supabase = createClient();
   const router = useRouter();
+  const { openKai } = useKaiSheet();
   const params = useParams<{ ticker: string }>();
   const ticker = (params?.ticker || "").toString().toUpperCase();
 
@@ -279,7 +255,6 @@ export default function ResearchClient({
   const [theses, setTheses] = useState<ThesisCard[]>([]);
   const [showCompose, setShowCompose] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<ResearchTabKey>(() => resolveInitialTab());
   const [back, setBack] = useState<BackTarget>(BACK_DEFAULT);
   const barsReq = useRef(false);
   const newsReq = useRef(false);
@@ -308,27 +283,6 @@ export default function ResearchClient({
       }
     },
     [ticker, supabase]
-  );
-
-  const selectTab = useCallback(
-    (tab: ResearchTabKey) => {
-      setActiveTab(tab);
-      try {
-        sessionStorage.setItem(SESSION_TAB_KEY, tab);
-      } catch {
-        /* ignore */
-      }
-      try {
-        const url = new URL(window.location.href);
-        if (tab === "overview") url.searchParams.delete("tab");
-        else url.searchParams.set("tab", tab);
-        window.history.replaceState(null, "", url.toString());
-      } catch {
-        /* ignore */
-      }
-      ensureTabData(tab);
-    },
-    [ensureTabData]
   );
 
   const load = useCallback(async () => {
@@ -419,19 +373,14 @@ export default function ResearchClient({
     if (next) setBack(next);
   }, []);
 
-  // Once data is ready: correct an invalid deep-linked tab (e.g. ?tab=kai on a
-  // ticker with no report) and kick off the active tab's lazy fetch. Runs once.
+  // CONVERGENCE S2 — canonical single scroll: no tabs, so the formerly tab-gated
+  // data (charts bars + news) loads once as soon as the page is ready.
   useEffect(() => {
     if (loading || !tierResolved || initRef.current) return;
     initRef.current = true;
-    let t = activeTab;
-    if (t === "kai" && !report) t = "overview";
-    if (t !== activeTab) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveTab(t);
-    }
-    ensureTabData(t);
-  }, [loading, tierResolved, activeTab, report, ensureTabData]);
+    ensureTabData("charts");
+    ensureTabData("news");
+  }, [loading, tierResolved, ensureTabData]);
 
   const companyName = useMemo(
     () => research?.company.name || entries.find((e) => e.company_name)?.company_name || ticker,
@@ -508,15 +457,6 @@ export default function ResearchClient({
   const adminEntry = entries.find((e) => e.kind === "admin") || null;
   const ungraded = !!research && research.insufficient && research.grades.overall.graded === 0;
 
-  const tabDefs: ResearchTabDef[] = [
-    { key: "overview", label: "Overview" },
-    { key: "charts", label: "Charts & Technicals" },
-    { key: "financials", label: "Financials" },
-    { key: "news", label: "News" },
-    ...(report ? [{ key: "kai" as ResearchTabKey, label: "Kai Report" }] : []),
-    { key: "community", label: "Community" },
-  ];
-
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
       <Link
@@ -564,23 +504,6 @@ export default function ResearchClient({
               >
                 <LineChart className="h-3.5 w-3.5" /> Chart
               </Link>
-              <Link
-                href={`/kai?ticker=${encodeURIComponent(ticker)}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-gold-300/50 bg-chip-amber/30 px-2.5 py-1.5 text-xs font-semibold text-gold-700 hover:bg-chip-amber/50"
-              >
-                <Sparkles className="h-3.5 w-3.5" /> Ask Kai
-              </Link>
-              {ageGroup !== "kids" && ageGroup !== "teens" && (
-                <SetAlertButton
-                  ticker={ticker}
-                  surface="research"
-                  defaultKind="price_cross"
-                  seedPrice={quote?.price ?? null}
-                  levels={researchLevels(quote?.price ?? null, keyStats)}
-                  variant="chip"
-                  stopPropagation={false}
-                />
-              )}
             </div>
           </div>
 
@@ -631,29 +554,24 @@ export default function ResearchClient({
         </div>
       </m.div>
 
-      {/* ── Sticky tab bar ───────────────────────────────────────────────────
-          Rendered as a DIRECT child of the tall page container (not inside a
-          short wrapper) so `sticky` stays pinned while the tab body scrolls —
-          a wrapping div would confine the sticky to its own height. */}
-      <ResearchTabBar tabs={tabDefs} active={activeTab} onSelect={selectTab} />
+      {/* ── 4 compact actions — Ask Kai · Watch · Practice · Share ──────────── */}
+      <TickerActions
+        ticker={ticker}
+        canAlert={ageGroup !== "kids" && ageGroup !== "teens"}
+        seedPrice={quote?.price ?? null}
+        levels={researchLevels(quote?.price ?? null, keyStats)}
+        onAskKai={() =>
+          openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })
+        }
+      />
 
-      {/* ── Tab content ──────────────────────────────────────────────────── */}
-      <div className="mt-5 space-y-5">
-        {activeTab === "overview" && (
-          <OverviewTab
-            research={research}
-            keyStats={keyStats}
-            companyName={companyName}
-            ungraded={ungraded}
-            locked={locked}
-            isKid={isKid}
-            hasReport={!!report}
-            onOpenKai={() => selectTab("kai")}
-          />
-        )}
-
-        {activeTab === "charts" && (
-          <Section title="Price & technicals">
+      {/* ── Canonical single scroll (no tabs, no nested product feels) ───────
+          What changed → Kai's read → What the Club thinks → Best research →
+          Fundamentals → News → Practice. */}
+      <div className="mt-6 space-y-10">
+        {/* What changed */}
+        {(
+          <Section title="What changed" subtitle="Price action & momentum">
             {research && barsState === "done" ? (
               <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
             ) : (
@@ -666,74 +584,8 @@ export default function ResearchClient({
           </Section>
         )}
 
-        {activeTab === "financials" && (
-          <Section title="Financials">
-            {!research || !keyStats ? (
-              <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
-            ) : research.insufficient ? (
-              <p className="border-y border-sand py-8 text-center text-sm text-soft">
-                We don&apos;t have enough published financials for {companyName} to chart yet — many
-                smaller companies and funds don&apos;t report the quarterly numbers these charts need.
-              </p>
-            ) : locked ? (
-              <UpsellCard context="watchlist" />
-            ) : (
-              <FinancialsSection
-                charts={research.charts}
-                keyStats={keyStats}
-                medians={research.sectorMedians}
-              />
-            )}
-          </Section>
-        )}
-
-        {activeTab === "news" && (
-          <Section title="News" subtitle="Club recaps + headlines from around the web">
-            {newsState !== "done" ? (
-              <div className="space-y-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-14 animate-pulse rounded-xl bg-sand/40" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {clubNews.length > 0 && (
-                  <div>
-                    <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
-                      <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
-                    </h3>
-                    <div className="border-y border-sand">
-                      {clubNews.map((a) => (
-                        <Link
-                          key={a.slug}
-                          href={`/news/${a.slug}`}
-                          className="group block border-t border-sand py-3 first:border-t-0"
-                        >
-                          <div className="mb-1 flex items-center gap-2">
-                            <KindChip kind={a.kind} />
-                            <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
-                          </div>
-                          <p className="text-sm font-semibold leading-snug text-ink group-hover:text-gold-700">{a.title}</p>
-                          {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  {clubNews.length > 0 && (
-                    <h3 className="mb-2 font-display text-xs font-bold uppercase tracking-wider text-soft">
-                      Around the web
-                    </h3>
-                  )}
-                  <NewsList news={news} />
-                </div>
-              </div>
-            )}
-          </Section>
-        )}
-
-        {activeTab === "kai" && report && (
+        {/* Kai's read — the derived Kai report; hidden when there's none */}
+        {report && (
           locked ? (
             <UpsellCard context="watchlist" />
           ) : (
@@ -741,8 +593,9 @@ export default function ResearchClient({
           )
         )}
 
-        {activeTab === "community" && (
-          <div className="space-y-5">
+        {/* What the Club thinks → Best research (un-buried from the old tab) */}
+        {(
+          <div className="space-y-6">
             {/* SOCIAL OBJECTS S1 — per-ticker debate (kid-walled in the RPC → renders
                 nothing for kids or tickers without a debate). */}
             <TickerDebate
@@ -990,11 +843,179 @@ export default function ResearchClient({
             </section>
           </div>
         )}
+
+        {/* Fundamentals — strengths & weaknesses, key stats, about */}
+        {(
+          <OverviewTab
+            research={research}
+            keyStats={keyStats}
+            companyName={companyName}
+            ungraded={ungraded}
+            locked={locked}
+            isKid={isKid}
+          />
+        )}
+
+        {/* Financials */}
+        {(
+          <Section title="Financials">
+            {!research || !keyStats ? (
+              <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
+            ) : research.insufficient ? (
+              <p className="border-y border-sand py-8 text-center text-sm text-soft">
+                We don&apos;t have enough published financials for {companyName} to chart yet — many
+                smaller companies and funds don&apos;t report the quarterly numbers these charts need.
+              </p>
+            ) : locked ? (
+              <UpsellCard context="watchlist" />
+            ) : (
+              <FinancialsSection
+                charts={research.charts}
+                keyStats={keyStats}
+                medians={research.sectorMedians}
+              />
+            )}
+          </Section>
+        )}
+
+        {/* News — keeps its own detail view (rows → /news/[slug]) */}
+        {(
+          <Section title="News" subtitle="Club recaps + headlines from around the web">
+            {newsState !== "done" ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-14 animate-pulse rounded-xl bg-sand/40" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {clubNews.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
+                      <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
+                    </h3>
+                    <div className="border-y border-sand">
+                      {clubNews.map((a) => (
+                        <Link
+                          key={a.slug}
+                          href={`/news/${a.slug}`}
+                          className="group block border-t border-sand py-3 first:border-t-0"
+                        >
+                          <div className="mb-1 flex items-center gap-2">
+                            <KindChip kind={a.kind} />
+                            <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
+                          </div>
+                          <p className="text-sm font-semibold leading-snug text-ink group-hover:text-gold-700">{a.title}</p>
+                          {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  {clubNews.length > 0 && (
+                    <h3 className="mb-2 font-display text-xs font-bold uppercase tracking-wider text-soft">
+                      Around the web
+                    </h3>
+                  )}
+                  <NewsList news={news} />
+                </div>
+              </div>
+            )}
+          </Section>
+        )}
+
+        {/* Practice — the ticker-relevant Continue Path lesson (amendment #3) */}
+        <div id="practice">
+          <ContinuePath pickup={null} ticker={ticker} />
+        </div>
       </div>
 
       <footer className="mt-8 border-t border-sand pt-5">
         <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
       </footer>
+    </div>
+  );
+}
+
+/* ─────────────── 4 compact actions (Ask Kai · Watch · Practice · Share) ──────
+   Canonical ticker page (CONVERGENCE S2): one compact action row directly under
+   the identity header. Ask Kai opens the S1 contextual Kai sheet with the ticker
+   as context; Watch = the kid-gated price-alert control; Practice jumps to the
+   ContinuePath lesson (amendment #3); Share copies / shares the page. */
+function TickerActions({
+  ticker,
+  canAlert,
+  seedPrice,
+  levels,
+  onAskKai,
+}: {
+  ticker: string;
+  canAlert: boolean;
+  seedPrice: number | null;
+  levels: AlertLevel[];
+  onAskKai: () => void;
+}) {
+  const [shared, setShared] = useState(false);
+
+  async function onShare() {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const title = `${ticker} on Cheat Code`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 1800);
+    } catch {
+      /* dismissed / unsupported */
+    }
+  }
+
+  function onPractice() {
+    document.getElementById("practice")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const pill =
+    "inline-flex items-center justify-center gap-1.5 rounded-xl border border-sand bg-card px-3 py-2.5 text-[13px] font-bold text-ink transition-colors hover:border-volt-400 hover:text-volt-700";
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <button
+        type="button"
+        onClick={onAskKai}
+        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-kai-blue/30 bg-kai-blue-soft px-3 py-2.5 text-[13px] font-bold text-kai-blue transition-colors hover:border-kai-blue/60"
+      >
+        <Sparkles className="h-4 w-4" /> Ask Kai
+      </button>
+
+      {canAlert ? (
+        <SetAlertButton
+          ticker={ticker}
+          surface="research"
+          defaultKind="price_cross"
+          seedPrice={seedPrice}
+          levels={levels}
+          variant="chip"
+          stopPropagation={false}
+          className="!w-full !justify-center"
+        />
+      ) : (
+        <button type="button" onClick={onPractice} className={pill}>
+          <Eye className="h-4 w-4" /> Watch
+        </button>
+      )}
+
+      <button type="button" onClick={onPractice} className={pill}>
+        <GraduationCap className="h-4 w-4" /> Practice
+      </button>
+
+      <button type="button" onClick={onShare} className={pill}>
+        {shared ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
+        {shared ? "Copied" : "Share"}
+      </button>
     </div>
   );
 }
@@ -1031,8 +1052,6 @@ function OverviewTab({
   ungraded,
   locked,
   isKid,
-  hasReport,
-  onOpenKai,
 }: {
   research: ResearchPayload | null;
   keyStats: ResearchPayload["keyStats"] | null;
@@ -1040,8 +1059,6 @@ function OverviewTab({
   ungraded: boolean;
   locked: boolean;
   isKid: boolean;
-  hasReport: boolean;
-  onOpenKai: () => void;
 }) {
   // Editorial one-pager: verdict detail → the numbers → about, each an
   // un-boxed section reading top-to-bottom. No card-in-card.
@@ -1073,24 +1090,6 @@ function OverviewTab({
         </Section>
       )}
 
-      {/* Kai report teaser → its own tab */}
-      {hasReport && (
-        <button
-          type="button"
-          onClick={onOpenKai}
-          className="flex w-full items-center gap-3 rounded-2xl border border-gold-300/50 bg-chip-amber/20 p-5 text-left transition-colors hover:bg-chip-amber/40"
-        >
-          <Sparkles className="h-5 w-5 shrink-0 text-gold-700" />
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-sm font-bold text-ink">Kai Research Report available</p>
-            <p className="mt-0.5 text-xs text-soft">
-              A deep-dive on {companyName} — the business, the numbers, the thesis, and how to explain
-              it to your kids. Open the Kai Report tab.
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-gold-700" />
-        </button>
-      )}
     </div>
   );
 }
