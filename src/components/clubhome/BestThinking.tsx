@@ -49,6 +49,12 @@ function Byline({ p }: { p: ThinkingPost }) {
   );
 }
 
+// The live endpoint may omit href on a post; never hand <Link> an undefined
+// href. Fall back to the ticker's research page, then the community feed.
+function postHref(p: ThinkingPost): string {
+  return p.href || (p.ticker ? `/research/${encodeURIComponent(p.ticker)}` : "/community");
+}
+
 export default function BestThinking({ thinking }: { thinking: ThinkingResponse | null }) {
   const lead = thinking?.lead ?? null;
   const secondary = thinking?.secondary ?? [];
@@ -68,7 +74,7 @@ export default function BestThinking({ thinking }: { thinking: ThinkingResponse 
       {lead ? (
         <>
           {/* lead — thumbnail + editorial masthead */}
-          <Link href={lead.href} className="group mt-4 flex gap-4 border-b border-sand pb-4">
+          <Link href={postHref(lead)} className="group mt-4 flex gap-4 border-b border-sand pb-4">
             <Thumb series={seriesFor(0)} tone="teal" size={64} className="mt-0.5" />
             <div className="min-w-0 flex-1">
               {lead.ticker && (
@@ -96,7 +102,7 @@ export default function BestThinking({ thinking }: { thinking: ThinkingResponse 
           <ol className="divide-y divide-sand">
             {secondary.map((p, i) => (
               <li key={p.id}>
-                <Link href={p.href} className="group club-row -mx-2 flex items-center gap-3 rounded-lg px-2 py-3">
+                <Link href={postHref(p)} className="group club-row -mx-2 flex items-center gap-3 rounded-lg px-2 py-3">
                   <Thumb series={seriesFor(i + 1)} tone={i % 2 ? "volt" : "teal"} size={46} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">

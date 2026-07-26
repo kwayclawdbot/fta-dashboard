@@ -14,17 +14,28 @@ import type { DebateResponse } from "@/lib/clubhome/contract";
  */
 
 export default function Debate({ debate }: { debate: DebateResponse | null }) {
-  const [counts, setCounts] = useState(debate?.counts ?? { yes: 0, no: 0 });
-  const [userVote, setUserVote] = useState<"yes" | "no" | null>(debate?.userVote ?? null);
+  // The live /api/club/debate endpoint returns { yes, no, total, question,
+  // participants? } — tolerate both that shape and the contract's { counts,
+  // participants }. Missing/nullable fields must never crash the Home.
+  const d = debate as
+    | (DebateResponse & { yes?: number; no?: number; total?: number; question?: string | null })
+    | null;
+  const initialCounts = d?.counts ?? { yes: d?.yes ?? 0, no: d?.no ?? 0 };
+  const participants = d?.participants ?? [];
+
+  const [counts, setCounts] = useState(initialCounts);
+  const [userVote, setUserVote] = useState<"yes" | "no" | null>(d?.userVote ?? null);
   const [voting, setVoting] = useState(false);
   const [pending, setPending] = useState(false);
 
-  if (!debate) return null;
+  // No debate seeded (question null/absent) → render nothing, never a broken card.
+  if (!d || !d.question) return null;
+  const debateId = d.id;
 
   const total = counts.yes + counts.no;
   const yesPct = total > 0 ? Math.round((counts.yes / total) * 100) : 50;
   const noPct = 100 - yesPct;
-  const floorMet = debate.floorMet;
+  const floorMet = d.floorMet;
 
   async function vote(choice: "yes" | "no") {
     if (userVote || pending) return;
@@ -32,7 +43,7 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
     setUserVote(choice);
     setCounts((c) => ({ ...c, [choice]: c[choice] + 1 }));
     clubFeedback.voted();
-    const server = await postDebateVote(debate!.id, choice);
+    const server = await postDebateVote(debateId, choice);
     if (server) setCounts(server);
     setPending(false);
   }
@@ -42,7 +53,7 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
       <CardHead title="The Debate" badge={<Badge tone="poll" dot>Live Poll</Badge>} />
 
       <h4 className="mt-3 font-display text-lg font-extrabold leading-snug tracking-tight text-ink">
-        {debate.question}
+        {d.question}
       </h4>
       <p className="mt-1 text-[13px] text-soft">
         {floorMet ? `${total.toLocaleString()} votes` : "Be an early voice — the first votes set the tone."}
@@ -101,10 +112,10 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
         </div>
       ) : (
         <div className="mt-5 flex items-center justify-between gap-3">
-          {debate.participants.length > 0 ? (
+          {participants.length > 0 ? (
             <div className="flex items-center">
               <div className="flex -space-x-2">
-                {debate.participants.slice(0, 4).map((p) => (
+                {participants.slice(0, 4).map((p) => (
                   <Avatar key={p.id} name={p.name || "Member"} size="sm" className="ring-2 ring-card" />
                 ))}
               </div>
