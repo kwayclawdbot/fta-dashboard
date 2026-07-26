@@ -29,7 +29,9 @@ export default function ContinuePath({
   ticker?: string;
   className?: string;
 }) {
-  const href = pickup?.href ?? "/courses";
+  // Deep-links to the path's current node (the resume lesson) when known; else
+  // to the Learning World front door (§3 — the journey, not the course grid).
+  const href = pickup?.href ?? "/learn";
   const title = pickup?.title ?? "Pick up the Foundations";
   const context = pickup?.context ?? "One concept, one company, every week.";
   const eyebrow = ticker ? `Learn · ${ticker}` : "Keep learning";
