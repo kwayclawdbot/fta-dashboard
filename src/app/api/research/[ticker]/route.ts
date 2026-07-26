@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeSymbol } from "@/lib/market/polygon";
 import { getResearchPayload } from "@/lib/research/aggregate";
+import { logClubEvent } from "@/lib/club/track";
 
 /**
  * GET /api/research/[ticker]
@@ -37,6 +38,10 @@ export async function GET(
   if (!payload) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
+
+  // ClubHome instrumentation: log a research_view (best-effort, non-blocking) so
+  // the Club Score pipeline can weight this ticker's community attention.
+  void logClubEvent(auth, user.id, "research_view", ticker);
 
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "private, max-age=60" },

@@ -25,6 +25,7 @@ import {
 } from "@/lib/kai/persona";
 import { beltForXp } from "@/lib/belts";
 import { serviceClient } from "@/lib/server/membership";
+import { logClubEvent } from "@/lib/club/track";
 import type { Register } from "@/lib/register";
 
 export const runtime = "nodejs";
@@ -391,6 +392,14 @@ export async function POST(req: NextRequest) {
   let threadId = body?.threadId ? String(body.threadId) : null;
   const startedNewThread = !threadId; // memory-refresh trigger (Lane 8B)
   if (!text) return Response.json({ error: "Empty message." }, { status: 400 });
+
+  // ClubHome instrumentation: log a kai_question (best-effort, non-blocking). A
+  // cashtag in the message ($AAPL) attributes the question to a ticker for the
+  // Club Score pipeline; otherwise it still counts toward collective activity.
+  {
+    const cash = text.match(/\$([A-Za-z]{1,5})\b/);
+    void logClubEvent(supabase, user.id, "kai_question", cash ? cash[1] : null);
+  }
 
   // Personalization (Lane 8B) — sourced server-side, never client-supplied. The
   // definer RPC returns only THIS caller's data (works for kids past the

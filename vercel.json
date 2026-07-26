@@ -55,6 +55,10 @@
     {
       "path": "/api/cron/challenge-sequences",
       "schedule": "10 23 * * *"
+    },
+    {
+      "path": "/api/club/refresh",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
