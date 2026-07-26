@@ -8,14 +8,13 @@ import {
   Home,
   Eye,
   Target,
-  Gamepad2,
   MessageCircle,
-  Menu,
   ChevronRight,
   BookOpen,
   Lock,
   Compass,
   User,
+  Users,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -31,42 +30,52 @@ interface Tab {
 }
 
 /**
- * Role-aware flanks around the elevated Community center button (Scheme B,
- * 2026-07-22). The center is always Community (the app's main action — kids are
- * in the club too). Owner-guided priorities:
- *   parents → Watchlist + Missions  (shared research + kid engagement)
- *   teens   → Watchlist + Missions  (research + gamified engagement)
- *   kids    → Missions + Games      (earn-rewards loop + play)
+ * The one permanent mobile mental model (PART IV): five EQUAL premium slots —
+ *   Home · {slot2} · Club · {slot4} · You
+ * — with the center-circle Community FAB retired (it read social-app-2020; the
+ * Club deserves premium). A register changes exactly ONE slot vs the adult
+ * baseline; kids get their own map (Learn one tap; Missions; "Me"):
+ *
+ *   adult / solo   Home · Discover · Club · Watchlist · You
+ *   parent         Home · Discover · Club · Family    · You
+ *   teen           Home · Learn    · Club · Watchlist · You
+ *   kid            Home · Learn    · Club · Missions  · Me
+ *   free           Home · Learn    · Club · Watchlist · You
+ *
+ * The 5th slot ("You"/"Me") opens the full-nav bottom sheet — every non-primary
+ * destination stays reachable there (it mirrors the sidebar), so nothing orphans.
  */
-function flanksFor(
+const T = {
+  Home: { label: "Home", href: "/dashboard", icon: Home } as Tab,
+  Club: { label: "Club", href: "/community", icon: MessageCircle } as Tab,
+  Discover: { label: "Discover", href: "/discover", icon: Compass } as Tab,
+  Learn: { label: "Learn", href: "/courses", icon: BookOpen } as Tab,
+  Watchlist: { label: "Watchlist", href: "/watchlist/community", icon: Eye } as Tab,
+  Missions: { label: "Missions", href: "/missions", icon: Target } as Tab,
+  Family: { label: "Family", href: "/family", icon: Users } as Tab,
+};
+
+/** The four navigable tabs (Home · slot2 · Club · slot4) + the "You"/"Me" label. */
+function tabsFor(
   role?: string,
   ageGroup?: string,
   tier?: FamilyTier,
   isSolo?: boolean
-): [Tab, Tab] {
-  // Free tier: surface the two "give the tools" value pages — the free courses
-  // sampler and the gated Community Watchlist door — flanking Community. Free
-  // Class + Join FIC live one tap away in the More sheet.
+): { tabs: [Tab, Tab, Tab, Tab]; youLabel: string } {
+  const isKid = role === "child" && ageGroup === "kids";
+  const isTeen = ageGroup === "teens" || role === "teen";
+  const canParent = role === "parent" || role === "admin";
+
   if (tier === "free")
-    return [
-      { label: "Courses", href: "/courses", icon: BookOpen },
-      { label: "Watchlist", href: "/watchlist/community", icon: Eye },
-    ];
-  const isChild = role === "child";
-  const isKid = isChild && ageGroup === "kids";
-  // Watchlist tab lands on the flagship Community Board; My Family / My Watchlist
-  // is one tap deeper via the Watchlist group in the More/Profile sheet.
-  const Watchlist: Tab = { label: "Watchlist", href: "/watchlist/community", icon: Eye };
-  const Missions: Tab = { label: "Missions", href: "/missions", icon: Target };
-  const Games: Tab = { label: "Games", href: "/games", icon: Gamepad2 };
-  const Discover: Tab = { label: "Discover", href: "/discover", icon: Compass };
-  // Cheat Code Club — five-item scheme (individual/club mode): the flanks are
-  // Discover + Watchlist around the elevated Community center. Solo ⇒ adult.
-  if (isSolo && !isKid) return [Discover, Watchlist];
-  if (isKid) return [Missions, Games];
-  // Family teens + parents keep their current pair (Scheme B) — families expect
-  // their layout. Discover is still reachable from the More sheet + sidebar.
-  return [Watchlist, Missions];
+    return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
+  if (isKid)
+    return { tabs: [T.Home, T.Learn, T.Club, T.Missions], youLabel: "Me" };
+  if (isTeen)
+    return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
+  if (canParent && !isSolo)
+    return { tabs: [T.Home, T.Discover, T.Club, T.Family], youLabel: "You" };
+  // Solo adult / individual member.
+  return { tabs: [T.Home, T.Discover, T.Club, T.Watchlist], youLabel: "You" };
 }
 
 interface MobileTabBarProps {
@@ -87,15 +96,18 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const [flank1, flank2] = flanksFor(user.role, user.age_group, user.tier, user.isSolo);
-  const HOME: Tab = { label: "Home", href: "/dashboard", icon: Home };
+  const { tabs, youLabel } = tabsFor(
+    user.role,
+    user.age_group,
+    user.tier,
+    user.isSolo
+  );
   const mode = modeFromSolo(user.isSolo);
   const individual = mode === "individual";
   const brand = modeBrand(mode);
-  // The 5th slot: "Profile" (user glyph) in the club five-item scheme, "More"
-  // (menu glyph) everywhere else. Both open the same full-nav sheet.
-  const MoreIcon = individual ? User : Menu;
-  const moreLabel = individual ? "Profile" : "More";
+  // The 5th slot ("You"/"Me") — a user glyph opening the full-nav sheet.
+  const MoreIcon = User;
+  const moreLabel = youLabel;
 
   // Close the sheet whenever the route changes (e.g. after tapping an item).
   useEffect(() => {
@@ -114,19 +126,12 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
-  const communityActive = isActive("/community");
 
-  // ── The More sheet reuses the sidebar's role/tier-aware nav definitions plus
+  // ── The "You" sheet reuses the sidebar's role/tier-aware nav definitions plus
   //    the footer utility cluster, minus whatever already has a dedicated tab,
-  //    so the two never fall out of sync. Sub-items that duplicate a tab href
-  //    (e.g. kids' Games, which is a flank tab AND a Practice sub-item) are
+  //    so the two never fall out of sync. Sub-items that duplicate a tab href are
   //    stripped too, so nothing appears twice. ──
-  const usedHrefs = new Set<string>([
-    HOME.href,
-    "/community",
-    flank1.href,
-    flank2.href,
-  ]);
+  const usedHrefs = new Set<string>(tabs.map((t) => t.href));
   const dedupeSubs = (item: NavItem): NavItem =>
     item.subItems
       ? { ...item, subItems: item.subItems.filter((s) => !usedHrefs.has(s.href)) }
@@ -175,37 +180,12 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
         aria-label="Primary"
       >
         <div className="flex items-stretch justify-around h-16 px-1">
-          <TabSlot tab={HOME} />
-          <TabSlot tab={flank1} />
+          {/* Five equal premium slots — Home · slot2 · Club · slot4 · You. */}
+          {tabs.map((tab) => (
+            <TabSlot key={tab.href} tab={tab} />
+          ))}
 
-          {/* Center — elevated Community, the app's main action */}
-          <Link
-            href="/community"
-            data-tour="tab:/community"
-            aria-label="Community"
-            className="relative flex flex-1 flex-col items-center justify-end pb-1.5"
-          >
-            <span
-              className={`absolute -top-5 w-14 h-14 rounded-full flex items-center justify-center ring-4 ring-midnight-900 transition-shadow ${
-                communityActive
-                  ? "bg-gold-500 shadow-[0_6px_20px_rgba(245,158,11,0.5)]"
-                  : "bg-gold-400 shadow-[0_4px_14px_rgba(245,158,11,0.35)]"
-              }`}
-            >
-              <MessageCircle className="w-6 h-6 text-white" strokeWidth={2.2} />
-            </span>
-            <span
-              className={`mt-9 text-[10px] font-semibold leading-none ${
-                communityActive ? "text-gold-700" : "text-gold-600"
-              }`}
-            >
-              Community
-            </span>
-          </Link>
-
-          <TabSlot tab={flank2} />
-
-          {/* Profile / More — opens the full-nav bottom sheet */}
+          {/* "You" / "Me" — opens the full-nav bottom sheet */}
           <button
             type="button"
             data-tour="tab:more"

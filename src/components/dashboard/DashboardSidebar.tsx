@@ -99,7 +99,7 @@ const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon:
 // News = its own top-level row on every tier. With only Feed left, a group
 // wrapper is redundant, so Community flattens to a single row.)
 const CLUB_COMMUNITY: NavItem = {
-  label: "Community",
+  label: "Club",
   href: "/community",
   icon: MessageCircle,
 };
@@ -337,13 +337,17 @@ export function getNavItems(
   //    the members-only UpsellCard — this replaces the old Team Picks teaser),
   //    the Free Class hub, and a "Join FIC" upsell. Help/Settings in the footer. ──
   if (tier === "free") {
+    // Mental model Home · Learn · Club · Watchlist · You — free swaps the adult
+    // slot-2 (Discover) for the free Courses sampler (their Learn door), leading
+    // with the four primary doors, then the rest under a quiet secondary group.
     return [
       { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Learn", href: "/courses", icon: BookOpen },
       CLUB_COMMUNITY,
+      { label: "Watchlist", href: "/watchlist/community", icon: Eye },
+      FAMILY_MORE_HEADER,
       CLUB_NEWS,
-      { label: "Free Courses", href: "/courses", icon: BookOpen },
       practiceGroup(false), // chart + games (Candle Battle); simulator stays locked
-      { label: "Community Watchlist", href: "/watchlist/community", icon: Eye },
       { label: "Free Class", href: "/free-class", icon: Video },
       { label: "Join the Club", href: "/upgrade", icon: Sparkles },
     ];
@@ -391,14 +395,19 @@ export function getNavItems(
   // ── Young kids (7 top-level): surface the play/earn loop flat, nest lessons.
   //    Community now appears on the kid DESKTOP nav too (it was mobile-only). ──
   if (isKid) {
+    // Kid mental model Home · Learn · Club · Missions · Me — Learn is a retention
+    // pillar, so it stays one tap from primary (never buried under "Me"). The
+    // primary four lead; the rest (News, Kai, Watchlist, Practice, Badges,
+    // Leaderboard) stay reachable below as their curated loop.
     return [
       { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
+      learnGroup(true), // My Lessons · Live Classes · My Cards
       CLUB_COMMUNITY,
+      CLUB_MISSIONS,
+      FAMILY_MORE_HEADER,
       CLUB_NEWS,
       KAI_ASK,
-      CLUB_MISSIONS,
       CLUB_WATCHLIST,
-      learnGroup(true), // My Lessons · Live Classes · My Cards
       practiceGroup(false), // chart + games only for young kids
       { label: "My Badges", href: "/progress", icon: Trophy },
       LEADERBOARD,
@@ -414,43 +423,58 @@ export function getNavItems(
   //    Missions, Learn, Practice, Alerts, Progress, Leaderboard) drops under a
   //    "More" header. Warm-gold register + kid-relevant ordering unchanged; no
   //    routes move. The gold FTA hub stays at the tail with its own treatment. ──
-  const primary: NavItem[] = [
+  // One mental model: Home, Discover, Club, {slot4}, You. A family register
+  // changes exactly ONE slot vs the adult baseline — parents get Family in slot
+  // 4; teens keep Learn one tap from primary (a retention pillar can't sit under
+  // "You" for minors) and run Home, Learn, Club, Watchlist. Everything else drops
+  // under a quiet "More" group. No routes are removed — items only move between
+  // primary and More, so every destination stays reachable (link-graph preserved).
+  if (canParent) {
+    // Parent: Home, Discover, Club, Family. Watchlist moves under More.
+    const primary: NavItem[] = [
+      { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+      CLUB_DISCOVER,
+      CLUB_COMMUNITY,
+      isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM,
+    ];
+    const more: NavItem[] = [
+      CLUB_WATCHLIST,
+      CLUB_NEWS,
+      KAI_ASK,
+      CLUB_SCREENER,
+      CLUB_MISSIONS,
+      learnGroup(false),
+      practiceGroup(true),
+      CLUB_ALERTS,
+      LEADERBOARD,
+    ];
+    // The FTA section closes the nav as a hard-split gold hub for FTA families;
+    // FIC-only parents get the compact locked teaser in its place (to /upgrade).
+    return [...primary, FAMILY_MORE_HEADER, ...more, isFta ? FTA_SECTION : FTA_LOCKED];
+  }
+
+  // Teens: Home, Learn, Club, Watchlist. Discover, News, Kai, Screener, Missions,
+  // Practice, Progress, Leaderboard live under More. FTA teens still get the hub;
+  // FIC teens see nothing at the tail (upsell stays parent-gated).
+  const teenPrimary: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
+    learnGroup(false),
     CLUB_COMMUNITY,
     CLUB_WATCHLIST,
   ];
-
-  // Secondary cluster (browse-not-daily), preserving the prior relative order.
-  const more: NavItem[] = [
+  const teenMore: NavItem[] = [
     CLUB_DISCOVER,
     CLUB_NEWS,
     KAI_ASK,
     CLUB_SCREENER,
     CLUB_MISSIONS,
-    learnGroup(false),
     practiceGroup(true),
+    { label: "My Progress", href: "/progress", icon: Trophy },
+    LEADERBOARD,
   ];
-
-  if (canParent) {
-    // Family is a PRIMARY door for parents. (Solo owners returned above, so a
-    // parent here always has a family; the slim SOLO group never applies.)
-    primary.push(isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM);
-    // Alerts — adults only (parent/admin); kids/teens never see it. Now grouped
-    // under More alongside the rest of the secondary surfaces.
-    more.push(CLUB_ALERTS);
-    more.push(LEADERBOARD);
-    // The FTA section closes the nav as a hard-split gold hub for FTA families;
-    // FIC-only parents get the compact locked teaser in its place (→ /upgrade).
-    return [...primary, FAMILY_MORE_HEADER, ...more, isFta ? FTA_SECTION : FTA_LOCKED];
-  }
-
-  // Teens: no Family primary. My Progress + Leaderboard live under More. FTA
-  // teens still get the hub; FIC teens see nothing here (upsell stays parent-gated).
-  more.push({ label: "My Progress", href: "/progress", icon: Trophy });
-  more.push(LEADERBOARD);
   return isFta
-    ? [...primary, FAMILY_MORE_HEADER, ...more, FTA_SECTION]
-    : [...primary, FAMILY_MORE_HEADER, ...more];
+    ? [...teenPrimary, FAMILY_MORE_HEADER, ...teenMore, FTA_SECTION]
+    : [...teenPrimary, FAMILY_MORE_HEADER, ...teenMore];
 }
 
 interface DashboardSidebarProps {

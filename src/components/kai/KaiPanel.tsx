@@ -22,9 +22,18 @@ import KaiChatShared from "@/components/kai/KaiChatShared";
 export default function KaiPanel({
   open,
   onClose,
+  contextChip = null,
+  initialInput = null,
+  contextNonce = 0,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Page-context label shown as a Kai-blue chip in the sheet header. */
+  contextChip?: string | null;
+  /** Prefill the composer when the sheet opens with context. */
+  initialInput?: string | null;
+  /** Bumps each fresh contextual open so the chip/prefill re-apply. */
+  contextNonce?: number;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -119,7 +128,13 @@ export default function KaiPanel({
           {/* The parent only mounts KaiPanel after the FAB's first open and keeps
               it mounted thereafter, so the conversation (thread, history, scroll)
               persists across open/close. */}
-          <KaiChatShared variant="panel" onClose={onClose} />
+          <KaiChatShared
+            variant="panel"
+            onClose={onClose}
+            contextChip={contextChip}
+            initialInput={initialInput}
+            contextNonce={contextNonce}
+          />
         </div>
       </div>
     </div>

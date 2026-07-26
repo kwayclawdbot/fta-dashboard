@@ -121,6 +121,9 @@ export default function KaiChatShared({
   variant = "page",
   autoThreadId = null,
   onClose,
+  contextChip = null,
+  initialInput = null,
+  contextNonce = 0,
 }: {
   initialData?: KaiChatSeed | null;
   variant?: "page" | "panel";
@@ -128,6 +131,14 @@ export default function KaiChatShared({
   autoThreadId?: string | null;
   /** Panel-only: close the slide-over. */
   onClose?: () => void;
+  /** Panel-only: a page-context label shown as a Kai-blue chip in the header
+   *  (e.g. "NVDA", "Lesson: Reading a candle"). Tells Kai — and the member —
+   *  what Kai already knows about the current surface. */
+  contextChip?: string | null;
+  /** Panel-only: prefill the composer with this query when the sheet opens. */
+  initialInput?: string | null;
+  /** Panel-only: bump to re-apply contextChip/initialInput on a fresh open. */
+  contextNonce?: number;
 }) {
   const isPanel = variant === "panel";
   const router = useRouter();
@@ -154,6 +165,18 @@ export default function KaiChatShared({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Contextual open (Kai sheet): when the FAB / an "Ask Kai" entry / a search row
+  // opens Kai with page context, prefill the composer and focus it. Keyed on
+  // contextNonce so each fresh open re-applies even though the panel stays mounted.
+  useEffect(() => {
+    if (!isPanel || contextNonce === 0) return;
+    if (initialInput) setInput(initialInput);
+    const t = setTimeout(() => composerRef.current?.focus(), 60);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextNonce]);
   const [sending, setSending] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Last user message text — kept so a failed turn can be retried without
@@ -591,7 +614,17 @@ export default function KaiChatShared({
               <X className="h-5 w-5" />
             </button>
           </div>
-        ) : (
+        ) : null}
+        {/* Context chip — the current surface Kai already knows about (ticker /
+            lesson / thesis / alert). Kai-blue, panel only. */}
+        {isPanel && contextChip && (
+          <div className="flex items-center gap-1.5 border-b border-sand bg-kai-blue-soft px-3 py-1.5">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-kai-blue" />
+            <span className="text-[11px] font-semibold text-kai-blue">Context</span>
+            <span className="truncate text-[11px] font-medium text-ink">{contextChip}</span>
+          </div>
+        )}
+        {!isPanel && (
           <div className="flex items-center gap-2 border-b border-sand px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -736,6 +769,7 @@ export default function KaiChatShared({
               {capNote && <p className="mb-2 text-center text-xs text-kai-700">{capNote}</p>}
               <div className="flex items-end gap-2">
                 <textarea
+                  ref={composerRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {

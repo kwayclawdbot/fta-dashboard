@@ -9,7 +9,7 @@ import { getUserXp } from "@/lib/xp";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
-import FloatingKaiButton from "./FloatingKaiButton";
+import KaiSheetProvider from "@/components/kai/KaiSheetProvider";
 import FreeLocked from "./FreeLocked";
 import type { UpsellContext } from "./UpsellCard";
 import AppTour from "@/components/tour/AppTour";
@@ -158,6 +158,12 @@ export default function DashboardShell({
   return (
     <div data-mode={mode} className="min-h-screen bg-midnight-950">
       <ModeManager mode={mode} />
+      <KaiSheetProvider
+        tier={user.tier}
+        role={user.role}
+        ageGroup={user.age_group}
+        isSolo={user.isSolo}
+      >
       <DashboardSidebar
         user={user}
         collapsed={sidebarCollapsed}
@@ -226,14 +232,10 @@ export default function DashboardShell({
       {/* App-style bottom tab bar — phones only, dashboard routes only. */}
       <MobileTabBar user={user} xp={xp} />
 
-      {/* Floating Kai FAB — Kai's home now that it left the primary nav.
-          Adults only; component self-gates on role/tier/route. */}
-      <FloatingKaiButton
-        role={user.role}
-        ageGroup={user.age_group}
-        tier={user.tier}
-        isSolo={user.isSolo}
-      />
+      {/* The contextual Kai sheet + its floating FAB are owned by
+          KaiSheetProvider (wrapping this subtree) — Kai is a system capability,
+          reachable from the FAB, "Ask Kai" actions, and universal search. */}
+      </KaiSheetProvider>
 
       <Suspense fallback={null}>
         <AppTour user={user} />
