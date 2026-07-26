@@ -22,7 +22,8 @@ import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
   activityLine, isWatchlistShare, timeAgo, parseTickerTags, parseCashtags, POSITION_META,
-  type WatchlistSharePayload, type PostPosition,
+  TIME_HORIZON_META, CONTENT_TYPE_META,
+  type WatchlistSharePayload, type PostPosition, type TimeHorizon, type ContentType,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
   type AnchorPayload, type Role,
 } from "@/lib/feed";
@@ -191,6 +192,9 @@ export default function CommunityClient({
   const [tickerDraft, setTickerDraft] = useState("");
   const [tickerTags, setTickerTags] = useState<string[]>([]);
   const [position, setPosition] = useState<PostPosition | null>(null);
+  // KAI §2b: optional structured capture (asked once, never inferred).
+  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon | null>(null);
+  const [contentType, setContentType] = useState<ContentType | null>(null);
   const [showTagger, setShowTagger] = useState(false);
   function commitTicker(raw: string) {
     const parsed = parseTickerTags(raw + " " + tickerTags.join(" "));
@@ -273,7 +277,7 @@ export default function CommunityClient({
       const { data } = await supabase
         .from("feed_posts")
         .select(
-          `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at, ${AUTHOR_SEL}`
+          `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, time_horizon, content_type, created_at, ${AUTHOR_SEL}`
         )
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
@@ -489,9 +493,12 @@ export default function CommunityClient({
         author_id: me.id, family_id: me.family_id, kind: "post", body,
         ticker_tags: finalTags,
         position: finalTags.length ? position : null,
+        // KAI §2b structured capture — horizon only meaningful with a ticker.
+        time_horizon: finalTags.length ? timeHorizon : null,
+        content_type: contentType,
         ...(attachmentFields || {}),
       })
-      .select(`id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at`)
+      .select(`id, author_id, family_id, kind, body, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, time_horizon, content_type, created_at`)
       .single();
 
     if (!error && data) {
@@ -509,6 +516,8 @@ export default function CommunityClient({
       setTickerTags([]);
       setTickerDraft("");
       setPosition(null);
+      setTimeHorizon(null);
+      setContentType(null);
       setShowTagger(false);
       clearAttachment();
       const todayPosts = await countXpToday(supabase, me.id, "community");
@@ -841,6 +850,23 @@ export default function CommunityClient({
                         />
                       )}
                     </div>
+                    {/* KAI §2b — optional "what kind of post" (any post) */}
+                    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-sand flex-wrap">
+                      <span className="text-[10px] text-soft font-display uppercase tracking-wider mr-0.5">Type</span>
+                      {(["thesis", "question", "news_reaction"] as ContentType[]).map((c) => {
+                        const active = contentType === c;
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setContentType(active ? null : c)}
+                            className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? "bg-chip-sky text-sky-800 ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
+                          >
+                            {CONTENT_TYPE_META[c].label}
+                          </button>
+                        );
+                      })}
+                    </div>
                     {tickerTags.length > 0 && (
                       <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-sand">
                         <span className="text-[10px] text-soft font-display uppercase tracking-wider mr-0.5">Leaning</span>
@@ -856,6 +882,25 @@ export default function CommunityClient({
                               className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? meta.chip + " ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
                             >
                               <Icon className="w-3 h-3" />{meta.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* KAI §2b — optional time horizon (ticker-scoped) */}
+                    {tickerTags.length > 0 && (
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span className="text-[10px] text-soft font-display uppercase tracking-wider mr-0.5">Horizon</span>
+                        {(["near", "1yr", "3-5yr"] as TimeHorizon[]).map((h) => {
+                          const active = timeHorizon === h;
+                          return (
+                            <button
+                              key={h}
+                              type="button"
+                              onClick={() => setTimeHorizon(active ? null : h)}
+                              className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? "bg-chip-amber text-gold-800 ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
+                            >
+                              {TIME_HORIZON_META[h].label}
                             </button>
                           );
                         })}
@@ -1094,13 +1139,26 @@ function FreeComposerUpsell() {
 }
 
 // R5 — ticker-tag chips + optional positioning stance beneath a post body.
-function TickerRow({ tags, position }: { tags?: string[] | null; position?: PostPosition | null }) {
-  if (!tags?.length) return null;
+// KAI §2b — plus subtle structured metadata (content type + time horizon) when
+// the author declared them at compose. Quiet, muted, never a loud chip wall.
+function TickerRow({
+  tags,
+  position,
+  timeHorizon,
+  contentType,
+}: {
+  tags?: string[] | null;
+  position?: PostPosition | null;
+  timeHorizon?: TimeHorizon | null;
+  contentType?: ContentType | null;
+}) {
   const pmeta = position ? POSITION_META[position] : null;
   const PIcon = position === "bull" ? TrendingUp : position === "bear" ? TrendingDown : Minus;
+  const hasMeta = !!tags?.length || !!contentType || !!timeHorizon;
+  if (!hasMeta) return null;
   return (
     <div className="flex items-center gap-1.5 flex-wrap mt-2">
-      {tags.map((t) => (
+      {(tags ?? []).map((t) => (
         <Link key={t} href={`/research/${encodeURIComponent(t)}`} className="inline-flex items-center bg-chip-amber text-gold-800 text-[11px] font-mono font-bold px-1.5 py-0.5 rounded hover:bg-gold-400/30">
           ${t}
         </Link>
@@ -1108,6 +1166,17 @@ function TickerRow({ tags, position }: { tags?: string[] | null; position?: Post
       {pmeta && (
         <span className={`inline-flex items-center gap-1 text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${pmeta.chip}`}>
           <PIcon className="w-3 h-3" />{pmeta.label}
+        </span>
+      )}
+      {contentType && (
+        <span className="text-[10px] font-display uppercase tracking-wider text-soft">
+          {CONTENT_TYPE_META[contentType].label}
+        </span>
+      )}
+      {contentType && timeHorizon && <span className="text-[10px] text-soft">·</span>}
+      {timeHorizon && (
+        <span className="text-[10px] font-display uppercase tracking-wider text-soft" title={TIME_HORIZON_META[timeHorizon].full}>
+          {TIME_HORIZON_META[timeHorizon].label}
         </span>
       )}
     </div>
@@ -1162,7 +1231,7 @@ function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
             <span className="text-[11px] text-soft font-body">· {timeAgo(post.created_at)}</span>
           </div>
           <PostBody body={post.body} />
-          <TickerRow tags={post.ticker_tags} position={post.position} />
+          <TickerRow tags={post.ticker_tags} position={post.position} timeHorizon={post.time_horizon} contentType={post.content_type} />
           {isWatchlistShare(post.activity_payload) && (
             <WatchlistShareCard payload={post.activity_payload} />
           )}

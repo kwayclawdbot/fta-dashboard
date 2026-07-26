@@ -141,6 +141,44 @@ export const KAI_WATCH_KINDS: AlertKind[] = ["sentiment_velocity", "news_event"]
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
 
+/* ============================================================================
+ * ABSOLUTE-FLOOR SIGNAL HYGIENE (Kai Intelligence Layer §2c, binding).
+ *
+ * "Every relative delta pairs with an absolute floor so tiny bases can't trigger
+ * (1 extra comment ≠ +100% velocity)." Audit of the rule kinds this engine
+ * evaluates:
+ *   • price_cross / pct_move  — ABSOLUTE ($ level) or scale-free (%) on a member-
+ *       chosen ticker → no small-N relative delta. No floor.
+ *   • rsi_cross / ema_cross / w52_break — BOUNDED threshold crosses (RSI 0–100,
+ *       price vs its own EMA, distance to 52w extreme) on a member-chosen ticker
+ *       → not a relative delta over a small base. No floor.
+ *   • preset_match / news_event — a set-diff / a discrete event, not a delta. No floor.
+ *   • sentiment_velocity — RELATIVE net-vote swing → FLOORED: the swing only counts
+ *       once an absolute minimum of community votes backs it (below → a 1–2 vote
+ *       ticker can't manufacture a "the club turned" signal).
+ *   • vol_surge — RELATIVE volume ratio (vol ÷ 20d avg) → FLOORED on ABSOLUTE
+ *       liquidity: an illiquid name printing 3× on a few hundred shares is noise,
+ *       not a surge. Below the avg-volume floor → skip.
+ * These floors do NOT change what a rule means at healthy volume — they only
+ * suppress firings a tiny base could otherwise fake. Crons log-skip below floor.
+ * ==========================================================================*/
+export const ALERT_SIGNAL_FLOORS = {
+  /** Min total community votes (likes+unlikes) backing a sentiment_velocity swing. */
+  sentimentVelocityMinVotes: 5,
+  /** Min 20-day average volume (shares) for a vol_surge ratio to be trustworthy. */
+  volSurgeMinAvgVol: 50_000,
+} as const;
+
+/** Does a ticker have enough community votes for a sentiment swing to be real? */
+export function sentimentBaseMet(totalVotes: number | null | undefined): boolean {
+  return (totalVotes ?? 0) >= ALERT_SIGNAL_FLOORS.sentimentVelocityMinVotes;
+}
+
+/** Is a ticker liquid enough that a volume ratio isn't small-base noise? */
+export function volSurgeLiquidityMet(avgVol20: number | null | undefined): boolean {
+  return (avgVol20 ?? 0) >= ALERT_SIGNAL_FLOORS.volSurgeMinAvgVol;
+}
+
 /** Plain-English label for a rule (shown in the hub + push body). */
 export function ruleLabel(
   kind: AlertKind,

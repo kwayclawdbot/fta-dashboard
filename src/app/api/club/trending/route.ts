@@ -8,9 +8,12 @@ import { FLOORS, TRENDING_DISCLAIMER, floorMet } from "@/lib/club/score";
  *   → { rows: [{rank, ticker, score, change, participants, floorMet}], updatedAt,
  *       disclaimer }
  *
- * Ranked community-ATTENTION ledger (NOT top gainers). Reads the cached
- * club_trending table only — no fan-out. `disclaimer` is the verbatim compliance
- * line the UI must render (attention ≠ recommendation).
+ * Ranked community-ATTENTION ledger (NOT top gainers). Sourced from the canonical
+ * ticker_intel_snapshots (Kai Intelligence Layer §2a) — the snapshot's club_score
+ * / club_change_14d / rank / participants are the SAME numbers club_trending
+ * carries (both written in one refresh pass), so the ledger and Kai read one
+ * object. No fan-out. `disclaimer` is the verbatim compliance line the UI must
+ * render (attention ≠ recommendation).
  */
 export const runtime = "nodejs";
 
@@ -24,19 +27,19 @@ export async function GET() {
   await ensureClubMetricsFresh();
 
   const { data } = await supabase
-    .from("club_trending")
-    .select("ticker, score, change, rank, participants, computed_at")
+    .from("ticker_intel_snapshots")
+    .select("ticker, club_score, club_change_14d, rank, participants, computed_at")
     .order("rank", { ascending: true })
     .limit(12);
 
   const rows = (data || []).map((r) => ({
     rank: r.rank,
     ticker: r.ticker,
-    score: Number(r.score),
-    change: Number(r.change),
+    score: Number(r.club_score),
+    change: Number(r.club_change_14d),
     participants: r.participants,
     // Per-row scale awareness: only call a ticker "hot" once real breadth exists.
-    floorMet: floorMet(Number(r.score), FLOORS.trendingScore),
+    floorMet: floorMet(Number(r.club_score), FLOORS.trendingScore),
   }));
 
   return NextResponse.json({

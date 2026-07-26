@@ -47,3 +47,25 @@ export function floorMet(value: number | null | undefined, floor: number): boole
 /** Verbatim compliance line the Trending UI must render (attention ≠ advice). */
 export const TRENDING_DISCLAIMER =
   "Attention inside the Club — not a recommendation.";
+
+/**
+ * SNAPSHOT SIGNAL FLOORS (Kai Intelligence Layer §2c) — MIRROR of the constants
+ * in migration 141's refresh_club_metrics(). The `unusual_activity` composite on
+ * a ticker_intel_snapshot only trips when a 24h spike clears BOTH an absolute
+ * event floor AND a relative multiple over the prior-24h baseline, so one extra
+ * comment on a cold ticker can never read as "unusual". If you change a value
+ * here, change it in the migration too.
+ */
+export const SNAPSHOT_FLOORS = {
+  /** Minimum events in the last 24h before "unusual activity" can be true. */
+  unusualMinEvents24h: 8,
+  /** 24h event count must be ≥ this × the prior-24h baseline. */
+  unusualSpikeMult: 2.0,
+} as const;
+
+/**
+ * Verbatim compliance line the intel "why?" surface must render. Kai and the
+ * Club describe ATTENTION and ACTIVITY, never advice (KAI-INTELLIGENCE-LAYER §6).
+ */
+export const INTEL_DISCLAIMER =
+  "This is a snapshot of Club attention and activity — not investment advice or a recommendation.";

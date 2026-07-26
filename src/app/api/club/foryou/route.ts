@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureClubMetricsFresh } from "@/lib/club/cache";
 
 /**
@@ -9,11 +8,21 @@ import { ensureClubMetricsFresh } from "@/lib/club/cache";
  *       clubScore, clubChange}] }
  *
  * The bridge from network → me: per-ticker deltas on the tickers THIS member's
- * family already watches. Everything real: research views (club_events),
- * sentiment (ticker_sentiment), watcher adds (watchlists), plus the cached Club
- * Score for context. Bounded by the member's own watchlist size.
+ * family already watches. Sourced from the canonical ticker_intel_snapshots (Kai
+ * Intelligence Layer §2a) — one read instead of five fan-out queries. Every field
+ * comes off the snapshot (or its provenance raw counts):
+ *   researchViews7d ← provenance.researchViews7d   sentimentNet ← provenance.sentiment.net
+ *   watchers7d      ← provenance.watchlistAdds7d    clubScore/clubChange ← snapshot
+ * Tickers with no active snapshot report zeros (unchanged behaviour). Bounded by
+ * the member's own watchlist size.
  */
 export const runtime = "nodejs";
+
+interface Provenance {
+  researchViews7d?: number;
+  watchlistAdds7d?: number;
+  sentiment?: { net?: number };
+}
 
 export async function GET() {
   const supabase = await createClient();
@@ -44,36 +53,29 @@ export async function GET() {
   const nameByTicker = new Map<string, string>();
   for (const w of watch || []) if (w.ticker) nameByTicker.set(w.ticker.toUpperCase(), w.company_name || "");
 
-  const admin = createAdminClient();
-  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString();
+  // Single read of the canonical snapshots for the watched tickers.
+  const { data: snaps } = await supabase
+    .from("ticker_intel_snapshots")
+    .select("ticker, club_score, club_change_14d, provenance")
+    .in("ticker", tickers);
 
-  const [{ data: rv }, { data: sent }, { data: cw }, { data: fw }, { data: trend }] = await Promise.all([
-    admin.from("club_events").select("ticker").eq("kind", "research_view").in("ticker", tickers).gte("created_at", weekAgo),
-    admin.from("ticker_sentiment").select("ticker, vote").in("ticker", tickers),
-    admin.from("community_watchlist").select("ticker").in("ticker", tickers).gte("created_at", weekAgo),
-    admin.from("family_watchlist").select("ticker").in("ticker", tickers).gte("created_at", weekAgo),
-    admin.from("club_trending").select("ticker, score, change").in("ticker", tickers),
-  ]);
+  const byTicker = new Map(
+    (snaps || []).map((s) => [s.ticker.toUpperCase(), s])
+  );
 
-  const rvCount = tallyUpper(rv);
-  const watchCount = tallyUpper([...(cw || []), ...(fw || [])]);
-  const sentNet = new Map<string, number>();
-  for (const r of sent || []) {
-    if (!r.ticker) continue;
-    const k = r.ticker.toUpperCase();
-    sentNet.set(k, (sentNet.get(k) || 0) + (Number(r.vote) || 0));
-  }
-  const trendMap = new Map((trend || []).map((t) => [t.ticker.toUpperCase(), t]));
-
-  const items = tickers.map((t) => ({
-    ticker: t,
-    companyName: nameByTicker.get(t) || null,
-    researchViews7d: rvCount.get(t) || 0,
-    sentimentNet: sentNet.get(t) || 0,
-    watchers7d: watchCount.get(t) || 0,
-    clubScore: trendMap.get(t) ? Number(trendMap.get(t)!.score) : 0,
-    clubChange: trendMap.get(t) ? Number(trendMap.get(t)!.change) : 0,
-  }));
+  const items = tickers.map((t) => {
+    const s = byTicker.get(t);
+    const prov = (s?.provenance as Provenance) || {};
+    return {
+      ticker: t,
+      companyName: nameByTicker.get(t) || null,
+      researchViews7d: prov.researchViews7d ?? 0,
+      sentimentNet: prov.sentiment?.net ?? 0,
+      watchers7d: prov.watchlistAdds7d ?? 0,
+      clubScore: s ? Number(s.club_score) : 0,
+      clubChange: s ? Number(s.club_change_14d) : 0,
+    };
+  });
 
   // Surface the tickers with the most movement first.
   items.sort(
@@ -83,14 +85,4 @@ export async function GET() {
   );
 
   return NextResponse.json({ items });
-}
-
-function tallyUpper(rows: { ticker: string | null }[] | null): Map<string, number> {
-  const m = new Map<string, number>();
-  for (const r of rows || []) {
-    if (!r.ticker) continue;
-    const k = r.ticker.toUpperCase();
-    m.set(k, (m.get(k) || 0) + 1);
-  }
-  return m;
 }

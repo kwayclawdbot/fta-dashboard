@@ -7,12 +7,13 @@ import { ensureClubMetricsFresh } from "@/lib/club/cache";
  * GET /api/club/pulse
  *   → { signals: [{kind, ticker, headline, detail, delta, spark?}] }  (3–4)
  *
- * "What the Club is seeing today" — COMMUNITY behavior, not market movers. Every
- * signal is derived from real rows:
- *   • most_watched   — top of the cached Club Score ledger (attention leader)
- *   • new_watchers   — ticker with the most watchlist adds in the last 7 days
- *   • sentiment_shift— ticker with the most bull/bear votes in the last 7 days
- *   • fresh_research — most recently researched ticker (club_events)
+ * "What the Club is seeing today" — COMMUNITY behavior, not market movers. The
+ * per-ticker signals are sourced from the canonical ticker_intel_snapshots (Kai
+ * Intelligence Layer §2a) so pulse, trending, foryou and Kai all read one object:
+ *   • most_watched   — top of the snapshot ledger (rank 1 = attention leader)
+ *   • new_watchers   — snapshot with the most watchlist adds in the last 7 days
+ *   • sentiment_shift— snapshot with the largest 7-day net sentiment swing
+ *   • fresh_research — most recently researched ticker (club_events recency)
  * Headlines are scale-aware COPY ("The Club is watching NVDA"), never raw counts.
  * spark (optional) = 7-day daily attention series from club_events for accents.
  */
@@ -27,6 +28,11 @@ interface Signal {
   spark?: number[];
 }
 
+interface Provenance {
+  watchlistAdds7d?: number;
+  sentiment?: { net7d?: number };
+}
+
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -38,34 +44,39 @@ export async function GET() {
   const admin = createAdminClient();
   const signals: Signal[] = [];
   const used = new Set<string>();
-  const since7 = new Date(Date.now() - 7 * 864e5).toISOString();
 
-  // 1. Attention leader (cached score).
-  const { data: top } = await supabase
-    .from("club_trending")
-    .select("ticker, score, change, participants")
-    .order("rank", { ascending: true })
-    .limit(3);
-  if (top && top[0]) {
-    const t = top[0];
+  // The canonical snapshots — one read backs the first three signals.
+  const { data: snaps } = await supabase
+    .from("ticker_intel_snapshots")
+    .select("ticker, rank, club_change_14d, provenance")
+    .order("rank", { ascending: true });
+  const rows = (snaps || []).map((s) => ({
+    ticker: s.ticker.toUpperCase(),
+    rank: s.rank as number | null,
+    change: Number(s.club_change_14d),
+    prov: (s.provenance as Provenance) || {},
+  }));
+
+  // 1. Attention leader (rank 1 of the snapshot ledger).
+  const leader = rows[0];
+  if (leader) {
     signals.push({
       kind: "most_watched",
-      ticker: t.ticker,
-      headline: `The Club is focused on ${t.ticker}`,
+      ticker: leader.ticker,
+      headline: `The Club is focused on ${leader.ticker}`,
       detail: "Highest community attention this week.",
-      delta: Number(t.change),
-      spark: await spark(admin, t.ticker),
+      delta: leader.change,
+      spark: await spark(admin, leader.ticker),
     });
-    used.add(t.ticker);
+    used.add(leader.ticker);
   }
 
-  // 2. New watchers — most watchlist adds in the last 7 days (community + family).
-  const [{ data: cw }, { data: fw }] = await Promise.all([
-    admin.from("community_watchlist").select("ticker").gte("created_at", since7),
-    admin.from("family_watchlist").select("ticker").gte("created_at", since7),
-  ]);
-  const watchCounts = tally([...(cw || []), ...(fw || [])].map((r) => r.ticker));
-  const topWatch = pick(watchCounts, used);
+  // 2. New watchers — most watchlist adds in the last 7 days (from provenance).
+  const topWatch = [...rows]
+    .filter((r) => !used.has(r.ticker))
+    .map((r) => ({ ticker: r.ticker, count: r.prov.watchlistAdds7d ?? 0 }))
+    .filter((r) => r.count > 0)
+    .sort((a, b) => b.count - a.count)[0];
   if (topWatch) {
     signals.push({
       kind: "new_watchers",
@@ -78,27 +89,21 @@ export async function GET() {
     used.add(topWatch.ticker);
   }
 
-  // 3. Sentiment shift — most bull/bear votes in the last 7 days.
-  const { data: sent } = await admin
-    .from("ticker_sentiment")
-    .select("ticker, vote, updated_at")
-    .gte("updated_at", since7);
-  const sentNet = new Map<string, number>();
-  for (const r of sent || []) {
-    if (!r.ticker || used.has(r.ticker)) continue;
-    sentNet.set(r.ticker, (sentNet.get(r.ticker) || 0) + (Number(r.vote) || 0));
-  }
-  const topSent = [...sentNet.entries()].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
+  // 3. Sentiment shift — largest 7-day net sentiment swing (from provenance).
+  const topSent = [...rows]
+    .filter((r) => !used.has(r.ticker))
+    .map((r) => ({ ticker: r.ticker, net: r.prov.sentiment?.net7d ?? 0 }))
+    .filter((r) => r.net !== 0)
+    .sort((a, b) => Math.abs(b.net) - Math.abs(a.net))[0];
   if (topSent) {
-    const [tk, net] = topSent;
     signals.push({
       kind: "sentiment_shift",
-      ticker: tk,
-      headline: `Conviction building on ${tk}`,
-      detail: net >= 0 ? "The Club is leaning bullish." : "The Club is leaning cautious.",
-      delta: net,
+      ticker: topSent.ticker,
+      headline: `Conviction building on ${topSent.ticker}`,
+      detail: topSent.net >= 0 ? "The Club is leaning bullish." : "The Club is leaning cautious.",
+      delta: topSent.net,
     });
-    used.add(tk);
+    used.add(topSent.ticker);
   }
 
   // 4. Fresh research — most recently viewed ticker (fills to 3–4 signals).
@@ -110,12 +115,12 @@ export async function GET() {
       .not("ticker", "is", null)
       .order("created_at", { ascending: false })
       .limit(20);
-    const fresh = (rv || []).find((r) => r.ticker && !used.has(r.ticker));
+    const fresh = (rv || []).find((r) => r.ticker && !used.has(r.ticker.toUpperCase()));
     if (fresh?.ticker) {
       signals.push({
         kind: "fresh_research",
-        ticker: fresh.ticker,
-        headline: `Someone just dug into ${fresh.ticker}`,
+        ticker: fresh.ticker.toUpperCase(),
+        headline: `Someone just dug into ${fresh.ticker.toUpperCase()}`,
         detail: "Fresh research in the Club.",
         delta: 1,
         spark: await spark(admin, fresh.ticker),
@@ -124,25 +129,6 @@ export async function GET() {
   }
 
   return NextResponse.json({ signals: signals.slice(0, 4) });
-}
-
-function tally(items: (string | null)[]): Map<string, number> {
-  const m = new Map<string, number>();
-  for (const it of items) {
-    if (!it) continue;
-    const k = it.toUpperCase();
-    m.set(k, (m.get(k) || 0) + 1);
-  }
-  return m;
-}
-
-function pick(m: Map<string, number>, used: Set<string>) {
-  let best: { ticker: string; count: number } | null = null;
-  for (const [ticker, count] of m) {
-    if (used.has(ticker)) continue;
-    if (!best || count > best.count) best = { ticker, count };
-  }
-  return best;
 }
 
 /** 7-day daily club_events attention series for a ticker (accent only). */

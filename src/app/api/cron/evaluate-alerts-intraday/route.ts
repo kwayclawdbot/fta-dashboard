@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getFullSnapshot, getMarketState } from "@/lib/market/polygon";
 import {
   evalIntraday,
+  volSurgeLiquidityMet,
+  ALERT_SIGNAL_FLOORS,
   type AlertRule,
   type SnapRow,
 } from "@/lib/alerts/types";
@@ -85,7 +87,16 @@ export async function GET(req: NextRequest) {
       .select("ticker, avg_vol_20")
       .in("ticker", chunk);
     for (const row of (data || []) as { ticker: string; avg_vol_20: number | null }[]) {
-      if (row.avg_vol_20 && row.avg_vol_20 > 0) avgVol.set(row.ticker, row.avg_vol_20);
+      // ABSOLUTE LIQUIDITY FLOOR (§2c): only trust a volume ratio when the 20-day
+      // average is deep enough that a surge isn't a few-hundred-share fluke.
+      if (volSurgeLiquidityMet(row.avg_vol_20)) {
+        avgVol.set(row.ticker, row.avg_vol_20 as number);
+      } else {
+        console.log(
+          `[evaluate-alerts-intraday] skip vol_surge ${row.ticker}: avg_vol_20 ` +
+            `${row.avg_vol_20 ?? 0} < floor (${ALERT_SIGNAL_FLOORS.volSurgeMinAvgVol})`
+        );
+      }
     }
   }
 

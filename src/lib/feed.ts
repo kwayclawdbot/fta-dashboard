@@ -110,10 +110,34 @@ export interface FeedPost {
   // R5 (migration 132): optional ticker tags + education-first positioning.
   ticker_tags?: string[] | null;
   position?: PostPosition | null;
+  // Kai Intelligence Layer §2b (migration 142): optional structured-at-capture.
+  time_horizon?: TimeHorizon | null;
+  content_type?: ContentType | null;
 }
 
 /** Education-first stance on a tagged ticker. Never a trade instruction. */
 export type PostPosition = "bull" | "neutral" | "bear";
+
+/**
+ * KAI §2b structured capture — asked once at compose, never inferred. Optional;
+ * a post with neither is simply unclassified. These feed the Phase 2 classifier
+ * and the intel score pipeline. Kept as a closed vocabulary (mirrors the CHECK
+ * constraints in migration 142).
+ */
+export type TimeHorizon = "near" | "1yr" | "3-5yr";
+export type ContentType = "thesis" | "question" | "news_reaction";
+
+export const TIME_HORIZON_META: Record<TimeHorizon, { label: string; full: string }> = {
+  near: { label: "Near-term", full: "Near-term (days–weeks)" },
+  "1yr": { label: "~1 year", full: "About a year out" },
+  "3-5yr": { label: "3–5 yr", full: "Long-term (3–5 years)" },
+};
+
+export const CONTENT_TYPE_META: Record<ContentType, { label: string }> = {
+  thesis: { label: "Thesis" },
+  question: { label: "Question" },
+  news_reaction: { label: "News reaction" },
+};
 
 export const POSITION_META: Record<
   PostPosition,

@@ -4,6 +4,8 @@ import {
   evalNightly,
   evalSentimentVelocity,
   evalNewsEvent,
+  sentimentBaseMet,
+  ALERT_SIGNAL_FLOORS,
   KAI_WATCH_KINDS,
   type AlertRule,
   type MetricsRow,
@@ -158,16 +160,25 @@ export async function GET(req: NextRequest) {
   if (kaiRules.length > 0) {
     const kaiTickers = [...new Set(kaiRules.map((r) => r.ticker!.toUpperCase()))];
 
-    // Current net community sentiment (precomputed) + latest chg / price.
+    // Current net community sentiment (precomputed) + total votes (for the
+    // small-N floor) + latest chg / price.
     const netByTicker = new Map<string, number>();
+    const votesByTicker = new Map<string, number>();
     const chgByTicker = new Map<string, number | null>();
     const priceByTicker = new Map<string, number | null>();
     const { data: lc } = await db
       .from("ticker_like_counts")
-      .select("ticker, net")
+      .select("ticker, net, likes, unlikes")
       .in("ticker", kaiTickers);
-    for (const r of (lc || []) as { ticker: string; net: number | null }[])
+    for (const r of (lc || []) as {
+      ticker: string;
+      net: number | null;
+      likes: number | null;
+      unlikes: number | null;
+    }[]) {
       netByTicker.set(r.ticker, r.net ?? 0);
+      votesByTicker.set(r.ticker, (r.likes ?? 0) + (r.unlikes ?? 0));
+    }
     const { data: mx } = await db
       .from("screener_metrics")
       .select("ticker, chg_1d, price")
@@ -206,6 +217,22 @@ export async function GET(req: NextRequest) {
         const cur = netByTicker.has(tk) ? netByTicker.get(tk)! : null;
         const st = (r.state || {}) as { base_net?: number };
         const base = typeof st.base_net === "number" ? st.base_net : null;
+        // ABSOLUTE FLOOR (§2c): a swing only counts once enough community votes
+        // back it — otherwise a 1–2 vote ticker fakes a "the club turned" signal.
+        const totalVotes = votesByTicker.get(tk) ?? 0;
+        if (!sentimentBaseMet(totalVotes)) {
+          console.log(
+            `[evaluate-alerts] skip sentiment_velocity ${tk} rule ${r.id}: ` +
+              `only ${totalVotes} votes < floor (${ALERT_SIGNAL_FLOORS.sentimentVelocityMinVotes})`
+          );
+          // Still seed the baseline so a future, well-backed swing is measurable.
+          if (base === null && cur !== null)
+            await db
+              .from("alert_rules")
+              .update({ state: { ...st, base_net: cur } })
+              .eq("id", r.id);
+          continue;
+        }
         const hit = evalSentimentVelocity(r, cur, base);
         if (!hit) {
           // Seed the baseline on first sighting so future swings are measurable.
