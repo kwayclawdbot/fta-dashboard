@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { m } from "@/lib/motion";
 import {
   ArrowLeft,
@@ -51,6 +51,9 @@ interface Lesson {
   // Learning World P2: native interactive step sequence. Non-null => the lesson
   // renders in <LessonEngine>; null => the legacy video/html/iframe paths below.
   steps: unknown | null;
+  // Learning World P5: DRAFT step sequence, admin-preview only (?draft=1).
+  // Never rendered for members; only used when an admin appends ?draft=1.
+  steps_draft: unknown | null;
   lesson_xp: number | null;
 }
 
@@ -197,6 +200,7 @@ function mockToModules(slug: string, moduleId: string, lessonId: string): { cour
       sort_order: li,
       module_id: m.id,
       steps: null,
+      steps_draft: null,
       lesson_xp: null,
     })),
   }));
@@ -213,6 +217,11 @@ function formatDuration(sec: number | null) {
 
 export default function LessonViewerClient() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  // Admin-only draft preview: /courses/.../lessonId?draft=1 renders steps_draft
+  // in the REAL engine so THE OWNER can review before publishing. Gated on
+  // isAdmin below — a non-admin appending ?draft=1 sees the normal lesson.
+  const draftMode = searchParams.get("draft") === "1";
   const slug = params.slug as string;
   const moduleId = params.moduleId as string;
   const lessonId = params.lessonId as string;
@@ -230,6 +239,7 @@ export default function LessonViewerClient() {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [register, setRegister] = useState<Register>("adult");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [engaged, setEngaged] = useState(false);
@@ -268,6 +278,7 @@ export default function LessonViewerClient() {
       if (profile) {
         setRegister(deriveRegister(profile));
         setFamilyId((profile as { family_id?: string | null }).family_id ?? null);
+        setIsAdmin((profile as { role?: string | null }).role === "admin");
       }
     }
 
@@ -292,7 +303,7 @@ export default function LessonViewerClient() {
         for (const mod of mods) {
           const { data: lessons } = await supabase
             .from("lessons")
-            .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id, steps, lesson_xp")
+            .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id, steps, steps_draft, lesson_xp")
             .eq("module_id", mod.id)
             .order("sort_order");
           modulesWithLessons.push({ ...mod, lessons: lessons || [] });
@@ -491,8 +502,15 @@ export default function LessonViewerClient() {
   // ONE top branch (proposal §3): a lesson with a non-null `steps` renders in
   // <LessonEngine>; everything else falls through to the legacy video/html/mock
   // paths below, untouched. Migration is lesson-by-lesson with zero dead URLs.
+  // Admin draft preview picks steps_draft (176/177) instead of the live steps —
+  // the same engine, so the owner reviews exactly what members would see once
+  // published. Non-admins never reach this branch (draftMode is ignored).
+  const previewDraft = draftMode && isAdmin;
+  const stepsSource = previewDraft
+    ? currentLesson.steps_draft
+    : currentLesson.steps;
   const parsedLesson = !isMock
-    ? parseLessonSteps(currentLesson.steps, {
+    ? parseLessonSteps(stepsSource, {
         title: currentLesson.title,
         xp: currentLesson.lesson_xp ?? XP.LESSON,
       })
@@ -500,6 +518,13 @@ export default function LessonViewerClient() {
   if (parsedLesson) {
     return (
       <div className="max-w-[1400px] mx-auto">
+        {previewDraft && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs font-body text-amber-300">
+            <Sparkles className="h-3.5 w-3.5" />
+            DRAFT PREVIEW — this is unpublished draft content, visible to admins
+            only. Members still see the current lesson.
+          </div>
+        )}
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
