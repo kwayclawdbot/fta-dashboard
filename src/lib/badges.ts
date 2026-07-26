@@ -176,32 +176,23 @@ async function checkTechnician(supabase: DB, userId: string): Promise<boolean> {
 }
 
 async function checkCeo(supabase: DB, userId: string): Promise<boolean> {
-  // Prefer the fic_missions slug → mission_completions.mission_id path.
+  // Resolve the fic_missions slug → mission_completions.mission_id path. The
+  // completions table (migration 032) keys ONLY on mission_id — there is no
+  // `mission_slug` column, so a slug-based fallback query 400s on PostgREST.
   const mission = await safeRows(() =>
     supabase.from("fic_missions").select("id").eq("slug", "family-ceo").limit(1)
   );
-  if (mission && mission.length > 0) {
-    const missionId = mission[0].id as string;
-    const done = await safeRows(() =>
-      supabase
-        .from("mission_completions")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("mission_id", missionId)
-        .limit(1)
-    );
-    if (done && done.length > 0) return true;
-  }
-  // Fallback: completions may store the slug directly.
-  const bySlug = await safeRows(() =>
+  if (!mission || mission.length === 0) return false;
+  const missionId = mission[0].id as string;
+  const done = await safeRows(() =>
     supabase
       .from("mission_completions")
       .select("id")
       .eq("user_id", userId)
-      .eq("mission_slug", "family-ceo")
+      .eq("mission_id", missionId)
       .limit(1)
   );
-  return !!bySlug && bySlug.length > 0;
+  return !!done && done.length > 0;
 }
 
 /** Compute the set of earned professional-title slugs (all checks guarded). */
