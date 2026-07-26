@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserXp } from "@/lib/xp";
 import { beltForXp } from "@/lib/belts";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
  * GET /api/club/thinking → { lead: Post|null, secondary: Post[] }
@@ -11,6 +10,8 @@ import { beltForXp } from "@/lib/belts";
  * engagement (likes + comments). The top post is the editorial lead; the next
  * few are the ruled secondary list. Author credibility = their earned belt
  * (from lifetime XP). All counts are real; nothing fabricated.
+ *
+ * The body is `thinkingCore(ctx)` — shared verbatim with GET /api/club/home.
  */
 export const runtime = "nodejs";
 
@@ -36,14 +37,8 @@ interface Post {
   createdAt: string;
 }
 
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const admin = createAdminClient();
+export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
+  const admin = ctx.admin();
 
   // Member-authored posts (exclude auto 'activity' cards and 'anchor').
   const { data: posts } = await admin
@@ -54,7 +49,7 @@ export async function GET() {
     .limit(40);
 
   if (!posts || posts.length === 0) {
-    return NextResponse.json({ lead: null, secondary: [] });
+    return { body: { lead: null, secondary: [] } };
   }
 
   const ids = posts.map((p) => p.id);
@@ -88,13 +83,18 @@ export async function GET() {
   const authorMap = new Map((authors || []).map((a) => [a.id, a]));
   const companyByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
 
-  // Belts need lifetime XP per author.
+  // Belts need lifetime XP per author — one grouped read instead of a per-author
+  // scan of xp_events (was N round trips). Identical totals; sums client-side.
   const xpByAuthor = new Map<string, number>();
-  await Promise.all(
-    authorIds.map(async (id) => {
-      xpByAuthor.set(id, await getUserXp(admin, id));
-    })
-  );
+  if (authorIds.length) {
+    const { data: xpRows } = await admin
+      .from("xp_events")
+      .select("user_id, amount")
+      .in("user_id", authorIds);
+    for (const r of (xpRows || []) as { user_id: string; amount: number }[]) {
+      xpByAuthor.set(r.user_id, (xpByAuthor.get(r.user_id) || 0) + (r.amount || 0));
+    }
+  }
 
   const shaped: Post[] = posts.map((p) => {
     const a = authorMap.get(p.author_id as string);
@@ -143,10 +143,15 @@ export async function GET() {
   const lead = shaped[0] ?? null;
   if (lead && lead.votes + lead.comments + lead.saves >= 3) lead.editorPick = true;
 
-  return NextResponse.json({
-    lead,
-    secondary: shaped.slice(1, 4),
-  });
+  return { body: { lead, secondary: shaped.slice(1, 4) } };
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await thinkingCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
 }
 
 function countBy<T extends Record<string, unknown>>(rows: T[], key: keyof T): Map<string, number> {

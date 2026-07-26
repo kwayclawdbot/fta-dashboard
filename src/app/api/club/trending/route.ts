@@ -1,8 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { ensureClubMetricsFresh } from "@/lib/club/cache";
-import { getClubTier } from "@/lib/tier";
 import { FLOORS, TRENDING_DISCLAIMER, floorMet } from "@/lib/club/score";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /** Free tier sees the top N of the attention ledger; Club/FTA see the full list. */
 const FREE_TRENDING_ROWS = 5;
@@ -18,44 +17,34 @@ const FREE_TRENDING_ROWS = 5;
  * carries (both written in one refresh pass), so the ledger and Kai read one
  * object. No fan-out. `disclaimer` is the verbatim compliance line the UI must
  * render (attention ≠ recommendation).
+ *
+ * The body is `trendingCore(ctx)` — shared verbatim with GET /api/club/home; it
+ * reads the top of the SHARED snapshot ledger (pulse reads the same ledger).
  */
 export const runtime = "nodejs";
 
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
   // ENTITLEMENT (MONETIZATION-GATES.md): "Trending in the Club — Top 5 (free) /
   // Full rankings + history (Club)". Server-authoritative — free callers never
   // receive rows beyond the cap, so the lock can't be bypassed client-side.
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("family_id")
-    .eq("id", user.id)
-    .maybeSingle();
-  const tier = await getClubTier(supabase, prof?.family_id);
+  const tier = await ctx.getTier();
   const isFree = tier === "free";
 
-  await ensureClubMetricsFresh();
+  await ctx.ensureFresh();
 
-  const { data } = await supabase
-    .from("ticker_intel_snapshots")
-    .select("ticker, club_score, club_change_14d, rank, participants, computed_at")
-    .order("rank", { ascending: true })
-    .limit(12);
+  // Top of the canonical snapshot ledger (shared with pulse) — take the same 12
+  // the previous dedicated `.limit(12)` read returned.
+  const data = (await ctx.getSnapshots()).slice(0, 12);
 
   // UI-contract reconcile (§6 TrendingRow.company): attach the company name from
   // screener_metrics so the row can render "Nvidia" alongside the ticker logo.
-  const tickers = (data || []).map((r) => r.ticker).filter(Boolean) as string[];
+  const tickers = data.map((r) => r.ticker).filter(Boolean) as string[];
   const { data: metrics } = tickers.length
-    ? await supabase.from("screener_metrics").select("ticker, name").in("ticker", tickers)
+    ? await ctx.supabase.from("screener_metrics").select("ticker, name").in("ticker", tickers)
     : { data: [] as { ticker: string; name: string | null }[] };
   const nameByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
 
-  const all = (data || []).map((r) => ({
+  const all = data.map((r) => ({
     rank: r.rank,
     ticker: r.ticker,
     company: nameByTicker.get((r.ticker || "").toUpperCase()) ?? null,
@@ -67,14 +56,24 @@ export async function GET() {
   }));
   const rows = isFree ? all.slice(0, FREE_TRENDING_ROWS) : all;
 
-  return NextResponse.json({
-    rows,
-    // Signal the free cap so the UI can show a "see the full rankings" wall.
-    locked: isFree,
-    lockedFeature: isFree ? "trending_full" : undefined,
-    totalCount: all.length,
-    freeCap: FREE_TRENDING_ROWS,
-    updatedAt: data?.[0]?.computed_at ?? null,
-    disclaimer: TRENDING_DISCLAIMER,
-  });
+  return {
+    body: {
+      rows,
+      // Signal the free cap so the UI can show a "see the full rankings" wall.
+      locked: isFree,
+      lockedFeature: isFree ? "trending_full" : undefined,
+      totalCount: all.length,
+      freeCap: FREE_TRENDING_ROWS,
+      updatedAt: data[0]?.computed_at ?? null,
+      disclaimer: TRENDING_DISCLAIMER,
+    },
+  };
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await trendingCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
 }

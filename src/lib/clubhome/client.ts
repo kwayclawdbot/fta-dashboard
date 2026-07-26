@@ -55,6 +55,30 @@ async function fetchEndpoint<K extends ClubEndpoint>(
   }
 }
 
+/** The batched /api/club/home envelope: every section keyed by endpoint, plus
+ *  `_errors` = the sections whose core threw (client re-fetches just those). */
+type ClubHomeBatch = { [K in ClubEndpoint]?: ClubData[K] | null } & {
+  _errors?: ClubEndpoint[];
+};
+
+/**
+ * Load every ClubHome section in ONE round trip (GET /api/club/home). Returns the
+ * batch envelope, or null when the whole request fails (the caller then falls
+ * back to the nine-way individual fan-out — the original behavior).
+ */
+async function fetchClubHome(signal: AbortSignal): Promise<ClubHomeBatch | null> {
+  try {
+    const res = await fetch(`/api/club/home`, {
+      signal,
+      headers: { accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as ClubHomeBatch;
+  } catch {
+    return null;
+  }
+}
+
 export interface UseClubDataOptions {
   /** design-review only — force fixture data (ignored in production) */
   fixtures?: boolean;
@@ -98,16 +122,42 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
     let mounted = true;
     setLoading(true);
 
-    ENDPOINTS.forEach((key) => {
+    // Per-section individual fallback (original behavior) — used when the whole
+    // batch request fails, or for the specific sections the batch flags in
+    // `_errors`. A null value means "absent" and never overwrites founding state.
+    const hydrateOne = (key: ClubEndpoint) => {
       void fetchEndpoint(key, ctrl.signal).then((value) => {
         if (!mounted || value == null) return;
         setData((prev) => ({ ...prev, [key]: value }));
       });
+    };
+
+    // ONE round trip: GET /api/club/home. Sections resolve together; a section
+    // the server couldn't produce (`_errors`) degrades to its individual
+    // endpoint, and a total batch failure falls back to the nine-way fan-out.
+    void fetchClubHome(ctrl.signal).then((batch) => {
+      if (!mounted) return;
+      if (!batch) {
+        ENDPOINTS.forEach(hydrateOne);
+        return;
+      }
+      setData((prev) => {
+        const next: Record<string, unknown> = { ...prev };
+        for (const key of ENDPOINTS) {
+          const value = batch[key];
+          if (value != null) next[key] = value;
+        }
+        return next as ClubDataState;
+      });
+      const errors = Array.isArray(batch._errors) ? batch._errors : [];
+      for (const key of errors) {
+        if ((ENDPOINTS as string[]).includes(key)) hydrateOne(key);
+      }
+      setLoading(false);
     });
 
-    // Clear the loading gate once the first tick of requests has been dispatched
-    // and given a beat to land; sections render their own founding fallbacks so
-    // we never hold the whole page on a hung endpoint.
+    // Safety floor: clear the loading gate even if the batch never lands;
+    // sections render their own founding fallbacks so the page is never held.
     const t = setTimeout(() => mounted && setLoading(false), 1200);
 
     return () => {

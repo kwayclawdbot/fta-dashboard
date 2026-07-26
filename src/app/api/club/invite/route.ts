@@ -1,9 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { deriveRegister } from "@/lib/register";
 import { referralLink } from "@/lib/referral";
-import { siteUrl } from "@/lib/site-url";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
  * GET /api/club/invite
@@ -19,49 +17,53 @@ import { siteUrl } from "@/lib/site-url";
  *   • xpEarned — the +100/activation the referral system already awards, summed.
  *   • leaderboard — top inviters (club_top_inviters RPC), names + counts only.
  * Kid-walled: kids get { kidWalled:true } and no code.
+ *
+ * The body is `inviteCore(ctx)` — shared verbatim with GET /api/club/home. The
+ * share-link origin comes from ctx.origin (NEXT_PUBLIC_SITE_URL → request origin
+ * → siteUrl fallback), identical to the previous inline resolution.
  */
 export const runtime = "nodejs";
 
-export async function GET(req: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, age_group, track")
-    .eq("id", user.id)
-    .single();
-  if (deriveRegister(profile) === "kid") {
-    return NextResponse.json({ kidWalled: true });
+export async function inviteCore(ctx: ClubCtx): Promise<CoreResult> {
+  if ((await ctx.getRegister()) === "kid") {
+    return { body: { kidWalled: true } };
   }
 
   // Mint/fetch this member's code (adults + teens).
-  const { data: code } = await supabase.rpc("get_or_create_club_invite_code");
+  const { data: code } = await ctx.supabase.rpc("get_or_create_club_invite_code");
   if (!code) {
-    return NextResponse.json({ kidWalled: false, code: null, url: null, activatedCount: 0, xpEarned: 0, leaderboard: [] });
+    return {
+      body: { kidWalled: false, code: null, url: null, activatedCount: 0, xpEarned: 0, leaderboard: [] },
+    };
   }
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL?.trim() || new URL(req.url).origin || siteUrl();
-  const url = referralLink(origin, code as string);
+  const url = referralLink(ctx.origin, code as string);
 
-  const admin = createAdminClient();
+  const admin = ctx.admin();
   const [{ count: activatedCount }, { data: xpRows }, { data: leaderboard }] = await Promise.all([
     admin.from("referral_events").select("id", { count: "exact", head: true }).eq("code", code).eq("kind", "signup"),
-    admin.from("xp_events").select("amount").eq("user_id", user.id).eq("kind", "bonus").like("ref_id", "referral:signup:%"),
+    admin.from("xp_events").select("amount").eq("user_id", ctx.user.id).eq("kind", "bonus").like("ref_id", "referral:signup:%"),
     admin.rpc("club_top_inviters", { p_limit: 10 }),
   ]);
 
   const xpEarned = (xpRows || []).reduce((s: number, r: { amount: number }) => s + (r.amount || 0), 0);
 
-  return NextResponse.json({
-    kidWalled: false,
-    code,
-    url,
-    activatedCount: activatedCount || 0,
-    xpEarned,
-    leaderboard: (leaderboard as { name: string; count: number }[] | null) || [],
-  });
+  return {
+    body: {
+      kidWalled: false,
+      code,
+      url,
+      activatedCount: activatedCount || 0,
+      xpEarned,
+      leaderboard: (leaderboard as { name: string; count: number }[] | null) || [],
+    },
+  };
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await inviteCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
 }

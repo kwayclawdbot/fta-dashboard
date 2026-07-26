@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveRegister } from "@/lib/register";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
  * GET /api/club/people → { members: [{id, name, avatar, tags, reason}] }
@@ -11,26 +11,17 @@ import { deriveRegister } from "@/lib/register";
  * contribution: posts authored, ticker comments, and likes their work earned.
  * Kid-walled (same wall as the screener). Excludes the viewer + kids. Tags +
  * reason are derived from what each member actually does — nothing invented.
+ *
+ * The body is `peopleCore(ctx)` — shared verbatim with GET /api/club/home.
  */
 export const runtime = "nodejs";
 
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role, age_group, track")
-    .eq("id", user.id)
-    .single();
-  if (deriveRegister(me) === "kid") {
-    return NextResponse.json({ kidWalled: true, members: [] });
+export async function peopleCore(ctx: ClubCtx): Promise<CoreResult> {
+  if ((await ctx.getRegister()) === "kid") {
+    return { body: { kidWalled: true, members: [] } };
   }
 
-  const admin = createAdminClient();
+  const admin = ctx.admin();
   const { data: profiles } = await admin
     .from("profiles")
     .select("id, display_name, username, avatar_url, role, age_group, track")
@@ -38,9 +29,9 @@ export async function GET() {
 
   // Candidate pool: non-kid, not the viewer.
   const candidates = (profiles || []).filter(
-    (p) => p.id !== user.id && deriveRegister(p) !== "kid"
+    (p) => p.id !== ctx.user.id && deriveRegister(p) !== "kid"
   );
-  if (candidates.length === 0) return NextResponse.json({ kidWalled: false, members: [] });
+  if (candidates.length === 0) return { body: { kidWalled: false, members: [] } };
 
   const candidateIds = candidates.map((p) => p.id);
 
@@ -117,5 +108,13 @@ export async function GET() {
     // Strip the internal score — no counts leak to the client.
     .map((m) => ({ id: m.id, name: m.name, avatar: m.avatar, href: m.href, tags: m.tags, reason: m.reason }));
 
-  return NextResponse.json({ kidWalled: false, members: scored });
+  return { body: { kidWalled: false, members: scored } };
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await peopleCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
 }

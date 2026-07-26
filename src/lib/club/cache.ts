@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -38,9 +39,26 @@ export async function ensureClubMetricsFresh(): Promise<void> {
     }
 
     lastTriggeredAt = now;
-    // The SQL function holds an advisory lock, so a concurrent refresh is a
-    // cheap no-op. Bounded — never block the response for long.
-    await admin.rpc("refresh_club_metrics");
+    // Fire-and-forget: schedule the (expensive) recompute to run AFTER the
+    // response is sent so a cold-cache request never blocks on it. The Vercel
+    // Cron (POST /api/club/refresh, every 15 min) is the primary refresh; this
+    // read-through is only a cold-start / local safety net. The SQL advisory
+    // lock inside refresh_club_metrics makes a concurrent refresh a cheap no-op.
+    const runRefresh = async (): Promise<void> => {
+      try {
+        await admin.rpc("refresh_club_metrics");
+      } catch {
+        /* stale data is fine — the cron refresh covers correctness */
+      }
+    };
+    try {
+      // next/server after(): runs post-response without holding up the request.
+      after(runRefresh);
+    } catch {
+      // Called outside a request scope (not the route path) — detach it; the
+      // cron still guarantees correctness.
+      void runRefresh();
+    }
   } catch {
     // Never let a refresh hiccup break a home-page read; stale data is fine.
   }
