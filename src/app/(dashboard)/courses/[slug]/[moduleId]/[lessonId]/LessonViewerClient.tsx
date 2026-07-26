@@ -35,6 +35,8 @@ import Celebrate, {
 import { beltCelebrateFields } from "@/lib/belts";
 import { Sparkles } from "lucide-react";
 import PracticeInSimbotLink from "@/components/simulator/PracticeInSimbotLink";
+import LessonEngine from "@/components/learn/LessonEngine/LessonEngine";
+import { parseLessonSteps } from "@/lib/learn/schema";
 
 interface Lesson {
   id: string;
@@ -46,6 +48,10 @@ interface Lesson {
   has_quiz: boolean;
   sort_order: number;
   module_id: string;
+  // Learning World P2: native interactive step sequence. Non-null => the lesson
+  // renders in <LessonEngine>; null => the legacy video/html/iframe paths below.
+  steps: unknown | null;
+  lesson_xp: number | null;
 }
 
 interface Module {
@@ -190,6 +196,8 @@ function mockToModules(slug: string, moduleId: string, lessonId: string): { cour
       has_quiz: li === m.lessons.length - 1,
       sort_order: li,
       module_id: m.id,
+      steps: null,
+      lesson_xp: null,
     })),
   }));
 
@@ -222,6 +230,8 @@ export default function LessonViewerClient() {
   const [quizId, setQuizId] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [register, setRegister] = useState<Register>("adult");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [familyId, setFamilyId] = useState<string | null>(null);
   const [engaged, setEngaged] = useState(false);
   const [celebrateQueue, setCelebrateQueue] = useState<CelebrateOptions[]>([]);
   // HTML-lesson iframe resilience (audit #25): the embed is reliable but slow
@@ -249,12 +259,16 @@ export default function LessonViewerClient() {
       data: { user: authUser },
     } = await supabase.auth.getUser();
     if (authUser) {
+      setUserId(authUser.id);
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, age_group, track")
+        .select("role, age_group, track, family_id")
         .eq("id", authUser.id)
         .maybeSingle();
-      if (profile) setRegister(deriveRegister(profile));
+      if (profile) {
+        setRegister(deriveRegister(profile));
+        setFamilyId((profile as { family_id?: string | null }).family_id ?? null);
+      }
     }
 
     // Try Supabase first
@@ -278,7 +292,7 @@ export default function LessonViewerClient() {
         for (const mod of mods) {
           const { data: lessons } = await supabase
             .from("lessons")
-            .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id")
+            .select("id, title, description, video_provider, video_id, video_duration_sec, has_quiz, sort_order, module_id, steps, lesson_xp")
             .eq("module_id", mod.id)
             .order("sort_order");
           modulesWithLessons.push({ ...mod, lessons: lessons || [] });
@@ -470,6 +484,55 @@ export default function LessonViewerClient() {
           href: `/courses/${slug}`,
         }}
       />
+    );
+  }
+
+  // ── Learning World P2: native interactive lesson ──
+  // ONE top branch (proposal §3): a lesson with a non-null `steps` renders in
+  // <LessonEngine>; everything else falls through to the legacy video/html/mock
+  // paths below, untouched. Migration is lesson-by-lesson with zero dead URLs.
+  const parsedLesson = !isMock
+    ? parseLessonSteps(currentLesson.steps, {
+        title: currentLesson.title,
+        xp: currentLesson.lesson_xp ?? XP.LESSON,
+      })
+    : null;
+  if (parsedLesson) {
+    return (
+      <div className="max-w-[1400px] mx-auto">
+        <m.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-4 flex items-center gap-2 text-xs text-midnight-500 font-body"
+        >
+          <Link
+            href={`/courses/${slug}`}
+            className="hover:text-midnight-300 transition-colors flex items-center gap-1"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            {courseTitle}
+          </Link>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-midnight-400">{currentModule.title}</span>
+        </m.div>
+        <LessonEngine
+          lesson={parsedLesson}
+          lessonId={lessonId}
+          quizId={quizId}
+          register={register}
+          supabase={supabase}
+          userId={userId}
+          familyId={familyId}
+          courseTitle={courseTitle}
+          moduleTitle={currentModule.title}
+          backHref={`/courses/${slug}`}
+          nextHref={
+            nextLesson
+              ? `/courses/${slug}/${nextLesson.moduleId}/${nextLesson.id}`
+              : null
+          }
+        />
+      </div>
     );
   }
 
