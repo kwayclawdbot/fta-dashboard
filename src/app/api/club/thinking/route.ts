@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserXp } from "@/lib/xp";
 import { beltForXp } from "@/lib/belts";
 
 /**
@@ -88,13 +87,18 @@ export async function GET() {
   const authorMap = new Map((authors || []).map((a) => [a.id, a]));
   const companyByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
 
-  // Belts need lifetime XP per author.
+  // Belts need lifetime XP per author — one grouped read instead of a per-author
+  // scan of xp_events (was N round trips). Identical totals; sums client-side.
   const xpByAuthor = new Map<string, number>();
-  await Promise.all(
-    authorIds.map(async (id) => {
-      xpByAuthor.set(id, await getUserXp(admin, id));
-    })
-  );
+  if (authorIds.length) {
+    const { data: xpRows } = await admin
+      .from("xp_events")
+      .select("user_id, amount")
+      .in("user_id", authorIds);
+    for (const r of (xpRows || []) as { user_id: string; amount: number }[]) {
+      xpByAuthor.set(r.user_id, (xpByAuthor.get(r.user_id) || 0) + (r.amount || 0));
+    }
+  }
 
   const shaped: Post[] = posts.map((p) => {
     const a = authorMap.get(p.author_id as string);
