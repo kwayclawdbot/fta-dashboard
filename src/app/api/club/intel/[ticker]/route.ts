@@ -69,6 +69,22 @@ export async function GET(
 
   const provenance = (snap.provenance as Record<string, unknown>) || {};
 
+  // "Changed their mind" stat (mig 151 → snapshot provenance via mig 160). Floor-
+  // gated: only surfaced once ≥ SNAPSHOT_FLOORS.mindChangeMinMembers DISTINCT
+  // members have flipped on this ticker (no "3 people changed their mind"). It is a
+  // stance/sentiment signal, so it rides the SAME wall as sentiment (kid + free
+  // strip it below). null when below floor or absent.
+  const mindProv = (provenance.mindChanges as Record<string, unknown> | undefined) || undefined;
+  const mindMembers = Number(mindProv?.members ?? 0);
+  const mindChanges =
+    mindProv && mindMembers >= SNAPSHOT_FLOORS.mindChangeMinMembers
+      ? {
+          members: mindMembers,
+          members7d: Number(mindProv.members7d ?? 0),
+          flips: Number(mindProv.flips ?? 0),
+        }
+      : null;
+
   // Base intelligence view — attention + activity, safe for every register.
   const intel: Record<string, unknown> = {
     ticker: snap.ticker,
@@ -111,12 +127,16 @@ export async function GET(
 
   if (isKid) {
     // Strip sentiment + sentiment provenance for kids (same wall as the debate).
+    // The mind-change signal is stance (bull/bear) movement — sentiment-adjacent —
+    // so it is stripped for kids too.
     const prov = { ...provenance };
     delete (prov as Record<string, unknown>).sentiment;
+    delete (prov as Record<string, unknown>).mindChanges;
     return NextResponse.json({
       ...intel,
       kidWalled: true,
       sentiment: null,
+      mindChanges: null,
       provenance: prov,
       floors: SNAPSHOT_FLOORS,
       disclaimer: INTEL_DISCLAIMER,
@@ -132,6 +152,8 @@ export async function GET(
       bearish: snap.sentiment_bearish,
       change24h: Number(snap.sentiment_change_24h),
     },
+    // Floor-gated "N changed their mind" signal (null below the floor).
+    mindChanges,
     provenance,
     floors: SNAPSHOT_FLOORS,
     disclaimer: INTEL_DISCLAIMER,

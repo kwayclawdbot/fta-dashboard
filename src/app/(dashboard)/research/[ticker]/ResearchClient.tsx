@@ -35,7 +35,6 @@ import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import KaiReportSection from "@/components/kai/KaiReportSection";
 import type { KaiReport } from "@/lib/kai/report";
-import SocialBar from "@/components/research/SocialBar";
 import SetAlertButton, { type AlertLevel } from "@/components/alerts/SetAlertButton";
 import Scorecard from "@/components/research/Scorecard";
 import PriceTechnicals from "@/components/research/PriceTechnicals";
@@ -622,20 +621,12 @@ export default function ResearchClient({
           )}
         </div>
 
-        {/* Social band — hero social bar + community aggregation. The comment
-            count jumps to the Community tab; cold tickers show no sad zeros. */}
+        {/* Social band — community aggregation. Per SOCIAL-OBJECTS.md the generic
+            👍/👎 like bar is retired on research surfaces (informational reactions
+            + the Changed-My-Mind stance flow in the Community tab carry the social
+            layer now); the ticker_sentiment table + SocialBar's other consumers
+            (news, community-watchlist, screener rows) are untouched. */}
         <div className="border-t border-sand px-5 py-4">
-          <SocialBar
-            supabase={supabase}
-            ticker={ticker}
-            variant="hero"
-            userId={userId}
-            ageGroup={ageGroup}
-            canVote={canVote}
-            onCommentClick={() => selectTab("community")}
-            commentActive={activeTab === "community"}
-            showConsensus
-          />
           <CommunityAggBar supabase={supabase} ticker={ticker} />
         </div>
       </m.div>

@@ -61,6 +61,12 @@ export const SNAPSHOT_FLOORS = {
   unusualMinEvents24h: 8,
   /** 24h event count must be ≥ this × the prior-24h baseline. */
   unusualSpikeMult: 2.0,
+  /**
+   * Distinct members who must have FLIPPED their stance on a ticker (stance_events,
+   * mig 151) before the "N changed their mind" stat surfaces on /api/club/intel.
+   * MIRRORS v_mind_change_floor in migration 160's refresh_club_metrics().
+   */
+  mindChangeMinMembers: 5,
 } as const;
 
 /**
