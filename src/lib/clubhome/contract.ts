@@ -148,9 +148,12 @@ export interface PeopleMember {
   id: string;
   name: string;
   avatar?: string | null;
-  tags: string[];           // style tags — NO follower counts (fake at our N)
+  tags: string[];           // style tags
   reason: string;           // why they're worth following
   href: string;
+  /** compact follower count — fixtures/at-scale ONLY. Real endpoints never send
+   *  this (no follow graph exists at our N); the UI hides it when absent. */
+  followers?: number | null;
 }
 export interface PeopleResponse {
   members: PeopleMember[];

@@ -114,11 +114,11 @@ const SCALE: ClubData = {
   },
   people: {
     members: [
-      { id: "p1", name: "TechTactician", avatar: null, tags: ["Semis", "Deep dives"], reason: "12 research pieces this month, most-saved in the Club", href: "/u/techtactician" },
-      { id: "p2", name: "ValueHawk", avatar: null, tags: ["Value", "Balance sheets"], reason: "Called the SoFi turn three weeks early", href: "/u/valuehawk" },
-      { id: "p3", name: "DataDive", avatar: null, tags: ["Data-driven", "Screens"], reason: "Shares the screens behind every idea", href: "/u/datadive" },
-      { id: "p4", name: "LongTermLiz", avatar: null, tags: ["Long horizon", "Coach"], reason: "Patient theses the room keeps coming back to", href: "/u/longtermliz" },
-      { id: "p5", name: "ChartNerd", avatar: null, tags: ["Technicals", "Levels"], reason: "Clean level maps on every trending ticker", href: "/u/chartnerd" },
+      { id: "p1", name: "TechTactician", avatar: null, tags: ["Semis", "Deep dives"], reason: "12 research pieces this month, most-saved in the Club", href: "/u/techtactician", followers: 24100 },
+      { id: "p2", name: "ValueHawk", avatar: null, tags: ["Value", "Balance sheets"], reason: "Called the SoFi turn three weeks early", href: "/u/valuehawk", followers: 18700 },
+      { id: "p3", name: "DataDive", avatar: null, tags: ["Data-driven", "Screens"], reason: "Shares the screens behind every idea", href: "/u/datadive", followers: 15300 },
+      { id: "p4", name: "LongTermLiz", avatar: null, tags: ["Long horizon", "Coach"], reason: "Patient theses the room keeps coming back to", href: "/u/longtermliz", followers: 12900 },
+      { id: "p5", name: "ChartNerd", avatar: null, tags: ["Technicals", "Levels"], reason: "Clean level maps on every trending ticker", href: "/u/chartnerd", followers: 11800 },
     ],
   },
 };

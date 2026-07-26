@@ -3,36 +3,32 @@
 import Link from "next/link";
 import { Info } from "lucide-react";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import { SectionLabel, Delta } from "./parts";
+import { Card, CardHead, Delta } from "./parts";
 import type { TrendingResponse } from "@/lib/clubhome/contract";
 
 /**
- * §6 Trending in the Club — a ranked ATTENTION ledger (not a top-gainers card,
- * not a card grid). Club Score = weighted community attention (research views,
- * watchlist adds, comments, unique participants, saves, searches, Kai questions,
- * sentiment activity). Volt = trending/action. Carries the compliance line in
- * the UI: attention inside the Club, NOT a recommendation.
+ * §6 Trending in the Club — a ranked ATTENTION table (mock-faithful: ticker +
+ * Club Score + change delta, clean rows, no gainer bars). Club Score = weighted
+ * community attention (research views, watchlist adds, comments, unique
+ * participants, saves, searches, Kai questions, sentiment activity). Carries the
+ * compliance line in the UI: attention inside the Club, NOT a recommendation.
  */
 
 export default function Trending({ trending }: { trending: TrendingResponse | null }) {
   const rows = trending?.rows ?? [];
   if (rows.length === 0) return null;
-  const maxScore = Math.max(...rows.map((r) => r.score), 1);
 
   return (
-    <section aria-label="Trending in the Club">
-      <SectionLabel
-        tone="volt"
+    <Card aria-label="Trending in the Club">
+      <CardHead
+        title="Trending in the Club"
         action={
           <Link href="/discover" className="text-xs font-semibold text-volt-700 hover:text-volt-800">
-            View all →
+            View all
           </Link>
         }
-      >
-        Trending in the Club
-      </SectionLabel>
+      />
 
-      {/* column header + compliance */}
       <div className="mt-3 flex items-center justify-between border-b border-sand pb-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-soft">Ticker</span>
         <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-soft">
@@ -43,36 +39,20 @@ export default function Trending({ trending }: { trending: TrendingResponse | nu
         </span>
       </div>
 
-      <ol>
+      <ol className="divide-y divide-sand">
         {rows.map((r) => (
           <li key={r.ticker}>
             <Link
               href={`/research/${encodeURIComponent(r.ticker)}`}
-              className="group club-row -mx-2 flex items-center gap-3 rounded-lg border-b border-sand px-2 py-2.5"
+              className="group club-row -mx-2 flex items-center gap-2.5 rounded-lg px-2 py-2.5"
             >
-              <span className="w-4 shrink-0 font-mono text-xs font-bold tabular-nums text-soft">
-                {r.rank}
+              <span className="w-3.5 shrink-0 font-mono text-xs font-bold tabular-nums text-soft">{r.rank}</span>
+              <CompanyLogo symbol={r.ticker} name={r.company} size={24} />
+              <span className="min-w-0 flex-1 truncate font-display text-sm font-bold text-ink group-hover:text-volt-700">
+                {r.ticker}
               </span>
-              <CompanyLogo symbol={r.ticker} name={r.company} size={26} />
-              <div className="min-w-0 flex-1">
-                <span className="font-display text-sm font-bold text-ink group-hover:text-volt-700">
-                  {r.ticker}
-                </span>
-                {r.company && (
-                  <span className="ml-2 truncate text-[11px] text-soft">{r.company}</span>
-                )}
-                {/* attention meter — saturated volt→amber, grows in on mount */}
-                <div className="mt-1 h-1.5 w-full max-w-[180px] overflow-hidden rounded-full bg-sand">
-                  <div
-                    className="club-meter-fill club-meter-anim h-full rounded-full"
-                    style={{ width: `${Math.round((r.score / maxScore) * 100)}%` }}
-                  />
-                </div>
-              </div>
-              <span className="shrink-0 font-mono text-lg font-extrabold tabular-nums text-ink">
-                {r.score}
-              </span>
-              <span className="w-12 shrink-0 text-right">
+              <span className="shrink-0 font-mono text-base font-extrabold tabular-nums text-ink">{r.score}</span>
+              <span className="w-11 shrink-0 text-right">
                 <Delta value={r.change} />
               </span>
             </Link>
@@ -80,9 +60,7 @@ export default function Trending({ trending }: { trending: TrendingResponse | nu
         ))}
       </ol>
 
-      <p className="mt-2 text-[11px] italic text-soft">
-        Attention inside the Club — not a recommendation.
-      </p>
-    </section>
+      <p className="mt-2.5 text-[11px] italic text-soft">Attention inside the Club — not a recommendation.</p>
+    </Card>
   );
 }

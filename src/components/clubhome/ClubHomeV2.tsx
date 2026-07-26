@@ -19,16 +19,16 @@ import ForYou from "./ForYou";
 import People from "./People";
 
 /**
- * ClubHome v2 — "The Collective." The live collective-intelligence Home for CLUB
- * (solo) members. Composes sections 1–13 of the ratified plan in the D1
- * editorial language (typography, ruled ledgers, hairlines, objects-with-
- * identity — never a grid of identical cards). Every count-bearing section is
- * scale-aware: a designed founding-era state (motivation, not emptiness) and an
- * at-scale state. Kid register gets the safe subset (no Debate, no People, no
- * invite competition).
- *
- * Data: consumes the /api/club/* contract via useClubData, with a fixtures
- * fallback for design review (dev/preview only — never in production).
+ * ClubHome v2 — mock-faithful rebuild (owner 07-26: reproduce the mock). The
+ * page is a three-column dashboard of contained data-object cards over the warm
+ * sand base: a Live Pulse hero of ticker signal cards, then a masonry grid —
+ *   left:   The Collective · Today's Best Thinking
+ *   middle: Kai Brief · The Debate
+ *   right:  Trending in the Club · For You
+ * — closed by the Build-the-Club invite (carve-out, styled native) and the
+ * People strip. Every count-bearing section is scale-aware (a designed founding
+ * state, never a raw embarrassing number). Kid register gets the safe subset
+ * (no Debate, no People, no invite competition, no sentiment).
  */
 
 export interface LearningPickup {
@@ -52,7 +52,7 @@ export default function ClubHomeV2({
   preview?: { fixtures: boolean; scale: ClubScale };
 }) {
   const isKid = register === "kid";
-  const canInvite = register !== "kid"; // adults + teens
+  const canInvite = register !== "kid";
   const canDebate = register !== "kid";
   const canDiscoverPeople = register !== "kid";
 
@@ -63,8 +63,8 @@ export default function ClubHomeV2({
 
   const collectiveFloorMet = data.collective?.floorMet ?? false;
 
-  // Kid-safe subset: sentiment display is kid-walled (plan §16). Strip sentiment
-  // signals/items from the surfaces kids DO see so no bull/bear read reaches them.
+  // Kid-safe subset: sentiment display is kid-walled — strip sentiment signals/
+  // items from the surfaces kids DO see so no bull/bear read reaches them.
   const pulse = isKid && data.pulse
     ? { ...data.pulse, signals: data.pulse.signals.filter((s) => s.kind !== "sentiment") }
     : data.pulse;
@@ -75,20 +75,8 @@ export default function ClubHomeV2({
     ? { ...data.foryou, items: data.foryou.items.filter((i) => i.kind !== "sentiment") }
     : data.foryou;
 
-  // Two-lane pairing helper: render a paired row on lg, but if one side is walled
-  // off (kid register) the present side takes the full width — never an empty cell.
-  function Pair({ a, b }: { a: React.ReactNode; b: React.ReactNode | null }) {
-    if (!b) return <>{a}</>;
-    return (
-      <div className="grid gap-x-8 gap-y-10 lg:grid-cols-2">
-        <div className="min-w-0">{a}</div>
-        <div className="min-w-0">{b}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto max-w-5xl space-y-10 pb-16">
+    <div className="mx-auto max-w-6xl space-y-6 pb-16">
       {usingFixtures && (
         <div className="pointer-events-none fixed bottom-4 left-4 z-50 rounded-full border border-volt-500/40 bg-card/95 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-volt-700 shadow-soft">
           fixtures · {preview?.scale ?? "scale"} · {register}
@@ -105,37 +93,49 @@ export default function ClubHomeV2({
         floorMet={collectiveFloorMet}
       />
 
-      {/* §2 Live Pulse hero (absorbs the old masthead) */}
+      {/* §2 Live Pulse hero — ticker signal cards */}
       <LivePulse pulse={pulse} isKid={isKid} />
 
-      {/* §3 The Collective — founding embeds the §4 invite engine as centerpiece */}
-      <Collective
-        collective={data.collective}
-        isKid={isKid}
-        invite={
-          canInvite && !collectiveFloorMet ? (
-            <BuildTheClub invite={data.invite} embedded />
-          ) : undefined
-        }
-      />
+      {/* three-column dashboard grid (masonry columns, mock-faithful) */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr_1fr]">
+        {/* left column */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* §3 The Collective — founding embeds the §4 invite engine as centerpiece */}
+          <Collective
+            collective={data.collective}
+            isKid={isKid}
+            invite={
+              canInvite && !collectiveFloorMet ? (
+                <BuildTheClub invite={data.invite} embedded />
+              ) : undefined
+            }
+          />
+          {/* §7 Today's Best Thinking */}
+          <BestThinking thinking={data.thinking} />
+        </div>
 
-      {/* §5 Kai Brief · §6 Trending */}
-      <Pair a={<KaiBrief brief={brief} />} b={<Trending trending={data.trending} />} />
+        {/* middle column */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* §5 Kai Brief */}
+          <KaiBrief brief={brief} />
+          {/* §8 The Debate (kid-walled) */}
+          {canDebate && <Debate debate={data.debate} />}
+        </div>
 
-      {/* §7 Best Thinking · §8 Debate (kid-walled) */}
-      <Pair
-        a={<BestThinking thinking={data.thinking} />}
-        b={canDebate ? <Debate debate={data.debate} /> : null}
-      />
+        {/* right column */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* §6 Trending in the Club */}
+          <Trending trending={data.trending} />
+          {/* §9 For You */}
+          <ForYou foryou={foryou} />
+        </div>
+      </div>
 
-      {/* §4 Build the Club — standalone recognition ledger once past the floor */}
+      {/* §4 Build the Club — standalone invite ledger once past the floor (carve-out) */}
       {canInvite && collectiveFloorMet && <BuildTheClub invite={data.invite} />}
 
-      {/* §9 For You · §10 People (kid-walled) */}
-      <Pair
-        a={<ForYou foryou={foryou} />}
-        b={canDiscoverPeople ? <People people={data.people} /> : null}
-      />
+      {/* §10 People worth following (kid-walled) */}
+      {canDiscoverPeople && <People people={data.people} />}
 
       {/* Keep learning — one compact pickup line (personal continuity) */}
       <KeepLearning learning={learning} />
@@ -156,9 +156,7 @@ function KeepLearning({ learning }: { learning: LearningPickup | null }) {
         <PlayCircle className="h-6 w-6" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="font-display text-[11px] font-bold uppercase tracking-wider text-volt-700">
-          Keep learning
-        </p>
+        <p className="font-display text-[11px] font-bold uppercase tracking-wider text-volt-700">Keep learning</p>
         <p className="truncate font-semibold text-ink">{title}</p>
         <p className="truncate text-[12px] text-soft">{context}</p>
       </div>

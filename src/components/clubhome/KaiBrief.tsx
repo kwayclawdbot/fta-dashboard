@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Sparkles } from "lucide-react";
-import { SectionLabel } from "./parts";
+import { ArrowUpRight, Bot } from "lucide-react";
+import { Card } from "./parts";
 import type { BriefResponse } from "@/lib/clubhome/contract";
 
 /**
@@ -19,25 +19,22 @@ export default function KaiBrief({ brief }: { brief: BriefResponse | null }) {
   const derived = brief?.source === "derived";
 
   return (
-    <section
-      aria-label="Kai Brief"
-      className="club-field-kai rounded-2xl p-5 sm:p-6"
-    >
-      <div className="flex items-start justify-between gap-3">
+    <Card aria-label="Kai Brief">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-kai-500 text-white shadow-soft">
-            <Sparkles className="h-4 w-4" />
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-kai-500 text-white shadow-soft">
+            <Bot className="h-4 w-4" />
           </span>
-          <SectionLabel tone="kai">Kai Brief</SectionLabel>
+          <h3 className="font-display text-[15px] font-extrabold tracking-tight text-kai-600">Kai Brief</h3>
         </div>
         {brief?.updatedAt && (
           <span className="font-mono text-[11px] text-soft">Updated {brief.updatedAt}</span>
         )}
       </div>
 
-      <h3 className="mt-3 font-display text-lg font-bold leading-snug text-ink">
+      <h4 className="mt-3 font-display text-lg font-bold leading-snug text-ink">
         Here&apos;s what changed since your last check-in.
-      </h3>
+      </h4>
 
       {!available && (
         <p className="mt-2 text-[13px] font-medium text-kai-600">
@@ -46,12 +43,12 @@ export default function KaiBrief({ brief }: { brief: BriefResponse | null }) {
       )}
 
       {items.length > 0 ? (
-        <ul className="mt-3 space-y-0 divide-y divide-kai-500/12">
+        <ul className="mt-3 space-y-3">
           {items.map((it, i) => {
             const row = (
               <>
                 <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-kai-500" aria-hidden />
-                <span className="text-[14px] leading-relaxed text-ink">
+                <span className="text-[13.5px] leading-relaxed text-ink">
                   {it.ticker && (
                     <span className="mr-1 font-mono text-[13px] font-bold text-kai-600">{it.ticker}</span>
                   )}
@@ -60,9 +57,9 @@ export default function KaiBrief({ brief }: { brief: BriefResponse | null }) {
               </>
             );
             return (
-              <li key={i} className="py-2.5">
+              <li key={i}>
                 {it.ticker ? (
-                  <Link href={`/research/${encodeURIComponent(it.ticker)}`} className="flex gap-2.5 group">
+                  <Link href={`/research/${encodeURIComponent(it.ticker)}`} className="flex gap-2.5">
                     {row}
                   </Link>
                 ) : (
@@ -78,20 +75,18 @@ export default function KaiBrief({ brief }: { brief: BriefResponse | null }) {
         </p>
       )}
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <Link
-          href="/kai"
-          className="inline-flex items-center gap-2 rounded-xl bg-kai-500 px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:bg-kai-600 active:scale-[0.97]"
-        >
-          Ask Kai anything
-          <ArrowUpRight className="h-4 w-4" />
-        </Link>
-        {derived && (
-          <span className="font-mono text-[10px] uppercase tracking-wide text-soft">
-            derived from Club activity
-          </span>
-        )}
-      </div>
-    </section>
+      <Link
+        href="/kai"
+        className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-kai-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-kai-600 active:scale-[0.98]"
+      >
+        Ask Kai anything
+        <ArrowUpRight className="h-4 w-4" />
+      </Link>
+      {derived && (
+        <p className="mt-2 text-center font-mono text-[10px] uppercase tracking-wide text-soft">
+          derived from Club activity
+        </p>
+      )}
+    </Card>
   );
 }

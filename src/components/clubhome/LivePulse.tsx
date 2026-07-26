@@ -1,172 +1,130 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, ArrowUp } from "lucide-react";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
 import { SectionLabel, Spark } from "./parts";
 import type { PulseResponse, PulseSignal } from "@/lib/clubhome/contract";
 
 /**
- * §2 Live Pulse (hero) — ABSORBS the old "Today in the Club" masthead into one
- * hero (no two competing heroes). It answers "what is the Club seeing right
- * now" with the 3–4 strongest COMMUNITY signals (most-researched, new watchers,
- * sentiment shift, Kai pattern) — community behavior, not market movers —
- * composed as ruled columns inside one masthead object, with sparkline accents.
- * The delayed-index strip keeps the hero alive even for a brand-new member.
+ * §2 Live Pulse (hero) — mock-faithful. An editorial "LIVE PULSE / What the Club
+ * is seeing today" masthead with carousel arrows, then the row of ticker signal
+ * CARDS (the #1-ranked card carries the volt outline). Community behavior, not
+ * market movers — most-researched, new watchers, sentiment shift, Kai pattern —
+ * each with a saturated orange sparkline. On mobile it collapses to a compact
+ * ranked list (the phone mock).
  */
-
-const INDICES = [
-  { symbol: "SPY", label: "S&P 500" },
-  { symbol: "QQQ", label: "Nasdaq" },
-  { symbol: "DIA", label: "Dow" },
-];
-
-function pctText(v: number | null | undefined) {
-  if (v == null) return "—";
-  return `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
-}
-function pctClass(v: number | null | undefined) {
-  if (v == null) return "text-soft";
-  return v > 0 ? "text-green-600" : v < 0 ? "text-red-500" : "text-soft";
-}
 
 function sparkTone(d?: PulseSignal["direction"]) {
   return d === "down" ? "down" : d === "flat" ? "flat" : "volt";
 }
 
+function PulseCard({ s, rank, lead }: { s: PulseSignal; rank: number; lead: boolean }) {
+  return (
+    <Link
+      href={`/research/${encodeURIComponent(s.ticker)}`}
+      className={`club-rise group relative flex min-w-0 snap-start flex-col overflow-hidden rounded-2xl bg-card p-4 shadow-soft transition-transform hover:-translate-y-0.5 ${
+        lead ? "border-[1.5px] border-volt-500" : "border border-sand"
+      }`}
+      style={{ animationDelay: `${(rank - 1) * 70}ms` }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-xs font-bold tabular-nums text-volt-600">{rank}</span>
+        <CompanyLogo symbol={s.ticker} name={s.company} size={22} />
+        <span className="font-display text-sm font-extrabold tracking-tight text-ink group-hover:text-volt-700">
+          {s.ticker}
+        </span>
+      </div>
+
+      <p className="mt-2.5 text-[13px] font-bold leading-snug text-ink">{s.headline}</p>
+      <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-snug text-soft">
+        {s.direction === "up" && <ArrowUp className="h-3 w-3 text-volt-600" />}
+        <span className="line-clamp-2">{s.detail}</span>
+      </p>
+
+      {s.spark && (
+        <div className="pointer-events-none mt-3 flex justify-end pt-1">
+          <Spark series={s.spark} tone={sparkTone(s.direction)} width={150} height={40} />
+        </div>
+      )}
+    </Link>
+  );
+}
+
 export default function LivePulse({
   pulse,
-  isKid,
 }: {
   pulse: PulseResponse | null;
   isKid: boolean;
 }) {
-  const [quotes, setQuotes] = useState<Record<string, MarketQuote> | null>(null);
-
-  useEffect(() => {
-    if (isKid) return;
-    let mounted = true;
-    fetchQuotes(INDICES.map((i) => i.symbol))
-      .then((q) => mounted && setQuotes(q))
-      .catch(() => mounted && setQuotes({}));
-    return () => {
-      mounted = false;
-    };
-  }, [isKid]);
-
-  const dateLabel = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-
+  const rowRef = useRef<HTMLDivElement>(null);
   const signals = pulse?.signals ?? [];
-  const marketOk = quotes && Object.keys(quotes).length > 0;
+  if (signals.length === 0) return null;
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = rowRef.current;
+    if (el) el.scrollBy({ left: dir * (el.clientWidth * 0.7), behavior: "smooth" });
+  };
 
   return (
-    <section
-      aria-label="Live pulse — what the Club is seeing today"
-      data-tour="club-pulse"
-      className="club-field-pulse overflow-hidden rounded-2xl px-5 py-5 shadow-soft sm:px-7 sm:py-6"
-    >
-      {/* Masthead line */}
-      <div className="flex items-center justify-between gap-3">
-        <SectionLabel tone="volt" live liveTone="volt" charged>
-          Live Pulse
-        </SectionLabel>
-        <span className="font-mono text-[11px] text-soft">{dateLabel}</span>
+    <section aria-label="Live pulse — what the Club is seeing today" data-tour="club-pulse">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <SectionLabel tone="volt" live liveTone="volt" charged>
+            Live Pulse
+          </SectionLabel>
+          <h2 className="mt-1.5 font-display text-2xl font-extrabold leading-tight tracking-tight text-ink sm:text-[28px]">
+            What the Club is seeing today
+          </h2>
+        </div>
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={() => scrollBy(-1)}
+            aria-label="Previous signals"
+            className="grid h-8 w-8 place-items-center rounded-full border border-sand bg-card text-soft transition-colors hover:border-volt-400 hover:text-volt-700 active:scale-95"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollBy(1)}
+            aria-label="More signals"
+            className="grid h-8 w-8 place-items-center rounded-full border border-sand bg-card text-soft transition-colors hover:border-volt-400 hover:text-volt-700 active:scale-95"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <h2 className="mt-2 font-display text-2xl font-extrabold leading-[1.1] tracking-tight text-ink sm:text-[28px]">
-        What the Club is seeing today
-      </h2>
+      {/* desktop / tablet: even card grid (mock's 4-up), no overflow */}
+      <div
+        ref={rowRef}
+        className="mt-4 hidden gap-4 sm:grid"
+        style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(signals.length, 1), 4)}, minmax(0, 1fr))` }}
+      >
+        {signals.map((s, i) => (
+          <PulseCard key={`${s.ticker}-${i}`} s={s} rank={i + 1} lead={i === 0} />
+        ))}
+      </div>
 
-      {/* Delayed index strip (adults) — inline mono %, hairline-bounded, not boxed */}
-      {!isKid && (
-        <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-1 border-t border-sand pt-3">
-          {INDICES.map((idx) => (
-            <span key={idx.symbol} className="inline-flex items-baseline gap-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-soft">
-                {idx.label}
-              </span>
-              {quotes == null ? (
-                <span className="inline-block h-3 w-10 animate-pulse rounded bg-sand align-middle" />
-              ) : (
-                <span className={`font-mono text-sm font-bold tabular-nums ${pctClass(quotes[idx.symbol]?.changePercent)}`}>
-                  {pctText(quotes[idx.symbol]?.changePercent)}
-                </span>
-              )}
-            </span>
-          ))}
-          {marketOk && (
-            <span className="ml-auto font-mono text-[10px] uppercase tracking-wide text-soft">
-              markets delayed
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Signals — ruled columns on desktop, hairline rows on mobile */}
-      <div className="mt-4 border-t border-sand pt-1">
-        {/* desktop: divided columns */}
-        <div
-          className="hidden divide-x divide-sand sm:grid"
-          style={{ gridTemplateColumns: `repeat(${Math.max(signals.length, 1)}, minmax(0, 1fr))` }}
-        >
-          {signals.map((s, i) => (
-            <Link
-              key={`${s.ticker}-${i}`}
-              href={`/research/${encodeURIComponent(s.ticker)}`}
-              className="group club-rise relative flex flex-col gap-2 px-5 pt-4 first:pl-0 last:pr-0"
-              style={{ animationDelay: `${i * 70}ms` }}
-            >
-              {i === 0 && (
-                <span className="club-hero-gradient absolute left-0 top-4 h-6 w-[3px] rounded-full" />
-              )}
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-volt-600 tabular-nums">
-                  {i + 1}
-                </span>
-                <CompanyLogo symbol={s.ticker} name={s.company} size={20} />
-                <span className="font-display text-sm font-bold text-ink group-hover:text-volt-700">
-                  {s.ticker}
-                </span>
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-ink">{s.headline}</p>
-                <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-soft">
-                  {s.detail}
-                </p>
-              </div>
-              {s.spark && (
-                <div className="mt-auto pt-1">
-                  <Spark series={s.spark} tone={sparkTone(s.direction)} width={110} height={30} />
-                </div>
-              )}
-            </Link>
-          ))}
-        </div>
-
-        {/* mobile: hairline rows */}
-        <div className="divide-y divide-sand sm:hidden">
-          {signals.map((s, i) => (
-            <Link
-              key={`m-${s.ticker}-${i}`}
-              href={`/research/${encodeURIComponent(s.ticker)}`}
-              className="flex items-center gap-3 py-3"
-            >
-              <span className="font-mono text-xs font-bold text-volt-600 tabular-nums">{i + 1}</span>
+      {/* mobile: compact ranked list (phone mock) */}
+      <ul className="mt-4 divide-y divide-sand rounded-2xl border border-sand bg-card px-4 shadow-soft sm:hidden">
+        {signals.map((s, i) => (
+          <li key={`m-${s.ticker}-${i}`}>
+            <Link href={`/research/${encodeURIComponent(s.ticker)}`} className="flex items-center gap-3 py-3">
+              <span className="font-mono text-xs font-bold tabular-nums text-volt-600">{i + 1}</span>
               <CompanyLogo symbol={s.ticker} name={s.company} size={26} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-ink">{s.ticker}</p>
+                <p className="truncate text-sm font-extrabold text-ink">{s.ticker}</p>
                 <p className="truncate text-[12px] text-soft">{s.headline}</p>
               </div>
               {s.spark && <Spark series={s.spark} tone={sparkTone(s.direction)} width={72} height={26} />}
             </Link>
-          ))}
-        </div>
-      </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

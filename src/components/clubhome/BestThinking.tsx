@@ -2,16 +2,26 @@
 
 import Link from "next/link";
 import { Heart, MessageCircle, Bookmark, BadgeCheck, PenLine } from "lucide-react";
-import { SectionLabel } from "./parts";
+import { Card, CardHead, Badge, Thumb } from "./parts";
 import type { ThinkingPost, ThinkingResponse } from "@/lib/clubhome/contract";
 
 /**
- * §7 Today's Best Thinking — the editorial feature. One lead piece in big
- * typography (ticker, author + credibility, saves/comments/votes) then 2–3
- * secondary pieces in a ruled list. Sourced from the community feed ranked by
- * engagement. Composed as an editorial masthead + hairline list — not cards.
- * Founding-thin → a warm invitation to publish the first research.
+ * §7 Today's Best Thinking — the editorial feature, mock-faithful: one lead piece
+ * with a chart thumbnail, big title, author + credibility and engagement metrics,
+ * then 2–3 secondary pieces (also thumbed) in a ruled list. Sourced from the
+ * community feed ranked by engagement. Founding-thin → a warm invite to publish.
  */
+
+// self-contained thumbnail series (no external images) — cycles for variety
+const THUMB_SERIES = [
+  [40, 42, 41, 45, 48, 47, 53, 58, 61],
+  [52, 50, 54, 51, 56, 60, 58, 63, 66],
+  [30, 33, 32, 36, 40, 44, 47, 46, 51],
+  [45, 44, 47, 49, 48, 52, 55, 59, 62],
+];
+function seriesFor(i: number) {
+  return THUMB_SERIES[i % THUMB_SERIES.length];
+}
 
 function Metrics({ p, size = "sm" }: { p: ThinkingPost; size?: "sm" | "xs" }) {
   const cls = size === "xs" ? "text-[11px]" : "text-xs";
@@ -26,7 +36,7 @@ function Metrics({ p, size = "sm" }: { p: ThinkingPost; size?: "sm" | "xs" }) {
 
 function Byline({ p }: { p: ThinkingPost }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[13px] text-soft">
+    <span className="inline-flex items-center gap-1 text-[12px] text-soft">
       by <span className="font-semibold text-ink">@{p.author.name}</span>
       {p.author.verified && <BadgeCheck className="h-3.5 w-3.5 text-teal-600" />}
       {p.author.badge && (
@@ -43,73 +53,81 @@ export default function BestThinking({ thinking }: { thinking: ThinkingResponse 
   const secondary = thinking?.secondary ?? [];
 
   return (
-    <section aria-label="Today's Best Thinking">
-      <SectionLabel
+    <Card aria-label="Today's Best Thinking">
+      <CardHead
+        title="Today's Best Thinking"
+        badge={lead?.editorPick ? <Badge tone="pick">Editor&apos;s Pick</Badge> : undefined}
         action={
           <Link href="/community" className="text-xs font-semibold text-volt-700 hover:text-volt-800">
-            All research →
+            All research
           </Link>
         }
-      >
-        Today&apos;s Best Thinking
-      </SectionLabel>
+      />
 
       {lead ? (
         <>
-          {/* lead — editorial masthead */}
-          <Link href={lead.href} className="group mt-3 block border-b border-sand pb-4">
-            <div className="flex items-center gap-2">
-              {lead.editorPick && (
-                <span className="rounded-full bg-volt-500/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-volt-700">
-                  Editor&apos;s pick
-                </span>
-              )}
+          {/* lead — thumbnail + editorial masthead */}
+          <Link href={lead.href} className="group mt-4 flex gap-4 border-b border-sand pb-4">
+            <Thumb series={seriesFor(0)} tone="teal" size={64} className="mt-0.5" />
+            <div className="min-w-0 flex-1">
               {lead.ticker && (
-                <span className="font-mono text-xs font-bold text-ink">{lead.ticker}</span>
+                <span className="font-mono text-[11px] font-bold text-soft">{lead.ticker}</span>
               )}
-            </div>
-            <h3 className="mt-2 font-display text-xl font-extrabold leading-snug tracking-tight text-ink group-hover:text-volt-700 sm:text-2xl">
-              {lead.title}
-            </h3>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-              <Byline p={lead} />
-              <Metrics p={lead} />
+              <h4 className="mt-0.5 font-display text-lg font-extrabold leading-snug tracking-tight text-ink group-hover:text-volt-700">
+                {lead.title}
+              </h4>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                <Byline p={lead} />
+                <div className="flex items-center gap-3">
+                  <Metrics p={lead} />
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-soft">
+                    <Bookmark className="h-3.5 w-3.5" />Save
+                  </span>
+                </div>
+              </div>
             </div>
           </Link>
 
-          {/* secondary — ruled list */}
+          {/* secondary — thumbed ruled list */}
           <ol className="divide-y divide-sand">
-            {secondary.map((p) => (
+            {secondary.map((p, i) => (
               <li key={p.id}>
-                <Link href={p.href} className="group club-row -mx-2 flex items-start justify-between gap-4 rounded-lg px-2 py-3">
-                  <div className="min-w-0">
+                <Link href={p.href} className="group club-row -mx-2 flex items-center gap-3 rounded-lg px-2 py-3">
+                  <Thumb series={seriesFor(i + 1)} tone={i % 2 ? "volt" : "teal"} size={46} />
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       {p.ticker && <span className="font-mono text-[11px] font-bold text-soft">{p.ticker}</span>}
-                      <h4 className="truncate font-semibold text-ink group-hover:text-volt-700">{p.title}</h4>
+                      <h5 className="truncate font-semibold text-ink group-hover:text-volt-700">{p.title}</h5>
                     </div>
-                    <div className="mt-1"><Byline p={p} /></div>
+                    <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <Byline p={p} />
+                      <Metrics p={p} size="xs" />
+                    </div>
                   </div>
-                  <div className="shrink-0 pt-0.5"><Metrics p={p} size="xs" /></div>
                 </Link>
               </li>
             ))}
           </ol>
+
+          <Link
+            href="/community"
+            className="mt-3 inline-block text-[13px] font-semibold text-volt-700 hover:text-volt-800"
+          >
+            View all top research →
+          </Link>
         </>
       ) : (
-        <div className="mt-3 rounded-2xl border border-dashed border-sand bg-card/60 p-6 text-center">
+        <div className="mt-4 rounded-2xl border border-dashed border-sand bg-paper/50 p-6 text-center">
           <PenLine className="mx-auto h-6 w-6 text-volt-600" />
           <p className="mt-2 font-display text-base font-bold text-ink">The first great idea is yours to write.</p>
           <p className="mt-1 text-sm text-soft">
             Publish your research and it leads this space — founding thinking shapes the whole Club.
           </p>
-          <Link
-            href="/community"
-            className="cta-button mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
-          >
+          <Link href="/community" className="cta-button mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm">
             Share your research
           </Link>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

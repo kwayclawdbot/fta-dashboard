@@ -190,6 +190,166 @@ export function Spark({
   );
 }
 
+/* ── Card — the mock's white panel: warm off-white, hairline sand border, soft
+   shadow, rounded. The owner ratified these contained data objects as the in-app
+   nuance of the no-generic-cards rule (mock = full spec). ──────────────────── */
+export function Card({
+  children,
+  className = "",
+  as: As = "section",
+  ...rest
+}: {
+  children: React.ReactNode;
+  className?: string;
+  as?: React.ElementType;
+} & React.HTMLAttributes<HTMLElement>) {
+  return (
+    <As
+      className={`rounded-2xl border border-sand bg-card p-5 shadow-soft ${className}`}
+      {...rest}
+    >
+      {children}
+    </As>
+  );
+}
+
+/* ── Card header — bold dark title + optional badge + optional right action.
+   The mock's per-card masthead (not the uppercase editorial eyebrow). ──────── */
+export function CardHead({
+  title,
+  badge,
+  action,
+  icon,
+  className = "",
+}: {
+  title: React.ReactNode;
+  badge?: React.ReactNode;
+  action?: React.ReactNode;
+  icon?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center justify-between gap-3 ${className}`}>
+      <div className="flex min-w-0 items-center gap-2">
+        {icon}
+        <h3 className="truncate font-display text-[15px] font-extrabold tracking-tight text-ink">
+          {title}
+        </h3>
+        {badge}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/* ── Badge — the mock's status pills (LIVE teal · LIVE POLL red · Editor's pick
+   volt · neutral). Small caps, dot for the live variants. ──────────────────── */
+export function Badge({
+  children,
+  tone = "neutral",
+  dot = false,
+}: {
+  children: React.ReactNode;
+  tone?: "live" | "poll" | "pick" | "kai" | "neutral";
+  dot?: boolean;
+}) {
+  const map = {
+    live: "bg-teal-400/12 text-teal-700",
+    poll: "bg-red-500/12 text-red-600",
+    pick: "bg-volt-500/12 text-volt-700",
+    kai: "bg-kai-500/12 text-kai-600",
+    neutral: "bg-sand/70 text-soft",
+  } as const;
+  const dotColor = tone === "live" ? "bg-teal-400" : tone === "poll" ? "bg-red-500" : "bg-volt-500";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${map[tone]}`}
+    >
+      {dot && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className={`absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-70 motion-safe:animate-ping`} />
+          <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${dotColor}`} />
+        </span>
+      )}
+      {children}
+    </span>
+  );
+}
+
+/* ── Donut — the mock's Debate chart. Two-segment ring (yes teal → no volt) with
+   a draw-in sweep; reduced-motion safe. Pure SVG, no deps. ──────────────────── */
+export function Donut({
+  yesPct,
+  size = 128,
+  stroke = 18,
+}: {
+  yesPct: number;
+  size?: number;
+  stroke?: number;
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const yes = Math.max(0, Math.min(100, yesPct));
+  const yesLen = (yes / 100) * c;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden className="club-donut -rotate-90">
+      {/* No segment = full ring in volt (under) */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--color-volt-500)"
+        strokeWidth={stroke}
+      />
+      {/* Yes segment = teal arc on top */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="var(--color-teal-400)"
+        strokeWidth={stroke}
+        strokeDasharray={`${yesLen} ${c}`}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/* ── Thumb — self-contained "chart thumbnail" for Best Thinking (no external
+   images: a dark island tile + an on-brand mini sparkline). ─────────────────── */
+export function Thumb({
+  series,
+  tone = "volt",
+  size = 60,
+  className = "",
+}: {
+  series: number[];
+  tone?: "volt" | "teal";
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-xl ${className}`}
+      style={{ width: size, height: size, background: "linear-gradient(150deg,#0B1220 0%,#101A2E 60%,#0A2320 100%)" }}
+      aria-hidden
+    >
+      <div className="absolute inset-0 grid place-items-center px-1.5">
+        <Spark series={series} tone={tone} width={size - 12} height={size - 24} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Follower-count formatter — compact (24.1K, 1.2M). Fixture/at-scale only. ── */
+export function formatFollowers(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `${n}`;
+}
+
 /* ── Change delta chip — mono, arrow, VIVID green up / red down. ──────────── */
 export function Delta({ value, suffix = "" }: { value: number; suffix?: string }) {
   const up = value > 0;

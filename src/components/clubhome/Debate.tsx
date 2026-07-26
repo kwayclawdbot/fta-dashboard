@@ -2,21 +2,21 @@
 
 import { useState } from "react";
 import Avatar from "@/components/Avatar";
-import { SectionLabel, clubFeedback } from "./parts";
+import { Card, CardHead, Badge, Donut, clubFeedback } from "./parts";
 import { postDebateVote } from "@/lib/clubhome/client";
 import type { DebateResponse } from "@/lib/clubhome/contract";
 
 /**
- * §8 The Debate — one live question with a YES/NO split BAR (a horizontal
- * segmented bar, not a donut — it fits the editorial language better). Yes =
- * teal (Club sentiment), No = neutral slate (volt stays reserved for action).
- * Vote counts are scale-aware; below floor it's an "early voice" moment. After
- * voting: "Your view was added to Club Sentiment." Kid-walled upstream.
+ * §8 The Debate — one live question with the mock's DONUT split (Yes = teal Club
+ * sentiment, No = volt), flanked by the two legends. Vote counts are scale-aware;
+ * below floor it's an "early voice" moment. The primary CTA opens the Yes/No
+ * vote; after voting: "Your view was added to Club Sentiment." Kid-walled upstream.
  */
 
 export default function Debate({ debate }: { debate: DebateResponse | null }) {
   const [counts, setCounts] = useState(debate?.counts ?? { yes: 0, no: 0 });
   const [userVote, setUserVote] = useState<"yes" | "no" | null>(debate?.userVote ?? null);
+  const [voting, setVoting] = useState(false);
   const [pending, setPending] = useState(false);
 
   if (!debate) return null;
@@ -29,7 +29,6 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
   async function vote(choice: "yes" | "no") {
     if (userVote || pending) return;
     setPending(true);
-    // optimistic
     setUserVote(choice);
     setCounts((c) => ({ ...c, [choice]: c[choice] + 1 }));
     clubFeedback.voted();
@@ -39,51 +38,70 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
   }
 
   return (
-    <section aria-label="The Debate" className="club-field-teal rounded-2xl p-5 sm:p-6">
-      <SectionLabel tone="teal" live liveTone="teal">
-        The Debate
-      </SectionLabel>
+    <Card aria-label="The Debate">
+      <CardHead title="The Debate" badge={<Badge tone="poll" dot>Live Poll</Badge>} />
 
-      <h3 className="mt-3 font-display text-xl font-extrabold leading-snug tracking-tight text-ink">
+      <h4 className="mt-3 font-display text-lg font-extrabold leading-snug tracking-tight text-ink">
         {debate.question}
-      </h3>
+      </h4>
       <p className="mt-1 text-[13px] text-soft">
-        {floorMet
-          ? `${total.toLocaleString()} votes so far`
-          : "Be an early voice — the first votes set the tone."}
+        {floorMet ? `${total.toLocaleString()} votes` : "Be an early voice — the first votes set the tone."}
       </p>
 
-      {/* split bar */}
-      <div className="mt-4">
-        <div className="flex h-11 w-full overflow-hidden rounded-xl">
-          <div
-            className="club-bar-teal flex items-center justify-start pl-3 text-sm font-bold text-white transition-all duration-500"
-            style={{ width: `${yesPct}%` }}
-          >
-            {yesPct >= 18 && `Yes ${yesPct}%`}
+      {/* donut + flanking legends */}
+      <div className="mt-4 flex items-center justify-center gap-4">
+        <div className="min-w-0 text-right">
+          <div className="inline-flex items-center gap-1.5 font-display text-2xl font-extrabold text-ink">
+            <span className="h-2.5 w-2.5 rounded-full bg-teal-400" aria-hidden />
+            {yesPct}%
           </div>
-          <div
-            className="flex items-center justify-end bg-midnight-300 pr-3 text-sm font-bold text-card transition-all duration-500"
-            style={{ width: `${noPct}%` }}
-          >
-            {noPct >= 18 && `No ${noPct}%`}
-          </div>
+          <p className="text-[12px] font-semibold text-teal-700">Yes</p>
+          {floorMet && (
+            <p className="font-mono text-[11px] tabular-nums text-soft">{counts.yes.toLocaleString()} votes</p>
+          )}
         </div>
-        {floorMet && (
-          <div className="mt-1.5 flex justify-between font-mono text-[11px] tabular-nums text-soft">
-            <span>{counts.yes.toLocaleString()} yes</span>
-            <span>{counts.no.toLocaleString()} no</span>
+
+        <div className="relative shrink-0">
+          <Donut yesPct={yesPct} size={116} stroke={17} />
+        </div>
+
+        <div className="min-w-0 text-left">
+          <div className="inline-flex items-center gap-1.5 font-display text-2xl font-extrabold text-ink">
+            <span className="h-2.5 w-2.5 rounded-full bg-volt-500" aria-hidden />
+            {noPct}%
           </div>
-        )}
+          <p className="text-[12px] font-semibold text-volt-700">No</p>
+          {floorMet && (
+            <p className="font-mono text-[11px] tabular-nums text-soft">{counts.no.toLocaleString()} votes</p>
+          )}
+        </div>
       </div>
 
-      {/* vote / result */}
+      {/* footer: participants + action */}
       {userVote ? (
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-teal-700">
-            Your view was added to Club Sentiment.
-          </p>
-          {debate.participants.length > 0 && (
+        <p className="mt-5 text-center text-sm font-semibold text-teal-700">
+          Your view was added to Club Sentiment.
+        </p>
+      ) : voting ? (
+        <div className="mt-5 flex gap-2">
+          <button
+            onClick={() => vote("yes")}
+            disabled={pending}
+            className="flex-1 rounded-xl bg-teal-500 py-2.5 text-sm font-bold text-white transition-transform hover:bg-teal-600 active:scale-[0.98] disabled:opacity-60"
+          >
+            Vote Yes
+          </button>
+          <button
+            onClick={() => vote("no")}
+            disabled={pending}
+            className="flex-1 rounded-xl bg-volt-500 py-2.5 text-sm font-bold text-white transition-transform hover:bg-volt-600 active:scale-[0.98] disabled:opacity-60"
+          >
+            Vote No
+          </button>
+        </div>
+      ) : (
+        <div className="mt-5 flex items-center justify-between gap-3">
+          {debate.participants.length > 0 ? (
             <div className="flex items-center">
               <div className="flex -space-x-2">
                 {debate.participants.slice(0, 4).map((p) => (
@@ -96,26 +114,17 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
                 </span>
               )}
             </div>
+          ) : (
+            <span />
           )}
-        </div>
-      ) : (
-        <div className="mt-4 flex gap-2">
           <button
-            onClick={() => vote("yes")}
-            disabled={pending}
-            className="flex-1 rounded-xl bg-teal-500 py-2.5 text-sm font-bold text-white transition-transform hover:bg-teal-600 active:scale-[0.98] disabled:opacity-60"
+            onClick={() => setVoting(true)}
+            className="rounded-xl border border-sand bg-card px-4 py-2.5 text-sm font-bold text-ink transition-colors hover:border-volt-400 hover:text-volt-700 active:scale-[0.98]"
           >
-            Vote Yes
-          </button>
-          <button
-            onClick={() => vote("no")}
-            disabled={pending}
-            className="flex-1 rounded-xl border border-sand bg-card py-2.5 text-sm font-bold text-ink transition-transform hover:border-midnight-300 active:scale-[0.98] disabled:opacity-60"
-          >
-            Vote No
+            Join the debate
           </button>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
