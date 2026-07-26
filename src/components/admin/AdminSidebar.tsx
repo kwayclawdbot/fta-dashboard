@@ -23,6 +23,7 @@ import {
   Activity,
   MailPlus,
   Flame,
+  GraduationCap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -70,6 +71,7 @@ const sections: AdminNavSection[] = [
       { label: "This Week (FIC)", href: "/admin/fic-weeks", icon: CalendarRange },
       { label: "Community Watchlist", href: "/admin/community-watchlist", icon: Gem },
       { label: "Courses", href: "/admin/courses", icon: BookOpen },
+      { label: "Learn Drafts", href: "/admin/learn-drafts", icon: GraduationCap },
       { label: "Coach Demos", href: "/admin/coach-demos", icon: Clapperboard },
       { label: "Live Sessions", href: "/admin/live-sessions", icon: Video },
     ],
