@@ -1,0 +1,22 @@
+{
+  "character": "Kai",
+  "description": "Canonical chrome-blue robot companion mascot: over-ear headphones, dark glossy screen face with glowing cyan eyes, CC shield chest emblem, volt-orange + teal joint accents. One identity, three intensity registers (expressive / standard / restrained) per CINEMATIC-LAYER-PLAN.md §1.",
+  "format": "webp, transparent background (RGBA)",
+  "generator": "Higgsfield Nano Banana Pro (nano_banana_2), reference-locked to watchful.webp for identity consistency; keyed to transparency locally",
+  "basePath": "/assets/kai",
+  "fullBodyHeightPx": 1024,
+  "poses": [
+    { "id": "watchful", "file": "watchful.webp", "intensity": "standard", "use": "DEFAULT pose. Kai Watch header ('Kai is watching N things for you'), calm analyst-at-desk energy, general standard Club surfaces." },
+    { "id": "teaching", "file": "teaching.webp", "intensity": "expressive", "use": "Lesson guide (Learning World), onboarding step explainers, Kai Daily 'presenting' banner, concept intros." },
+    { "id": "celebrating", "file": "celebrating.webp", "intensity": "expressive", "use": "Correct-answer / belt-earned / streak / challenge-win moments, lesson completion, XP cinematics." },
+    { "id": "thinking", "file": "thinking.webp", "intensity": "standard", "use": "Loading / analyzing states, 'Kai is thinking', prediction suspense, quiz-in-progress." },
+    { "id": "resting", "file": "resting.webp", "intensity": "restrained", "use": "Empty / degraded / offline states: 'Kai is temporarily unavailable' — failure still feels like a companion." },
+    { "id": "pointing", "file": "pointing.webp", "intensity": "expressive", "use": "Directing attention / call-to-action, 'Make your first move', pointing to a ticker or next step." },
+    { "id": "focused", "file": "focused.webp", "intensity": "standard", "use": "Kai's-read / analysis contexts, alert detail 'Kai's read', reviewing a chart or tablet." },
+    { "id": "alarmed", "file": "alarmed.webp", "intensity": "standard", "use": "Alert / Near-Trigger states, unusual-volume flags, 'heads up' watch notifications (urgent but friendly)." },
+    { "id": "waving", "file": "waving.webp", "intensity": "expressive", "use": "Greeting / welcome — onboarding step 1, first-run welcome, splash companion, family household welcome." },
+    { "id": "thumbsup", "file": "thumbsup.webp", "intensity": "expressive", "use": "Approval / confirmation / 'nice work' micro-reactions, positive feedback on submissions." },
+    { "id": "laughing", "file": "laughing.webp", "intensity": "expressive", "use": "Kid-expressive delight — kid surfaces, playful reactions, fun reveals (kids register only)." },
+    { "id": "avatar", "file": "avatar.webp", "intensity": "restrained", "use": "Small static avatar / badge crop (512x512, centered bust). Kai sheet trigger + FAB, alert-author byline, dense data UI where a full illustration is banned." }
+  ]
+}

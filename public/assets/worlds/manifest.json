@@ -1,0 +1,14 @@
+{
+  "description": "Per-world hero scene art for the FIC Learning World (5 worlds). Warm brand register (sand base, volt/teal/Kai-blue accents), kid-friendly but premium, no people, no real brand logos. Adult surfaces are expected to tone/crop these. Per FIC-LEARNING-WORLD.md §5.",
+  "format": "webp, 1600x893 (16:9), opaque",
+  "generator": "Higgsfield Nano Banana Pro (nano_banana_2), shared style preamble for one cohesive system",
+  "basePath": "/assets/worlds",
+  "perfNote": "All <=120KB per hero (CINEMATIC-LAYER-PLAN §3 guardrail). Lazy-load below LCP; use blur-up LQIP.",
+  "worlds": [
+    { "slug": "own-the-company", "file": "own-the-company.webp", "world": "Own the Company", "scene": "Stylized miniature city of generic business types (coffee shop, tech tower, sneaker boutique, media studio, grocery) with ownership sparkles. Note: contains one small diegetic 'STUDIO' sign (generic word, not a brand)." },
+    { "slug": "follow-the-money", "file": "follow-the-money.webp", "world": "Follow the Money", "scene": "Golden light/coin streams flowing through channels between buildings — how money moves through a business." },
+    { "slug": "find-great-businesses", "file": "find-great-businesses.webp", "world": "Find Great Businesses", "scene": "Castle company on an island ringed by a glowing teal moat — the competitive-advantage 'moat' metaphor." },
+    { "slug": "build-a-portfolio", "file": "build-a-portfolio.webp", "world": "Build a Portfolio", "scene": "Aerial map of color-coded sector neighborhoods (tech / food / healthcare / energy / finance) connected by roads — diversification." },
+    { "slug": "think-like-an-investor", "file": "think-like-an-investor.webp", "world": "Think Like an Investor", "scene": "Serene market mountain with a winding path to a glowing summit through clouds — the patient long-term journey." }
+  ]
+}

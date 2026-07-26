@@ -1,0 +1,45 @@
+{
+  "description": "Rendered pilot micro-videos for the FIC Learning World, produced from the parametrized Remotion templates in /fta-remotion. Silent (text-on-screen; no voiceover per pilot decision). Real, verifiable public figures used. Per FIC-LEARNING-WORLD.md §6 + CINEMATIC-LAYER-PLAN.md.",
+  "basePath": "/assets/lessons",
+  "source": "fta-remotion/ (Remotion 4.0.499). Re-render: cd fta-remotion && npm i && npm run render:concept:v etc.",
+  "templates": [
+    {
+      "template": "ConceptExplainer",
+      "component": "fta-remotion/src/ConceptExplainer.tsx",
+      "props": ["title", "definition", "exampleCompany", "exampleTicker", "exampleValuePrefix", "exampleValueNumber", "exampleValueSuffix", "exampleNote", "glow"],
+      "structure": "animated headline -> definition -> illustrated flow (Customers -> Company -> Revenue) -> ticker chip + big count-up stat -> branded outro",
+      "durationSec": 30,
+      "fps": 30
+    },
+    {
+      "template": "AnswerReveal",
+      "component": "fta-remotion/src/AnswerReveal.tsx",
+      "props": ["company", "ticker", "setup", "question", "answer", "moveValuePrefix", "moveValueNumber", "moveValueSuffix", "moveNote", "why", "glow"],
+      "structure": "setup -> question + UP/DOWN prediction chips -> animated reveal (arrow + count-up move) -> why-it-moved + brand footer",
+      "durationSec": 20,
+      "fps": 30
+    }
+  ],
+  "pilots": [
+    {
+      "id": "concept-what-is-revenue",
+      "template": "ConceptExplainer",
+      "topic": "What is Revenue?",
+      "data": "Apple (AAPL) total revenue $383.3B, fiscal year 2023 — real public figure.",
+      "files": {
+        "vertical": "concept-revenue-1080x1920.mp4",
+        "wide": "concept-revenue-1920x1080.mp4"
+      }
+    },
+    {
+      "id": "reveal-meta-earnings",
+      "template": "AnswerReveal",
+      "topic": "Prediction reveal: Meta Q4 2023 earnings reaction",
+      "data": "META rose +20.3% on Feb 2, 2024 — record ~$196B single-day market-value gain — real public figure.",
+      "files": {
+        "vertical": "reveal-meta-1080x1920.mp4",
+        "wide": "reveal-meta-1920x1080.mp4"
+      }
+    }
+  ]
+}

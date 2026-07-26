@@ -1,0 +1,25 @@
+{
+  "name": "fta-remotion",
+  "version": "1.0.0",
+  "description": "FIC Learning World micro-video templates (Remotion) — Concept Explainer + Answer Reveal",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render",
+    "render:concept:v": "remotion render concept-revenue-vertical out/concept-revenue-1080x1920.mp4",
+    "render:concept:w": "remotion render concept-revenue-wide out/concept-revenue-1920x1080.mp4",
+    "render:reveal:v": "remotion render reveal-meta-vertical out/reveal-meta-1080x1920.mp4",
+    "render:reveal:w": "remotion render reveal-meta-wide out/reveal-meta-1920x1080.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.499",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.499",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "typescript": "5.9.3"
+  }
+}
