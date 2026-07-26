@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { m } from "@/lib/motion";
 import {
   ArrowLeft,
@@ -20,6 +20,7 @@ import {
   HelpCircle,
   ChevronRight,
   TrendingUp,
+  FileText,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -54,6 +55,11 @@ import {
   contributionMeta,
   type ContributionType,
 } from "@/lib/research/social";
+import TickerDebate from "@/components/social/TickerDebate";
+import ChangedMyMind from "@/components/social/ChangedMyMind";
+import ResearchObjectCard from "@/components/social/ResearchObjectCard";
+import ResearchObjectCompose from "@/components/social/ResearchObjectCompose";
+import { fetchTickerTheses, type ResearchObjectCard as ThesisCard } from "@/lib/social/research-object";
 import {
   pctSinceAdded,
   formatPct,
@@ -240,6 +246,7 @@ export default function ResearchClient({
   initialResearch?: ResearchPayload | null;
 }) {
   const supabase = createClient();
+  const router = useRouter();
   const params = useParams<{ ticker: string }>();
   const ticker = (params?.ticker || "").toString().toUpperCase();
 
@@ -268,6 +275,8 @@ export default function ResearchClient({
   const [filter, setFilter] = useState<string>("all");
   const [posting, setPosting] = useState(false);
   const [err, setErr] = useState("");
+  const [theses, setTheses] = useState<ThesisCard[]>([]);
+  const [showCompose, setShowCompose] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ResearchTabKey>(() => resolveInitialTab());
   const [back, setBack] = useState<BackTarget>(BACK_DEFAULT);
@@ -377,6 +386,9 @@ export default function ResearchClient({
     supabase
       .rpc("get_latest_kai_report", { p_ticker: ticker })
       .then(({ data: rep }) => setReport((rep as KaiReport) ?? null), swallow);
+
+    // Research Objects (structured theses) for this ticker (SOCIAL OBJECTS S1).
+    fetchTickerTheses(supabase, ticker).then(setTheses, swallow);
 
     // Eager: hero + Overview data. Charts (bars) and News fetch lazily per-tab.
     // Both helpers already swallow errors (return null); mark research resolved
@@ -738,6 +750,72 @@ export default function ResearchClient({
 
         {activeTab === "community" && (
           <div className="space-y-5">
+            {/* SOCIAL OBJECTS S1 — per-ticker debate (kid-walled in the RPC → renders
+                nothing for kids or tickers without a debate). */}
+            <TickerDebate
+              supabase={supabase}
+              ticker={ticker}
+              userId={userId}
+              canParticipate={canVote && !isKid}
+            />
+
+            {/* Changed My Mind — the member's stance + flip flow (kid-walled) + the
+                club's recent "changed their mind" moments. */}
+            {!isKid && (
+              <section className="rounded-2xl border border-sand bg-card p-5">
+                <ChangedMyMind
+                  supabase={supabase}
+                  ticker={ticker}
+                  userId={userId}
+                  canFlip={canVote && !isKid}
+                />
+              </section>
+            )}
+
+            {/* Research Objects (structured theses) for this ticker + the ONE
+                gated publish entry point (TODO(gate:research_publish) lives in the
+                composer + API route). Kids never see the composer. */}
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
+                  Theses on {ticker}
+                </h2>
+                {canVote && !isKid && !showCompose && (
+                  <button
+                    onClick={() => setShowCompose(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-gold-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-gold-600"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> Publish a thesis
+                  </button>
+                )}
+              </div>
+              {showCompose && (
+                <ResearchObjectCompose
+                  ticker={ticker}
+                  companyName={companyName}
+                  onCancel={() => setShowCompose(false)}
+                  onPublished={(id) => {
+                    setShowCompose(false);
+                    fetchTickerTheses(supabase, ticker).then(setTheses, () => {});
+                    router.push(`/research/thesis/${id}`);
+                  }}
+                />
+              )}
+              {theses.length > 0 ? (
+                <div className="space-y-2.5">
+                  {theses.map((t) => (
+                    <ResearchObjectCard key={t.id} obj={t} currentPrice={quote?.price ?? null} />
+                  ))}
+                </div>
+              ) : (
+                !showCompose && (
+                  <p className="rounded-xl border border-dashed border-sand px-3 py-5 text-center text-sm text-soft">
+                    No published theses yet{canVote && !isKid ? " — publish the first structured thesis for the club." : "."}
+                  </p>
+                )
+              )}
+            </section>
+
             {/* Admin thesis (if this is an "our research" pick) */}
             {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
               <section className="rounded-2xl border border-gold-300/40 bg-chip-amber/20 p-5">

@@ -17,7 +17,7 @@ import LiveRooms, { type LiveRoomsMe } from "@/components/community/LiveRooms";
 export default function ClubChatDrawer({
   me,
   tier,
-  label = "Club Chat",
+  label = "Main Circle",
 }: {
   me: LiveRoomsMe | null;
   tier: FamilyTier;
@@ -31,7 +31,7 @@ export default function ClubChatDrawer({
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Open Club Chat"
+          aria-label="Open Main Circle"
           className="fixed z-40 bottom-20 right-4 md:bottom-6 md:right-6 inline-flex items-center gap-2 rounded-full bg-gold-500 pl-3.5 pr-4 py-3 text-white font-display text-sm font-semibold shadow-[0_6px_20px_rgba(245,158,11,0.4)] hover:bg-gold-600 transition-colors"
         >
           <MessageCircle className="w-5 h-5" strokeWidth={2.2} />
@@ -62,7 +62,7 @@ export default function ClubChatDrawer({
                 </span>
                 <button
                   onClick={() => setOpen(false)}
-                  aria-label="Close Club Chat"
+                  aria-label="Close Main Circle"
                   className="text-soft hover:text-ink transition-colors"
                 >
                   <X className="w-5 h-5" />

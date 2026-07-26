@@ -255,8 +255,8 @@ function buildSteps(u: TourUser, framing: Framing): TourStep[] {
       title: pick("The clubhouse", "The Community feed", "The Community feed"),
       body: pick(
         "Share what you find and cheer for other families. That big button in the middle is always here.",
-        "Where the club talks all week — post picks with live data attached, cheer other families, and open Club Chat around class time.",
-        "The heart of the club — a full-width feed for wins and picks, plus a Club Chat drawer that slides in around class time."
+        "Where the club talks all week — post picks with live data attached, cheer other families, and open Main Circle around class time.",
+        "The heart of the club — a full-width feed for wins and picks, plus a Main Circle chat drawer that slides in around class time."
       ),
     },
     watchlist: {

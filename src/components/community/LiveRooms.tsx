@@ -24,7 +24,7 @@ interface Room {
   id: string;
   name: string;
 }
-const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "Members Club" };
+const FIC_ROOM: Room = { id: FIC_ROOM_ID, name: "Main Circle" };
 const FREE_LOUNGE: Room = { id: FREE_LOUNGE_ROOM_ID, name: "Free Lounge" };
 
 /**
@@ -66,7 +66,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
             </span>
             <h3 className="font-display text-sm font-bold text-ink flex items-center gap-1.5">
-              <Radio className="w-4 h-4 text-gold-600" /> Club Chat
+              <Radio className="w-4 h-4 text-gold-600" /> Main Circle
             </h3>
           </div>
           <p className="text-[11px] text-soft mt-0.5">
@@ -107,7 +107,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
           {tier === "free" && (
             <p className="text-[11px] text-soft/80 mt-1.5">
               <Lock className="inline w-3 h-3 -mt-0.5 mr-0.5" />
-              Members Club is the members&apos; room —{" "}
+              Main Circle is the members&apos; room —{" "}
               <Link href="/upgrade" className="text-gold-700 font-semibold">
                 join the Club
               </Link>{" "}
