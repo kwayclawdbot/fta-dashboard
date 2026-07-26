@@ -9,7 +9,7 @@ import { deriveRegister } from "@/lib/register";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
-import LiveEventCard, { LiveNowStrip } from "@/components/clubhome/LiveEventCard";
+import { LiveEventCard, LiveNowStrip } from "@/components/live";
 import CommunityClient from "./CommunityClient";
 import LiveRooms from "@/components/community/LiveRooms";
 import ClubLiveTab from "./ClubLiveTab";
@@ -44,8 +44,12 @@ export default function ClubModeShell({
   demoEvents?: boolean;
 }) {
   const searchParams = useSearchParams();
+  // Go-live deep-link (/club?live={id} → /community?mode=live&live={id}): the
+  // push lands here and opens the Live tab focused on that room.
+  const liveParam = searchParams.get("live");
   const initialMode = ((): Mode => {
     const m = searchParams.get("mode");
+    if (liveParam) return "live";
     return m === "lounge" || m === "live" ? m : "feed";
   })();
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -207,7 +211,7 @@ export default function ClubModeShell({
         </div>
       )}
 
-      {mode === "live" && showLive && <ClubLiveTab events={events} />}
+      {mode === "live" && showLive && <ClubLiveTab events={events} focusId={liveParam} />}
     </div>
   );
 }

@@ -1,21 +1,54 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Radio, CalendarClock, History } from "lucide-react";
 import { EditorialSection } from "@/components/grammar";
-import LiveEventCard from "@/components/clubhome/LiveEventCard";
+import { LiveEventCard } from "@/components/live";
 import type { LiveEvent } from "@/lib/clubhome/live-events";
 
 /**
  * The Club · Live — the room list. One infrastructure, three states: what's on
  * the air now, what's scheduled, and recent replays. Built from the grammar:
  * editorial section framing on the sand canvas, live_event ObjectCards for the
- * rooms themselves. Empty until the S2.5 backend lands (the endpoint 404s → []),
+ * rooms themselves. Empty until real rooms run (GET /api/live degrades to []),
  * so it degrades to a calm founding state, never a fabricated room.
+ *
+ * `focusId` is the go-live deep-link target (/club?live={id} → /community?mode=
+ * live&live={id}): the matching room scrolls into view and pulses briefly.
  */
-export default function ClubLiveTab({ events }: { events: LiveEvent[] }) {
+export default function ClubLiveTab({
+  events,
+  focusId = null,
+}: {
+  events: LiveEvent[];
+  focusId?: string | null;
+}) {
   const live = events.filter((e) => e.status === "live" || e.status === "starting_soon");
   const scheduled = events.filter((e) => e.status === "scheduled");
   const replays = events.filter((e) => e.status === "replay_ready" || e.status === "ended");
+
+  const focusRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!focusId) return;
+    const el = focusRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-volt-500", "ring-offset-2", "ring-offset-paper", "rounded-2xl");
+    const t = setTimeout(() => {
+      el.classList.remove("ring-2", "ring-volt-500", "ring-offset-2", "ring-offset-paper");
+    }, 2600);
+    return () => clearTimeout(t);
+  }, [focusId, events.length]);
+
+  // Wrap the deep-link target so it can be scrolled to / highlighted.
+  const renderCard = (e: LiveEvent) =>
+    e.id === focusId ? (
+      <div key={e.id} ref={focusRef} className="transition-shadow">
+        <LiveEventCard event={e} />
+      </div>
+    ) : (
+      <LiveEventCard key={e.id} event={e} />
+    );
 
   if (events.length === 0) {
     return (
@@ -39,9 +72,7 @@ export default function ClubLiveTab({ events }: { events: LiveEvent[] }) {
       {live.length > 0 && (
         <EditorialSection title="On the air">
           <div className="grid gap-4 sm:grid-cols-2">
-            {live.map((e) => (
-              <LiveEventCard key={e.id} event={e} />
-            ))}
+            {live.map(renderCard)}
           </div>
         </EditorialSection>
       )}
@@ -52,9 +83,7 @@ export default function ClubLiveTab({ events }: { events: LiveEvent[] }) {
           divide={live.length > 0}
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            {scheduled.map((e) => (
-              <LiveEventCard key={e.id} event={e} />
-            ))}
+            {scheduled.map(renderCard)}
           </div>
         </EditorialSection>
       )}
@@ -65,9 +94,7 @@ export default function ClubLiveTab({ events }: { events: LiveEvent[] }) {
           divide={live.length > 0 || scheduled.length > 0}
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            {replays.map((e) => (
-              <LiveEventCard key={e.id} event={e} />
-            ))}
+            {replays.map(renderCard)}
           </div>
         </EditorialSection>
       )}

@@ -18,7 +18,7 @@ import BestThinking from "./BestThinking";
 import Debate from "./Debate";
 import ForYou from "./ForYou";
 import People from "./People";
-import LiveEventCard, { LiveNowStrip } from "./LiveEventCard";
+import { LiveEventCard, LiveNowStrip } from "@/components/live";
 
 /**
  * ClubHome v2 — CONVERGENCE S2 hierarchy pass. Keeps v3's owner-approved content

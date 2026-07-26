@@ -4,51 +4,29 @@
  * live_event — the S2.5 first-class object, consumed by S2 surfaces (Home Pulse
  * tier, The Club's Feed + Live tab + LIVE NOW strip).
  *
- * The BACKEND + the canonical <LiveEventCard/> are built by the parallel S2.5
- * lane under /api/live/** + src/components/live/**. Until that lands this module
- * is the S2 stub: the exact props contract from the convergence brief, a
- * graceful data hook (the live endpoint 404s today → [] , never an error), and
- * preview fixtures so design review can SEE the LIVE NOW strip and live cards.
- *
- * ON FINAL REBASE: if src/components/live/LiveEventCard exists, swap the S2
- * imports to it and delete the local card; the shapes are identical so the
- * surfaces don't change.
+ * The backend + the canonical <LiveEventCard/> ship in the S2.5 lane under
+ * /api/live/** + src/components/live/**. This module is the S2-side DATA layer
+ * for those surfaces: it re-exports the shared props contract (LiveEventCardData
+ * from @/lib/live/types), a graceful data hook against GET /api/live (degrades to
+ * [] on any non-200 — never an error, never a fabricated room), and preview
+ * fixtures so the /club/preview + ?events=demo harnesses can SEE the LIVE NOW
+ * strip and live cards before real rooms run.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fixturesAllowed } from "./client";
 import type { ClubScale } from "./contract";
+import type {
+  LiveEventCardData,
+  LiveEventStatus,
+  LiveRoomType,
+} from "@/lib/live/types";
 
-export type LiveEventStatus =
-  | "scheduled"
-  | "starting_soon"
-  | "live"
-  | "ended"
-  | "replay_ready";
-export type LiveRoomType = "audio" | "market" | "class";
-
-export interface LiveEventHost {
-  name: string;
-  avatarUrl?: string | null;
-}
-
-/** The exact props contract handed down for the S2.5 live_event object. */
-export interface LiveEvent {
-  id: string;
-  status: LiveEventStatus;
-  room_type: LiveRoomType;
-  title: string;
-  description?: string | null;
-  tickers: string[];
-  host: LiveEventHost;
-  viewer_count: number;
-  interested_count: number;
-  starts_at: string | null;
-  ended_at?: string | null;
-  duration_min?: number | null;
-  join_url?: string | null;
-  replay_url?: string | null;
-}
+// Re-exported so existing S2 imports (`import type { LiveEvent } from
+// "@/lib/clubhome/live-events"`) keep resolving to the canonical shape.
+export type { LiveEventStatus, LiveRoomType };
+/** The live_event props contract — an alias to the canonical LiveEventCardData. */
+export type LiveEvent = LiveEventCardData;
 
 /** A room is "on the air" (urgent) when live or just about to start. */
 export function isEventUrgent(e: LiveEvent): boolean {
@@ -80,9 +58,13 @@ function fixtureEvents(scale: ClubScale): LiveEvent[] {
     viewer_count: scale === "founding" ? 9 : 214,
     interested_count: scale === "founding" ? 14 : 512,
     starts_at: inMin(-12),
+    ended_at: null,
     duration_min: null,
     join_url: "/live-sessions",
     replay_url: null,
+    interested: false,
+    kai_summary: null,
+    top_questions: [],
   };
   const soon: LiveEvent = {
     id: "le-soon-1",
@@ -95,9 +77,13 @@ function fixtureEvents(scale: ClubScale): LiveEvent[] {
     viewer_count: 0,
     interested_count: scale === "founding" ? 8 : 112,
     starts_at: inMin(24),
+    ended_at: null,
     duration_min: 45,
     join_url: "/live-sessions",
     replay_url: null,
+    interested: false,
+    kai_summary: null,
+    top_questions: [],
   };
   const replay: LiveEvent = {
     id: "le-replay-1",
@@ -114,6 +100,10 @@ function fixtureEvents(scale: ClubScale): LiveEvent[] {
     duration_min: 52,
     join_url: null,
     replay_url: "/fta/recordings",
+    interested: false,
+    kai_summary:
+      "Powell held rates; the tape faded the knee-jerk pop and reclaimed the range. Focus stayed on rate-sensitive names.",
+    top_questions: [{ q: "Is the range still valid into Friday?", count: 7 }],
   };
   return scale === "founding" ? [soon, replay] : [live, soon, replay];
 }
@@ -123,11 +113,19 @@ export interface UseLiveEventsOptions {
   scale?: ClubScale;
 }
 
+/** The shape returned by GET /api/live (S2.5 backend). */
+interface LiveListResponse {
+  live?: LiveEvent[];
+  upcoming?: LiveEvent[];
+  replays?: LiveEvent[];
+}
+
 /**
  * Load the Club's live_events. Fixtures short-circuit for design review; live
- * mode hits the (S2.5-owned) endpoint and degrades to [] on any non-200 so the
- * surfaces render nothing until the backend lands — never an error, never a
- * fabricated room.
+ * mode hits GET /api/live (member-readable) and flattens {live, upcoming,
+ * replays} into one ordered stream. Any non-200 (e.g. 401 for a signed-out
+ * viewer) or network error degrades to [] so the surfaces render nothing rather
+ * than a fabricated room.
  */
 export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
   const usingFixtures = !!opts.fixtures && fixturesAllowed();
@@ -150,13 +148,18 @@ export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
     let mounted = true;
     void (async () => {
       try {
-        const res = await fetch(`/api/club/live`, {
+        const res = await fetch(`/api/live`, {
           signal: ctrl.signal,
           headers: { accept: "application/json" },
         });
-        if (!res.ok) return; // 404 today (S2.5 not landed) → stay []
-        const json = (await res.json()) as { events?: LiveEvent[] };
-        if (mounted && Array.isArray(json.events)) setFetched(json.events);
+        if (!res.ok) return; // 401 (signed out) / error → stay []
+        const json = (await res.json()) as LiveListResponse;
+        const merged = [
+          ...(Array.isArray(json.live) ? json.live : []),
+          ...(Array.isArray(json.upcoming) ? json.upcoming : []),
+          ...(Array.isArray(json.replays) ? json.replays : []),
+        ];
+        if (mounted) setFetched(merged);
       } catch {
         /* network/abort → stay [] */
       }
