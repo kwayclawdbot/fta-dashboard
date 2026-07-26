@@ -43,13 +43,13 @@ import Avatar from "@/components/Avatar";
 import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
 import ClubPulseMasthead from "@/components/dashboard/ClubPulseMasthead";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
-import ClubHome from "@/components/dashboard/ClubHome";
+import ClubHomeV2 from "@/components/clubhome/ClubHomeV2";
 import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
 import AddFamily from "@/components/dashboard/AddFamily";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
-import { isSoloProfile } from "@/lib/register";
+import { isSoloProfile, deriveRegister, type Register } from "@/lib/register";
 
 /** Next scheduled academy class, for the FTA premium home rail. */
 type NextClass = { title: string; when: string } | null;
@@ -179,6 +179,10 @@ export default function DashboardHome() {
   // Solo (individual, non-parent) member — a family of one. De-parents the Home
   // copy (setup card, empty state, This Week) without any data-model change.
   const [isSolo, setIsSolo] = useState(false);
+  // Register (kid/teen/adult) for the club-first Home v2, and the active
+  // 5-Day Challenge pass window for its high-priority challenge slot.
+  const [register, setRegister] = useState<Register>("adult");
+  const [soloChallengeExpiresAt, setSoloChallengeExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
     setTab(searchParams.get("tab") === "this-week" ? "week" : "home");
@@ -229,11 +233,17 @@ export default function DashboardHome() {
             { data: null }
           ),
           withTimeout<{
-            data: { display_name: string; family_id: string | null; role: string } | null;
+            data: {
+              display_name: string;
+              family_id: string | null;
+              role: string;
+              age_group: string | null;
+              track: string | null;
+            } | null;
           }>(
             supabase
               .from("profiles")
-              .select("display_name, family_id, role")
+              .select("display_name, family_id, role, age_group, track")
               .eq("id", user.id)
               .single(),
             LOAD_TIMEOUT_MS,
@@ -253,6 +263,7 @@ export default function DashboardHome() {
       const track = hs?.track || "adults";
       setHasFamily(!!famId);
       setFamilyId(famId);
+      setRegister(deriveRegister(profile));
 
       // Does the family still need to fill the profile questionnaire? Parents
       // only; drives whether the warm welcome card jumps ahead of the setup
@@ -265,6 +276,20 @@ export default function DashboardHome() {
           .eq("family_id", famId)
           .maybeSingle();
         setIsSolo(isSoloProfile(fpRow));
+        // Active 5-Day Challenge pass window (for ClubHome v2's challenge slot).
+        // Best-effort own-family lookup; null (no active pass) is the common case.
+        void (async () => {
+          const { data: pass } = await supabase
+            .from("enrollments")
+            .select("expires_at")
+            .eq("family_id", famId)
+            .eq("program", "challenge_pass")
+            .eq("status", "active")
+            .not("expires_at", "is", null)
+            .gt("expires_at", new Date().toISOString())
+            .maybeSingle();
+          setSoloChallengeExpiresAt((pass?.expires_at as string | null) ?? null);
+        })().catch(() => {});
         let dcount = 0;
         try {
           dcount = parseInt(
@@ -434,7 +459,14 @@ export default function DashboardHome() {
             context: `${home.today.module_title} · ${home.today.course_title}`,
           }
         : null;
-    return <ClubHome firstName={firstName} xp={xp} learning={learning} />;
+    return (
+      <ClubHomeV2
+        firstName={firstName}
+        register={register}
+        learning={learning}
+        challengeExpiresAt={soloChallengeExpiresAt}
+      />
+    );
   }
 
   const isKid = home?.role === "child" && home?.track === "kids";

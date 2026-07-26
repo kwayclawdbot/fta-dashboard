@@ -572,3 +572,227 @@ body {
   border-radius: 1rem;
   overflow: hidden;
 }
+
+/* ================================================================== */
+/* CLUBHOME v2 — VIBRANCY SYSTEM (owner 07-26: alive, not muted).       */
+/* Saturated volt/teal COLOR MOMENTS over the warm sand base + premium  */
+/* 60fps micro-motion. Ceiling: premium-alive, never crypto/neon-       */
+/* terminal. Volt = action/live/trending · teal = network/collective ·  */
+/* Kai blue = AI only. All motion gated on prefers-reduced-motion.      */
+/* ================================================================== */
+
+/* --- Color-field surfaces (genuine section identity, not pale tints) - */
+/* The Collective — a teal-charged network field. */
+.club-field-teal {
+  background:
+    radial-gradient(125% 150% at 88% 8%, color-mix(in srgb, var(--color-teal-600) 18%, transparent) 0%, transparent 52%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-teal-400) 15%, transparent) 0%, color-mix(in srgb, var(--color-teal-600) 6%, transparent) 58%, transparent 100%),
+    var(--card);
+  border: 1px solid color-mix(in srgb, var(--color-teal-500) 34%, var(--sand));
+  box-shadow: var(--shadow-soft);
+}
+:root[data-theme="dark"] .club-field-teal,
+:root[data-theme="dark"] [data-mode] .club-field-teal {
+  background:
+    radial-gradient(125% 150% at 88% 8%, color-mix(in srgb, var(--color-teal-600) 30%, transparent) 0%, transparent 52%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-teal-400) 24%, transparent) 0%, color-mix(in srgb, var(--color-teal-600) 11%, transparent) 58%, transparent 100%),
+    var(--card);
+  border-color: color-mix(in srgb, var(--color-teal-400) 44%, var(--sand));
+  box-shadow: var(--shadow-soft), inset 0 1px 0 color-mix(in srgb, var(--color-teal-300) 22%, transparent);
+}
+
+/* Build the Club — a true volt-energy field. */
+.club-field-volt {
+  background:
+    radial-gradient(125% 150% at 88% 8%, color-mix(in srgb, var(--color-volt-500) 16%, transparent) 0%, transparent 52%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-volt-400) 14%, transparent) 0%, color-mix(in srgb, var(--color-volt-600) 5%, transparent) 58%, transparent 100%),
+    var(--card);
+  border: 1px solid color-mix(in srgb, var(--color-volt-500) 34%, var(--sand));
+  box-shadow: var(--shadow-soft);
+}
+:root[data-theme="dark"] .club-field-volt,
+:root[data-theme="dark"] [data-mode] .club-field-volt {
+  background:
+    radial-gradient(125% 150% at 88% 8%, color-mix(in srgb, var(--color-volt-500) 26%, transparent) 0%, transparent 52%),
+    linear-gradient(135deg, color-mix(in srgb, var(--color-volt-400) 22%, transparent) 0%, color-mix(in srgb, var(--color-volt-600) 10%, transparent) 58%, transparent 100%),
+    var(--card);
+  border-color: color-mix(in srgb, var(--color-volt-400) 42%, var(--sand));
+  box-shadow: var(--shadow-soft), inset 0 1px 0 color-mix(in srgb, var(--color-volt-300) 22%, transparent);
+}
+
+/* Kai Brief — a present (not pale) Kai-blue AI field. */
+.club-field-kai {
+  background:
+    radial-gradient(120% 140% at 90% 6%, color-mix(in srgb, var(--kai-blue) 14%, transparent) 0%, transparent 55%),
+    linear-gradient(150deg, color-mix(in srgb, var(--kai-blue) 10%, transparent) 0%, color-mix(in srgb, var(--kai-blue) 3%, transparent) 70%, transparent 100%),
+    var(--card);
+  border: 1px solid color-mix(in srgb, var(--kai-blue) 32%, var(--sand));
+  box-shadow: var(--shadow-soft);
+}
+:root[data-theme="dark"] .club-field-kai,
+:root[data-theme="dark"] [data-mode] .club-field-kai {
+  background:
+    radial-gradient(120% 140% at 90% 6%, color-mix(in srgb, var(--kai-blue) 26%, transparent) 0%, transparent 55%),
+    linear-gradient(150deg, color-mix(in srgb, var(--kai-blue) 18%, transparent) 0%, color-mix(in srgb, var(--kai-blue) 7%, transparent) 70%, transparent 100%),
+    var(--card);
+  border-color: color-mix(in srgb, var(--kai-blue) 46%, var(--sand));
+  box-shadow: var(--shadow-soft), inset 0 1px 0 color-mix(in srgb, var(--kai-300) 22%, transparent);
+}
+
+/* Live Pulse — warm card base carrying a HOT gradient accent (top band +
+   corner glow). The base stays warm sand; the charge is the accent. */
+.club-field-pulse {
+  position: relative;
+  background:
+    radial-gradient(90% 120% at 96% -10%, color-mix(in srgb, var(--color-volt-500) 12%, transparent) 0%, transparent 45%),
+    linear-gradient(160deg, var(--card) 0%, var(--card) 62%, var(--paper) 100%);
+  border: 1px solid color-mix(in srgb, var(--color-volt-500) 22%, var(--sand));
+}
+.club-field-pulse::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--grad-hero);
+  opacity: 0.95;
+}
+:root[data-theme="dark"] .club-field-pulse,
+:root[data-theme="dark"] [data-mode] .club-field-pulse {
+  background:
+    radial-gradient(90% 120% at 96% -10%, color-mix(in srgb, var(--color-volt-500) 22%, transparent) 0%, transparent 48%),
+    linear-gradient(160deg, var(--card) 0%, var(--card) 60%, color-mix(in srgb, var(--color-volt-900) 30%, var(--card)) 100%);
+  border-color: color-mix(in srgb, var(--color-volt-500) 34%, var(--sand));
+}
+
+/* --- Gradient fills for meters / bars / text ---------------------- */
+.club-meter-fill {
+  background: linear-gradient(90deg, var(--color-volt-600) 0%, var(--color-volt-500) 45%, #FFB020 100%);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-volt-500) 45%, transparent);
+}
+.club-bar-teal {
+  background: linear-gradient(90deg, var(--color-teal-400) 0%, var(--color-teal-500) 55%, var(--color-teal-600) 100%);
+}
+.text-gradient-teal {
+  background: linear-gradient(120deg, var(--color-teal-400) 0%, var(--color-teal-600) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text-gradient-volt {
+  background: linear-gradient(120deg, var(--color-volt-600) 0%, #FFB020 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Charged "LIVE PULSE" eyebrow — a hot moving gradient over the label. */
+.club-eyebrow-charged {
+  background: linear-gradient(90deg, var(--color-volt-600), var(--color-volt-400), #FFC24D, var(--color-volt-500), var(--color-volt-600));
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glowing live dot — pulse ring is on the markup; this adds the halo. */
+.club-livedot-volt { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-volt-500) 65%, transparent); }
+.club-livedot-teal { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-teal-400) 65%, transparent); }
+.club-livedot-kai  { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--kai-blue) 65%, transparent); }
+
+/* Interactive ledger row — hover charge (volt accent bar slides in) + press. */
+.club-row {
+  position: relative;
+  transition: background-color 0.18s ease;
+}
+.club-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-volt-500);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .club-row:hover {
+    background: color-mix(in srgb, var(--color-volt-500) 7%, transparent);
+  }
+  .club-row:hover::before {
+    transform: scaleY(1);
+  }
+}
+.club-row:active {
+  transform: scale(0.995);
+}
+
+/* --- Motion (all opt-in via no-preference) ------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes club-drift-a {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(1.6px, -2.2px); }
+  }
+  @keyframes club-drift-b {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-2.2px, 1.6px); }
+  }
+  @keyframes club-core-pulse {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.14); }
+  }
+  @keyframes club-node-twinkle {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+  @keyframes club-spark-draw {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes club-eyebrow-charge {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes club-rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes club-meter-grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes club-donut-sweep {
+    from { stroke-dashoffset: 360; }
+    to { stroke-dashoffset: 0; }
+  }
+  /* the yes-arc (2nd circle) sweeps in on mount */
+  .club-donut circle:last-child {
+    animation: club-donut-sweep 0.9s cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  .club-eyebrow-charged { animation: club-eyebrow-charge 3.4s ease-in-out infinite; }
+
+  /* sparkline draw-in — polyline uses pathLength="1" so dashoffset 1→0 draws it */
+  .club-spark-line {
+    stroke-dasharray: 1;
+    animation: club-spark-draw 0.9s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  }
+
+  .club-core-glow { animation: club-core-pulse 2.8s ease-in-out infinite; transform-origin: center; }
+  .club-node { animation: club-drift-a 6s ease-in-out infinite; }
+  .club-node:nth-child(even) { animation-name: club-drift-b; animation-duration: 7.2s; }
+  .club-node-dot { animation: club-node-twinkle 3.2s ease-in-out infinite; }
+
+  .club-rise { animation: club-rise 0.5s cubic-bezier(0.23, 1, 0.32, 1) both; }
+
+  .club-meter-anim {
+    transform-origin: left center;
+    animation: club-meter-grow 0.8s cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* keep sparklines fully drawn when motion is off */
+  .club-spark-line { stroke-dasharray: none; }
+}
