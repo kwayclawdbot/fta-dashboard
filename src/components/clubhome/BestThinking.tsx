@@ -81,7 +81,7 @@ export default function BestThinking({ thinking }: { thinking: ThinkingResponse 
           <ol className="divide-y divide-sand">
             {secondary.map((p) => (
               <li key={p.id}>
-                <Link href={p.href} className="group flex items-start justify-between gap-4 py-3">
+                <Link href={p.href} className="group club-row -mx-2 flex items-start justify-between gap-4 rounded-lg px-2 py-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       {p.ticker && <span className="font-mono text-[11px] font-bold text-soft">{p.ticker}</span>}

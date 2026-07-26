@@ -45,7 +45,7 @@ export default function ForYou({ foryou }: { foryou: ForYouResponse | null }) {
             <li key={it.ticker}>
               <Link
                 href={`/research/${encodeURIComponent(it.ticker)}`}
-                className="group flex items-center gap-3 border-b border-sand py-3 transition-colors hover:bg-card"
+                className="group club-row -mx-2 flex items-center gap-3 rounded-lg border-b border-sand px-2 py-3"
               >
                 <CompanyLogo symbol={it.ticker} name={it.company} size={30} />
                 <div className="min-w-0 flex-1">

@@ -21,7 +21,7 @@ export default function KaiBrief({ brief }: { brief: BriefResponse | null }) {
   return (
     <section
       aria-label="Kai Brief"
-      className="rounded-2xl border border-kai-500/30 bg-kai-blue-soft p-5 shadow-soft sm:p-6"
+      className="club-field-kai rounded-2xl p-5 sm:p-6"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">

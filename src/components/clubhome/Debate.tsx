@@ -39,7 +39,7 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
   }
 
   return (
-    <section aria-label="The Debate" className="rounded-2xl border border-sand bg-card p-5 shadow-soft sm:p-6">
+    <section aria-label="The Debate" className="club-field-teal rounded-2xl p-5 sm:p-6">
       <SectionLabel tone="teal" live liveTone="teal">
         The Debate
       </SectionLabel>
@@ -57,7 +57,7 @@ export default function Debate({ debate }: { debate: DebateResponse | null }) {
       <div className="mt-4">
         <div className="flex h-11 w-full overflow-hidden rounded-xl">
           <div
-            className="flex items-center justify-start bg-teal-500 pl-3 text-sm font-bold text-white transition-all duration-500"
+            className="club-bar-teal flex items-center justify-start pl-3 text-sm font-bold text-white transition-all duration-500"
             style={{ width: `${yesPct}%` }}
           >
             {yesPct >= 18 && `Yes ${yesPct}%`}

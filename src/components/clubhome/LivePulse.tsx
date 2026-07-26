@@ -68,11 +68,11 @@ export default function LivePulse({
     <section
       aria-label="Live pulse — what the Club is seeing today"
       data-tour="club-pulse"
-      className="overflow-hidden rounded-2xl border border-sand bg-gradient-to-br from-card via-card to-paper px-5 py-5 shadow-soft sm:px-7 sm:py-6"
+      className="club-field-pulse overflow-hidden rounded-2xl px-5 py-5 shadow-soft sm:px-7 sm:py-6"
     >
       {/* Masthead line */}
       <div className="flex items-center justify-between gap-3">
-        <SectionLabel tone="volt" live liveTone="volt">
+        <SectionLabel tone="volt" live liveTone="volt" charged>
           Live Pulse
         </SectionLabel>
         <span className="font-mono text-[11px] text-soft">{dateLabel}</span>
@@ -118,12 +118,11 @@ export default function LivePulse({
             <Link
               key={`${s.ticker}-${i}`}
               href={`/research/${encodeURIComponent(s.ticker)}`}
-              className={`group relative flex flex-col gap-2 px-5 pt-4 first:pl-0 last:pr-0 ${
-                i === 0 ? "" : ""
-              }`}
+              className="group club-rise relative flex flex-col gap-2 px-5 pt-4 first:pl-0 last:pr-0"
+              style={{ animationDelay: `${i * 70}ms` }}
             >
               {i === 0 && (
-                <span className="absolute left-0 top-4 h-6 w-[3px] rounded-full bg-volt-500" />
+                <span className="club-hero-gradient absolute left-0 top-4 h-6 w-[3px] rounded-full" />
               )}
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs font-bold text-volt-600 tabular-nums">

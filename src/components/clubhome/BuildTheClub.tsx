@@ -162,7 +162,7 @@ export default function BuildTheClub({
   if (embedded) return <div>{body}</div>;
 
   return (
-    <section aria-label="Build the Club" className="rounded-2xl border border-sand bg-card p-5 shadow-soft sm:p-7">
+    <section aria-label="Build the Club" className="club-field-volt rounded-2xl p-5 sm:p-7">
       <SectionLabel tone="volt">Build the Club</SectionLabel>
       <div className="mt-4">{body}</div>
     </section>

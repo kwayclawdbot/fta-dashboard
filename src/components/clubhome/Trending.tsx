@@ -48,7 +48,7 @@ export default function Trending({ trending }: { trending: TrendingResponse | nu
           <li key={r.ticker}>
             <Link
               href={`/research/${encodeURIComponent(r.ticker)}`}
-              className="group flex items-center gap-3 border-b border-sand py-2.5 transition-colors hover:bg-card"
+              className="group club-row -mx-2 flex items-center gap-3 rounded-lg border-b border-sand px-2 py-2.5"
             >
               <span className="w-4 shrink-0 font-mono text-xs font-bold tabular-nums text-soft">
                 {r.rank}
@@ -61,15 +61,15 @@ export default function Trending({ trending }: { trending: TrendingResponse | nu
                 {r.company && (
                   <span className="ml-2 truncate text-[11px] text-soft">{r.company}</span>
                 )}
-                {/* attention meter — thin volt bar, not a card */}
-                <div className="mt-1 h-1 w-full max-w-[180px] overflow-hidden rounded-full bg-sand">
+                {/* attention meter — saturated volt→amber, grows in on mount */}
+                <div className="mt-1 h-1.5 w-full max-w-[180px] overflow-hidden rounded-full bg-sand">
                   <div
-                    className="h-full rounded-full bg-volt-500"
+                    className="club-meter-fill club-meter-anim h-full rounded-full"
                     style={{ width: `${Math.round((r.score / maxScore) * 100)}%` }}
                   />
                 </div>
               </div>
-              <span className="shrink-0 font-mono text-base font-bold tabular-nums text-ink">
+              <span className="shrink-0 font-mono text-lg font-extrabold tabular-nums text-ink">
                 {r.score}
               </span>
               <span className="w-12 shrink-0 text-right">
