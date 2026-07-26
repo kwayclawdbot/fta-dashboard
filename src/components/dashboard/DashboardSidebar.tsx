@@ -125,11 +125,28 @@ const CLUB_WATCHLIST_SOLO: NavItem = {
 };
 const CLUB_REFER: NavItem = { label: "Refer a friend", href: "/referrals", icon: Gift };
 const CLUB_PROGRESS: NavItem = { label: "My Progress", href: "/progress", icon: Trophy };
-// A non-clickable section label that opens the secondary "More" cluster in the
-// club sidebar (mobile surfaces the same rows inside the Profile/More sheet).
-const CLUB_MORE_HEADER: NavItem = {
-  label: "More",
-  href: "#club-more",
+// Quiet section labels that group the club (individual) sidebar's SECONDARY
+// cluster into meaning-based buckets instead of one flat "More" list — the
+// desktop counterpart of the Profile/More sheet's grouped rows. These render as
+// non-clickable uppercase labels (neutral chrome; no accent tokens). Distinct
+// hrefs keep their React keys unique. Order below: LEARN (education) · MARKETS
+// (market intelligence tools) · ACCOUNT (your standing + growth), then the FTA
+// hub keeps its own gold treatment at the tail.
+const CLUB_LEARN_HEADER: NavItem = {
+  label: "Learn",
+  href: "#club-learn",
+  icon: MessageCircle,
+  sectionHeader: true,
+};
+const CLUB_MARKETS_HEADER: NavItem = {
+  label: "Markets",
+  href: "#club-markets",
+  icon: MessageCircle,
+  sectionHeader: true,
+};
+const CLUB_ACCOUNT_HEADER: NavItem = {
+  label: "Account",
+  href: "#club-account",
   icon: MessageCircle,
   sectionHeader: true,
 };
@@ -342,25 +359,31 @@ export function getNavItems(
   if (isSolo) {
     // (Free tier already returned above; a solo member here is fic or fta.)
     return [
+      // ── PRIMARY five (Profile is the top-bar avatar on desktop, not a row) ──
       { label: "Home", href: "/dashboard", icon: LayoutDashboard },
       CLUB_DISCOVER,
       CLUB_COMMUNITY_PROMINENT,
       CLUB_WATCHLIST_SOLO,
-      CLUB_MORE_HEADER,
-      LEADERBOARD,
-      CLUB_PROGRESS,
+      // ── SECONDARY — grouped under quiet labels instead of one flat "More". ──
+      // LEARN: the education surfaces (course hub + practice/simulator/games).
+      CLUB_LEARN_HEADER,
       learnGroup(false),
       practiceGroup(true),
-      // Screener (Stock Finder) — the R2 five-item regroup dropped it from the
-      // solo nav entirely. Restored here under More, grouped with the market /
-      // discovery tools. It points at the standalone /screener route (also the
-      // Discover hub's "Screener" tab) so the active state + app tour resolve.
+      // MARKETS: the market-intelligence tools. Screener (Stock Finder) — the R2
+      // five-item regroup dropped it from the primary nav; it lives here (also
+      // the Discover hub's "Screener" tab) so the active state + app tour resolve.
+      CLUB_MARKETS_HEADER,
       CLUB_SCREENER,
       CLUB_NEWS,
       CLUB_ALERTS,
+      // ACCOUNT: your standing + growth. Individual members can add a family
+      // later (Family Mode ships with every membership) — surfaced via
+      // Settings#family, so no Family group is pushed here.
+      CLUB_ACCOUNT_HEADER,
+      LEADERBOARD,
+      CLUB_PROGRESS,
       CLUB_REFER,
-      // Individual members can add a family later (Family Mode ships with every
-      // membership) — surfaced via Settings#family, so no Family group is pushed.
+      // FTA hub keeps its own gold, hard-split treatment at the tail.
       isFta ? FTA_SECTION : FTA_LOCKED,
     ];
   }
