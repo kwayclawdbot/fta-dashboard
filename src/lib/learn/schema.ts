@@ -81,6 +81,22 @@ export interface PredictionStep extends BaseStep {
   reveal: { headline: string; body: string };
 }
 
+/** A rendered micro-video block (Track B Remotion outputs: Concept Explainer,
+ *  Answer Reveal, Company Breakdown, etc.). Presentation-only + null-safe — a
+ *  lesson simply omits this step type until a real asset URL exists. */
+export interface MicroVideoStep extends BaseStep {
+  type: "micro_video";
+  /** mp4/webm asset URL. */
+  src: string;
+  /** poster shown before play (also the LQIP). */
+  poster?: string;
+  heading?: string;
+  /** short summary / takeaway line under the video. */
+  caption?: string;
+  /** optional WebVTT captions track URL (caption-friendly). */
+  captions?: string;
+}
+
 export type RealWorldAction = "save_watchlist" | "research_ticker";
 
 /** The differentiator: escape the lesson into the live product, return with a
@@ -99,6 +115,7 @@ export interface RealWorldStep extends BaseStep {
 
 export type StepSpec =
   | ExplainerStep
+  | MicroVideoStep
   | MultipleChoiceStep
   | TrueFalseStep
   | MatchPairsStep

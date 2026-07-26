@@ -1,0 +1,267 @@
+/*
+ * Lesson-engine presentation skin (Track A rebuild).
+ *
+ * Every register (kid / teen / adult) drives the SAME structure through a set of
+ * `--l-*` custom properties set inline by skin.ts. This module owns:
+ *   • the full-canvas per-step COLOR FIELD (kills the "card-in-page")
+ *   • the reward keyframes (correct-pop, xp-float, node-unlock, mascot idle)
+ *   • the progress-bar sheen
+ * All motion is gated on prefers-reduced-motion at the bottom of the file, and
+ * comprehension-aiding opacity/colour is kept while movement is dropped.
+ *
+ * Colours reference the global theme tokens (ink, soft, sand, card plus the
+ * volt, teal, gold ramps and kai-blue) so light, dark and data-mode all
+ * cascade for free.
+ */
+
+/* ── The immersive field: each step OWNS this canvas, not a floating card ── */
+.canvas {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  border-radius: 30px;
+  padding: clamp(20px, 4vw, 40px);
+  min-height: var(--l-canvas-min, 420px);
+  border: 1px solid var(--l-field-border);
+  background:
+    radial-gradient(120% 130% at 88% -8%, var(--l-glow-a) 0%, transparent 52%),
+    radial-gradient(90% 90% at 6% 106%, var(--l-glow-b) 0%, transparent 46%),
+    linear-gradient(158deg, var(--l-field-a) 0%, var(--l-field-b) 46%, var(--l-field-c) 100%);
+  box-shadow:
+    0 1px 0 var(--l-field-hi) inset,
+    0 24px 60px -32px var(--l-field-shadow);
+  transition: border-color 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* A quiet living wash drifting across the field — motion = "this is alive",
+   killed under reduced-motion. */
+.canvas::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(38% 38% at 50% 50%, var(--l-drift) 0%, transparent 70%);
+  opacity: 0.55;
+  animation: l-drift 16s ease-in-out infinite alternate;
+}
+
+@keyframes l-drift {
+  0%   { transform: translate3d(-8%, 4%, 0) scale(1); }
+  100% { transform: translate3d(10%, -6%, 0) scale(1.15); }
+}
+
+/* ── Progress rail ── */
+.rail {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--l-rail-bg);
+}
+.railFill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--l-accent-b), var(--l-accent));
+  box-shadow: 0 0 14px -2px var(--l-accent-glow);
+}
+/* Sheen sweep on the fill — reads as forward energy. */
+.railFill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--l-field-hi) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: l-sheen 2.6s ease-in-out infinite;
+}
+@keyframes l-sheen {
+  0%, 60% { transform: translateX(-100%); }
+  100%    { transform: translateX(200%); }
+}
+
+/* ── Option / tap surface (choice steps) ── */
+.option {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 14px;
+  border-radius: var(--l-radius, 16px);
+  border: 1.5px solid var(--l-opt-border);
+  background: var(--l-opt-bg);
+  color: var(--ink);
+  padding: var(--l-opt-pad, 16px 18px);
+  text-align: left;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--l-opt-size, 16px);
+  line-height: 1.3;
+  transition:
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 200ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .option:not(:disabled):hover {
+    border-color: var(--l-accent);
+    background: var(--l-opt-bg-hover);
+    transform: translateY(-1px);
+  }
+}
+.option:not(:disabled):active { transform: scale(0.985); }
+
+.optIdle {}
+.optSelected {
+  border-color: var(--l-accent);
+  background: var(--l-accent-soft);
+  box-shadow: 0 0 0 3px var(--l-accent-ring);
+}
+.optCorrect {
+  border-color: var(--l-ok);
+  background: var(--l-ok-soft);
+  color: var(--l-ok-ink);
+}
+.optWrong {
+  border-color: var(--l-warm);
+  background: var(--l-warm-soft);
+  color: var(--l-warm-ink);
+}
+.optReveal {
+  border-color: var(--l-ok);
+  background: var(--l-ok-soft);
+  color: var(--l-ok-ink);
+  box-shadow: 0 0 0 3px var(--l-ok-ring);
+}
+
+/* The satisfying correct-answer POP — register-scaled via --l-pop. */
+.pop {
+  animation: l-pop var(--l-pop-dur, 440ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes l-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(var(--l-pop, 1.06)); }
+  100% { transform: scale(1); }
+}
+
+/* The letter/index chip inside an option. */
+.letter {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--l-letter, 30px);
+  height: var(--l-letter, 30px);
+  border-radius: calc(var(--l-radius, 16px) * 0.5);
+  background: var(--l-letter-bg);
+  color: var(--l-letter-ink);
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* ── Floating "+XP" reward chip ── */
+.xpFloat {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  pointer-events: none;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  font-size: var(--l-xp-size, 15px);
+  color: var(--l-ok-ink);
+  animation: l-xp-float 900ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+@keyframes l-xp-float {
+  0%   { opacity: 0; transform: translateY(-50%) scale(0.7); }
+  25%  { opacity: 1; transform: translateY(-70%) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-160%) scale(1); }
+}
+
+/* ── Kai guide mascot slot ── */
+.mascot {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--l-kai-medallion);
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--kai-blue) 60%, transparent);
+}
+.mascotImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mascotFloat { animation: l-bob 4.2s ease-in-out infinite; }
+@keyframes l-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* ── Big-stat figure (explainer visual moment) ── */
+.figure {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: clamp(20px, 3vw, 30px);
+  background:
+    radial-gradient(120% 120% at 80% 0%, var(--l-glow-a) 0%, transparent 60%),
+    linear-gradient(150deg, var(--l-field-b), var(--l-field-c));
+  border: 1px solid var(--l-field-border);
+}
+
+/* Enter animation for a step (JS-driven via framer stays primary; this is the
+   figure's own reveal). */
+.rise {
+  animation: l-rise 460ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes l-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Completion — the node-unlock burst ring behind the emblem. */
+.unlockRing {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  border: 2px solid var(--l-accent);
+  opacity: 0;
+  animation: l-unlock 1200ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+@keyframes l-unlock {
+  0%   { opacity: 0.7; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+
+/* Skill-grown bar fill. */
+.skillTrack {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--l-rail-bg);
+}
+.skillFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--l-accent-b), var(--l-accent));
+  transform-origin: left;
+  animation: l-skill 900ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes l-skill {
+  from { transform: scaleX(0.04); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Reduced motion: keep colour/opacity meaning, drop movement ── */
+@media (prefers-reduced-motion: reduce) {
+  .canvas::before,
+  .railFill::after,
+  .mascotFloat,
+  .rise,
+  .unlockRing { animation: none; }
+  .rise { opacity: 1; transform: none; }
+  .pop { animation: none; }
+  .xpFloat { animation: l-xp-fade 900ms ease forwards; }
+  .skillFill { animation: none; }
+  @keyframes l-xp-fade { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+}

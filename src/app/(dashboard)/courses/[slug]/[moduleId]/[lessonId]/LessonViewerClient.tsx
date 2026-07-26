@@ -556,6 +556,7 @@ export default function LessonViewerClient() {
               ? `/courses/${slug}/${nextLesson.moduleId}/${nextLesson.id}`
               : null
           }
+          nextTitle={nextLesson ? nextLesson.title : null}
         />
       </div>
     );

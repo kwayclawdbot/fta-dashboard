@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
 import { TrendingUp } from "lucide-react";
 import type {
@@ -8,13 +8,13 @@ import type {
   StepComponentProps,
 } from "@/lib/learn/schema";
 import { playCue } from "@/lib/learn/feedback";
-import { OptionButton, PrimaryButton, StepPrompt, GuideLine, EASE_OUT } from "../ui";
+import { getLessonSkin, lessonHaptic, EASE_OUT } from "../skin";
+import { OptionButton, PrimaryButton, StepPrompt, GuideLine } from "../ui";
 
 /**
  * Prediction → reveal. The member commits to a call, THEN sees what actually
- * happened. Being "wrong" is not punished — the reveal is the teaching moment
- * (spec §2 prediction-then-reveal). Mastery still records whether the call
- * matched reality, but there is no mastery-loop re-ask here.
+ * happened. Being "wrong" is never punished — the reveal is the teaching moment.
+ * Mastery records whether the call matched reality; no mastery-loop re-ask.
  */
 export default function PredictionStep({
   spec,
@@ -23,6 +23,7 @@ export default function PredictionStep({
   onResolve,
 }: StepComponentProps<Spec>) {
   const reduce = useReducedMotion();
+  const skin = useMemo(() => getLessonSkin(register), [register]);
   const [picked, setPicked] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
 
@@ -31,16 +32,21 @@ export default function PredictionStep({
   function reveal() {
     if (picked === null) return;
     playCue(correct ? "correct" : "advance", register, soundOn);
+    if (correct) lessonHaptic(skin, !!reduce);
     setRevealed(true);
   }
 
   return (
     <div>
-      <StepPrompt sub="Make your call first. No peeking — that's the fun part.">
+      <StepPrompt
+        skin={skin}
+        eyebrow="Make the call"
+        sub="Commit first — no peeking. That's the whole point."
+      >
         {spec.question}
       </StepPrompt>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-3">
         {spec.options.map((o) => (
           <OptionButton
             key={o.value}
@@ -70,7 +76,7 @@ export default function PredictionStep({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: EASE_OUT }}
-            className="mt-5 flex justify-end"
+            className="mt-6 flex justify-end"
           >
             <PrimaryButton onClick={reveal} disabled={picked === null} icon="none">
               Lock it in
@@ -79,33 +85,42 @@ export default function PredictionStep({
         ) : (
           <m.div
             key="reveal"
-            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: EASE_OUT }}
-            className="mt-5"
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4, ease: EASE_OUT }}
+            className="mt-6"
           >
-            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-ink to-night-700 px-5 py-5 text-paper">
-              <div className="flex items-center gap-2 text-gold-300">
+            <div
+              className="overflow-hidden rounded-3xl px-6 py-6 text-paper"
+              style={{
+                background:
+                  "radial-gradient(120% 140% at 85% 0%, color-mix(in srgb, var(--l-accent) 40%, transparent) 0%, transparent 55%), linear-gradient(150deg, #12131A 0%, #1B1D28 100%)",
+              }}
+            >
+              <div
+                className="flex items-center gap-2"
+                style={{ color: "var(--l-accent-b)" }}
+              >
                 <TrendingUp className="h-4 w-4" />
-                <span className="font-display text-xs font-bold uppercase tracking-wider">
+                <span className="font-display text-[11px] font-black uppercase tracking-[0.18em]">
                   What actually happened
                 </span>
               </div>
-              <p className="mt-2 font-display text-xl font-bold leading-tight">
+              <p className="mt-3 font-display text-[26px] font-black leading-[1.1] sm:text-[30px]">
                 {spec.reveal.headline}
               </p>
-              <p className="mt-2 font-body text-sm leading-relaxed text-paper/80">
+              <p className="mt-3 font-body text-[15px] leading-relaxed text-paper/85">
                 {spec.reveal.body}
               </p>
             </div>
-            <div className="mt-4">
-              <GuideLine register={register}>
+            <div className="mt-5">
+              <GuideLine skin={skin} pose={correct ? "celebrating" : "thinking"}>
                 {correct
                   ? "You called it. That's the read of an investor."
                   : "Not the call you made — and that's exactly how you learn to read one."}
               </GuideLine>
             </div>
-            <div className="flex justify-end">
+            <div className="mt-5 flex justify-end">
               <PrimaryButton
                 onClick={() => onResolve({ correct, firstTry: correct })}
                 icon="arrow"

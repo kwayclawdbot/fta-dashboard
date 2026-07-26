@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import type { StepComponentProps, StepType } from "@/lib/learn/schema";
 import ExplainerStep from "./steps/ExplainerStep";
+import MicroVideoStep from "./steps/MicroVideoStep";
 import MultipleChoiceStep from "./steps/MultipleChoiceStep";
 import TrueFalseStep from "./steps/TrueFalseStep";
 import MatchPairsStep from "./steps/MatchPairsStep";
@@ -17,6 +18,7 @@ import RealWorldStep from "./steps/RealWorldStep";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const STEP_REGISTRY: Partial<Record<StepType, ComponentType<StepComponentProps<any>>>> = {
   explainer: ExplainerStep,
+  micro_video: MicroVideoStep,
   multiple_choice: MultipleChoiceStep,
   true_false: TrueFalseStep,
   match_pairs: MatchPairsStep,

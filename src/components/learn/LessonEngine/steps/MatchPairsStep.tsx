@@ -8,12 +8,14 @@ import type {
   StepComponentProps,
 } from "@/lib/learn/schema";
 import { playCue } from "@/lib/learn/feedback";
-import { FeedbackNote, GuideLine, StepPrompt, EASE_OUT } from "../ui";
+import { getLessonSkin, lessonHaptic, EASE_OUT } from "../skin";
+import { FeedbackNote, GuideLine, StepPrompt } from "../ui";
+import styles from "../skin.module.css";
 
 /**
- * Match pairs — tap a left item, then its match on the right. Correct locks
- * green; a wrong connection triggers the mastery-loop (guide explains once, then
- * you keep matching — never a hard reset). firstTry = matched with no mistakes.
+ * Match pairs — tap a left item, then its match on the right. Correct locks with
+ * a pop; a wrong connection is a warm coaching beat (guide explains once, you
+ * keep matching — never a hard reset). firstTry = matched with no mistakes.
  */
 export default function MatchPairsStep({
   spec,
@@ -22,6 +24,7 @@ export default function MatchPairsStep({
   onResolve,
 }: StepComponentProps<Spec>) {
   const reduce = useReducedMotion();
+  const skin = useMemo(() => getLessonSkin(register), [register]);
   const n = spec.pairs.length;
 
   const rightOrder = useMemo(() => {
@@ -35,6 +38,7 @@ export default function MatchPairsStep({
 
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
   const [matched, setMatched] = useState<Set<number>>(new Set());
+  const [justMatched, setJustMatched] = useState<number | null>(null);
   const [wrongFlash, setWrongFlash] = useState<number | null>(null);
   const [mistakes, setMistakes] = useState(0);
   const [explained, setExplained] = useState(false);
@@ -43,40 +47,53 @@ export default function MatchPairsStep({
   function pickRight(rightIdx: number) {
     if (selectedLeft === null || matched.has(rightIdx) || done) return;
     if (rightIdx === selectedLeft) {
-      // correct (right original index == left index means same pair)
       playCue("correct", register, soundOn);
+      lessonHaptic(skin, !!reduce);
       const next = new Set(matched);
       next.add(rightIdx);
       setMatched(next);
+      setJustMatched(rightIdx);
+      window.setTimeout(() => setJustMatched(null), 520);
       setSelectedLeft(null);
       if (next.size === n) {
         setDone(true);
         window.setTimeout(
           () => onResolve({ correct: true, firstTry: mistakes === 0 }),
-          700
+          760
         );
       }
     } else {
       playCue("wrong", register, soundOn);
       setMistakes((m) => m + 1);
       setWrongFlash(rightIdx);
-      window.setTimeout(() => setWrongFlash(null), 420);
+      window.setTimeout(() => setWrongFlash(null), 440);
       setSelectedLeft(null);
       if (!explained) setExplained(true);
     }
   }
 
-  const cell =
-    "rounded-xl border px-4 py-3.5 text-left font-body text-[15px] transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.99]";
+  function cellClass(state: "idle" | "sel" | "matched" | "wrong", popped: boolean) {
+    const map = {
+      idle: styles.optIdle,
+      sel: styles.optSelected,
+      matched: styles.optCorrect,
+      wrong: styles.optWrong,
+    } as const;
+    return `${styles.option} ${map[state]} ${popped ? styles.pop : ""}`;
+  }
 
   return (
     <div>
-      <StepPrompt sub="Tap one on the left, then its match on the right.">
+      <StepPrompt
+        skin={skin}
+        eyebrow="Match them up"
+        sub="Tap one on the left, then its match on the right."
+      >
         {spec.prompt}
       </StepPrompt>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-3">
           {spec.pairs.map((p, i) => {
             const isMatched = matched.has(i);
             const isSel = selectedLeft === i;
@@ -85,25 +102,20 @@ export default function MatchPairsStep({
                 key={i}
                 disabled={isMatched || done}
                 onClick={() => !isMatched && setSelectedLeft(i)}
-                className={`${cell} ${
-                  isMatched
-                    ? "border-green-500 bg-chip-green text-green-900"
-                    : isSel
-                      ? "border-gold-400 bg-gold-400/10 text-ink"
-                      : "border-sand bg-white/60 text-ink hover:border-gold-300"
-                }`}
+                className={cellClass(
+                  isMatched ? "matched" : isSel ? "sel" : "idle",
+                  false
+                )}
               >
-                <span className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1">{p.left}</span>
-                  {isMatched && (
-                    <Check className="h-4 w-4 shrink-0 text-green-600" />
-                  )}
-                </span>
+                <span className="min-w-0 flex-1">{p.left}</span>
+                {isMatched && (
+                  <Check className="h-5 w-5 shrink-0" style={{ color: "var(--l-ok)" }} />
+                )}
               </button>
             );
           })}
         </div>
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-3">
           {rightOrder.map((origIdx) => {
             const isMatched = matched.has(origIdx);
             const isWrong = wrongFlash === origIdx;
@@ -112,26 +124,17 @@ export default function MatchPairsStep({
                 key={origIdx}
                 disabled={isMatched || done}
                 onClick={() => pickRight(origIdx)}
-                animate={
-                  isWrong && !reduce ? { x: [0, -5, 5, -3, 0] } : { x: 0 }
-                }
-                transition={{ duration: 0.32, ease: EASE_OUT }}
-                className={`${cell} ${
-                  isMatched
-                    ? "border-green-500 bg-chip-green text-green-900"
-                    : isWrong
-                      ? "border-red-400 bg-red-500/10 text-red-800"
-                      : "border-sand bg-white/60 text-ink hover:border-gold-300"
-                }`}
+                animate={isWrong && !reduce ? { x: [0, -6, 6, -3, 0] } : { x: 0 }}
+                transition={{ duration: 0.34, ease: EASE_OUT }}
+                className={cellClass(
+                  isMatched ? "matched" : isWrong ? "wrong" : "idle",
+                  justMatched === origIdx
+                )}
               >
-                <span className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1">
-                    {spec.pairs[origIdx].right}
-                  </span>
-                  {isMatched && (
-                    <Check className="h-4 w-4 shrink-0 text-green-600" />
-                  )}
-                </span>
+                <span className="min-w-0 flex-1">{spec.pairs[origIdx].right}</span>
+                {isMatched && (
+                  <Check className="h-5 w-5 shrink-0" style={{ color: "var(--l-ok)" }} />
+                )}
               </m.button>
             );
           })}
@@ -148,9 +151,9 @@ export default function MatchPairsStep({
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
             <FeedbackNote kind="explain">{spec.explanation}</FeedbackNote>
-            <div className="mt-3">
-              <GuideLine register={register}>
-                Not a match — keep going, you&apos;ve got the rest.
+            <div className="mt-4">
+              <GuideLine skin={skin} pose="thinking">
+                {skin.reask.match}
               </GuideLine>
             </div>
           </m.div>

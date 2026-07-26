@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
-import { X, ArrowRight, RotateCcw } from "lucide-react";
+import { X, ArrowRight, RotateCcw, Sparkle } from "lucide-react";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Register } from "@/lib/register";
@@ -23,24 +23,53 @@ import {
 import { useSoundOptIn } from "@/components/fic/Celebrate";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
 import Burst from "@/components/games/Burst";
-import { playCue, feedbackScale } from "@/lib/learn/feedback";
+import { playCue } from "@/lib/learn/feedback";
 import { STEP_REGISTRY } from "./registry";
 import { EngineProvider } from "./EngineContext";
-import { EASE_OUT, GuideLine, PrimaryButton } from "./ui";
+import { getLessonSkin, EASE_OUT } from "./skin";
+import { GuideLine, PrimaryButton } from "./ui";
+import KaiGuide from "./KaiGuide";
+import styles from "./skin.module.css";
 
 /**
  * <LessonEngine/> — the universal renderer (FIC-LEARNING-WORLD §1). Reads a
- * lesson's JSON step sequence and walks a step-progression state machine with:
- *   • resume (lesson_step_progress), monotonic-forward
- *   • mastery-loop mistake handling (owned by each step; see ChoiceCore)
- *   • per-interaction skill_mastery updates (deterministic RPC, zero LLM)
- *   • byte-compatible completion writes (lesson_progress + quiz_attempts + XP)
- *     so belts / leaderboards / home-state / report cards keep working
- *   • register-scaled feedback + prefers-reduced-motion + mobile-first + a11y
+ * lesson's JSON step sequence and walks a step-progression state machine with
+ * resume, mastery-loop, per-interaction mastery, and byte-compatible completion
+ * writes. Track A rebuilt the PRESENTATION only: full-canvas register color
+ * fields, feature typography, a Kai mascot guide, satisfying reward moments, and
+ * a cinematic completion — the machinery below is untouched.
  */
 
-// Scored graded types (prediction is a reveal, not a score — excluded).
 const SCORED = new Set(["multiple_choice", "true_false", "match_pairs"]);
+
+/** Small honest count-up for the completion XP tally. */
+function CountUp({ to, durationMs = 900 }: { to: number; durationMs?: number }) {
+  const reduce = useReducedMotion();
+  const [n, setN] = useState(reduce ? to : 0);
+  useEffect(() => {
+    if (reduce) {
+      setN(to);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / durationMs);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setN(Math.round(to * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, durationMs, reduce]);
+  return <>{n}</>;
+}
+
+function skillLabel(id: string): string {
+  return id
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function LessonEngine({
   lesson,
@@ -50,10 +79,10 @@ export default function LessonEngine({
   supabase,
   userId,
   familyId,
-  courseTitle,
   moduleTitle,
   backHref,
   nextHref,
+  nextTitle,
 }: {
   lesson: LessonJSON;
   lessonId: string;
@@ -67,9 +96,11 @@ export default function LessonEngine({
   moduleTitle: string;
   backHref: string;
   nextHref: string | null;
+  nextTitle?: string | null;
 }) {
   const reduce = useReducedMotion();
   const [soundOn] = useSoundOptIn();
+  const skin = useMemo(() => getLessonSkin(register), [register]);
   const steps = lesson.steps;
   const total = steps.length;
 
@@ -83,11 +114,7 @@ export default function LessonEngine({
   const [celebrateQueue, setCelebrateQueue] = useState<CelebrateOptions[]>([]);
   const [winBurst, setWinBurst] = useState(0);
 
-  // Score accumulator across scored steps (first-try correctness).
-  const scored = useRef<{ total: number; correct: number }>({
-    total: 0,
-    correct: 0,
-  });
+  const scored = useRef<{ total: number; correct: number }>({ total: 0, correct: 0 });
   const resolving = useRef(false);
 
   const enqueue = useCallback(
@@ -95,17 +122,11 @@ export default function LessonEngine({
     []
   );
 
-  // Hydrate resume position once.
   useEffect(() => {
     let alive = true;
     (async () => {
       if (userId) {
-        const { stepIndex: saved } = await loadStepProgress(
-          supabase,
-          userId,
-          lessonId
-        );
-        // A finished row (>= total) means a prior completion — replay from 0.
+        const { stepIndex: saved } = await loadStepProgress(supabase, userId, lessonId);
         if (alive) setStepIndex(saved >= total ? 0 : Math.max(0, saved));
       }
       if (alive) setHydrated(true);
@@ -123,7 +144,6 @@ export default function LessonEngine({
     playCue("win", register, soundOn);
     setWinBurst((n) => n + 1);
 
-    // Mission-complete moment (register-scaled by Celebrate).
     enqueue({
       variant: "mission",
       register: celebrateRegister(register),
@@ -134,38 +154,19 @@ export default function LessonEngine({
     });
 
     if (userId) {
-      // Graded result → quiz_attempts + quiz XP (legacy-identical intents).
       if (quizId && s.total > 0) {
         await recordQuizAttempt(supabase, userId, quizId, score, passed, [
           { engine: true, score, correct: s.correct, total: s.total },
         ]);
       }
-      // Completion → lesson_progress + one-time lesson XP + belt ceremony.
-      const belt = await completeLesson(
-        supabase,
-        userId,
-        lessonId,
-        register,
-        lesson.xp
-      );
+      const belt = await completeLesson(supabase, userId, lessonId, register, lesson.xp);
       if (belt) enqueue(belt);
       await saveStepProgress(supabase, userId, lessonId, total, { done: true });
     }
 
     setSummary({ xp: lesson.xp, score: s.total > 0 ? score : null });
     setFinished(true);
-  }, [
-    supabase,
-    userId,
-    lessonId,
-    quizId,
-    total,
-    register,
-    soundOn,
-    lesson.title,
-    lesson.xp,
-    enqueue,
-  ]);
+  }, [supabase, userId, lessonId, quizId, total, register, soundOn, lesson.title, lesson.xp, enqueue]);
 
   const handleResolve = useCallback(
     (result: StepResult) => {
@@ -173,8 +174,6 @@ export default function LessonEngine({
       resolving.current = true;
       const spec = steps[stepIndex];
 
-      // Mastery update (deterministic). Prediction is positive-only (a reveal is
-      // never punished); other graded steps use honest first-try correctness.
       const skill = result.skill ?? spec.skill;
       if (skill && isGradedStep(spec.type)) {
         if (spec.type === "prediction") {
@@ -184,7 +183,6 @@ export default function LessonEngine({
         }
       }
 
-      // Score accumulation (scored types only).
       if (SCORED.has(spec.type)) {
         scored.current.total += 1;
         if (result.firstTry) scored.current.correct += 1;
@@ -195,7 +193,6 @@ export default function LessonEngine({
         void finishLesson();
         return;
       }
-      // Advance + persist resume, then release the resolve lock.
       setStepIndex(next);
       if (userId) void saveStepProgress(supabase, userId, lessonId, next, {});
       window.setTimeout(() => {
@@ -215,7 +212,7 @@ export default function LessonEngine({
 
   if (!hydrated) {
     return (
-      <div className="mx-auto flex max-w-2xl flex-col items-center justify-center py-24 text-center">
+      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center py-24 text-center">
         <div className="relative h-11 w-11">
           <div className="absolute inset-0 rounded-full border-2 border-gold-400/25" />
           <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-gold-500" />
@@ -227,97 +224,135 @@ export default function LessonEngine({
     );
   }
 
-  const scale = feedbackScale(register);
-
-  /* ── Completion screen ─────────────────────────────────────────────── */
+  /* ── Completion cinematic ─────────────────────────────────────────────── */
   if (finished) {
+    const shownSkills = (lesson.skills ?? []).slice(0, 3);
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-3xl" style={skin.vars}>
         <Celebrate
           opts={celebrateQueue[0] ?? null}
           onDone={() => setCelebrateQueue((q) => q.slice(1))}
         />
         <m.div
-          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: EASE_OUT }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gold-400/15 via-paper to-chip-sky/30 px-6 py-10 text-center sm:px-10"
+          transition={{ duration: 0.4, ease: EASE_OUT }}
+          className={`${styles.canvas} text-center`}
         >
-          {scale.burst > 0 && !reduce && (
+          {skin.motion.burst > 0 && !reduce && (
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
-              <Burst key={winBurst} count={scale.burst} power={scale.burstPower} />
+              <Burst key={winBurst} count={skin.motion.burst} power={skin.motion.burstPower} />
             </div>
           )}
-          <div className="relative">
-            <div className="font-display text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
-              {moduleTitle}
-            </div>
-            <h1 className="mt-2 font-display text-3xl font-black tracking-tight text-ink sm:text-4xl">
-              {register === "kid" ? "You did it!" : "Lesson complete"}
-            </h1>
-            <p className="mx-auto mt-2 max-w-md font-body text-[15px] leading-relaxed text-soft">
-              {lesson.guide?.outro ??
-                "That concept is yours now. Take it into the market."}
-            </p>
 
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-amber px-4 py-2 font-display text-sm font-bold text-gold-800">
-                +{summary.xp} XP
-              </span>
-              {summary.score != null && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-green px-4 py-2 font-display text-sm font-bold text-green-800">
-                  {summary.score}% right first try
-                </span>
-              )}
-            </div>
+          {/* Celebrating Kai + node-unlock ring */}
+          <div className="relative mx-auto mb-5 grid place-items-center" style={{ width: skin.mascot.completion, height: skin.mascot.completion }}>
+            {!reduce && <span className={styles.unlockRing} style={{ width: "100%", height: "100%" }} />}
+            <KaiGuide pose="celebrating" size={skin.mascot.completion} />
+          </div>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              {nextHref ? (
-                <Link
-                  href={nextHref}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-5 py-3 font-display text-sm font-semibold text-midnight-950 transition-[transform,background-color] duration-150 ease-out hover:bg-gold-300 active:scale-[0.97]"
-                >
-                  Next lesson
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              ) : (
-                <Link
-                  href={backHref}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-5 py-3 font-display text-sm font-semibold text-midnight-950 transition-[transform,background-color] duration-150 ease-out hover:bg-gold-300 active:scale-[0.97]"
-                >
-                  Back to course
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              )}
-              <button
-                onClick={replay}
-                className="inline-flex items-center gap-2 rounded-xl border border-sand bg-white/60 px-4 py-3 font-body text-sm text-soft transition-colors hover:text-ink"
+          <div className={`${skin.type.eyebrow}`} style={{ color: "var(--l-accent)" }}>
+            {moduleTitle}
+          </div>
+          <h1 className={`mt-2 ${skin.type.headline} text-ink`}>
+            {register === "kid" ? "You did it!" : "Lesson complete"}
+          </h1>
+          <p className={`mx-auto mt-3 max-w-md text-soft ${skin.type.body}`}>
+            {lesson.guide?.outro ?? "That concept is yours now. Take it into the market."}
+          </p>
+
+          {/* XP tally + score */}
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 font-display text-[15px] font-black"
+              style={{ background: "var(--l-accent)", color: "var(--l-accent-on)" }}
+            >
+              <Sparkle className="h-4 w-4" />
+              +<CountUp to={summary.xp} /> XP
+            </span>
+            {summary.score != null && (
+              <span
+                className="inline-flex items-center rounded-full px-5 py-2.5 font-display text-[15px] font-bold"
+                style={{ background: "var(--l-ok-soft)", color: "var(--l-ok-ink)" }}
               >
-                <RotateCcw className="h-4 w-4" />
-                Replay
-              </button>
+                {summary.score}% first try
+              </span>
+            )}
+          </div>
+
+          {/* Skills strengthened */}
+          {shownSkills.length > 0 && (
+            <div className="mx-auto mt-8 max-w-sm space-y-3 text-left">
+              <div className="text-center text-[12px] font-bold uppercase tracking-[0.16em] text-soft">
+                Skills you strengthened
+              </div>
+              {shownSkills.map((sk, i) => (
+                <div key={sk}>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="font-body text-[14px] font-semibold text-ink">
+                      {skillLabel(sk)}
+                    </span>
+                  </div>
+                  <div className={styles.skillTrack}>
+                    <span
+                      className={styles.skillFill}
+                      style={{ animationDelay: `${120 + i * 120}ms` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
+          )}
+
+          {/* Next-node tease */}
+          {nextHref && nextTitle && (
+            <div className="mx-auto mt-8 max-w-sm">
+              <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-soft">
+                Up next
+              </div>
+              <div className="mt-1 font-display text-[17px] font-bold text-ink">
+                {nextTitle}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href={nextHref ?? backHref}
+              className="inline-flex items-center gap-2 rounded-full px-6 py-3 font-display text-[15px] font-bold transition-transform duration-150 ease-out active:scale-[0.97]"
+              style={{ background: "var(--l-accent)", color: "var(--l-accent-on)" }}
+            >
+              {nextHref ? "Next lesson" : "Back to course"}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <button
+              onClick={replay}
+              className="inline-flex items-center gap-2 rounded-full border border-sand bg-white/50 px-5 py-3 font-body text-[14px] text-soft transition-colors hover:text-ink"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Replay
+            </button>
           </div>
         </m.div>
       </div>
     );
   }
 
-  /* ── Step flow ─────────────────────────────────────────────────────── */
+  /* ── Step flow ─────────────────────────────────────────────────────────── */
   const spec: StepSpec = steps[stepIndex];
   const StepComp = STEP_REGISTRY[spec.type];
   const pct = Math.round(((stepIndex + 1) / total) * 100);
 
   return (
     <EngineProvider value={{ supabase, userId, familyId }}>
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-3xl" style={skin.vars} data-reg={register}>
         <Celebrate
           opts={celebrateQueue[0] ?? null}
           onDone={() => setCelebrateQueue((q) => q.slice(1))}
         />
 
-        {/* Header: breadcrumb-lite + progress + exit */}
-        <div className="mb-6 flex items-center gap-3">
+        {/* Header: exit + progress rail + counter */}
+        <div className="mb-5 flex items-center gap-3">
           <Link
             href={backHref}
             aria-label="Exit lesson"
@@ -326,44 +361,49 @@ export default function LessonEngine({
             <X className="h-4 w-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <div className="h-2 overflow-hidden rounded-full bg-sand">
+            <div className={styles.rail}>
               <m.div
-                className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-500"
+                className={styles.railFill}
                 initial={false}
                 animate={{ transform: `scaleX(${pct / 100})` }}
-                style={{ transformOrigin: "left", width: "100%" }}
-                transition={{ duration: 0.35, ease: EASE_OUT }}
+                style={{ width: "100%" }}
+                transition={{ duration: 0.4, ease: EASE_OUT }}
               />
             </div>
           </div>
-          <span className="shrink-0 font-display text-xs font-semibold text-soft">
+          <span className="shrink-0 font-display text-xs font-bold text-soft">
             {stepIndex + 1}/{total}
           </span>
         </div>
 
-        {/* Lesson title (small) + guide intro on the first step */}
-        {stepIndex === 0 && (
-          <div className="mb-5">
-            <h1 className="font-display text-lg font-bold text-ink">
-              {lesson.title}
-            </h1>
-            {lesson.guide?.intro && (
-              <div className="mt-3">
-                <GuideLine register={register}>{lesson.guide.intro}</GuideLine>
+        {/* The full-canvas step field */}
+        <div className={styles.canvas}>
+          {/* Step-0 intro: lesson title + Kai welcome */}
+          {stepIndex === 0 && (
+            <div className="mb-6">
+              <div className={skin.type.eyebrow} style={{ color: "var(--l-accent)" }}>
+                {moduleTitle}
               </div>
-            )}
-          </div>
-        )}
+              <h1 className="mt-1.5 font-display text-[20px] font-black text-ink sm:text-[22px]">
+                {lesson.title}
+              </h1>
+              {lesson.guide?.intro && (
+                <div className="mt-4">
+                  <GuideLine skin={skin} pose="watchful">
+                    {lesson.guide.intro}
+                  </GuideLine>
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* The step */}
-        <div className="rounded-3xl border border-sand bg-white/50 px-5 py-6 sm:px-7 sm:py-7">
           <AnimatePresence mode="wait">
             <m.div
               key={`${stepIndex}-${spec.id}`}
               initial={reduce ? { opacity: 0 } : { opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
-              transition={{ duration: 0.26, ease: EASE_OUT }}
+              transition={{ duration: skin.motion.stepDurMs / 1000, ease: EASE_OUT }}
             >
               {StepComp ? (
                 <StepComp
@@ -373,7 +413,6 @@ export default function LessonEngine({
                   onResolve={handleResolve}
                 />
               ) : (
-                // Unknown step type — skip gracefully (forward-compat).
                 <div className="text-center">
                   <p className="font-body text-sm text-soft">
                     This step isn&apos;t available in your app version.
