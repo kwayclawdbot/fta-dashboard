@@ -47,9 +47,18 @@ export async function GET() {
     .order("rank", { ascending: true })
     .limit(12);
 
+  // UI-contract reconcile (§6 TrendingRow.company): attach the company name from
+  // screener_metrics so the row can render "Nvidia" alongside the ticker logo.
+  const tickers = (data || []).map((r) => r.ticker).filter(Boolean) as string[];
+  const { data: metrics } = tickers.length
+    ? await supabase.from("screener_metrics").select("ticker, name").in("ticker", tickers)
+    : { data: [] as { ticker: string; name: string | null }[] };
+  const nameByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
+
   const all = (data || []).map((r) => ({
     rank: r.rank,
     ticker: r.ticker,
+    company: nameByTicker.get((r.ticker || "").toUpperCase()) ?? null,
     score: Number(r.club_score),
     change: Number(r.club_change_14d),
     participants: r.participants,

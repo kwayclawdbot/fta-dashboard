@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveRegister } from "@/lib/register";
 import { FLOORS, floorMet } from "@/lib/club/score";
 
@@ -46,6 +47,28 @@ export async function GET() {
     userVote: string | null;
   };
 
+  // UI-contract reconcile (§8 DebateResponse.participants): an ambient stack of
+  // consented adult member faces for the "join the debate" social proof. These
+  // are Club members (avatar set, non-kid) — NOT vote-attributed: the per-member
+  // vote direction stays sealed behind the aggregate RPC, so nothing leaks.
+  let participants: { id: string; name: string | null; url: string | null }[] = [];
+  if (s.total > 0) {
+    const admin = createAdminClient();
+    const { data: people } = await admin
+      .from("profiles")
+      .select("id, display_name, username, avatar_url, role, age_group, track")
+      .not("avatar_url", "is", null)
+      .limit(40);
+    participants = (people || [])
+      .filter((p) => deriveRegister(p) !== "kid")
+      .slice(0, 8)
+      .map((p) => ({
+        id: p.id,
+        name: p.display_name || p.username || null,
+        url: p.avatar_url as string | null,
+      }));
+  }
+
   return NextResponse.json({
     id: s.id,
     question: s.question,
@@ -53,8 +76,11 @@ export async function GET() {
     yes: s.yes,
     no: s.no,
     total: s.total,
+    // UI contract (§8): the counts object the card reads (yes/no kept too).
+    counts: { yes: s.yes, no: s.no },
     userVote: s.userVote,
     floorMet: floorMet(s.total, FLOORS.debateVotes),
+    participants,
     kidWalled: false,
   });
 }

@@ -59,6 +59,8 @@ import TickerDebate from "@/components/social/TickerDebate";
 import ChangedMyMind from "@/components/social/ChangedMyMind";
 import ResearchObjectCard from "@/components/social/ResearchObjectCard";
 import ResearchObjectCompose from "@/components/social/ResearchObjectCompose";
+import Gated from "@/components/entitlements/Gated";
+import ContextualWall from "@/components/entitlements/ContextualWall";
 import { fetchTickerTheses, type ResearchObjectCard as ThesisCard } from "@/lib/social/research-object";
 import {
   pctSinceAdded,
@@ -790,16 +792,26 @@ export default function ResearchClient({
                 )}
               </div>
               {showCompose && (
-                <ResearchObjectCompose
-                  ticker={ticker}
-                  companyName={companyName}
-                  onCancel={() => setShowCompose(false)}
-                  onPublished={(id) => {
-                    setShowCompose(false);
-                    fetchTickerTheses(supabase, ticker).then(setTheses, () => {});
-                    router.push(`/research/thesis/${id}`);
-                  }}
-                />
+                // Gate the structured-thesis composer (paid Cheat Code Club). Free
+                // members get the contextual wall here; Challenge-Pass holders get
+                // the countdown ribbon + the composer. Server enforces the same on
+                // POST /api/social/research. The basic free ticker post stays on
+                // the untouched community composer.
+                <Gated
+                  feature="publish_thesis"
+                  fallback={<ContextualWall feature="publish_thesis" variant="band" />}
+                >
+                  <ResearchObjectCompose
+                    ticker={ticker}
+                    companyName={companyName}
+                    onCancel={() => setShowCompose(false)}
+                    onPublished={(id) => {
+                      setShowCompose(false);
+                      fetchTickerTheses(supabase, ticker).then(setTheses, () => {});
+                      router.push(`/research/thesis/${id}`);
+                    }}
+                  />
+                </Gated>
               )}
               {theses.length > 0 ? (
                 <div className="space-y-2.5">

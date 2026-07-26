@@ -22,8 +22,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import LockedState from "@/components/dashboard/LockedState";
-import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import { wallFor, type Feature } from "@/lib/entitlements";
+
+/**
+ * Every wall CTA lands on the canonical matrix pricing page (/pricing) — the ONE
+ * upgrade surface (MONETIZATION-GATES.md "Pricing page"), which then routes to
+ * Club checkout. Keeps the walls and the pricing table in lockstep and stops
+ * /pricing being an orphan with no inbound links.
+ */
+const PRICING_HREF = "/pricing";
 
 /**
  * The ONE contextual paywall surface. Renders the verbatim per-feature copy
@@ -87,7 +94,7 @@ export default function ContextualWall({
           <p className="text-sm leading-snug text-soft">{copy.body}</p>
         </div>
         <a
-          href={FIC_CHECKOUT_URL}
+          href={PRICING_HREF}
           className="cta-button inline-flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-xs sm:w-auto"
         >
           {copy.cta}
@@ -103,7 +110,7 @@ export default function ContextualWall({
       title={copy.title}
       body={copy.body}
       surface={surface}
-      cta={{ label: copy.cta, href: FIC_CHECKOUT_URL, external: true }}
+      cta={{ label: copy.cta, href: PRICING_HREF, external: false }}
       className={className}
     />
   );

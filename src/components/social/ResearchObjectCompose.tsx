@@ -6,11 +6,13 @@
  * sections (thesis / catalysts / risks / valuation) and publishes through the
  * SINGLE gated entry point (publishThesis → POST /api/social/research).
  *
- * TODO(gate:research_publish): structured publishing is a paid (Cheat Code Club)
- * feature per MONETIZATION-GATES.md. The monetization-gates lane wraps the publish
- * ACTION (the API route) + will render its contextual wall around THIS trigger.
- * This lane exposes the clean entry point only and does NOT implement tier gating
- * — the basic free ticker post stays on the community composer, untouched.
+ * GATED (research_publish → publish_thesis): structured publishing is a paid
+ * (Cheat Code Club / FTA) feature per MONETIZATION-GATES.md. The server enforces
+ * it on POST /api/social/research via the central can() gate, and the caller
+ * wraps THIS composer in <Gated feature="publish_thesis"> so free members see the
+ * contextual wall and Challenge-Pass holders see the countdown ribbon. The basic
+ * free ticker post stays on the community composer, untouched. The publish()
+ * handler below also fails soft on a server "walled" verdict (belt-and-suspenders).
  */
 
 import { useState } from "react";
@@ -80,6 +82,8 @@ export default function ResearchObjectCompose({
       setErr(
         res.reason === "kid_walled"
           ? "This isn't available on your account."
+          : res.reason === "walled"
+          ? "Publishing a structured thesis is a Cheat Code Club feature."
           : "Couldn't publish that — try again."
       );
       return;

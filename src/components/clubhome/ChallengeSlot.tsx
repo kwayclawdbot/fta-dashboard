@@ -26,7 +26,7 @@ export default function ChallengeSlot({
 
   return (
     <Link
-      href="/challenge"
+      href="/community"
       aria-label={`5-Day Challenge — day ${day} of ${CHALLENGE_DAYS}, continue`}
       className="group flex items-stretch overflow-hidden rounded-2xl border border-volt-500/40 bg-gradient-to-r from-volt-500/[0.10] to-teal-400/[0.06] shadow-soft transition-transform active:scale-[0.99]"
     >

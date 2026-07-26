@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { deriveRegister } from "@/lib/register";
+import { getEntitlements, can } from "@/lib/entitlements";
 
 /**
  * Research Object v1 publish/list endpoint (SOCIAL OBJECTS S1).
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, age_group, track")
+    .select("role, age_group, track, family_id")
     .eq("id", user.id)
     .single();
 
@@ -53,11 +54,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "forbidden", reason: "kid_walled" }, { status: 403 });
   }
 
-  // TODO(gate:research_publish): the monetization-gates lane wraps this ONE entry
-  // point with can(user,'research_publish'). Structured thesis publishing is a
-  // paid (Cheat Code Club) feature per MONETIZATION-GATES.md; the basic free
-  // ticker post is a separate, untouched path. Until the gate lands, membership
-  // is enforced by the RPC/RLS chain only — do NOT add ad-hoc tier checks here.
+  // ENTITLEMENT (MONETIZATION-GATES.md): the structured Research Object is a paid
+  // (Cheat Code Club / FTA) publish path — the ONE gated entry point. The basic
+  // free ticker post lives on the community composer and is untouched. Server-
+  // authoritative via the central can() gate (never UI-only); a Challenge-Pass
+  // holder reads tier 'fic' and passes. Composes with the kid wall above.
+  const ent = await getEntitlements(supabase, { profile });
+  if (!can(ent, "publish_thesis")) {
+    return NextResponse.json(
+      { error: "members_only", reason: "walled", feature: "publish_thesis" },
+      { status: 403 }
+    );
+  }
 
   let body: {
     ticker?: string;

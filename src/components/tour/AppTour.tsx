@@ -35,6 +35,18 @@ import type { FamilyTier } from "@/lib/tier";
 // Discover row was added), so re-touring them would be noise: they are silently
 // advanced to v3 without re-firing (see the auto-run decision below).
 const CURRENT_TOUR_VERSION = 3;
+
+// The moment the v3 (Cheat Code Club) redesign shipped to production. It is the
+// cutoff that separates a genuine RETURNING member (who used a pre-redesign app
+// and for whom "here's what's new" is true) from a member who only ever knew the
+// new app. Any account created on/after this date has no "old app" memory, so it
+// must NEVER be shown the stale "we redesigned the club" what's-new overlay —
+// even if it carries a stale tour_version (e.g. a v2-era completion, or a seeded
+// test profile). Those accounts are silently advanced to CURRENT instead.
+//
+// This fixes the reported bug: brand-new / recently-created accounts firing the
+// "what's new" tour on first login purely because their tour_version < 3.
+const TOUR_V3_LAUNCH_AT = Date.parse("2026-07-24T00:00:00Z");
 // Per-device fast-path cache of the highest tour version seen (skips the DB
 // round trip once this device has seen the current tour).
 const LSV_KEY = "fic-tour-v";
@@ -520,14 +532,21 @@ export default function AppTour({ user }: { user: TourUser }) {
       if (!session?.user) return;
       const { data } = await supabase
         .from("profiles")
-        .select("tour_completed_at, tour_version")
+        .select("tour_completed_at, tour_version, created_at")
         .eq("id", session.user.id)
         .single();
       if (!mounted || !data) return;
       const seen = data.tour_version ?? 0;
-      // Brand-new members get the welcome tour; members who finished an older
-      // tour version get the refreshed tour ONCE with "what's new" framing.
-      // Everyone at the current version is left alone.
+      // A member counts as a genuine "returning" member — one for whom the
+      // redesign is actually NEW — only if their account predates the v3 launch.
+      // An account created on/after launch never knew the old app, so it must not
+      // get the "what's new" overlay no matter what tour_version it carries.
+      const createdAt = data.created_at ? Date.parse(data.created_at as string) : Date.now();
+      const predatesRedesign = Number.isFinite(createdAt) && createdAt < TOUR_V3_LAUNCH_AT;
+
+      // Brand-new members get the welcome tour; genuinely-returning members who
+      // finished an older tour version get the refreshed tour ONCE with "what's
+      // new" framing. Everyone at the current version is left alone.
       //
       // v3 gating (per-mode): the redesign's "what's new" pass is a real change
       // only for CLUB (individual) members. FAMILY members' nav is essentially
@@ -536,10 +555,12 @@ export default function AppTour({ user }: { user: TourUser }) {
       let framing: Framing | null = null;
       if (!data.tour_completed_at) framing = "welcome";
       else if (seen < CURRENT_TOUR_VERSION) {
-        if (user.isSolo) {
+        if (user.isSolo && predatesRedesign) {
           framing = "whatsnew";
         } else {
-          // Family: silently mark them current so the tour never re-imposes.
+          // Not a genuine pre-redesign veteran (a recent/never-saw-old-app
+          // account, or a family whose nav is unchanged): silently mark them
+          // current so the stale "what's new" tour never imposes.
           try { localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION)); } catch { /* ignore */ }
           await supabase
             .from("profiles")

@@ -17,11 +17,22 @@ export const runtime = "nodejs";
 interface Post {
   id: string;
   ticker: string | null;
+  company: string | null;
   title: string | null;
   excerpt: string | null;
-  author: { id: string; name: string; avatar: string | null; belt: string };
+  author: {
+    id: string;
+    name: string;
+    avatar: string | null;
+    belt: string;
+    badge: string | null;
+    verified: boolean;
+  };
   votes: number;
   comments: number;
+  saves: number;
+  href: string;
+  editorPick: boolean;
   createdAt: string;
 }
 
@@ -48,16 +59,34 @@ export async function GET() {
 
   const ids = posts.map((p) => p.id);
   const authorIds = [...new Set(posts.map((p) => p.author_id).filter(Boolean))] as string[];
+  const tickerSet = [
+    ...new Set(
+      posts.map((p) => (p.ticker_tags && p.ticker_tags.length ? String(p.ticker_tags[0]).toUpperCase() : null)).filter(Boolean)
+    ),
+  ] as string[];
 
-  const [{ data: likes }, { data: comments }, { data: authors }] = await Promise.all([
-    admin.from("post_likes").select("post_id").in("post_id", ids),
-    admin.from("post_comments").select("post_id").in("post_id", ids),
-    admin.from("profiles").select("id, display_name, username, avatar_url").in("id", authorIds),
-  ]);
+  const [{ data: likes }, { data: comments }, { data: saves }, { data: authors }, { data: metrics }] =
+    await Promise.all([
+      admin.from("post_likes").select("post_id").in("post_id", ids),
+      admin.from("post_comments").select("post_id").in("post_id", ids),
+      // Saves = the 'saved' object reaction on a feed post (migration 150).
+      admin
+        .from("object_reactions")
+        .select("target_id")
+        .eq("target_type", "feed_post")
+        .eq("reaction", "saved")
+        .in("target_id", ids),
+      admin.from("profiles").select("id, display_name, username, avatar_url, role").in("id", authorIds),
+      tickerSet.length
+        ? admin.from("screener_metrics").select("ticker, name").in("ticker", tickerSet)
+        : Promise.resolve({ data: [] as { ticker: string; name: string | null }[] }),
+    ]);
 
   const likeCount = countBy(likes || [], "post_id");
   const commentCount = countBy(comments || [], "post_id");
+  const saveCount = countBy(saves || [], "target_id");
   const authorMap = new Map((authors || []).map((a) => [a.id, a]));
+  const companyByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
 
   // Belts need lifetime XP per author.
   const xpByAuthor = new Map<string, number>();
@@ -70,33 +99,52 @@ export async function GET() {
   const shaped: Post[] = posts.map((p) => {
     const a = authorMap.get(p.author_id as string);
     const xp = xpByAuthor.get(p.author_id as string) || 0;
+    const belt = beltForXp(xp).belt;
+    const ticker = p.ticker_tags && p.ticker_tags.length ? String(p.ticker_tags[0]) : null;
+    const role = (a?.role as string | null) || null;
     return {
       id: p.id,
-      ticker: p.ticker_tags && p.ticker_tags.length ? p.ticker_tags[0] : null,
+      ticker,
+      // UI contract (§7 ThinkingPost): company name for the ticker logo/byline.
+      company: ticker ? companyByTicker.get(ticker.toUpperCase()) ?? null : null,
       title: p.title,
       excerpt: p.body ? p.body.slice(0, 240) : null,
       author: {
         id: (p.author_id as string) || "",
         name: a?.display_name || a?.username || "A member",
         avatar: a?.avatar_url ?? null,
-        belt: beltForXp(xp).belt.key,
+        belt: belt.key,
+        // Credibility tag from the earned belt (White = no badge). verified =
+        // staff (coach/admin) — a real authority marker, never fabricated.
+        badge: belt.order > 0 ? `${belt.name} Belt` : null,
+        verified: role === "admin" || role === "coach",
       },
       votes: likeCount.get(p.id) || 0,
       comments: commentCount.get(p.id) || 0,
+      saves: saveCount.get(p.id) || 0,
+      // Real, working link — the ticker's research page (with the community tab),
+      // or the feed when the post carries no ticker.
+      href: ticker ? `/research/${encodeURIComponent(ticker)}` : "/community",
+      editorPick: false,
       createdAt: p.created_at,
     };
   });
 
-  // Rank by engagement (votes + comments), then recency.
+  // Rank by engagement (votes + comments + saves), then recency.
   shaped.sort((a, b) => {
-    const ea = a.votes + a.comments;
-    const eb = b.votes + b.comments;
+    const ea = a.votes + a.comments + a.saves;
+    const eb = b.votes + b.comments + b.saves;
     if (eb !== ea) return eb - ea;
     return +new Date(b.createdAt) - +new Date(a.createdAt);
   });
 
+  // The editorial lead earns the "Editor's Pick" flag once it clears a real
+  // engagement bar (never on an empty room).
+  const lead = shaped[0] ?? null;
+  if (lead && lead.votes + lead.comments + lead.saves >= 3) lead.editorPick = true;
+
   return NextResponse.json({
-    lead: shaped[0] ?? null,
+    lead,
     secondary: shaped.slice(1, 4),
   });
 }

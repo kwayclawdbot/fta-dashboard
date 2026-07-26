@@ -103,6 +103,9 @@ export async function GET() {
         id: p.id,
         name: p.display_name || p.username || "A member",
         avatar: p.avatar_url ?? null,
+        // UI contract (§10 PeopleMember.href): a real profile link when the
+        // member has a public username (saves the client id→handle round-trip).
+        href: p.username ? `/u/${encodeURIComponent(p.username)}` : null,
         tags: tags.slice(0, 3),
         reason,
         contribution,
@@ -112,7 +115,7 @@ export async function GET() {
     .sort((a, b) => b.contribution - a.contribution)
     .slice(0, 6)
     // Strip the internal score — no counts leak to the client.
-    .map((m) => ({ id: m.id, name: m.name, avatar: m.avatar, tags: m.tags, reason: m.reason }));
+    .map((m) => ({ id: m.id, name: m.name, avatar: m.avatar, href: m.href, tags: m.tags, reason: m.reason }));
 
   return NextResponse.json({ kidWalled: false, members: scored });
 }

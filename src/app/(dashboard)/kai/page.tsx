@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { getClubTier } from "@/lib/tier";
 import { getKaiChatSeed } from "@/lib/kai/chat-seed";
+import ContextualWall from "@/components/entitlements/ContextualWall";
 import KaiChatClient from "./KaiChatClient";
 
 /**
@@ -25,6 +27,27 @@ export default async function AskKaiPage({
   searchParams: Promise<{ thread?: string }>;
 }) {
   const supabase = await createClient();
+
+  // Tier guard (belt-and-suspenders with the nav, which never surfaces Ask Kai
+  // to the free tier, and the chat API, which gates server-side). A free member
+  // reaching /kai directly would otherwise hit a dead shell — instead show the
+  // Kai contextual wall so the door is closed with real copy + the /pricing CTA.
+  // Auth is already enforced by the (dashboard) layout.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("family_id").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const tier = await getClubTier(supabase, profile?.family_id);
+  if (tier === "free") {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-10">
+        <ContextualWall feature="kai_chat_full" />
+      </div>
+    );
+  }
+
   const [initialData, sp] = await Promise.all([
     getKaiChatSeed(supabase).catch(() => null),
     searchParams,
