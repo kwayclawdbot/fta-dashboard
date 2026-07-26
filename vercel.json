@@ -60,6 +60,10 @@
     {
       "path": "/api/club/refresh",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/live-events",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

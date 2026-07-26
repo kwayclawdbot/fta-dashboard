@@ -43,7 +43,8 @@ type NotifType =
   | "new_lesson"
   | "recording_posted"
   | "broadcast"
-  | "alert";
+  | "alert"
+  | "live_starting";
 
 /**
  * Map a notification type → the notification_prefs push-toggle key that gates
@@ -66,6 +67,10 @@ const PREF_KEY_FOR: Record<NotifType, string | null> = {
   // the dispatch layer sends every 'alert' row it sees.
   alert: null,
   support_reply: null, // support replies always push (transactional)
+  // Live go-live pushes are opt-out via push_lives (absent/true = send). The
+  // notification row is only created for members who opted into Remind Me, so
+  // this gate is a second, per-member mute — not the audience selector.
+  live_starting: "push_lives",
 };
 
 function pushAllowed(prefs: Record<string, unknown> | null, type: NotifType): boolean {
@@ -102,6 +107,10 @@ function titleFor(n: NotificationRow, actorName: string): string {
       return "Trade alert";
     case "support_reply":
       return "FTA Support replied";
+    case "live_starting":
+      // The contextual, room-type line lives in n.body ("🎓 Live class starting
+      // now · {title}"); the title is the brand anchor.
+      return "Cheat Code Club";
   }
 }
 
