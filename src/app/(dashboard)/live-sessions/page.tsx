@@ -106,8 +106,8 @@ const TRACK_CONFIG: Record<
   },
   teens: {
     label: "Teens",
-    color: "text-purple-700",
-    bgColor: "bg-purple-400/10",
+    color: "text-teal-700",
+    bgColor: "bg-teal-400/10",
   },
   adults: {
     label: "Parents & Adults",

@@ -294,7 +294,7 @@ export default function ScenarioPracticePage() {
           )}
 
           {/* Chart */}
-          <div className="night-island border border-night-700/60 p-2">
+          <div className="chart-frame p-2">
             {visibleBars.length > 0 ? (
               <CandlestickChart
                 ref={chartRef}

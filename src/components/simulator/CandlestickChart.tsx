@@ -91,25 +91,29 @@ const CandlestickChart = forwardRef<ChartHandle, CandlestickChartProps>(
         width: containerRef.current.clientWidth,
         height,
         layout: {
+          // Warm-dark chart theme (Lane A): grid/text/borders warmed off the
+          // old cold navy (#0F1B37) so the pane reads as an intentional warm
+          // media panel in the paper app, not a cold trading terminal. bg stays
+          // transparent so it inherits the warm .chart-frame container.
           background: { type: lc.ColorType.Solid, color: "transparent" },
-          textColor: "#75819d",
+          textColor: "#9C927E",
           fontFamily: "var(--font-body), sans-serif",
           fontSize: 11,
         },
         grid: {
-          vertLines: { color: "rgba(15, 27, 55, 0.8)" },
-          horzLines: { color: "rgba(15, 27, 55, 0.8)" },
+          vertLines: { color: "rgba(150, 132, 104, 0.14)" },
+          horzLines: { color: "rgba(150, 132, 104, 0.14)" },
         },
         crosshair: {
           mode: lc.CrosshairMode.Normal,
-          vertLine: { color: "rgba(251, 191, 36, 0.3)", style: lc.LineStyle.Dashed },
-          horzLine: { color: "rgba(251, 191, 36, 0.3)", style: lc.LineStyle.Dashed },
+          vertLine: { color: "rgba(255, 138, 0, 0.35)", style: lc.LineStyle.Dashed },
+          horzLine: { color: "rgba(255, 138, 0, 0.35)", style: lc.LineStyle.Dashed },
         },
         rightPriceScale: {
-          borderColor: "rgba(15, 27, 55, 0.8)",
+          borderColor: "rgba(150, 132, 104, 0.22)",
         },
         timeScale: {
-          borderColor: "rgba(15, 27, 55, 0.8)",
+          borderColor: "rgba(150, 132, 104, 0.22)",
           timeVisible: false,
           rightOffset: 5,
         },

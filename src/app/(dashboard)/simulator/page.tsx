@@ -357,7 +357,7 @@ export default function SimulatorPage() {
           <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="night-island border border-night-700/60 p-2"
+            className="chart-frame p-2"
           >
             <CandlestickChart
               ref={chartRef}

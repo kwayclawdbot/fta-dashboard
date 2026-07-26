@@ -17,6 +17,8 @@ import {
   Heart,
 } from "lucide-react";
 import NewsClient from "../news/NewsClient";
+import Tabs from "@/components/ui/Tabs";
+import TickerRow from "@/components/ui/TickerRow";
 import ScreenerSurface from "@/components/screener/ScreenerSurface";
 import type { NewsCardData } from "@/lib/news/types";
 import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
@@ -115,29 +117,19 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
           the narrow column so the nav stays put; the Screener tab below breaks
           out wider for its data table. */}
       <div className="mx-auto max-w-3xl">
-        <div className="mb-5 -mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-          <div className="flex min-w-max gap-1.5">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  data-tour={`discover:${t.key}`}
-                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                    active
-                      ? "bg-gold-400/15 text-gold-700"
-                      : "text-midnight-400 hover:bg-midnight-800/40 hover:text-midnight-200"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <Tabs
+          ariaLabel="Discover sections"
+          size="sm"
+          className="mb-5"
+          tabs={TABS.map((t) => ({
+            key: t.key,
+            label: t.label,
+            icon: t.icon,
+            dataAttrs: { "data-tour": `discover:${t.key}` },
+          }))}
+          active={tab}
+          onSelect={setTab}
+        />
       </div>
 
       {tab === "screener" ? (
@@ -207,7 +199,8 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
 }
 
 // ── Enriched ranked ticker row (sparkline + delayed price + discussion) ──────
-function TickerRow({
+// Wraps the shared ui/TickerRow primitive with Discover's metric slot.
+function RankedTickerRow({
   rank,
   ticker,
   name,
@@ -224,20 +217,18 @@ function TickerRow({
 }) {
   const tone = changeTone(quote?.changePercent);
   return (
-    <Link
+    <TickerRow
       href={`/research/${encodeURIComponent(ticker)}`}
-      className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-midnight-800/40"
+      symbol={ticker}
+      name={name}
+      leading={
+        rank != null ? (
+          <span className="w-4 shrink-0 text-center font-mono text-xs font-bold text-midnight-400">
+            {rank}
+          </span>
+        ) : undefined
+      }
     >
-      {rank != null && (
-        <span className="w-4 shrink-0 text-center font-mono text-xs font-bold text-midnight-400">
-          {rank}
-        </span>
-      )}
-      <CompanyLogo symbol={ticker} name={name} size={30} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ink">{ticker}</p>
-        <p className="truncate text-[11px] text-soft">{name}</p>
-      </div>
       {/* Local price sparkline (lazy), narrow on phones. */}
       <div className="w-12 shrink-0 sm:w-24">
         <Sparkline symbol={ticker} height={28} />
@@ -273,7 +264,7 @@ function TickerRow({
           </p>
         )}
       </div>
-    </Link>
+    </TickerRow>
   );
 }
 
@@ -308,7 +299,7 @@ function ForYouTab({
           <DelayedNote />
           <div className="space-y-0.5">
             {movers.map((mv) => (
-              <TickerRow
+              <RankedTickerRow
                 key={mv.ticker}
                 ticker={mv.ticker}
                 name={mv.name ?? mv.ticker}
@@ -341,7 +332,7 @@ function ForYouTab({
           <DelayedNote />
           <div className="space-y-0.5">
             {byDiscussion.slice(0, 5).map((e) => (
-              <TickerRow
+              <RankedTickerRow
                 key={e.id}
                 ticker={e.ticker}
                 name={e.company_name}
@@ -409,7 +400,7 @@ function TrendingTab({
         {rows.length ? (
           <div className="space-y-0.5">
             {rows.map((e, i) => (
-              <TickerRow
+              <RankedTickerRow
                 key={e.id}
                 rank={i + 1}
                 ticker={e.ticker}
@@ -555,7 +546,7 @@ function DiscussedTab({
       {rows.length ? (
         <div className="space-y-0.5">
           {rows.map((e, i) => (
-            <TickerRow
+            <RankedTickerRow
               key={e.id}
               rank={i + 1}
               ticker={e.ticker}

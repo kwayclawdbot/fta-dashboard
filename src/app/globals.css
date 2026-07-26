@@ -573,6 +573,23 @@ body {
   overflow: hidden;
 }
 
+/* Warm chart frame (Lane A) — the trading-simulator / practice chart pane.
+   Replaces the pure-black night-island under lightweight-charts so the candle
+   surface reads as a WARM dark media panel framed by the paper app, not a cold
+   terminal. A warm near-black ground + sand border + soft lift. */
+.chart-frame {
+  background: #1B1710;
+  color: #E7DFCF;
+  border: 1px solid var(--sand);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+:root[data-theme="dark"] .chart-frame,
+:root[data-theme="dark"] [data-mode] .chart-frame {
+  background: #16120C;
+}
+
 /* ================================================================== */
 /* CLUBHOME v2 — VIBRANCY SYSTEM (owner 07-26: alive, not muted).       */
 /* Saturated volt/teal COLOR MOMENTS over the warm sand base + premium  */
@@ -698,6 +715,18 @@ body {
 .club-livedot-volt { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-volt-500) 65%, transparent); }
 .club-livedot-teal { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-teal-400) 65%, transparent); }
 .club-livedot-kai  { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--kai-blue) 65%, transparent); }
+
+/* Shared TickerRow hover (Lane A) — register-aware accent tint (gold in Family,
+   volt in Club, metallic on FTA). Lighter than .club-row (no accent bar); used
+   by the ui/TickerRow primitive across Discover/Screener/Watchlist/etc. */
+.ticker-row {
+  transition: background-color 0.16s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ticker-row:hover {
+    background: color-mix(in srgb, var(--accent-solid) 7%, transparent);
+  }
+}
 
 /* Interactive ledger row — hover charge (volt accent bar slides in) + press. */
 .club-row {

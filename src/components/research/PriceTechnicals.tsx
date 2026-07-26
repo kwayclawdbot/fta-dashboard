@@ -155,7 +155,7 @@ export default function PriceTechnicals({
           <button
             onClick={() => setShowEma50((v) => !v)}
             className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${
-              showEma50 ? "border-purple-400 bg-purple-500/12 text-purple-600" : "border-sand text-soft hover:bg-paper"
+              showEma50 ? "border-teal-400 bg-teal-400/12 text-teal-700" : "border-sand text-soft hover:bg-paper"
             }`}
           >
             EMA 50
@@ -257,7 +257,7 @@ function PriceSvg({
           <path d={path(view.ema20)} fill="none" stroke="#38bdf8" strokeWidth={1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.9} />
         )}
         {showEma50 && view.ema50.length === bars.length && (
-          <path d={path(view.ema50)} fill="none" stroke="#a78bfa" strokeWidth={1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.9} />
+          <path d={path(view.ema50)} fill="none" stroke="#00B8A0" strokeWidth={1.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.9} />
         )}
         <g className={strokeCls}>
           <circle cx={x(bars.length - 1)} cy={y(last)} r={3.5} fill="currentColor" />

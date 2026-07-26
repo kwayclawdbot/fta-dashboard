@@ -62,9 +62,9 @@ interface Thread {
 function BlockView({ block }: { block: Block }) {
   if (block.kind === "chart") {
     return (
-      <div className="mt-2 rounded-xl border border-sand bg-paper/40 p-3 text-gold-600">
+      <div className="mt-2 rounded-xl border border-sand bg-paper/40 p-3 text-kai-600">
         <div className="mb-1 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-soft">
-          <Link href={`/research/${encodeURIComponent(block.symbol)}`} className="hover:text-gold-700">
+          <Link href={`/research/${encodeURIComponent(block.symbol)}`} className="hover:text-kai-700">
             {block.symbol} · {block.range}
           </Link>
           <span>delayed</span>
@@ -77,7 +77,7 @@ function BlockView({ block }: { block: Block }) {
     <div className="mt-2 space-y-1.5">
       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soft">
         <Newspaper className="h-3.5 w-3.5" />{" "}
-        <Link href={`/research/${encodeURIComponent(block.symbol)}`} className="hover:text-gold-700">
+        <Link href={`/research/${encodeURIComponent(block.symbol)}`} className="hover:text-kai-700">
           {block.symbol}
         </Link>{" "}
         headlines
@@ -88,9 +88,9 @@ function BlockView({ block }: { block: Block }) {
           href={n.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-start gap-2 rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm transition-colors hover:border-gold-400"
+          className="flex items-start gap-2 rounded-lg border border-sand bg-midnight-900 px-3 py-2 text-sm transition-colors hover:border-kai-400"
         >
-          <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
+          <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-kai-600" />
           <span className="min-w-0">
             <span className="line-clamp-2 font-medium text-ink">{n.title}</span>
             {n.publisher && <span className="text-[11px] text-soft">{n.publisher}</span>}
@@ -472,7 +472,7 @@ export default function KaiChatShared({
   if (!ready) {
     return (
       <div className={`flex items-center justify-center ${isPanel ? "h-full" : "h-[70vh]"}`}>
-        <Loader2 className="h-6 w-6 animate-spin text-gold-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-kai-600" />
       </div>
     );
   }
@@ -506,7 +506,7 @@ export default function KaiChatShared({
         >
           <button
             onClick={newThread}
-            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-gold-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-gold-600"
+            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-kai-500 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-kai-600"
           >
             <Plus className="h-4 w-4" /> New chat
           </button>
@@ -515,14 +515,14 @@ export default function KaiChatShared({
               <div
                 key={t.id}
                 className={`group flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm ${
-                  activeId === t.id ? "bg-chip-amber/30 text-ink" : "text-soft hover:bg-paper"
+                  activeId === t.id ? "bg-kai-400/12 text-ink" : "text-soft hover:bg-paper"
                 }`}
               >
                 <button
                   onClick={() => openThread(t.id)}
                   className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                 >
-                  <MessageSquareText className="h-3.5 w-3.5 shrink-0 text-gold-600" />
+                  <MessageSquareText className="h-3.5 w-3.5 shrink-0 text-kai-600" />
                   <span className="truncate">{t.title}</span>
                 </button>
                 <button
@@ -570,14 +570,14 @@ export default function KaiChatShared({
             )}
             <button
               onClick={openFullView}
-              className="hidden shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold text-gold-700 transition-colors hover:bg-paper sm:inline-flex"
+              className="hidden shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold text-kai-700 transition-colors hover:bg-paper sm:inline-flex"
               title="Open the full Kai page"
             >
               Open full view <ExternalLink className="h-3 w-3" />
             </button>
             <button
               onClick={() => setMemoryOpen(true)}
-              className="shrink-0 rounded-full p-1.5 text-soft transition-colors hover:bg-paper hover:text-gold-700"
+              className="shrink-0 rounded-full p-1.5 text-soft transition-colors hover:bg-paper hover:text-kai-700"
               aria-label="What Kai remembers about you"
               title="What Kai remembers about you"
             >
@@ -600,8 +600,8 @@ export default function KaiChatShared({
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/20">
-              <Sparkles className="h-4 w-4 text-gold-700" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-kai-400/20">
+              <Sparkles className="h-4 w-4 text-kai-700" />
             </span>
             <div className="min-w-0 flex-1">
               <h1 className="font-display text-base font-bold text-ink">Ask Kai</h1>
@@ -616,7 +616,7 @@ export default function KaiChatShared({
             )}
             <button
               onClick={() => setMemoryOpen(true)}
-              className="shrink-0 rounded-full p-1.5 text-soft transition-colors hover:bg-paper hover:text-gold-700"
+              className="shrink-0 rounded-full p-1.5 text-soft transition-colors hover:bg-paper hover:text-kai-700"
               aria-label="What Kai remembers about you"
               title="What Kai remembers about you"
             >
@@ -629,8 +629,8 @@ export default function KaiChatShared({
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
           {messages.length === 0 ? (
             <div className="mx-auto mt-10 max-w-md text-center">
-              <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gold-400/20">
-                <Sparkles className="h-7 w-7 text-gold-700" />
+              <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-kai-400/20">
+                <Sparkles className="h-7 w-7 text-kai-700" />
               </span>
               <h2 className="font-display text-lg font-bold text-ink">
                 {isKid ? "Hi! I'm Kai 👋" : "Ask Kai anything about a company"}
@@ -664,7 +664,7 @@ export default function KaiChatShared({
                   <button
                     key={q}
                     onClick={() => setInput(q)}
-                    className="rounded-full border border-sand px-3 py-1.5 text-xs text-soft hover:border-gold-400 hover:text-ink"
+                    className="rounded-full border border-sand px-3 py-1.5 text-xs text-soft hover:border-kai-400 hover:text-ink"
                   >
                     {q}
                   </button>
@@ -681,7 +681,7 @@ export default function KaiChatShared({
                   <div
                     className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[15px] ${
                       m.role === "user"
-                        ? "bg-gold-500 text-white"
+                        ? "bg-kai-500 text-white"
                         : m.error
                           ? "border border-red-500/40 bg-red-500/5 text-midnight-200"
                           : "border border-sand bg-midnight-900 text-midnight-200"
@@ -704,7 +704,7 @@ export default function KaiChatShared({
                           <button
                             onClick={retry}
                             disabled={sending}
-                            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-sand bg-paper px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-gold-400 hover:text-gold-700 disabled:opacity-50"
+                            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-sand bg-paper px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-kai-400 hover:text-kai-700 disabled:opacity-50"
                           >
                             {sending ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -733,7 +733,7 @@ export default function KaiChatShared({
             </div>
           ) : (
             <>
-              {capNote && <p className="mb-2 text-center text-xs text-gold-700">{capNote}</p>}
+              {capNote && <p className="mb-2 text-center text-xs text-kai-700">{capNote}</p>}
               <div className="flex items-end gap-2">
                 <textarea
                   value={input}
@@ -746,12 +746,12 @@ export default function KaiChatShared({
                   }}
                   rows={1}
                   placeholder={isKid ? "Ask Kai about a company…" : "Ask Kai about a company or ticker…"}
-                  className="max-h-32 flex-1 resize-none rounded-xl border border-sand bg-midnight-900 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                  className="max-h-32 flex-1 resize-none rounded-xl border border-sand bg-midnight-900 px-3.5 py-2.5 text-[15px] text-ink placeholder:text-midnight-500 focus:border-kai-400 focus:outline-none"
                 />
                 <button
                   onClick={send}
                   disabled={sending || !input.trim()}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-500 text-white transition-colors hover:bg-gold-600 disabled:opacity-50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kai-500 text-white transition-colors hover:bg-kai-600 disabled:opacity-50"
                   aria-label="Send"
                 >
                   {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -760,7 +760,7 @@ export default function KaiChatShared({
               {isPanel && (
                 <button
                   onClick={openFullView}
-                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-soft transition-colors hover:text-gold-700 sm:hidden"
+                  className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-soft transition-colors hover:text-kai-700 sm:hidden"
                 >
                   Open full view <ExternalLink className="h-3 w-3" />
                 </button>
@@ -781,8 +781,8 @@ export default function KaiChatShared({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/20">
-                <Brain className="h-4 w-4 text-gold-700" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-kai-400/20">
+                <Brain className="h-4 w-4 text-kai-700" />
               </span>
               <h2 className="flex-1 font-display text-base font-bold text-ink">
                 What Kai remembers about you
@@ -835,7 +835,7 @@ export default function KaiChatShared({
                     disabled={deepModeSaving}
                     onClick={() => toggleDeepMode(!deepMode)}
                     className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                      deepMode ? "bg-gold-500" : "bg-sand"
+                      deepMode ? "bg-kai-500" : "bg-sand"
                     }`}
                     aria-label="Toggle deeper analysis mode"
                   >

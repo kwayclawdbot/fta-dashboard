@@ -36,6 +36,7 @@ import AgeBadge from "@/components/community/AgeBadge";
 import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import AnnouncementCard from "@/components/community/AnnouncementCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import Tabs from "@/components/ui/Tabs";
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   award: Award, eye: Eye, check: CheckCircle2, target: Target,
@@ -926,19 +927,13 @@ export default function CommunityClient({
           )}
 
           {/* R5 feed tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={tab === t.key}
-                onClick={() => setTab(t.key)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-display font-semibold transition-colors ${tab === t.key ? "bg-gold-500 text-white" : "text-soft hover:text-ink hover:bg-sand/60"}`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            ariaLabel="Community feed"
+            size="sm"
+            tabs={TABS.map((t) => ({ key: t.key, label: t.label }))}
+            active={tab}
+            onSelect={setTab}
+          />
 
           {/* ── Feed ─────────────────────────────────────────────────────────
               Two lanes. The ambient strip carries the auto-activity as a quiet

@@ -8,6 +8,7 @@ import { fetchNewsFeed } from "@/lib/news/client";
 import { AI_GENERATED_TAG, KIND_META, type NewsCardData, type NewsKind } from "@/lib/news/types";
 import NewsCard from "@/components/news/NewsCard";
 import { useNewMemberHints, HintDismiss } from "@/components/hints/useNewMemberHints";
+import Tabs from "@/components/ui/Tabs";
 
 const KIND_TABS: { key: NewsKind | "all"; label: string }[] = [
   { key: "all", label: "All" },
@@ -78,25 +79,18 @@ export default function NewsClient({
       </div>
 
       {/* Kind tabs + how-to */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {KIND_TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setKind(t.key)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                kind === t.key
-                  ? "bg-ink text-paper"
-                  : "border border-sand bg-paper text-soft hover:text-ink"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-end justify-between gap-2">
+        <Tabs
+          ariaLabel="News categories"
+          size="sm"
+          className="min-w-0 flex-1"
+          tabs={KIND_TABS}
+          active={kind}
+          onSelect={setKind}
+        />
         <button
           onClick={() => setExplainerOpen((v) => !v)}
-          className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-soft hover:text-ink"
+          className="mb-1.5 inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-soft hover:text-ink"
         >
           <Info className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">What is this?</span>

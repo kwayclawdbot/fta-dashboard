@@ -160,9 +160,26 @@ export default function RegisterPage() {
   }
 
   if (!ready) {
+    // Paint the funnel SHELL immediately (top bar + progress + a form-shaped
+    // skeleton) so the last step doesn't flash a bare centered spinner while the
+    // session hydrates. Same chrome the ready state renders, minus live fields.
+    const skeletonStep = FUNNEL_STEPS.indexOf("register") + 1;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
+      <div className="min-h-screen bg-paper text-ink flex flex-col">
+        <TopBar />
+        <ProgressBar current={skeletonStep} total={FUNNEL_STEPS.length} />
+        <div className="flex-1 w-full max-w-md mx-auto px-5 pt-8">
+          <div className="mx-auto mb-6 h-7 w-56 animate-pulse rounded bg-sand" />
+          <div className="mx-auto mb-8 h-4 w-64 animate-pulse rounded bg-sand/70" />
+          <div className="space-y-4">
+            <div className="h-12 w-full animate-pulse rounded-xl bg-sand/70" />
+            <div className="h-12 w-full animate-pulse rounded-xl bg-sand/70" />
+            <div className="h-12 w-full animate-pulse rounded-xl bg-sand" />
+          </div>
+          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-soft">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading your seat…
+          </div>
+        </div>
       </div>
     );
   }

@@ -371,13 +371,15 @@ function LevelRow({
   const val =
     tone === "target" ? "text-emerald-700" : tone === "invalid" ? "text-red-600" : "text-ink";
   return (
-    <div className="flex items-center gap-2.5 py-2">
+    <div className="flex min-w-0 items-center gap-2.5 py-2">
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
-      <span className="w-24 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-soft/80">
+      <span className="w-20 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-soft/80 sm:w-24">
         {label}
       </span>
-      <span className={`text-[13px] font-bold tabular-nums ${val}`}>{value}</span>
-      <span className="ml-auto truncate text-right text-[11px] text-soft/70">{note}</span>
+      <span className={`shrink-0 text-[13px] font-bold tabular-nums ${val}`}>{value}</span>
+      {/* flex-1 + min-w-0 lets the descriptor truncate instead of forcing the row
+          past the viewport (m390 overflow fix). */}
+      <span className="min-w-0 flex-1 truncate text-right text-[11px] text-soft/70">{note}</span>
     </div>
   );
 }
