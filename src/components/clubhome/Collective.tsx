@@ -181,7 +181,7 @@ export default function Collective({
       <Card aria-label="The Collective — founding era">
         <CardHead title="The Collective" badge={<Badge tone="live" dot>Live</Badge>} />
         <div className="mt-4 grid items-center gap-6 lg:grid-cols-2">
-          <div>
+          <div className="min-w-0">
             <p className="font-display text-2xl font-extrabold leading-tight tracking-tight text-ink">
               This is the ground floor.
             </p>
@@ -207,7 +207,7 @@ export default function Collective({
     <Card aria-label="The Collective">
       <CardHead title="The Collective" badge={<Badge tone="live" dot>Live</Badge>} />
       <div className="mt-4 grid items-center gap-4 sm:grid-cols-[1fr_1.15fr]">
-        <div>
+        <div className="min-w-0">
           <div className="font-display text-5xl font-black leading-none tracking-tight text-ink sm:text-6xl">
             <CountUp value={collective!.actionsToday} />
           </div>
