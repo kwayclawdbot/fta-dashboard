@@ -34,6 +34,32 @@ export async function GET(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // Research premium-read METER (MONETIZATION-GATES.md): free tier gets 3 reads
+  // per rolling week, then a contextual wall; Club/FTA unlimited. Server-
+  // authoritative (never UI-only) — the definer RPC is the sole meter writer and
+  // is idempotent per (user, ticker, week) so a re-open never burns a pass.
+  const { data: meter } = await auth.rpc("consume_research_read", {
+    p_ticker: ticker,
+  });
+  const m = (meter || {}) as {
+    allowed?: boolean;
+    unlimited?: boolean;
+    used?: number;
+    cap?: number;
+  };
+  if (m.allowed === false) {
+    return NextResponse.json(
+      {
+        error: "research_metered",
+        walled: true,
+        feature: "research_unlimited",
+        used: m.used ?? 3,
+        cap: m.cap ?? 3,
+      },
+      { status: 402 }
+    );
+  }
+
   const payload = await getResearchPayload(ticker);
   if (!payload) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });

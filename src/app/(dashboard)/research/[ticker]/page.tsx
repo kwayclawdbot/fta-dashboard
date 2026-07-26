@@ -1,5 +1,7 @@
 import { normalizeSymbol } from "@/lib/market/polygon";
 import { getResearchPayload } from "@/lib/research/aggregate";
+import { createClient } from "@/lib/supabase/server";
+import ContextualWall from "@/components/entitlements/ContextualWall";
 import ResearchClient from "./ResearchClient";
 
 /**
@@ -22,6 +24,22 @@ export default async function TickerResearchPage({
 }) {
   const { ticker: raw } = await params;
   const ticker = normalizeSymbol(raw) ?? (raw || "").toUpperCase();
+
+  // Research premium-read METER — server-authoritative. Free tier: 3 reads/week,
+  // then the "you've used your weekly research passes" wall. Club/FTA unlimited.
+  // Idempotent per (user, ticker, week) so re-opening the same name is free.
+  const supabase = await createClient();
+  const { data: meter } = await supabase.rpc("consume_research_read", {
+    p_ticker: ticker,
+  });
+  if ((meter as { allowed?: boolean } | null)?.allowed === false) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-10">
+        <ContextualWall feature="research_unlimited" />
+      </div>
+    );
+  }
+
   const initialResearch = await getResearchPayload(ticker).catch(() => null);
   return <ResearchClient initialResearch={initialResearch} />;
 }

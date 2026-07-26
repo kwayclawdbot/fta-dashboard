@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getClubTier } from "@/lib/tier";
 
 /**
  * GET /api/club/brief
@@ -28,6 +29,21 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // ENTITLEMENT (MONETIZATION-GATES.md): Kai Brief / "what changed since I left"
+  // is the flagship paid retention feature (free = ❌). Server-authoritative.
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("family_id")
+    .eq("id", user.id)
+    .maybeSingle();
+  const tier = await getClubTier(supabase, prof?.family_id);
+  if (tier === "free") {
+    return NextResponse.json(
+      { error: "members_only", walled: true, feature: "kai_brief" },
+      { status: 403 }
+    );
+  }
 
   const admin = createAdminClient();
   const items = await deriveItems(admin);

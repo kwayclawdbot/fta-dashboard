@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureClubMetricsFresh } from "@/lib/club/cache";
 import { deriveRegister } from "@/lib/register";
+import { getClubTier } from "@/lib/tier";
 import { FLOORS, SNAPSHOT_FLOORS, INTEL_DISCLAIMER, floorMet } from "@/lib/club/score";
 
 /**
@@ -35,10 +36,17 @@ export async function GET(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, age_group, track")
+    .select("role, age_group, track, family_id")
     .eq("id", user.id)
     .single();
   const isKid = deriveRegister(profile) === "kid";
+
+  // ENTITLEMENT (MONETIZATION-GATES.md): the intel provenance — Club Score
+  // drivers/history + "why is this moving" — is the paid "Club Intelligence"
+  // surface. Free members see CURRENT score only; the drivers are walled.
+  // Server-authoritative (never UI-only). Composes with the kid wall below.
+  const tier = await getClubTier(supabase, profile?.family_id);
+  const isFree = tier === "free";
 
   await ensureClubMetricsFresh();
 
@@ -82,6 +90,24 @@ export async function GET(
     topTopics: snap.top_topics ?? null,
     topRisks: snap.top_risks ?? null,
   };
+
+  if (isFree) {
+    // Free tier — "Club Score: current score only". Return the current score +
+    // rank so the ticker still shows a number, but WALL the drivers/history,
+    // velocities, sentiment and provenance behind Club Intelligence. The client
+    // shows the ContextualWall(club_intel) for the paid detail.
+    return NextResponse.json({
+      ticker: snap.ticker,
+      active: true,
+      asOf: snap.as_of,
+      rank: snap.rank,
+      clubScore: Number(snap.club_score),
+      scoreFloorMet: floorMet(Number(snap.club_score), FLOORS.trendingScore),
+      walled: true,
+      feature: "club_intel",
+      disclaimer: INTEL_DISCLAIMER,
+    });
+  }
 
   if (isKid) {
     // Strip sentiment + sentiment provenance for kids (same wall as the debate).

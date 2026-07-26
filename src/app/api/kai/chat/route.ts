@@ -377,7 +377,13 @@ export async function POST(req: NextRequest) {
         error:
           register === "kid"
             ? "That's all your Kai questions for today — come back tomorrow for more!"
-            : `You've used all ${cap} of your Ask Kai messages for today. Come back tomorrow${register === "adult" && tier === "fic" ? " — or upgrade to FTA for more" : ""}.`,
+            : `You've used all ${cap} of your Ask Kai messages for today. Come back tomorrow${
+                register === "adult" && tier === "free"
+                  ? " — or join the Club for much higher limits"
+                  : register === "adult" && tier === "fic"
+                    ? " — or upgrade to FTA for more"
+                    : ""
+              }.`,
         capped: true,
         register,
         used: usedToday,

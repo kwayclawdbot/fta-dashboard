@@ -2,9 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getFamilyTierState } from "@/lib/tier";
-import { isSoloProfile } from "@/lib/register";
+import { getFamilyTierState, effectiveClubTier } from "@/lib/tier";
+import { isSoloProfile, deriveRegister } from "@/lib/register";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import { EntitlementsProvider } from "@/components/entitlements/EntitlementsProvider";
+import type { EntitlementState } from "@/lib/entitlements";
 
 export default async function DashboardLayout({
   children,
@@ -121,6 +123,28 @@ export default async function DashboardLayout({
     isVip,
   };
 
+  // Central entitlement snapshot (src/lib/entitlements) — computed ONCE from the
+  // values this layout already derived (no extra queries), then provided to every
+  // client <Gated>. Fail-closed: a lapsed FTA family reads 'free' for Club gates.
+  const entitlements: EntitlementState = {
+    tier: effectiveClubTier(tier, clubLapsed),
+    realTier: tier,
+    register: deriveRegister(profile),
+    clubLapsed,
+    challenge: challengeExpiresAt
+      ? {
+          active: true,
+          expiresAt: challengeExpiresAt,
+          daysRemaining: Math.max(
+            0,
+            Math.ceil(
+              (new Date(challengeExpiresAt).getTime() - Date.now()) / 86_400_000
+            )
+          ),
+        }
+      : null,
+  };
+
   return (
     <DashboardShell
       user={userData}
@@ -128,7 +152,7 @@ export default async function DashboardLayout({
       clubLapsed={clubLapsed}
       clubUntil={clubUntil}
     >
-      {children}
+      <EntitlementsProvider value={entitlements}>{children}</EntitlementsProvider>
     </DashboardShell>
   );
 }

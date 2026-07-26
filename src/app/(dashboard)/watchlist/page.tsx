@@ -24,6 +24,7 @@ import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import UpsellCard from "@/components/dashboard/UpsellCard";
+import WatchlistDowngradeScreen from "@/components/entitlements/WatchlistDowngradeScreen";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
@@ -597,6 +598,23 @@ export default function WatchlistPage() {
   const rFilled = researchFilledCount({ ...researchItem, ...rForm });
 
   if (tierResolved && tier === "free") {
+    // PRESERVE-DON'T-DELETE (MONETIZATION-GATES.md): a free/lapsed member who
+    // already has saved tickers (e.g. a challenge-pass holder past expiry) keeps
+    // every one — monitoring is paused above the free active cap, never deleted.
+    // The downgrade screen is the Sept 6–8 conversion moment. A free member with
+    // nothing saved yet still sees the join-the-Club upsell.
+    if (items.length > 0) {
+      return (
+        <WatchlistDowngradeScreen
+          items={items.map((i) => ({
+            id: i.id,
+            ticker: i.ticker,
+            company_name: i.company_name,
+            created_at: i.created_at,
+          }))}
+        />
+      );
+    }
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
         <UpsellCard context="watchlist" />

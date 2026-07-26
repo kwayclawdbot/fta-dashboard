@@ -465,9 +465,13 @@ Rules:
 - Output ONLY the updated summary text, nothing else.${kidRule}`;
 }
 
-/** Config: daily message caps per membership tier (owner-retunable). */
+/**
+ * Config: daily Ask-Kai message caps per membership tier (owner-retunable).
+ * MONETIZATION-GATES.md matrix: free gets a few questions/day (hard meter), Club
+ * gets much higher limits. Free is a metered taste of Kai, not a locked door.
+ */
 export const KAI_CHAT_DAILY_CAP = {
-  free: 0,
+  free: 3,
   fic: 15,
   fta: 60,
 } as const;
