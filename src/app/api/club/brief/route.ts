@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getClubTier } from "@/lib/tier";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
  * GET /api/club/brief
@@ -13,6 +13,10 @@ import { getClubTier } from "@/lib/tier";
  * If ANTHROPIC_API_KEY is live at runtime, a short polish pass rewrites the item
  * copy (source:"live"); any failure — including dead credits — silently falls
  * back to the derived copy (source:"derived"). No fabricated numbers.
+ *
+ * The body is `briefCore(ctx)` — shared verbatim with GET /api/club/home. Free
+ * tier is walled (403) exactly as before; the batched assembler maps that wall
+ * to a null section (client parity: a 403 read is a null section).
  */
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -23,42 +27,41 @@ interface BriefItem {
   kind: string;
 }
 
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+export async function briefCore(ctx: ClubCtx): Promise<CoreResult> {
   // ENTITLEMENT (MONETIZATION-GATES.md): Kai Brief / "what changed since I left"
   // is the flagship paid retention feature (free = ❌). Server-authoritative.
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("family_id")
-    .eq("id", user.id)
-    .maybeSingle();
-  const tier = await getClubTier(supabase, prof?.family_id);
+  const tier = await ctx.getTier();
   if (tier === "free") {
-    return NextResponse.json(
-      { error: "members_only", walled: true, feature: "kai_brief" },
-      { status: 403 }
-    );
+    return {
+      status: 403,
+      body: { error: "members_only", walled: true, feature: "kai_brief" },
+    };
   }
 
-  const admin = createAdminClient();
+  const admin = ctx.admin();
   const items = await deriveItems(admin);
   const updatedAt = new Date().toISOString();
 
   // Optional LLM polish — never required, never blocking beyond a short timeout.
   const polished = await maybePolish(items);
-  return NextResponse.json({
-    updatedAt,
-    items: polished ?? items,
-    source: polished ? "live" : "derived",
-  });
+  return {
+    body: {
+      updatedAt,
+      items: polished ?? items,
+      source: polished ? "live" : "derived",
+    },
+  };
 }
 
-async function deriveItems(admin: ReturnType<typeof createAdminClient>): Promise<BriefItem[]> {
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await briefCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
+}
+
+async function deriveItems(admin: SupabaseClient): Promise<BriefItem[]> {
   const now = Date.now();
   const dayAgo = new Date(now - 864e5).toISOString();
   const twoDayAgo = new Date(now - 2 * 864e5).toISOString();

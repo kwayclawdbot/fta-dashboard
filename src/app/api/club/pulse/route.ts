@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { ensureClubMetricsFresh } from "@/lib/club/cache";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
  * GET /api/club/pulse
@@ -16,6 +16,9 @@ import { ensureClubMetricsFresh } from "@/lib/club/cache";
  *   • fresh_research — most recently researched ticker (club_events recency)
  * Headlines are scale-aware COPY ("The Club is watching NVDA"), never raw counts.
  * spark (optional) = 7-day daily attention series from club_events for accents.
+ *
+ * The body is `pulseCore(ctx)` — shared verbatim with the batched
+ * GET /api/club/home (see src/lib/club/home-context.ts).
  */
 export const runtime = "nodejs";
 
@@ -33,24 +36,14 @@ interface Provenance {
   sentiment?: { net7d?: number };
 }
 
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  await ensureClubMetricsFresh();
-  const admin = createAdminClient();
+export async function pulseCore(ctx: ClubCtx): Promise<CoreResult> {
+  await ctx.ensureFresh();
+  const admin = ctx.admin();
   const signals: Signal[] = [];
   const used = new Set<string>();
 
-  // The canonical snapshots — one read backs the first three signals.
-  const { data: snaps } = await supabase
-    .from("ticker_intel_snapshots")
-    .select("ticker, rank, club_change_14d, provenance")
-    .order("rank", { ascending: true });
-  const rows = (snaps || []).map((s) => ({
+  // The canonical snapshots — one shared read backs the first three signals.
+  const rows = (await ctx.getSnapshots()).map((s) => ({
     ticker: s.ticker.toUpperCase(),
     rank: s.rank as number | null,
     change: Number(s.club_change_14d),
@@ -128,14 +121,19 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ signals: signals.slice(0, 4) });
+  return { body: { signals: signals.slice(0, 4) } };
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await pulseCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
 }
 
 /** 7-day daily club_events attention series for a ticker (accent only). */
-async function spark(
-  admin: ReturnType<typeof createAdminClient>,
-  ticker: string
-): Promise<number[] | undefined> {
+async function spark(admin: SupabaseClient, ticker: string): Promise<number[] | undefined> {
   const since = new Date(Date.now() - 7 * 864e5);
   const { data } = await admin
     .from("club_events")

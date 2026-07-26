@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveRegister } from "@/lib/register";
 import { FLOORS, floorMet } from "@/lib/club/score";
+import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
  * GET /api/club/debate
@@ -13,29 +13,19 @@ import { FLOORS, floorMet } from "@/lib/club/score";
  * SECURITY DEFINER aggregate RPC so no one can enumerate individual votes.
  * floorMet is false below FLOORS.debateVotes → UI renders join-framing, not raw
  * small tallies.
+ *
+ * The body is `debateCore(ctx)` — shared verbatim with GET /api/club/home.
  */
 export const runtime = "nodejs";
 
-export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, age_group, track")
-    .eq("id", user.id)
-    .single();
-
-  if (deriveRegister(profile) === "kid") {
-    return NextResponse.json({ kidWalled: true });
+export async function debateCore(ctx: ClubCtx): Promise<CoreResult> {
+  if ((await ctx.getRegister()) === "kid") {
+    return { body: { kidWalled: true } };
   }
 
-  const { data } = await supabase.rpc("club_debate_state");
+  const { data } = await ctx.supabase.rpc("club_debate_state");
   if (!data) {
-    return NextResponse.json({ kidWalled: false, question: null });
+    return { body: { kidWalled: false, question: null } };
   }
   const s = data as {
     id: string;
@@ -53,7 +43,7 @@ export async function GET() {
   // vote direction stays sealed behind the aggregate RPC, so nothing leaks.
   let participants: { id: string; name: string | null; url: string | null }[] = [];
   if (s.total > 0) {
-    const admin = createAdminClient();
+    const admin = ctx.admin();
     const { data: people } = await admin
       .from("profiles")
       .select("id, display_name, username, avatar_url, role, age_group, track")
@@ -69,18 +59,28 @@ export async function GET() {
       }));
   }
 
-  return NextResponse.json({
-    id: s.id,
-    question: s.question,
-    status: s.status,
-    yes: s.yes,
-    no: s.no,
-    total: s.total,
-    // UI contract (§8): the counts object the card reads (yes/no kept too).
-    counts: { yes: s.yes, no: s.no },
-    userVote: s.userVote,
-    floorMet: floorMet(s.total, FLOORS.debateVotes),
-    participants,
-    kidWalled: false,
-  });
+  return {
+    body: {
+      id: s.id,
+      question: s.question,
+      status: s.status,
+      yes: s.yes,
+      no: s.no,
+      total: s.total,
+      // UI contract (§8): the counts object the card reads (yes/no kept too).
+      counts: { yes: s.yes, no: s.no },
+      userVote: s.userVote,
+      floorMet: floorMet(s.total, FLOORS.debateVotes),
+      participants,
+      kidWalled: false,
+    },
+  };
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const ctx = await resolveClubCtx(supabase, req);
+  if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const { status, body } = await debateCore(ctx);
+  return NextResponse.json(body, status ? { status } : undefined);
 }
