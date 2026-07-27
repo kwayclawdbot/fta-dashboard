@@ -24,6 +24,7 @@ import { researchComplete } from "@/lib/watchlist";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
 import BadgeCaseView from "@/components/BadgeCaseView";
 import StreakFlame from "@/components/games/StreakFlame";
+import { familyInsight } from "@/lib/family/insight";
 
 interface Stats {
   totalLessons: number;
@@ -83,6 +84,9 @@ export default function ProgressPage() {
   const [badges, setBadges] = useState<BadgeRow[] | null>(null);
   const [xp, setXp] = useState(0);
   const [fic, setFic] = useState<FicStats | null>(null);
+  const [strengths, setStrengths] = useState<
+    { domain: string; label: string; score: number }[]
+  >([]);
 
   const loadProgress = useCallback(async () => {
     setLoadError(false);
@@ -311,6 +315,29 @@ export default function ProgressPage() {
       // Tables from a sibling migration may not exist yet — fail soft.
       setFic(null);
     }
+
+    // ── Strengths (per-domain mastery bars) ────────────────────────────────
+    // Reuses the SAME deterministic domain grouping as the Parent Corner weekly
+    // report (src/lib/family/insight.ts) so a child's strengths read identically
+    // on their own Progress screen and on their parent's report — one source.
+    try {
+      const [masteryRes, skillsRes] = await Promise.all([
+        supabase
+          .from("skill_mastery")
+          .select("skill_id, mastery_score, attempts")
+          .eq("user_id", user.id),
+        supabase.from("skills").select("id, domain"),
+      ]);
+      const mastery = masteryRes.data || [];
+      const skills = skillsRes.data || [];
+      if (mastery.length > 0 && skills.length > 0) {
+        const insight = familyInsight("You", mastery, skills);
+        setStrengths(insight.strengths);
+      }
+    } catch {
+      // skill_mastery / skills ship in a sibling migration — fail soft.
+      setStrengths([]);
+    }
     } catch (err) {
       // Root-cause fix for the infinite spinner: any rejecting/hanging query in
       // the chain above used to strand loading=true forever. Now we always
@@ -343,10 +370,10 @@ export default function ProgressPage() {
     return (
       <div className="max-w-md mx-auto py-20 text-center">
         <Trophy className="w-8 h-8 text-gold-400/60 mx-auto mb-3" />
-        <h2 className="font-display text-lg font-bold text-midnight-100 mb-1">
+        <h2 className="font-display text-lg font-bold text-ink mb-1">
           Couldn&apos;t load your progress
         </h2>
-        <p className="text-sm text-midnight-400 font-body mb-5">
+        <p className="text-sm text-soft font-body mb-5">
           Something hiccuped on our end. Your achievements are safe — give it
           another try.
         </p>
@@ -355,7 +382,7 @@ export default function ProgressPage() {
             setLoading(true);
             loadProgress();
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gold-400 text-ink text-sm font-display font-semibold hover:bg-gold-300 transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
           Try again
@@ -372,10 +399,10 @@ export default function ProgressPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <h1 className="font-display text-2xl font-bold text-midnight-100">
+        <h1 className="font-display text-2xl font-bold text-ink">
           Your Progress
         </h1>
-        <p className="text-sm text-midnight-400 font-body mt-1">
+        <p className="text-sm text-soft font-body mt-1">
           Track your learning journey and achievements
         </p>
       </mm.div>
@@ -450,37 +477,37 @@ export default function ProgressPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-wrap gap-x-10 gap-y-4 py-5 border-y border-midnight-800"
+        className="flex flex-wrap gap-x-10 gap-y-4 py-5 border-y border-sand"
       >
         <div>
-          <p className="text-2xl font-display font-bold text-midnight-100">
+          <p className="text-2xl font-display font-bold text-ink">
             {stats.completed}
-            <span className="text-midnight-500 text-base font-normal">
+            <span className="text-soft text-base font-normal">
               /{stats.totalLessons}
             </span>
           </p>
-          <p className="text-xs text-midnight-500 font-body mt-0.5 flex items-center gap-1">
+          <p className="text-xs text-soft font-body mt-0.5 flex items-center gap-1">
             <BookOpen className="w-3 h-3" />
             Lessons completed
           </p>
         </div>
         <div>
-          <p className="text-2xl font-display font-bold text-midnight-100">
+          <p className="text-2xl font-display font-bold text-ink">
             {stats.hoursWatched}
-            <span className="text-midnight-500 text-base font-normal">h</span>
+            <span className="text-soft text-base font-normal">h</span>
           </p>
-          <p className="text-xs text-midnight-500 font-body mt-0.5 flex items-center gap-1">
+          <p className="text-xs text-soft font-body mt-0.5 flex items-center gap-1">
             <Clock className="w-3 h-3" />
             Hours watched
           </p>
         </div>
         <div>
-          <p className="text-2xl font-display font-bold text-gold-400 flex items-center gap-1.5">
+          <p className="text-2xl font-display font-bold text-gold-700 flex items-center gap-1.5">
             {stats.currentStreak}
-            <span className="text-midnight-500 text-base font-normal">days</span>
+            <span className="text-soft text-base font-normal">days</span>
             <StreakFlame streak={stats.currentStreak} size={22} />
           </p>
-          <p className="text-xs text-midnight-500 font-body mt-0.5 flex items-center gap-1">
+          <p className="text-xs text-soft font-body mt-0.5 flex items-center gap-1">
             <Flame className="w-3 h-3" />
             Current streak
           </p>
@@ -496,7 +523,7 @@ export default function ProgressPage() {
         >
           <div className="mb-4 flex items-center gap-2">
             <Compass className="h-5 w-5 text-gold-500" />
-            <h2 className="font-display text-lg font-semibold text-midnight-100">
+            <h2 className="font-display text-lg font-semibold text-ink">
               The Club
             </h2>
           </div>
@@ -508,7 +535,7 @@ export default function ProgressPage() {
               <ClipboardCheck className="mb-2 h-4 w-4 text-gold-500" />
               <p className="font-display text-2xl font-bold text-ink">
                 {fic.missionsDone}
-                <span className="text-base font-normal text-midnight-500">
+                <span className="text-base font-normal text-soft">
                   /{fic.missionsTotal}
                 </span>
               </p>
@@ -531,12 +558,58 @@ export default function ProgressPage() {
               <Star className="mb-2 h-4 w-4 text-gold-500" />
               <p className="font-display text-2xl font-bold text-ink">
                 {fic.companiesChampioned}
-                <span className="text-base font-normal text-midnight-500">
+                <span className="text-base font-normal text-soft">
                   {" "}· {fic.researchDone} researched
                 </span>
               </p>
               <p className="mt-0.5 text-xs text-soft">Companies championed</p>
             </Link>
+          </div>
+        </mm.section>
+      )}
+
+      {/* Strengths — per-domain mastery bars (shared grouping with the Parent
+          Corner weekly report). Green once a domain is solid, warm gold while
+          it is still being built. */}
+      {strengths.length > 0 && (
+        <mm.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.13 }}
+          className="paper-card p-6"
+        >
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-ink mb-5">
+            Strengths
+          </h2>
+          <div className="space-y-4">
+            {strengths.map((s, i) => {
+              const strong = s.score >= 60;
+              return (
+                <div key={s.domain} className="flex items-center gap-3">
+                  <p className="font-display text-sm font-bold text-ink w-36 shrink-0">
+                    {s.label}
+                  </p>
+                  <div className="flex-1 h-2.5 rounded-full bg-sand overflow-hidden">
+                    <mm.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${s.score}%` }}
+                      transition={{
+                        duration: 0.8,
+                        ease: "easeOut",
+                        delay: 0.25 + i * 0.06,
+                      }}
+                      className="h-full rounded-full"
+                      style={{
+                        backgroundColor: strong ? "#16A34A" : "#F59E0B",
+                      }}
+                    />
+                  </div>
+                  <span className="font-display text-sm font-bold text-soft w-11 text-right shrink-0">
+                    {s.score}%
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </mm.section>
       )}
@@ -547,11 +620,11 @@ export default function ProgressPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.15 }}
       >
-        <h2 className="font-display text-lg font-semibold text-midnight-100 mb-4">
+        <h2 className="font-display text-lg font-semibold text-ink mb-4">
           Course Progress
         </h2>
         {courseProgress.length === 0 ? (
-          <p className="text-sm text-midnight-500 font-body py-6">
+          <p className="text-sm text-soft font-body py-6">
             No course progress yet. Start a course to track your progress.
           </p>
         ) : (
@@ -564,17 +637,17 @@ export default function ProgressPage() {
               return (
                 <div
                   key={course.slug}
-                  className="py-3 border-b border-midnight-800/50 last:border-0"
+                  className="py-3 border-b border-sand last:border-0"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-body text-midnight-200">
+                    <h3 className="text-sm font-body text-ink">
                       {course.title}
                     </h3>
-                    <span className="text-xs text-midnight-400 font-body">
+                    <span className="text-xs text-soft font-body">
                       {course.completed}/{course.total} lessons
                     </span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full bg-midnight-800 overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-sand overflow-hidden">
                     <mm.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
@@ -599,29 +672,29 @@ export default function ProgressPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
       >
-        <h2 className="font-display text-lg font-semibold text-midnight-100 mb-4">
+        <h2 className="font-display text-lg font-semibold text-ink mb-4">
           Recent Activity
         </h2>
         <div className="space-y-0">
           {recentActivity.map((item) => (
             <div
               key={item.lessonId}
-              className="flex items-center gap-3 py-3 border-b border-midnight-800/50 last:border-0"
+              className="flex items-center gap-3 py-3 border-b border-sand last:border-0"
             >
               <div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
                 <Check className="w-3 h-3 text-green-400" />
               </div>
-              <p className="text-sm text-midnight-200 font-body flex-1 min-w-0 truncate">
+              <p className="text-sm text-ink font-body flex-1 min-w-0 truncate">
                 {item.title}
               </p>
-              <span className="text-xs text-midnight-500 font-body shrink-0">
+              <span className="text-xs text-soft font-body shrink-0">
                 {formatRelativeTime(item.completedAt)}
               </span>
             </div>
           ))}
         </div>
         {recentActivity.length === 0 && (
-          <p className="text-sm text-midnight-500 font-body py-6">
+          <p className="text-sm text-soft font-body py-6">
             No completed lessons yet. Start learning to see your activity here.
           </p>
         )}
