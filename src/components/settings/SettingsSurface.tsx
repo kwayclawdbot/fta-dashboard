@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, AtSign, Check, Monitor, Moon, Sun } from "lucide-react";
+import { ArrowLeft, ArrowRight, AtSign, Check } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { useResolvedTheme, useThemePref } from "@/lib/useTheme";
@@ -14,6 +14,7 @@ import AvatarPicker from "@/components/AvatarPicker";
 import EnablePushButton from "@/components/notifications/EnablePushButton";
 import PushDevices from "@/components/notifications/PushDevices";
 import AddFamily from "@/components/dashboard/AddFamily";
+import { SegmentedRail } from "@/components/canvas2";
 import {
   DisplayHead,
   SectionRule,
@@ -28,10 +29,29 @@ import {
 /* ══════════════════════════════════════════════════════════════════════════
    SETTINGS — every control as a hairline ledger row under a section rule.
 
+   No canvas board exists for this surface, so it is derived from the canvas
+   design language rather than invented: the same masthead scale, eyebrow +
+   section-rule marking, ledgers instead of settings-cards, and the SHARED
+   one-of-N primitive for the theme picker (SegmentedRail, canvas v2 L0) so it
+   has the same keyboard model, focus ring and underline geometry as every
+   other selector in the app. It used to be a hand-rolled radiogroup with its
+   own bar and its own tab behaviour.
+
    Nothing here is decorative: the theme control writes through to the real
    theme store, every switch persists to profiles.notification_prefs, the
    membership block reads the family's real tier + enrollment dates, and Sign
    out really signs out. A field with no real value renders "—".
+
+   COMMERCIAL COPY IS BYTE-IDENTICAL to the version that shipped — every plan
+   label, renewal line, Challenge Pass string and billing row is unchanged.
+
+   TOKEN NOTE: this file previously wrote `text-volt-700 dark:text-volt-400` in
+   three places. `text-volt-*` is FROZEN across themes, so the dark: half was
+   both illegal and doing nothing useful; orange TEXT is `text-gold-700`, which
+   IS volt orange in club mode and flips correctly at night. The Save button was
+   `bg-volt-500 text-white` — white on orange is ~2.6:1; it now rides `bg-accent`
+   (mode-correct: family gold / club orange / FTA metallic) with `text-night-950`,
+   the same pairing every other filled action in the app uses.
    ══════════════════════════════════════════════════════════════════════════ */
 
 interface NotificationPrefs {
@@ -93,10 +113,10 @@ const PUSH: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
    src/app/api/push/dispatch/route.ts — a toggle that gates nothing is not a
    setting, it's decoration. */
 
-const THEMES: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
-  { value: "light", label: "Light", Icon: Sun },
-  { value: "dark", label: "Dark", Icon: Moon },
-  { value: "system", label: "System", Icon: Monitor },
+const THEMES: { id: ThemePref; label: string }[] = [
+  { id: "light", label: "Light" },
+  { id: "dark", label: "Dark" },
+  { id: "system", label: "System" },
 ];
 
 /** Plan label for the family's real tier. */
@@ -326,7 +346,7 @@ export default function SettingsSurface() {
             />
           </label>
           {nameWarning && (
-            <p className="flex items-start gap-1.5 text-[13px] text-volt-700 dark:text-volt-400">
+            <p className="flex items-start gap-1.5 text-[13px] text-gold-700">
               <AtSign className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               {nameWarning}
             </p>
@@ -338,17 +358,19 @@ export default function SettingsSurface() {
           </Ledger>
 
           <div className="flex items-center gap-4">
-            {/* text-white is theme-INVARIANT on purpose: it sits on the volt
-                fill, and volt does not change between light and dark. */}
+            {/* bg-accent is the mode-correct action fill; text-night-950 is the
+                only legible foreground on it in both themes (never text-ink,
+                which flips near-white at night, and never text-white, which is
+                ~2.6:1 on orange). */}
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[14px] font-bold text-night-950 disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save"}
             </button>
             {saved && (
-              <span className="inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-volt-700 dark:text-volt-400">
+              <span className="inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700">
                 <Check className="h-4 w-4" /> Saved
               </span>
             )}
@@ -363,33 +385,14 @@ export default function SettingsSurface() {
           here is decorative and nothing needs a reload. */}
       <section className="space-y-4">
         <SectionRule>Appearance</SectionRule>
-        <div
-          role="radiogroup"
-          aria-label="Theme"
-          className="flex items-stretch border-y border-sand"
-        >
-          {THEMES.map(({ value, label, Icon }) => {
-            const active = themePref === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setThemePrefValue(value)}
-                className={`relative flex flex-1 items-center justify-center gap-2 py-3.5 font-display text-[14px] font-bold transition-colors ${
-                  active ? "text-ink" : "text-soft hover:text-ink"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-                {active && (
-                  <span className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-volt-500" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedRail
+          options={THEMES}
+          value={themePref}
+          onChange={setThemePrefValue}
+          ariaLabel="Theme"
+          barClassName="bg-accent"
+          fill
+        />
         <p className="text-[13px] text-soft">
           {themePref === "system"
             ? `Following your device — currently ${resolved}. Pick Light or Dark to override it.`
@@ -522,13 +525,19 @@ export default function SettingsSurface() {
         </Ledger>
       </section>
 
-      <p className="flex items-center gap-2 text-[13px] text-soft">
-        Looking for your level, badges and reps?
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-soft">
+        Looking for your belt, badges and reps?
         <Link
           href="/progress"
-          className="inline-flex items-center gap-1 font-display font-bold text-volt-700 dark:text-volt-400"
+          className="f0-focus inline-flex items-center gap-1 rounded font-display font-bold text-gold-700"
         >
           Your profile <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+        <Link
+          href="/belts"
+          className="f0-focus inline-flex items-center gap-1 rounded font-display font-bold text-gold-700"
+        >
+          The belt ladder <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </p>
     </div>

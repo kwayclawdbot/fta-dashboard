@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelProgress } from "@/lib/xp";
 import { beltForXp } from "@/lib/belts";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
+import { TickerTile, TickerTileStrip } from "@/components/canvas2";
 import {
   DisplayHead,
   SectionRule,
@@ -23,21 +24,41 @@ import {
 
 /* ══════════════════════════════════════════════════════════════════════════
    YOU — the member's own profile surface (route: /progress).
+   Canvas v2, App Light board 07 "You · Profile".
 
    Composition, top → bottom:
      · YOU masthead (display-1) + eyebrow
      · IDENTITY HERO — the one obsidian field on the surface: avatar, name,
        belt/level, XP, next-level meter, participation-streak marks
-     · YOUR NUMBERS — the stat trio as a hairline measure strip
-     · BADGES — the credential shelf as marks, not tiles
+     · YOUR NUMBERS — positions / conviction / changed minds as a measure strip,
+       then the rest of the participation record as a hairline ledger
+     · WHERE YOU STAND — current positions as canvas ticker tiles
+     · CHANGED YOUR MIND — the flip ledger; the update, not the ego
+     · CREDENTIALS — the badge shelf as chips, not tiles
      · LEARNING — course progress as ledger rows with meters
      · RECENT — completed lessons as a dated ledger
      · rows: My posts · Saved · Settings
 
-   REAL DATA ONLY. Every number is an own-user RLS read:
-     profiles · xp_events (XP, level, participation streak) ·
-     ticker_sentiment (tickers rated, conviction) · research_objects (research) ·
-     feed_posts (posts) · family_watchlist (saved) · lesson_progress + courses.
+   ── WHAT THE CANVAS DRAWS HERE THAT DOES NOT SHIP ─────────────────────────
+   Board 07 puts an `87 OPINION SCORE` conic dial beside the member's name, an
+   `Accuracy 71%` measure in the stat row, `Influence 1.8x` ("your opinions
+   carry 1.8x more weight"), `People Influenced 382`, a "Strongest areas /
+   Top 4%" percentile block, and a "Recent calls" ledger scored `✓ +6.4%` /
+   `✗ −2.1%`. None of it ships, and the reason is one reason: publishing a
+   member's hit rate — or any score derived from it — is a performance claim on
+   the most shareable surface in the app. The percentile block fails a second
+   test (no percentile of anything is computed anywhere) and the dial fails a
+   third (plan §1.5: the club-sentiment arc stays the only radial gauge).
+
+   What replaces them is CONVICTION and PARTICIPATION, from
+   `member_participation` (migration 196): positions taken, share of them
+   bullish, minds changed in public, respect received for those updates, notes
+   and posts written, weeks active — every one a behaviour the member performed
+   rather than a verdict on whether they were right.
+
+   REAL DATA ONLY. Every number is a real read: profiles · xp_events (XP, level,
+   participation streak) · member_participation + member_flips RPCs ·
+   ticker_stances · family_watchlist · lesson_progress + courses.
    Any measure the feed cannot supply renders "—". Nothing is fabricated.
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -54,6 +75,24 @@ interface RecentLine {
   completedAt: string;
 }
 
+interface FlipLine {
+  id: string;
+  ticker: string;
+  from_stance: string | null;
+  to_stance: string;
+  created_at: string;
+}
+
+interface Participation {
+  stances: number;
+  bullStances: number;
+  flips: number;
+  respect: number;
+  research: number;
+  posts: number;
+  weeksActive: number;
+}
+
 interface ProfileState {
   userId: string | null;
   name: string;
@@ -63,10 +102,10 @@ interface ProfileState {
   xp: number;
   /** distinct trailing ISO-weeks carrying an xp_event */
   streakWeeks: number;
-  tickersRated: number | null;
-  conviction: number | null;
-  research: number | null;
-  posts: number | null;
+  /** null until the participation RPC answers — "—" until then, never 0 */
+  part: Participation | null;
+  positions: string[];
+  flips: FlipLine[];
   saved: number | null;
   courses: CourseLine[];
   recent: RecentLine[];
@@ -80,13 +119,18 @@ const EMPTY: ProfileState = {
   since: null,
   xp: 0,
   streakWeeks: 0,
-  tickersRated: null,
-  conviction: null,
-  research: null,
-  posts: null,
+  part: null,
+  positions: [],
+  flips: [],
   saved: null,
   courses: [],
   recent: [],
+};
+
+const STANCE_WORD: Record<string, string> = {
+  bull: "Bullish",
+  bear: "Bearish",
+  neutral: "Neutral",
 };
 
 /** Monday-anchored ISO-week key for a date. */
@@ -114,7 +158,6 @@ export default function ProfileSurface() {
   const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
-    setFailed(false);
     const supabase = createClient();
     // Never strand the surface on a hanging query — settle and offer a retry.
     let settled = false;
@@ -136,54 +179,34 @@ export default function ProfileSurface() {
         return;
       }
 
-      const [profileRes, xp, sentimentRes, eventsRes, progressRes, coursesRes] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select("display_name, username, avatar_url, created_at")
-            .eq("id", user.id)
-            .maybeSingle(),
-          getUserXp(supabase, user.id).catch(() => 0),
-          supabase
-            .from("ticker_sentiment")
-            .select("vote")
-            .eq("user_id", user.id)
-            .limit(1000),
-          supabase
-            .from("xp_events")
-            .select("created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(500),
-          supabase
-            .from("lesson_progress")
-            .select("lesson_id, completed_at")
-            .eq("user_id", user.id)
-            .eq("status", "completed")
-            .order("completed_at", { ascending: false }),
-          supabase
-            .from("courses")
-            .select("slug, title, modules(lessons(id))")
-            .in("program", ["fic", "fta"])
-            .eq("published", true)
-            .order("sort_order"),
-        ]);
+      const [profileRes, xp, eventsRes, progressRes, coursesRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("display_name, username, avatar_url, created_at")
+          .eq("id", user.id)
+          .maybeSingle(),
+        getUserXp(supabase, user.id).catch(() => 0),
+        supabase
+          .from("xp_events")
+          .select("created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("lesson_progress")
+          .select("lesson_id, completed_at")
+          .eq("user_id", user.id)
+          .eq("status", "completed")
+          .order("completed_at", { ascending: false }),
+        supabase
+          .from("courses")
+          .select("slug, title, modules(lessons(id))")
+          .in("program", ["fic", "fta"])
+          .eq("published", true)
+          .order("sort_order"),
+      ]);
 
       const profile = profileRes.data;
-
-      // ── stat trio ────────────────────────────────────────────────────────
-      // A count only becomes a number when the read actually succeeded; an RLS
-      // failure or a missing table leaves it null so the strip renders "—".
-      let tickersRated: number | null = null;
-      let conviction: number | null = null;
-      if (!sentimentRes.error && sentimentRes.data) {
-        const rows = sentimentRes.data as { vote: number }[];
-        tickersRated = rows.length;
-        if (rows.length > 0) {
-          const bull = rows.filter((r) => Number(r.vote) === 1).length;
-          conviction = Math.round((bull / rows.length) * 100);
-        }
-      }
 
       // ── participation streak — trailing run of weeks with an xp_event ─────
       let streakWeeks = 0;
@@ -238,10 +261,9 @@ export default function ProfileSurface() {
           : null,
         xp,
         streakWeeks,
-        tickersRated,
-        conviction,
-        research: null,
-        posts: null,
+        part: null,
+        positions: [],
+        flips: [],
         saved: null,
         courses,
         recent: [],
@@ -275,28 +297,58 @@ export default function ProfileSurface() {
         }));
       }
 
-      // ── research / posts / saved — each guarded independently, so one
-      //    missing table never blanks the others. ────────────────────────────
-      const [researchRes, postsRes, savedRes] = await Promise.all([
+      // ── participation, positions, flips, saved ────────────────────────────
+      // member_participation is the authority on the counts: feed_posts SELECT
+      // is family-scoped, so counting posts from the client undercounts and
+      // then prints the undercount as a total. Each read is guarded on its own,
+      // so one missing table never blanks the others — a failed read leaves the
+      // measure null and the strip renders "—".
+      const [partRes, stanceRes, flipRes, savedRes] = await Promise.all([
+        supabase.rpc("member_participation", { p_user_id: user.id }),
         supabase
-          .from("research_objects")
-          .select("id", { count: "exact", head: true })
-          .eq("author_id", user.id)
-          .eq("status", "published"),
-        supabase
-          .from("feed_posts")
-          .select("id", { count: "exact", head: true })
-          .eq("author_id", user.id)
-          .eq("kind", "post"),
+          .from("ticker_stances")
+          .select("ticker, updated_at")
+          .eq("user_id", user.id)
+          .order("updated_at", { ascending: false })
+          .limit(12),
+        supabase.rpc("member_flips", { p_user_id: user.id, p_limit: 4 }),
         supabase
           .from("family_watchlist")
           .select("id", { count: "exact", head: true })
           .eq("champion_id", user.id),
       ]);
+
+      const p = partRes.error
+        ? null
+        : (partRes.data as {
+            stances: number;
+            bull_stances: number;
+            flips: number;
+            respect: number;
+            research: number;
+            posts: number;
+            weeks_active: number;
+          } | null);
+
       setState((s) => ({
         ...s,
-        research: researchRes.error ? null : (researchRes.count ?? null),
-        posts: postsRes.error ? null : (postsRes.count ?? null),
+        part: p
+          ? {
+              stances: p.stances,
+              bullStances: p.bull_stances,
+              flips: p.flips,
+              respect: p.respect,
+              research: p.research,
+              posts: p.posts,
+              weeksActive: p.weeks_active,
+            }
+          : null,
+        positions: stanceRes.error
+          ? []
+          : ((stanceRes.data ?? []) as { ticker: string }[]).map((r) =>
+              r.ticker.toUpperCase()
+            ),
+        flips: flipRes.error ? [] : ((flipRes.data ?? []) as FlipLine[]),
         saved: savedRes.error ? null : (savedRes.count ?? null),
       }));
 
@@ -329,6 +381,7 @@ export default function ProfileSurface() {
           action={
             <TextAction
               onClick={() => {
+                setFailed(false);
                 setLoading(true);
                 void load();
               }}
@@ -345,13 +398,18 @@ export default function ProfileSurface() {
   const belt = beltForXp(state.xp);
   const awarded = (badges ?? []).filter((b) => b.awarded);
   const postsHref = state.username ? `/u/${state.username}` : "/community";
+  const part = state.part;
+  const conviction =
+    part && part.stances > 0
+      ? Math.round((part.bullStances / part.stances) * 100)
+      : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 pb-16">
       <DisplayHead
         eyebrow="Cheat Code Club"
         title="You"
-        lede="Everything you've built here — your level, your reps, and the record of the work behind them."
+        lede="Everything you've built here — your belt, your reps, and the record of the work behind them."
       />
 
       {/* ── IDENTITY HERO — the one obsidian field on this surface ─────────
@@ -359,7 +417,11 @@ export default function ProfileSurface() {
           hairlines INSIDE it are theme-invariant cream/white-alpha — the same
           rule that governs type on the orange action band. This is the only
           place on the surface where a non-token colour is correct; everything
-          outside the field is ink / soft / sand / paper. */}
+          outside the field is ink / soft / sand / paper.
+
+          The canvas puts an 87 OPINION SCORE dial in the top-right of this
+          block. The belt swatch takes that position instead: earned from reps,
+          verifiable, and not a rating of anyone's opinions. */}
       <section className="f0-hero-field f0-grain p-6 sm:p-7">
         <div className="relative flex items-center gap-4">
           <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 ring-2 ring-volt-500">
@@ -389,7 +451,7 @@ export default function ProfileSurface() {
 
           <Link
             href="/settings"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/25 px-3.5 py-1.5 font-display text-[13px] font-bold text-[#F7F3EA] transition-colors hover:border-volt-400 hover:text-volt-300"
+            className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/25 px-3.5 py-1.5 font-display text-[13px] font-bold text-[#F7F3EA] transition-colors hover:border-volt-400 hover:text-volt-300"
           >
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Link>
@@ -399,13 +461,23 @@ export default function ProfileSurface() {
           <div className="flex items-end justify-between gap-4">
             <div className="min-w-0">
               <p className="text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
-                {belt.label}
+                Your belt
               </p>
-              <p className="mt-1.5 font-display text-display-2 font-extrabold text-[#F7F3EA]">
-                Level {prog.current.level}
-                <span className="ml-2 align-middle font-display text-[15px] font-bold text-[#F7F3EA]/70">
-                  {prog.current.name}
+              {/* The belt swatch is intrinsic colour — a blue belt is blue in
+                  every theme — so it is an inline style, not a token. Purple is
+                  a legal BELT colour and appears nowhere else in the chrome. */}
+              <p className="mt-1.5 flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className="h-5 w-5 shrink-0 rounded-[5px] ring-1 ring-white/30"
+                  style={{ backgroundColor: belt.belt.hex }}
+                />
+                <span className="font-display text-display-2 font-extrabold text-[#F7F3EA]">
+                  {belt.label}
                 </span>
+              </p>
+              <p className="mt-1.5 font-mono text-[12px] text-[#F7F3EA]/60">
+                Level {prog.current.level} · {prog.current.name}
               </p>
             </div>
             <p className="shrink-0 text-right">
@@ -419,11 +491,19 @@ export default function ProfileSurface() {
           </div>
 
           <Meter pct={prog.pct} onDark className="mt-4" />
-          <p className="mt-2 font-mono text-[12px] text-[#F7F3EA]/60">
-            {prog.next
-              ? `${prog.toNext.toLocaleString()} XP to Level ${prog.next.level} · ${prog.next.name}`
-              : "Top of the ladder — every level earned"}
-          </p>
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="font-mono text-[12px] text-[#F7F3EA]/60">
+              {prog.next
+                ? `${prog.toNext.toLocaleString()} XP to Level ${prog.next.level} · ${prog.next.name}`
+                : "Top of the ladder — every level earned"}
+            </p>
+            <Link
+              href="/belts"
+              className="f0-focus inline-flex items-center gap-1 rounded font-display text-[12px] font-bold text-volt-400 transition-colors hover:text-volt-300"
+            >
+              See the ladder <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
 
         {/* participation streak — one mark per trailing week, capped at the
@@ -459,31 +539,125 @@ export default function ProfileSurface() {
         <SectionRule>Your numbers</SectionRule>
         <MeasureStrip
           items={[
-            { label: "Tickers rated", value: dash(state.tickersRated) },
+            { label: "Positions", value: dash(part?.stances) },
             {
               label: "Conviction",
-              value: state.conviction == null ? "—" : `${state.conviction}%`,
+              value: conviction == null ? "—" : `${conviction}%`,
               tone: "sentiment",
             },
-            { label: "Research", value: dash(state.research) },
+            { label: "Changed minds", value: dash(part?.flips) },
           ]}
         />
+        <Ledger>
+          <LedgerRow label="Research notes" value={dash(part?.research)} />
+          <LedgerRow label="Club posts" value={dash(part?.posts)} />
+          <LedgerRow
+            label="Respect received"
+            sub="Members acknowledging an update you made in public"
+            value={dash(part?.respect)}
+          />
+          <LedgerRow label="Weeks active" value={dash(part?.weeksActive)} />
+        </Ledger>
         <p className="text-[13px] leading-relaxed text-soft">
-          Conviction is the share of your rated tickers you called bullish — the
-          Club&apos;s own sentiment measure, not a market number. A measure reads
-          &ldquo;—&rdquo; until you&apos;ve given it something real.
+          Conviction is the share of your positions you called bullish — the
+          Club&apos;s own sentiment measure, not a market number, and never a
+          score of whether you were right. A measure reads &ldquo;—&rdquo; until
+          you&apos;ve given it something real.
         </p>
       </section>
 
-      {/* ── BADGES ───────────────────────────────────────────────────────── */}
+      {/* ── WHERE YOU STAND ──────────────────────────────────────────────────
+          The canvas's ticker tile at its intended density. No delta on these:
+          this strip is a record of POSITIONS TAKEN, and a price beside each one
+          would turn a participation record into a scoreboard. Below the floor
+          the strip pads with dashed slots rather than collapsing — a member with
+          two positions should look like someone getting started, not broken. */}
+      <section className="space-y-4">
+        <SectionRule
+          action={<TextAction href="/discover">Find one</TextAction>}
+        >
+          Where you stand
+        </SectionRule>
+        {state.positions.length === 0 ? (
+          <EmptyLine
+            title="No positions yet"
+            body="Take a position on a company you've actually looked at — bullish, bearish or neutral. It lands here, and you can change it any time."
+            action={
+              <TextAction href="/discover">
+                Browse companies <ArrowRight className="h-3.5 w-3.5" />
+              </TextAction>
+            }
+          />
+        ) : (
+          <>
+            <TickerTileStrip minSlots={5} size="md">
+              {state.positions.map((t) => (
+                <TickerTile
+                  key={t}
+                  ticker={t}
+                  showDelta={false}
+                  href={`/research/${encodeURIComponent(t)}`}
+                />
+              ))}
+            </TickerTileStrip>
+            <p className="text-[13px] text-soft">
+              Companies you&apos;ve taken a position on. Tap one to revisit the
+              call.
+            </p>
+          </>
+        )}
+      </section>
+
+      {/* ── CHANGED YOUR MIND ────────────────────────────────────────────────
+          A flip is rendered as a BEHAVIOUR: which company, which way, when.
+          Direction is carried by the words and by reading order — never by hue,
+          because bull/bear in green/red would put the price ramp on a community
+          object. Nothing here says whether the change turned out well. */}
+      <section className="space-y-4">
+        <SectionRule
+          action={
+            <TextAction href="/community/changed-my-mind">All flips</TextAction>
+          }
+        >
+          Changed your mind
+        </SectionRule>
+        {state.flips.length === 0 ? (
+          <EmptyLine
+            title="No changes of mind yet"
+            body="The Club rewards the update, not the ego. When new evidence moves you off a position, say so — it gets recorded here."
+          />
+        ) : (
+          <Ledger>
+            {state.flips.map((f) => (
+              <LedgerRow
+                key={f.id}
+                label={
+                  <span className="font-mono text-[13px] font-semibold">
+                    {f.ticker.toUpperCase()}
+                  </span>
+                }
+                sub={`${
+                  f.from_stance ? STANCE_WORD[f.from_stance] ?? f.from_stance : "No position"
+                } → ${STANCE_WORD[f.to_stance] ?? f.to_stance}`}
+                value={relative(f.created_at)}
+              />
+            ))}
+          </Ledger>
+        )}
+      </section>
+
+      {/* ── CREDENTIALS ──────────────────────────────────────────────────── */}
       <section className="space-y-5">
         <SectionRule action={<TextAction href="/leaderboard">Leaderboard</TextAction>}>
           Credentials
         </SectionRule>
         {badges == null ? (
-          <div className="flex gap-2">
+          <div className="flex gap-2" aria-busy="true">
             {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i} className="h-8 w-24 animate-pulse rounded-full bg-sand/60" />
+              <span
+                key={i}
+                className="h-8 w-24 rounded-full bg-sand/60 motion-safe:animate-pulse"
+              />
             ))}
           </div>
         ) : awarded.length === 0 ? (
@@ -498,10 +672,11 @@ export default function ProfileSurface() {
               <span
                 key={b.slug}
                 title={b.subtitle ?? undefined}
-                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-display text-[13px] font-bold ${
-                  b.awarded
-                    ? "bg-ink text-paper"
-                    : "border border-dashed border-sand text-soft"
+                /* .f0-chip carries structure only and ships with NO padding —
+                   see the report note. Padding is the caller's until it lands
+                   on the primitive. */
+                className={`f0-chip px-3.5 py-1.5 font-display text-[13px] font-bold ${
+                  b.awarded ? "f0-chip-on" : "text-soft"
                 }`}
               >
                 {b.title}
@@ -530,7 +705,7 @@ export default function ProfileSurface() {
                 <Link
                   key={c.slug}
                   href={`/courses/${c.slug}`}
-                  className="f0-ledger-row group block"
+                  className="f0-ledger-row f0-focus group block"
                 >
                   <div className="flex w-full items-center justify-between gap-4">
                     <p className="min-w-0 flex-1 truncate font-display text-[15px] font-bold text-ink">
@@ -576,7 +751,7 @@ export default function ProfileSurface() {
                 ? "Your public profile and everything you've said in the Club"
                 : "Pick a handle in Settings to get a public profile"
             }
-            meta={dash(state.posts)}
+            meta={dash(part?.posts)}
           />
           <LedgerLink
             href="/watchlist"
@@ -595,16 +770,21 @@ export default function ProfileSurface() {
   );
 }
 
+/* LOADING ≠ EMPTY (§0.4): this is the shape of the surface arriving, not the
+   surface's founding state. The founding state is the designed EmptyLine copy
+   in each section above, which only renders once a read has actually answered. */
 function ProfileSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl animate-pulse space-y-10 pb-16">
+    <div className="mx-auto max-w-2xl space-y-10 pb-16" aria-busy="true">
       <div className="space-y-3">
-        <div className="h-3 w-32 rounded bg-sand/60" />
-        <div className="h-11 w-40 rounded bg-sand/60" />
+        <div className="h-3 w-32 rounded bg-sand/60 motion-safe:animate-pulse" />
+        <div className="h-11 w-40 rounded bg-sand/60 motion-safe:animate-pulse" />
       </div>
-      <div className="h-64 rounded-[1.5rem] bg-sand/40" />
-      <div className="h-20 rounded bg-sand/30" />
-      <div className="h-32 rounded bg-sand/30" />
+      <div className="h-64 rounded-[1.5rem] bg-sand/40 motion-safe:animate-pulse" />
+      <div className="h-20 rounded bg-sand/30 motion-safe:animate-pulse" />
+      <TickerTileStrip loading loadingCount={5} />
+      <div className="h-32 rounded bg-sand/30 motion-safe:animate-pulse" />
+      <span className="sr-only">Loading your profile</span>
     </div>
   );
 }

@@ -17,6 +17,28 @@ import { referralLink, shareTargets, REFERRAL_SIGNUP_XP } from "@/lib/referral";
 import { Sparkle } from "@/components/fic/glyphs/motifs";
 import { DisplayHead, MeasureStrip, SectionRule } from "@/components/f0/parts";
 
+/* ══════════════════════════════════════════════════════════════════════════
+   REFERRALS — no canvas board exists for this surface, so it is derived from
+   the canvas design language rather than invented: the same masthead scale,
+   the same eyebrow + section-rule marking, hairline ledgers instead of boxes,
+   and a stated founding state.
+
+   THE OBJECT ON THIS PAGE IS THE LINK. It used to sit in a bordered `bg-card`
+   rectangle beside a button — a generic card container, and the one thing the
+   brand register bans outright. It is now set as a mono line on a hairline
+   baseline, the same treatment the display-name field gets in Settings: the
+   link reads as a value you can take, not as a widget.
+
+   COMMERCIAL COPY IS BYTE-IDENTICAL to the version that shipped. Every string
+   touching the offer — the lede with REFERRAL_SIGNUP_XP, "You earn N XP", the
+   three How-it-works bodies, and the grown-ups-only block — is unchanged text
+   moved between elements, never re-worded.
+
+   COLOUR LAW: the share row is neutral. It used to paint each destination in
+   its own brand hue (green WhatsApp, sky Facebook) — green is price, and the
+   chip tints collapsed in dark. The glyph does the identifying now.
+   ══════════════════════════════════════════════════════════════════════════ */
+
 interface Stats {
   clicks: number;
   signups: number;
@@ -118,12 +140,19 @@ export default function ReferralsPage() {
     }
   }
 
+  // LOADING ≠ EMPTY: this is the shape of the page arriving. The founding state
+  // — a link nobody has followed yet — is designed separately, below.
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl animate-pulse space-y-6">
-        <div className="h-11 w-72 rounded-lg bg-sand/60" />
-        <div className="h-32 rounded-2xl bg-sand/40" />
-        <div className="h-24 rounded-2xl bg-sand/40" />
+      <div className="mx-auto max-w-3xl space-y-8" aria-busy="true">
+        <div className="space-y-3">
+          <div className="h-3 w-28 rounded bg-sand/60 motion-safe:animate-pulse" />
+          <div className="h-11 w-80 max-w-full rounded bg-sand/60 motion-safe:animate-pulse" />
+          <div className="h-4 w-full max-w-md rounded bg-sand/40 motion-safe:animate-pulse" />
+        </div>
+        <div className="h-10 w-full rounded bg-sand/40 motion-safe:animate-pulse" />
+        <div className="h-20 rounded bg-sand/30 motion-safe:animate-pulse" />
+        <span className="sr-only">Loading your referral link</span>
       </div>
     );
   }
@@ -139,13 +168,15 @@ export default function ReferralsPage() {
         />
         <Link
           href="/dashboard"
-          className="cta-button mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+          className="cta-button f0-focus f0-press mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
         >
           Back to home
         </Link>
       </div>
     );
   }
+
+  const untouched = stats.clicks === 0 && stats.signups === 0;
 
   return (
     <div className="mx-auto max-w-3xl pb-14">
@@ -156,19 +187,31 @@ export default function ReferralsPage() {
         lede={`Word of mouth between families is how the club grows. Share your personal link — when a new family joins, you earn ${REFERRAL_SIGNUP_XP} XP and help another family start learning together.`}
       />
 
-      {/* The link itself — the one object that matters on this page. */}
+      {/* ── THE LINK — the one object on this page ─────────────────────────
+          Set on a baseline hairline, not inside a card. */}
       <section className="mt-9">
-        <SectionRule>Your referral link</SectionRule>
+        <SectionRule
+          action={
+            <span className="inline-flex items-center gap-1.5 font-mono text-[13px] font-bold tracking-wide text-soft">
+              <Sparkle className="h-3.5 w-3.5" />
+              <span className="sr-only">Your code: </span>
+              {code}
+            </span>
+          }
+        >
+          Your referral link
+        </SectionRule>
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1 rounded-xl border border-sand bg-card px-4 py-3">
-            <p className="truncate font-mono text-sm text-ink" title={link}>
-              {link || "…"}
-            </p>
-          </div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <p
+            className="min-w-0 flex-1 truncate border-b border-sand pb-2 font-mono text-[15px] text-ink sm:text-[17px]"
+            title={link}
+          >
+            {link || "…"}
+          </p>
           <button
             onClick={copyLink}
-            className="cta-button inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm"
+            className="f0-focus f0-press inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[14px] font-bold text-night-950"
           >
             {copied ? (
               <>
@@ -182,16 +225,8 @@ export default function ReferralsPage() {
           </button>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-soft">Your code:</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-sand px-3 py-1 font-mono text-sm font-bold tracking-wide text-ink">
-            <Sparkle className="h-3.5 w-3.5" />
-            {code}
-          </span>
-        </div>
-
         {targets && (
-          <div className="mt-6">
+          <div className="mt-7">
             <p className="text-eyebrow font-display font-bold uppercase text-soft">
               Share it
             </p>
@@ -199,7 +234,7 @@ export default function ReferralsPage() {
               {canNativeShare && (
                 <button
                   onClick={nativeShare}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-500 px-4 py-2.5 text-sm font-display font-bold text-night-950 transition-colors hover:bg-gold-600"
+                  className="f0-chip f0-chip-on f0-focus f0-press px-4 py-2.5 font-display text-[14px] font-bold"
                 >
                   <Share2 className="h-4 w-4" /> Share
                 </button>
@@ -207,16 +242,16 @@ export default function ReferralsPage() {
               <ShareLink href={targets.whatsapp} label="WhatsApp">
                 <MessageCircle className="h-4 w-4" />
               </ShareLink>
-              <ShareLink href={targets.x} label="X" tone="ink">
+              <ShareLink href={targets.x} label="X">
                 <XGlyph />
               </ShareLink>
               <ShareLink href={targets.facebook} label="Facebook">
                 <FacebookGlyph />
               </ShareLink>
-              <ShareLink href={targets.mailto} label="Email" tone="sand">
+              <ShareLink href={targets.mailto} label="Email">
                 <Mail className="h-4 w-4" />
               </ShareLink>
-              <ShareLink href={targets.sms} label="Text" tone="sand">
+              <ShareLink href={targets.sms} label="Text">
                 <MessageCircle className="h-4 w-4" />
               </ShareLink>
             </div>
@@ -236,6 +271,15 @@ export default function ReferralsPage() {
             ]}
           />
         </div>
+        {/* FOUNDING STATE — three real zeros, said out loud instead of left to
+            read as a broken counter. */}
+        {untouched && (
+          <p className="f0-rule-top mt-6 max-w-[62ch] pt-4 text-[13px] leading-relaxed text-soft">
+            Nobody has followed your link yet — it was minted for you and these
+            counts are real, not a placeholder. The first one moves the moment
+            somebody taps it.
+          </p>
+        )}
       </section>
 
       {/* How it works */}
@@ -280,27 +324,17 @@ export default function ReferralsPage() {
   );
 }
 
-// ── Share button ─────────────────────────────────────────────────────────────
-// COLOUR LAW: the share row used to paint each destination in its own brand hue
-// (green WhatsApp, sky Facebook). Green is reserved for price and the chip tints
-// collapse in dark, so every destination is now neutral sand and the glyph does
-// the identifying. `ink` used to be `bg-ink text-white`, which inverts in dark
-// (--ink becomes a warm off-white and the white type vanished) — it now pins to
-// the constant night ramp.
-const TONES: Record<string, string> = {
-  ink: "bg-night-950 text-night-50 hover:opacity-90",
-  sand: "bg-sand text-ink hover:opacity-80",
-};
-
+// ── Share destination ────────────────────────────────────────────────────────
+// One neutral chip per destination, on the shared .f0-chip geometry so the row
+// matches every other chip set in the app. The glyph identifies the destination;
+// no destination gets a colour of its own.
 function ShareLink({
   href,
   label,
-  tone = "sand",
   children,
 }: {
   href: string;
   label: string;
-  tone?: keyof typeof TONES | string;
   children: React.ReactNode;
 }) {
   return (
@@ -308,7 +342,7 @@ function ShareLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${TONES[tone] || TONES.sand}`}
+      className="f0-chip f0-focus f0-press px-4 py-2.5 font-display text-[14px] font-bold text-ink"
     >
       {children}
       {label}
