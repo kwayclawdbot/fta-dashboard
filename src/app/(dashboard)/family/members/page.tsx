@@ -190,12 +190,12 @@ export default function FamilyMembersPage() {
       >
         <div>
           <div className="flex items-center gap-2.5">
-            <h2 className="font-display text-2xl font-bold text-midnight-100">
+            <h2 className="font-display text-2xl font-bold text-ink">
               Manage Members
             </h2>
             <TierBadge tier={tier} size="md" />
           </div>
-          <p className="text-midnight-400 text-sm font-body mt-1">
+          <p className="text-soft text-sm font-body mt-1">
             {members.length} member{members.length !== 1 ? "s" : ""} in your
             family
           </p>
@@ -225,7 +225,7 @@ export default function FamilyMembersPage() {
           return (
             <div
               key={member.id}
-              className="flex items-center gap-4 py-4 border-b border-midnight-800/50 last:border-0"
+              className="flex items-center gap-4 py-4 border-b border-sand last:border-0"
             >
               {/* Avatar */}
               <Avatar
@@ -239,10 +239,10 @@ export default function FamilyMembersPage() {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-display font-semibold text-midnight-100 truncate">
+                  <p className="text-sm font-display font-semibold text-ink truncate">
                     {member.display_name || "Member"}
                     {isCurrentUser && (
-                      <span className="text-midnight-500 font-body font-normal ml-1">
+                      <span className="text-soft font-body font-normal ml-1">
                         (you)
                       </span>
                     )}
@@ -261,11 +261,11 @@ export default function FamilyMembersPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-midnight-400 font-body mt-0.5">
+                <div className="flex items-center gap-2 text-xs text-soft font-body mt-0.5">
                   <span className="capitalize">{member.track || "No track"}</span>
                   {member.age_group && (
                     <>
-                      <span className="text-midnight-600">&middot;</span>
+                      <span className="text-soft">&middot;</span>
                       <span className="capitalize flex items-center gap-1">
                         <GraduationCap className="w-3 h-3" />
                         {member.age_group}
@@ -279,7 +279,7 @@ export default function FamilyMembersPage() {
               {!isCurrentUser && (
                 <button
                   onClick={() => openMemory(member.id, member.display_name || "This member")}
-                  className="text-midnight-500 hover:text-gold-500 transition-colors shrink-0"
+                  className="text-soft hover:text-gold-500 transition-colors shrink-0"
                   aria-label={`What Kai remembers about ${member.display_name || "this member"}`}
                   title="What Kai remembers"
                 >
@@ -293,7 +293,7 @@ export default function FamilyMembersPage() {
                   value={member.role}
                   onChange={(e) => handleRoleChange(member.id, e.target.value)}
                   disabled={updatingRole === member.id}
-                  className="bg-midnight-800 border border-midnight-700 rounded-md px-2 py-1 text-xs text-midnight-200 font-body shrink-0 focus:outline-none focus:border-midnight-600"
+                  className="bg-card border border-sand rounded-md px-2 py-1 text-xs text-ink font-body shrink-0 focus:outline-none focus:border-gold-400"
                 >
                   <option value="parent">Parent</option>
                   <option value="teen">Teen</option>
@@ -314,7 +314,7 @@ export default function FamilyMembersPage() {
                       </button>
                       <button
                         onClick={() => setConfirmRemove(null)}
-                        className="text-xs text-midnight-400 hover:text-midnight-200 font-body transition-colors"
+                        className="text-xs text-soft hover:text-ink font-body transition-colors"
                       >
                         Cancel
                       </button>
@@ -322,7 +322,7 @@ export default function FamilyMembersPage() {
                   ) : (
                     <button
                       onClick={() => setConfirmRemove(member.id)}
-                      className="text-midnight-500 hover:text-red-400 transition-colors shrink-0"
+                      className="text-soft hover:text-red-400 transition-colors shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -350,21 +350,21 @@ export default function FamilyMembersPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 16 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl bg-midnight-900 border border-midnight-700 p-6 z-50"
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl bg-card border border-sand p-6 z-50"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display text-base font-bold text-midnight-100">
+                <h3 className="font-display text-base font-bold text-ink">
                   Invite Family Member
                 </h3>
                 <button
                   onClick={() => setShowInviteModal(false)}
-                  className="text-midnight-400 hover:text-midnight-200 transition-colors"
+                  className="text-soft hover:text-ink transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <p className="text-sm text-midnight-300 font-body mb-4">
+              <p className="text-sm text-soft font-body mb-4">
                 Share this link with a family member. It expires in 7 days.
               </p>
 
@@ -378,11 +378,11 @@ export default function FamilyMembersPage() {
                     type="text"
                     readOnly
                     value={inviteLink}
-                    className="flex-1 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-200 text-sm truncate"
+                    className="flex-1 px-3 py-2.5 rounded-lg bg-card border border-sand text-ink text-sm truncate"
                   />
                   <button
                     onClick={handleCopy}
-                    className="shrink-0 px-3 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-300 hover:text-midnight-100 hover:bg-midnight-700 transition-colors"
+                    className="shrink-0 px-3 py-2.5 rounded-lg bg-card border border-sand text-soft hover:text-ink hover:bg-sand transition-colors"
                   >
                     {copied ? (
                       <Check className="w-4 h-4 text-green-400" />
@@ -393,7 +393,7 @@ export default function FamilyMembersPage() {
                 </div>
               )}
 
-              <p className="text-[11px] text-midnight-500 mt-3 font-body">
+              <p className="text-[11px] text-soft mt-3 font-body">
                 The invited member will join your family and can start learning
                 immediately.
               </p>
@@ -418,33 +418,33 @@ export default function FamilyMembersPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 16 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl bg-midnight-900 border border-midnight-700 p-6 z-50"
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl bg-card border border-sand p-6 z-50"
             >
               <div className="flex items-center gap-2 mb-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold-400/20">
                   <Brain className="h-4 w-4 text-gold-700" />
                 </span>
-                <h3 className="flex-1 font-display text-base font-bold text-midnight-100">
+                <h3 className="flex-1 font-display text-base font-bold text-ink">
                   What Kai remembers about {memoryFor.name}
                 </h3>
                 <button
                   onClick={() => setMemoryFor(null)}
-                  className="text-midnight-400 hover:text-midnight-200 transition-colors"
+                  className="text-soft hover:text-ink transition-colors"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="max-h-56 overflow-y-auto rounded-lg border border-midnight-700 bg-midnight-800 p-3 text-sm text-midnight-200 font-body">
+              <div className="max-h-56 overflow-y-auto rounded-lg border border-sand bg-card p-3 text-sm text-ink font-body">
                 {memoryLoading ? (
-                  <span className="flex items-center gap-2 text-midnight-400">
+                  <span className="flex items-center gap-2 text-soft">
                     <Loader2 className="h-4 w-4 animate-spin" /> Loading…
                   </span>
                 ) : memoryText ? (
                   memoryText
                 ) : (
-                  <span className="text-midnight-400">
+                  <span className="text-soft">
                     Kai doesn&apos;t have any notes about {memoryFor.name} yet.
                   </span>
                 )}
@@ -454,7 +454,7 @@ export default function FamilyMembersPage() {
                 <button
                   onClick={clearMemory}
                   disabled={memoryClearing}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-midnight-700 px-3 py-2.5 text-sm font-semibold text-midnight-300 transition-colors hover:border-red-500/40 hover:text-red-400 disabled:opacity-50"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-sand px-3 py-2.5 text-sm font-semibold text-soft transition-colors hover:border-red-500/40 hover:text-red-400 disabled:opacity-50"
                 >
                   {memoryClearing ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
