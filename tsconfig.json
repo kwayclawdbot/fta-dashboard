@@ -36,10 +36,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    "**/*.test.ts",
-    "scripts/**",
-    "fta-remotion"
-  ]
+  "exclude": ["node_modules", "**/*.test.ts", "scripts/**", "fta-remotion", "fta-remotion/**"]
 }
