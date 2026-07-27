@@ -46,6 +46,7 @@ import ClubActivityStrip from "@/components/community/ClubActivityStrip";
 import ClubHomeV2 from "@/components/clubhome/ClubHomeV2";
 import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
+import TableTalkCard from "@/components/dashboard/TableTalkCard";
 import AddFamily from "@/components/dashboard/AddFamily";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
@@ -581,6 +582,10 @@ export default function DashboardHomeClient() {
 
       {/* Belt/XP hero — always-visible progress toward the next belt. */}
       <BeltHeroStrip xp={xp} isKid={isKid} />
+
+      {/* This week's Table Talk — signature family-home card (Family Mode
+          canvas, artboard 01). Parents only; self-hides when no week prepared. */}
+      {isParent && <TableTalkCard />}
 
       {/* Kai briefing card (Lane C6) — adults only (parents), renders only when
           the trade-alerts feed has a row. Free tier never reaches this page. */}
