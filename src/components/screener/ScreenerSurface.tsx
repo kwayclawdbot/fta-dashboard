@@ -8,11 +8,6 @@ import {
   Telescope,
   Search,
   ChevronDown,
-  Trophy,
-  TrendingUp,
-  Rocket,
-  Waves,
-  BarChart3,
   ArrowRight,
   Plus,
   Users2,
@@ -23,8 +18,9 @@ import {
   X,
   Sparkles,
   CornerDownLeft,
-  type LucideIcon,
+  Bookmark,
 } from "lucide-react";
+import { SegmentedRail, type SegmentedOption } from "@/components/canvas2";
 import { createClient } from "@/lib/supabase/client";
 import { parseScreenerQuery } from "@/lib/screener-nl";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
@@ -32,7 +28,6 @@ import { fetchQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import LockedState from "@/components/dashboard/LockedState";
-import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import {
   useNewMemberHints,
@@ -52,7 +47,6 @@ import {
 import { SECTORS, SUBSECTORS, type Sector } from "@/lib/screener-sectors";
 import { formatExchange } from "@/lib/market/exchange";
 
-const ICONS: Record<string, LucideIcon> = { Trophy, TrendingUp, Rocket, Waves, BarChart3 };
 const PAGE_SIZE = 100;
 const METRIC_COLS =
   "ticker, name, sector, exchange, type, mcap, price, chg_1d, chg_5d, chg_1m, chg_3m, vol, avg_vol_20, vol_ratio, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, gap_pct, like_count, updated_at";
@@ -127,22 +121,32 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "ticker", label: "Ticker" },
 ];
 
+/** The quick-start presets as rail options. Labels only: the preset's icon
+ *  carried no information the label doesn't, and five distinct glyphs in a row
+ *  read as five competing objects rather than one control. */
+const PRESET_OPTIONS: SegmentedOption<string>[] = PRESETS.map((p) => ({
+  id: p.id,
+  label: p.label,
+}));
+
 /* The ledger's vertical hairlines. --sand is lifted globally in dark by the
    foundation, so a plain border-sand is correct in both themes now. */
 const RULE = "border-sand";
 
 /* ---------- club heat ----------
-   COLOUR LAW: heat is COMMUNITY SENTIMENT, so it is LIME — never the red heart
-   it used to be (red belongs to price, and a red heart next to a red 1d% made
-   the two read as the same signal). The mark is a physical bar scaled against
-   the hottest name on the page plus the mono count, so "hot" is legible before
-   the number is read. */
+   COLOUR LAW: heat is COMMUNITY SENTIMENT, so it takes the canonical sentiment
+   ramp — never the red heart it used to be (red belongs to price, and a red
+   heart next to a red 1d% made the two read as the same signal). The token
+   carries both theme steps itself, which is why there is no dark: variant here
+   and why the hand-written `bg-lime-400` it replaced was a defect waiting to
+   happen. The mark is a physical bar scaled against the hottest name on the
+   page plus the mono count, so "hot" is legible before the number is read. */
 function HeatMark({ n, max }: { n: number | null | undefined; max: number }) {
   if (!n || n <= 0) return <span className="font-mono text-[12px] text-soft/60">—</span>;
   const w = 6 + Math.round((Math.min(n, max) / Math.max(max, 1)) * 26);
   return (
     <span className="inline-flex items-center justify-end gap-1.5">
-      <span className="h-[7px] rounded-full bg-lime-400" style={{ width: w }} aria-hidden />
+      <span className="h-[7px] rounded-full bg-sentiment-fill" style={{ width: w }} aria-hidden />
       <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">{n}</span>
     </span>
   );
@@ -155,6 +159,22 @@ interface Meta {
   etf_count: number | null;
   mcap_count: number | null;
   history_days: number | null;
+}
+
+/* ---------- saved screens (migration 194) ----------
+   Canvas board 15 draws "Save screen" on the results header. It is backed by
+   `screener_saved_screens`: own-row RLS, kid-walled through the same
+   viewer_is_kid() definer the screener universe uses, capped at 20 per member
+   by a trigger. `filters` is the CustomFilters blob verbatim, so a re-applied
+   screen and a hand-built one are the same object. */
+const SAVED_SCREEN_LIMIT = 20;
+
+interface SavedScreen {
+  id: string;
+  name: string;
+  filters: CustomFilters;
+  sort_key: SortKey;
+  sort_dir: SortDir;
 }
 
 /**
@@ -206,6 +226,15 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
   const [added, setAdded] = useState<Record<string, "family" | "community">>({});
   const [busy, setBusy] = useState<string | null>(null);
+
+  // SAVED SCREENS. `null` = the member's screens have not been read yet, which
+  // is NOT the same as "no saved screens" — the rail renders nothing at all
+  // while null and only takes its founding branch once an empty array lands.
+  const [saved, setSaved] = useState<SavedScreen[] | null>(null);
+  const [savedError, setSavedError] = useState<string | null>(null);
+  const [savingScreen, setSavingScreen] = useState(false);
+  const [screenName, setScreenName] = useState("");
+  const [appliedScreenId, setAppliedScreenId] = useState<string | null>(null);
 
   const isFTA = tier === "fta";
 
@@ -292,6 +321,86 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     load();
   }, [load]);
 
+  /* ── saved screens: read ────────────────────────────────────────────────
+     Fails soft to an empty list — a screener whose universe loaded must never
+     be blocked by a personalisation read. */
+  const loadSaved = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("screener_saved_screens")
+      .select("id, name, filters, sort_key, sort_dir")
+      .order("used_at", { ascending: false });
+    if (error) {
+      setSaved([]);
+      return;
+    }
+    setSaved((data as SavedScreen[]) ?? []);
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!userId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSaved();
+  }, [userId, loadSaved]);
+
+  /** Persist the CURRENT view — filters + sort — under a member-chosen name.
+   *  The unique(user_id, name) constraint makes re-saving under an existing
+   *  name an UPDATE, which is what "Save screen" means when the name is taken. */
+  async function saveScreen() {
+    const name = screenName.trim();
+    if (!name || !userId || savingScreen) return;
+    setSavingScreen(true);
+    setSavedError(null);
+    // `q` is a free-text search, not a filter — it is deliberately NOT saved:
+    // a screen is a shape ("mid-cap semis breaking out"), and baking one
+    // company's name into it makes it un-reusable.
+    const filters: CustomFilters = { ...custom };
+    delete filters.q;
+    const { error } = await supabase
+      .from("screener_saved_screens")
+      .upsert(
+        {
+          user_id: userId,
+          name,
+          filters,
+          sort_key: sortKey,
+          sort_dir: sortDir,
+          used_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,name" }
+      );
+    if (error) {
+      setSavedError(
+        (saved?.length ?? 0) >= SAVED_SCREEN_LIMIT
+          ? `You can keep ${SAVED_SCREEN_LIMIT} screens — delete one to save this.`
+          : "Couldn't save that screen. Try again."
+      );
+    } else {
+      setScreenName("");
+      await loadSaved();
+    }
+    setSavingScreen(false);
+  }
+
+  /** Re-apply a saved screen and bump its recency so the rail self-orders. */
+  async function applyScreen(s: SavedScreen) {
+    setActivePresetId(null);
+    setAppliedScreenId(s.id);
+    setCustom((c) => ({ ...s.filters, q: c.q ?? null }));
+    setSortKey(s.sort_key);
+    setSortDir(s.sort_dir);
+    setNlNote(null);
+    await supabase
+      .from("screener_saved_screens")
+      .update({ used_at: new Date().toISOString() })
+      .eq("id", s.id);
+  }
+
+  async function deleteScreen(id: string) {
+    setSaved((prev) => (prev ?? []).filter((s) => s.id !== id));
+    if (appliedScreenId === id) setAppliedScreenId(null);
+    await supabase.from("screener_saved_screens").delete().eq("id", id);
+  }
+
   const exchanges = useMemo(() => {
     const s = new Set<string>();
     for (const r of rows) if (r.exchange) s.add(r.exchange);
@@ -329,6 +438,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   );
 
   function applyPreset(p: ScreenerPreset) {
+    setAppliedScreenId(null);
     if (activePresetId === p.id) {
       // toggle off
       setActivePresetId(null);
@@ -359,10 +469,12 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   }
   function patchFilter(patch: Partial<CustomFilters>) {
     setActivePresetId(null);
+    setAppliedScreenId(null);
     setCustom((c) => ({ ...c, ...patch }));
   }
   function clearFilter(key: keyof CustomFilters) {
     setActivePresetId(null);
+    setAppliedScreenId(null);
     setCustom((c) => {
       const next = { ...c };
       delete next[key];
@@ -373,6 +485,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   }
   function clearAll() {
     setActivePresetId(null);
+    setAppliedScreenId(null);
     setCustom((c) => ({ q: c.q }));
   }
   function toggleSort(key: SortKey) {
@@ -412,7 +525,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setBusy(null);
   }
 
-  if (loading || !tierResolved) return <DashboardSkeleton variant="list" />;
+  if (loading || !tierResolved) return <ScreenerSkeleton embedded={embedded} />;
 
   if (tier === "free") {
     return (
@@ -529,44 +642,43 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         )}
       </div>
 
-      {/* Preset quick-start chips */}
-      <div className="flex flex-wrap gap-2">
-        <span className="flex items-center font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft/70">
+      {/* ── Quick start ─────────────────────────────────────────────────────
+          Was a row of five bordered pills with an icon in each — pill soup by
+          the register's own definition, and five icons encoding nothing the
+          label doesn't already say. It is now the shared <SegmentedRail />:
+          the system's single answer to "pick one of N", so this control has
+          the same keyboard model, the same focus ring and the same 3px
+          indicator as every other one-of-N in the app. The bar rides
+          `bg-accent` because choosing a screen is an ACTION (orange by law),
+          and re-selecting the current preset clears it — the toggle-off
+          behaviour the pills had, preserved. */}
+      <div>
+        <p className="mb-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft/70">
           Quick start
-        </span>
-        {PRESETS.map((p) => {
-          const Icon = ICONS[p.icon] ?? Trophy;
-          const active = activePresetId === p.id;
-          return (
-            <button
-              key={p.id}
-              onClick={() => applyPreset(p)}
-              title={p.blurb}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold transition ${
-                active
-                  ? "border-gold-400 bg-chip-amber text-gold-700 shadow-soft"
-                  : "border-sand bg-paper text-soft hover:border-gold-300"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {p.label}
-            </button>
-          );
-        })}
+        </p>
+        <SegmentedRail
+          options={PRESET_OPTIONS}
+          value={activePresetId as string | null}
+          onChange={(id) => {
+            const p = PRESETS.find((x) => x.id === id);
+            if (p) applyPreset(p);
+          }}
+          ariaLabel="Quick-start screens"
+          barClassName="bg-accent"
+          size="sm"
+        />
       </div>
       {activePresetId && (
-        <div className="border-l-[3px] border-volt-500 py-1 pl-3.5">
+        <div className="border-l-[3px] border-accent py-1 pl-3.5">
           {(() => {
             const ap = getPreset(activePresetId)!;
-            const Icon = ICONS[ap.icon] ?? Trophy;
             return (
               <>
-                <p className="flex items-start gap-2 text-[13px] leading-snug text-ink/80">
-                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-gold-600" />
-                  <span>{ap.blurb} These filters are applied below — tweak any of them.</span>
+                <p className="text-[13px] leading-snug text-ink/80">
+                  {ap.blurb} These filters are applied below — tweak any of them.
                 </p>
                 {!isKid && (
-                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-sand pt-2">
+                  <div className="f0-rule-top mt-2 flex items-center justify-between gap-2 pt-2">
                     <span className="text-[12px] font-medium text-soft">
                       Want a heads-up when new names enter this screen?
                     </span>
@@ -584,6 +696,46 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
               </>
             );
           })()}
+        </div>
+      )}
+
+      {/* ── Your screens (canvas 15 · "Save screen") ────────────────────────
+          Real persistence, not a UI gesture: every chip here is a row in
+          screener_saved_screens. Rendered only once the read has landed —
+          `saved === null` is "not read yet", which must never take the
+          founding branch (§0.4). */}
+      {saved !== null && saved.length > 0 && (
+        <div>
+          <p className="mb-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft/70">
+            Your screens
+          </p>
+          <div className="club2-track -m-1 flex gap-2 overflow-x-auto p-1">
+            {saved.map((s) => {
+              const on = appliedScreenId === s.id;
+              return (
+                <span
+                  key={s.id}
+                  className={`f0-chip shrink-0 px-2.5 py-1 ${on ? "f0-chip-on" : "text-soft"}`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => applyScreen(s)}
+                    className="f0-focus f0-press rounded font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
+                  >
+                    {s.name}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteScreen(s.id)}
+                    aria-label={`Delete the ${s.name} screen`}
+                    className="f0-focus rounded opacity-60 transition-opacity hover:opacity-100"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -621,31 +773,51 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         </AnimatePresence>
       </div>
 
-      {/* Active filter chips */}
+      {/* Active filter chips — the canvas's own orange-outlined "Tech ✕" row,
+          built on the shared .f0-chip so it cannot drift from the selection
+          chips inside the filter panel. --f0-chip-line is the one hook the
+          primitive exposes for a charged outline. */}
       {chips.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
           {chips.map((c) => (
             <button
               key={c.key}
               onClick={() => clearFilter(c.key)}
-              className="inline-flex items-center gap-1 rounded-full border border-gold-400 bg-chip-amber px-2.5 py-1 text-[11px] font-semibold text-gold-700 transition hover:border-gold-500"
+              style={{ "--f0-chip-line": "var(--accent-solid)" } as React.CSSProperties}
+              className="f0-chip f0-press f0-focus px-2.5 py-1 text-[11px] font-semibold text-gold-700"
             >
               {c.label}
               <X className="h-3 w-3" />
             </button>
           ))}
-          <button onClick={clearAll} className="ml-1 text-[11px] font-semibold text-soft underline hover:text-ink">
+          <button
+            onClick={clearAll}
+            className="f0-focus ml-1 rounded text-[11px] font-semibold text-soft underline hover:text-ink"
+          >
             Clear all
           </button>
         </div>
       )}
 
-      {/* Result count · sort · how-to */}
+      {/* Result count · save · sort · how-to */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
           {results.length.toLocaleString()} {results.length === 1 ? "result" : "results"}
         </span>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* SAVE SCREEN — canvas 15 draws it right here. It writes a real row
+              (migration 194) and only appears once there is a screen worth
+              keeping, so it never invites a member to save the empty view. */}
+          {userId && !filtersEmpty(custom) && (
+            <SaveScreenControl
+              name={screenName}
+              onName={setScreenName}
+              onSave={saveScreen}
+              saving={savingScreen}
+              error={savedError}
+              count={saved?.length ?? 0}
+            />
+          )}
           {/* The sort is a stated fact, not a hidden default: the surface opens
               on CLUB HEAT — what the club is actually engaging with — and says
               so, with the change one tap away on every breakpoint. */}
@@ -654,10 +826,11 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
             <select
               value={sortKey}
               onChange={(e) => {
-                            setSortKey(e.target.value as SortKey);
+                setSortKey(e.target.value as SortKey);
                 setSortDir(e.target.value === "ticker" ? "asc" : "desc");
+                setAppliedScreenId(null);
               }}
-              className="bg-transparent font-display text-[12px] font-bold uppercase tracking-normal text-ink outline-none"
+              className="f0-focus rounded bg-transparent font-display text-[12px] font-bold uppercase tracking-normal text-ink outline-none"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.key} value={o.key}>
@@ -668,13 +841,38 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
           </label>
           <button
             onClick={() => setExplainerOpen((v) => !v)}
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-soft hover:text-ink"
+            className="f0-focus inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.14em] text-soft hover:text-ink"
           >
             <Info className="h-3.5 w-3.5" />
             How to use this
           </button>
         </div>
       </div>
+
+      {/* FOUNDING STATE (§0.5). The surface opens on CLUB HEAT, and a club of
+          nine tickers with one or two participants each has no heat to sort by
+          — so the default sort would silently degrade to an arbitrary order
+          with a column of dashes beside it. Say so instead, and hand over the
+          one-tap fix. Distinct from loading: the universe has already landed by
+          the time this can render. */}
+      {sortKey === "like_count" && results.length > 0 && maxHeat === 0 && (
+        <p className="border-l-2 border-accent py-1 pl-3.5 text-[12.5px] leading-relaxed text-soft">
+          The Club hasn&apos;t warmed any of these names yet, so this list is in
+          no meaningful order. Like a ticker on its research page to start its
+          heat — or{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setSortKey("mcap");
+              setSortDir("desc");
+            }}
+            className="f0-focus rounded font-semibold text-gold-700 underline decoration-1 underline-offset-2"
+          >
+            sort by size
+          </button>{" "}
+          for now.
+        </p>
+      )}
       <AnimatePresence initial={false}>
         {explainerOpen && (
           <m.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
@@ -698,8 +896,8 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
           mobile: the same ruled ledger both times, shedding columns as the
           viewport narrows. Rules do the separating; nothing is boxed. */}
       {results.length === 0 ? (
-        <div className="border-y border-sand py-14">
-          <Telescope className="mb-3 h-7 w-7 text-gold-500/60" />
+        <div className="f0-rule-top f0-rule-bottom py-14">
+          <Telescope className="mb-3 h-7 w-7 text-gold-600" />
           <h3 className="font-display text-display-3 font-extrabold text-ink">Nothing matches</h3>
           <p className="mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-soft">
             Loosen a filter or clear your search — the market shifts every day, so this list changes
@@ -789,6 +987,154 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 }
 
 /* ============================================================================
+ * SCREENER SKELETON — the route's own furniture, not a generic list skeleton.
+ *
+ * Both the /screener route shell and this component's in-flight branch used
+ * DashboardSkeleton, which draws a stack of rounded CARDS — a shape that exists
+ * nowhere on the finished surface, so every screener open flashed the old
+ * design for the length of a ~10k-row universe fetch and then swapped to a
+ * hairline ledger. This is the finished page furniture with only the parts that
+ * genuinely depend on data left blank: the masthead is real type, the ledger is
+ * ruled rows, and the rules land where the real rules will land.
+ *
+ * Exported so the route shell (app/(dashboard)/screener/loading.tsx) renders
+ * the identical thing and navigation does not shift.
+ * ==========================================================================*/
+export function ScreenerSkeleton({ embedded = false }: { embedded?: boolean }) {
+  return (
+    <div
+      className={
+        embedded ? "space-y-4" : "mx-auto max-w-6xl space-y-4 px-4 pb-24 sm:px-6"
+      }
+      aria-busy="true"
+    >
+      <header className={embedded ? "" : "pt-2"}>
+        <p className="font-mono text-eyebrow font-bold uppercase text-gold-700">Screener</p>
+        <h1 className="mt-2.5 font-display text-display-2 font-extrabold text-ink">
+          The whole US market,
+          <br className="hidden sm:block" /> filtered down to a short list.
+        </h1>
+        <p className="mt-3 max-w-xl text-[13.5px] leading-relaxed text-soft">
+          Every common stock and ETF on the NYSE, Nasdaq and AMEX. Candidates to{" "}
+          <em>research</em> — never a list of things to buy.
+        </p>
+        <div className="f0-rule-top mt-4 pt-2.5">
+          <div className="h-2.5 w-64 max-w-full animate-pulse rounded bg-sand" />
+        </div>
+      </header>
+
+      <div className="f0-rule-bottom py-3">
+        <div className="h-4 w-72 max-w-full animate-pulse rounded bg-sand/70" />
+      </div>
+
+      <div className="f0-rule-bottom flex gap-6 pb-3">
+        {[64, 88, 72, 96, 80].map((w, i) => (
+          <div key={i} className="h-2.5 animate-pulse rounded bg-sand" style={{ width: w }} />
+        ))}
+      </div>
+
+      <div className="f0-ledger">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="f0-ledger-row">
+            <div className="h-[34px] w-[34px] shrink-0 animate-pulse rounded-lg bg-sand" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-3 w-16 animate-pulse rounded bg-sand" />
+              <div className="h-2.5 w-40 max-w-full animate-pulse rounded bg-sand/60" />
+            </div>
+            <div className="h-3 w-16 shrink-0 animate-pulse rounded bg-sand/70" />
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Loading the market universe</span>
+    </div>
+  );
+}
+
+/* ============================================================================
+ * SAVE SCREEN — canvas board 15's "Save screen", with a table behind it.
+ *
+ * Closed it is one orange word on the results header, the same weight as the
+ * "How to use this" affordance beside it. Open it becomes a ruled name field
+ * and a commit — no dialog, no modal, no boxed popover: the control expands in
+ * place the way every other disclosure on this surface does.
+ * ==========================================================================*/
+function SaveScreenControl({
+  name,
+  onName,
+  onSave,
+  saving,
+  error,
+  count,
+}: {
+  name: string;
+  onName: (v: string) => void;
+  onSave: () => void;
+  saving: boolean;
+  error: string | null;
+  count: number;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="f0-focus f0-press inline-flex items-center gap-1 rounded font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold-700 transition-colors hover:text-gold-600"
+      >
+        <Bookmark className="h-3.5 w-3.5" />
+        Save screen
+      </button>
+    );
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <label className="inline-flex items-center gap-1.5">
+        <span className="sr-only">Name this screen</span>
+        <input
+          autoFocus
+          value={name}
+          maxLength={48}
+          onChange={(e) => onName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onSave();
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder="Name this screen"
+          className="w-40 border-b border-sand bg-transparent py-1 font-display text-[13px] font-semibold text-ink outline-none transition-colors placeholder:font-normal placeholder:text-soft/70 hover:border-gold-400 focus:border-accent"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={!name.trim() || saving}
+        className="f0-focus f0-press rounded font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold-700 disabled:opacity-40"
+      >
+        {saving ? "Saving…" : "Save"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        aria-label="Cancel saving this screen"
+        className="f0-focus rounded text-soft hover:text-ink"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+      {error ? (
+        <span className="w-full font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+          {error}
+        </span>
+      ) : (
+        <span className="w-full font-mono text-[10px] uppercase tracking-[0.12em] text-soft/70">
+          {count} of {SAVED_SCREEN_LIMIT} saved · reusing a name replaces it
+        </span>
+      )}
+    </span>
+  );
+}
+
+/* ============================================================================
  * LEDGER ROW — one result, one ruled line.
  *
  * The same component at every breakpoint. Desktop hangs the numeric cells off
@@ -830,7 +1176,7 @@ function LedgerRow({
           onOpen();
         }
       }}
-      className="f0-ledger-row group cursor-pointer focus:outline-none focus-visible:bg-volt-50 dark:focus-visible:bg-volt-500/12"
+      className="f0-ledger-row f0-focus group cursor-pointer"
     >
       {/* identity */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -869,7 +1215,7 @@ function LedgerRow({
             </span>
             {r.like_count != null && r.like_count > 0 && (
               <span className="inline-flex items-center gap-1">
-                <span className="h-[6px] w-[6px] rounded-full bg-lime-400" aria-hidden />
+                <span className="h-[6px] w-[6px] rounded-full bg-sentiment-fill" aria-hidden />
                 <span className="text-ink">{r.like_count}</span>
               </span>
             )}
@@ -962,9 +1308,11 @@ function RowActions({
   allowAlert?: boolean;
 }) {
   if (added) {
-    // Confirmation is a COMMUNITY act, so it wears lime — not green (price).
+    // Confirmation is a COMMUNITY act, so it wears the sentiment ramp — not
+    // green (price). `text-sentiment` carries both theme steps, which is why
+    // the `dark:` variant this used to hand-write is gone.
     return (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-lime-700 dark:text-lime-400">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-sentiment">
         <Check className="h-3 w-3" />
         {added === "community" ? "On the board" : "Watching"}
       </span>
@@ -979,7 +1327,7 @@ function RowActions({
           onAddFamily();
         }}
         title="Add to family watchlist"
-        className="inline-flex items-center gap-1 rounded-lg border border-sand px-2 py-1 text-[11px] font-semibold text-soft transition hover:border-volt-400 hover:text-gold-700 disabled:opacity-50"
+        className="f0-chip f0-press f0-focus px-2 py-1 text-[11px] font-semibold text-soft hover:text-gold-700 disabled:opacity-50"
       >
         <Plus className="h-3.5 w-3.5" />
         {compact ? "" : "Add to family watchlist"}
@@ -991,7 +1339,7 @@ function RowActions({
           onSuggest();
         }}
         title="Suggest to community"
-        className="inline-flex items-center gap-1 rounded-lg border border-sand px-2 py-1 text-[11px] font-semibold text-soft transition hover:border-volt-400 hover:text-gold-700 disabled:opacity-50"
+        className="f0-chip f0-press f0-focus px-2 py-1 text-[11px] font-semibold text-soft hover:text-gold-700 disabled:opacity-50"
       >
         <Users2 className="h-3.5 w-3.5" />
         {compact ? "" : "Suggest to community"}
@@ -1011,7 +1359,7 @@ function RowActions({
         href={researchHref(r.ticker)}
         onClick={(e) => e.stopPropagation()}
         title="Research"
-        className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gold-700 hover:underline"
+        className="f0-focus inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gold-700 hover:underline"
       >
         Research
         <ArrowRight className="h-3.5 w-3.5" />
@@ -1404,7 +1752,7 @@ function FieldSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="max-w-[16rem] cursor-pointer truncate border-b border-sand bg-transparent py-1 text-right font-display text-[13px] font-bold text-ink outline-none transition-colors hover:border-gold-400 focus:border-gold-500 disabled:cursor-not-allowed disabled:opacity-45"
+      className="f0-focus max-w-[16rem] cursor-pointer truncate border-b border-sand bg-transparent py-1 text-right font-display text-[13px] font-bold text-ink outline-none transition-colors hover:border-gold-400 focus:border-accent disabled:cursor-not-allowed disabled:opacity-45"
     >
       {children}
     </select>
@@ -1439,16 +1787,19 @@ function NumField({
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
         placeholder="—"
-        className={`${width} border-b border-sand bg-transparent py-1 text-right font-mono text-[13px] font-semibold tabular-nums tracking-normal text-ink outline-none transition-colors placeholder:text-soft/60 hover:border-gold-400 focus:border-gold-500`}
+        className={`f0-focus ${width} border-b border-sand bg-transparent py-1 text-right font-mono text-[13px] font-semibold tabular-nums tracking-normal text-ink outline-none transition-colors placeholder:text-soft/60 hover:border-gold-400 focus:border-accent`}
       />
       {suffix && <span aria-hidden>{suffix}</span>}
     </label>
   );
 }
 
-/* A pill toggle. Selecting a filter is an ACTION, so the on-state wears the
-   brand orange (`text-gold-700` — the gold ramp IS volt orange in club mode
-   and, unlike the frozen volt ramp, it flips for the dark page). */
+/* A selection toggle, on the shared .f0-chip / .f0-chip-on primitive.
+   Previously a bespoke amber-tinted pill; the primitive exists precisely so
+   the filter panel, the active-filter row and the canvas's stance/post-type
+   controls cannot each invent their own selected state. .f0-chip-on inverts
+   to a solid field (and flips in dark), so the choice survives with colour
+   stripped — it is a value change, not a hue change. */
 function Chip({
   active,
   onClick,
@@ -1463,10 +1814,8 @@ function Chip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition ${
-        active
-          ? "border-gold-400 bg-chip-amber text-gold-700"
-          : "border-sand text-soft hover:border-gold-300 hover:text-ink"
+      className={`f0-chip f0-press f0-focus px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] ${
+        active ? "f0-chip-on" : "text-soft hover:text-ink"
       }`}
     >
       {children}

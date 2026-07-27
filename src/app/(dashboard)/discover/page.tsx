@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchNewsFeed } from "@/lib/news/client";
 import { getCommunityBoardSeed } from "@/lib/community-watchlist-board";
 import { getDiscoverExtras } from "@/lib/discover";
+import { deriveRegister } from "@/lib/register";
 import DiscoverClient from "./DiscoverClient";
 
 /**
@@ -25,10 +26,36 @@ export const dynamic = "force-dynamic";
 
 export default async function DiscoverPage() {
   const supabase = await createClient();
-  const [initialNews, board, extras] = await Promise.all([
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [initialNews, board, extras, profile] = await Promise.all([
     fetchNewsFeed(supabase, { kind: null, limit: 30 }).catch(() => null),
     getCommunityBoardSeed(supabase).catch(() => null),
     getDiscoverExtras(supabase).catch(() => null),
+    user
+      ? supabase
+          .from("profiles")
+          .select("role, age_group, track")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data }) => data, () => null)
+      : Promise.resolve(null),
   ]);
-  return <DiscoverClient initialNews={initialNews} board={board} extras={extras} />;
+
+  // /screener redirects kids server-side (and migration 137 closed the data
+  // door), so the Stock Finder band was offering a young member a door that
+  // bounces them to /dashboard. The band is resolved here, on the server, where
+  // the register is actually known — the client never guesses.
+  const isKid = deriveRegister(profile) === "kid";
+
+  return (
+    <DiscoverClient
+      initialNews={initialNews}
+      board={board}
+      extras={extras}
+      showStockFinder={!isKid}
+    />
+  );
 }

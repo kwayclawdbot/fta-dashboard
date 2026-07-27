@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import NewsClient from "../news/NewsClient";
+import { TickerTile, TickerTileStrip } from "@/components/canvas2";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
@@ -47,8 +48,19 @@ import type {
  *   SEARCH              a full-width ruled field — not a boxed input — with the
  *                       "or ask Kai" affordance opening the contextual Kai sheet
  *   WHAT THE CLUB IS SEEING   the shared <TickerCarousel /> (read-only foundation)
+ *   MOVING UP THE BOARD canvas v2 board 02 "From quiet to loud" — a dense
+ *                       <TickerTileStrip /> of the names whose club score rose
+ *                       most against the prior window. Below the floor it pads
+ *                       with EMPTY SLOTS, so nine tickers read as a club filling
+ *                       up rather than as a broken row.
+ *   MOST DIVISIVE       canvas v2 board 02 §2 — the biggest split in opinion.
+ *                       The canvas draws a bull/bear DONUT; adopted as a split
+ *                       BAR instead (plan §1.5 keeps one radial gauge in the
+ *                       system, and green/red on an opinion split would spend
+ *                       the price ramp on community sentiment).
  *   SEGMENTED CONTROL   For You · Trending · Top Research · Most Discussed —
- *                       underline-driven tabs on a hairline, never pill-soup
+ *                       underline-driven tabs on the shared .f0-seg-bar
+ *                       geometry, never pill-soup
  *   THE LEDGER          hairline rows where a LARGE MUTED RANK NUMERAL carries the
  *                       object identity: rank · logo · $CASHTAG · mono price ·
  *                       green/red % · lime community-sentiment bar
@@ -74,28 +86,45 @@ interface DiscoverClientProps {
   initialNews: NewsCardData[] | null;
   board: CommunityBoardSeed | null;
   extras: DiscoverExtras | null;
+  /** False for a kid register — /screener redirects them, so the band would be
+   *  a door that bounces. Resolved server-side; never guessed here. */
+  showStockFinder?: boolean;
 }
 
 type SegmentKey = "foryou" | "trending" | "research" | "discussed";
 
-/* ── DARK-THEME COLOUR STEPS ─────────────────────────────────────────────────
- * The colour law is unchanged at night — orange is still brand/action, lime is
- * still sentiment, green/red is still price, Kai blue is still AI. What changes
- * is the STEP on each ramp, because every one of them was chosen for legibility
- * against cream and none of them survives an obsidian page:
+/* ── ORANGE, ONE WAY ─────────────────────────────────────────────────────────
+ * This surface used to hand-roll its own dark steps (`text-volt-700
+ * dark:text-volt-400`), which is the exact drift the token layer exists to end:
+ * `volt-*` is FROZEN across themes, so every consumer that wanted a legible
+ * orange at night had to re-derive one and they all landed somewhere different.
  *
- *   volt-700  #C24400 on #0F1115 → ~2.5:1     → volt-400 #FF8C33 (~7.4:1)
- *   green-600 #15803D            → ~2.9:1     → green-400 #22C55E
- *   red-600   #B91C1C            → ~2.6:1     → red-400   #F87171
- *   kai-600   #1D4FD6            → ~2.2:1     → kai-300   #7DA0FF
+ * The system's answer is the GOLD ramp — in club mode it IS volt orange, and
+ * unlike volt it flips for the dark page (--g700 #C24400 → #FFC96B). So orange
+ * TEXT is `text-gold-700` with NO dark: variant anywhere; orange FILLS and
+ * rules ride `bg-accent` / `border-accent` (--accent-solid), which is also
+ * mode-correct for free (family gold, club orange, FTA metallic).
  *
- * Every dark step goes BRIGHTER, never greyer — orange must not soften at night.
- * The one orange that stays at volt-700 is the Stock Finder pill, because it
- * sits on a white chip inside the theme-invariant .club2-band.
+ * Underline decoration deliberately inherits currentColor rather than naming a
+ * ramp step, so the rule under a link can never disagree with the link.
  */
-const ORANGE_ACTION =
-  "text-volt-700 hover:text-volt-600 dark:text-volt-400 dark:hover:text-volt-300";
-const ORANGE_LINK = `font-display font-bold underline decoration-volt-500/40 underline-offset-2 dark:decoration-volt-400/50 ${ORANGE_ACTION}`;
+const ORANGE_ACTION = "text-gold-700 transition-colors hover:text-gold-600";
+const ORANGE_LINK = `font-display font-bold underline decoration-1 underline-offset-2 ${ORANGE_ACTION}`;
+
+/* ── "MOST DIVISIVE" FLOORS ──────────────────────────────────────────────────
+ * FLOORS in src/lib/club/score.ts is scaled for club-wide aggregates (50), which
+ * a nine-ticker founding club will not clear on any single name for months — so
+ * a divisiveness gate borrowed from it would mean the section NEVER renders and
+ * the surface would ship a permanently dead heading.
+ *
+ * These are per-ticker floors instead, and they are deliberately small but
+ * honest: the row must carry at least four positioned members, and the split is
+ * only called "divisive" inside a genuinely contested band. Because the rendered
+ * copy always states the denominator ("· 4 positioned"), a four-vote split can
+ * never masquerade as consensus — which is the same contract StanceBar holds.
+ */
+const DIVISIVE_MIN_POSITIONED = 4;
+const DIVISIVE_MAX_GAP = 20; // bullPct within 30–70
 
 /** One row of the ranked ledger, normalized across the three ranked segments. */
 interface LedgerItem {
@@ -118,7 +147,12 @@ interface LedgerItem {
 }
 
 /* ── the surface ─────────────────────────────────────────────────────────── */
-export default function DiscoverClient({ initialNews, board, extras }: DiscoverClientProps) {
+export default function DiscoverClient({
+  initialNews,
+  board,
+  extras,
+  showStockFinder = true,
+}: DiscoverClientProps) {
   // Stable identities for the seeds — `x ?? []` allocates a fresh array on every
   // render, which would invalidate every memo below.
   const entries = useMemo(() => board?.entries ?? [], [board]);
@@ -220,6 +254,41 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
 
   const researchCount = contributions.length + reports.length;
 
+  /* — canvas v2 board 02 §"From quiet to loud" ————————————————————————
+   * `change` is club_change_14d off the snapshot ledger — the row's score
+   * against the PRIOR window, i.e. exactly "names the Club just woke up on".
+   * Nothing is derived here that the server did not already compute. */
+  const risingRows = useMemo(
+    () =>
+      trendingRows
+        .filter((r) => (r.change ?? 0) > 0)
+        .sort((a, b) => (b.change ?? 0) - (a.change ?? 0))
+        .slice(0, 8),
+    [trendingRows]
+  );
+
+  /* — canvas v2 board 02 §"Most divisive" ————————————————————————————
+   * The single widest split in opinion. A split needs BODIES before it can be
+   * called divisive, so a row must clear DIVISIVE_MIN_POSITIONED and sit inside
+   * the contested band; otherwise the section renders its founding state. The
+   * denominator always ships with the percentage, exactly as StanceBar does. */
+  const divisive = useMemo(() => {
+    let best: TrendingRow | null = null;
+    let bestGap = Infinity;
+    for (const r of trendingRows) {
+      const s = r.sentiment;
+      if (!s || s.bullPct == null) continue;
+      const positioned = s.bull + s.neutral + s.bear;
+      if (positioned < DIVISIVE_MIN_POSITIONED) continue;
+      const gap = Math.abs(50 - s.bullPct);
+      if (gap <= DIVISIVE_MAX_GAP && gap < bestGap) {
+        best = r;
+        bestGap = gap;
+      }
+    }
+    return best;
+  }, [trendingRows]);
+
   /* — the control ————————————————————————————————————————————————— */
   const segments: { key: SegmentKey; label: string; count: number }[] = [
     { key: "foryou", label: "For you", count: forYouItems.length },
@@ -246,7 +315,7 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
     <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">
       {/* ── MASTHEAD ─────────────────────────────────────────────────────── */}
       <header>
-        <p className="font-display text-eyebrow font-bold uppercase text-volt-700 dark:text-volt-400">
+        <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
           Cheat Code Club
         </p>
         <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase text-ink">
@@ -263,8 +332,14 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
 
       {/* ── WHAT THE CLUB IS SEEING ─────────────────────────────────────── */}
       <div className="mt-10">
-        <TickerCarousel trending={trending} pulse={pulse} />
+        <TickerCarousel trending={trending} pulse={pulse} loading={ledgerLoading} />
       </div>
+
+      {/* ── MOVING UP THE BOARD (canvas 02 · "From quiet to loud") ───────── */}
+      <RisingStrip rows={risingRows} loading={ledgerLoading} />
+
+      {/* ── MOST DIVISIVE (canvas 02 §2) ────────────────────────────────── */}
+      <DivisiveSplit row={divisive} loading={ledgerLoading} />
 
       {/* ── THE LEDGER ───────────────────────────────────────────────────── */}
       <section className="mt-11" aria-labelledby="discover-ledger">
@@ -367,7 +442,7 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
       </section>
 
       {/* ── STOCK FINDER — the one orange field on this surface ──────────── */}
-      <StockFinderBand />
+      {showStockFinder && <StockFinderBand />}
 
       {/* ── NEWSROOM (preserved: rows keep their own /news/[slug] detail) ── */}
       <section className="mt-11" aria-labelledby="discover-news">
@@ -379,7 +454,9 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
             News moving the Club
           </h2>
         </div>
-        <NewsClient initialArticles={initialNews} />
+        {/* `embedded` drops the newsroom's own display-1 masthead, its page box
+            and its ticker strip — Discover already owns all three. */}
+        <NewsClient initialArticles={initialNews} embedded />
       </section>
     </div>
   );
@@ -465,9 +542,9 @@ function SearchAnchor() {
       {/* The rule is the field. In light it is a near-black 2px bar on cream; at
           80% of a near-WHITE ink on obsidian that same bar glares, so dark drops
           it to 40% — same weight and intent, correct value contrast. */}
-      <div className="group flex items-center gap-3 border-b-2 border-ink/80 pb-3 transition-colors focus-within:border-volt-500 dark:border-ink/40 dark:focus-within:border-volt-400">
+      <div className="group flex items-center gap-3 border-b-2 border-ink/80 pb-3 transition-colors focus-within:border-accent dark:border-ink/40">
         <Search
-          className="h-5 w-5 shrink-0 text-soft transition-colors group-focus-within:text-volt-600 dark:group-focus-within:text-volt-400"
+          className="h-5 w-5 shrink-0 text-soft transition-colors group-focus-within:text-gold-700"
           aria-hidden
         />
         <input
@@ -481,7 +558,7 @@ function SearchAnchor() {
           <button
             type="submit"
             aria-label="Open research"
-            className={`shrink-0 rounded-full p-1.5 transition-colors hover:bg-volt-500/10 dark:hover:bg-volt-500/20 ${ORANGE_ACTION}`}
+            className={`f0-focus f0-press shrink-0 rounded-full p-1.5 ${ORANGE_ACTION}`}
           >
             <ArrowRight className="h-5 w-5" />
           </button>
@@ -494,7 +571,7 @@ function SearchAnchor() {
         <button
           type="button"
           onClick={askKai}
-          className={`inline-flex items-center gap-1.5 font-display text-[13px] font-bold transition-colors ${ORANGE_ACTION}`}
+          className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded font-display text-[13px] font-bold ${ORANGE_ACTION}`}
         >
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
           or ask Kai
@@ -504,11 +581,182 @@ function SearchAnchor() {
   );
 }
 
+/* ── SECTION HEAD ────────────────────────────────────────────────────────── */
+/** The canvas's own section marker: charged tick + label + hairline to the edge,
+ *  with the plain-English gloss beneath it. */
+function SectionHead({ title, gloss }: { title: string; gloss: string }) {
+  return (
+    <>
+      <h2 className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink">
+        <span className="shrink-0 whitespace-nowrap">{title}</span>
+      </h2>
+      <p className="mt-2 text-[12.5px] leading-relaxed text-soft">{gloss}</p>
+    </>
+  );
+}
+
+/* ── MOVING UP THE BOARD ─────────────────────────────────────────────────── */
+/**
+ * Canvas board 02, "From quiet to loud — names the Club just woke up on".
+ *
+ * The canvas draws five bare sparklines in five different colours (red, orange,
+ * amber, green, green) with a ticker under each — five hues encoding nothing,
+ * two of which are the price ramp. Adopted as the <TickerTile /> strip instead:
+ * one achromatic ground, identity carried by the mark, and the ONLY colour on
+ * the object is the delta, which is genuinely a price.
+ *
+ * LOADING ≠ EMPTY (§0.4) and FOUNDING IS MANDATORY (§0.5) are both visible here:
+ * in flight the strip pulses filled tiles; with nothing rising it renders six
+ * DASHED slots plus founding copy, so a young club reads as one that is filling
+ * up rather than as a section that failed.
+ */
+function RisingStrip({ rows, loading }: { rows: TrendingRow[]; loading: boolean }) {
+  return (
+    <section className="mt-11" aria-labelledby="discover-rising">
+      <div id="discover-rising">
+        <SectionHead
+          title="Moving up the board"
+          gloss="Names the Club just woke up on — biggest gain in attention against the last two weeks."
+        />
+      </div>
+
+      {loading ? (
+        <TickerTileStrip className="mt-4" loading loadingCount={6} />
+      ) : rows.length > 0 ? (
+        <TickerTileStrip className="mt-4" minSlots={6}>
+          {rows.map((r) => (
+            <TickerTile
+              key={r.ticker}
+              ticker={r.ticker}
+              changePct={r.changePct ?? null}
+              href={`/research/${encodeURIComponent(r.ticker)}`}
+            />
+          ))}
+        </TickerTileStrip>
+      ) : (
+        <>
+          <TickerTileStrip className="mt-4" minSlots={6} />
+          <p className="mt-3 max-w-[56ch] text-[13px] leading-relaxed text-soft">
+            No name has gained ground on the board this fortnight. Every slot here
+            fills itself — watch a ticker, ask Kai about it, or post a thesis, and
+            it starts climbing.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/* ── MOST DIVISIVE ───────────────────────────────────────────────────────── */
+/**
+ * Canvas board 02 §2, "Most divisive — biggest split in opinions".
+ *
+ * TWO DELIBERATE DIVERGENCES FROM THE CANVAS:
+ *  1. The canvas renders the split as a conic-gradient DONUT. Plan §1.5 keeps
+ *     exactly one radial gauge in the system (the club-sentiment arc), so this
+ *     is a split BAR — which carries a two-part proportion at least as legibly
+ *     and costs no new visual idiom.
+ *  2. The canvas paints bullish GREEN and bearish RED. Both halves of this split
+ *     are COMMUNITY SENTIMENT, and the colour law reserves green/red for price.
+ *     The bull share therefore takes the sentiment ramp and the bear share takes
+ *     a neutral ink tint — the object still reads as a contest, and no price
+ *     colour is spent on an opinion.
+ *
+ * The tile suppresses its delta on purpose: this object is about disagreement,
+ * and hanging a price move off it invites the split to be read as a forecast.
+ */
+function DivisiveSplit({ row, loading }: { row: TrendingRow | null; loading: boolean }) {
+  const s = row?.sentiment;
+  const bullPct = s?.bullPct ?? null;
+  const positioned = s ? s.bull + s.neutral + s.bear : 0;
+
+  return (
+    <section className="mt-11" aria-labelledby="discover-divisive">
+      <div id="discover-divisive">
+        <SectionHead
+          title="Most divisive"
+          gloss="Where the Club disagrees with itself the most."
+        />
+      </div>
+
+      {loading ? (
+        <div className="mt-4 flex items-center gap-4" aria-busy="true">
+          <TickerTile size="lg" loading showDelta={false} />
+          <div className="min-w-0 flex-1 space-y-2.5">
+            <div className="h-3.5 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+            <div className="h-[6px] w-full rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
+            <div className="h-2.5 w-40 rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
+          </div>
+          <span className="sr-only">Loading the widest split</span>
+        </div>
+      ) : row && bullPct != null ? (
+        <Link
+          href={`/research/${encodeURIComponent(row.ticker)}?tab=community`}
+          className="f0-focus group mt-4 flex items-center gap-4 rounded-lg"
+        >
+          <TickerTile ticker={row.ticker} size="lg" showDelta={false} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-[17px] font-extrabold tracking-tight text-ink">
+              <span className="text-soft">$</span>
+              {row.ticker.toUpperCase()}
+            </p>
+            {row.company && (
+              <p className="truncate text-[12px] leading-tight text-soft">{row.company}</p>
+            )}
+
+            {/* The split. Sentiment owns the bull share; the bear share is a
+                neutral ink tint, never the price red. */}
+            <span
+              className="mt-2 flex h-[6px] w-full overflow-hidden rounded-full bg-ink/12"
+              aria-hidden
+            >
+              <span
+                className="h-full bg-sentiment-fill"
+                style={{ width: `${Math.max(2, Math.min(98, bullPct))}%` }}
+              />
+            </span>
+
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+              <span className="text-sentiment">{bullPct}% bull</span>
+              {" · "}
+              {100 - bullPct}% not
+              {" · "}
+              {positioned} positioned
+            </p>
+          </div>
+          <ArrowRight
+            className="h-4 w-4 shrink-0 text-soft transition-colors group-hover:text-gold-700"
+            aria-hidden
+          />
+        </Link>
+      ) : (
+        <div className="mt-4 flex items-center gap-4">
+          <TickerTile size="lg" showDelta={false} />
+          <p className="max-w-[46ch] text-[13px] leading-relaxed text-soft">
+            Nothing is contested yet — a split needs at least{" "}
+            {DIVISIVE_MIN_POSITIONED} members on the same name taking opposite
+            sides. Take a position on any ticker and the argument starts here.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 /* ── SEGMENTED CONTROL ───────────────────────────────────────────────────── */
 /**
  * Underline-driven tabs riding a single hairline. Deliberately NOT pills: a row
  * of rounded chips reads as five competing objects, where the rule + one charged
  * underline reads as one control with a current position.
+ *
+ * WHY NOT <SegmentedRail /> (canvas2): the rail is a `radiogroup` — a FORM
+ * control with roving tabindex, correct for stance and post type. This control
+ * drives a `tabpanel`, so it must stay `tablist`/`tab` or the panel loses its
+ * relationship to the thing that switched it. Per the L0 contract the geometry
+ * is shared instead: the same `.f0-seg-bar` indicator and the same `.f0-focus`
+ * ring, so the two controls look and feel identical and only their semantics
+ * differ. The bar rides `bg-accent` (--accent-solid) rather than a frozen
+ * `volt-*` step, so it is mode-correct in family gold / club orange / FTA.
  */
 function Segmented<T extends string>({
   segments,
@@ -528,7 +776,7 @@ function Segmented<T extends string>({
          page, which would leave the control with no baseline for the underline
          to travel along. The active volt underline is unchanged — orange holds
          its value in both themes. */
-      className="club2-track -mx-4 flex gap-7 overflow-x-auto border-b border-sand px-4 dark:border-ink/20"
+      className="club2-track f0-rule-bottom -mx-4 flex gap-7 overflow-x-auto px-4"
     >
       {segments.map((s) => {
         const active = s.key === value;
@@ -541,7 +789,7 @@ function Segmented<T extends string>({
             aria-selected={active}
             aria-controls="discover-panel"
             onClick={() => onChange(s.key)}
-            className={`relative shrink-0 pb-3 font-display text-[13px] font-bold uppercase tracking-[0.1em] transition-colors ${
+            className={`f0-focus f0-press relative -mb-px shrink-0 pb-3 font-display text-[13px] font-bold uppercase tracking-[0.1em] transition-colors ${
               active ? "text-ink" : "text-soft hover:text-ink"
             }`}
           >
@@ -549,18 +797,13 @@ function Segmented<T extends string>({
             {s.count > 0 && (
               <span
                 className={`ml-1.5 font-mono text-[10px] font-semibold tabular-nums ${
-                  active ? "text-volt-700 dark:text-volt-400" : "text-soft/70"
+                  active ? "text-gold-700" : "text-soft/70"
                 }`}
               >
                 {s.count}
               </span>
             )}
-            <span
-              aria-hidden
-              className={`absolute inset-x-0 -bottom-px h-[2px] rounded-full transition-opacity duration-200 ${
-                active ? "bg-volt-500 opacity-100" : "opacity-0"
-              }`}
-            />
+            {active && <span className="f0-seg-bar bg-accent" aria-hidden />}
           </button>
         );
       })}
@@ -629,7 +872,7 @@ function LedgerRow({ item, rank }: { item: LedgerItem; rank: number }) {
           than as something that failed to load. */}
       <span
         aria-hidden
-        className="w-11 shrink-0 text-right font-display text-[34px] font-extrabold leading-none tracking-tight tabular-nums text-ink/15 transition-colors group-hover:text-volt-500/50 dark:text-ink/25 dark:group-hover:text-volt-500/70"
+        className="w-11 shrink-0 text-right font-display text-[34px] font-extrabold leading-none tracking-tight tabular-nums text-ink/15 transition-colors group-hover:text-accent dark:text-ink/25"
       >
         {rank}
       </span>
@@ -654,9 +897,9 @@ function LedgerRow({ item, rank }: { item: LedgerItem; rank: number }) {
         <p
           className={`font-mono text-[12px] font-bold tabular-nums ${
             tone === "up"
-              ? "text-green-600 dark:text-green-400"
+              ? "text-price-up"
               : tone === "down"
-                ? "text-red-600 dark:text-red-400"
+                ? "text-price-down"
                 : "text-soft"
           }`}
         >
@@ -696,20 +939,23 @@ function StanceBar({ item }: { item: LedgerItem }) {
 
   return (
     <div className="mt-1.5 flex items-center gap-2">
-      {/* The unfilled track rides --sand, so it re-maps with the theme. The lime
-          fill is deliberately CONSTANT in both themes: lime means one thing
-          (community sentiment) and reads cleanly on cream and on obsidian. */}
+      {/* The unfilled track rides --sand, so it re-maps with the theme. The fill
+          is `bg-sentiment-fill` — the canonical community-sentiment token, which
+          carries BOTH theme steps itself, so this never needs (and must never
+          get) a dark: variant. It replaced a hand-written `bg-lime-500`, the
+          per-surface divergence the token was minted to end. */}
       <span
         className="h-[3px] w-16 shrink-0 overflow-hidden rounded-full bg-sand sm:w-24"
         aria-hidden
       >
         <span
-          className="block h-full rounded-full bg-lime-500"
+          className="block h-full rounded-full bg-sentiment-fill"
           style={{ width: `${Math.max(2, Math.min(100, item.bullPct as number))}%` }}
         />
       </span>
       <span className="truncate font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-        {item.bullPct}% bull · {item.positioned} positioned
+        <span className="text-sentiment">{item.bullPct}% bull</span> ·{" "}
+        {item.positioned} positioned
         {showWatchers ? ` · ${item.watchers} watching` : ""}
         {item.heat != null ? ` · club ${item.heat}` : ""}
       </span>
@@ -720,7 +966,7 @@ function StanceBar({ item }: { item: LedgerItem }) {
 /** The server-authoritative free cap, stated plainly rather than blurred out. */
 function LedgerWall({ shown, total }: { shown: number; total: number }) {
   return (
-    <div className="mt-5 border-t border-sand pt-4 dark:border-ink/20">
+    <div className="f0-rule-top mt-5 pt-4">
       <p className="font-display text-[15px] font-bold text-ink">
         You&apos;re seeing the top {shown} of {total}.
       </p>
@@ -730,7 +976,7 @@ function LedgerWall({ shown, total }: { shown: number; total: number }) {
       </p>
       <Link
         href="/upgrade"
-        className={`mt-2.5 inline-flex items-center gap-1.5 font-display text-[13px] font-bold transition-colors ${ORANGE_ACTION}`}
+        className={`f0-focus mt-2.5 inline-flex items-center gap-1.5 rounded font-display text-[13px] font-bold ${ORANGE_ACTION}`}
       >
         See the full rankings <ArrowRight className="h-3.5 w-3.5" />
       </Link>
@@ -770,7 +1016,7 @@ function ResearchLedger({
           <article key={c.id} style={{ "--i": i } as React.CSSProperties}>
             <Link
               href={`/research/${encodeURIComponent(c.ticker)}`}
-              className="block -mx-2 px-2 py-4 transition-colors hover:bg-volt-500/[0.05] dark:hover:bg-volt-500/10"
+              className="f0-focus block -mx-2 rounded px-2 py-4 transition-colors hover:bg-accent/[0.06]"
             >
               {/* identity first — who is talking, and why you should listen */}
               <div className="flex items-center gap-2">
@@ -823,7 +1069,7 @@ function ResearchLedger({
         >
           <Link
             href={`/research/${encodeURIComponent(r.ticker)}`}
-            className="block -mx-2 px-2 py-4 transition-colors hover:bg-volt-500/[0.05] dark:hover:bg-volt-500/10"
+            className="f0-focus block -mx-2 rounded px-2 py-4 transition-colors hover:bg-accent/[0.06]"
           >
             <div className="flex items-center gap-2">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kai-500/12 text-kai-600 dark:bg-kai-500/22 dark:text-kai-300">
@@ -862,10 +1108,14 @@ function ResearchLedger({
  * THEME-INVARIANT BY DESIGN. `.club2-band` stays orange in both themes (the
  * foundation only drops a little luminance at night so it doesn't glare), which
  * means the type on it is measured against ORANGE, not against the page. So the
- * white text and the white action pill here are correct in both themes and must
- * NOT be swapped for semantic tokens — text-ink on this band would flip to
- * near-black in light and near-white in dark, i.e. it would break in one of them.
- * These are the only literal whites on the surface.
+ * light action pill here is correct in both themes and must NOT be swapped for
+ * semantic tokens — `text-ink` on this band flips to near-black in light and
+ * near-white in dark, i.e. it breaks in one of them.
+ *
+ * The pill's ground is `bg-night-50` and its type `text-night-950`: both are
+ * CONSTANT ramp steps (they are not remapped by the theme blocks), which is the
+ * same fix ActionBand carries, expressed with tokens instead of a literal
+ * `bg-white` — so this file holds no raw colour keyword at all.
  */
 function StockFinderBand() {
   return (
@@ -887,14 +1137,14 @@ function StockFinderBand() {
         <div className="mt-4 flex flex-wrap items-center gap-4">
           <Link
             href="/screener"
-            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 font-display text-[13px] font-bold text-volt-700 transition-transform active:scale-[0.98]"
+            className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-night-50 px-4 py-2 font-display text-[13px] font-bold text-night-950"
           >
-            <Telescope className="h-4 w-4" aria-hidden />
+            <Telescope className="h-4 w-4 text-volt-600" aria-hidden />
             Open Stock Finder
           </Link>
           <Link
             href="/watchlist/community"
-            className="inline-flex items-center gap-1 font-display text-[13px] font-bold text-white/90 transition-colors hover:text-white"
+            className="f0-focus inline-flex items-center gap-1 rounded font-display text-[13px] font-bold text-white/90 transition-colors hover:text-white"
           >
             Community Watchlist <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
@@ -907,7 +1157,7 @@ function StockFinderBand() {
 /* ── founding-era copy (never an empty rectangle, never a fake number) ───── */
 function FoundingNote({ children }: { children: React.ReactNode }) {
   return (
-    <p className="max-w-[56ch] border-l-2 border-volt-500/50 pl-4 text-[15px] leading-relaxed text-soft">
+    <p className="max-w-[56ch] border-l-2 border-accent pl-4 text-[15px] leading-relaxed text-soft">
       {children}
     </p>
   );

@@ -2,6 +2,7 @@
  * Route shell for /news. The masthead is known at build time, so navigation
  * lands on finished page furniture and only the story column fills in.
  */
+import { TickerTileStrip } from "@/components/canvas2";
 import { AI_GENERATED_TAG } from "@/lib/news/types";
 import { NewsSkeleton } from "./NewsClient";
 
@@ -22,6 +23,16 @@ export default function NewsLoading() {
           {AI_GENERATED_TAG} · delayed market data
         </p>
       </header>
+
+      {/* The desk strip is page furniture too — without its placeholder the
+          section bar and the whole column jumped 60px the moment the route
+          resolved. */}
+      <section className="mt-8">
+        <h2 className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink">
+          <span className="shrink-0 whitespace-nowrap">In the news today</span>
+        </h2>
+        <TickerTileStrip className="mt-4" loading loadingCount={7} size="sm" />
+      </section>
 
       <div className="f0-rule-top mt-8">
         <div className="flex items-center gap-6 py-3">

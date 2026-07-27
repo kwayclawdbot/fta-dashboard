@@ -20,7 +20,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { m, AnimatePresence } from "@/lib/motion";
 import { Search } from "lucide-react";
+import { TickerTile, TickerTileStrip } from "@/components/canvas2";
 import { createClient } from "@/lib/supabase/client";
+import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
 import { fetchNewsFeed } from "@/lib/news/client";
 import { AI_GENERATED_TAG, KIND_META, type NewsCardData, type NewsKind } from "@/lib/news/types";
 import NewsEntry from "@/components/news/NewsCard";
@@ -36,8 +38,22 @@ const KIND_TABS: { key: KindKey; label: string }[] = [
 
 export default function NewsClient({
   initialArticles = null,
+  embedded = false,
 }: {
   initialArticles?: NewsCardData[] | null;
+  /**
+   * Rendered inside another surface (Discover's newsroom section) rather than
+   * as the /news route.
+   *
+   * DEFECT THIS FIXES: Discover mounted this component whole, so a `display-1`
+   * "NEWSROOM" masthead — the loudest type in the system, and the marker for
+   * "you are on the newsroom" — appeared halfway down Discover, directly under
+   * Discover's own `News moving the Club` section rule. Two mastheads, one
+   * page. Embedded now drops the masthead, the route's own page box, and the
+   * ticker strip (Discover already carries two ticker strips of its own),
+   * leaving exactly what the host asked for: the desk bar and the column.
+   */
+  embedded?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [articles, setArticles] = useState<NewsCardData[]>(initialArticles ?? []);
@@ -80,28 +96,91 @@ export default function NewsClient({
     return articles.filter((a) => a.tickers.some((k) => k.includes(t)));
   }, [articles, tickerFilter]);
 
+  /* ── IN THE NEWS TODAY ───────────────────────────────────────────────────
+     Canvas v2's ticker-tile strip, applied to the desk that had no board of
+     its own: the names the current stories are actually about, ordered by how
+     many stories mention each. Every ticker here comes off a real published
+     article, and the delta comes off the same batched quote endpoint the rest
+     of the app uses — a name whose quote is unavailable renders "—" on its own
+     tile rather than a fabricated 0.00%. Each tile is a link into that
+     company's research page — the newsroom's fastest route from "I read about
+     this" to "show me the company". */
+  const deskTickers = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of articles) {
+      for (const t of a.tickers) {
+        const k = t.toUpperCase();
+        if (k) counts.set(k, (counts.get(k) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 12)
+      .map(([t]) => t);
+  }, [articles]);
+
+  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  useEffect(() => {
+    if (deskTickers.length === 0) return;
+    const ctrl = new AbortController();
+    fetchQuotes(deskTickers, ctrl.signal).then(setQuotes).catch(() => {});
+    return () => ctrl.abort();
+  }, [deskTickers]);
+
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
+    <div className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}>
       {/* ── MASTHEAD ──────────────────────────────────────────────────────── */}
-      <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Cheat Code Club
-        </p>
-        <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase text-ink">
-          Newsroom
-        </h1>
-        <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-soft">
-          The market, explained for the whole family.
-        </p>
-        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-soft opacity-70">
-          {AI_GENERATED_TAG} · delayed market data
-        </p>
-      </header>
+      {!embedded && (
+        <header>
+          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+            Cheat Code Club
+          </p>
+          <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase text-ink">
+            Newsroom
+          </h1>
+          <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-soft">
+            The market, explained for the whole family.
+          </p>
+          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-soft opacity-70">
+            {AI_GENERATED_TAG} · delayed market data
+          </p>
+        </header>
+      )}
+
+      {/* ── IN THE NEWS TODAY ─────────────────────────────────────────────── */}
+      {/* LOADING ≠ EMPTY: in flight the strip pulses filled tiles; with no
+          stories filed it renders dashed slots and says so in the column
+          below, rather than collapsing to nothing. */}
+      {!embedded && (
+        <section className="mt-8" aria-labelledby="news-desk-strip">
+          <h2
+            id="news-desk-strip"
+            className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink"
+          >
+            <span className="shrink-0 whitespace-nowrap">In the news today</span>
+          </h2>
+          {loading ? (
+            <TickerTileStrip className="mt-4" loading loadingCount={7} size="sm" />
+          ) : (
+            <TickerTileStrip className="mt-4" minSlots={7} size="sm">
+              {deskTickers.map((t) => (
+                <TickerTile
+                  key={t}
+                  ticker={t}
+                  size="sm"
+                  changePct={quotes[t]?.changePercent ?? null}
+                  href={`/research/${encodeURIComponent(t)}`}
+                />
+              ))}
+            </TickerTileStrip>
+          )}
+        </section>
+      )}
 
       {/* ── SECTION BAR ───────────────────────────────────────────────────── */}
       {/* The desks on the left, the ticker filter on the right — one strip of
           controls bounded by rules, the newspaper's section index. */}
-      <div className="f0-rule-top mt-8">
+      <div className={`f0-rule-top ${embedded ? "" : "mt-8"}`}>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-3">
           <div role="tablist" aria-label="News categories" className="flex flex-wrap gap-x-6">
             {KIND_TABS.map((t) => {
@@ -113,17 +192,17 @@ export default function NewsClient({
                   role="tab"
                   aria-selected={on}
                   onClick={() => setKind(t.key)}
-                  className={`relative py-1 font-display text-eyebrow font-bold uppercase transition-colors ${
+                  className={`f0-focus f0-press relative py-1 font-display text-eyebrow font-bold uppercase transition-colors ${
                     on ? "text-ink" : "text-soft hover:text-ink"
                   }`}
                 >
                   {t.label}
-                  {on && (
-                    <span
-                      aria-hidden
-                      className="absolute inset-x-0 -bottom-0.5 h-[2px] rounded-full bg-gold-600"
-                    />
-                  )}
+                  {/* Canvas v2 L0 geometry. These are real tabs over a story
+                      column, so the semantics stay tablist/tab rather than
+                      SegmentedRail's radiogroup — but the indicator is the
+                      shared .f0-seg-bar, on `bg-accent` so the desk marker is
+                      the same object here as on Discover's rail. */}
+                  {on && <span aria-hidden className="f0-seg-bar bg-accent" />}
                 </button>
               );
             })}
@@ -137,14 +216,14 @@ export default function NewsClient({
                 value={tickerFilter}
                 onChange={(e) => setTickerFilter(e.target.value)}
                 placeholder="Filter $TICKER"
-                className="w-32 bg-transparent font-mono text-[12px] uppercase tracking-[0.06em] text-ink outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-soft/70 focus:w-40"
+                className="f0-focus w-32 rounded bg-transparent font-mono text-[12px] uppercase tracking-[0.06em] text-ink outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-soft/70 focus:w-40"
               />
             </label>
             <button
               type="button"
               onClick={() => setExplainerOpen((v) => !v)}
               aria-expanded={explainerOpen}
-              className="font-display text-eyebrow font-bold uppercase text-soft transition-colors hover:text-gold-700"
+              className="f0-focus rounded font-display text-eyebrow font-bold uppercase text-soft transition-colors hover:text-gold-700"
             >
               What is this?
             </button>
@@ -163,7 +242,7 @@ export default function NewsClient({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex items-start gap-3 border-l-2 border-gold-500 py-4 pl-4">
+            <div className="flex items-start gap-3 border-l-2 border-accent py-4 pl-4">
               <p className="max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
                 The Club Newsroom is written by AI from public market data — a twice-daily{" "}
                 <em>Market Wrap</em> plus short <em>Ticker Notes</em> on the day&apos;s biggest movers.
@@ -185,7 +264,7 @@ export default function NewsClient({
       {loading ? (
         <NewsSkeleton />
       ) : shown.length === 0 ? (
-        <div className="mt-10 border-l-2 border-sand py-1 pl-4">
+        <div className="f0-rule-left mt-10 py-1 pl-4">
           <p className="font-display text-display-3 font-extrabold text-ink">
             Nothing filed yet
           </p>
