@@ -258,12 +258,12 @@ export default function MissionsPage() {
               onClick={toggleSound}
               aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
               title={soundOn ? "Sound on" : "Sound off"}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-sand bg-midnight-900 text-soft shadow-soft hover:text-ink"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-sand bg-card text-soft shadow-soft hover:text-ink"
             >
               {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
             </button>
           )}
-          <div className="flex items-center gap-2 rounded-xl border border-sand bg-midnight-900 px-4 py-2.5 shadow-soft">
+          <div className="flex items-center gap-2 rounded-xl border border-sand bg-card px-4 py-2.5 shadow-soft">
             <Trophy className="h-4 w-4 text-gold-500" />
             <span className="font-display text-lg font-bold text-ink">{doneCount}</span>
             <span className="text-sm text-soft">/ {missions.length} done</span>
@@ -289,7 +289,7 @@ export default function MissionsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: i * 0.05 }}
               className={`relative overflow-hidden rounded-2xl border p-5 shadow-soft transition-colors ${
-                done ? "border-gold-400/40 bg-gold-50/40" : "border-sand bg-midnight-900"
+                done ? "border-gold-400/40 bg-gold-50/40" : "border-sand bg-card"
               }`}
             >
               <div className="flex gap-4">
@@ -315,7 +315,7 @@ export default function MissionsPage() {
                   <h2 className="mt-1 font-display text-xl font-bold text-ink">{m.title}</h2>
 
                   {/* The kid-voiced ask — the hero line */}
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-midnight-200">
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-ink">
                     {m.kid_prompt || m.description}
                   </p>
 
@@ -360,9 +360,9 @@ export default function MissionsPage() {
 
               {/* Completed evidence */}
               {done && completions[m.id].evidence && (
-                <div className="mt-3 rounded-lg border border-green-500/20 bg-midnight-900 p-3">
+                <div className="mt-3 rounded-lg border border-green-500/20 bg-card p-3">
                   <p className="text-xs font-semibold text-green-600">What you found</p>
-                  <p className="mt-0.5 text-sm text-midnight-200">
+                  <p className="mt-0.5 text-sm text-ink">
                     {completions[m.id].evidence}
                   </p>
                 </div>
@@ -381,14 +381,14 @@ export default function MissionsPage() {
                       >
                         <label className="text-xs font-medium text-soft">
                           What did you find?{" "}
-                          <span className="text-midnight-500">(optional)</span>
+                          <span className="text-soft">(optional)</span>
                         </label>
                         <textarea
                           value={evidence}
                           onChange={(e) => setEvidence(e.target.value)}
                           rows={2}
                           placeholder="Tell us in your own words..."
-                          className="mt-1 w-full resize-none rounded-lg border border-sand bg-midnight-900 p-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                          className="mt-1 w-full resize-none rounded-lg border border-sand bg-card p-3 text-sm text-ink placeholder:text-soft focus:border-gold-400 focus:outline-none"
                         />
                         <div className="mt-2 flex gap-2">
                           <button
