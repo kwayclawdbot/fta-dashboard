@@ -3,8 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  AuthField,
+  AuthHeading,
+  AuthNotice,
+  AuthSubmit,
+  MarkWord,
+} from "@/components/auth/AuthParts";
 
+/**
+ * Reset password — same pre-auth register as board 10. Restyle only: every
+ * string here is byte-identical to the previous revision, including the
+ * deliberately neutral "If an account exists for …" confirmation.
+ */
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -39,26 +51,31 @@ export default function ForgotPasswordPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-center py-4"
       >
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gold-400/10 flex items-center justify-center">
-          <Mail className="w-8 h-8 text-gold-400" />
+        <AuthHeading
+          eyebrow="Password reset"
+          title={
+            <>
+              Check Your <MarkWord>Email</MarkWord>
+            </>
+          }
+        />
+        <div className="mt-6">
+          <AuthNotice tone="done">
+            If an account exists for{" "}
+            <span className="font-semibold text-ink">{email}</span>, we sent a
+            password reset link.
+          </AuthNotice>
         </div>
-        <h2 className="font-display text-2xl font-bold text-gold-400 mb-2">
-          Check Your Email
-        </h2>
-        <p className="text-midnight-300 text-sm mb-6 font-body">
-          If an account exists for{" "}
-          <span className="text-midnight-100 font-medium">{email}</span>, we
-          sent a password reset link.
-        </p>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-1.5 text-gold-400 hover:text-gold-300 text-sm font-medium transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to login
-        </Link>
+        <div className="f0-rule-top mt-8 pt-6">
+          <Link
+            href="/login"
+            className="f0-focus inline-flex items-center gap-1.5 rounded font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to login
+          </Link>
+        </div>
       </m.div>
     );
   }
@@ -69,55 +86,48 @@ export default function ForgotPasswordPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <h2 className="font-display text-2xl font-bold text-gold-400 mb-1">
-        Reset Password
-      </h2>
-      <p className="text-midnight-300 text-sm mb-6 font-body">
-        Enter your email and we&apos;ll send you a reset link
-      </p>
+      <AuthHeading
+        eyebrow="Password reset"
+        title={
+          <>
+            Reset <MarkWord>Password</MarkWord>
+          </>
+        }
+        sub="Enter your email and we'll send you a reset link"
+      />
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-500 text-sm">
-          {error}
+        <div className="mt-6">
+          <AuthNotice>{error}</AuthNotice>
         </div>
       )}
 
-      <form onSubmit={handleReset} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-midnight-200 mb-1.5">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="you@example.com"
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
-            />
-          </div>
-        </div>
+      <form onSubmit={handleReset} className="mt-8 space-y-5">
+        <AuthField
+          label="Email"
+          icon={Mail}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder="you@example.com"
+        />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="cta-button w-full py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <AuthSubmit type="submit" disabled={loading}>
           {loading ? "Sending..." : "Send Reset Link"}
-        </button>
+          {!loading && <ArrowRight className="h-4 w-4" />}
+        </AuthSubmit>
       </form>
 
-      <p className="mt-6 text-center">
+      <div className="f0-rule-top mt-9 pt-6">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-gold-400/70 hover:text-gold-400 text-sm transition-colors"
+          className="f0-focus inline-flex items-center gap-1.5 rounded text-[13.5px] text-soft transition-colors hover:text-ink"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
           Back to login
         </Link>
-      </p>
+      </div>
     </m.div>
   );
 }

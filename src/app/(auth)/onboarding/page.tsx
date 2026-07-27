@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { m, AnimatePresence } from "@/lib/motion";
-import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import AvatarPicker from "@/components/AvatarPicker";
 import {
@@ -526,9 +526,21 @@ export default function OnboardingWizard() {
             </AnimatePresence>
           </div>
 
+          {/* COLOUR LAW: green/red is reserved for market price, so the error
+              state is carried by an accent rule + weight, not by a red tint. */}
           {error && (
-            <div className="mt-4 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-600 text-sm">
-              {error}
+            <div
+              role="alert"
+              className="f0-rule-left mt-5 flex items-start gap-2.5 py-1 pl-3.5"
+              style={{
+                borderLeftColor: "var(--accent-solid)",
+                borderLeftWidth: "2px",
+              }}
+            >
+              <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-gold-700" />
+              <p className="text-[13.5px] font-semibold leading-relaxed text-ink">
+                {error}
+              </p>
             </div>
           )}
         </div>
@@ -541,7 +553,7 @@ export default function OnboardingWizard() {
             {!isFirst && !isLast ? (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-soft hover:text-ink transition-colors font-medium"
+                className="f0-focus f0-press flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-soft transition-colors hover:text-ink"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back
@@ -554,7 +566,7 @@ export default function OnboardingWizard() {
               {canSkip && (
                 <button
                   onClick={goNext}
-                  className="text-sm text-soft hover:text-ink transition-colors font-medium"
+                  className="f0-focus rounded text-sm font-medium text-soft transition-colors hover:text-ink"
                 >
                   Skip
                 </button>
@@ -564,7 +576,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={complete}
                   disabled={loading}
-                  className="cta-button flex items-center gap-2 px-6 py-3 rounded-2xl text-sm disabled:opacity-50"
+                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:opacity-50"
                 >
                   {loading ? "Setting up…" : "Go to my dashboard"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -573,7 +585,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={submitPassword}
                   disabled={!canProceed || loading}
-                  className="cta-button flex items-center gap-2 px-6 py-3 rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Saving…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -582,7 +594,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={continueFromUsername}
                   disabled={!canProceed || loading}
-                  className="cta-button flex items-center gap-2 px-6 py-3 rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Setting up…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -591,7 +603,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={goNext}
                   disabled={!canProceed}
-                  className="cta-button flex items-center gap-2 px-6 py-3 rounded-2xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -645,25 +657,24 @@ function CelebrationStep({
       </h1>
       <p className="text-soft mt-2 max-w-md mx-auto">{sub}</p>
 
+      {/* A ledger, not a stack of bordered cards — the recommendations are a
+          list of places to go, so rules separate them and type ranks them. */}
       {recommendations.length > 0 && (
-        <div className="mt-6 space-y-2.5 text-left">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-soft text-center">
+        <div className="mt-7 text-left">
+          <p className="text-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-soft">
             Start here — built around your answers
           </p>
-          {recommendations.map((r) => (
-            <div
-              key={r.key}
-              className="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-sand bg-card"
-            >
-              <span className="w-9 h-9 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-gold-700" />
-              </span>
-              <div className="min-w-0">
-                <p className="font-display font-semibold text-sm text-ink">{r.title}</p>
-                <p className="text-xs text-soft">{r.sub}</p>
+          <div className="f0-ledger mt-2">
+            {recommendations.map((r) => (
+              <div key={r.key} className="flex items-center gap-3 py-3.5">
+                <Check className="h-4 w-4 shrink-0 text-gold-700" />
+                <div className="min-w-0">
+                  <p className="font-display text-sm font-bold text-ink">{r.title}</p>
+                  <p className="text-xs text-soft">{r.sub}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

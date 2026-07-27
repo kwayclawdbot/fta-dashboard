@@ -4,10 +4,36 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import { Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authCallbackUrl } from "@/lib/site-url";
+import {
+  AuthField,
+  AuthHeading,
+  AuthNotice,
+  AuthOrRule,
+  AuthSubmit,
+  FieldToggle,
+  GoogleButton,
+  MarkWord,
+} from "@/components/auth/AuthParts";
 
+/**
+ * Sign in — canvas board 10.
+ *
+ * Restyle only. Every string on this page is byte-identical to the previous
+ * revision, including the join link and its destination. What changed is the
+ * composition: the boxed panel is gone, the headline carries the canvas's
+ * drawn underline on one word, social sits above the rule and email below it
+ * (board 10's order), and every control now shares `.f0-focus` / `.f0-press`.
+ *
+ * DELIBERATELY NOT ADOPTED from board 10:
+ *   · "25,842 members are already reading the room" — an invented number on a
+ *     pre-auth page. Production is nowhere near it and no honest source exists.
+ *   · The board's legal footer ("By continuing you agree to…") — new legal
+ *     copy is not a restyle; it needs owner sign-off, not a design lane.
+ *   · "Continue with Apple" — no Apple provider is configured.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -96,160 +122,119 @@ export default function LoginPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <h2 className="font-display text-xl font-bold text-midnight-100 mb-1">
-        Welcome Back
-      </h2>
-      <p className="text-midnight-400 text-sm mb-6 font-body">
-        Sign in to continue your journey
-      </p>
+      <AuthHeading
+        title={
+          <>
+            Welcome <MarkWord>Back</MarkWord>
+          </>
+        }
+        sub="Sign in to continue your journey"
+      />
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-red-500 text-sm">
-          {error}
+        <div className="mt-6">
+          <AuthNotice>{error}</AuthNotice>
         </div>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-midnight-200 mb-1.5">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="you@example.com"
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
-            />
-          </div>
-        </div>
+      {/* Social first, then the rule, then email — canvas board 10 order. */}
+      <div className="mt-8">
+        <GoogleButton onClick={handleGoogleLogin}>
+          Continue with Google
+        </GoogleButton>
+      </div>
 
-        {/* Password */}
-        <div>
-          <label className="block text-sm font-medium text-midnight-200 mb-1.5">
-            Password
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter your password"
-              className="w-full pl-10 pr-11 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
-            />
-            <button
-              type="button"
+      <AuthOrRule label="or" />
+
+      <form onSubmit={handleLogin} className="space-y-5">
+        <AuthField
+          label="Email"
+          icon={Mail}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder="you@example.com"
+        />
+
+        <AuthField
+          label="Password"
+          icon={Lock}
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          placeholder="Enter your password"
+          trailing={
+            <FieldToggle
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-midnight-400 hover:text-midnight-200 transition-colors"
+              label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </FieldToggle>
+          }
+        />
 
-        {/* Forgot password link */}
-        <div className="text-right">
+        <div className="flex justify-end">
           <Link
             href="/forgot-password"
-            className="text-xs text-midnight-400 hover:text-midnight-200 transition-colors"
+            className="f0-focus rounded text-[13px] text-soft transition-colors hover:text-ink"
           >
             Forgot password?
           </Link>
         </div>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="cta-button w-full py-2.5 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <AuthSubmit type="submit" disabled={loading}>
           {loading ? "Signing in..." : "Sign In"}
-        </button>
+          {!loading && <ArrowRight className="h-4 w-4" />}
+        </AuthSubmit>
       </form>
 
-      {/* Divider */}
-      <div className="flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-midnight-800" />
-        <span className="text-xs text-midnight-500">or</span>
-        <div className="flex-1 h-px bg-midnight-800" />
-      </div>
-
-      {/* Google OAuth */}
-      <button
-        onClick={handleGoogleLogin}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-midnight-700 bg-midnight-800 hover:bg-midnight-700 text-midnight-200 text-sm font-medium transition-colors"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24">
-          <path
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-            fill="#4285F4"
-          />
-          <path
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            fill="#34A853"
-          />
-          <path
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-            fill="#FBBC05"
-          />
-          <path
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-            fill="#EA4335"
-          />
-        </svg>
-        Continue with Google
-      </button>
-
       {/* Invited-user rescue: no-password accounts can't sign in above. */}
-      <div className="mt-6 border-t border-midnight-800 pt-5">
+      <div className="f0-rule-top mt-9 pt-6">
         {inviteSent ? (
-          <div className="flex items-start gap-2.5 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3">
-            <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-            <p className="text-sm text-midnight-200">
-              Sign-in link sent to{" "}
-              <span className="text-midnight-50 font-medium">{inviteEmail}</span>.
-              Open it to finish setting up your account.
-            </p>
-          </div>
+          <AuthNotice tone="done">
+            Sign-in link sent to{" "}
+            <span className="font-semibold text-ink">{inviteEmail}</span>. Open
+            it to finish setting up your account.
+          </AuthNotice>
         ) : inviteOpen ? (
-          <form onSubmit={handleInviteLink} className="space-y-3">
-            <p className="text-xs text-midnight-400">
+          <form onSubmit={handleInviteLink} className="space-y-4">
+            <p className="max-w-[42ch] text-[13px] leading-relaxed text-soft">
               Invited to the club but never set a password? Enter your email and
               we&apos;ll send a fresh sign-in link.
             </p>
-            {inviteError && (
-              <p className="text-xs text-red-500">{inviteError}</p>
-            )}
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                required
-                placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/20 transition-colors text-sm"
-              />
-            </div>
+            {inviteError && <AuthNotice>{inviteError}</AuthNotice>}
+            <AuthField
+              label="Email"
+              icon={Mail}
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+              placeholder="you@example.com"
+            />
             <button
               type="submit"
               disabled={inviteLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gold-400/40 bg-gold-400/10 text-gold-300 hover:bg-gold-400/15 text-sm font-medium transition-colors disabled:opacity-50"
+              className="f0-frame f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-display text-[14px] font-bold text-gold-700 transition-colors disabled:opacity-50"
+              style={{
+                background:
+                  "color-mix(in srgb, var(--accent-solid) 9%, transparent)",
+              }}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="h-4 w-4" />
               {inviteLoading ? "Sending…" : "Send me a sign-in link"}
             </button>
           </form>
         ) : (
           <button
             onClick={() => setInviteOpen(true)}
-            className="w-full text-center text-sm text-midnight-400 hover:text-midnight-200 transition-colors"
+            className="f0-focus w-full rounded py-1 text-center text-[13px] text-soft transition-colors hover:text-ink"
           >
             Invited but can&apos;t sign in?
           </button>
@@ -257,9 +242,12 @@ export default function LoginPage() {
       </div>
 
       {/* Membership is purchase- or invite-only */}
-      <p className="mt-6 text-center text-sm text-midnight-400">
+      <p className="mt-8 text-center text-[13.5px] text-soft">
         New here?{" "}
-        <a href="https://familyinvestingclub.com" className="text-gold-400 hover:text-gold-300 font-medium transition-colors">
+        <a
+          href="https://familyinvestingclub.com"
+          className="f0-focus rounded font-display font-bold text-gold-700 transition-colors hover:text-gold-600"
+        >
           Join the club
         </a>
       </p>

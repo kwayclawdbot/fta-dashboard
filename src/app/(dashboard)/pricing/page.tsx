@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { ArrowRight } from "lucide-react";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import PricingMatrix from "@/components/entitlements/PricingMatrix";
-import { DisplayHead, SectionRule, TextAction } from "@/components/f0/parts";
+import { SectionRule, TextAction } from "@/components/f0/parts";
 
 /**
  * /pricing — the canonical three-tier pricing surface (MONETIZATION-GATES.md).
@@ -81,11 +81,24 @@ function Tier({
 export default function PricingPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 pb-16">
-      <DisplayHead
-        eyebrow="Membership"
-        title="Participate free. Unlock the intelligence."
-        lede="The whole community is free — read, post, vote, and shape what the Club is watching. Cheat Code Club adds the layer on top: interpretation, personalization, monitoring, and Kai working for you."
-      />
+      {/* Hand-composed masthead (not DisplayHead) for ONE reason: the canvas's
+          signature emphasis is a drawn underline under a single word, and
+          DisplayHead takes a plain string. The words are byte-identical to the
+          previous revision — only the mark on "intelligence" is new. */}
+      <header>
+        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          Membership
+        </p>
+        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
+          Participate free. Unlock the{" "}
+          <span className="f0-underline-mark">intelligence</span>.
+        </h1>
+        <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-soft">
+          The whole community is free — read, post, vote, and shape what the
+          Club is watching. Cheat Code Club adds the layer on top:
+          interpretation, personalization, monitoring, and Kai working for you.
+        </p>
+      </header>
 
       {/* The three tiers — a ledger, not a card tower. */}
       <section className="mt-10">
@@ -105,7 +118,7 @@ export default function PricingPage() {
             action={
               <a
                 href={FIC_CHECKOUT_URL}
-                className="cta-button inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm"
+                className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm"
               >
                 Join the Club <ArrowRight className="h-4 w-4" />
               </a>

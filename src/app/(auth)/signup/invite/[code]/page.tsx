@@ -4,10 +4,27 @@ import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import { Mail, Lock, User, Eye, EyeOff, Users, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authCallbackUrl } from "@/lib/site-url";
+import {
+  AuthField,
+  AuthHeading,
+  AuthNotice,
+  AuthSubmit,
+  FieldToggle,
+  MarkWord,
+} from "@/components/auth/AuthParts";
 
+/**
+ * Invite signup — the family-member door. Restyle only: every string here,
+ * including the invalid-invite copy and the button labels, is byte-identical
+ * to the previous revision.
+ *
+ * The invite banner was a bordered, centred card; it is now a hairline-left
+ * statement — the invitation is a fact about who you are joining, so it reads
+ * as composed type, not as a badge in a box.
+ */
 export default function InvitePage() {
   return (
     <Suspense fallback={null}>
@@ -118,10 +135,17 @@ function InviteSignupForm() {
     setLoading(false);
   }
 
+  // LOADING ≠ EMPTY: while the invite is being validated we show a skeleton of
+  // the screen that is coming, never the invalid-invite branch.
   if (checking) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="w-8 h-8 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      <div aria-busy className="animate-pulse space-y-4">
+        <div className="h-3 w-24 rounded bg-sand" />
+        <div className="h-8 w-3/4 rounded bg-sand" />
+        <div className="h-3 w-2/3 rounded bg-sand" />
+        <div className="h-12 rounded-xl bg-sand" />
+        <div className="h-12 rounded-xl bg-sand" />
+        <div className="h-12 rounded-xl bg-sand" />
       </div>
     );
   }
@@ -132,28 +156,27 @@ function InviteSignupForm() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-center py-4"
       >
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
-          <AlertCircle className="w-8 h-8 text-red-500" />
-        </div>
-        <h2 className="font-display text-2xl font-bold text-midnight-100 mb-2">
-          Invalid or Expired Invite
-        </h2>
-        <p className="text-midnight-300 text-sm mb-6 font-body max-w-sm mx-auto">
-          This invite link is no longer valid. Ask your family member to send a
-          new invite, or create your own account.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <AuthHeading
+          eyebrow="Invite"
+          title={
+            <>
+              Invalid or Expired <MarkWord>Invite</MarkWord>
+            </>
+          }
+          sub="This invite link is no longer valid. Ask your family member to send a new invite, or create your own account."
+        />
+        <div className="mt-8 flex flex-col gap-4">
           <Link
             href="/signup"
-            className="cta-button px-6 py-3 rounded-lg text-sm"
+            className="cta-button f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[15px]"
           >
             Create Account
+            <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             href="/login"
-            className="text-gold-400 hover:text-gold-300 text-sm font-medium transition-colors"
+            className="f0-focus rounded text-center font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
           >
             Sign in instead
           </Link>
@@ -168,30 +191,34 @@ function InviteSignupForm() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-center py-4"
       >
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gold-400/10 flex items-center justify-center">
-          <Mail className="w-8 h-8 text-gold-400" />
+        <AuthHeading
+          eyebrow="One more step"
+          title={
+            <>
+              Check Your <MarkWord>Email</MarkWord>
+            </>
+          }
+        />
+        <div className="mt-6">
+          <AuthNotice tone="done">
+            We sent a confirmation link to{" "}
+            <span className="font-semibold text-ink">{email}</span>. Click it to
+            join{" "}
+            <span className="font-semibold text-ink">
+              {inviteData?.family_name}
+            </span>
+            .
+          </AuthNotice>
         </div>
-        <h2 className="font-display text-2xl font-bold text-gold-400 mb-2">
-          Check Your Email
-        </h2>
-        <p className="text-midnight-300 text-sm mb-6 font-body">
-          We sent a confirmation link to{" "}
-          <span className="text-midnight-100 font-medium">{email}</span>.
-          <br />
-          Click it to join{" "}
-          <span className="text-gold-400 font-medium">
-            {inviteData?.family_name}
-          </span>
-          .
-        </p>
-        <Link
-          href="/login"
-          className="text-gold-400 hover:text-gold-300 text-sm font-medium transition-colors"
-        >
-          Back to login
-        </Link>
+        <div className="f0-rule-top mt-8 pt-6">
+          <Link
+            href="/login"
+            className="f0-focus rounded font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+          >
+            Back to login
+          </Link>
+        </div>
       </m.div>
     );
   }
@@ -202,121 +229,91 @@ function InviteSignupForm() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Invite banner */}
-      <m.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-        className="mb-6 rounded-xl bg-gold-400/5 border border-gold-400/20 p-4 text-center"
+      {/* Who invited you — a hairline statement, not a bordered badge. */}
+      <div
+        className="f0-rule-left pl-4"
+        style={{ borderLeftColor: "var(--accent-solid)", borderLeftWidth: "3px" }}
       >
-        <div className="w-10 h-10 mx-auto rounded-full bg-gold-400/10 flex items-center justify-center mb-2">
-          <Users className="w-5 h-5 text-gold-400" />
-        </div>
-        <p className="text-sm text-midnight-200 font-body">
-          You&apos;ve been invited to join
-        </p>
-        <p className="font-display text-lg font-bold text-gold-400 mt-1">
+        <p className="text-[13px] text-soft">You&apos;ve been invited to join</p>
+        <p className="mt-1 font-display text-[22px] font-extrabold leading-tight text-ink">
           {inviteData?.family_name}
         </p>
-        <p className="text-xs text-midnight-400 mt-1 font-body">
+        <p className="mt-1 text-[12.5px] text-soft">
           by {inviteData?.invited_by_name}
         </p>
-      </m.div>
+      </div>
 
-      <h2 className="font-display text-xl font-bold text-midnight-100 mb-1">
-        Create Your Account
-      </h2>
-      <p className="text-midnight-300 text-sm mb-6 font-body">
-        Sign up to join the family and start learning
-      </p>
+      <div className="mt-8">
+        <AuthHeading
+          title={
+            <>
+              Create Your <MarkWord>Account</MarkWord>
+            </>
+          }
+          sub="Sign up to join the family and start learning"
+        />
+      </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-500 text-sm">
-          {error}
+        <div className="mt-6">
+          <AuthNotice>{error}</AuthNotice>
         </div>
       )}
 
-      <form onSubmit={handleSignup} className="space-y-4">
-        {/* Display Name */}
-        <div>
-          <label className="block text-sm font-medium text-midnight-200 mb-1.5">
-            Your Name
-          </label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              required
-              placeholder="Your name"
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSignup} className="mt-8 space-y-5">
+        <AuthField
+          label="Your Name"
+          icon={User}
+          type="text"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          required
+          placeholder="Your name"
+        />
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-midnight-200 mb-1.5">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="you@example.com"
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
-            />
-          </div>
-        </div>
+        <AuthField
+          label="Email"
+          icon={Mail}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder="you@example.com"
+        />
 
-        {/* Password */}
-        <div>
-          <label className="block text-sm font-medium text-midnight-200 mb-1.5">
-            Password
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-midnight-400" />
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="Min. 6 characters"
-              className="w-full pl-10 pr-11 py-3 rounded-lg bg-midnight-800 border border-midnight-600 text-midnight-50 placeholder:text-midnight-500 focus:outline-none focus:border-gold-400/60 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
-            />
-            <button
-              type="button"
+        <AuthField
+          label="Password"
+          icon={Lock}
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+          placeholder="Min. 6 characters"
+          trailing={
+            <FieldToggle
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-midnight-400 hover:text-midnight-200 transition-colors"
+              label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <EyeOff className="w-4 h-4" />
+                <EyeOff className="h-4 w-4" />
               ) : (
-                <Eye className="w-4 h-4" />
+                <Eye className="h-4 w-4" />
               )}
-            </button>
-          </div>
-        </div>
+            </FieldToggle>
+          }
+        />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="cta-button w-full py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <AuthSubmit type="submit" disabled={loading}>
           {loading ? "Creating account..." : "Join Family & Create Account"}
-        </button>
+        </AuthSubmit>
       </form>
 
-      <p className="mt-6 text-center text-sm text-midnight-400">
+      <p className="mt-8 text-center text-[13.5px] text-soft">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="text-gold-400 hover:text-gold-300 font-medium transition-colors"
+          className="f0-focus rounded font-display font-bold text-gold-700 transition-colors hover:text-gold-600"
         >
           Sign in
         </Link>

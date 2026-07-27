@@ -15,9 +15,10 @@ function Cell({ value, accent }: { value: string; accent?: boolean }) {
   if (value === "✓")
     return (
       <span className="inline-flex items-center justify-center">
-        <Check
-          className={`h-4 w-4 ${accent ? "text-gold-600" : "text-green-600"}`}
-        />
+        {/* COLOUR LAW: green is reserved for market price. An "included" tick
+            is not a price, so the free column's check is ink and the Club
+            column's is the brand accent. */}
+        <Check className={`h-4 w-4 ${accent ? "text-gold-600" : "text-ink"}`} />
       </span>
     );
   if (value === "—")

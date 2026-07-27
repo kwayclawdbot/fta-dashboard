@@ -352,7 +352,7 @@ export default function UpgradePage() {
               href={FIC_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="cta-button mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+              className="cta-button f0-focus f0-press mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
             >
               Keep your Club membership — $99/mo
               <ArrowRight className="h-4 w-4" />
@@ -384,14 +384,14 @@ export default function UpgradePage() {
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             href="/courses"
-            className="cta-button inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+            className="cta-button f0-focus f0-press inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
           >
             <CalendarDays className="h-4 w-4" />
             Continue the program
           </Link>
           <Link
             href="/live-sessions"
-            className="inline-flex items-center gap-2 rounded-xl border border-sand px-5 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:bg-card"
+            className="f0-focus f0-press inline-flex items-center gap-2 rounded-xl border border-sand px-5 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:bg-card"
           >
             <Video className="h-4 w-4" />
             Live classes
@@ -487,14 +487,14 @@ export default function UpgradePage() {
               href={FIC_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="cta-button inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
+              className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
             >
               Join {clubName} — $99/mo
               <ArrowRight className="h-4 w-4" />
             </a>
             <a
               href="#whats-included"
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-6 py-3.5 font-display text-sm font-semibold text-white/90 transition-colors hover:bg-white/5"
+              className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-6 py-3.5 font-display text-sm font-semibold text-white/90 transition-colors hover:bg-white/5"
             >
               See what&apos;s included
             </a>
@@ -570,7 +570,7 @@ export default function UpgradePage() {
             href={FIC_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="cta-button mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm"
+            className="cta-button f0-focus f0-press mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm"
           >
             Join the club
             <ArrowRight className="h-4 w-4" />
@@ -609,7 +609,7 @@ export default function UpgradePage() {
             href={FTA_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-sand px-5 py-3 font-display text-sm font-semibold text-ink transition-colors hover:bg-card"
+            className="f0-focus f0-press inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-sand px-5 py-3 font-display text-sm font-semibold text-ink transition-colors hover:bg-card"
           >
             Explore FTA — $2,997
             <ArrowRight className="h-4 w-4" />
@@ -657,14 +657,14 @@ export default function UpgradePage() {
             href={FTA_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="cta-button inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
+            className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
           >
             Upgrade to FTA — $2,997
             <ArrowRight className="h-4 w-4" />
           </a>
           <a
             href="#whats-inside"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-6 py-3.5 font-display text-sm font-semibold text-white/90 transition-colors hover:bg-white/5"
+            className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-6 py-3.5 font-display text-sm font-semibold text-white/90 transition-colors hover:bg-white/5"
           >
             See what&apos;s inside
           </a>
@@ -769,7 +769,7 @@ export default function UpgradePage() {
         <div className="f0-ledger mt-2">
           {FAQ.map((f) => (
             <details key={f.q} className="group py-1">
-              <summary className="flex cursor-pointer list-none items-start gap-3 py-4">
+              <summary className="f0-focus flex cursor-pointer list-none items-start gap-3 py-4">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-soft transition-transform group-open:rotate-90 motion-reduce:transform-none" />
                 <span className="flex-1 font-display text-[15px] font-extrabold text-ink">
                   {f.q}
@@ -806,7 +806,7 @@ export default function UpgradePage() {
           href={FTA_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="cta-button mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm"
+          className="cta-button f0-focus f0-press mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm"
         >
           Upgrade to FTA
           <ArrowRight className="h-4 w-4" />

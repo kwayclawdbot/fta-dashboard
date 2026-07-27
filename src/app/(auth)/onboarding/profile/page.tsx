@@ -116,10 +116,17 @@ export default function ProfileOnboardingPage() {
     router.refresh();
   }
 
+  // LOADING ≠ EMPTY — a skeleton of the step that is coming, not a spinner
+  // sitting where the founding state would be.
   if (!ready) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-7 h-7 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      <div aria-busy className="mx-auto w-full max-w-lg animate-pulse space-y-5">
+        <div className="mx-auto h-2 w-32 rounded-full bg-sand" />
+        <div className="h-3 w-24 rounded bg-sand" />
+        <div className="h-8 w-3/4 rounded bg-sand" />
+        <div className="h-12 rounded-xl bg-sand" />
+        <div className="h-12 rounded-xl bg-sand" />
+        <div className="h-12 rounded-xl bg-sand" />
       </div>
     );
   }
@@ -174,7 +181,7 @@ export default function ProfileOnboardingPage() {
         {step > S_HOUSEHOLD && !isWelcome ? (
           <button
             onClick={goBack}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-medium"
+            className="f0-focus f0-press flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-soft transition-colors hover:text-ink"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -187,7 +194,7 @@ export default function ProfileOnboardingPage() {
           {isProfileStep && (
             <button
               onClick={() => advance(step === S_HEAR)}
-              className="text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-medium"
+              className="f0-focus rounded text-sm font-medium text-soft transition-colors hover:text-ink"
             >
               I&apos;ll do this later
             </button>
@@ -195,7 +202,7 @@ export default function ProfileOnboardingPage() {
           {isWelcome ? (
             <button
               onClick={finish}
-              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm"
+              className="cta-button f0-focus f0-press flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
             >
               Go to my dashboard
               <ArrowRight className="w-4 h-4" />
@@ -203,7 +210,7 @@ export default function ProfileOnboardingPage() {
           ) : (
             <button
               onClick={() => advance(step === S_HEAR)}
-              className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm"
+              className="cta-button f0-focus f0-press flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
             >
               Continue
               <ArrowRight className="w-4 h-4" />
