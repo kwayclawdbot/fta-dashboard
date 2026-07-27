@@ -104,7 +104,7 @@ export default function StanceControl({
     id: s,
     label: LABEL[s],
     meta: showSplit ? (
-      <span className="font-mono text-[10px] font-semibold tabular-nums text-lime-700 dark:text-lime-400">
+      <span className="font-mono text-[10px] font-semibold tabular-nums text-sentiment">
         {Math.round(((counts?.[s] ?? 0) / total) * 100)}%
       </span>
     ) : undefined,
@@ -120,8 +120,11 @@ export default function StanceControl({
         disabled={disabled}
         fill
         size={size}
-        // Lime: community sentiment. Never the price ramp, never the volt ramp.
-        barClassName="bg-lime-500"
+        // Community sentiment, through the canonical token — never the price
+        // ramp, never the volt ramp, and never a hand-written dark: variant.
+        // -fill rather than -sentiment because a 3px bar needs mass, not the
+        // contrast step tuned for type.
+        barClassName="bg-sentiment-fill"
         activeTextClassName="text-ink"
       />
       {!value && emptyHint && (

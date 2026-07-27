@@ -87,7 +87,7 @@ export default function RespectAction({
       }
       className={`f0-focus inline-flex items-center gap-1.5 rounded-md ${pad} font-display ${type} font-extrabold uppercase tracking-[0.12em] transition-colors disabled:opacity-45 ${
         active
-          ? "bg-lime-500/14 text-lime-700 dark:text-lime-400"
+          ? "bg-sentiment-soft text-sentiment"
           : "text-soft hover:text-ink"
       } ${className}`}
     >
