@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AdminShell from "@/components/admin/AdminShell";
+import { resolveViewAs } from "@/lib/server/view-as";
 
 export default async function AdminLayout({
   children,
@@ -29,5 +30,9 @@ export default async function AdminLayout({
     redirect("/dashboard");
   }
 
-  return <AdminShell>{children}</AdminShell>;
+  // Same gate as the dashboard: the cookie is only read once the REAL profile
+  // has been resolved and found to be an admin (src/lib/server/view-as.ts).
+  const viewAs = await resolveViewAs(profile.role);
+
+  return <AdminShell viewAs={viewAs}>{children}</AdminShell>;
 }

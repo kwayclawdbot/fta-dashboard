@@ -86,6 +86,13 @@ interface DashboardShellProps {
   clubLapsed?: boolean;
   /** ISO date the Club window closed (for the renewal banner copy). */
   clubUntil?: string | null;
+  /**
+   * Admin "View as" register preview is active (src/lib/view-as.ts). The `user`
+   * prop above is then a PERSONA, not this account. Used only to suppress the
+   * onboarding layers below — they write to the real profiles row (tour_version,
+   * first-run timestamps) and must never be driven by a fake register.
+   */
+  viewAs?: string | null;
   children: React.ReactNode;
 }
 
@@ -94,6 +101,7 @@ export default function DashboardShell({
   challengeExpiresAt,
   clubLapsed,
   clubUntil,
+  viewAs,
   children,
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -237,20 +245,31 @@ export default function DashboardShell({
           reachable from the FAB, "Ask Kai" actions, and universal search. */}
       </KaiSheetProvider>
 
-      <Suspense fallback={null}>
-        <AppTour user={user} />
-      </Suspense>
+      {/* The three layers below all PERSIST — AppTour and FirstRun update the
+          real profiles row (tour_version, first-run timestamps) and
+          NotificationOnboard touches push subscriptions. Under an admin
+          register preview `user` is a persona, so running them would write the
+          preview back onto the admin's real account. A preview never writes. */}
+      {!viewAs && (
+        <>
+          <Suspense fallback={null}>
+            <AppTour user={user} />
+          </Suspense>
 
-      {/* Unified per-profile first-run layer: sequences walkthrough → add-to-home
-          -screen → push pre-prompt on a user's first session, every signup path.
-          Converges here so the invite path (and every other) gets first-run. */}
-      <Suspense fallback={null}>
-        <FirstRun user={user} />
-      </Suspense>
+          {/* Unified per-profile first-run layer: sequences walkthrough → add-to
+              -home-screen → push pre-prompt on a user's first session, every
+              signup path. Converges here so the invite path (and every other)
+              gets first-run. */}
+          <Suspense fallback={null}>
+            <FirstRun user={user} />
+          </Suspense>
 
-      {/* Silent push self-heal + platform-aware re-prompts (FirstRun owns the
-          initial prompt and silences this during first-run to avoid doubling). */}
-      <NotificationOnboard />
+          {/* Silent push self-heal + platform-aware re-prompts (FirstRun owns
+              the initial prompt and silences this during first-run to avoid
+              doubling). */}
+          <NotificationOnboard />
+        </>
+      )}
 
       {/* Global toast host (enrollment confirmations, etc.). */}
       <Toaster />

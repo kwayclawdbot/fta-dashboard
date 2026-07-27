@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getFamilyTierState, effectiveClubTier } from "@/lib/tier";
 import { isSoloProfile, deriveRegister } from "@/lib/register";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import ViewAsIndicator from "@/components/dashboard/ViewAsIndicator";
+import { resolveViewAs } from "@/lib/server/view-as";
+import { applyViewAs } from "@/lib/view-as";
 import { EntitlementsProvider } from "@/components/entitlements/EntitlementsProvider";
 import type { EntitlementState } from "@/lib/entitlements";
 
@@ -105,18 +108,43 @@ export default async function DashboardLayout({
     isSolo = isSoloProfile(fp);
   }
 
+  // ── ADMIN "VIEW AS" — the single override point (src/lib/view-as.ts) ───────
+  // Everything the shell keys off (nav, register, brand/palette, tier gating)
+  // is derived from the five fields below, so the preview is applied HERE, once,
+  // and every downstream surface follows without a line of its own. Two hard
+  // properties of this placement:
+  //   • resolveViewAs is passed the REAL profile role read above from the
+  //     authenticated session. A cookie on a non-admin's browser returns null
+  //     and is never even read — the cookie is not the authority.
+  //   • it is a pure in-memory transform. No row is written; the admin's real
+  //     tier, role and age_group are exactly as the database has them, and every
+  //     API route still re-derives from the real profile (so writes, RLS and
+  //     analytics see the real member, never the preview).
+  const viewAs = await resolveViewAs(profile?.role);
+  const ctx = applyViewAs(
+    {
+      role: profile?.role ?? undefined,
+      age_group: profile?.age_group ?? undefined,
+      track: profile?.track ?? undefined,
+      tier,
+      isSolo,
+      clubLapsed,
+    },
+    viewAs
+  );
+
   const userData = {
     email: user.email,
     display_name:
       profile?.display_name ||
       user.user_metadata?.display_name ||
       user.user_metadata?.full_name,
-    role: profile?.role ?? undefined,
-    age_group: profile?.age_group ?? undefined,
-    track: profile?.track ?? undefined,
+    role: ctx.role,
+    age_group: ctx.age_group,
+    track: ctx.track,
     avatar_url: profile?.avatar_url ?? undefined,
-    tier,
-    isSolo,
+    tier: ctx.tier,
+    isSolo: ctx.isSolo,
     // Challenge walkthrough signals (Lane C9b): a challenge_pass holder gets the
     // challenge-flavored tour; VIPs additionally get the VIP-room stop.
     isChallenge: !!challengeExpiresAt,
@@ -127,10 +155,10 @@ export default async function DashboardLayout({
   // values this layout already derived (no extra queries), then provided to every
   // client <Gated>. Fail-closed: a lapsed FTA family reads 'free' for Club gates.
   const entitlements: EntitlementState = {
-    tier: effectiveClubTier(tier, clubLapsed),
-    realTier: tier,
-    register: deriveRegister(profile),
-    clubLapsed,
+    tier: effectiveClubTier(ctx.tier, ctx.clubLapsed),
+    realTier: ctx.tier,
+    register: deriveRegister(ctx),
+    clubLapsed: ctx.clubLapsed,
     challenge: challengeExpiresAt
       ? {
           active: true,
@@ -146,13 +174,23 @@ export default async function DashboardLayout({
   };
 
   return (
-    <DashboardShell
-      user={userData}
-      challengeExpiresAt={challengeExpiresAt}
-      clubLapsed={clubLapsed}
-      clubUntil={clubUntil}
-    >
-      <EntitlementsProvider value={entitlements}>{children}</EntitlementsProvider>
-    </DashboardShell>
+    <>
+      <DashboardShell
+        user={userData}
+        challengeExpiresAt={challengeExpiresAt}
+        clubLapsed={ctx.clubLapsed}
+        clubUntil={clubUntil}
+        viewAs={viewAs}
+      >
+        <EntitlementsProvider value={entitlements}>
+          {children}
+        </EntitlementsProvider>
+      </DashboardShell>
+
+      {/* Standing "you are previewing" marker. Rendered as a sibling of the
+          shell so its fixed frame can never be trapped in a nested stacking
+          context, and only when the SERVER honoured the override. */}
+      {viewAs && <ViewAsIndicator view={viewAs} />}
+    </>
   );
 }
