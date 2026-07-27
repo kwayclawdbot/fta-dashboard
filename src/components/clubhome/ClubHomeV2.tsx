@@ -8,16 +8,7 @@ import type { ClubScale } from "@/lib/clubhome/contract";
 import type { Register } from "@/lib/register";
 
 import ChallengeSlot from "./ChallengeSlot";
-import ClubHeader from "./ClubHeader";
-import LivePulse from "./LivePulse";
-import Collective from "./Collective";
-import BuildTheClub from "./BuildTheClub";
-import KaiBrief from "./KaiBrief";
-import Trending from "./Trending";
-import BestThinking from "./BestThinking";
-import Debate from "./Debate";
-import ForYou from "./ForYou";
-import People from "./People";
+import CanvasHome from "./CanvasHome";
 import { LiveEventCard, LiveNowStrip } from "@/components/live";
 
 /**
@@ -47,13 +38,13 @@ export interface LearningPickup {
 }
 
 export default function ClubHomeV2({
-  firstName,
   register,
   learning,
   challengeExpiresAt = null,
   preview,
 }: {
-  firstName: string;
+  /** kept in the contract for callers; the canvas Home leads with the board, not a greeting */
+  firstName?: string;
   register: Register;
   learning: LearningPickup | null;
   challengeExpiresAt?: string | null;
@@ -61,9 +52,6 @@ export default function ClubHomeV2({
   preview?: { fixtures: boolean; scale: ClubScale };
 }) {
   const isKid = register === "kid";
-  const canInvite = register !== "kid";
-  const canDebate = register !== "kid";
-  const canDiscoverPeople = register !== "kid";
 
   const { data, usingFixtures } = useClubData({
     fixtures: preview?.fixtures,
@@ -88,7 +76,6 @@ export default function ClubHomeV2({
   // holders resolve to 'fic' and read as fully entitled (the countdown ribbon is
   // the global DashboardShell + ChallengeSlot, not a per-section wall). The kid
   // register axis is still enforced below (sentiment strips + kid-walled sections).
-  const collectiveFloorMet = data.collective?.floorMet ?? false;
 
   // Kid-safe subset: sentiment display is kid-walled — strip sentiment signals/
   // items from the surfaces kids DO see so no bull/bear read reaches them.
@@ -103,37 +90,34 @@ export default function ClubHomeV2({
     : data.foryou;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-16">
+    <div className="mx-auto max-w-2xl space-y-7 pb-16 lg:max-w-3xl">
       {usingFixtures && (
         <div className="pointer-events-none fixed bottom-4 left-4 z-50 rounded-full border border-volt-500/40 bg-card/95 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-volt-700 shadow-soft">
           fixtures · {preview?.scale ?? "scale"} · {register}
         </div>
       )}
 
-      {/* §12 Challenge slot — high priority, only during an active pass */}
+      {/* §12 Challenge slot — high priority, only during an active pass (preserved law) */}
       <ChallengeSlot challengeExpiresAt={challengeExpiresAt} />
 
-      {/* §1 Header */}
-      <ClubHeader
-        firstName={firstName}
-        connectedMinds={data.collective?.connectedMinds ?? null}
-        floorMet={collectiveFloorMet}
+      {/* LIVE NOW (amendment #2): a live/starting room is urgent, above all — a
+          canvas-styled addition sitting above the board (preserved law) */}
+      {liveNow && <LiveNowStrip event={liveNow} />}
+
+      {/* Board 01 — the canvas Home composition, wired to live club data.
+          Supersedes the former Live-Pulse/Collective tier layout for club members. */}
+      <CanvasHome
+        trending={data.trending}
+        brief={brief}
+        pulse={pulse}
+        foryou={foryou}
       />
 
-      {/* TIER 0 — LIVE NOW (amendment #2): a live/starting room is urgent, above all */}
-      {liveNow && (
-        <div className="-mt-2">
-          <LiveNowStrip event={liveNow} />
-        </div>
-      )}
-
-      {/* TIER 1 — Live Pulse hero (dominant, full width) */}
-      <LivePulse pulse={pulse} isKid={isKid} />
-
-      {/* live_event cards join the Pulse tier when rooms are on */}
+      {/* live_event rooms — canvas-styled additions when rooms are on air
+          (preserved law: live_event cards) */}
       {pulseTierEvents.length > 0 && (
         <EditorialSection title="Live in the Club" divide>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {pulseTierEvents.map((e) => (
               <LiveEventCard key={e.id} event={e} />
             ))}
@@ -141,46 +125,8 @@ export default function ClubHomeV2({
         </EditorialSection>
       )}
 
-      {/* TIER 2 — the signature row: The Collective (large) + Kai Brief adjacent.
-          The Collective's founding state embeds the §4 invite engine as its
-          centerpiece; at scale it's the network visualization. */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.55fr_1fr]">
-        <Collective
-          collective={data.collective}
-          isKid={isKid}
-          fixtures={usingFixtures}
-          invite={
-            canInvite && !collectiveFloorMet ? (
-              <BuildTheClub invite={data.invite} embedded />
-            ) : undefined
-          }
-        />
-        <KaiBrief brief={brief} />
-      </div>
-
-      {/* TIER 3 — the editorial tail. Two columns of editorial sections on the
-          sand canvas (the section framing is open, the object rows keep their
-          in-app treatment): the collective's thinking on the left, the day's
-          signal on the right. */}
-      <div className="grid grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-2">
-        <div className="flex min-w-0 flex-col gap-8">
-          <Trending trending={data.trending} />
-          <BestThinking thinking={data.thinking} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-8">
-          {canDebate && <Debate debate={data.debate} />}
-          <ForYou foryou={foryou} />
-        </div>
-      </div>
-
-      {/* §4 Build the Club — standalone invite ledger once past the floor (carve-out) */}
-      {canInvite && collectiveFloorMet && <BuildTheClub invite={data.invite} />}
-
-      {/* §10 People worth following (kid-walled) */}
-      {canDiscoverPeople && <People people={data.people} />}
-
       {/* Keep learning — the shared ContinuePath object (amendment #3): Learn
-          stays visible for adults through this contextual object, not primary nav. */}
+          stays reachable for adults through this contextual object (preserved law). */}
       <ContinuePath pickup={learning} />
     </div>
   );

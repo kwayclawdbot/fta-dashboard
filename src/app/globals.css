@@ -711,6 +711,24 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+/* Canvas Home — Market Brief banner. Honest brand gradient (dark obsidian →
+   deep teal-green) standing in for a newsroom image, with a faint chart grid so
+   it reads as "market", never a broken photo box. Board 01. */
+.club-brief-banner {
+  background:
+    radial-gradient(120% 140% at 85% 15%, color-mix(in srgb, var(--color-teal-400) 34%, transparent) 0%, transparent 55%),
+    radial-gradient(90% 120% at 10% 90%, color-mix(in srgb, var(--color-volt-500) 22%, transparent) 0%, transparent 60%),
+    linear-gradient(150deg, #0B1220 0%, #101A2E 55%, #08221C 100%);
+}
+.club-brief-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 40%, #000 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 40%, #000 100%);
+}
+
 /* Glowing live dot — pulse ring is on the markup; this adds the halo. */
 .club-livedot-volt { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-volt-500) 65%, transparent); }
 .club-livedot-teal { box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-teal-400) 65%, transparent); }
