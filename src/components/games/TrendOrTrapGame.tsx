@@ -113,10 +113,20 @@ export default function TrendOrTrapGame() {
     setPhase("resolving");
   }
 
+  /* LOADING ≠ EMPTY (§0.4). A spinner here was indistinguishable from the
+     "no rounds are loaded" state below, which is a real state whenever the
+     `game_items` set is unpublished. This skeleton is the game's own shape. */
   if (g.loading) {
     return (
-      <div className="mx-auto flex max-w-2xl items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-500" />
+      <div className="mx-auto max-w-2xl" aria-busy="true">
+        <div className="h-3 w-28 animate-pulse rounded bg-sand" />
+        <div className="mt-3 h-9 w-56 animate-pulse rounded bg-sand" />
+        <div className="mt-5 h-1 w-full animate-pulse rounded-full bg-sand/60" />
+        <div className="mt-6 h-64 animate-pulse rounded-2xl bg-sand/40" />
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
+          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
+        </div>
       </div>
     );
   }
@@ -201,7 +211,7 @@ export default function TrendOrTrapGame() {
         </p>
       </m.div>
 
-      {/* decision UI with speed-bonus timer ring */}
+      {/* decision UI with the speed-bonus window as a depleting BAR (no rings) */}
       <AnimatePresence mode="wait">
         {phase === "decision" && (
           <m.div
@@ -211,11 +221,11 @@ export default function TrendOrTrapGame() {
             exit={{ opacity: 0 }}
             className="mt-5"
           >
-            <div className="mb-3 flex items-center justify-center gap-2">
-              <TimerRing />
+            <div className="mb-3">
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
                 Quick correct calls earn bonus points
               </span>
+              <TimerBar />
             </div>
             {/* A control PAIR, not a content grid — the two calls are mutually
                 exclusive and must carry identical weight. Green/red here are
@@ -223,13 +233,13 @@ export default function TrendOrTrapGame() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => choose("CLIMBING")}
-                className="flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20 active:scale-[0.98]"
+                className="f0-focus f0-press flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20"
               >
                 <TrendingUp className="h-5 w-5" /> CLIMBING
               </button>
               <button
                 onClick={() => choose("FALLING")}
-                className="flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20 active:scale-[0.98]"
+                className="f0-focus f0-press flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20"
               >
                 <TrendingDown className="h-5 w-5" /> FALLING
               </button>
@@ -265,7 +275,7 @@ export default function TrendOrTrapGame() {
             </div>
             <button
               onClick={g.advance}
-              className="cta-button w-full min-h-[52px] rounded-xl text-base mt-4"
+              className="f0-focus f0-press mt-4 min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
             >
               {g.index + 1 >= g.total ? "See results" : "Next chart"}
             </button>
@@ -295,30 +305,31 @@ export default function TrendOrTrapGame() {
   );
 }
 
-/** Depleting ring — purely cosmetic pressure + a nod to the speed bonus. */
-function TimerRing() {
+/**
+ * Depleting BAR — the speed-bonus window.
+ *
+ * This was a radial countdown ring. The adoption plan bans radial gauges beyond
+ * the club-sentiment arc (§1.5) and calls out games as exactly where rings are
+ * tempting: a ring encodes one number less legibly than a bar, and a second dial
+ * in the app dilutes the one that means something. A depleting bar also reads
+ * its remaining time at a glance from across a table, which is how a kid
+ * actually plays this.
+ *
+ * Track + fill read from theme tokens (--sand / --accent-solid), so it is both
+ * mode- and theme-correct: metallic on the FTA desk, gold in Family Mode.
+ * Reduced motion gets a static full bar rather than a jump to empty — an empty
+ * bar would state, falsely, that the bonus window has closed.
+ */
+function TimerBar() {
   const reduce = useReducedMotion();
-  const C = 2 * Math.PI * 13;
   return (
-    <svg width={34} height={34} viewBox="0 0 34 34">
-      {/* Track + sweep read from theme tokens: the old rgba(0,0,0,0.08) track
-          vanished on the dark page and the hardcoded #F59E0B was family gold on
-          every mode. --sand and --accent-solid are both mode- and theme-correct. */}
-      <circle cx={17} cy={17} r={13} fill="none" stroke="var(--sand)" strokeWidth={3} />
-      <m.circle
-        cx={17}
-        cy={17}
-        r={13}
-        fill="none"
-        stroke="var(--accent-solid)"
-        strokeWidth={3}
-        strokeLinecap="round"
-        transform="rotate(-90 17 17)"
-        strokeDasharray={C}
-        initial={{ strokeDashoffset: 0 }}
-        animate={{ strokeDashoffset: reduce ? 0 : C }}
+    <div className="mt-2 h-1 overflow-hidden rounded-full bg-sand" aria-hidden>
+      <m.div
+        className="h-full rounded-full bg-accent"
+        initial={{ width: "100%" }}
+        animate={{ width: reduce ? "100%" : "0%" }}
         transition={{ duration: reduce ? 0 : TIMER_MS / 1000, ease: "linear" }}
       />
-    </svg>
+    </div>
   );
 }

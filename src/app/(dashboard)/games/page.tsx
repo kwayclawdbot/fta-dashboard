@@ -28,6 +28,17 @@ import { getClubTier, type FamilyTier } from "@/lib/tier";
  * The accent (family gold / club volt / FTA metallic) marks the play action and
  * the lock upsell, which are actions. Orange TEXT uses the gold ramp, which
  * flips at night; text-volt-* is frozen and never used.
+ *
+ * ADULT-FIRST (canvas v2): these are kid-facing games, and the standing rule is
+ * that the kid version is DERIVED from the adult one. So the index is the same
+ * display/hairline/ledger vocabulary as Live Classes and the FTA desk — no toy
+ * bevels, no bubble emoji, no pulsing pings. What makes it playable is the
+ * numeral, the tug-of-war art and the copy, not a second visual system.
+ *
+ * CANVAS V2 PASS: one annotated word in the headline, the shared focus ring and
+ * press feedback on every row, and a real founding state for a member who has
+ * never played (the previous version simply omitted the record line, which read
+ * as a rendering gap rather than a stated absence).
  */
 
 interface GameEntry {
@@ -133,8 +144,8 @@ export default function GamesHubPage() {
           <p className="text-eyebrow font-display font-bold uppercase text-gold-600">
             Training room
           </p>
-          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase">
-            Practice Games
+          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05]">
+            Practice <span className="f0-underline-mark">Games</span>
           </h1>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/70">
             Every price move is a tug-of-war between buyers and sellers. Ten rounds a
@@ -157,7 +168,10 @@ export default function GamesHubPage() {
             const played = bestScore !== undefined;
             return (
               <div key={g.href} style={{ "--i": i } as React.CSSProperties}>
-                <Link href={locked ? "/upgrade" : g.href} className="f0-ledger-row group">
+                <Link
+                  href={locked ? "/upgrade" : g.href}
+                  className="f0-ledger-row f0-focus f0-press group"
+                >
                   <span
                     aria-hidden
                     className="w-9 shrink-0 self-center text-right font-display text-display-3 font-extrabold tabular-nums text-soft sm:w-12"
@@ -217,13 +231,14 @@ export default function GamesHubPage() {
         </div>
       </section>
 
-      {/* Your record — stated, never inferred. Absent until there is one. */}
-      {totalPlays > 0 && (
-        <p className="f0-rule-top pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-          {totalPlays} session{totalPlays === 1 ? "" : "s"} logged · a session is 10 rounds ·
-          70% pays XP
-        </p>
-      )}
+      {/* Your record — stated, never inferred. A member with no sessions gets a
+          FOUNDING STATE (§0.5), not a missing line: "you have not played yet" is
+          a fact worth saying, and it carries the rule that makes a session pay. */}
+      <p className="f0-rule-top pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+        {totalPlays > 0
+          ? `${totalPlays} session${totalPlays === 1 ? "" : "s"} logged · a session is 10 rounds · 70% pays XP`
+          : "No sessions logged yet · a session is 10 rounds · 70% pays XP"}
+      </p>
     </div>
   );
 }

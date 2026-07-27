@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { m } from "@/lib/motion";
-import { Play, Clock, Calendar, Film, Lock, ExternalLink, Sparkles } from "lucide-react";
+import { Play, Film, Lock, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useFtaViewer } from "@/components/fta/useFtaViewer";
 import FtaHubHeader from "@/components/fta/FtaHubHeader";
@@ -13,11 +13,19 @@ import RecordingPlayerModal, {
 import { resolveRecordingKind, type RecordingKind } from "@/lib/recordings";
 
 /**
- * /fta/recordings — a recordings-first, FTA-scoped view of the class library.
- * It reuses the exact live-sessions recording query + the shared
- * RecordingPlayerModal (signed URL / youtube-nocookie + watch XP), filtered to
- * the FTA program (min_tier = 'academy'), grouped by class series, newest
- * first. The shared /live-sessions page stays for everyone (FIC classes etc.).
+ * /fta/recordings — the FTA shelf, canvas v2.
+ *
+ * WHAT CHANGED: every recording used to be a gradient-bordered rounded card with
+ * a gold gradient play tile — a stack of boxes where a ledger belongs, and the
+ * `paper-card` empty state again. Now: the metallic desk masthead, a section rule
+ * per class series, and one hairline row per recording. The date column is the
+ * mono anchor (same geometry as the Live Classes ledger, deliberately — they are
+ * the same object at two tiers), and the play affordance is type, not chrome.
+ *
+ * WIRING UNTOUCHED: the same live_sessions query filtered to min_tier='academy',
+ * the same resolveRecordingKind, and the same shared RecordingPlayerModal —
+ * which owns the signed-URL / youtube-nocookie handling AND the watch-XP write.
+ * That XP path is not duplicated here and was not touched.
  */
 
 type ClassType =
@@ -132,50 +140,65 @@ export default function FtaRecordingsPage() {
     groups.push({ key: "all", label: null, items: recordings });
   }
 
+  const totalMin = recordings.reduce((s, r) => s + (r.durationMin || 0), 0);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pb-12">
+    <div className="mx-auto w-full max-w-3xl pb-16">
       <FtaHubHeader
-        title="Recordings"
+        title="The"
+        mark="Recordings"
         subtitle="Every FTA class, always waiting — newest first, grouped by series."
       />
 
       {loading ? (
-        <FtaRecordingsListSkeleton />
+        <FtaListSkeleton />
       ) : recordings.length === 0 ? (
-        <div className="paper-card p-10 text-center">
-          <Sparkles className="w-7 h-7 text-ftagold-500 mx-auto mb-3" />
-          <p className="font-display text-base font-semibold text-ink mb-1">No recordings yet</p>
-          <p className="text-sm text-soft max-w-sm mx-auto">
-            Your FTA class recordings land here right after each live session.
+        /* FOUNDING STATE (§0.5) — an empty shelf is the REAL state before the
+           first cohort session is processed. Say so. */
+        <div className="mt-12 border-l-2 border-sand py-1 pl-4">
+          <p className="font-display text-display-3 font-extrabold text-ink">
+            The shelf is empty
+          </p>
+          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-soft">
+            FTA class recordings land here right after each live session, grouped
+            by series. Nothing is missing — the first one simply has not been
+            recorded yet.
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {groups.map((group) => (
-            <div key={group.key}>
-              {group.label && (
-                <h2 className="font-display text-xs font-bold uppercase tracking-wider text-ftagold-700 mb-2">
-                  {group.label}
-                </h2>
-              )}
-              <div className="space-y-2.5">
-                {group.items.map((rec, i) => (
-                  <m.div
-                    key={rec.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(i * 0.04, 0.2) }}
-                  >
-                    <RecordingRow
-                      rec={rec}
-                      onWatch={() => setWatching(rec)}
-                    />
-                  </m.div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <>
+          {/* The shelf's own measures — stated, never inferred. */}
+          <p className="mt-9 font-mono text-[10px] uppercase tracking-[0.16em] text-soft">
+            {recordings.length} recording{recordings.length === 1 ? "" : "s"} ·{" "}
+            {Math.round(totalMin / 60)} hours on the shelf
+          </p>
+
+          <div className="mt-8 space-y-9">
+            {groups.map((group) => (
+              <section key={group.key}>
+                {group.label && (
+                  <h2 className="f0-section-rule mb-1">
+                    <span className="text-eyebrow font-display font-bold uppercase text-soft">
+                      {group.label}
+                    </span>
+                  </h2>
+                )}
+                <div className="f0-ledger f0-stagger border-t border-sand/70">
+                  {group.items.map((rec, i) => (
+                    <m.div
+                      key={rec.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.04, 0.2) }}
+                    >
+                      <RecordingRow rec={rec} onWatch={() => setWatching(rec)} />
+                    </m.div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </>
       )}
 
       {watching && (
@@ -189,55 +212,92 @@ export default function FtaRecordingsPage() {
   );
 }
 
+/** One recording on the shelf. Date column, title, then the watch affordance. */
 function RecordingRow({ rec, onWatch }: { rec: Rec; onWatch: () => void }) {
   const external = rec.recordingKind === "external" && rec.recordingUrl;
+  const d = rec.scheduledIso ? new Date(rec.scheduledIso) : null;
+
+  const body = (
+    <>
+      <span className="w-[4.5rem] shrink-0 self-start">
+        {d ? (
+          <>
+            <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink">
+              {d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            </span>
+            <span className="block font-mono text-[10.5px] tabular-nums text-soft">
+              {d.getFullYear()}
+            </span>
+          </>
+        ) : (
+          <span className="block font-mono text-[11px] uppercase tracking-[0.1em] text-soft">
+            —
+          </span>
+        )}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block font-display text-[15px] font-bold leading-snug text-ink">
+          {rec.title}
+        </span>
+        {rec.description && (
+          <span className="mt-0.5 line-clamp-2 block max-w-prose text-[12.5px] leading-relaxed text-soft">
+            {rec.description}
+          </span>
+        )}
+        <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
+          {rec.durationMin} min
+        </span>
+      </span>
+
+      <span className="inline-flex shrink-0 items-center gap-1.5 self-center font-display text-[12.5px] font-bold uppercase tracking-[0.08em] text-ftagold-700">
+        <Play className="h-3.5 w-3.5" />
+        Watch
+        {external && <ExternalLink className="h-3 w-3" />}
+      </span>
+    </>
+  );
+
+  return external ? (
+    <a
+      href={rec.recordingUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="f0-ledger-row f0-focus f0-press"
+    >
+      {body}
+    </a>
+  ) : (
+    <button onClick={onWatch} className="f0-ledger-row f0-focus f0-press w-full text-left">
+      {body}
+    </button>
+  );
+}
+
+/* LOADING ≠ EMPTY (§0.4). */
+function FtaRecordingsSkeleton() {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-ftagold-400/30 bg-gradient-to-br from-ftagold-400/[0.06] to-transparent p-4 hover:border-ftagold-400/60 transition-colors">
-      <div className="w-10 h-10 rounded-lg bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
-        <Play className="w-5 h-5" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-display text-sm font-semibold text-ink leading-snug">{rec.title}</h3>
-        {rec.description && <p className="text-xs text-soft mt-0.5 line-clamp-2">{rec.description}</p>}
-        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-soft">
-          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{rec.scheduledAt}</span>
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{rec.durationMin} min</span>
-        </div>
-      </div>
-      {external ? (
-        <a
-          href={rec.recordingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ftagold-400/15 text-ftagold-700 border border-ftagold-400/30 text-xs font-semibold hover:bg-ftagold-400/25 transition-colors shrink-0"
-        >
-          <Play className="w-3 h-3" /> Watch <ExternalLink className="w-3 h-3" />
-        </a>
-      ) : (
-        <button
-          onClick={onWatch}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ftagold-400/15 text-ftagold-700 border border-ftagold-400/30 text-xs font-semibold hover:bg-ftagold-400/25 transition-colors shrink-0"
-        >
-          <Play className="w-3 h-3" /> Watch
-        </button>
-      )}
+    <div className="mx-auto w-full max-w-3xl pb-16" aria-busy="true">
+      <div className="metal-gold h-[3px] w-full rounded-full opacity-40" />
+      <div className="mt-5 h-3 w-44 animate-pulse rounded bg-sand" />
+      <div className="mt-3 h-11 w-72 animate-pulse rounded bg-sand" />
+      <div className="mt-7 h-8 w-full animate-pulse rounded bg-sand/50" />
+      <FtaListSkeleton />
     </div>
   );
 }
 
-function FtaRecordingsSkeleton() {
+function FtaListSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto space-y-5 animate-pulse">
-      <div className="h-32 rounded-2xl bg-sand/40" />
-      <FtaRecordingsListSkeleton />
-    </div>
-  );
-}
-function FtaRecordingsListSkeleton() {
-  return (
-    <div className="space-y-2.5">
+    <div className="f0-ledger mt-10 border-t border-sand/70" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-20 rounded-xl bg-sand/30 animate-pulse" />
+        <div key={i} className="f0-ledger-row">
+          <div className="h-8 w-[4.5rem] shrink-0 animate-pulse rounded bg-sand/60" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-4 w-2/3 animate-pulse rounded bg-sand/60" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+          </div>
+        </div>
       ))}
     </div>
   );

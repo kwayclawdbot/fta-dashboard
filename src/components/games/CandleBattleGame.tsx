@@ -119,10 +119,20 @@ export default function CandleBattleGame() {
     lean = Math.max(-1, Math.min(1, (cur - data.o) / span));
   }
 
+  /* LOADING ≠ EMPTY (§0.4). A spinner here was indistinguishable from the
+     "no rounds are loaded" state below, which is a real state whenever the
+     `game_items` set is unpublished. This skeleton is the game's own shape. */
   if (g.loading) {
     return (
-      <div className="mx-auto flex max-w-2xl items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-500" />
+      <div className="mx-auto max-w-2xl" aria-busy="true">
+        <div className="h-3 w-28 animate-pulse rounded bg-sand" />
+        <div className="mt-3 h-9 w-56 animate-pulse rounded bg-sand" />
+        <div className="mt-5 h-1 w-full animate-pulse rounded-full bg-sand/60" />
+        <div className="mt-6 h-64 animate-pulse rounded-2xl bg-sand/40" />
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
+          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
+        </div>
       </div>
     );
   }
@@ -212,13 +222,13 @@ export default function CandleBattleGame() {
           >
             <button
               onClick={() => choose("GREEN TEAM")}
-              className="min-h-[64px] rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20 active:scale-[0.98]"
+              className="f0-focus f0-press min-h-[64px] rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20"
             >
               GREEN TEAM
             </button>
             <button
               onClick={() => choose("RED TEAM")}
-              className="min-h-[64px] rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20 active:scale-[0.98]"
+              className="f0-focus f0-press min-h-[64px] rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20"
             >
               RED TEAM
             </button>
@@ -263,7 +273,7 @@ export default function CandleBattleGame() {
             </div>
             <button
               onClick={g.advance}
-              className="cta-button w-full min-h-[52px] rounded-xl text-base mt-4"
+              className="f0-focus f0-press mt-4 min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
             >
               {g.index + 1 >= g.total ? "See results" : "Next battle"}
             </button>

@@ -43,6 +43,25 @@ import { deriveRegister, celebrateRegister } from "@/lib/register";
  * never handed the kid voice), and the sound opt-in only ever appears for kids.
  * The adult voice is the default and the kid voice is the derivation — the set
  * reads competitive, not cartoonish.
+ *
+ * CANVAS V2 PASS: the masthead annotates ONE word the way every canvas headline
+ * does; every interactive element carries the shared focus ring and press
+ * feedback (.f0-focus / .f0-press) so the missions ledger answers the keyboard
+ * and the thumb identically to the rest of the app; the meter and the primary
+ * action ride `bg-accent` (--accent-solid) rather than a hardcoded gold stop, so
+ * they render family gold / club orange / FTA metallic automatically; and the
+ * loading state is a real skeleton shaped like the ledger instead of a spinner —
+ * a spinner is indistinguishable from "nothing published", which is a state this
+ * page genuinely has (§0.4).
+ *
+ * NO RINGS: Brand Detective's progress is a BAR and a numeral. A single number
+ * on a radial reads worse and the plan explicitly calls mission progress out as
+ * the place rings are tempting (§1.5).
+ *
+ * XP IS UNTOUCHED: both award paths (the deferred Brand Detective auto-complete
+ * and the self-reported completion) still insert into `mission_completions`,
+ * still guard with `hasXpForRef(..., "bonus", "mission:<id>")`, and still call
+ * `awardXp` with the mission's own `xp_reward` under that same ref.
  */
 
 interface Mission {
@@ -246,16 +265,47 @@ export default function MissionsPage() {
     0
   );
 
+  /* LOADING ≠ EMPTY (§0.4). The old spinner was indistinguishable from "no
+     missions published", which is a real state here. This is the ledger's own
+     shape — emblem slot, title, reward column — so the page never lies about
+     whether content is coming. */
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-500" />
+      <div className="mx-auto max-w-3xl space-y-8" aria-busy="true">
+        <div>
+          <div className="h-3 w-24 animate-pulse rounded bg-sand" />
+          <div className="mt-3 h-11 w-64 animate-pulse rounded bg-sand" />
+          <div className="mt-4 h-4 w-full max-w-sm animate-pulse rounded bg-sand/60" />
+        </div>
+        <div className="flex items-stretch gap-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex-1 space-y-2">
+              <div className="h-8 w-16 animate-pulse rounded bg-sand/60" />
+              <div className="h-3 w-20 animate-pulse rounded bg-sand/40" />
+            </div>
+          ))}
+        </div>
+        <div className="f0-ledger border-t border-sand/70">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="f0-ledger-row">
+              <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-sand/60" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />
+                <div className="h-3 w-3/4 animate-pulse rounded bg-sand/40" />
+              </div>
+              <div className="h-6 w-10 shrink-0 animate-pulse rounded bg-sand/50" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   const title =
     register === "kid" ? "My Missions" : register === "teen" ? "Missions" : "Family Missions";
+  const titleParts = title.split(" ");
+  const titleMark = titleParts[titleParts.length - 1];
+  const titleLead = titleParts.slice(0, -1).join(" ");
   const lede =
     register === "kid"
       ? "Little quests that turn you into an investor. Collect every emblem in the set."
@@ -278,8 +328,12 @@ export default function MissionsPage() {
           <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
             The set
           </p>
-          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
-            {title}
+          {/* The canvas annotates ONE word per headline. The marked word is the
+              last one so the register reads the same for "My Missions",
+              "Missions" and "Family Missions" without a special case. */}
+          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+            {titleLead ? `${titleLead} ` : ""}
+            <span className="f0-underline-mark">{titleMark}</span>
           </h1>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">{lede}</p>
         </div>
@@ -288,7 +342,7 @@ export default function MissionsPage() {
             onClick={toggleSound}
             aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
             title={soundOn ? "Sound on" : "Sound off"}
-            className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sand text-soft transition-colors hover:text-ink"
+            className="f0-chip f0-focus f0-press mt-1 h-10 w-10 shrink-0 justify-center text-soft hover:text-ink"
           >
             {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
@@ -423,7 +477,7 @@ export default function MissionsPage() {
                         </span>
                         <Link
                           href="/watchlist"
-                          className="font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                          className="f0-focus f0-press font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
                         >
                           Add companies →
                         </Link>
@@ -439,7 +493,7 @@ export default function MissionsPage() {
                           initial={{ width: 0 }}
                           animate={{ width: `${brandPct}%` }}
                           transition={{ duration: 0.7, ease: "easeOut" }}
-                          className="h-full rounded-full bg-gold-500"
+                          className="h-full rounded-full bg-accent"
                         />
                       </div>
                       <p className="mt-2 text-[13px] leading-relaxed text-soft">
@@ -473,13 +527,13 @@ export default function MissionsPage() {
                               onChange={(e) => setEvidence(e.target.value)}
                               rows={2}
                               placeholder="In your own words…"
-                              className="mt-2 w-full resize-none rounded-lg border border-sand bg-transparent p-3 text-[14px] text-ink placeholder:text-soft focus:border-gold-500 focus:outline-none"
+                              className="f0-focus f0-frame mt-2 w-full resize-none rounded-lg bg-transparent p-3 text-[14px] text-ink placeholder:text-soft focus:outline-none"
                             />
                             <div className="mt-3 flex items-center gap-4">
                               <button
                                 onClick={() => completeMission(m)}
                                 disabled={busy}
-                                className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                                className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-60"
                               >
                                 <Check className="h-4 w-4" />
                                 Mark complete · +{m.xp_reward} XP
@@ -489,7 +543,7 @@ export default function MissionsPage() {
                                   setOpenId(null);
                                   setEvidence("");
                                 }}
-                                className="font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
+                                className="f0-focus f0-press font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
                               >
                                 Cancel
                               </button>
@@ -502,7 +556,7 @@ export default function MissionsPage() {
                               setOpenId(m.id);
                               setEvidence("");
                             }}
-                            className="group inline-flex items-center gap-1 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                            className="f0-focus f0-press group inline-flex items-center gap-1 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
                           >
                             Start this mission
                             <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />

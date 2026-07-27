@@ -6,6 +6,15 @@ import { m, useReducedMotion } from "@/lib/motion";
  * Tug-of-war meter — the deck's core metaphor. Green team (buyers) pull left,
  * red team (sellers) pull right. The knot leans toward whoever is winning the
  * battle right now. `lean` is -1..1 (+1 = buyers fully winning).
+ *
+ * COLOUR LAW: this is the law's own exception, not a breach of it — the two
+ * teams literally ARE the direction of price, which is the one thing green and
+ * red are reserved for. The two winning LABELS therefore use the semantic price
+ * stops (text-price-up / text-price-down) rather than raw `green-400`/`red-500`,
+ * so they track the same values every price figure in the app uses and stay
+ * correct when the ramp is retuned. The zone washes stay on the raw ramp on
+ * purpose: they are a translucent field on a dark stage, not type, and the
+ * semantic stops are tuned for text contrast rather than for a 25% wash.
  */
 export default function TugOfWar({ lean }: { lean: number }) {
   const reduce = useReducedMotion();
@@ -19,10 +28,10 @@ export default function TugOfWar({ lean }: { lean: number }) {
   return (
     <div className="select-none">
       <div className="flex items-center justify-between mb-2 text-[11px] font-display font-bold tracking-wide">
-        <span className={buyersWin ? "text-green-400" : "text-night-300"}>
+        <span className={buyersWin ? "text-price-up" : "text-night-300"}>
           GREEN TEAM · BUYERS
         </span>
-        <span className={sellersWin ? "text-red-500" : "text-night-300"}>
+        <span className={sellersWin ? "text-price-down" : "text-night-300"}>
           SELLERS · RED TEAM
         </span>
       </div>

@@ -24,7 +24,28 @@ import Celebrate, {
   type Register,
 } from "@/components/fic/Celebrate";
 import { KID_FIRST_ADVENTURE } from "@/lib/register";
-import { DisplayHead, LedgerLink, SectionRule, TextAction } from "@/components/f0/parts";
+import { LedgerLink, SectionRule, TextAction } from "@/components/f0/parts";
+
+/**
+ * START HERE — the family's orientation, canvas v2.
+ *
+ * Two surfaces from one route, chosen by REGISTER: a kid gets their first
+ * adventure (they cannot open a custodial account, so the six grown-up steps are
+ * not theirs to see, and no upsell is ever shown to a young member); everyone
+ * else gets the six-step setup ledger.
+ *
+ * CANVAS V2 PASS: one annotated word in each masthead; the step actions are now
+ * the shared chip (.f0-chip) rather than a bespoke tinted button, so they answer
+ * the keyboard and the thumb like every other control in the app; the primary
+ * affordances ride `bg-accent` + text-night-950 (never white on gold, never
+ * text-ink on a fill); and the kid entry point is a hairline-ruled object rather
+ * than a bordered panel.
+ *
+ * WRITES UNTOUCHED: `markOrientationStep` still persists every attestation to
+ * the family's orientation record, and the 6/6 celebration still fires from the
+ * same completed-set transition. The optimistic set update stays ahead of the
+ * write exactly as before, so a slow network never blocks the tick.
+ */
 
 const ORIENTATION_DECK_URL = "https://fta-start.vercel.app";
 const WALKTHROUGH_URL =
@@ -49,7 +70,7 @@ function TourVideo() {
           href={WALKTHROUGH_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-display font-bold text-night-950 transition-colors hover:bg-gold-400"
+          className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
         >
           <ExternalLink className="h-4 w-4" />
           Open the tour
@@ -77,20 +98,24 @@ function TourVideo() {
 function StepMark({ done, n }: { done: boolean; n: number }) {
   if (done) {
     return (
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gold-500">
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent">
         <Check className="h-3.5 w-3.5 text-night-950" strokeWidth={3} />
       </span>
     );
   }
   return (
-    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-sand font-mono text-[11px] font-bold tabular-nums text-soft">
+    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center f0-frame rounded-full font-mono text-[11px] font-bold tabular-nums text-soft">
       {n}
     </span>
   );
 }
 
+/* The step affordance. Was a bespoke tinted button with its own border, fill and
+   hover — a fourth answer to "a small action" in an app that already has one.
+   It is now the shared chip: structure from .f0-chip, colour from the caller,
+   focus + press from the shared classes. */
 const quietAction =
-  "inline-flex items-center gap-1.5 rounded-lg border border-gold-400/40 bg-gold-400/10 px-4 py-2 text-sm font-display font-semibold text-gold-700 transition-colors hover:bg-gold-400/20";
+  "f0-chip f0-focus f0-press px-4 py-2 text-sm font-display font-semibold text-gold-700 hover:text-gold-600";
 
 export default function StartHerePage() {
   const supabase = createClient();
@@ -186,15 +211,23 @@ export default function StartHerePage() {
       <div className="mx-auto max-w-2xl pb-14">
         <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
-        <DisplayHead
-          eyebrow="Start Here"
-          title="Ready for your first adventure?"
-          lede="Your grown-ups take care of the boring account stuff. Your job is the fun part — learning how money grows, one adventure at a time."
-        />
+        <header>
+          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+            Start Here
+          </p>
+          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+            Ready for your first{" "}
+            <span className="f0-underline-mark">adventure</span>?
+          </h1>
+          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
+            Your grown-ups take care of the boring account stuff. Your job is the
+            fun part — learning how money grows, one adventure at a time.
+          </p>
+        </header>
 
         <Link
           href={KID_FIRST_ADVENTURE.href}
-          className="group mt-8 flex gap-4 border-l-[3px] border-gold-500 pl-4 sm:pl-5"
+          className="f0-focus f0-press group mt-9 flex gap-4 border-l-[3px] border-accent pl-4 sm:pl-5"
         >
           <div className="min-w-0 flex-1">
             <p className="font-display text-display-3 font-extrabold text-ink">
@@ -203,7 +236,7 @@ export default function StartHerePage() {
             <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
               {KID_FIRST_ADVENTURE.body}
             </p>
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-display font-bold text-night-950 transition-colors group-hover:bg-gold-600">
+            <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950">
               <Sparkles className="h-4 w-4" />
               {KID_FIRST_ADVENTURE.cta}
             </span>
@@ -226,11 +259,19 @@ export default function StartHerePage() {
       <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
       {/* Masthead — paints immediately (no data dependency) */}
-      <DisplayHead
-        eyebrow="Start Here"
-        title="Welcome to the Club"
-        lede="We learn first and practice with pretend money. There is no pressure to ever trade for real — this is a family classroom for building smart money habits together. Finish these six steps to get your family set up."
-      />
+      <header>
+        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          Start Here
+        </p>
+        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+          Welcome to the <span className="f0-underline-mark">Club</span>
+        </h1>
+        <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft">
+          We learn first and practice with pretend money. There is no pressure to
+          ever trade for real — this is a family classroom for building smart
+          money habits together. Finish these six steps to get your family set up.
+        </p>
+      </header>
 
       {/* The setup journey. This is the make-or-break motivator, so it leads and
           paints immediately from local state (0/6), then fills in as orientation
@@ -316,7 +357,7 @@ export default function StartHerePage() {
                         {step.kind === "attest" && (
                           <button
                             onClick={() => attest(step)}
-                            className="text-sm font-medium text-soft transition-colors hover:text-ink"
+                            className="f0-focus f0-press text-sm font-display font-bold text-soft transition-colors hover:text-ink"
                           >
                             {step.attestLabel || "Mark done"}
                           </button>
@@ -330,7 +371,7 @@ export default function StartHerePage() {
                         kept for reference, folded away and labelled "older layout". */}
                     {isWatch && openPanel === "watch" && (
                       <div className="f0-rule-top mt-5 space-y-4 pt-5">
-                        <div className="border-l-[3px] border-gold-500 pl-4">
+                        <div className="border-l-[3px] border-accent pl-4">
                           <p className="max-w-[60ch] text-sm leading-relaxed text-ink">
                             <span className="font-semibold">
                               The app has been updated.
@@ -341,7 +382,7 @@ export default function StartHerePage() {
                           </p>
                           <Link
                             href="/dashboard?tour=1"
-                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-display font-bold text-night-950 transition-colors hover:bg-gold-600"
+                            className="f0-focus f0-press mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
                           >
                             <Sparkles className="h-4 w-4" />
                             Take the new tour

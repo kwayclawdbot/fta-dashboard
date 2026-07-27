@@ -21,7 +21,6 @@ import CandleRenderer from "@/components/games/CandleRenderer";
 import Burst from "@/components/games/Burst";
 import StreakFlame from "@/components/games/StreakFlame";
 import {
-  DisplayHead,
   SectionRule,
   Ledger,
   EmptyLine,
@@ -42,9 +41,29 @@ import {
                  imagery because it IS the card's identity.
 
    COLOUR LAW: green/red = price, so "Got it" / "Again" are differentiated by
-   WEIGHT, not by hue — Got it is the solid volt action, Again is a hairline
-   outline. Volt orange also carries the meter, the dots and every CTA.
-   Behaviour (SRS scheduling, once-a-day XP, streaks) is untouched.
+   WEIGHT, not by hue — Got it is the solid accent action, Again is a hairline
+   outline. Correct/incorrect in a recall drill is NOT a price and never touches
+   the price ramp.
+
+   CANVAS V2 PASS:
+     · Fills moved from the hardcoded `bg-volt-500` to `bg-accent`
+       (--accent-solid), so the deck is warm gold in Family Mode and metallic on
+       the FTA desk without a fork — and the type on those fills is
+       `text-night-950`, never white. White on orange is ~2.5:1; the "never
+       text-ink on a white/orange/kai fill" rule cuts both ways and the fix on
+       the light side is the near-black stop, not white.
+     · Every control carries .f0-focus and .f0-press. The deck is swiped and
+       tapped more than anything else in the app; it had no focus ring at all.
+     · The masthead annotates ONE word, as every canvas headline does.
+
+   ADULT-FIRST: this is used by kids and by adults from the same deck. The
+   register does not soften for kids — only the COPY changes (`isKid`). No
+   bubble chrome, no bevels; the card is a card because of the flip and the art
+   header, not because of a toy border.
+
+   XP IS UNTOUCHED: `finishSession` still gates on `countXpToday(..., "flashcards")`
+   and still calls `awardXp(..., "flashcards", XP.FLASHCARDS, "daily-5")` exactly
+   once a day, and `reviewCard` still owns the SRS write per card.
    ══════════════════════════════════════════════════════════════════════════ */
 
 type Mode = "picker" | "session";
@@ -195,15 +214,28 @@ export default function FlashcardsPage() {
     else if (info.offset.x < -90) handleResult(false);
   }
 
+  /* LOADING ≠ EMPTY (§0.4). Shaped like the picker — masthead, the Daily 5
+     field, then the set ledger — so it never reads as "you have no sets". */
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16">
+      <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16" aria-busy="true">
         <div className="space-y-3">
           <div className="h-3 w-32 rounded bg-sand/60" />
           <div className="h-11 w-56 rounded bg-sand/60" />
+          <div className="h-4 w-full max-w-sm rounded bg-sand/40" />
         </div>
         <div className="h-44 rounded-[1.5rem] bg-sand/40" />
-        <div className="h-32 rounded bg-sand/30" />
+        <div className="f0-ledger border-t border-sand/70">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="f0-ledger-row">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-4 w-1/2 rounded bg-sand/60" />
+                <div className="h-3 w-3/4 rounded bg-sand/40" />
+              </div>
+              <div className="h-4 w-16 shrink-0 rounded bg-sand/50" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -212,9 +244,7 @@ export default function FlashcardsPage() {
   if (mode === "picker") {
     return (
       <div className="mx-auto max-w-2xl space-y-8 pb-16">
-        <DisplayHead
-          eyebrow="Recall practice"
-          title="Flashcards"
+        <FlashMast
           lede={
             isKid
               ? "Flip a card, make your guess, grow your streak. Five a day keeps it all sharp."
@@ -224,13 +254,13 @@ export default function FlashcardsPage() {
 
         {/* Daily 5 — the one dark object on this surface */}
         <section className="f0-hero-field f0-grain p-6 sm:p-7">
-          <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
+          <p className="text-eyebrow font-display font-bold uppercase text-volt-300">
             Today
           </p>
-          <h2 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05] text-[#F7F3EA]">
+          <h2 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05]">
             Daily 5
           </h2>
-          <p className="mt-2.5 max-w-[46ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
+          <p className="mt-2.5 max-w-[46ch] text-[15px] leading-relaxed opacity-75">
             {totalDue > 0
               ? `${totalDue} card${totalDue === 1 ? "" : "s"} are due across every set — five minutes closes them out.`
               : "Five cards pulled across all your sets to keep every concept sharp."}
@@ -238,7 +268,7 @@ export default function FlashcardsPage() {
           <button
             onClick={startDaily}
             disabled={starting}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+            className="f0-focus f0-press mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-60"
           >
             {starting ? "Dealing…" : "Start the Daily 5"}
             <ArrowRight className="h-4 w-4" />
@@ -265,7 +295,7 @@ export default function FlashcardsPage() {
                   key={s.slug}
                   onClick={() => startSet(s)}
                   disabled={starting}
-                  className="f0-ledger-row w-full justify-between text-left disabled:opacity-60"
+                  className="f0-ledger-row f0-focus f0-press w-full justify-between text-left disabled:opacity-60"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block font-display text-[15px] font-bold text-ink">
@@ -328,13 +358,13 @@ export default function FlashcardsPage() {
         >
           <Burst count={26} power={150} />
           <div className="relative">
-            <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
+            <p className="text-eyebrow font-display font-bold uppercase text-volt-300">
               Session complete
             </p>
-            <h2 className="mt-2 font-display text-display-2 font-extrabold text-[#F7F3EA]">
+            <h2 className="mt-2 font-display text-display-2 font-extrabold">
               {isKid ? "You did it!" : sessionLabel}
             </h2>
-            <p className="mx-auto mt-2.5 max-w-[46ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
+            <p className="mx-auto mt-2.5 max-w-[46ch] text-[15px] leading-relaxed opacity-75">
               You reviewed {cards.length} card{cards.length === 1 ? "" : "s"} and
               got {gotCount} on the first try.
             </p>
@@ -342,10 +372,10 @@ export default function FlashcardsPage() {
             {/* Measures — hairline-separated, no boxes */}
             <div className="mt-7 flex items-stretch justify-center">
               <div className="px-5">
-                <p className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]">
+                <p className="font-display text-display-3 font-extrabold tabular-nums">
                   {cards.length}
                 </p>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase opacity-55">
                   Reviewed
                 </p>
               </div>
@@ -353,7 +383,7 @@ export default function FlashcardsPage() {
                 <div className="flex justify-center">
                   <StreakFlame streak={bestStreak} size={26} showZero />
                 </div>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase opacity-55">
                   Best streak
                 </p>
               </div>
@@ -362,17 +392,17 @@ export default function FlashcardsPage() {
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
-                  className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]"
+                  className="font-display text-display-3 font-extrabold tabular-nums"
                 >
                   +{xpAwarded}
                 </motion.p>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase opacity-55">
                   {xpAwarded > 0 ? "XP earned" : "XP (already today)"}
                 </p>
               </div>
             </div>
 
-            <p className="mx-auto mt-6 max-w-[46ch] text-[13px] leading-relaxed text-[#F7F3EA]/60">
+            <p className="mx-auto mt-6 max-w-[46ch] text-[13px] leading-relaxed opacity-60">
               {dueTomorrow > 0
                 ? `${dueTomorrow} card${dueTomorrow === 1 ? "" : "s"} come back tomorrow to lock it in.`
                 : "Every card leveled up — nothing due tomorrow. Nice."}
@@ -381,14 +411,14 @@ export default function FlashcardsPage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/progress"
-                className="inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
+                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
               >
                 See progress
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <button
                 onClick={backToPicker}
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-[14px] font-bold text-[#F7F3EA]/80 transition-colors hover:text-[#F7F3EA]"
+                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] opacity-80 transition-opacity hover:opacity-100"
               >
                 <ChevronLeft className="h-4 w-4" /> Back to sets
               </button>
@@ -417,7 +447,7 @@ export default function FlashcardsPage() {
           <span
             key={i}
             className={`h-1.5 rounded-full transition-all ${
-              i < index ? "w-1.5 bg-volt-500" : i === index ? "w-6 bg-volt-500" : "w-1.5 bg-sand"
+              i < index ? "w-1.5 bg-accent" : i === index ? "w-6 bg-accent" : "w-1.5 bg-sand"
             }`}
           />
         ))}
@@ -431,7 +461,7 @@ export default function FlashcardsPage() {
           return (
             <div
               key={`peek-${peek.id}`}
-              className="absolute inset-x-0 top-0 rounded-2xl border border-sand bg-card"
+              className="f0-frame absolute inset-x-0 top-0 rounded-2xl bg-card"
               style={{
                 transform: `translateY(${depth * 12}px) scale(${1 - depth * 0.05})`,
                 zIndex: 1,
@@ -484,7 +514,7 @@ export default function FlashcardsPage() {
         {!flipped ? (
           <button
             onClick={() => setFlipped(true)}
-            className="min-h-[52px] w-full rounded-full bg-volt-500 font-display text-[15px] font-bold text-white transition-transform active:scale-[0.99]"
+            className="f0-focus f0-press min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
           >
             {isKid ? "Flip the card" : "Reveal answer"}
           </button>
@@ -493,7 +523,7 @@ export default function FlashcardsPage() {
             <button
               onClick={() => handleResult(false)}
               disabled={busy}
-              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full border border-sand font-display text-[15px] font-bold text-ink transition-colors hover:border-gold-500 disabled:opacity-50"
+              className="f0-focus f0-press flex min-h-[52px] flex-1 items-center justify-center gap-2 f0-frame rounded-full font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-ink transition-colors hover:border-accent disabled:opacity-50"
             >
               <X className="h-5 w-5" />
               {isKid ? "Try again" : "Again"}
@@ -501,7 +531,7 @@ export default function FlashcardsPage() {
             <button
               onClick={() => handleResult(true)}
               disabled={busy}
-              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-volt-500 font-display text-[15px] font-bold text-white transition-transform active:scale-[0.99] disabled:opacity-50"
+              className="f0-focus f0-press flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-50"
             >
               <Check className="h-5 w-5" />
               {isKid ? "Nailed it!" : "Got it"}
@@ -510,6 +540,24 @@ export default function FlashcardsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ---------- masthead ----------
+   The canvas annotates ONE word per headline with a drawn underline. f0's
+   DisplayHead cannot carry the mark, so the deck composes it directly — the
+   same three registers (eyebrow / display / lede), one of them marked. */
+function FlashMast({ lede }: { lede: string }) {
+  return (
+    <header>
+      <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+        Recall practice
+      </p>
+      <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+        <span className="f0-underline-mark">Flashcards</span>
+      </h1>
+      <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">{lede}</p>
+    </header>
   );
 }
 
@@ -535,7 +583,7 @@ function FlipCard({
   // unreadable type on the dark theme) and a sand hairline; the storybook art
   // header carries the set's identity instead of a coloured border.
   const faceBase =
-    "absolute inset-0 flex flex-col overflow-hidden rounded-2xl border border-sand bg-card";
+    "f0-frame absolute inset-0 flex flex-col overflow-hidden rounded-2xl bg-card";
 
   return (
     <div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }} onClick={onFlip}>
@@ -601,7 +649,7 @@ function FlipCard({
           </div>
           <div className="flex items-center justify-center px-5 pb-4">
             {card.source ? (
-              <span className="inline-flex items-center rounded-full border border-sand px-2.5 py-1 font-mono text-[11px] text-soft">
+              <span className="f0-frame inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[11px] text-soft">
                 {card.source}
               </span>
             ) : (
@@ -660,9 +708,9 @@ function SessionHeader({
     <div className="mb-6">
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
+        className="f0-focus f0-press inline-flex items-center gap-1.5 font-display text-[13px] font-bold uppercase tracking-[0.08em] text-soft transition-colors hover:text-ink"
       >
-        <ChevronLeft className="h-3.5 w-3.5" /> All sets
+        <span aria-hidden>←</span> All sets
       </button>
       <h1 className="mt-3 font-display text-display-2 font-extrabold leading-[1.05] text-ink">
         {label}

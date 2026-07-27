@@ -7,12 +7,10 @@ import {
   Play,
   Clock,
   Lock,
-  Users,
   BookOpen,
   Check,
   CalendarCheck,
   ExternalLink,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -24,7 +22,7 @@ import {
   type SessionTier,
 } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
-import Tabs from "@/components/ui/Tabs";
+import { SegmentedRail } from "@/components/canvas2";
 import RecordingPlayerModal from "@/components/live/RecordingPlayerModal";
 import {
   resolveRecordingKind,
@@ -32,23 +30,34 @@ import {
 } from "@/lib/recordings";
 
 /**
- * LIVE CLASSES — canvas rebuild (light-primary club system).
+ * LIVE CLASSES — canvas v2 (board 05 "Live · The Club Room", Club Screens 07
+ * "Live rooms" / 08 "In the room", Family F7 "Live class").
  *
- * COMPOSITION LAW: the schedule is a LEDGER, not a stack of cards. Every class
- * used to render as a bordered mini-card in a vertical list, which flattened a
- * live broadcast, a class three weeks out and a year-old recording into three
- * identical boxes. Now: one hairline-ruled ledger, grouped by class type with
- * section rules — and the ONE dark object on the surface is reserved for a class
- * that is actually ON AIR, which is the only moment on this page that deserves
- * to dominate.
+ * WHAT THE CANVAS DRAWS AND WE DO NOT: a stage with speaker tiles, a raise-hand
+ * button, a room chat rail and "2,341 in room". None of that has a write path.
+ * `live_sessions` + `session_rsvps` carry a schedule, a Zoom link and an RSVP —
+ * so the room here is the SCHEDULE, and the only controls drawn are the two that
+ * actually persist: RSVP (which also awards XP) and Join (which opens Zoom).
+ * Drawing a mic or a hand that does nothing is worse than not drawing it.
  *
- * COLOUR LAW on this surface: green/red are PRICE colours and appear nowhere
- * here. "On air" is carried by the ACCENT ramp (gold in Family Mode, volt orange
- * in Club, metallic on the FTA desk) so the live signal is mode-correct for free.
+ * WHAT WE TOOK FROM THE CANVAS: the display masthead with one annotated word,
+ * the ON-AIR field as the single dark object, the "in the room" roster as an
+ * overlapping avatar stack (.f0-stack, real RSVP'd members — never a count we
+ * do not have), the hairline-ruled schedule grouped by series, and the
+ * segmented rail for the one-of-N controls.
  *
- * Wiring is untouched: the Zoom join link, RSVP writes + XP award + the push
- * enrolment nudge, the Supabase session/RSVP reads, tier + track gating via the
- * central access matrix, and the recording player (which owns its own XP award).
+ * HOST HONESTY (migration 198): this page used to hardcode `host: "Coach"` for
+ * every class in the app. `live_sessions` now carries host_name / host_title /
+ * host_avatar_url, and a class with no host on the record renders NO host line.
+ *
+ * COLOUR LAW: green/red are PRICE and appear nowhere here. "On air" and every
+ * action ride --accent-solid (gold in Family Mode, volt orange in Club, metallic
+ * on the FTA desk), so the live signal is mode-correct for free. Orange TEXT is
+ * the gold ramp; orange FILLS carry text-night-950, never text-ink or white.
+ *
+ * WIRING UNTOUCHED: the Zoom join link, the RSVP insert/delete + XP award + the
+ * push-enrolment nudge, the Supabase session/RSVP reads, tier + track gating via
+ * the central access matrix, and the recording player (which owns its own XP).
  */
 
 // ── Types ──
@@ -59,8 +68,10 @@ interface LiveSession {
   id: string;
   title: string;
   description: string;
-  host: string;
-  hostAvatar: string;
+  /** From the record (migration 198). null = unknown → no host line is drawn. */
+  host: string | null;
+  hostTitle: string | null;
+  hostAvatarUrl: string | null;
   scheduledAt: string;
   scheduledIso: string | null;
   durationMin: number;
@@ -110,6 +121,13 @@ interface Access {
   clubLapsed: boolean;
 }
 
+/** A real RSVP'd member, for the room roster. */
+interface RosterMember {
+  id: string;
+  name: string;
+  initials: string;
+}
+
 /** Track labels only — the old per-track colour chips added four accent ramps to
  *  a surface that needs one. Track now reads as a mono label in the row meta. */
 const TRACK_LABEL: Record<Track, string> = {
@@ -118,6 +136,18 @@ const TRACK_LABEL: Record<Track, string> = {
   adults: "Parents & Adults",
   all: "Whole Family",
 };
+
+function initialsOf(name: string): string {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "M"
+  );
+}
 
 // ── Bits ──
 
@@ -141,45 +171,110 @@ function SectionRule({
   );
 }
 
-/** The date column of a ledger row — mono, tabular, two lines. */
-function WhenColumn({ session }: { session: LiveSession }) {
-  const iso = session.scheduledIso;
-  if (!iso) {
-    return (
-      <div className="w-[4.75rem] shrink-0 self-start">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-soft/70">
-          TBA
-        </p>
-      </div>
-    );
-  }
-  const d = new Date(iso);
-  const day = d
-    .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
-    .replace(",", "");
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+/**
+ * The tab rail. Real tabs over real panels, so this is tablist/tab semantics —
+ * NOT the SegmentedRail radiogroup (which is for form controls). The selected
+ * mark reuses the shared .f0-seg-bar geometry so the two rails are visually one
+ * mechanism, and the count rides the mono register beside the label rather than
+ * inside a badge pill.
+ */
+function ClassTabs({
+  value,
+  onChange,
+  counts,
+}: {
+  value: TabType;
+  onChange: (t: TabType) => void;
+  counts: Record<TabType, number>;
+}) {
+  const TABS: { id: TabType; label: string }[] = [
+    { id: "live", label: "On air" },
+    { id: "upcoming", label: "Upcoming" },
+    { id: "recordings", label: "Recordings" },
+  ];
   return (
-    <div className="w-[4.75rem] shrink-0 self-start">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink">
-        {day}
-      </p>
-      <p className="font-mono text-[10.5px] tabular-nums text-soft/80">{time}</p>
+    <div role="tablist" aria-label="Live class views" className="flex gap-7 border-b border-sand">
+      {TABS.map((t) => {
+        const on = value === t.id;
+        return (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            id={`live-tab-${t.id}`}
+            aria-selected={on}
+            aria-controls={`live-panel-${t.id}`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(t.id)}
+            className={`f0-focus relative -mb-px pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.1em] transition-colors ${
+              on ? "text-ink" : "text-soft hover:text-ink"
+            }`}
+          >
+            {t.label}
+            <span className="ml-1.5 font-mono text-[11px] font-semibold tabular-nums text-soft">
+              {counts[t.id]}
+            </span>
+            {on && <span className="f0-seg-bar bg-accent" aria-hidden />}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 /**
- * ON AIR — the one dark object on this surface. Host identity leads, the join
- * action is the single filled control on the page, and the copy stays honest:
- * joining happens in Zoom (no simulated stage), and the recording is promised
- * only because it genuinely gets posted here afterwards.
+ * The room roster — canvas board 08's "on stage" row, honest. These are the
+ * members who actually pressed RSVP; there is no attendance table, so this
+ * never claims anyone is "listening". Below three people the stack degrades to
+ * nothing rather than posing as a crowd.
+ */
+function RosterStack({ members, total }: { members: RosterMember[]; total: number }) {
+  if (members.length === 0) return null;
+  const shown = members.slice(0, 5);
+  const rest = total - shown.length;
+  return (
+    <span className="flex items-center gap-3">
+      {/* The ring must match the surface BEHIND the stack so it reads as a
+          cut-out. This stack sits on the dark hero field in both themes, so the
+          ring is pinned to that ground rather than the page's --paper. */}
+      <span className="f0-stack" style={{ ["--f0-stack-ring" as string]: "#191512" }}>
+        {shown.map((mem) => (
+          <span
+            key={mem.id}
+            title={mem.name}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 font-display text-[10px] font-extrabold"
+          >
+            {mem.initials}
+          </span>
+        ))}
+        {rest > 0 && (
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 font-mono text-[9px] font-semibold">
+            +{rest}
+          </span>
+        )}
+      </span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-60">
+        {total} RSVP&apos;d
+      </span>
+    </span>
+  );
+}
+
+/**
+ * ON AIR — the one dark object on this surface. The canvas fills this slot with
+ * a photographed stage; production has no stage capture, so the field carries
+ * the class identity, the real host, the real roster and the one control that
+ * works. Copy stays honest: joining happens in Zoom, and the recording is
+ * promised only because it genuinely gets posted here afterwards.
  */
 function OnAirField({
   session,
-  familiesGoing,
+  roster,
+  rosterTotal,
 }: {
   session: LiveSession;
-  familiesGoing: number;
+  roster: RosterMember[];
+  rosterTotal: number;
 }) {
   return (
     <m.section
@@ -190,8 +285,8 @@ function OnAirField({
     >
       <div className="flex flex-wrap items-center gap-2.5">
         <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-          <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-volt-400/60 motion-safe:animate-ping" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-volt-400" />
+          <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
         </span>
         <span className="font-mono text-eyebrow font-semibold uppercase text-volt-300">
           On air now
@@ -211,28 +306,26 @@ function OnAirField({
         </p>
       )}
 
-      {/* host identity + the honest instrument line */}
+      {/* Host identity + the honest instrument line. A class with no host on the
+          record draws no host block — never a placeholder name. */}
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <span className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 font-display text-[12px] font-extrabold">
-            {session.hostAvatar}
-          </span>
-          <span>
-            <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
-              Hosted by
+        {session.host && (
+          <span className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 font-display text-[12px] font-extrabold">
+              {initialsOf(session.host)}
             </span>
-            <span className="block text-[13.5px] font-semibold">{session.host}</span>
+            <span>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
+                {session.hostTitle || "Hosted by"}
+              </span>
+              <span className="block text-[13.5px] font-semibold">{session.host}</span>
+            </span>
           </span>
-        </span>
+        )}
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] opacity-65">
           {session.durationMin} min
         </span>
-        {familiesGoing > 0 && (
-          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] opacity-65">
-            <Users className="h-3.5 w-3.5" />
-            {familiesGoing} RSVP&apos;d
-          </span>
-        )}
+        <RosterStack members={roster} total={rosterTotal} />
       </div>
 
       <div className="mt-6">
@@ -241,7 +334,7 @@ function OnAirField({
             href={session.zoomUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-volt-500 px-6 py-3 font-display text-[14px] font-bold text-white transition hover:brightness-110"
+            className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
           >
             <Video className="h-4 w-4" />
             Join the class
@@ -296,16 +389,15 @@ function SessionRow({
           </p>
         )}
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/75">
-          <span>{session.host}</span>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
+          {session.host && <span>{session.host}</span>}
           <span className="inline-flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {session.durationMin} min
           </span>
           <span>{TRACK_LABEL[session.track]}</span>
-          {!isRecording && onRsvp && (
-            <span className="inline-flex items-center gap-1 text-gold-700">
-              <Users className="h-3 w-3" />
+          {!isRecording && onRsvp && families > 0 && (
+            <span className="text-gold-700">
               {families} famil{families === 1 ? "y" : "ies"} going
             </span>
           )}
@@ -319,7 +411,7 @@ function SessionRow({
                 href={session.worksheetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-gold-700 hover:text-gold-600"
+                className="f0-focus inline-flex items-center gap-1 text-[11.5px] font-semibold text-gold-700 hover:text-gold-600"
               >
                 <BookOpen className="h-3 w-3" />
                 Worksheet
@@ -339,7 +431,7 @@ function SessionRow({
       <div className="shrink-0 self-start pt-0.5 text-right">
         {locked ? (
           <span
-            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/70"
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft"
             title={lockReason}
           >
             <Lock className="h-3 w-3" />
@@ -352,7 +444,7 @@ function SessionRow({
                 href={session.recordingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+                className="f0-focus f0-press inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
               >
                 <Play className="h-3.5 w-3.5" />
                 Watch
@@ -360,24 +452,23 @@ function SessionRow({
             ) : (
               <button
                 onClick={onWatch}
-                className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+                className="f0-focus f0-press inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
               >
                 <Play className="h-3.5 w-3.5" />
                 Watch
               </button>
             )
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
+            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
               Recording soon
             </span>
           )
         ) : onRsvp ? (
           <button
             onClick={onRsvp}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition ${
-              going
-                ? "border-gold-500 bg-gold-400/12 text-gold-700"
-                : "border-sand text-soft hover:border-gold-400 hover:text-ink"
+            aria-pressed={going}
+            className={`f0-chip f0-focus f0-press px-3 py-1.5 text-[12.5px] font-semibold ${
+              going ? "f0-chip-on" : "text-soft hover:text-ink"
             }`}
           >
             {going ? (
@@ -393,11 +484,38 @@ function SessionRow({
             )}
           </button>
         ) : (
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
             TBA
           </span>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The date column of a ledger row — mono, tabular, two lines. */
+function WhenColumn({ session }: { session: LiveSession }) {
+  const iso = session.scheduledIso;
+  if (!iso) {
+    return (
+      <div className="w-[4.75rem] shrink-0 self-start">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-soft">
+          TBA
+        </p>
+      </div>
+    );
+  }
+  const d = new Date(iso);
+  const day = d
+    .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+    .replace(",", "");
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return (
+    <div className="w-[4.75rem] shrink-0 self-start">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink">
+        {day}
+      </p>
+      <p className="font-mono text-[10.5px] tabular-nums text-soft">{time}</p>
     </div>
   );
 }
@@ -438,27 +556,58 @@ export default function LiveSessionsPage() {
   const [rsvpInfo, setRsvpInfo] = useState<
     Record<string, { count: number; going: boolean }>
   >({});
+  /** Real RSVP'd members per session, for the room roster. */
+  const [roster, setRoster] = useState<Record<string, RosterMember[]>>({});
 
   const loadRsvps = useCallback(
     async (uid: string) => {
       const { data } = await supabase
         .from("session_rsvps")
         .select("session_id, user_id, family_id");
+      const rows =
+        (data as { session_id: string; user_id: string; family_id: string | null }[]) || [];
+
       const map: Record<string, { fams: Set<string>; going: boolean }> = {};
-      (data || []).forEach(
-        (r: { session_id: string; user_id: string; family_id: string | null }) => {
-          const e = map[r.session_id] || { fams: new Set<string>(), going: false };
-          if (r.family_id) e.fams.add(r.family_id);
-          else e.fams.add(r.user_id); // no family → count the individual
-          if (r.user_id === uid) e.going = true;
-          map[r.session_id] = e;
-        }
-      );
+      const bySession: Record<string, string[]> = {};
+      rows.forEach((r) => {
+        const e = map[r.session_id] || { fams: new Set<string>(), going: false };
+        if (r.family_id) e.fams.add(r.family_id);
+        else e.fams.add(r.user_id); // no family → count the individual
+        if (r.user_id === uid) e.going = true;
+        map[r.session_id] = e;
+        (bySession[r.session_id] ||= []).push(r.user_id);
+      });
       const out: Record<string, { count: number; going: boolean }> = {};
       Object.entries(map).forEach(([k, v]) => {
         out[k] = { count: v.fams.size, going: v.going };
       });
       setRsvpInfo(out);
+
+      // The roster is REAL people who pressed RSVP — resolved from profiles, so
+      // the stack shows names we actually have. No names → no stack.
+      const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+      if (ids.length === 0) {
+        setRoster({});
+        return;
+      }
+      const { data: people } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", ids.slice(0, 200));
+      const nameOf = new Map<string, string>();
+      ((people as { id: string; display_name: string | null }[]) || []).forEach((p) => {
+        if (p.display_name) nameOf.set(p.id, p.display_name);
+      });
+      const rosterOut: Record<string, RosterMember[]> = {};
+      Object.entries(bySession).forEach(([sid, uids]) => {
+        rosterOut[sid] = uids
+          .filter((id) => nameOf.has(id))
+          .map((id) => {
+            const name = nameOf.get(id)!;
+            return { id, name, initials: initialsOf(name) };
+          });
+      });
+      setRoster(rosterOut);
     },
     [supabase]
   );
@@ -513,12 +662,18 @@ export default function LiveSessionsPage() {
           class_type: string | null;
           worksheet_url: string | null;
           assignment: string | null;
+          host_name?: string | null;
+          host_title?: string | null;
+          host_avatar_url?: string | null;
         }) => ({
           id: s.id,
           title: s.title,
           description: s.description || "",
-          host: "Coach",
-          hostAvatar: "C",
+          // Migration 198. Null stays null — the UI omits the host line rather
+          // than substituting a plausible-looking name.
+          host: s.host_name || null,
+          hostTitle: s.host_title || null,
+          hostAvatarUrl: s.host_avatar_url || null,
           scheduledAt: formatScheduledAt(s.scheduled_at, s.status),
           scheduledIso: s.scheduled_at,
           durationMin: s.duration_min || 45,
@@ -660,17 +815,27 @@ export default function LiveSessionsPage() {
     return groups;
   };
 
-  const trackFilters: Track[] = ["all", "kids", "teens", "adults"];
   const liveLock = liveSession ? sessionLock(liveSession) : null;
 
+  /* LOADING ≠ EMPTY (§0.4). This is the schedule's skeleton — masthead bar,
+     tab rail, then ruled rows. It is deliberately shaped like the ledger it is
+     about to become, and it is never the founding state's copy. */
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-6">
+      <div className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-6" aria-busy="true">
         <div className="h-3 w-28 animate-pulse rounded bg-sand" />
-        <div className="mt-4 h-10 w-64 animate-pulse rounded bg-sand" />
-        <div className="mt-8 space-y-4">
+        <div className="mt-4 h-11 w-64 animate-pulse rounded bg-sand" />
+        <div className="mt-4 h-4 w-full max-w-md animate-pulse rounded bg-sand/60" />
+        <div className="mt-9 h-8 w-full animate-pulse rounded bg-sand/50" />
+        <div className="f0-ledger mt-6 border-t border-sand/70">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 w-full animate-pulse rounded bg-sand/60" />
+            <div key={i} className="f0-ledger-row">
+              <div className="h-8 w-[4.75rem] shrink-0 animate-pulse rounded bg-sand/60" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-4 w-2/3 animate-pulse rounded bg-sand/60" />
+                <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -685,11 +850,13 @@ export default function LiveSessionsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <p className="font-mono text-eyebrow font-semibold uppercase text-soft">
+        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
           {liveSession ? "A class is on air" : "The club's classroom"}
         </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
-          Live Classes
+        {/* The canvas annotates ONE word per headline. Never a phrase — the
+            mark stops meaning anything the moment it covers more than a word. */}
+        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+          Live <span className="f0-underline-mark">Classes</span>
         </h1>
         <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-soft">
           Coaching calls, Q&amp;A and workshops run live — then every one of them
@@ -717,7 +884,7 @@ export default function LiveSessionsPage() {
               of the 6-week live program.{" "}
               <Link
                 href="/upgrade"
-                className="font-semibold text-gold-700 transition-colors hover:text-gold-600"
+                className="f0-focus font-semibold text-gold-700 transition-colors hover:text-gold-600"
               >
                 Join the next cohort →
               </Link>
@@ -727,51 +894,51 @@ export default function LiveSessionsPage() {
       </m.header>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <Tabs
-        className="mt-8"
-        ariaLabel="Live class views"
-        active={tab}
-        onSelect={(k) => {
-          setTabTouched(true);
-          setTab(k);
-        }}
-        tabs={[
-          { key: "live" as TabType, label: "On air", count: liveSession ? 1 : 0 },
-          { key: "upcoming" as TabType, label: "Upcoming", count: upcoming.length },
-          { key: "recordings" as TabType, label: "Recordings", count: recordings.length },
-        ]}
-      />
+      <div className="mt-8">
+        <ClassTabs
+          value={tab}
+          onChange={(k) => {
+            setTabTouched(true);
+            setTab(k);
+          }}
+          counts={{
+            live: liveSession ? 1 : 0,
+            upcoming: upcoming.length,
+            recordings: recordings.length,
+          }}
+        />
+      </div>
 
-      {/* Track filter — only worth showing once a tab is crowded (>6 sessions) */}
+      {/* Track filter — only worth showing once a tab is crowded (>6 sessions).
+          A one-of-N form control, so it is the shared SegmentedRail (radiogroup),
+          which keeps the keyboard model singular across the whole app. */}
       {tab !== "live" &&
         (tab === "upcoming" ? upcoming.length : recordings.length) > 6 && (
-          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
-              Track
-            </span>
-            {trackFilters.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTrackFilter(t)}
-                className={`rounded-full px-3 py-1 text-[12px] font-semibold transition ${
-                  trackFilter === t
-                    ? "bg-gold-500 text-night-950"
-                    : "text-soft hover:text-ink"
-                }`}
-              >
-                {t === "all" ? "All" : TRACK_LABEL[t]}
-              </button>
-            ))}
+          <div className="mt-5">
+            <SegmentedRail<Track>
+              ariaLabel="Filter classes by track"
+              value={trackFilter}
+              onChange={setTrackFilter}
+              barClassName="bg-accent"
+              size="sm"
+              fill
+              options={[
+                { id: "all", label: "All" },
+                { id: "kids", label: "Kids" },
+                { id: "teens", label: "Teens" },
+                { id: "adults", label: "Adults" },
+              ]}
+            />
           </div>
         )}
 
       {/* ── On air ───────────────────────────────────────────────────────── */}
       {tab === "live" && (
-        <div className="mt-6">
+        <div className="mt-6" role="tabpanel" id="live-panel-live" aria-labelledby="live-tab-live">
           {liveSession ? (
             liveLock?.locked ? (
               <div className="f0-rule-top py-8">
-                <p className="font-mono text-eyebrow font-semibold uppercase text-soft">
+                <p className="text-eyebrow font-display font-bold uppercase text-soft">
                   This class isn&apos;t yours yet
                 </p>
                 <h2 className="mt-2.5 font-display text-display-3 font-extrabold text-ink">
@@ -782,9 +949,8 @@ export default function LiveSessionsPage() {
                 {isTierLocked(liveSession) && (
                   <Link
                     href="/upgrade"
-                    className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-gold-700 transition hover:text-gold-600"
+                    className="f0-focus f0-press mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-gold-700 transition hover:text-gold-600"
                   >
-                    <Sparkles className="h-4 w-4" />
                     Join the next cohort →
                   </Link>
                 )}
@@ -792,12 +958,15 @@ export default function LiveSessionsPage() {
             ) : (
               <OnAirField
                 session={liveSession}
-                familiesGoing={rsvpInfo[liveSession.id]?.count ?? 0}
+                roster={roster[liveSession.id] ?? []}
+                rosterTotal={rsvpInfo[liveSession.id]?.count ?? 0}
               />
             )
           ) : (
-            <div className="f0-rule-top py-10">
-              <p className="font-mono text-eyebrow font-semibold uppercase text-soft">
+            /* FOUNDING STATE (§0.5) — the real state on most days. Stated
+               absence with two ways out, never a skeleton. */
+            <div className="border-l-2 border-sand py-1 pl-4">
+              <p className="text-eyebrow font-display font-bold uppercase text-soft">
                 Nothing on air
               </p>
               <h2 className="mt-2.5 max-w-md font-display text-display-3 font-extrabold text-ink">
@@ -813,7 +982,7 @@ export default function LiveSessionsPage() {
                     setTabTouched(true);
                     setTab("upcoming");
                   }}
-                  className="text-gold-700 transition hover:text-gold-600"
+                  className="f0-focus f0-press text-gold-700 transition hover:text-gold-600"
                 >
                   See what&apos;s scheduled →
                 </button>
@@ -823,7 +992,7 @@ export default function LiveSessionsPage() {
                       setTabTouched(true);
                       setTab("recordings");
                     }}
-                    className="text-soft transition hover:text-ink"
+                    className="f0-focus f0-press text-soft transition hover:text-ink"
                   >
                     Watch a recording
                   </button>
@@ -836,13 +1005,24 @@ export default function LiveSessionsPage() {
 
       {/* ── Upcoming ─────────────────────────────────────────────────────── */}
       {tab === "upcoming" && (
-        <div className="mt-6 space-y-8">
+        <div
+          className="mt-6 space-y-8"
+          role="tabpanel"
+          id="live-panel-upcoming"
+          aria-labelledby="live-tab-upcoming"
+        >
           {filterByTrack(upcoming).length === 0 ? (
-            <p className="f0-rule-top py-8 text-[13.5px] text-soft">
-              No upcoming sessions
-              {trackFilter !== "all" ? " for this track" : ""} on the calendar
-              yet — new classes are posted as they&apos;re scheduled.
-            </p>
+            <div className="border-l-2 border-sand py-1 pl-4">
+              <p className="font-display text-display-3 font-extrabold text-ink">
+                Nothing on the calendar yet
+              </p>
+              <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-soft">
+                No upcoming sessions
+                {trackFilter !== "all" ? " for this track" : ""} are scheduled —
+                new classes are posted here as they are set, with the host and the
+                time on the record.
+              </p>
+            </div>
           ) : (
             groupSessions(filterByTrack(upcoming)).map((group) => (
               <section key={group.key}>
@@ -850,7 +1030,7 @@ export default function LiveSessionsPage() {
                   <SectionRule
                     label={group.label}
                     meta={
-                      <span className="font-mono text-[11px] tabular-nums text-soft/70">
+                      <span className="font-mono text-[11px] tabular-nums text-soft">
                         {group.items.length}
                       </span>
                     }
@@ -882,13 +1062,24 @@ export default function LiveSessionsPage() {
 
       {/* ── Recordings ───────────────────────────────────────────────────── */}
       {tab === "recordings" && (
-        <div className="mt-6 space-y-8">
+        <div
+          className="mt-6 space-y-8"
+          role="tabpanel"
+          id="live-panel-recordings"
+          aria-labelledby="live-tab-recordings"
+        >
           {filterByTrack(recordings).length === 0 ? (
-            <p className="f0-rule-top py-8 text-[13.5px] text-soft">
-              No recordings
-              {trackFilter !== "all" ? " for this track" : ""} yet — every live
-              class lands here once it&apos;s processed.
-            </p>
+            <div className="border-l-2 border-sand py-1 pl-4">
+              <p className="font-display text-display-3 font-extrabold text-ink">
+                The shelf is empty
+              </p>
+              <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-soft">
+                No recordings
+                {trackFilter !== "all" ? " for this track" : ""} yet — every live
+                class lands here once it has been processed. Nothing is hidden
+                behind this screen.
+              </p>
+            </div>
           ) : (
             groupSessions(filterByTrack(recordings)).map((group) => (
               <section key={group.key}>
@@ -896,7 +1087,7 @@ export default function LiveSessionsPage() {
                   <SectionRule
                     label={group.label}
                     meta={
-                      <span className="font-mono text-[11px] tabular-nums text-soft/70">
+                      <span className="font-mono text-[11px] tabular-nums text-soft">
                         {group.items.length}
                       </span>
                     }

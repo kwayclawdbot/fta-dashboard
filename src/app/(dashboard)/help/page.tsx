@@ -20,7 +20,7 @@ import {
   type TicketCategory,
   type TicketStatus,
 } from "@/lib/help/tickets";
-import { DisplayHead, SectionRule, TabRail, TextAction } from "@/components/f0/parts";
+import { SectionRule, TabRail, TextAction } from "@/components/f0/parts";
 
 /**
  * /help — the support surface: a Kai help bot and a real ticket queue.
@@ -32,7 +32,22 @@ import { DisplayHead, SectionRule, TabRail, TextAction } from "@/components/f0/p
  * follow the surface vars, and every prose column is capped at a real reading
  * measure (~65ch). Kai's identity colour is Kai blue by law; the send affordances
  * are the brand action ramp with night-950 type (never white on gold).
+ *
+ * CANVAS V2 PASS: one annotated word in the masthead; the shared focus ring and
+ * press feedback on every control (a support form with no visible focus state is
+ * a real accessibility failure, not a polish item); fills moved to `bg-accent`
+ * so the page is mode-correct; and both empty branches are designed FOUNDING
+ * STATES rather than one grey sentence — "no tickets yet" is the state almost
+ * every member is in, so it is the state worth designing.
+ *
+ * THE SUPPORT ADDRESS: `support@cheatcode.com` is the ONLY support email in the
+ * product. It is stated once, at the foot, as the last resort behind the bot and
+ * the ticket queue — both of which are real, so the address is a fallback and
+ * never the primary path. No other address may be introduced anywhere.
  */
+
+/** The one support address in the product. */
+const SUPPORT_EMAIL = "support@cheatcode.com";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -80,11 +95,11 @@ function timeAgo(iso: string): string {
 }
 
 const fieldCls =
-  "w-full rounded-lg border border-sand bg-card px-3 py-2 text-sm text-ink placeholder:text-soft transition-colors focus:border-gold-500 focus:outline-none";
+  "f0-focus f0-frame w-full rounded-lg bg-transparent px-3 py-2 text-sm text-ink placeholder:text-soft transition-colors focus:outline-none";
 const labelCls =
   "mb-1.5 block text-eyebrow font-display font-bold uppercase text-soft";
 const sendBtnCls =
-  "shrink-0 flex items-center justify-center rounded-lg bg-gold-500 text-night-950 transition-colors hover:bg-gold-600 disabled:opacity-40";
+  "f0-focus f0-press shrink-0 flex items-center justify-center rounded-lg bg-accent text-night-950 disabled:opacity-40";
 
 export default function HelpPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -247,11 +262,17 @@ export default function HelpPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 pb-16">
       {/* Masthead */}
-      <DisplayHead
-        eyebrow="Support"
-        title="Help & Support"
-        lede="Ask the help bot a quick question, or reach a real person on the team."
-      />
+      <header>
+        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          Support
+        </p>
+        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+          Help &amp; <span className="f0-underline-mark">Support</span>
+        </h1>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
+          Ask the help bot a quick question, or reach a real person on the team.
+        </p>
+      </header>
 
       <div className="mt-8">
         <TabRail
@@ -293,7 +314,7 @@ export default function HelpPage() {
                   className={`max-w-[52ch] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed text-ink ${
                     m.role === "user"
                       ? "rounded-tr-sm bg-sand"
-                      : "rounded-tl-sm border border-sand bg-card"
+                      : "rounded-tl-sm f0-frame bg-card"
                   }`}
                 >
                   {m.content}
@@ -305,7 +326,7 @@ export default function HelpPage() {
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-kai-blue-soft text-kai-blue">
                   <Bot className="h-4 w-4" />
                 </span>
-                <div className="rounded-2xl rounded-tl-sm border border-sand bg-card px-4 py-2.5 text-soft">
+                <div className="rounded-2xl rounded-tl-sm f0-frame bg-card px-4 py-2.5 text-soft">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
@@ -408,7 +429,7 @@ export default function HelpPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="cta-button mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm disabled:opacity-50"
+              className="f0-focus f0-press mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-50"
             >
               {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -423,13 +444,30 @@ export default function HelpPage() {
           <div className="mt-11">
             <SectionRule>Your requests</SectionRule>
             {loadingTickets ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="h-5 w-5 animate-spin text-gold-600" />
+              /* LOADING ≠ EMPTY (§0.4) — a centred spinner reads the same as
+                 "you have no requests", which is the far more common state. */
+              <div className="f0-ledger mt-1 border-t border-sand/70" aria-busy="true">
+                {[0, 1].map((i) => (
+                  <div key={i} className="f0-ledger-row">
+                    <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-sand/60" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />
+                      <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : tickets.length === 0 ? (
-              <p className="max-w-[62ch] py-6 text-sm leading-relaxed text-soft">
-                No requests yet. Send one above and we&apos;ll get back to you.
-              </p>
+              /* FOUNDING STATE (§0.5) — the state almost every member is in. */
+              <div className="mt-4 border-l-2 border-sand py-1 pl-4">
+                <p className="font-display text-display-3 font-extrabold text-ink">
+                  No requests yet
+                </p>
+                <p className="mt-1.5 max-w-[62ch] text-[15px] leading-relaxed text-soft">
+                  Send one above and we&apos;ll get back to you. Every reply lands
+                  right here in this thread, so nothing gets lost in an inbox.
+                </p>
+              </div>
             ) : (
               <div className="f0-ledger mt-1">
                 {tickets.map((t) => {
@@ -438,7 +476,8 @@ export default function HelpPage() {
                     <div key={t.id}>
                       <button
                         onClick={() => setExpanded(open ? null : t.id)}
-                        className="f0-ledger-row w-full text-left"
+                        aria-expanded={open}
+                        className="f0-ledger-row f0-focus f0-press w-full text-left"
                       >
                         {open ? (
                           <ChevronDown className="h-4 w-4 shrink-0 text-soft" />
@@ -481,7 +520,7 @@ export default function HelpPage() {
                                 className={`max-w-[52ch] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed text-ink ${
                                   m.sender === "user"
                                     ? "rounded-tr-sm bg-sand"
-                                    : "rounded-tl-sm border border-sand bg-card"
+                                    : "rounded-tl-sm f0-frame bg-card"
                                 }`}
                               >
                                 {m.body}
@@ -516,6 +555,20 @@ export default function HelpPage() {
               </div>
             )}
           </div>
+
+          {/* The last resort. Stated once, after the two real channels — the bot
+              and the ticket queue both work, so the address is a fallback. */}
+          <p className="f0-rule-top mt-11 max-w-[62ch] pt-5 text-[13px] leading-relaxed text-soft">
+            Prefer email? Write to{" "}
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="f0-focus font-semibold text-gold-700 transition-colors hover:text-gold-600"
+            >
+              {SUPPORT_EMAIL}
+            </a>{" "}
+            — it reaches the same team, but a request opened here keeps the whole
+            thread in one place.
+          </p>
         </div>
       )}
     </div>

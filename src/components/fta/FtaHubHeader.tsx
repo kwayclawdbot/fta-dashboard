@@ -1,95 +1,107 @@
 "use client";
 
 import Link from "next/link";
-import { m } from "@/lib/motion";
-import { GraduationCap, Radio, BookOpen, Film, type LucideIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { m } from "@/lib/motion";
 
 /**
- * The consistent gold-accent identity strip that tops every FTA hub page
- * (/fta/chat, /fta/courses, /fta/recordings). It anchors the member on the
- * premium "FTA — Trading Academy" side of the platform — FIC pages stay warm
- * paper with no strip — and carries a tab row across the three hub surfaces so
- * they feel like one destination. Gold gradient chrome, PRO chip, within the
- * token palette (works in both themes).
+ * THE FTA DESK — the masthead that tops /fta/chat, /fta/courses, /fta/recordings.
+ *
+ * FTA is the PREMIUM TIER and it must not read as a reskin of the Club. The
+ * canvas language is the same (display type, hairlines, eyebrows, section rules
+ * — no card containers), but the FTA desk states itself with a HARD SPLIT: a
+ * full-bleed metallic rule across the top, the eyebrow in the mono register, and
+ * the title at display-1 with one annotated word. Where a Club surface leads
+ * with warm paper, the desk leads with metal.
+ *
+ * WHAT WAS HERE BEFORE: a rounded gradient CARD with a gold-gradient icon tile,
+ * a PRO pill, and a row of pill tabs — three of the four patterns the brand
+ * register bans (generic card container, filled pill soup, chrome badge). The
+ * hierarchy now comes from the rule, the type scale and the metal, so the strip
+ * carries more weight while drawing less furniture.
+ *
+ * METAL, NOT ORANGE: DashboardShell stamps data-mode="fta" on every /fta route,
+ * and globals.css re-points --accent-* to the metal sheen for that mode — so
+ * `bg-accent` and `.f0-seg-bar` are metallic here for free. Where a stop must be
+ * metallic REGARDLESS of the surrounding register, use the dedicated `ftagold-*`
+ * ramp (--fg*), which is mode-invariant and already lifts in dark.
+ *
+ * TABS: three real destinations, so these are LINKS with aria-current, not a
+ * radiogroup. They reuse the shared `.f0-seg-bar` geometry (a 3px bar on a
+ * hairline rail) so the FTA rail and every other rail in the app are visibly
+ * one mechanism.
  */
 
-const TABS: { label: string; href: string; icon: LucideIcon }[] = [
-  { label: "Traders Chat", href: "/fta/chat", icon: Radio },
-  { label: "Course Library", href: "/fta/courses", icon: BookOpen },
-  { label: "Recordings", href: "/fta/recordings", icon: Film },
+const TABS: { label: string; href: string }[] = [
+  { label: "Traders Chat", href: "/fta/chat" },
+  { label: "Course Library", href: "/fta/courses" },
+  { label: "Recordings", href: "/fta/recordings" },
 ];
 
 export default function FtaHubHeader({
   title,
+  /** The ONE word that carries the drawn annotation. */
+  mark,
   subtitle,
-  tone = "paper",
+  aside,
 }: {
   title: string;
+  mark?: string;
   subtitle?: string;
-  /** "dark" tucks the strip onto the FTA chat's night surface. */
-  tone?: "paper" | "dark";
+  aside?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const dark = tone === "dark";
 
   return (
-    <m.div
+    <m.header
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative overflow-hidden rounded-2xl border ${
-        dark
-          ? "border-ftagold-400/30 bg-gradient-to-br from-night-900 via-night-900 to-night-950"
-          : "border-ftagold-400/40 bg-gradient-to-br from-ftagold-400/[0.14] via-ftagold-400/[0.05] to-transparent"
-      }`}
+      transition={{ duration: 0.4 }}
     >
-      <div className="p-4 lg:p-5">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] font-display font-bold uppercase tracking-[0.14em] text-ftagold-600">
-                FTA — Trading Academy
-              </p>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white">
-                PRO
-              </span>
-            </div>
-            <h1 className={`font-display text-xl font-bold leading-snug ${dark ? "text-night-50" : "text-ink"}`}>
-              {title}
-            </h1>
-            {subtitle && (
-              <p className={`text-sm mt-0.5 ${dark ? "text-night-300" : "text-soft"}`}>{subtitle}</p>
-            )}
-          </div>
-        </div>
+      {/* The hard split. A 3px metallic rule is the desk's signature — it is the
+          one piece of chrome on the surface and it is a RULE, not a box. */}
+      <div className="metal-gold h-[3px] w-full rounded-full" aria-hidden />
 
-        {/* Hub tab row — the three FTA surfaces, one tap apart. */}
-        <div className="flex items-center gap-1.5 mt-4 -mb-0.5 overflow-x-auto">
-          {TABS.map((t) => {
-            const active = pathname === t.href || pathname.startsWith(t.href + "/");
-            const Icon = t.icon;
-            return (
-              <Link
-                key={t.href}
-                href={t.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-semibold whitespace-nowrap transition-colors border ${
-                  active
-                    ? "bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white border-transparent shadow-soft"
-                    : dark
-                      ? "bg-night-950/60 text-night-200 border-night-700 hover:text-ftagold-400 hover:border-ftagold-400/40"
-                      : "bg-paper/70 text-soft border-sand hover:text-ftagold-700 hover:border-ftagold-300"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label}
-              </Link>
-            );
-          })}
+      <div className="mt-5 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-mono text-eyebrow font-semibold uppercase tracking-[0.18em] text-ftagold-700">
+            FTA · Family Trading Academy
+          </p>
+          <h1 className="mt-2.5 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+            {title}
+            {mark && (
+              <>
+                {" "}
+                <span className="f0-underline-mark">{mark}</span>
+              </>
+            )}
+          </h1>
+          {subtitle && (
+            <p className="mt-3 max-w-md text-[14px] leading-relaxed text-soft">{subtitle}</p>
+          )}
         </div>
+        {aside && <div className="shrink-0 pt-1">{aside}</div>}
       </div>
-    </m.div>
+
+      {/* The desk's three rooms. */}
+      <nav aria-label="FTA desk" className="mt-7 flex gap-7 border-b border-sand">
+        {TABS.map((t) => {
+          const active = pathname === t.href || pathname.startsWith(t.href + "/");
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              aria-current={active ? "page" : undefined}
+              className={`f0-focus relative -mb-px shrink-0 whitespace-nowrap pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.1em] transition-colors ${
+                active ? "text-ink" : "text-soft hover:text-ink"
+              }`}
+            >
+              {t.label}
+              {active && <span className="f0-seg-bar metal-gold" aria-hidden />}
+            </Link>
+          );
+        })}
+      </nav>
+    </m.header>
   );
 }

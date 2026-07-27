@@ -26,6 +26,16 @@ import Burst from "./Burst";
  * the gold ramp, which flips at :root[data-theme="dark"]. The previous version
  * of this file painted `bg-card`/`paper-card` boxes and a hardcoded green XP
  * figure; both are gone.
+ *
+ * CANVAS V2 PASS: the round meter and the "Play again" affordance ride
+ * `bg-accent` (--accent-solid) rather than a hardcoded gold stop, so a game
+ * inside the FTA desk is metallic and a game in Family Mode is warm gold with no
+ * fork; `.f0-focus` / `.f0-press` land on every control; and the end screen's
+ * headline annotates one word the way every canvas headline does.
+ *
+ * ADULT-FIRST: this is the kid-facing corner of the app and the register is
+ * deliberately the SAME as the adult surfaces — display type, hairlines, a mono
+ * scoreboard. The reward for winning is a burst and a number, not a bevel.
  */
 
 /** Top bar shared by both games: title, score, streak, sound, progress. */
@@ -84,7 +94,7 @@ export function GameTopBar({
           <button
             onClick={onToggleSound}
             aria-label={muted ? "Unmute sounds" : "Mute sounds"}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sand text-soft transition-colors hover:text-ink"
+            className="f0-chip f0-focus f0-press h-10 w-10 shrink-0 justify-center text-soft hover:text-ink"
           >
             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
@@ -102,7 +112,7 @@ export function GameTopBar({
             <span
               key={i}
               className={`h-1 flex-1 rounded-full transition-colors ${
-                i < index ? "bg-gold-500" : i === index ? "bg-gold-400" : "bg-sand"
+                i < index ? "bg-accent" : i === index ? "bg-accent opacity-55" : "bg-sand"
               }`}
             />
           ))}
@@ -147,8 +157,16 @@ export function GameEndScreen({
         <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
           Session complete
         </p>
-        <h2 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
-          {passed ? "Clean read" : "Good reps"}
+        <h2 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
+          {passed ? (
+            <>
+              Clean <span className="f0-underline-mark">read</span>
+            </>
+          ) : (
+            <>
+              Good <span className="f0-underline-mark">reps</span>
+            </>
+          )}
         </h2>
         <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
           {passed
@@ -197,13 +215,13 @@ export function GameEndScreen({
         <div className="f0-rule-top mt-6 flex items-center gap-4 pt-6">
           <Link
             href={backHref}
-            className="cta-button inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+            className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
           >
             {backLabel} <ArrowRight className="h-4 w-4" />
           </Link>
           <button
             onClick={onReplay}
-            className="inline-flex items-center gap-2 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+            className="f0-focus f0-press inline-flex items-center gap-2 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
           >
             <RefreshCw className="h-4 w-4" /> Play again
           </button>
