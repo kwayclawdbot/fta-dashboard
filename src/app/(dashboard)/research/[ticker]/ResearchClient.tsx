@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { m } from "@/lib/motion";
 import {
-  ArrowLeft,
   Send,
   MessageCircle,
   ShieldCheck,
@@ -29,10 +28,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote, fetchNews, fetchBars, type MarketQuote, type MarketBar, type NewsHeadline } from "@/lib/market/client";
-import { formatExchange } from "@/lib/market/exchange";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import LivePrice from "@/components/fic/LivePrice";
+import CanvasResearchTop from "./CanvasResearchTop";
 import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
@@ -175,25 +173,6 @@ function Avatar({ name, url, size = 28 }: { name?: string | null; url?: string |
 }
 
 /** 52-week range position marker (WSZ hero device). */
-function RangeBar({ low, high, price }: { low: number | null; high: number | null; price: number | null }) {
-  if (low == null || high == null || price == null || high <= low) return null;
-  const pos = Math.max(0, Math.min(1, (price - low) / (high - low)));
-  return (
-    <div className="mt-3">
-      <div className="relative h-1.5 rounded-full bg-sand">
-        <div
-          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-gold-500 shadow-soft"
-          style={{ left: `calc(${(pos * 100).toFixed(1)}% - 6px)` }}
-        />
-      </div>
-      <div className="mt-1 flex justify-between text-[10px] font-medium text-soft">
-        <span>52w low ${low.toFixed(2)}</span>
-        <span>52w high ${high.toFixed(2)}</span>
-      </div>
-    </div>
-  );
-}
-
 /** Key-level prefills for the research-page "Set alert" — the 52-week extremes
  *  the aggregate computed. Above the high / below the low are the levels members
  *  most often want a heads-up on. */
@@ -459,65 +438,29 @@ export default function ResearchClient({
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
-      <Link
-        href={back.href}
-        className="inline-flex items-center gap-1.5 pt-4 text-sm font-medium text-soft hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" /> {back.label}
-      </Link>
+      {/* ── Canvas research top (board 04) — header · identity · big price ·
+          delta · range tabs · chart · what-the-club-thinks donut · key metrics
+          · Ask Kai band. Pixel-faithful to the "Ticker research" artboard. */}
+      <CanvasResearchTop
+        ticker={ticker}
+        companyName={companyName}
+        quote={quote}
+        research={research}
+        supabase={supabase}
+        backHref={back.href}
+        onAskKai={() =>
+          openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })
+        }
+      />
 
-      {/* ── Masthead — the page's signature object ───────────────────────────
-          Company identity, the VERDICT GAUGE lifted out of its old card to be
-          the hero, then the social band. ONE surface, no card-in-card. */}
+      {/* ── Verdict + community aggregation — the scorecard, kept below the
+          canvas research top. */}
       <m.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-4 mb-5 overflow-hidden rounded-2xl border border-sand bg-midnight-900 shadow-soft"
+        className="mt-6 mb-5 overflow-hidden rounded-2xl border border-sand bg-midnight-900 shadow-soft"
       >
-        {/* Identity band */}
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <CompanyLogo symbol={ticker} name={companyName} size={52} />
-              <div className="min-w-0">
-                {/* Long company names wrap to 2 lines (and scale down on mobile)
-                    instead of truncating to "Apple In…"; the ticker below always
-                    stays visible on its own line. */}
-                <h1 className="font-display text-xl font-bold leading-tight text-ink line-clamp-2 sm:text-2xl sm:leading-snug">
-                  {companyName}
-                </h1>
-                <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-midnight-500">{ticker}</span>
-                  {research?.company.exchange && (
-                    <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold tracking-wider text-soft">
-                      {formatExchange(research.company.exchange)}
-                    </span>
-                  )}
-                  <LivePrice quote={quote} size="md" showDelayed />
-                </div>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col gap-1.5">
-              <Link
-                href={`/chart?symbol=${encodeURIComponent(ticker)}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
-              >
-                <LineChart className="h-3.5 w-3.5" /> Chart
-              </Link>
-            </div>
-          </div>
-
-          {keyStats && (
-            <RangeBar
-              low={keyStats.week52Low}
-              high={keyStats.week52High}
-              price={quote?.price ?? keyStats.week52High}
-            />
-          )}
-        </div>
-
-        {/* Verdict — the hero. Gauge + rings sit directly under the ticker
-            header (not in a separate card). Three honest states. */}
+        {/* Verdict — the scorecard gauge + rings. Three honest states. */}
         <div className="border-t border-sand px-5 py-6">
           {research ? (
             ungraded ? (
@@ -596,16 +539,8 @@ export default function ResearchClient({
         {/* What the Club thinks → Best research (un-buried from the old tab) */}
         {(
           <div className="space-y-6">
-            {/* What the Club thinks — the bull/neutral/bear split of members who've
-                taken a stance, as a donut. Same RPC as the header agg bar; floors
-                at 4 positioned so a cold ticker shows nothing. */}
-            <ClubThinksDonut
-              supabase={supabase}
-              ticker={ticker}
-              onAskKai={() =>
-                openKai({ chip: ticker, query: `What's the club's read on ${ticker} right now?` })
-              }
-            />
+            {/* What the Club thinks now lives in the canvas research top (board
+                04) above — deduped here to keep one sentiment donut per page. */}
 
             {/* SOCIAL OBJECTS S1 — per-ticker debate (kid-walled in the RPC → renders
                 nothing for kids or tickers without a debate). */}
@@ -1185,110 +1120,3 @@ function CommunityAggBar({ supabase, ticker }: { supabase: SupabaseClient; ticke
 // "What the club thinks" — the bull/neutral/bear split as a donut, from the same
 // get_ticker_community_stats RPC. Floors at 4 positioned members so a cold ticker
 // renders nothing (never sad zeros). Ends in an Ask-Kai handoff into the S1 sheet.
-function ClubThinksDonut({
-  supabase,
-  ticker,
-  onAskKai,
-}: {
-  supabase: SupabaseClient;
-  ticker: string;
-  onAskKai: () => void;
-}) {
-  const [stats, setStats] = useState<CommunityStats | null>(null);
-  useEffect(() => {
-    let on = true;
-    supabase
-      .rpc("get_ticker_community_stats", { p_ticker: ticker })
-      .then(({ data }) => {
-        if (!on) return;
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row) setStats(row as CommunityStats);
-      });
-    return () => {
-      on = false;
-    };
-  }, [supabase, ticker]);
-
-  if (!stats || stats.positioned < 4) return null;
-
-  const total = stats.positioned;
-  const bull = Math.round((stats.bull / total) * 100);
-  const neutral = Math.round((stats.neutral / total) * 100);
-  const bear = Math.max(0, 100 - bull - neutral);
-
-  // Donut geometry — a single circle, three arcs via stroke-dasharray offsets.
-  const R = 42;
-  const C = 2 * Math.PI * R;
-  const segs = [
-    { pct: bull, color: "#15803d", label: "Bullish" },
-    { pct: neutral, color: "#d99a2b", label: "Neutral" },
-    { pct: bear, color: "#dc2626", label: "Bearish" },
-  ];
-  let offset = 0;
-
-  return (
-    <div className="rounded-2xl border border-sand bg-white/60 p-5">
-      <h3 className="font-display text-lg font-bold tracking-tight text-ink">
-        What the club thinks
-      </h3>
-      <p className="mt-0.5 text-xs text-soft">
-        <span className="font-semibold text-ink">{total}</span> member
-        {total === 1 ? "" : "s"} analyzing {ticker}
-      </p>
-
-      <div className="mt-4 flex items-center gap-5">
-        <div className="relative h-28 w-28 shrink-0">
-          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-            <circle cx="50" cy="50" r={R} fill="none" stroke="#eadfce" strokeWidth="12" />
-            {segs.map((s, i) => {
-              const len = (s.pct / 100) * C;
-              const dash = `${len} ${C - len}`;
-              const el = (
-                <circle
-                  key={i}
-                  cx="50"
-                  cy="50"
-                  r={R}
-                  fill="none"
-                  stroke={s.color}
-                  strokeWidth="12"
-                  strokeDasharray={dash}
-                  strokeDashoffset={-offset}
-                />
-              );
-              offset += len;
-              return el;
-            })}
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-mono text-xl font-bold leading-none text-ink">{bull}%</span>
-            <span className="text-[10px] uppercase tracking-wide text-soft">bullish</span>
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-1.5">
-          {segs.map((s) => (
-            <div key={s.label} className="flex items-center gap-2 text-sm">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: s.color }}
-              />
-              <span className="font-mono font-semibold text-ink tabular-nums">{s.pct}%</span>
-              <span className="text-soft">{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <button
-        onClick={onAskKai}
-        className="mt-4 flex w-full items-center justify-between rounded-xl border border-sky-300/70 bg-chip-sky px-4 py-2.5 text-left transition-colors hover:bg-sky-100"
-      >
-        <span className="flex items-center gap-2 text-sm font-semibold text-sky-800">
-          <Sparkles className="h-4 w-4" /> Ask Kai
-        </span>
-        <span className="text-xs text-sky-700">Get deeper insight on {ticker} →</span>
-      </button>
-    </div>
-  );
-}
