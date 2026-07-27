@@ -1197,7 +1197,11 @@ body {
       padding-top, which reads backwards.
    2. `.f0-ledger-row:hover` set `padding-inline` directly. Because
       globals.css has no @layer, that unlayered rule (0,2,0) beats ANY
-      Tailwind pl-*/px-* utility, so a ledger row could never carry an
+      Tailwind pl-* or px-* utility, so a ledger row could never carry an
+      (NB: never write that pair with a slash between them. Star-then-slash is
+      the comment terminator, so the comment closes mid-sentence and every rule
+      below it stops parsing. It shipped that way in 652f731 and was caught
+      here — see the CANVAS V2 block at the foot of this file.)
       indent or a left rule without nesting an inner div. Routing it
       through a custom property lets a component override the resting
       padding while keeping the hover inset behaviour. */
@@ -1227,4 +1231,251 @@ body {
 }
 :root[data-theme="dark"] .kai-gradient {
   background: linear-gradient(135deg, var(--color-kai-400) 0%, var(--color-kai-600) 100%);
+}
+
+/* ================================================================== */
+/* CANVAS V2 — L0 SHARED CHROME                                        */
+/* ================================================================== */
+/* The canvas vocabulary that is CHROME rather than composition, and
+   that no single primitive owns: the selection chip, the marker
+   annotations, the avatar stack, the press feedback, and the one
+   semantic colour the law names but never tokenised (community
+   sentiment). Six surface lanes build on top of this and none of them
+   may edit globals.css, so anything a lane would otherwise hand-roll
+   per-component lives here. The classes backing the four L0 components
+   are further down under "CANVAS V2 — FOUNDATION (lane L0)".
+
+   COLOUR LAW (unchanged): green/red = PRICE only · LIME = COMMUNITY
+   SENTIMENT only · orange = BRAND + ACTION · kai blue = Kai/AI only.
+   Purple is not in the system. */
+
+/* --- Community sentiment, canonical --------------------------------- */
+/* The law names lime as the sentiment colour but never gave it a token,
+   so surfaces wrote `text-lime-700 dark:text-lime-400` by hand (F0's
+   MeasureStrip did exactly that) — the same per-lane divergence the
+   price tokens were created to end. Same remedy, same shape: one hue,
+   two ramp steps, and NEVER a dark: variant at the call site.
+     text-sentiment  → sentiment type + glyphs
+     bg-sentiment-fill → tally bars / dots (needs mass, not contrast)
+     bg-sentiment-soft → the resting tint behind a sentiment chip
+   NOTE the pairing rule: --sentiment is tuned for the PAGE (dark ink on
+   cream, bright lime on obsidian). It is NOT legible on an inverted
+   field — anything sitting on .f0-chip-on inherits that chip's own
+   foreground instead. */
+@theme inline {
+  --color-sentiment: var(--sentiment);
+  --color-sentiment-fill: var(--sentiment-fill);
+}
+:root { --sentiment: #4D7C0F; --sentiment-fill: #65A30D; }
+:root[data-theme="dark"] { --sentiment: #A3E635; --sentiment-fill: #84CC16; }
+.bg-sentiment-soft { background-color: color-mix(in srgb, var(--sentiment-fill) 14%, transparent); }
+:root[data-theme="dark"] .bg-sentiment-soft {
+  background-color: color-mix(in srgb, var(--sentiment-fill) 18%, transparent);
+}
+
+/* --- Selection chip ------------------------------------------------- */
+/* The canvas's stance / post-type / filter control: hairline chips where
+   the CHOSEN one becomes a solid field. Deliberately not a segmented
+   pill widget — the chips sit directly on the paper.
+
+   .f0-chip carries structure ONLY (no color, no background), because
+   globals.css has no @layer and any colour declared here would beat the
+   caller's Tailwind utilities. Callers style resting state with
+   text-soft / hover:text-ink as normal.
+
+   .f0-chip-on DOES set colour and DOES win over utilities — that is the
+   point: it is the selected state and must not be half-overridden. It
+   inverts in dark for the same reason club2-card does, except selection
+   has to SHOUT, so it takes the full cream flip rather than a lift. */
+.f0-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--f0-chip-line, var(--sand));
+  background: transparent;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+:root[data-theme="dark"] .f0-chip {
+  border-color: var(--f0-chip-line, color-mix(in srgb, var(--sand) 100%, #FFFFFF 6%));
+}
+@media (hover: hover) and (pointer: fine) {
+  .f0-chip:not(.f0-chip-on):hover {
+    border-color: color-mix(in srgb, var(--accent-solid) 45%, var(--sand));
+  }
+}
+.f0-chip-on {
+  background: #14110F;
+  color: #F7F3EA;
+  border-color: transparent;
+}
+:root[data-theme="dark"] .f0-chip-on,
+:root[data-theme="dark"] [data-mode] .f0-chip-on {
+  background: #F2EFE7;
+  color: #14110F;
+  border-color: transparent;
+}
+
+/* --- Press feedback -------------------------------------------------- */
+/* Every canvas control acknowledges the tap. One class so six lanes do
+   not each invent an active: transform. */
+.f0-press { transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1); }
+.f0-press:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .f0-press, .f0-press:active { transform: none; transition: none; }
+}
+
+/* --- Marker annotations ---------------------------------------------- */
+/* The canvas emphasises ONE word per headline with a drawn underline or
+   a lassoed ellipse ("Where the Club [updated] its thinking", "What's
+   [your call] on NVDA?"). Both are mode-correct through --accent-solid,
+   so they are gold in Family, orange in Club, metallic on the FTA desk.
+   Wrap a <span> around the word — never the whole headline. */
+.f0-underline-mark { position: relative; display: inline-block; }
+.f0-underline-mark::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.1em;
+  height: 0.14em;
+  border-radius: 2px;
+  background: var(--accent-solid);
+}
+.f0-circle-mark { position: relative; display: inline-block; }
+.f0-circle-mark::before {
+  content: "";
+  position: absolute;
+  inset: -0.16em -0.34em -0.1em;
+  border: 2.5px solid var(--accent-solid);
+  border-radius: 50%;
+  transform: rotate(-2deg);
+  pointer-events: none;
+}
+
+/* --- Avatar stack ---------------------------------------------------- */
+/* Overlapping member avatars (who is listening, who voted, who
+   responded). The ring must match the surface BEHIND the stack, so it
+   reads as a cut-out rather than a white outline — override
+   --f0-stack-ring when the stack sits on a card or a dark field. */
+.f0-stack { display: inline-flex; align-items: center; }
+.f0-stack > * {
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--f0-stack-ring, var(--paper));
+}
+.f0-stack > * + * { margin-left: -0.4rem; }
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/* CANVAS V2 — FOUNDATION (lane L0)                                       */
+/* ══════════════════════════════════════════════════════════════════════ */
+/* Everything below backs a primitive in src/components/canvas2/. Nothing
+   here introduces a semantic colour on its own: the tile field is an
+   achromatic GROUND, the focus ring rides --accent-solid so it is
+   mode-correct (family gold / club orange / FTA metallic) for free, and
+   price + sentiment colour stays in the components where the law can be
+   read next to the markup. */
+
+/* --- Ticker tile field ---------------------------------------------- */
+/* The canvas (Club Screens 01, App 01) draws a ticker as a black rounded
+   square carrying a letter mark, with the delta OUTSIDE it. This class is
+   only the square. Two defects it exists to prevent:
+
+   1. FOREGROUND. The tile is dark in BOTH themes, so nothing inside it may
+      use --ink: ink INVERTS to near-white at night, so a mark written as
+      `text-ink` renders black-on-black in dark. This is the documented
+      "never text-ink on a fill" gotcha in a new place, so the class owns a
+      CONSTANT cream foreground and consumers inherit it rather than
+      choosing. Anything placed inside should stay on currentColor.
+
+   2. GROUND. Flat obsidian (#14110F as drawn) is the strongest value
+      contrast available on the cream page — and on the #17120B dark page
+      it is the SAME value as its ground, so the square dissolves into the
+      surface it is meant to sit on. club2-card and f0-hero-field both hit
+      this exact defect. Same remedy, third time: dark flips the tile from
+      a well sunk INTO the page to a warm surface lifted ABOVE it, and adds
+      an inset edge so the silhouette survives even where the fill and the
+      page land close together.
+
+   The canvas also paints some tiles in per-brand saturated colour (a red
+   Tesla tile, a green mark). Deliberately not adopted — a red or green
+   field on an object that also reports a price delta collides head-on with
+   `green/red = PRICE only`, and a red tile above a green delta is exactly
+   the unreadable pairing the colour law was written after. The field stays
+   achromatic; identity is carried by the mark. */
+.f0-tile-field {
+  color: #F7F3EA;
+  background: linear-gradient(157deg, #1C1F26 0%, #131519 58%, #0E1013 100%);
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, #0F1115 66%, transparent);
+}
+:root[data-theme="dark"] .f0-tile-field,
+:root[data-theme="dark"] [data-mode] .f0-tile-field {
+  background: linear-gradient(157deg, #322A1D 0%, #282117 60%, #221B12 100%);
+  box-shadow:
+    0 8px 18px -12px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px color-mix(in srgb, #FFFFFF 10%, transparent);
+}
+
+/* --- Placeholder tile ------------------------------------------------ */
+/* LOADING ≠ EMPTY, at primitive scale. A tile with no ticker yet must not
+   borrow the filled field — a dark square reads as a real, tappable object
+   and a strip of them reads as content the club does not have. The empty
+   tile is a dashed hairline outline instead: obviously a slot, obviously
+   not a holding. (Loading is a separate state and DOES use the filled
+   field, pulsing — because a skeleton is a promise that content is coming,
+   which is the opposite claim.) */
+.f0-tile-empty {
+  border: 1px dashed color-mix(in srgb, var(--sand) 100%, var(--ink) 8%);
+  background: transparent;
+}
+
+/* --- Shared focus ring ----------------------------------------------- */
+/* The app had no shared focus style, so the two places that bothered
+   diverged (`ring-gold-400` on the research tabs, a `bg-volt-500/12` wash
+   on the screener) and every new control re-decided. Worse, both are club
+   colours hardcoded into neutral components — the same mode-correctness
+   defect the f0 primitives were repointed to fix. This rides
+   --accent-solid, so it is family gold / club orange / FTA metallic for
+   free, and it uses `outline` rather than `box-shadow` so it survives on
+   the tile field where a shadow would be swallowed by the fill.
+
+   `outline-offset` is what makes it legible on BOTH grounds: the ring sits
+   in the page colour rather than on the object, so it never has to beat
+   the object's own fill for contrast.
+
+   IT MUST GO ON THE FOCUSABLE ELEMENT. Declaring it on a presentational
+   child (the tile field inside a link, say) silently does nothing —
+   :focus-visible never matches a non-focusable node — and the browser's own
+   blue outline draws instead, which on a dark field is the only blue on the
+   screen. Caught exactly that way on TickerTile. */
+.f0-focus:focus-visible {
+  outline: 2px solid var(--accent-solid);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* --- Segmented control indicator ------------------------------------- */
+/* Both canvas selectors (stance, post type) are "pick one of N". The
+   canvas draws them as filled pills — pill soup, and in the stance case a
+   GREEN filled pill, which puts the price ramp on a community control.
+   The system's existing answer to "one of N" is already the underline
+   (`f0-section-rule`, `TabRail`), so these reuse it: the rail is a
+   hairline, the choice is marked by weight plus a 3px bar.
+
+   The bar colour is the CALLER's, not this class's — post type is an
+   authoring action (orange) and stance is community sentiment (lime), and
+   those must not be allowed to drift into one shared "selected" colour.
+   The class supplies geometry and the motion only. */
+.f0-seg-bar {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;              /* sits ON the rail hairline, not above it */
+  height: 3px;
+  border-radius: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .f0-seg-bar { animation: f0-seg-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+}
+@keyframes f0-seg-in {
+  from { transform: scaleX(0.35); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
 }
