@@ -596,6 +596,17 @@ export default function ResearchClient({
         {/* What the Club thinks → Best research (un-buried from the old tab) */}
         {(
           <div className="space-y-6">
+            {/* What the Club thinks — the bull/neutral/bear split of members who've
+                taken a stance, as a donut. Same RPC as the header agg bar; floors
+                at 4 positioned so a cold ticker shows nothing. */}
+            <ClubThinksDonut
+              supabase={supabase}
+              ticker={ticker}
+              onAskKai={() =>
+                openKai({ chip: ticker, query: `What's the club's read on ${ticker} right now?` })
+              }
+            />
+
             {/* SOCIAL OBJECTS S1 — per-ticker debate (kid-walled in the RPC → renders
                 nothing for kids or tickers without a debate). */}
             <TickerDebate
@@ -1167,6 +1178,117 @@ function CommunityAggBar({ supabase, ticker }: { supabase: SupabaseClient; ticke
           </span>
         );
       })}
+    </div>
+  );
+}
+
+// "What the club thinks" — the bull/neutral/bear split as a donut, from the same
+// get_ticker_community_stats RPC. Floors at 4 positioned members so a cold ticker
+// renders nothing (never sad zeros). Ends in an Ask-Kai handoff into the S1 sheet.
+function ClubThinksDonut({
+  supabase,
+  ticker,
+  onAskKai,
+}: {
+  supabase: SupabaseClient;
+  ticker: string;
+  onAskKai: () => void;
+}) {
+  const [stats, setStats] = useState<CommunityStats | null>(null);
+  useEffect(() => {
+    let on = true;
+    supabase
+      .rpc("get_ticker_community_stats", { p_ticker: ticker })
+      .then(({ data }) => {
+        if (!on) return;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) setStats(row as CommunityStats);
+      });
+    return () => {
+      on = false;
+    };
+  }, [supabase, ticker]);
+
+  if (!stats || stats.positioned < 4) return null;
+
+  const total = stats.positioned;
+  const bull = Math.round((stats.bull / total) * 100);
+  const neutral = Math.round((stats.neutral / total) * 100);
+  const bear = Math.max(0, 100 - bull - neutral);
+
+  // Donut geometry — a single circle, three arcs via stroke-dasharray offsets.
+  const R = 42;
+  const C = 2 * Math.PI * R;
+  const segs = [
+    { pct: bull, color: "#15803d", label: "Bullish" },
+    { pct: neutral, color: "#d99a2b", label: "Neutral" },
+    { pct: bear, color: "#dc2626", label: "Bearish" },
+  ];
+  let offset = 0;
+
+  return (
+    <div className="rounded-2xl border border-sand bg-white/60 p-5">
+      <h3 className="font-display text-lg font-bold tracking-tight text-ink">
+        What the club thinks
+      </h3>
+      <p className="mt-0.5 text-xs text-soft">
+        <span className="font-semibold text-ink">{total}</span> member
+        {total === 1 ? "" : "s"} analyzing {ticker}
+      </p>
+
+      <div className="mt-4 flex items-center gap-5">
+        <div className="relative h-28 w-28 shrink-0">
+          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
+            <circle cx="50" cy="50" r={R} fill="none" stroke="#eadfce" strokeWidth="12" />
+            {segs.map((s, i) => {
+              const len = (s.pct / 100) * C;
+              const dash = `${len} ${C - len}`;
+              const el = (
+                <circle
+                  key={i}
+                  cx="50"
+                  cy="50"
+                  r={R}
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth="12"
+                  strokeDasharray={dash}
+                  strokeDashoffset={-offset}
+                />
+              );
+              offset += len;
+              return el;
+            })}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-mono text-xl font-bold leading-none text-ink">{bull}%</span>
+            <span className="text-[10px] uppercase tracking-wide text-soft">bullish</span>
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-1.5">
+          {segs.map((s) => (
+            <div key={s.label} className="flex items-center gap-2 text-sm">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: s.color }}
+              />
+              <span className="font-mono font-semibold text-ink tabular-nums">{s.pct}%</span>
+              <span className="text-soft">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={onAskKai}
+        className="mt-4 flex w-full items-center justify-between rounded-xl border border-sky-300/70 bg-chip-sky px-4 py-2.5 text-left transition-colors hover:bg-sky-100"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-sky-800">
+          <Sparkles className="h-4 w-4" /> Ask Kai
+        </span>
+        <span className="text-xs text-sky-700">Get deeper insight on {ticker} →</span>
+      </button>
     </div>
   );
 }
