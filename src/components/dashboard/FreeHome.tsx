@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { m } from "@/lib/motion";
 import {
   CalendarDays,
   Clock,
@@ -11,7 +10,6 @@ import {
   CalendarPlus,
   MessageCircle,
   Lock,
-  GraduationCap,
   Sparkles,
   BookOpen,
   Eye,
@@ -37,12 +35,30 @@ import {
   type JourneyState,
   type JourneyStepKey,
 } from "@/lib/free-journey";
+import { Meter } from "@/components/f0/parts";
 
 /**
  * FREE-tier dashboard home. Leads with the "Your first week, free" checklist
  * (steps auto-detected server-side), the free-class card, a read-only nudge into
  * the community, a peek at everything membership unlocks, and the Join-FIC CTA.
  * After the member's class date passes, a "How was the class?" band leads.
+ *
+ * CANVAS V2 (M1). Rebuilt on the canvas language without touching a single
+ * commercial string or a single journey write:
+ *
+ *   · the five paper-cards are gone. The post-class pitch is the surface's ONE
+ *     hero field (.f0-hero-field — obsidian on cream, so the offer is the
+ *     strongest object on the page); everything else is a hairline ledger or a
+ *     ruled section, which is what the register asks for instead of a stack of
+ *     bordered boxes.
+ *   · the "everything the club unlocks" 2-column grid of outlined pills was an
+ *     equal-column CONTENT grid — banned — and is now a ledger of locked rows.
+ *     A locked feature reading as a ROW rather than a tile also stops it looking
+ *     like six things you already have.
+ *   · the ProgressRing is deleted. Plan §1.5: the club-sentiment arc is the only
+ *     gauge in the app, and a 5-step checklist is a bar and two numerals.
+ *
+ * EVERY commercial and journey string below is byte-identical to what shipped.
  */
 
 interface StepMeta {
@@ -60,6 +76,15 @@ const STEPS: StepMeta[] = [
   { key: "first_lesson", label: "Play your first free lesson", href: "/courses", icon: BookOpen },
   { key: "said_hi", label: "Say hi in the Free Lounge", href: "/community", icon: MessageCircle },
   { key: "first_game", label: "Play Candle Battle", href: "/games/candle-battle", icon: Gamepad2 },
+];
+
+const UNLOCKS: { icon: LucideIcon; label: string }[] = [
+  { icon: BookOpen, label: "Full course library" },
+  { icon: Video, label: "Weekly live classes" },
+  { icon: Eye, label: "Family watchlist" },
+  { icon: Target, label: "Kid missions" },
+  { icon: Gamepad2, label: "Games & simulator" },
+  { icon: Sparkles, label: "Badges & progress" },
 ];
 
 export default function FreeHome({ firstName }: { firstName: string }) {
@@ -94,43 +119,45 @@ export default function FreeHome({ firstName }: { firstName: string }) {
   const classPassed = !!journey?.class_passed;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      {/* Greeting */}
-      <div>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-[11px] font-display font-bold uppercase tracking-[0.14em]">
-          <Sparkles className="w-3 h-3" /> Free member
-        </span>
-        <h1 className="font-display text-2xl font-bold text-ink mt-3">
+    <div className="mx-auto max-w-3xl space-y-8 pb-14">
+      {/* ── Masthead ──────────────────────────────────────────────────────── */}
+      <header className="f0-stagger">
+        <p
+          className="font-display text-eyebrow font-bold uppercase text-gold-700"
+          style={{ "--i": 0 } as React.CSSProperties}
+        >
+          Free member
+        </p>
+        <h1
+          className="mt-3 font-display text-display-1 font-black text-ink"
+          style={{ "--i": 1 } as React.CSSProperties}
+        >
           Welcome{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="text-soft mt-1">
+        <p
+          className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft"
+          style={{ "--i": 2 } as React.CSSProperties}
+        >
           {classPassed
             ? "Hope the class was a good one. Here's how to keep the momentum going."
             : "Your free seat is saved. Here's your first week — and a look at what the club unlocks."}
         </p>
-      </div>
+      </header>
 
-      {/* Post-class band — leads once the member's class date has passed. */}
+      {/* ── Post-class band — the surface's ONE hero field, and only once the
+             member's class date has passed. ─────────────────────────────────── */}
       {classPassed && (
-        <m.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="paper-card ring-2 ring-gold-400 p-6"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-ink">
-                How was the class?
-              </h3>
-              <p className="text-sm text-soft">
-                Members pick up right where the class left off — every week.
-              </p>
-            </div>
-          </div>
-          <p className="text-sm text-midnight-100 leading-relaxed">
+        <section className="f0-hero-field f0-grain px-6 py-7">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">
+            After the class
+          </p>
+          <h2 className="mt-2.5 font-display text-display-2 font-extrabold text-white">
+            How was the class?
+          </h2>
+          <p className="mt-2 text-[14px] text-white/80">
+            Members pick up right where the class left off — every week.
+          </p>
+          <p className="mt-4 max-w-lg text-[14px] leading-relaxed text-white/70">
             The free class is the first step. Inside the club, your family gets the
             full course library, a weekly live class, the family watchlist, the
             simulator, and every game — one membership for everyone under your
@@ -138,146 +165,119 @@ export default function FreeHome({ firstName }: { firstName: string }) {
           </p>
           <a
             href={FIC_CHECKOUT_URL}
-            className="cta-button mt-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px]"
+            className="cta-button mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-[15px]"
           >
-            Join FIC — $99/mo <ArrowRight className="w-4 h-4" />
+            Join FIC — $99/mo <ArrowRight className="h-4 w-4" />
           </a>
-        </m.div>
+        </section>
       )}
 
-      {/* Your first week checklist */}
-      {journey && <JourneyCard journey={journey} onGo={markWatched} />}
+      {/* ── Your first week checklist ─────────────────────────────────────── */}
+      {journey && <JourneyLedger journey={journey} onGo={markWatched} />}
 
-      {/* Your free class */}
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="paper-card p-6"
-      >
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-            <CalendarDays className="w-6 h-6 text-gold-700" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-              Your free class
-            </p>
-            <h2 className="font-display text-lg font-bold text-ink leading-snug mt-0.5">
-              {session?.title || "Cheat Code Club — Free Class"}
-            </h2>
-            <div className="flex items-center gap-2 text-sm text-soft mt-1.5">
-              <Clock className="w-4 h-4 text-gold-600 shrink-0" />
-              {loaded
-                ? session?.scheduled_at
-                  ? formatClassWhen(session.scheduled_at)
-                  : "A class is being scheduled — we'll email you the time."
-                : "Loading…"}
-            </div>
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              <Link
-                href="/free-class"
-                onClick={markWatched}
-                className="cta-button inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm"
-              >
-                <Video className="w-4 h-4" /> Class info & video
-              </Link>
-              {session && (
-                <button
-                  onClick={() => downloadClassIcs(session)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-sand text-ink text-sm font-display font-semibold hover:bg-card transition-colors"
-                >
-                  <CalendarPlus className="w-4 h-4 text-gold-600" /> Add to
-                  calendar
-                </button>
-              )}
-            </div>
-          </div>
+      {/* ── Your free class ───────────────────────────────────────────────── */}
+      <section aria-labelledby="free-class">
+        <h2 id="free-class" className="f0-section-rule">
+          <span className="font-display text-eyebrow font-bold uppercase text-ink">
+            Your free class
+          </span>
+        </h2>
+        <p className="mt-3 font-display text-display-3 font-extrabold leading-snug text-ink">
+          {session?.title || "Cheat Code Club — Free Class"}
+        </p>
+        <p className="mt-2 flex items-center gap-2 text-[14px] text-soft">
+          <Clock className="h-4 w-4 shrink-0 text-gold-700" aria-hidden />
+          {loaded
+            ? session?.scheduled_at
+              ? formatClassWhen(session.scheduled_at)
+              : "A class is being scheduled — we'll email you the time."
+            : "Loading…"}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link
+            href="/free-class"
+            onClick={markWatched}
+            className="cta-button f0-focus inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm"
+          >
+            <Video className="h-4 w-4" /> Class info & video
+          </Link>
+          {session && (
+            <button
+              onClick={() => downloadClassIcs(session)}
+              className="f0-frame f0-focus f0-press inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:text-gold-700"
+            >
+              <CalendarPlus className="h-4 w-4 text-gold-700" /> Add to
+              calendar
+            </button>
+          )}
         </div>
-      </m.div>
+      </section>
 
-      {/* Community (read-only) */}
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
+      {/* ── Community (read-only) ─────────────────────────────────────────── */}
+      <section className="f0-rule-top pt-5">
         <Link
           href="/community"
-          className="paper-card p-5 flex items-center gap-4 hover:border-gold-300 transition-colors"
+          className="f0-ledger-row f0-focus group"
         >
-          <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-            <MessageCircle className="w-6 h-6 text-gold-700" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-display font-semibold text-ink">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--accent-solid)_12%,transparent)] text-gold-700">
+            <MessageCircle className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-[15px] font-extrabold text-ink">
               Look inside the club community
-            </p>
-            <p className="text-sm text-soft">
+            </span>
+            <span className="mt-1 block text-[13px] leading-snug text-soft">
               Say hi in the Free Lounge and see what real families are learning.
               Join the Club to post in the members&apos; room.
-            </p>
-          </div>
-          <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
+            </span>
+          </span>
+          <ArrowRight className="h-5 w-5 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
         </Link>
-      </m.div>
+      </section>
 
-      {/* What membership unlocks */}
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="paper-card ring-2 ring-gold-400 p-6"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-display text-lg font-bold text-ink">
-              Everything the club unlocks
-            </h3>
-            <p className="text-sm text-soft">
-              One membership. The whole family.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2.5">
-          {[
-            { icon: BookOpen, label: "Full course library" },
-            { icon: Video, label: "Weekly live classes" },
-            { icon: Eye, label: "Family watchlist" },
-            { icon: Target, label: "Kid missions" },
-            { icon: Gamepad2, label: "Games & simulator" },
-            { icon: Sparkles, label: "Badges & progress" },
-          ].map((f) => (
-            <div
-              key={f.label}
-              className="flex items-center gap-2.5 rounded-xl border border-sand bg-card px-3 py-2.5"
-            >
-              <f.icon className="w-4 h-4 text-gold-600 shrink-0" />
-              <span className="text-sm text-ink font-medium leading-tight flex-1 min-w-0">
+      {/* ── What membership unlocks ───────────────────────────────────────── */}
+      <section aria-labelledby="free-unlocks">
+        <h2 id="free-unlocks" className="f0-section-rule">
+          <span className="font-display text-eyebrow font-bold uppercase text-ink">
+            Everything the club unlocks
+          </span>
+        </h2>
+        <p className="mt-2.5 text-[14px] text-soft">
+          One membership. The whole family.
+        </p>
+
+        <div className="f0-ledger mt-3">
+          {UNLOCKS.map((f) => (
+            <div key={f.label} className="f0-ledger-row">
+              <f.icon className="h-4 w-4 shrink-0 text-gold-700" />
+              <span className="min-w-0 flex-1 font-display text-[15px] font-bold text-ink">
                 {f.label}
               </span>
-              <Lock className="w-3.5 h-3.5 text-soft shrink-0" />
+              <Lock className="h-3.5 w-3.5 shrink-0 text-soft" aria-hidden />
+              <span className="sr-only">Members only</span>
             </div>
           ))}
         </div>
+
         {/* One compare link here — the single primary Join CTA lives in the
             first-week checklist above, so the free home isn't a wall of
             identical buttons (UX audit #18). */}
         <Link
           href="/upgrade"
-          className="mt-5 w-full inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
+          className="f0-frame f0-focus f0-press mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-display text-sm font-semibold text-ink transition-colors hover:text-gold-700"
         >
-          See what $99/mo unlocks <ArrowRight className="w-4 h-4 text-gold-700" />
+          See what $99/mo unlocks <ArrowRight className="h-4 w-4 text-gold-700" />
         </Link>
-      </m.div>
+      </section>
     </div>
   );
 }
 
-// ── The first-week checklist card ────────────────────────────────────────────
-function JourneyCard({
+/* ── The first-week checklist ────────────────────────────────────────────────
+   A ruled ledger with a bar, not a card with a ring. Done steps keep the green
+   tick — that is a COMPLETION mark, not a price, and it is the one place the
+   colour reads unambiguously because nothing on this surface carries a quote. */
+function JourneyLedger({
   journey,
   onGo,
 }: {
@@ -291,117 +291,83 @@ function JourneyCard({
   const pct = Math.round((done / total) * 100);
 
   return (
-    <m.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="paper-card p-6"
-    >
-      <div className="flex items-center gap-4">
-        <ProgressRing pct={pct} label={`${done}/${total}`} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+    <section aria-labelledby="free-journey">
+      <div className="flex items-end justify-between gap-3">
+        <h2 id="free-journey" className="f0-section-rule min-w-0 flex-1">
+          <span className="font-display text-eyebrow font-bold uppercase text-ink">
             Your first week, free
-          </p>
-          <h2 className="font-display text-lg font-bold text-ink leading-snug">
-            {complete ? "You did the whole tour" : "A few steps to get the most out of it"}
-          </h2>
-          <p className="text-sm text-soft mt-0.5">
-            {complete
-              ? "You've seen what's inside. Ready for the full club?"
-              : "Try the tools, meet the club, then decide."}
-          </p>
-        </div>
+          </span>
+        </h2>
+        <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-soft">
+          {done}/{total}
+        </span>
       </div>
 
-      <ul className="mt-5 space-y-1.5">
+      <h3 className="mt-3 font-display text-display-2 font-extrabold leading-tight text-ink">
+        {complete ? "You did the whole tour" : "A few steps to get the most out of it"}
+      </h3>
+      <p className="mt-2 text-[14px] text-soft">
+        {complete
+          ? "You've seen what's inside. Ready for the full club?"
+          : "Try the tools, meet the club, then decide."}
+      </p>
+
+      <Meter pct={pct} className="mt-4 max-w-sm" />
+
+      <div className="f0-ledger mt-4">
         {STEPS.map((s) => {
           const isDone = !!journey[s.key];
           const Icon = s.icon;
           return (
-            <li key={s.key}>
-              <Link
-                href={s.href}
-                onClick={s.markOnGo ? onGo : undefined}
-                className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+            <Link
+              key={s.key}
+              href={s.href}
+              onClick={s.markOnGo ? onGo : undefined}
+              className="f0-ledger-row f0-focus group"
+            >
+              <span
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
                   isDone
-                    ? "border-green-500/30 bg-chip-green/40"
-                    : "border-sand bg-card hover:border-gold-300"
+                    ? "bg-green-500 text-white"
+                    : "bg-[color-mix(in_srgb,var(--accent-solid)_14%,transparent)] text-gold-700"
                 }`}
               >
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                    isDone ? "bg-green-500 text-white" : "bg-gold-400/15 text-gold-700"
-                  }`}
-                >
-                  {isDone ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-                </span>
-                <span
-                  className={`text-sm font-medium flex-1 min-w-0 ${
-                    isDone ? "text-soft line-through" : "text-ink"
-                  }`}
-                >
-                  {s.label}
-                </span>
-                {!isDone && <ArrowRight className="w-4 h-4 text-gold-700 shrink-0" />}
-              </Link>
-            </li>
+                {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              </span>
+              <span
+                className={`min-w-0 flex-1 font-display text-[15px] font-bold ${
+                  isDone ? "text-soft line-through" : "text-ink"
+                }`}
+              >
+                {s.label}
+              </span>
+              {!isDone && (
+                <ArrowRight className="h-4 w-4 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+              )}
+            </Link>
           );
         })}
-      </ul>
+      </div>
 
       {/* Next step / final CTA */}
       {complete ? (
         <a
           href={FIC_CHECKOUT_URL}
-          className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px]"
+          className="cta-button f0-focus mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-[15px]"
         >
-          Unlock everything — join FIC <ArrowRight className="w-4 h-4" />
+          Unlock everything — join FIC <ArrowRight className="h-4 w-4" />
         </a>
       ) : (
         nextStep && (
           <Link
             href={nextStep.href}
             onClick={nextStep.markOnGo ? onGo : undefined}
-            className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm"
+            className="cta-button f0-focus mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm"
           >
-            Next: {nextStep.label} <ArrowRight className="w-4 h-4" />
+            Next: {nextStep.label} <ArrowRight className="h-4 w-4" />
           </Link>
         )
       )}
-    </m.div>
-  );
-}
-
-function ProgressRing({ pct, label }: { pct: number; label: string }) {
-  const r = 26;
-  const c = 2 * Math.PI * r;
-  const offset = c - (pct / 100) * c;
-  return (
-    <div className="relative w-16 h-16 shrink-0">
-      <svg viewBox="0 0 64 64" className="w-16 h-16 -rotate-90">
-        <circle
-          cx="32"
-          cy="32"
-          r={r}
-          fill="none"
-          strokeWidth="6"
-          className="stroke-sand"
-        />
-        <circle
-          cx="32"
-          cy="32"
-          r={r}
-          fill="none"
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          className="stroke-gold-500 transition-all duration-500"
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-display text-sm font-bold text-ink">
-        {label}
-      </span>
-    </div>
+    </section>
   );
 }

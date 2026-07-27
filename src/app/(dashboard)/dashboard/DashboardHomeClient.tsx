@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { m } from "@/lib/motion";
 import {
   ArrowRight,
   BookOpen,
@@ -50,6 +49,7 @@ import AddFamily from "@/components/dashboard/AddFamily";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { getFamilyTier } from "@/lib/tier";
 import { isSoloProfile, deriveRegister, type Register } from "@/lib/register";
+import { Meter, TabRail } from "@/components/f0/parts";
 
 /** Next scheduled academy class, for the FTA premium home rail. */
 type NextClass = { title: string; when: string } | null;
@@ -514,6 +514,7 @@ export default function DashboardHomeClient() {
         register={register}
         learning={learning}
         challengeExpiresAt={soloChallengeExpiresAt}
+        xp={xp}
       />
     );
   }
@@ -541,248 +542,221 @@ export default function DashboardHomeClient() {
     isParent && hasFamily && !!familyId && (showProfileFirst || setupResolved);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      {/* Greeting */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1
-            className={`font-display font-bold text-ink ${
-              isKid ? "text-3xl" : "text-2xl"
-            }`}
-          >
-            {isKid
-              ? `Hey ${firstName || "Explorer"}!`
-              : `${greeting()}, ${firstName || "there"}`}
-          </h1>
-          {home?.program === "fta" && home.week ? (
-            <p className="text-soft mt-1">
-              Week {home.week} of 6 —{" "}
-              <span className="text-gold-700 font-medium">
-                {WEEK_CODENAMES[home.week]}
-              </span>
-            </p>
-          ) : (
-            <p className="text-soft mt-1">
-              {isKid
-                ? "Ready for today's adventure?"
-                : "Steady steps build the skill."}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+    <div className="mx-auto max-w-5xl space-y-8 pb-14">
+      {/* ── Masthead ────────────────────────────────────────────────────────
+          The canvas opens every board with an eyebrow, one display headline
+          and a lede — three registers, not three sizes of the same thing. */}
+      <header className="f0-stagger">
+        <div
+          className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2"
+          style={{ "--i": 0 } as React.CSSProperties}
+        >
+          <p className="font-display text-eyebrow font-bold uppercase text-soft">
+            {isKid ? "Today" : greeting()}
+          </p>
           {home?.cohort && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
-              <Flame className="w-3.5 h-3.5" />
+            <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
+              <Flame className="h-3 w-3" aria-hidden />
               {home.cohort}
             </span>
           )}
         </div>
-      </div>
 
-      {/* Belt/XP hero — always-visible progress toward the next belt. */}
+        <h1
+          className="mt-3 font-display text-display-1 font-black text-ink"
+          style={{ "--i": 1 } as React.CSSProperties}
+        >
+          {isKid
+            ? `Hey ${firstName || "Explorer"}!`
+            : `${greeting()}, ${firstName || "there"}`}
+        </h1>
+
+        <p
+          className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft"
+          style={{ "--i": 2 } as React.CSSProperties}
+        >
+          {home?.program === "fta" && home.week ? (
+            <>
+              Week {home.week} of 6 —{" "}
+              <span className="font-semibold text-gold-700">
+                {WEEK_CODENAMES[home.week]}
+              </span>
+            </>
+          ) : isKid ? (
+            "Ready for today's adventure?"
+          ) : (
+            "Steady steps build the skill."
+          )}
+        </p>
+      </header>
+
+      {/* Belt/XP — always-visible progress toward the next belt. */}
       <BeltHeroStrip xp={xp} isKid={isKid} />
 
-      {/* Kai briefing card (Lane C6) — adults only (parents), renders only when
-          the trade-alerts feed has a row. Free tier never reaches this page. */}
+      {/* Kai briefing (Lane C6) — adults only (parents), renders only when the
+          trade-alerts feed has a row. Free tier never reaches this page.
+          Canvas: the brand-tinted digest field, with Kai wearing kai blue —
+          the same object Home's "Today in 30 seconds" uses, so a briefing
+          looks like a briefing everywhere in the app. */}
       {isParent && latestAlert && (
         <Link
           href="/alerts"
-          className="block rounded-2xl border border-gold-400/40 bg-chip-amber/30 p-4 transition hover:bg-chip-amber/50"
+          className="f0-brief-field f0-grain f0-focus block px-5 py-4"
         >
-          <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-gold-600" />
-            <span className="text-[11px] font-display font-bold uppercase tracking-wide text-gold-700">
-              Kai briefing
+          <div className="flex items-center gap-3">
+            <span className="f0-kai-mark h-9 w-9 shrink-0" aria-hidden>
+              <Bell className="h-4 w-4" />
             </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-soft">
+                Kai briefing
+              </p>
+              <p className="mt-1 truncate font-display text-[15px] font-extrabold text-ink">
+                {latestAlert.ticker} {latestAlert.direction}
+                {latestAlert.setup_label ? ` — ${latestAlert.setup_label}` : ""}
+              </p>
+              <p className="mt-0.5 text-[12px] text-soft">See today&apos;s alerts →</p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-gold-700" aria-hidden />
           </div>
-          <p className="mt-1 text-sm font-semibold text-ink">
-            {latestAlert.ticker} {latestAlert.direction}
-            {latestAlert.setup_label ? ` — ${latestAlert.setup_label}` : ""}
-          </p>
-          <p className="text-[12px] text-soft">See today&apos;s alerts →</p>
         </Link>
       )}
 
-      {/* Setup card #1 — the Start Here checklist, demoted from a nav row to a
-          dismissible Home card. Parents only; auto-hides at 6/6. */}
+      {/* Setup prompt #1 — the Start Here checklist, demoted from a nav row to
+          a dismissible Home object. Parents only; auto-hides at 6/6. */}
       {showSetupCard && (
-        <div className="relative" data-tour="start-here">
-          <Link href="/start-here" className="block">
-            <m.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="paper-card p-5 flex items-center gap-4 hover:border-gold-400/50 transition-colors"
-            >
-              <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-                <Compass className="w-6 h-6 text-gold-700" />
-              </div>
-              <div className="flex-1 min-w-0 pr-6">
-                <p className="font-display font-semibold text-ink">
+        <section className="f0-rule-top relative pt-4" data-tour="start-here">
+          <Link href="/start-here" className="f0-focus group block pr-9">
+            <div className="flex items-center gap-3.5">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--accent-solid)_12%,transparent)] text-gold-700">
+                <Compass className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[15px] font-extrabold text-ink">
                   {isSolo ? "Finish setting up your account" : "Finish setting up your family"}
                 </p>
-                <p className="text-sm text-soft">
+                <p className="mt-0.5 text-[13px] leading-snug text-soft">
                   {orientationDone} of {ORIENTATION_TOTAL} Start Here steps done —
                   pick up where you left off.
                 </p>
-                <div className="w-full max-w-xs h-2 rounded-full bg-sand overflow-hidden mt-2">
-                  <div
-                    className="h-full rounded-full bg-gold-500 transition-all"
-                    style={{
-                      width: `${Math.round((orientationDone / ORIENTATION_TOTAL) * 100)}%`,
-                    }}
-                  />
-                </div>
+                <Meter
+                  pct={Math.round((orientationDone / ORIENTATION_TOTAL) * 100)}
+                  className="mt-2 max-w-xs"
+                />
               </div>
-              <ArrowRight className="w-5 h-5 text-gold-700 shrink-0" />
-            </m.div>
+              <ArrowRight className="h-5 w-5 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+            </div>
           </Link>
           <button
             onClick={dismissSetupCard}
             aria-label="Dismiss setup checklist"
-            className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-midnight-500 hover:text-ink hover:bg-sand/60 transition-colors"
+            className="f0-focus absolute right-0 top-3 grid h-7 w-7 place-items-center rounded-full text-soft transition-colors hover:text-ink"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
-        </div>
+        </section>
       )}
 
-      {/* Card #2 — family-profile prompt / "recommended next". Only surfaces
-          AFTER the setup card is resolved, so exactly one prompt shows at a
-          time. Self-contained (renders null when there's nothing to show). */}
+      {/* Prompt #2 — family-profile / "recommended next". Only surfaces AFTER
+          the setup prompt is resolved, so exactly one shows at a time.
+          Self-contained (renders null when there's nothing to show). */}
       {showProfileCard && familyId && (
         <FamilyProfileHome familyId={familyId} />
       )}
 
-      {/* Family Mode activation — quiet Home card for solo owners. Family Mode
+      {/* Family Mode activation — quiet Home object for solo owners. Family Mode
           is included in their membership; this converts solo→family so the FIC
           surfaces light up. Self-gates via the passed isSolo/familyId. */}
       {isSolo && familyId && (
         <AddFamily variant="card" isSolo={isSolo} familyId={familyId} />
       )}
 
-      {/* FTA PREMIUM HOME RAIL (audit #3) — a distinct gold "Academy" module for
-          $2,997 families, above the fold. One rail, not a takeover: the
-          club-first hero + This Week stay exactly as they are below. */}
+      {/* ── FTA PREMIUM RAIL (audit #3) — a distinct Academy section for $2,997
+             families, above the fold. One rail, not a takeover.
+             Canvas: the three bordered tiles were an equal-column CONTENT grid
+             (banned). They are a hairline ledger now, which also lets the next
+             live class sit at the top of the same list instead of in its own
+             separate strip. ─────────────────────────────────────────────────── */}
       {isFta && (
-        <m.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl border border-gold-400/40 bg-gradient-to-br from-gold-400/[0.12] via-gold-400/[0.05] to-transparent p-5 lg:p-6"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
-              <GraduationCap className="w-6 h-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
+        <section aria-labelledby="fta-rail">
+          <div className="flex items-end justify-between gap-3">
+            <h2 id="fta-rail" className="f0-section-rule min-w-0 flex-1">
+              <span className="font-display text-eyebrow font-bold uppercase text-ink">
                 Family Trading Academy
-              </p>
-              <p className="font-display font-bold text-ink leading-snug">
-                Your premium trading hub
-              </p>
-            </div>
+              </span>
+            </h2>
             <Link
               href="/live-sessions"
-              className="ml-auto hidden sm:inline-flex items-center gap-1.5 text-sm font-display font-semibold text-gold-700 hover:text-gold-800 shrink-0"
+              className="f0-focus f0-press hidden shrink-0 items-center gap-1.5 rounded-md font-display text-[13px] font-bold text-gold-700 hover:text-gold-600 sm:inline-flex"
             >
-              <Video className="w-4 h-4" />
+              <Video className="h-4 w-4" aria-hidden />
               Live classes
             </Link>
           </div>
-          {/* Next live class strip — the live JOIN stays on Live Classes; the
-              three hub doors below open the FTA section. */}
-          {ftaNextClass && (
-            <Link
-              href="/live-sessions"
-              className="group mb-3 flex items-center gap-2 rounded-xl border border-gold-400/30 bg-gold-400/[0.06] px-3.5 py-2.5 hover:border-gold-400/60 transition-colors"
-            >
-              <Video className="w-4 h-4 text-gold-600 shrink-0" />
-              <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700 shrink-0">
-                Next live class
-              </span>
-              <span className="font-display font-semibold text-ink text-sm truncate">
-                {ftaNextClass.title}
-              </span>
-              <span className="text-xs text-soft shrink-0 hidden sm:inline">{ftaNextClass.when}</span>
-              <ArrowRight className="w-3.5 h-3.5 text-gold-700 ml-auto shrink-0 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          )}
-          <div className="grid sm:grid-cols-3 gap-3">
-            <Link
+
+          <p className="mt-3 font-display text-display-3 font-extrabold leading-snug text-ink">
+            Your premium trading hub
+          </p>
+
+          <div className="f0-ledger mt-3">
+            {/* Next live class — the live JOIN stays on Live Classes; the hub
+                doors below open the FTA section. */}
+            {ftaNextClass && (
+              <Link href="/live-sessions" className="f0-ledger-row f0-focus group">
+                <Video className="h-4 w-4 shrink-0 text-gold-700" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
+                    Next live class
+                  </span>
+                  <span className="mt-0.5 block truncate font-display text-[15px] font-extrabold text-ink">
+                    {ftaNextClass.title}
+                  </span>
+                </span>
+                <span className="hidden shrink-0 font-mono text-[12px] text-soft sm:inline">
+                  {ftaNextClass.when}
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+              </Link>
+            )}
+
+            <FtaDoor
               href="/fta/chat"
-              className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <Radio className="w-4 h-4 text-gold-600" />
-                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-                  Traders Chat
-                </span>
-              </div>
-              <p className="text-sm text-soft leading-relaxed">
-                Your always-on FTA room — setups, questions, and live-class talk.
-              </p>
-              <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
-                Open chat <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </Link>
-            <Link
+              icon={Radio}
+              label="Traders Chat"
+              sub="Your always-on FTA room — setups, questions, and live-class talk."
+              action="Open chat"
+            />
+            <FtaDoor
               href="/fta/courses"
-              className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <GraduationCap className="w-4 h-4 text-gold-600" />
-                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-                  Course Library
-                </span>
-              </div>
-              <p className="text-sm text-soft leading-relaxed">
-                Pick up where your family left off — foundations to trade ready.
-              </p>
-              <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
-                Continue the program <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </Link>
-            <Link
+              icon={GraduationCap}
+              label="Course Library"
+              sub="Pick up where your family left off — foundations to trade ready."
+              action="Continue the program"
+            />
+            <FtaDoor
               href="/fta/recordings"
-              className="group rounded-xl border border-sand bg-paper/60 p-4 hover:border-gold-400/50 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <Film className="w-4 h-4 text-gold-600" />
-                <span className="text-[11px] font-display font-bold uppercase tracking-wider text-gold-700">
-                  Recordings
-                </span>
-              </div>
-              <p className="text-sm text-soft leading-relaxed">
-                Every FTA class, always waiting — newest first, grouped by series.
-              </p>
-              <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-800">
-                Watch recordings <ArrowRight className="w-3.5 h-3.5" />
-              </span>
-            </Link>
+              icon={Film}
+              label="Recordings"
+              sub="Every FTA class, always waiting — newest first, grouped by series."
+              action="Watch recordings"
+            />
           </div>
-        </m.div>
+        </section>
       )}
 
       {/* Home tabs: everyday home vs This Week in FIC */}
-      <div className="flex items-center gap-1 border-b border-sand">
-        {[
+      <TabRail
+        ariaLabel="Home sections"
+        value={tab}
+        onChange={setTab}
+        tabs={[
           { id: "home" as const, label: isKid ? "Home" : "Home" },
-          { id: "week" as const, label: isSolo ? "This Week in the Club" : "This Week in FIC" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            data-tour={t.id === "week" ? "thisweek-tab" : undefined}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === t.id
-                ? "text-gold-700 border-gold-500"
-                : "text-soft border-transparent hover:text-ink"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+          {
+            id: "week" as const,
+            label: isSolo ? "This Week in the Club" : "This Week in FIC",
+          },
+        ]}
+      />
 
       {tab === "week" && (
         <ThisWeekPanel
@@ -796,329 +770,310 @@ export default function DashboardHomeClient() {
 
       {tab === "home" && (
         <>
+          {/* Live "Today in the Club" pulse masthead (D1). */}
+          <ClubPulseMasthead isKid={isKid} />
 
-      {/* Live "Today in the Club" pulse masthead (D1) — replaces the old
-          three-equal-card row (market pulse / community heat / Ask Kai). */}
-      <ClubPulseMasthead isKid={isKid} />
+          {/* No program yet */}
+          {!home?.program && (
+            <div className="f0-rule-left py-1 pl-4">
+              <p className="font-display text-display-3 font-extrabold text-ink">
+                {isSolo ? "You're not enrolled yet" : "Your family isn't enrolled yet"}
+              </p>
+              <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-soft">
+                {isSolo
+                  ? "The Cheat Code Club is where you learn one money concept, study one company, and build the habit every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."
+                  : "The Family Investing Club is where your family learns one money concept, studies one company, and builds the habit together every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."}
+              </p>
+              <Link
+                href="/upgrade"
+                className="cta-button f0-focus mt-4 inline-flex items-center gap-2 rounded-xl px-6 py-3"
+              >
+                See programs <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
 
-      {/* No program yet */}
-      {!home?.program && (
-        <div className="paper-card p-8 text-center">
-          <Sparkles className="w-8 h-8 text-gold-500 mx-auto mb-3" />
-          <h2 className="font-display text-xl font-semibold text-ink mb-2">
-            {isSolo ? "You're not enrolled yet" : "Your family isn't enrolled yet"}
-          </h2>
-          <p className="text-soft max-w-md mx-auto mb-5">
-            {isSolo
-              ? "The Cheat Code Club is where you learn one money concept, study one company, and build the habit every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."
-              : "The Family Investing Club is where your family learns one money concept, studies one company, and builds the habit together every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."}
-          </p>
-          <Link
-            href="/upgrade"
-            className="cta-button inline-flex items-center gap-2 px-6 py-3 rounded-xl"
-          >
-            See programs <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      )}
-
-      {home?.program && (
-        <>
-          {/* HERO — Today's one thing */}
-          <m.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="paper-card overflow-hidden"
-          >
-            <div className="grid md:grid-cols-5">
-              <div className="relative md:col-span-2 min-h-[200px] md:min-h-full">
+          {home?.program && (
+            <>
+              {/* ── HERO — Today's one thing. The surface's ONE hero field:
+                     the art becomes the ground, the scrim keeps the type
+                     legible over it, and the whole object is the dominant
+                     value contrast on the page rather than a bordered card
+                     with a picture glued to its left half. ───────────────── */}
+              <section className="f0-hero-field relative">
                 <Image
                   src={heroArt(home.track, home.caught_up)}
                   alt=""
                   fill
-                  sizes="(max-width: 768px) 100vw, 40vw"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
                   className="object-cover"
                   priority
                 />
-              </div>
-              <div className="md:col-span-3 p-6 lg:p-8 flex flex-col justify-center">
-                {home.today ? (
-                  <>
-                    <span className="inline-flex self-start items-center gap-1.5 px-3 py-1 rounded-full bg-chip-sky text-sky-800 text-xs font-semibold mb-3">
-                      <Target className="w-3.5 h-3.5" />
-                      {isKid ? "Today's adventure" : "Today's one thing"}
-                    </span>
-                    <h2
-                      className={`font-display font-bold text-ink leading-snug ${
-                        isKid ? "text-2xl" : "text-xl lg:text-2xl"
-                      }`}
-                    >
-                      {home.today.title}
-                    </h2>
-                    {home.today.description && (
-                      <p className="text-soft mt-2 leading-relaxed">
-                        {home.today.description}
-                      </p>
-                    )}
-                    <p className="text-sm text-midnight-500 mt-3">
-                      {home.today.module_title} · {home.today.course_title}
-                    </p>
-                    <div className="flex items-center gap-4 mt-5 flex-wrap">
-                      <Link
-                        href={`/courses/${home.today.course_slug}/${home.today.module_id}/${home.today.lesson_id}`}
-                        className="cta-button inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm"
-                      >
-                        <PlayCircle className="w-4 h-4" />
-                        {isKid ? "Start the adventure" : "Start lesson"}
-                      </Link>
-                      {typeof home.foundations_total === "number" &&
-                        home.foundations_total > 0 && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-28 h-2 rounded-full bg-sand overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-gold-500 transition-all"
-                                style={{
-                                  width: `${Math.round(
-                                    ((home.foundations_done || 0) /
-                                      home.foundations_total) *
-                                      100
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-soft">
-                              {home.foundations_done}/{home.foundations_total}{" "}
-                              done
-                            </span>
-                          </div>
-                        )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <span className="inline-flex self-start items-center gap-1.5 px-3 py-1 rounded-full bg-chip-green text-green-600 text-xs font-semibold mb-3">
-                      <Trophy className="w-3.5 h-3.5" />
-                      All caught up
-                    </span>
-                    <h2 className="font-display text-2xl font-bold text-ink">
-                      {isKid ? "You did it!" : "Foundations complete for now"}
-                    </h2>
-                    <p className="text-soft mt-2">
-                      {isKid
-                        ? "Every lesson is done. Practice your skills or show a grown-up what you learned."
-                        : "Everything unlocked so far is finished. Sharpen up in the simulator, or review this week's drill before Saturday."}
-                    </p>
-                    <div className="flex gap-3 mt-5">
-                      <Link
-                        href="/simulator/lessons"
-                        className="cta-button inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm"
-                      >
-                        <Target className="w-4 h-4" /> Practice patterns
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </m.div>
-
-          {/* THIS WEEK — live class + drill (academy execution rail) */}
-          {home.this_week && (
-            <m.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-              className="paper-card p-6 lg:p-7"
-            >
-              <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-display font-bold uppercase tracking-wider text-gold-700 mb-0.5">
-                    Your live class + drills
-                  </p>
-                  <h3 className="font-display text-lg font-semibold text-ink">
-                    {home.this_week.title}
-                  </h3>
-                </div>
-                <Link
-                  href="/live-sessions"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
-                >
-                  <CalendarDays className="w-4 h-4" />
-                  Live classes
-                </Link>
-              </div>
-              {home.this_week.description && (
-                <p className="text-soft text-sm mb-4">
-                  {home.this_week.description}
-                </p>
-              )}
-              <div className="grid sm:grid-cols-2 gap-3">
-                {home.this_week.lessons.map((l) => (
-                  <div
-                    key={l.id}
-                    className={`flex items-start gap-3 p-4 rounded-xl border ${
-                      l.completed
-                        ? "border-green-500/30 bg-chip-green/40"
-                        : "border-sand bg-paper"
-                    }`}
-                  >
-                    {l.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-midnight-600 shrink-0 mt-0.5" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-medium text-ink text-sm">{l.title}</p>
-                      {l.description && (
-                        <p className="text-xs text-soft mt-1 leading-relaxed line-clamp-2">
-                          {l.description}
+                <div className="f0-hero-scrim" />
+                <div className="relative px-6 py-8 lg:px-9 lg:py-11">
+                  {home.today ? (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                        <Target className="h-3.5 w-3.5" aria-hidden />
+                        {isKid ? "Today's adventure" : "Today's one thing"}
+                      </span>
+                      <h2 className="mt-4 max-w-xl font-display text-display-2 font-extrabold leading-tight text-white">
+                        {home.today.title}
+                      </h2>
+                      {home.today.description && (
+                        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/80">
+                          {home.today.description}
                         </p>
                       )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </m.div>
-          )}
-
-          {/* Role strips */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Parent: family this week */}
-            {isParent && family.length > 0 && (
-              <m.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.14 }}
-                className="paper-card p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gold-600" />
-                    Your family this week
-                  </h3>
-                  <Link
-                    href="/family/overview"
-                    className="text-sm font-medium text-gold-700 hover:text-gold-800"
-                  >
-                    Full overview →
-                  </Link>
-                </div>
-                <div className="space-y-3">
-                  {family.map((m) => (
-                    <div key={m.id} className="flex items-center gap-3">
-                      <Avatar
-                        name={m.display_name}
-                        avatarUrl={m.avatar_url}
-                        role={m.role}
-                        xp={m.xp}
-                        size="sm"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink truncate">
-                          {m.display_name}
-                        </p>
-                        <p className="text-xs text-soft capitalize">
-                          {m.age_group || m.role} · {levelForXp(m.xp).name}
-                        </p>
+                      <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-white/60">
+                        {home.today.module_title} · {home.today.course_title}
+                      </p>
+                      <div className="mt-6 flex flex-wrap items-center gap-4">
+                        <Link
+                          href={`/courses/${home.today.course_slug}/${home.today.module_id}/${home.today.lesson_id}`}
+                          className="cta-button f0-focus inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm"
+                        >
+                          <PlayCircle className="h-4 w-4" />
+                          {isKid ? "Start the adventure" : "Start lesson"}
+                        </Link>
+                        {typeof home.foundations_total === "number" &&
+                          home.foundations_total > 0 && (
+                            <div className="flex items-center gap-2.5">
+                              <Meter
+                                onDark
+                                pct={Math.round(
+                                  ((home.foundations_done || 0) / home.foundations_total) * 100
+                                )}
+                                className="w-28"
+                              />
+                              <span className="font-mono text-[11px] tabular-nums text-white/75">
+                                {home.foundations_done}/{home.foundations_total}{" "}
+                                done
+                              </span>
+                            </div>
+                          )}
                       </div>
-                      <span className="text-xs text-soft">
-                        {m.completed} lesson{m.completed === 1 ? "" : "s"} done
+                    </>
+                  ) : (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                        <Trophy className="h-3.5 w-3.5" aria-hidden />
+                        All caught up
                       </span>
-                    </div>
-                  ))}
+                      <h2 className="mt-4 font-display text-display-2 font-extrabold leading-tight text-white">
+                        {isKid ? "You did it!" : "Foundations complete for now"}
+                      </h2>
+                      <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-white/80">
+                        {isKid
+                          ? "Every lesson is done. Practice your skills or show a grown-up what you learned."
+                          : "Everything unlocked so far is finished. Sharpen up in the simulator, or review this week's drill before Saturday."}
+                      </p>
+                      <div className="mt-6 flex gap-3">
+                        <Link
+                          href="/simulator/lessons"
+                          className="cta-button f0-focus inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+                        >
+                          <Target className="h-4 w-4" /> Practice patterns
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </m.div>
-            )}
+              </section>
 
-            {/* Kid: House Rules */}
-            {isKid && (
-              <m.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.14 }}
-                className="paper-card p-6"
-              >
-                <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-4">
-                  <Shield className="w-4 h-4 text-gold-600" />
-                  Our House Rules
-                </h3>
-                <ol className="space-y-2.5">
-                  {HOUSE_RULES.map((rule, i) => (
-                    <li key={rule} className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-chip-amber text-gold-800 text-xs font-bold flex items-center justify-center font-display shrink-0">
-                        {i + 1}
+              {/* ── THIS WEEK — live class + drill (academy execution rail) ── */}
+              {home.this_week && (
+                <section aria-labelledby="this-week">
+                  <div className="flex items-end justify-between gap-3">
+                    <h2 id="this-week" className="f0-section-rule min-w-0 flex-1">
+                      <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                        Your live class + drills
                       </span>
-                      <span className="text-sm text-midnight-200">{rule}</span>
-                    </li>
-                  ))}
-                </ol>
-              </m.div>
-            )}
+                    </h2>
+                    <Link
+                      href="/live-sessions"
+                      className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-md font-display text-[13px] font-bold text-gold-700 hover:text-gold-600"
+                    >
+                      <CalendarDays className="h-4 w-4" aria-hidden />
+                      Live classes
+                    </Link>
+                  </div>
 
-            {/* Everyone: quick links */}
-            <m.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="paper-card p-6"
-            >
-              <h3 className="font-display text-base font-semibold text-ink mb-4">
-                {isKid ? "More fun" : "Keep going"}
-              </h3>
-              <div className="space-y-2">
-                <QuickLink
-                  href="/flashcards"
-                  icon={Layers}
-                  label={isKid ? "Your 5 cards are waiting" : "Daily 5 flashcards"}
-                  sub={
-                    dueCount > 0
-                      ? `${dueCount} card${dueCount === 1 ? "" : "s"} ready today`
-                      : isKid
-                        ? "Come back tomorrow for more"
-                        : "All caught up for today"
-                  }
-                />
-                <QuickLink
-                  href="/games"
-                  icon={Gamepad2}
-                  label={isKid ? "Play a game" : "Practice games"}
-                  sub="Trend or Trap and Candle Battle"
-                />
-                <QuickLink
-                  href="/courses"
-                  icon={BookOpen}
-                  label={isKid ? "My lessons" : "All courses"}
-                  sub={
-                    isKid
-                      ? "Stories and quests"
-                      : "Foundations and the live program"
-                  }
-                />
-                <QuickLink
-                  href={isKid ? "/simulator/lessons" : "/simulator"}
-                  icon={Target}
-                  label={isKid ? "Pattern practice" : "Trading floor"}
-                  sub={
-                    isKid
-                      ? "Spot the pattern, make the call"
-                      : "Practice with pretend money"
-                  }
-                />
-                <QuickLink
-                  href="/progress"
-                  icon={Trophy}
-                  label={isKid ? "My badges" : "Progress & badges"}
-                  sub={isKid ? "See what you've earned" : "Streaks, badges, stats"}
-                />
-              </div>
-            </m.div>
-          </div>
+                  <p className="mt-3 font-display text-display-3 font-extrabold leading-snug text-ink">
+                    {home.this_week.title}
+                  </p>
+                  {home.this_week.description && (
+                    <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-soft">
+                      {home.this_week.description}
+                    </p>
+                  )}
 
-          {/* Clubhouse activity — demoted below the family strips, capped to a
-              short glance; self-contained, renders null when empty */}
-          <ClubActivityStrip limit={2} />
-        </>
-      )}
+                  <div className="f0-ledger mt-3">
+                    {home.this_week.lessons.map((l) => (
+                      <div key={l.id} className="f0-ledger-row">
+                        {l.completed ? (
+                          <CheckCircle2
+                            className="h-5 w-5 shrink-0 self-start text-green-500"
+                            aria-hidden
+                          />
+                        ) : (
+                          <Circle
+                            className="h-5 w-5 shrink-0 self-start text-soft"
+                            aria-hidden
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`font-display text-[14.5px] font-bold ${
+                              l.completed ? "text-soft" : "text-ink"
+                            }`}
+                          >
+                            {l.title}
+                          </p>
+                          {l.description && (
+                            <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-soft">
+                              {l.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* ── Role strips. The old `grid md:grid-cols-2` of two cards was
+                     an equal-column CONTENT grid; they are stacked ruled
+                     sections now, so a family of five and a family of one
+                     both read correctly. ──────────────────────────────────── */}
+
+              {/* Parent: family this week */}
+              {isParent && family.length > 0 && (
+                <section aria-labelledby="family-week">
+                  <div className="flex items-end justify-between gap-3">
+                    <h2 id="family-week" className="f0-section-rule min-w-0 flex-1">
+                      <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                        Your family this week
+                      </span>
+                    </h2>
+                    <Link
+                      href="/family/overview"
+                      className="f0-focus f0-press inline-flex shrink-0 items-center gap-1 rounded-md font-display text-[13px] font-bold text-gold-700 hover:text-gold-600"
+                    >
+                      Full overview <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                    </Link>
+                  </div>
+                  <div className="f0-ledger mt-2">
+                    {family.map((member) => (
+                      <div key={member.id} className="f0-ledger-row">
+                        <Avatar
+                          name={member.display_name}
+                          avatarUrl={member.avatar_url}
+                          role={member.role}
+                          xp={member.xp}
+                          size="sm"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-display text-[14.5px] font-bold text-ink">
+                            {member.display_name}
+                          </p>
+                          <p className="mt-0.5 text-[12px] capitalize text-soft">
+                            {member.age_group || member.role} · {levelForXp(member.xp).name}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-mono text-[12px] tabular-nums text-soft">
+                          {member.completed} lesson{member.completed === 1 ? "" : "s"} done
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Kid: House Rules */}
+              {isKid && (
+                <section aria-labelledby="house-rules">
+                  <h2 id="house-rules" className="f0-section-rule">
+                    <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                      Our House Rules
+                    </span>
+                  </h2>
+                  <ol className="f0-ledger mt-2">
+                    {HOUSE_RULES.map((rule, i) => (
+                      <li key={rule} className="f0-ledger-row">
+                        <span className="f0-rank shrink-0" aria-hidden>
+                          {i + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 font-display text-[14.5px] font-bold text-ink">
+                          {rule}
+                        </span>
+                        <Shield className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+
+              {/* Everyone: quick links */}
+              <section aria-labelledby="keep-going">
+                <h2 id="keep-going" className="f0-section-rule">
+                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                    {isKid ? "More fun" : "Keep going"}
+                  </span>
+                </h2>
+                <div className="f0-ledger mt-2">
+                  <QuickLink
+                    href="/flashcards"
+                    icon={Layers}
+                    label={isKid ? "Your 5 cards are waiting" : "Daily 5 flashcards"}
+                    sub={
+                      dueCount > 0
+                        ? `${dueCount} card${dueCount === 1 ? "" : "s"} ready today`
+                        : isKid
+                          ? "Come back tomorrow for more"
+                          : "All caught up for today"
+                    }
+                  />
+                  <QuickLink
+                    href="/games"
+                    icon={Gamepad2}
+                    label={isKid ? "Play a game" : "Practice games"}
+                    sub="Trend or Trap and Candle Battle"
+                  />
+                  <QuickLink
+                    href="/courses"
+                    icon={BookOpen}
+                    label={isKid ? "My lessons" : "All courses"}
+                    sub={
+                      isKid
+                        ? "Stories and quests"
+                        : "Foundations and the live program"
+                    }
+                  />
+                  <QuickLink
+                    href={isKid ? "/simulator/lessons" : "/simulator"}
+                    icon={Target}
+                    label={isKid ? "Pattern practice" : "Trading floor"}
+                    sub={
+                      isKid
+                        ? "Spot the pattern, make the call"
+                        : "Practice with pretend money"
+                    }
+                  />
+                  <QuickLink
+                    href="/progress"
+                    icon={Trophy}
+                    label={isKid ? "My badges" : "Progress & badges"}
+                    sub={isKid ? "See what you've earned" : "Streaks, badges, stats"}
+                  />
+                </div>
+              </section>
+
+              {/* Clubhouse activity — demoted below the family strips, capped to a
+                  short glance; self-contained, renders null when empty */}
+              <ClubActivityStrip limit={2} />
+            </>
+          )}
         </>
       )}
     </div>
@@ -1132,28 +1087,31 @@ export default function DashboardHomeClient() {
  */
 function DashboardLoadError({ firstName }: { firstName: string }) {
   return (
-    <div className="max-w-xl mx-auto pt-10">
-      <div className="paper-card p-8 text-center">
-        <Sparkles className="w-8 h-8 text-gold-500 mx-auto mb-3" />
-        <h2 className="font-display text-xl font-semibold text-ink mb-2">
+    <div className="mx-auto max-w-xl pt-10">
+      <div className="f0-rule-left py-1 pl-4">
+        <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
+          <Sparkles className="mr-1.5 inline h-3.5 w-3.5" aria-hidden />
+          Home
+        </p>
+        <h2 className="mt-2 font-display text-display-2 font-extrabold leading-tight text-ink">
           {firstName ? `We couldn't load your home, ${firstName}` : "We couldn't load your home"}
         </h2>
-        <p className="text-soft max-w-md mx-auto mb-5">
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
           Something took too long on our side. Your progress is safe — give it another try, or
           jump straight into the Club.
         </p>
-        <div className="flex items-center justify-center gap-3 flex-wrap">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             onClick={() => window.location.reload()}
-            className="cta-button inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm"
+            className="cta-button f0-focus inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm"
           >
-            Reload <ArrowRight className="w-4 h-4" />
+            Reload <ArrowRight className="h-4 w-4" />
           </button>
           <Link
             href="/community"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium text-gold-700 hover:text-gold-800"
+            className="f0-focus f0-press inline-flex items-center gap-2 rounded-md font-display text-sm font-bold text-gold-700 hover:text-gold-600"
           >
-            <Users className="w-4 h-4" /> Go to the community
+            <Users className="h-4 w-4" /> Go to the community
           </Link>
         </div>
       </div>
@@ -1161,6 +1119,8 @@ function DashboardLoadError({ firstName }: { firstName: string }) {
   );
 }
 
+/* A ledger row, not a bordered tile: the quick links are a LIST of doors, and a
+   list is what the register asks for once there are more than three of them. */
 function QuickLink({
   href,
   icon: Icon,
@@ -1173,18 +1133,48 @@ function QuickLink({
   sub: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 p-3 rounded-xl hover:bg-paper border border-transparent hover:border-sand transition-colors group"
-    >
-      <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
-        <Icon className="w-[18px] h-[18px] text-gold-700" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-ink">{label}</p>
-        <p className="text-xs text-soft">{sub}</p>
-      </div>
-      <ArrowRight className="w-4 h-4 text-midnight-600 group-hover:text-gold-700 transition-colors" />
+    <Link href={href} className="f0-ledger-row f0-focus group">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--accent-solid)_12%,transparent)] text-gold-700">
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-display text-[14.5px] font-bold text-ink">{label}</span>
+        <span className="mt-0.5 block text-[12.5px] text-soft">{sub}</span>
+      </span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-soft transition-all group-hover:translate-x-0.5 group-hover:text-gold-700 motion-reduce:transform-none" />
+    </Link>
+  );
+}
+
+/* One door into the FTA hub. Same row grammar as QuickLink, with the action
+   verb kept because the Academy rail is a premium surface and each door does a
+   different thing ("open chat" vs "watch recordings"). */
+function FtaDoor({
+  href,
+  icon: Icon,
+  label,
+  sub,
+  action,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  sub: string;
+  action: string;
+}) {
+  return (
+    <Link href={href} className="f0-ledger-row f0-focus group">
+      <Icon className="h-4 w-4 shrink-0 self-start text-gold-700" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
+          {label}
+        </span>
+        <span className="mt-1 block text-[13px] leading-relaxed text-soft">{sub}</span>
+        <span className="mt-1.5 inline-flex items-center gap-1.5 font-display text-[12.5px] font-bold text-ink">
+          {action}
+          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+        </span>
+      </span>
     </Link>
   );
 }

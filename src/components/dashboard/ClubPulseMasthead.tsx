@@ -54,9 +54,12 @@ function pctText(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
 }
+/* PRICE COLOUR, canonically. `text-green-600` / `text-red-600` measured ~3.8:1
+   and ~2.9:1 on the dark page; text-price-up / text-price-down carry the same
+   MEANING and re-map per theme, and must never be written with a dark: variant. */
 function pctClass(v: number | null | undefined): string {
   if (v == null) return "text-soft";
-  return v > 0 ? "text-green-600" : v < 0 ? "text-red-600" : "text-soft";
+  return v > 0 ? "text-price-up" : v < 0 ? "text-price-down" : "text-soft";
 }
 
 export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }) {
@@ -153,19 +156,22 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
   const loading = pulse == null;
 
   return (
+    /* CANVAS V2 (M1): the bordered gradient panel is gone. The masthead was
+       already composed from type, rules and numerals — wrapping it in a card
+       was the one thing making it read as another box in a stack. It now sits
+       directly on the paper, which is what lets the numerals be the object. */
     <section
       aria-label="Today in the Club"
       data-tour="club-pulse"
-      className="overflow-hidden rounded-2xl border border-sand bg-gradient-to-br from-card to-paper px-5 py-4 shadow-soft sm:px-6 sm:py-5"
     >
       {/* Masthead line: live eyebrow + dateline */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-gold-500 opacity-60 motion-safe:animate-ping" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-gold-500" />
+          <span className="relative flex h-2 w-2" aria-hidden>
+            <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
           </span>
-          <h2 className="font-display text-[11px] font-bold uppercase tracking-[0.16em] text-gold-700">
+          <h2 className="font-display text-eyebrow font-bold uppercase text-gold-700">
             Today in the Club
           </h2>
         </div>
@@ -174,7 +180,7 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
 
       {/* Market ticker — indices inline as mono %, not boxed cards (adults). */}
       {!isKid && (
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1 border-t border-sand pt-3">
+        <div className="f0-rule-top mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1 pt-3">
           {INDICES.map((idx) => {
             const q = indexQuotes?.[idx.symbol];
             return (
@@ -192,7 +198,7 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
               </span>
             );
           })}
-          <span className="ml-auto font-mono text-[10px] uppercase tracking-wide text-midnight-500">
+          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
             markets delayed
           </span>
         </div>
@@ -200,7 +206,7 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
 
       {/* The live pulse — big mono numerals separated by hairline rules. */}
       <div
-        className="mt-3 grid divide-x divide-sand border-t border-sand pt-3"
+        className="f0-rule-top mt-3 grid divide-x divide-sand pt-3"
         style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
       >
         {stats.map((s) => (
