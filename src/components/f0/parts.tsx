@@ -247,7 +247,7 @@ export function MeasureStrip({ items }: { items: Measure[] }) {
           <p
             className={`font-display text-display-2 font-extrabold tabular-nums ${
               m.tone === "sentiment"
-                ? "text-lime-700 dark:text-lime-400"
+                ? "text-sentiment"
                 : "text-ink"
             }`}
           >

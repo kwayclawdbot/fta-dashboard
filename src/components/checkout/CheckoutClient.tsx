@@ -147,7 +147,24 @@ export default function CheckoutClient({
   };
 
   return (
-    <div data-mode="club" className="min-h-screen bg-paper text-ink">
+    <div
+      data-mode="club"
+      className="min-h-screen bg-paper text-ink"
+      // TOKEN PLUMBING, not decoration. `--accent-gradient` is declared on
+      // :root, so its var(--accent-a/b) references resolve against :ROOT's
+      // values — re-pointing --accent-a via [data-mode="club"] on this
+      // DESCENDANT does not reach it, and the .cta-button below renders FAMILY
+      // GOLD on the checkout page. Re-declaring the expression here makes it
+      // resolve against this element's club accents. Same defect L6 fixed on
+      // the pre-auth wrappers; the dashboard never hit it because ModeManager
+      // stamps data-mode on <html>, which IS :root.
+      style={
+        {
+          "--accent-gradient":
+            "linear-gradient(135deg, var(--accent-a), var(--accent-b))",
+        } as React.CSSProperties
+      }
+    >
       {/* Header */}
       <header className="border-b border-sand">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">

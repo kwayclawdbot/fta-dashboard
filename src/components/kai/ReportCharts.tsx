@@ -60,7 +60,7 @@ export function PriceChart({
   const hiIdx = closes.indexOf(max);
   const loIdx = closes.indexOf(min);
 
-  const strokeCls = up ? "text-green-600" : "text-red-600";
+  const strokeCls = up ? "text-price-up" : "text-price-down";
 
   return (
     <div className="w-full overflow-hidden">
@@ -108,7 +108,7 @@ export function PriceChart({
         {showKeyLevels && (
           <g>
             {/* 52w high */}
-            <circle cx={x(hiIdx)} cy={y(max)} r={3} className="text-green-600" fill="currentColor" />
+            <circle cx={x(hiIdx)} cy={y(max)} r={3} className="text-price-up" fill="currentColor" />
             <text
               x={Math.min(x(hiIdx) + 4, W - padR - 40)}
               y={Math.max(y(max) - 4, padT + 8)}
@@ -119,7 +119,7 @@ export function PriceChart({
               High ${max.toFixed(2)}
             </text>
             {/* 52w low */}
-            <circle cx={x(loIdx)} cy={y(min)} r={3} className="text-red-600" fill="currentColor" />
+            <circle cx={x(loIdx)} cy={y(min)} r={3} className="text-price-down" fill="currentColor" />
             <text
               x={Math.min(x(loIdx) + 4, W - padR - 38)}
               y={Math.min(y(min) + 12, H - padB - 2)}
@@ -219,7 +219,7 @@ export function RevenueChart({
                   width={barW}
                   height={Math.max(H - padB - y(Math.abs(p.netIncome)), 1)}
                   rx={3}
-                  className={netPos ? "text-green-600" : "text-red-600"}
+                  className={netPos ? "text-price-up" : "text-price-down"}
                   fill="currentColor"
                   opacity={0.45}
                 />

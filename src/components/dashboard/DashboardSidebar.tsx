@@ -35,6 +35,7 @@ import {
   Bell,
   Compass,
   Gift,
+  Award,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
@@ -103,6 +104,26 @@ const CLUB_COMMUNITY: NavItem = {
   href: "/community",
   icon: MessageCircle,
 };
+// Canvas v2 adds two club destinations that are places, not actions: the
+// Changed My Mind feed and Circles. They nest under Club rather than taking
+// top-level rows — the five-item primary is the constraint, and this is the
+// same umbrella pattern Watchlist already uses. "Share your call" is
+// deliberately NOT here: composing is an action, reached from the feed and the
+// in-surface rail, and a nav row that opens a composer reads as a place.
+// Young kids keep the plain CLUB_COMMUNITY row: RLS lets a minor READ a Circle
+// but never open, join or post in one, so surfacing it to them advertises a
+// door that will not open.
+const CLUB_COMMUNITY_HUB: NavItem = {
+  ...CLUB_COMMUNITY,
+  subItems: [
+    { label: "Club Feed", href: "/community" },
+    { label: "Changed my mind", href: "/community/changed-my-mind" },
+    { label: "Circles", href: "/circles" },
+  ],
+};
+// Belts render the XP ladder (White → Yellow → Blue → Purple → Black). It sits
+// with standing/growth, next to Leaderboard and Progress — not in Learn.
+const CLUB_BELTS: NavItem = { label: "Belts", href: "/belts", icon: Award };
 
 // ── Cheat Code Club — five-item scheme (individual/club mode, R2) ─────────────
 // The individual (solo adult) member runs the redesigned five-item nav:
@@ -111,7 +132,7 @@ const CLUB_COMMUNITY: NavItem = {
 // Community carries a persistent accent so it reads prominent (the desktop
 // counterpart of the elevated center tab on mobile).
 const CLUB_DISCOVER: NavItem = { label: "Discover", href: "/discover", icon: Compass };
-const CLUB_COMMUNITY_PROMINENT: NavItem = { ...CLUB_COMMUNITY, accent: true };
+const CLUB_COMMUNITY_PROMINENT: NavItem = { ...CLUB_COMMUNITY_HUB, accent: true };
 // Individual watchlist umbrella: the flagship Community Board + the member's own
 // private watchlist ("My Watchlist" — the solo counterpart of "My Family").
 const CLUB_WATCHLIST_SOLO: NavItem = {
@@ -385,6 +406,7 @@ export function getNavItems(
       // Settings#family, so no Family group is pushed here.
       CLUB_ACCOUNT_HEADER,
       LEADERBOARD,
+      CLUB_BELTS,
       CLUB_PROGRESS,
       CLUB_REFER,
       // FTA hub keeps its own gold, hard-split treatment at the tail.
@@ -434,7 +456,7 @@ export function getNavItems(
     const primary: NavItem[] = [
       { label: "Home", href: "/dashboard", icon: LayoutDashboard },
       CLUB_DISCOVER,
-      CLUB_COMMUNITY,
+      CLUB_COMMUNITY_HUB,
       isSolo ? SOLO_ACCOUNT_ITEM : FAMILY_ITEM,
     ];
     const more: NavItem[] = [
@@ -447,6 +469,7 @@ export function getNavItems(
       practiceGroup(true),
       CLUB_ALERTS,
       LEADERBOARD,
+      CLUB_BELTS,
     ];
     // The FTA section closes the nav as a hard-split gold hub for FTA families;
     // FIC-only parents get the compact locked teaser in its place (to /upgrade).
@@ -459,7 +482,7 @@ export function getNavItems(
   const teenPrimary: NavItem[] = [
     { label: "Home", href: "/dashboard", icon: LayoutDashboard },
     learnGroup(false),
-    CLUB_COMMUNITY,
+    CLUB_COMMUNITY_HUB,
     CLUB_WATCHLIST,
   ];
   const teenMore: NavItem[] = [
@@ -471,6 +494,7 @@ export function getNavItems(
     practiceGroup(true),
     { label: "My Progress", href: "/progress", icon: Trophy },
     LEADERBOARD,
+    CLUB_BELTS,
   ];
   return isFta
     ? [...teenPrimary, FAMILY_MORE_HEADER, ...teenMore, FTA_SECTION]
