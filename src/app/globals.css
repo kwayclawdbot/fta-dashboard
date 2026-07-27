@@ -1479,3 +1479,130 @@ body {
   from { transform: scaleX(0.35); opacity: 0; }
   to   { transform: scaleX(1); opacity: 1; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/* CANVAS V2 — HOME (lane M1, board 01) + the shared gaps it closes       */
+/* ══════════════════════════════════════════════════════════════════════ */
+/* Board 01 introduces four devices the foundation had no vocabulary for:
+   a WARM BRAND-TINTED digest field ("today in 30 seconds"), a NUMBERED
+   RANK PIP on the corner of a tile, a LEAD ring that marks the #1 object
+   in a strip, and a KAI identity mark. All four recur on other boards
+   (Club Picks 17, Kai Alerts 18, Circles 16, Discover 02, Belts 22), and
+   M1 is the only lane permitted to touch this file this round — so they
+   are written as general vocabulary, not as Home-private classes.
+
+   COLOUR LAW, applied: the tinted field is BRAND (accent), so nothing
+   carrying a price may sit on it — the Kai digest is prose and tickers,
+   never a percentage. The Kai mark is kai blue and nothing else is. The
+   rank pip and the lead ring ride --accent-solid, so they are family gold
+   / club orange / FTA metallic without a mode branch. */
+
+/* --- Brand-tinted digest field --------------------------------------- */
+/* The canvas draws "TODAY IN 30 SECONDS" as a peach-to-white wash with a
+   warm hairline — NOT a card: it has no shadow, no neutral fill, and its
+   colour is the brand's, so it reads as an editorial banner rather than a
+   container. Distinct from .f0-hero-field, which is the obsidian island:
+   a surface may carry one of each, and Home does (this, plus the ticker
+   tiles' fields).
+
+   Type INSIDE it stays on the page ramp (ink / soft), because the tint is
+   a wash over --card and never approaches the accent's own value. That is
+   also why price is banned here and why the "never text-ink on a fill"
+   gotcha does NOT apply: this is not a fill, it is a tinted paper. */
+.f0-brief-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  border: 1px solid color-mix(in srgb, var(--accent-solid) 24%, var(--sand));
+  background:
+    linear-gradient(
+      118deg,
+      color-mix(in srgb, var(--accent-solid) 15%, var(--card)) 0%,
+      color-mix(in srgb, var(--accent-solid) 6%, var(--card)) 54%,
+      var(--card) 100%
+    );
+}
+/* Dark: the wash has to LIFT off the obsidian page rather than sink into
+   it — the same correction club2-card, f0-hero-field and f0-tile-field
+   each needed. Stronger tint, brighter edge. */
+:root[data-theme="dark"] .f0-brief-field,
+:root[data-theme="dark"] [data-mode] .f0-brief-field {
+  border-color: color-mix(in srgb, var(--accent-solid) 34%, var(--sand));
+  background:
+    linear-gradient(
+      118deg,
+      color-mix(in srgb, var(--accent-solid) 20%, var(--card)) 0%,
+      color-mix(in srgb, var(--accent-solid) 9%, var(--card)) 56%,
+      var(--card) 100%
+    );
+}
+
+/* --- Rank pip --------------------------------------------------------- */
+/* The canvas's numbered badge on the corner of a ranked tile. Position is
+   the CALLER's (it sits differently on a tile, a ledger row and a picks
+   card); this owns shape, weight and the lead state only. */
+.f0-rank {
+  display: grid;
+  place-items: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--sand);
+  color: var(--soft);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.f0-rank-lead {
+  background: var(--accent-solid);
+  color: var(--accent-on);
+}
+
+/* --- Lead ring on a tile ---------------------------------------------- */
+/* Board 01 rings the #1 ticker in brand orange with a soft bloom. Applied
+   to the TILE WRAPPER (TickerTile's className) and reaching the field
+   inside it, because the field is presentational and the wrapper is what
+   the consumer can style. Never combined with a coloured field — the ring
+   is the only chromatic thing on the object, so the delta underneath is
+   still the one price colour in the column. */
+.f0-tile-lead .f0-tile-field {
+  box-shadow:
+    0 0 0 2px var(--accent-solid),
+    0 10px 22px -12px color-mix(in srgb, var(--accent-solid) 60%, transparent);
+}
+
+/* --- Kai identity mark ------------------------------------------------ */
+/* Wherever Kai speaks, it wears kai blue and nothing else does. A rounded
+   square (matching the ticker tile's geometry) so an AI object and a
+   market object read as the same family at different meanings. Constant
+   white foreground: the ground is a saturated fill in both themes, which
+   is exactly the case where --ink would invert into it. */
+.f0-kai-mark {
+  display: grid;
+  place-items: center;
+  border-radius: 0.625rem;
+  color: #FFFFFF;
+  background: linear-gradient(150deg, var(--color-kai-400) 0%, var(--color-kai-600) 100%);
+  box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--kai-blue) 70%, transparent);
+}
+
+/* --- Strip edge fade -------------------------------------------------- */
+/* Every horizontal track in the canvas runs off the right edge. The peek
+   alone is too quiet to read as "this scrolls", so the fade is the
+   affordance — and it must CLEAR at the end of the track or it promises a
+   scroll that cannot happen (toggle `opacity-0` from the caller). Fades to
+   the live page colour, so it works in both themes untouched. Hoisted out
+   of TickerCarousel, where it was an inline style, so the tile strips can
+   share it. */
+.f0-strip-fade {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 3.5rem;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--paper));
+  transition: opacity 300ms ease;
+}

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { resolveHomeRoute } from "@/lib/club/home-route";
-import { buildClubHomeSeed } from "@/lib/club/home-payload";
+import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
 import ClubHomeV2 from "@/components/clubhome/ClubHomeV2";
 import ClubHomeSkeleton from "@/components/clubhome/ClubHomeSkeleton";
 import FreeHome from "@/components/dashboard/FreeHome";
@@ -15,7 +15,7 @@ import DashboardHomeClient from "./DashboardHomeClient";
  * stream on first paint instead of after the client's hydrate → session →
  * profile → tier chain.
  *
- * S3 (this) moves the SECTION DATA too. It used to be client-fetched from
+ * S3 moved the SECTION DATA too. It used to be client-fetched from
  * /api/club/home inside a useEffect, which meant two things:
  *
  *   1. EMPTY-FIRST FLASH. The effect only runs after hydration, so the first
@@ -27,13 +27,24 @@ import DashboardHomeClient from "./DashboardHomeClient";
  * Now the page builds the payload itself, with the SAME assembler the API route
  * uses (src/lib/club/home-payload.ts), and hands the promise to ClubHomeV2.
  *
- * STREAMING, NOT BLOCKING. The promise is deliberately NOT awaited here: the
- * document (layout, nav, masthead shell) streams immediately at the old TTFB,
- * and the payload arrives through the Suspense boundary below as soon as the
- * nine cores settle. Awaiting it here would have pushed the whole document's
- * TTFB out by the cost of the slowest core. The fallback is a SKELETON, never
- * the founding copy — loading and empty stay distinct, which was the original
- * bug.
+ * CANVAS V2 (M1) adds the SPLIT. `briefCore` alone cost ~2.9s — it derives the
+ * deltas and then optionally waits on an LLM polish — and because the assembler
+ * awaited Promise.all over every core, that one paragraph was holding the other
+ * eight sections, and therefore the whole Home boundary, behind it. The seed is
+ * now TWO promises on TWO boundaries:
+ *
+ *   · `rest`  — eight fast cores. Gates the board's skeleton, as before.
+ *   · `brief` — the long pole, resolved independently and awaited only by the
+ *               "Today in 30 seconds" field, behind its own skeleton.
+ *
+ * The request context is still resolved ONCE, so nothing is fetched twice.
+ *
+ * STREAMING, NOT BLOCKING. Neither promise is awaited here: the document
+ * (layout, nav, masthead shell) streams immediately at the old TTFB and the
+ * payloads arrive through their boundaries. Awaiting either would push the
+ * document's TTFB out by the cost of the slowest core. Both fallbacks are
+ * SKELETONS, never founding copy — loading and empty stay distinct, which was
+ * the original bug.
  *
  * The seed is only built for the club fast-path. Free / family / kid / teen fall
  * through exactly as before, and the client's own batched fetch remains the
@@ -47,10 +58,10 @@ export default async function DashboardHome() {
   const route = await resolveHomeRoute(supabase);
 
   if (route.kind === "club") {
-    // Started here, awaited inside the boundary. buildClubHomeSeed never
-    // rejects — it resolves to null on any failure, and a null seed makes
+    // Started here, awaited inside the boundaries. Neither promise ever rejects
+    // (buildClubHomeSeedSplit catches), and either resolving to null makes
     // ClubHomeV2 fall back to its original client fetch.
-    const seedPromise = buildClubHomeSeed(supabase);
+    const { rest, brief } = buildClubHomeSeedSplit(supabase);
 
     return (
       <Suspense fallback={<ClubHomeSkeleton />}>
@@ -59,7 +70,9 @@ export default async function DashboardHome() {
           register={route.register}
           learning={route.learning}
           challengeExpiresAt={route.challengeExpiresAt}
-          seedPromise={seedPromise}
+          xp={route.xp}
+          seedPromise={rest}
+          briefPromise={brief}
         />
       </Suspense>
     );

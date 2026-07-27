@@ -121,6 +121,16 @@ export default function HomeMasthead({
           </>
         )}
       </h1>
+
+      {/* Canvas board 01's orienting line, kept verbatim. It does the job the
+          headline can't: the headline names the LEAD, this names the SURFACE, so
+          a member who lands here mid-scroll always knows what they are reading. */}
+      <p
+        className="mt-3 text-[14px] leading-snug text-soft"
+        style={{ "--i": 2 } as React.CSSProperties}
+      >
+        Here&apos;s what the Club is seeing.
+      </p>
     </header>
   );
 }

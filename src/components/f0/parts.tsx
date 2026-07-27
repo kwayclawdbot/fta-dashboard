@@ -263,8 +263,17 @@ export function MeasureStrip({ items }: { items: Measure[] }) {
 }
 
 /* ── Meter ────────────────────────────────────────────────────────────────
-   Progress toward something you can act on → volt by law. `onDark` flips the
-   track for use inside a hero field. */
+   Progress toward something you can act on → the ACTION colour by law.
+   `onDark` flips the track for use inside a hero field.
+
+   MODE CORRECTNESS (canvas v2, M1): the fill was a hardcoded `bg-volt-500`,
+   which is the CLUB's orange — so every Family and FTA surface that adopted
+   this primitive (family progress, teen paper account, lesson progress) painted
+   Club orange into a gold register. Same defect the f0 hairline primitives were
+   repointed to fix, same remedy: ride --accent-solid via `bg-accent`, so the bar
+   is family gold / club orange / FTA metallic with no mode branch at the call
+   site. In Club mode --accent-solid IS #FF6A00 — pixel-identical to volt-500 —
+   so nothing in the Club changes. */
 export function Meter({
   pct,
   onDark = false,
@@ -286,7 +295,7 @@ export function Meter({
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full bg-volt-500 transition-[width] duration-700 ease-out"
+        className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out"
         style={{ width: `${w}%` }}
       />
     </div>

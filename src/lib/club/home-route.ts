@@ -47,6 +47,13 @@ export type HomeRoute =
       register: Register;
       learning: LearningPickup | null;
       challengeExpiresAt: string | null;
+      /**
+       * Lifetime XP, for Home's closing belt strip (canvas board 01 "YOU").
+       * `null` means the read did not land — NOT zero. A real zero is a real
+       * White Belt at 0 XP and renders as such; null renders the honest
+       * "your rank starts with your first rep" state instead.
+       */
+      xp: number | null;
     };
 
 /**
@@ -63,13 +70,23 @@ export async function resolveHomeRoute(
     } = await supabase.auth.getUser();
     if (!user) return { kind: "client" };
 
-    const [{ data: state }, { data: profile }] = await Promise.all([
+    // XP joins this batch rather than adding a round trip: it depends only on
+    // user.id, which is already known, so it rides alongside the two reads that
+    // were already here. `xp_for_users` (migration 118) is the SECURITY DEFINER
+    // grouped SUM — a client-side sum over `xp_events` is capped by PostgREST's
+    // max-rows and would silently under-report a long-standing member's belt.
+    const [{ data: state }, { data: profile }, xpRes] = await Promise.all([
       supabase.rpc("get_home_state", { p_user_id: user.id }),
       supabase
         .from("profiles")
         .select("display_name, family_id, role, age_group, track")
         .eq("id", user.id)
         .single(),
+      // Promise.resolve(): the PostgREST builder is a thenable, not a Promise,
+      // so it has no .catch of its own to hang the degradation off.
+      Promise.resolve(supabase.rpc("xp_for_users", { p_user_ids: [user.id] })).catch(
+        () => null
+      ),
     ]);
 
     const prof = profile as ProfileRow | null;
@@ -137,12 +154,20 @@ export async function resolveHomeRoute(
     const challengeExpiresAt =
       (passRes?.data?.expires_at as string | null | undefined) ?? null;
 
+    // A missing row is 0 XP (White Belt) — that is a real rank, not an absence.
+    // Only a FAILED read is null, and only that renders the honest empty state.
+    const xpRow = (
+      (xpRes?.data ?? null) as { user_id: string; xp: number }[] | null
+    )?.find((r) => r.user_id === user.id);
+    const xp = xpRes?.error ? null : Number(xpRow?.xp ?? 0) || 0;
+
     return {
       kind: "club",
       firstName,
       register: deriveRegister(prof),
       learning,
       challengeExpiresAt,
+      xp,
     };
   } catch {
     // Any failure → the untouched client resolves it (no regression).

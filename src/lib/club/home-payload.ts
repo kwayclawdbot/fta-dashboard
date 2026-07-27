@@ -58,12 +58,24 @@ const CORES: Record<ClubSectionKey, (ctx: ClubCtx) => Promise<CoreResult>> = {
 
 const KEYS = Object.keys(CORES) as ClubSectionKey[];
 
+/** Everything except the brief — see buildClubHomeSeedSplit. */
+const KEYS_WITHOUT_BRIEF = KEYS.filter((k) => k !== "brief");
+
 /**
- * Run all nine section cores against an already-resolved context and assemble
- * the batch envelope. Never throws: a failing core degrades to `null` + an
- * `_errors` entry.
+ * Run the section cores against an already-resolved context and assemble the
+ * batch envelope. Never throws: a failing core degrades to `null` + an `_errors`
+ * entry.
+ *
+ * `keys` defaults to all nine. The /dashboard server component passes the
+ * eight-key subset so the brief can stream on its own boundary — see
+ * buildClubHomeSeedSplit. Sections not in `keys` are simply absent from the
+ * envelope, which the client's `applyBatch` already treats as "leave alone"
+ * rather than "null it out", so nothing downstream needed to change.
  */
-export async function buildClubHomePayload(ctx: ClubCtx): Promise<ClubHomePayload> {
+export async function buildClubHomePayload(
+  ctx: ClubCtx,
+  keys: ClubSectionKey[] = KEYS
+): Promise<ClubHomePayload> {
   // PERF: the metrics read-through is memoised and the cores that depend on it
   // (trending, pulse) already await it themselves — so kicking it off WITHOUT
   // awaiting keeps single-flight behaviour while letting the independent cores
@@ -72,7 +84,7 @@ export async function buildClubHomePayload(ctx: ClubCtx): Promise<ClubHomePayloa
   void ctx.ensureFresh().catch(() => {});
 
   const settled = await Promise.all(
-    KEYS.map(async (key) => {
+    keys.map(async (key) => {
       try {
         const r = await CORES[key](ctx);
         return { key, r, threw: false as const };
@@ -119,4 +131,66 @@ export function buildClubHomeSeed(
     console.error("[club/home] server seed failed:", err);
     return null;
   });
+}
+
+/** The two-boundary seed — see buildClubHomeSeedSplit. */
+export interface ClubHomeSplitSeed {
+  /** Everything except the brief. Gates the board's Suspense boundary. */
+  rest: Promise<ClubHomePayload | null>;
+  /** The brief body alone (BriefResponse-shaped), or null when walled/failed. */
+  brief: Promise<unknown>;
+}
+
+/**
+ * SPLIT SEED — the outstanding speed fix (plan §4).
+ *
+ * `briefCore` is the board's sole long pole (~2.9s): it derives the deltas and
+ * then optionally waits on an LLM polish. Because buildClubHomePayload awaits
+ * `Promise.all` over every core, that one section was holding the OTHER EIGHT —
+ * and therefore the whole Home Suspense boundary — behind it. Every member paid
+ * three seconds of skeleton for one paragraph.
+ *
+ * This resolves the request context ONCE (so nothing is fetched twice) and hands
+ * back two independent promises. /dashboard puts them on two Suspense
+ * boundaries: the board streams as soon as the eight fast cores settle, and the
+ * "Today in 30 seconds" field fills in on its own a beat later behind its own
+ * skeleton. Loading still never renders as empty — each boundary has its own
+ * skeleton — it just stops being one shared 2.9s gate.
+ *
+ * SAFETY: identical to buildClubHomeSeed. Neither promise can reject (a
+ * rejection would blow up a client component that `use()`s it), and either
+ * resolving to null degrades to the pre-existing client fetch path.
+ */
+export function buildClubHomeSeedSplit(
+  supabase: SupabaseClient
+): ClubHomeSplitSeed {
+  const ctxPromise: Promise<ClubCtx | null> = resolveClubCtx(supabase).catch(
+    (err) => {
+      console.error("[club/home] split seed context failed:", err);
+      return null;
+    }
+  );
+
+  const rest = ctxPromise
+    .then((ctx) => (ctx ? buildClubHomePayload(ctx, KEYS_WITHOUT_BRIEF) : null))
+    .catch((err) => {
+      console.error("[club/home] split seed (rest) failed:", err);
+      return null;
+    });
+
+  const brief = ctxPromise
+    .then(async (ctx) => {
+      if (!ctx) return null;
+      const r = await CORES.brief(ctx);
+      // A deliberate wall (free tier → 403) is an absence, not an error, exactly
+      // as the batched assembler treats it.
+      if (!r || (r.status && r.status !== 200)) return null;
+      return r.body;
+    })
+    .catch((err) => {
+      console.error("[club/home] split seed (brief) failed:", err);
+      return null;
+    });
+
+  return { rest, brief };
 }
