@@ -2,6 +2,7 @@
 
 import { m } from "@/lib/motion";
 import { Check, RotateCcw, ArrowRight } from "lucide-react";
+import { Meter } from "@/components/f0/parts";
 import type { Decision } from "@/lib/simulator/scenarios";
 
 /**
@@ -28,6 +29,11 @@ interface ScenarioResultPanelProps {
   onRetry: () => void;
   onNext: () => void;
   hasNext: boolean;
+  /** XP actually written to `xp_events` for this pass, or null if none was
+   *  (already earned on a previous pass, or the pattern was not passed). */
+  xpAwarded?: number | null;
+  /** True while the XP write is still in flight — loading, not "zero". */
+  xpPending?: boolean;
 }
 
 const DECISION_LABELS: Record<Decision, string> = {
@@ -48,6 +54,8 @@ export default function ScenarioResultPanel({
   onRetry,
   onNext,
   hasNext,
+  xpAwarded = null,
+  xpPending = false,
 }: ScenarioResultPanelProps) {
   const isCorrectDecision = userDecision === correctDecision;
 
@@ -69,20 +77,10 @@ export default function ScenarioResultPanel({
         {passed ? "Passed" : "Needs another rep"}
       </p>
 
-      <div
-        className="mt-3 h-1.5 overflow-hidden rounded-full bg-sand"
-        role="progressbar"
-        aria-valuenow={totalScore}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <m.div
-          initial={{ width: 0 }}
-          animate={{ width: `${totalScore}%` }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="h-full rounded-full bg-volt-500"
-        />
-      </div>
+      {/* The shared f0 Meter: its fill rides --accent-solid, so the bar is club
+          orange here and family gold on a Family-Mode account with no branch at
+          the call site. Progress is an ACTION colour by law — never a price. */}
+      <Meter pct={totalScore} className="mt-3" />
 
       <div className="f0-ledger mt-3">
         <div className="f0-ledger-row justify-between gap-4">
@@ -118,11 +116,27 @@ export default function ScenarioResultPanel({
         {explanation}
       </p>
 
-      <div className="mt-4 flex items-center gap-3">
+      {/* Canvas "21 Micro Lesson" footer (App Light L1681-1686): the XP earned
+          sits on a rule to the left of the forward action. It reports a REAL
+          `xp_events` write — a pattern already passed once earns nothing again
+          and says so, rather than showing a number that was not banked. */}
+      <div className="f0-rule-top mt-4 flex items-center gap-3 pt-3.5">
+        <span
+          className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold-700"
+          aria-live="polite"
+        >
+          {xpPending
+            ? "Banking XP…"
+            : xpAwarded
+              ? `+${xpAwarded} XP`
+              : passed
+                ? "Already banked"
+                : "No XP yet"}
+        </span>
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-sand px-4 py-2.5 font-display text-[13px] font-bold text-ink transition-colors hover:border-gold-400 hover:text-gold-700"
+          className="f0-focus f0-press ml-auto inline-flex items-center gap-1.5 rounded-xl border border-sand px-4 py-2.5 font-display text-[13px] font-bold text-ink transition-colors hover:border-gold-400 hover:text-gold-700"
         >
           <RotateCcw className="h-4 w-4" />
           Run it again
@@ -131,7 +145,7 @@ export default function ScenarioResultPanel({
           <button
             type="button"
             onClick={onNext}
-            className="cta-button inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px]"
+            className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px]"
           >
             Next pattern
             <ArrowRight className="h-4 w-4" />

@@ -34,15 +34,13 @@ export default function SimulatorTabs() {
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`relative -mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.08em] transition-colors ${
+            className={`f0-focus relative -mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.08em] transition-colors ${
               active ? "text-ink" : "text-soft hover:text-ink"
             }`}
           >
             <Icon className="h-4 w-4" />
             {t.label}
-            {active && (
-              <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-volt-500" />
-            )}
+            {active && <span className="f0-seg-bar bg-accent" aria-hidden />}
           </Link>
         );
       })}

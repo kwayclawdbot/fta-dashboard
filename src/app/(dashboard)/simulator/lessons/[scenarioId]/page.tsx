@@ -9,11 +9,28 @@ import Link from "next/link";
 import ScenarioDecisionPanel from "@/components/simulator/ScenarioDecisionPanel";
 import ScenarioResultPanel from "@/components/simulator/ScenarioResultPanel";
 import ChartDrawingTools from "@/components/simulator/ChartDrawingTools";
+import { Meter } from "@/components/f0/parts";
 import { getScenarioById, SCENARIOS, type Decision } from "@/lib/simulator/scenarios";
 import { generatePatternBars } from "@/lib/simulator/pattern-injector";
 import type { OHLCV } from "@/lib/simulator/market-engine";
 import type { PriceLine, ChartHandle } from "@/components/simulator/CandlestickChart";
 import { createClient } from "@/lib/supabase/client";
+import { XP, awardXp, hasXpForRef } from "@/lib/xp";
+
+/**
+ * PATTERN PRACTICE — one scenario, canvas v2.
+ *
+ * Canvas reference: "21 Micro Lesson" (App Light L1640-1687) — a progress track
+ * with a counter across the top, the question set at display weight, the scene,
+ * then lettered answer rows and an XP footer. All of that is here; the tape,
+ * the pattern injector and the scoring rubric are untouched.
+ *
+ * BACKEND: passing a pattern now BANKS REAL XP. `sim_scenario_scores` already
+ * recorded the attempt; nothing ever wrote to `xp_events`, so the canvas's
+ * "+10 XP" would have been a lie. It is written once per pattern, guarded by
+ * `hasXpForRef`, and the footer reports what was actually banked — including
+ * "already banked" on a repeat pass.
+ */
 
 const CandlestickChart = dynamic(
   () => import("@/components/simulator/CandlestickChart"),
@@ -33,6 +50,9 @@ export default function ScenarioPracticePage() {
   const [userDecision, setUserDecision] = useState<Decision | null>(null);
   const [scores, setScores] = useState({ pattern: 0, trade: 0, total: 0, passed: false });
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 100000));
+  // Real XP outcome for this attempt — null until the write resolves.
+  const [xpAwarded, setXpAwarded] = useState<number | null>(null);
+  const [xpPending, setXpPending] = useState(false);
 
   const chartRef = useRef<ChartHandle | null>(null);
   const allBarsRef = useRef<{
@@ -205,10 +225,14 @@ export default function ScenarioPracticePage() {
     totalScore: number,
     passed: boolean
   ) {
+    if (passed) setXpPending(true);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setXpPending(false);
+        return;
+      }
       await supabase.from("sim_scenario_scores").insert({
         user_id: user.id,
         scenario_id: scenarioId,
@@ -218,8 +242,22 @@ export default function ScenarioPracticePage() {
         passed,
         decision,
       });
+
+      // XP is banked once per pattern, ever. `ref_id` is the scenario id, so a
+      // second pass is a no-op and the footer says "already banked" rather than
+      // claiming XP that was not written.
+      if (passed) {
+        const ref = `scenario:${scenarioId}`;
+        const already = await hasXpForRef(supabase, user.id, "game", ref);
+        if (!already) {
+          await awardXp(supabase, user.id, "game", XP.GAME, ref);
+          setXpAwarded(XP.GAME);
+        }
+      }
     } catch {
       // ignore
+    } finally {
+      setXpPending(false);
     }
   }
 
@@ -228,6 +266,8 @@ export default function ScenarioPracticePage() {
     setSeed(Math.floor(Math.random() * 100000));
     setPhase("intro");
     setUserDecision(null);
+    setXpAwarded(null);
+    setXpPending(false);
   }
 
   function handleNext() {
@@ -251,7 +291,7 @@ export default function ScenarioPracticePage() {
         </p>
         <Link
           href="/simulator/lessons"
-          className="mt-3 inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700"
+          className="f0-focus mt-3 inline-flex items-center gap-1.5 rounded-full font-display text-[14px] font-bold text-gold-700"
         >
           <ArrowLeft className="h-4 w-4" />
           All patterns
@@ -266,13 +306,25 @@ export default function ScenarioPracticePage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-24">
-      <Link
-        href="/simulator/lessons"
-        className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        All patterns
-      </Link>
+      {/* Canvas "21 Micro Lesson" progress header (App Light L1642-1646): the
+          way out, a track, and the counter — one row, no box. */}
+      <div className="flex items-center gap-4">
+        <Link
+          href="/simulator/lessons"
+          aria-label="Back to all patterns"
+          className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          All patterns
+        </Link>
+        <Meter
+          pct={((currentIdx + 1) / SCENARIOS.length) * 100}
+          className="min-w-0 flex-1"
+        />
+        <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-gold-700">
+          {currentIdx + 1}/{SCENARIOS.length}
+        </span>
+      </div>
 
       {/* Chart canvas + the learn / decide rail. Asymmetric page layout, not an
           equal-column card grid — the canvas takes the room it needs. */}
@@ -349,7 +401,7 @@ export default function ScenarioPracticePage() {
               <m.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button
                   onClick={startPlayback}
-                  className="cta-button flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px]"
+                  className="cta-button f0-focus f0-press flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px]"
                 >
                   <Play className="h-4 w-4" />
                   Start practice
@@ -380,6 +432,8 @@ export default function ScenarioPracticePage() {
                   onRetry={handleRetry}
                   onNext={handleNext}
                   hasNext={hasNext}
+                  xpAwarded={xpAwarded}
+                  xpPending={xpPending}
                 />
               </m.div>
             )}

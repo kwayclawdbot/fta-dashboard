@@ -280,10 +280,97 @@ export async function resetPortfolio(portfolioId: string): Promise<void> {
   const supabase = createClient();
   await supabase.from("sim_positions").delete().eq("portfolio_id", portfolioId);
   await supabase.from("sim_trades").delete().eq("portfolio_id", portfolioId);
+  await supabase.from("sim_equity_snapshots").delete().eq("portfolio_id", portfolioId);
   await supabase.from("sim_portfolios").update({
-    balance: 100000,
+    balance: INITIAL_BALANCE,
     total_pnl: 0,
     total_trades: 0,
     winning_trades: 0,
   }).eq("id", portfolioId);
+}
+
+/* ── EQUITY HISTORY (migration 197) ───────────────────────────────────────
+   The Practice Portfolio hero draws a real equity curve. It is drawn from
+   `sim_equity_snapshots` — what the account was actually worth, when — and
+   NEVER interpolated or back-filled, so a brand-new account shows a founding
+   state rather than a fabricated flat line.
+
+   Paper money only: this is the member's own practice record, not a track
+   record and not a performance claim. */
+
+export interface EquityPoint {
+  /** epoch ms — the shape `PriceChart` and the sparkline already speak. */
+  t: number;
+  /** total account value at capture: cash + mark-to-market of open positions. */
+  equity: number;
+}
+
+/** At most one capture per portfolio per minute — the tape ticks far faster. */
+const SNAPSHOT_MIN_GAP_MS = 60_000;
+let lastSnapshotAt = 0;
+
+/**
+ * Record what the practice account is worth right now. Best-effort and
+ * rate-limited: a dropped snapshot leaves a gap in the curve, which is honest,
+ * where a retry storm would not be. Returns true only if a row was written.
+ */
+export async function saveEquitySnapshot(
+  state: PortfolioState,
+  opts: { force?: boolean } = {}
+): Promise<boolean> {
+  if (!state.portfolioId) return false;
+  const now = Date.now();
+  if (!opts.force && now - lastSnapshotAt < SNAPSHOT_MIN_GAP_MS) return false;
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase.from("sim_equity_snapshots").insert({
+    portfolio_id: state.portfolioId,
+    user_id: user.id,
+    equity: getEquity(state),
+    cash: Math.round(state.balance * 100) / 100,
+    open_positions: state.positions.length,
+  });
+  if (error) return false;
+
+  lastSnapshotAt = now;
+  return true;
+}
+
+/**
+ * The curve, oldest → newest, for a trailing window. `days = 0` means "all of
+ * it". Fails soft to an empty array — the caller renders the founding state,
+ * which is the truthful reading of "there is no history yet".
+ */
+export async function loadEquityHistory(
+  portfolioId: string,
+  days = 0
+): Promise<EquityPoint[]> {
+  const supabase = createClient();
+  let q = supabase
+    .from("sim_equity_snapshots")
+    .select("equity, captured_at")
+    .eq("portfolio_id", portfolioId)
+    .order("captured_at", { ascending: true })
+    .limit(500);
+
+  if (days > 0) {
+    q = q.gte(
+      "captured_at",
+      new Date(Date.now() - days * 86_400_000).toISOString()
+    );
+  }
+
+  const { data, error } = await q;
+  if (error || !data) return [];
+  return data
+    .map((r) => ({
+      t: new Date(r.captured_at as string).getTime(),
+      equity: Number(r.equity),
+    }))
+    .filter((p) => Number.isFinite(p.t) && Number.isFinite(p.equity));
 }

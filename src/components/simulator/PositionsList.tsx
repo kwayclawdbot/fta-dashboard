@@ -23,18 +23,11 @@ interface PositionsListProps {
 
 export default function PositionsList({ positions, onClosePosition }: PositionsListProps) {
   return (
-    <section aria-labelledby="sim-positions">
-      <h2
-        id="sim-positions"
-        className="f0-section-rule mb-1 font-display text-eyebrow font-bold uppercase text-soft"
-      >
-        <span className="shrink-0 whitespace-nowrap">
-          Open positions{positions.length > 0 ? ` · ${positions.length}` : ""}
-        </span>
-      </h2>
-
+    // The heading lives on the account-record TAB that controls this panel, so
+    // repeating it here would announce the same label twice to a screen reader.
+    <div>
       {positions.length === 0 ? (
-        <p className="py-4 text-[13.5px] leading-relaxed text-soft">
+        <p className="py-5 text-[13.5px] leading-relaxed text-soft">
           Nothing open. Place a practice order and the position lands here — with a
           live mark, a size and a move you can watch.
         </p>
@@ -88,7 +81,7 @@ export default function PositionsList({ positions, onClosePosition }: PositionsL
                   onClick={() => onClosePosition(pos.id)}
                   title={`Close ${pos.symbol}`}
                   aria-label={`Close ${pos.symbol} position`}
-                  className="ml-1 shrink-0 rounded-full p-1.5 text-soft transition-colors hover:text-ink"
+                  className="f0-focus f0-press ml-1 shrink-0 rounded-full p-1.5 text-soft transition-colors hover:text-ink"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -97,6 +90,6 @@ export default function PositionsList({ positions, onClosePosition }: PositionsL
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

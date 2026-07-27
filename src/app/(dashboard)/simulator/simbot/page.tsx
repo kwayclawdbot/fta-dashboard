@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { m } from "@/lib/motion";
 import { Bot, RotateCw, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useFtaViewer } from "@/components/fta/useFtaViewer";
@@ -31,7 +30,11 @@ import {
 
 export default function SimbotPage() {
   const { loading: viewerLoading, me, tier, profile } = useFtaViewer();
-  const supabaseRef = useRef(createClient());
+  // A lazily-initialised STATE value, not a ref: the bridge consumes it during
+  // render, and a ref read at render time is a correctness hazard (it is not
+  // part of the render output contract). The initialiser runs exactly once, so
+  // the client is still a singleton for this page.
+  const [supabaseClient] = useState(() => createClient());
 
   const register = profile ? deriveRegister(profile) : "adult";
   const isKid = register === "kid";
@@ -43,8 +46,15 @@ export default function SimbotPage() {
   const simbotHint = useNewMemberHints("simbot-intro");
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const [frameState, setFrameState] = useState<"loading" | "ok" | "error">("loading");
   const [frameNonce, setFrameNonce] = useState(0);
+  // The settled outcome is stamped with the nonce it belongs to, so reloading
+  // the frame re-arms the loading overlay by DERIVATION rather than by writing
+  // state from an effect (which cascades a second render before the reload).
+  const [settled, setSettled] = useState<{ nonce: number; state: "ok" | "error" } | null>(
+    null
+  );
+  const frameState: "loading" | "ok" | "error" =
+    settled && settled.nonce === frameNonce ? settled.state : "loading";
   const [celebrateQueue, setCelebrateQueue] = useState<CelebrateOptions[]>([]);
 
   // Push the current resolved theme into the sim iframe.
@@ -83,7 +93,7 @@ export default function SimbotPage() {
   );
 
   useSimbotBridge({
-    supabase: supabaseRef.current,
+    supabase: supabaseClient,
     enabled: canUse && frameState !== "error",
     isKid,
     onReady: () => pushTheme(),
@@ -100,11 +110,6 @@ export default function SimbotPage() {
     window.addEventListener(THEME_EVENT, onThemeChange as EventListener);
     return () => window.removeEventListener(THEME_EVENT, onThemeChange as EventListener);
   }, [canUse, pushTheme]);
-
-  // Re-arm the loading overlay whenever we reload the frame.
-  useEffect(() => {
-    setFrameState("loading");
-  }, [frameNonce]);
 
   if (viewerLoading) {
     return (
@@ -174,10 +179,18 @@ export default function SimbotPage() {
             Every price is practice; no real money.
           </p>
         </div>
+
+        {/* The canvas sets a permanent PAPER MONEY mark against a practice
+            account (New Screens "1a Portfolio" L215-218). Simbot is the same
+            kind of account, so it carries the same mark — this surface must
+            never be mistakable for a real one. */}
+        <span className="f0-chip shrink-0 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-soft">
+          Paper money
+        </span>
       </header>
 
       <div
-        className="relative w-full overflow-hidden rounded-xl border border-sand"
+        className="f0-frame relative w-full overflow-hidden rounded-xl"
         style={{ height: "calc(100vh - 190px)", minHeight: 520 }}
       >
         <iframe
@@ -188,11 +201,11 @@ export default function SimbotPage() {
           title="Simbot trading simulator"
           allow="autoplay"
           onLoad={() => {
-            setFrameState("ok");
+            setSettled({ nonce: frameNonce, state: "ok" });
             // Push theme once the frame is up (belt-and-suspenders with ?theme=).
             pushTheme();
           }}
-          onError={() => setFrameState("error")}
+          onError={() => setSettled({ nonce: frameNonce, state: "error" })}
         />
 
         {frameState === "loading" && (
@@ -217,7 +230,7 @@ export default function SimbotPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setFrameNonce((n) => n + 1)}
-                className="cta-button inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px]"
+                className="cta-button f0-focus f0-press inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px]"
               >
                 <RotateCw className="h-4 w-4" />
                 Try again
@@ -226,7 +239,7 @@ export default function SimbotPage() {
                 href={src}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-sand px-4 py-2 font-display text-[13px] font-bold text-ink transition-colors hover:border-gold-400 hover:text-gold-700"
+                className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-xl border border-sand px-4 py-2 font-display text-[13px] font-bold text-ink transition-colors hover:border-gold-400 hover:text-gold-700"
               >
                 <ExternalLink className="h-4 w-4" />
                 Open

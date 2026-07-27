@@ -1,7 +1,7 @@
 "use client";
 
 import { Play, Pause, SkipForward, RotateCcw } from "lucide-react";
-import { SimChip, SimIconButton } from "./parts";
+import { SimChip, SimChipGroup, SimIconButton } from "./parts";
 
 /**
  * TIME CONTROLS — the transport for the simulated tape.
@@ -46,13 +46,15 @@ export default function TimeControls({
         <SkipForward className="h-4 w-4" />
       </SimIconButton>
 
-      <div className="flex items-center gap-1.5">
+      {/* Speed is one-of-N, so it is a radiogroup: one tab stop, arrows move
+          within it — the same singular keyboard model as SegmentedRail. */}
+      <SimChipGroup ariaLabel="Tape speed">
         {SPEEDS.map((s) => (
-          <SimChip key={s} active={speed === s} onClick={() => onSpeedChange(s)}>
+          <SimChip key={s} radio active={speed === s} onClick={() => onSpeedChange(s)}>
             {s}×
           </SimChip>
         ))}
-      </div>
+      </SimChipGroup>
 
       <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
         Bar {barCount}

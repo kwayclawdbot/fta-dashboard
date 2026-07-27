@@ -63,18 +63,10 @@ export default function TradeHistory({ trades }: TradeHistoryProps) {
   }
 
   return (
-    <section aria-labelledby="sim-history">
-      <h2
-        id="sim-history"
-        className="f0-section-rule mb-1 font-display text-eyebrow font-bold uppercase text-soft"
-      >
-        <span className="shrink-0 whitespace-nowrap">
-          Trade history{trades.length > 0 ? ` · ${trades.length}` : ""}
-        </span>
-      </h2>
-
+    // The heading lives on the account-record TAB that controls this panel.
+    <div>
       {trades.length === 0 ? (
-        <p className="py-4 text-[13.5px] leading-relaxed text-soft">
+        <p className="py-5 text-[13.5px] leading-relaxed text-soft">
           No closes yet. Every practice trade you exit is written here, day by day,
           with what you made or lost on it.
         </p>
@@ -123,6 +115,6 @@ export default function TradeHistory({ trades }: TradeHistoryProps) {
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

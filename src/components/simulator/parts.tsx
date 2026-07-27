@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 /* ══════════════════════════════════════════════════════════════════════════
    PRACTICE — the shared vocabulary for the simulator cluster (Trading Floor,
    Pattern Practice, Simbot).
@@ -134,28 +136,80 @@ export function SimNumField({
   );
 }
 
+/**
+ * A one-of-N group of chips with a SINGULAR keyboard model: one tab stop, arrows
+ * move within it, exactly like SegmentedRail. Used where the canvas itself draws
+ * pills rather than a ruled rail (App Light L277-284 — the timeframe switcher on
+ * the ticker screen is six independent pills) and where a bottom-ruled rail would
+ * break an inline transport row.
+ *
+ * Children must be <SimChip role="radio"> — pass `radio` on each.
+ */
+export function SimChipGroup({
+  ariaLabel,
+  children,
+  className = "",
+}: {
+  ariaLabel: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(e.key)) return;
+    const btns = Array.from(
+      ref.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]:not(:disabled)') ?? []
+    );
+    if (btns.length === 0) return;
+    e.preventDefault();
+    const from = btns.findIndex((b) => b === document.activeElement);
+    const delta = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1;
+    const next = btns[(Math.max(from, 0) + delta + btns.length) % btns.length];
+    next.focus();
+    next.click();
+  }
+
+  return (
+    <div
+      ref={ref}
+      role="radiogroup"
+      aria-label={ariaLabel}
+      onKeyDown={onKeyDown}
+      className={`flex flex-wrap items-center gap-1.5 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** A pill toggle. On-state = brand orange, because selecting is an action. */
 export function SimChip({
   active,
   onClick,
   disabled,
   title,
+  radio = false,
   children,
 }: {
   active?: boolean;
   onClick: () => void;
   disabled?: boolean;
   title?: string;
+  /** Renders as a radio inside a <SimChipGroup> — one tab stop for the set. */
+  radio?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       title={title}
-      aria-pressed={active}
+      {...(radio
+        ? { role: "radio" as const, "aria-checked": !!active, tabIndex: active ? 0 : -1 }
+        : { "aria-pressed": active })}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:opacity-40 ${
+      className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition disabled:opacity-40 ${
         active
           ? "border-gold-400 bg-chip-amber text-gold-700"
           : "border-sand text-soft hover:border-gold-300 hover:text-ink"
@@ -187,7 +241,7 @@ export function SimIconButton({
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition disabled:opacity-35 ${
+      className={`f0-focus f0-press inline-flex h-9 w-9 items-center justify-center rounded-full border transition disabled:opacity-35 ${
         active
           ? "border-gold-400 bg-chip-amber text-gold-700"
           : "border-sand text-soft hover:border-gold-300 hover:text-ink"

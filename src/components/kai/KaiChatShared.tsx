@@ -75,15 +75,29 @@ const KAI_TINT: React.CSSProperties = {
   ].join(", "),
 };
 
-/** Kai's presence mark — a live blue pulse instead of an avatar chip. */
-function KaiPulse() {
+/**
+ * Kai's identity mark. The canvas gives Kai an avatar disc on a blue tint with
+ * a blue ring wherever Kai speaks (App Light L1059 Kai Report, L1408 Kai
+ * Alerts, L422 the feed insight card) — `.f0-kai-mark` is the foundation's
+ * translation of it, and the live pulse rides its corner so the mark reads as
+ * a presence rather than a logo.
+ *
+ * COLOUR LAW: this is the only blue object on the surface, and blue is used
+ * for nothing that is not Kai.
+ */
+function KaiMark({ size = 28 }: { size?: number }) {
   return (
-    <span
-      aria-hidden
-      className="relative flex h-2.5 w-2.5 shrink-0 items-center justify-center"
-    >
-      <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-kai-400/50 motion-safe:animate-ping" />
-      <span className="relative inline-flex h-2 w-2 rounded-full bg-kai-500" />
+    <span className="relative shrink-0" aria-hidden>
+      <span
+        className="f0-kai-mark"
+        style={{ width: size, height: size }}
+      >
+        <Sparkles style={{ width: size * 0.5, height: size * 0.5 }} />
+      </span>
+      <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2 items-center justify-center">
+        <span className="absolute inline-flex h-2 w-2 rounded-full bg-kai-400/60 motion-safe:animate-ping" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-kai-500" />
+      </span>
     </span>
   );
 }
@@ -543,9 +557,43 @@ export default function KaiChatShared({
   }
 
   if (!ready) {
+    // LOADING ≠ EMPTY. This is the SHAPE of the surface pulsing — the Kai field,
+    // the start-here chips and the composer — so it can never be mistaken for
+    // the founding state of a member who has never asked Kai anything (which is
+    // the designed empty state further down, with real copy in it).
     return (
-      <div className={`flex items-center justify-center ${isPanel ? "h-full" : "h-[70vh]"}`}>
-        <Loader2 className={`h-6 w-6 animate-spin ${KAI_INK}`} />
+      <div
+        className={`flex flex-col ${isPanel ? "h-full" : "h-[70vh]"}`}
+        aria-busy="true"
+        aria-label="Opening Kai"
+      >
+        <div className="flex items-center gap-3 border-b border-sand px-4 py-3.5">
+          <div
+            className="f0-kai-mark motion-safe:animate-pulse"
+            style={{ width: 28, height: 28 }}
+            aria-hidden
+          />
+          <div className="space-y-1.5">
+            <div className="h-3.5 w-24 animate-pulse rounded bg-sand" />
+            <div className="h-2.5 w-56 animate-pulse rounded bg-sand/70" />
+          </div>
+        </div>
+        <div className="flex-1 px-4 py-5">
+          <div className="mx-auto max-w-2xl">
+            <div className="f0-hero-field h-44 w-full animate-pulse" />
+            <div className="mt-6 flex flex-wrap gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-8 w-44 animate-pulse rounded-lg bg-sand/70" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-sand px-4 py-3.5">
+          <div className="mx-auto flex max-w-[65ch] items-end gap-3">
+            <div className="h-9 flex-1 animate-pulse rounded border-b border-sand bg-sand/40" />
+            <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-kai-500/40" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -586,7 +634,7 @@ export default function KaiChatShared({
           </div>
           <button
             onClick={newThread}
-            className={`mt-3 flex w-full items-center gap-1.5 pb-3 text-left text-[13px] font-semibold transition hover:opacity-80 ${KAI_INK}`}
+            className={`f0-focus f0-press mt-3 flex w-full items-center gap-1.5 rounded-lg pb-3 text-left text-[13px] font-semibold transition hover:opacity-80 ${KAI_INK}`}
           >
             <Plus className="h-4 w-4" /> New conversation
           </button>
@@ -606,7 +654,7 @@ export default function KaiChatShared({
                   />
                   <button
                     onClick={() => openThread(t.id)}
-                    className={`min-w-0 flex-1 truncate text-left text-[13px] transition ${
+                    className={`f0-focus min-w-0 flex-1 truncate rounded text-left text-[13px] transition ${
                       activeId === t.id
                         ? "font-semibold text-ink"
                         : "text-soft hover:text-ink"
@@ -616,7 +664,7 @@ export default function KaiChatShared({
                   </button>
                   <button
                     onClick={() => deleteThread(t.id)}
-                    className="shrink-0 text-soft/50 opacity-0 transition hover:text-red-600 group-hover:opacity-100 dark:hover:text-red-500"
+                    className="f0-focus shrink-0 rounded text-soft/50 opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-red-500"
                     aria-label="Delete chat"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -636,12 +684,12 @@ export default function KaiChatShared({
           <div className="flex items-center gap-2 border-b border-sand px-3 py-2.5">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-1.5 text-soft transition-colors hover:text-ink"
+              className="f0-focus f0-press rounded-lg p-1.5 text-soft transition-colors hover:text-ink"
               aria-label="Chats"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <KaiPulse />
+            <KaiMark size={26} />
             <div className="min-w-0 flex-1">
               <h2 className="font-display text-[13px] font-extrabold uppercase tracking-tight leading-tight text-ink">
                 Ask Kai
@@ -651,20 +699,21 @@ export default function KaiChatShared({
               </p>
             </div>
             {leftToday !== null && (
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-soft">
+              /* Canvas's trailing count chip on the Kai strip (App Light L1413). */
+              <span className="f0-chip shrink-0 px-2 py-0.5 font-mono text-[9.5px] tabular-nums text-soft">
                 {leftToday} left
               </span>
             )}
             <button
               onClick={openFullView}
-              className={`hidden shrink-0 items-center gap-1 px-1 py-1 text-[11px] font-semibold transition hover:opacity-80 sm:inline-flex ${KAI_INK}`}
+              className={`f0-focus f0-press hidden shrink-0 items-center gap-1 rounded-full px-1 py-1 text-[11px] font-semibold transition hover:opacity-80 sm:inline-flex ${KAI_INK}`}
               title="Open the full Kai page"
             >
               Open full view <ExternalLink className="h-3 w-3" />
             </button>
             <button
               onClick={() => setMemoryOpen(true)}
-              className="shrink-0 p-1.5 text-soft transition-colors hover:text-ink"
+              className="f0-focus f0-press shrink-0 rounded-full p-1.5 text-soft transition-colors hover:text-ink"
               aria-label="What Kai remembers about you"
               title="What Kai remembers about you"
             >
@@ -672,7 +721,7 @@ export default function KaiChatShared({
             </button>
             <button
               onClick={() => onClose?.()}
-              className="shrink-0 p-1.5 text-soft transition-colors hover:text-ink"
+              className="f0-focus f0-press shrink-0 rounded-full p-1.5 text-soft transition-colors hover:text-ink"
               aria-label="Close Kai"
             >
               <X className="h-5 w-5" />
@@ -696,12 +745,12 @@ export default function KaiChatShared({
           <header className="flex items-center gap-3 border-b border-sand px-4 py-3.5">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-1 text-soft transition-colors hover:text-ink sm:hidden"
+              className="f0-focus f0-press rounded-full p-1 text-soft transition-colors hover:text-ink sm:hidden"
               aria-label="Chats"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <KaiPulse />
+            <KaiMark size={30} />
             <div className="min-w-0 flex-1">
               <h1 className="font-display text-[15px] font-extrabold uppercase leading-none tracking-tight text-ink">
                 Ask Kai
@@ -711,14 +760,14 @@ export default function KaiChatShared({
               </p>
             </div>
             {cap > 0 && (
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-soft">
+              <span className="f0-chip shrink-0 px-2.5 py-1 font-mono text-[10px] tabular-nums text-soft">
                 {Math.max(cap - usedToday, 0)}
                 <span className="text-soft/55">/{cap}</span> left today
               </span>
             )}
             <button
               onClick={() => setMemoryOpen(true)}
-              className="shrink-0 p-1.5 text-soft transition-colors hover:text-ink"
+              className="f0-focus f0-press shrink-0 rounded-full p-1.5 text-soft transition-colors hover:text-ink"
               aria-label="What Kai remembers about you"
               title="What Kai remembers about you"
             >
@@ -788,7 +837,7 @@ export default function KaiChatShared({
                     <button
                       key={q}
                       onClick={() => setInput(q)}
-                      className="rounded-full border border-sand px-3 py-1.5 text-[12.5px] font-medium text-soft transition hover:border-kai-500 hover:text-ink"
+                      className="f0-chip f0-focus f0-press px-3 py-1.5 text-[12.5px] font-medium text-soft transition hover:text-ink"
                     >
                       {q}
                     </button>
@@ -844,7 +893,7 @@ export default function KaiChatShared({
                           <button
                             onClick={retry}
                             disabled={sending}
-                            className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-gold-700 transition hover:text-gold-600 disabled:opacity-50"
+                            className="f0-focus f0-press mt-3 inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold text-gold-700 transition hover:text-gold-600 disabled:opacity-50"
                           >
                             {sending ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -900,7 +949,7 @@ export default function KaiChatShared({
                 <button
                   onClick={send}
                   disabled={sending || !input.trim()}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-kai-500 text-white transition hover:brightness-110 disabled:opacity-45"
+                  className="f0-focus f0-press flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-kai-500 text-white transition hover:brightness-110 disabled:opacity-45"
                   aria-label="Send"
                 >
                   {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4.5 w-4.5" />}
@@ -946,7 +995,7 @@ export default function KaiChatShared({
               </div>
               <button
                 onClick={() => setMemoryOpen(false)}
-                className="p-1 text-soft transition-colors hover:text-ink"
+                className="f0-focus f0-press rounded-full p-1 text-soft transition-colors hover:text-ink"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -992,7 +1041,7 @@ export default function KaiChatShared({
                   aria-checked={deepMode}
                   disabled={deepModeSaving}
                   onClick={() => toggleDeepMode(!deepMode)}
-                  className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                  className={`f0-focus relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
                     deepMode ? "bg-kai-500" : "bg-sand"
                   }`}
                   aria-label="Toggle deeper analysis mode"
@@ -1010,7 +1059,7 @@ export default function KaiChatShared({
               <button
                 onClick={clearMemory}
                 disabled={memoryClearing}
-                className="f0-rule-top mt-5 flex w-full items-center justify-center gap-2 pt-4 text-[13px] font-semibold text-soft transition-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-500"
+                className="f0-focus f0-rule-top mt-5 flex w-full items-center justify-center gap-2 pt-4 text-[13px] font-semibold text-soft transition-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-500"
               >
                 {memoryClearing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
