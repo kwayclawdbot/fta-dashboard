@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Radio } from "lucide-react";
 import { deriveRegister } from "@/lib/register";
@@ -8,7 +9,7 @@ import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEventsState, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
 import CommunityClient from "./CommunityClient";
-import LiveRooms from "@/components/community/LiveRooms";
+import ClubRooms from "./ClubRooms";
 import ClubLiveTab from "./ClubLiveTab";
 import { DisplayHead } from "@/components/f0/parts";
 import {
@@ -263,6 +264,28 @@ export default function ClubModeShell({
         </div>
       </div>
 
+      {/* ── The two destinations the canvas adds (Club Screens 03 + 05) ──────
+          A quiet mono rail of standing links, deliberately NOT a second
+          segmented control: the surface already has one, and a second pill
+          group at the same weight reads as two competing navigations. Kids see
+          neither — both flows are kid-walled at the RPC. */}
+      {!isKid && (
+        <nav aria-label="Club destinations" className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <Link
+            href="/community/changed-my-mind"
+            className="f0-focus font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink"
+          >
+            Changed my mind
+          </Link>
+          <Link
+            href="/community/compose"
+            className="f0-focus font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] text-gold-700 transition-colors hover:text-gold-600"
+          >
+            Share your call →
+          </Link>
+        </nav>
+      )}
+
       {mode === "feed" && (
         <CommunityClient
           initialData={initialData}
@@ -300,7 +323,10 @@ export default function ClubModeShell({
               </p>
             </div>
           )}
-          <LiveRooms me={chatMe} tier={tier} />
+          {/* The Lounge is no longer one undifferentiated room (canvas v2, Club
+              Screens 02) — ClubRooms splits it by topic, with REAL 24h talker
+              counts and a designed below-floor line per room. */}
+          <ClubRooms me={chatMe} tier={tier} />
         </div>
       )}
 

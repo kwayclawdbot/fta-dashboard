@@ -9,6 +9,22 @@
  *
  * Kid-walled: the FLOW is adults+teens only (enforced in the RPC too). Kids never
  * see the control — pass canFlip=false; they still read the moments if shown.
+ *
+ * ── CANVAS V2 (lane L2) ──────────────────────────────────────────────────────
+ * This is the TICKER-SCOPED instance of the idea. Its club-wide destination now
+ * lives at /community/changed-my-mind (Club Screens 03), and this component
+ * points at it rather than duplicating it — a ticker page should show the flips
+ * on THIS name and hand off, not become a second feed.
+ *
+ * Three colour-law repairs landed here with the STANCE_META migration:
+ *   · the stance picker was `STANCE_META[s].chip` — green/red, the PRICE ramp,
+ *     on the control where a member declares an OPINION. It is now the shared
+ *     StanceControl (lime, direction carried by label + position).
+ *   · the reason chips were a solid teal fill; they are now the system's
+ *     f0-chip / f0-chip-on, so this flow stops inventing its own selected state.
+ *   · the error line was `text-red-600`. Red is price. A validation message that
+ *     shares a colour with a down move is a colour-law violation and a bad
+ *     message — it now carries weight instead of hue, matching the feed composer.
  */
 
 import { useEffect, useState } from "react";
@@ -17,6 +33,7 @@ import { RefreshCw } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
+import { StanceControl } from "@/components/canvas2";
 import { checkClean } from "@/lib/profanity";
 import { timeAgo } from "@/lib/feed";
 import { SOCIAL_FLOORS } from "@/lib/social/reactions";
@@ -31,8 +48,6 @@ import {
   type StanceSummary,
 } from "@/lib/social/stance";
 
-const STANCES: Stance[] = ["bull", "neutral", "bear"];
-
 export default function ChangedMyMind({
   supabase,
   ticker,
@@ -44,7 +59,10 @@ export default function ChangedMyMind({
   userId?: string | null;
   canFlip?: boolean;
 }) {
-  const [summary, setSummary] = useState<StanceSummary | null>(null);
+  // The summary is STAMPED with the ticker it answers, so "loading" is DERIVED
+  // rather than set inside the effect — which also means a stance from the
+  // previous ticker can never render for a beat under the new one.
+  const [answer, setAnswer] = useState<{ ticker: string; summary: StanceSummary } | null>(null);
   const [target, setTarget] = useState<Stance | null>(null); // stance being switched to
   const [reason, setReason] = useState<ChangeReasonKey | null>(null);
   const [note, setNote] = useState("");
@@ -54,14 +72,27 @@ export default function ChangedMyMind({
   useEffect(() => {
     let live = true;
     fetchStanceSummary(supabase, ticker).then((s) => {
-      if (live) setSummary(s);
+      if (live) setAnswer({ ticker, summary: s });
     });
     return () => {
       live = false;
     };
   }, [supabase, ticker]);
 
-  if (!summary) return null;
+  const summary = answer?.ticker === ticker ? answer.summary : null;
+
+  // LOADING IS NOT EMPTY (plan §0.4): while the read is in flight the control
+  // renders its own skeleton instead of a selector claiming no stance is held.
+  if (!summary) {
+    return (
+      <div className="space-y-3" aria-busy="true">
+        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
+          Your stance
+        </h3>
+        <StanceControl value={null} onChange={() => {}} loading />
+      </div>
+    );
+  }
   const current = summary.my_stance;
 
   function pick(s: Stance) {
@@ -103,7 +134,7 @@ export default function ChangedMyMind({
     setTarget(null);
     setReason(null);
     setNote("");
-    fetchStanceSummary(supabase, ticker).then(setSummary);
+    fetchStanceSummary(supabase, ticker).then((s) => setAnswer({ ticker, summary: s }));
   }
 
   const showFloorMet = summary.mind_changes >= SOCIAL_FLOORS.mindChanges;
@@ -119,41 +150,34 @@ export default function ChangedMyMind({
 
       {canFlip ? (
         <>
-          <div className="inline-flex rounded-xl border border-sand p-0.5">
-            {STANCES.map((s) => {
-              const active = current === s;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => pick(s)}
-                  disabled={busy}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-bold transition-colors ${
-                    active ? `${STANCE_META[s].chip}` : "text-soft hover:text-ink"
-                  }`}
-                >
-                  {STANCE_META[s].label}
-                </button>
-              );
-            })}
-          </div>
+          {/* The shared lime-keyed control. The club's own split rides along and
+              StanceControl withholds it below SOCIAL_FLOORS.debateStance, so a
+              9-ticker club never publishes "1 · 0 · 1" as a sentiment read. */}
+          <StanceControl
+            value={target ?? current}
+            onChange={pick}
+            counts={{ bull: summary.bull, bear: summary.bear, neutral: summary.neutral }}
+            disabled={busy}
+            ariaLabel={`Your stance on ${ticker.toUpperCase()}`}
+            emptyHint="Pick a stance. You can change it later — the Club rewards the update."
+          />
 
           {/* Flip flow: reason taxonomy + optional note */}
           {target && (
-            <div className="rounded-xl border border-teal-500/30 bg-teal-500/[0.06] p-3">
+            <div className="f0-rule-top pt-3">
               <p className="mb-2 text-xs font-semibold text-ink">
-                Changing to <span className="text-teal-700">{STANCE_META[target].label}</span> — why?
+                Changing to{" "}
+                <span className="text-sentiment">{STANCE_META[target].label}</span> — why?
               </p>
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {CHANGE_REASONS.map((r) => (
                   <button
                     key={r.key}
                     type="button"
+                    aria-pressed={reason === r.key}
                     onClick={() => setReason(r.key)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                      reason === r.key
-                        ? "bg-teal-500 text-white"
-                        : "border border-sand text-soft hover:bg-paper"
+                    className={`f0-chip f0-press f0-focus font-display text-[11px] font-bold uppercase tracking-[0.1em] ${
+                      reason === r.key ? "f0-chip-on" : "text-soft"
                     }`}
                   >
                     {r.label}
@@ -167,16 +191,16 @@ export default function ChangedMyMind({
                   if (err) setErr(null);
                 }}
                 rows={2}
-                placeholder="Add a note (optional)…"
-                className="w-full resize-none rounded-lg border border-sand bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-soft focus:border-teal-400 focus:outline-none"
+                placeholder="What changed it? (optional)"
+                className="f0-focus w-full resize-none border-b border-sand bg-transparent pb-1.5 text-[13px] text-ink placeholder:text-soft focus:outline-none"
               />
-              {err && <p className="mt-1 text-[11px] text-red-600">{err}</p>}
-              <div className="mt-2 flex gap-2">
+              {err && <p className="mt-1 text-[11px] font-semibold text-ink">{err}</p>}
+              <div className="mt-2.5 flex gap-4">
                 <button
                   type="button"
                   onClick={() => commit(target, reason)}
                   disabled={busy || !reason}
-                  className="rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-teal-600 disabled:opacity-50"
+                  className="f0-focus font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600 disabled:opacity-40"
                 >
                   Record the change
                 </button>
@@ -186,28 +210,31 @@ export default function ChangedMyMind({
                     setTarget(null);
                     setErr(null);
                   }}
-                  className="rounded-lg border border-sand px-3 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
+                  className="f0-focus font-display text-[13px] font-semibold text-soft transition-colors hover:text-ink"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           )}
-          {err && !target && <p className="text-[11px] text-red-600">{err}</p>}
+          {err && !target && <p className="text-[11px] font-semibold text-ink">{err}</p>}
         </>
       ) : (
         current && (
           <p className="text-xs text-soft">
-            You&apos;re marked <span className="font-semibold text-ink">{STANCE_META[current].label}</span> on {ticker.toUpperCase()}.
+            You&apos;re marked{" "}
+            <span className="font-semibold text-ink">{STANCE_META[current].label}</span> on{" "}
+            {ticker.toUpperCase()}.
           </p>
         )
       )}
 
       {/* Aggregate mind-change signal + recent flip moments */}
       {showFloorMet && (
-        <p className="inline-flex items-center gap-1.5 rounded-lg bg-teal-500/[0.08] px-2.5 py-1.5 text-xs font-semibold text-teal-700">
+        <p className="inline-flex items-center gap-1.5 rounded-lg bg-sentiment-soft px-2.5 py-1.5 text-xs font-semibold text-sentiment">
           <RefreshCw className="h-3.5 w-3.5" />
-          {summary.mind_changes.toLocaleString()} members changed their mind on {ticker.toUpperCase()}
+          {summary.mind_changes.toLocaleString()} members changed their mind on{" "}
+          {ticker.toUpperCase()}
         </p>
       )}
 
@@ -223,16 +250,21 @@ export default function ChangedMyMind({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {f.username ? (
-                      <Link href={`/u/${f.username}`} className="text-[12px] font-semibold text-ink hover:text-teal-700">
+                      <Link
+                        href={`/u/${f.username}`}
+                        className="text-[12px] font-semibold text-ink hover:text-gold-700"
+                      >
                         {f.display_name || "Member"}
                       </Link>
                     ) : (
-                      <span className="text-[12px] font-semibold text-ink">{f.display_name || "Member"}</span>
+                      <span className="text-[12px] font-semibold text-ink">
+                        {f.display_name || "Member"}
+                      </span>
                     )}
                     <AgeBadge role={f.role} ageGroup={f.age_group} />
                     <span className="text-[10px] text-soft">· {timeAgo(f.created_at)}</span>
                   </div>
-                  <p className="text-[12px] font-semibold text-teal-700">{flipLine(f)}</p>
+                  <p className="text-[12px] font-semibold text-sentiment">{flipLine(f)}</p>
                   {f.note && <p className="text-[12px] leading-snug text-midnight-200">{f.note}</p>}
                 </div>
               </div>
@@ -240,6 +272,15 @@ export default function ChangedMyMind({
           </div>
         </div>
       )}
+
+      {/* The hand-off. The club-wide record is the destination; this block is the
+          view onto one name. */}
+      <Link
+        href="/community/changed-my-mind"
+        className="f0-focus inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+      >
+        Where the Club updated its thinking →
+      </Link>
     </div>
   );
 }
