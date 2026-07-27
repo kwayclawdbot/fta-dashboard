@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { REF_COOKIE, REF_COOKIE_MAX_AGE } from "@/lib/referral";
+import { maybeAttachDemoSession, isPreview } from "@/lib/demo/preview-demo";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -36,10 +37,20 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Protect dashboard routes — redirect to login if no session
+  // PREVIEW-ONLY auto demo session. On a Vercel preview deploy this signs the
+  // visitor in as a dedicated demo member (or switches identity via ?as=) and
+  // short-circuits with a redirect carrying the session cookies. On production
+  // maybeAttachDemoSession() returns null immediately (VERCEL_ENV guard), so the
+  // block below is inert and the normal login flow runs byte-identically.
+  const demoResponse = await maybeAttachDemoSession(request, user?.email ?? null);
+  if (demoResponse) return demoResponse;
+
+  // Protect dashboard routes — redirect to login if no session.
+  // On preview, the demo hook above has already ensured a session for app paths,
+  // so this only fires for genuinely un-demo-able cases (never in production).
   const protectedPaths = ["/dashboard", "/courses", "/settings", "/live", "/coach", "/community", "/progress", "/family", "/upgrade", "/admin"];
   const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
-  if (!user && isProtected) {
+  if (!user && isProtected && !isPreview()) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

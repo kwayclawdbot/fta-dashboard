@@ -110,7 +110,16 @@ export default function OnboardingWizard() {
 
       // Already finished (e.g. a returning member sent to /onboarding via an
       // invite re-request link) — never re-run the wizard.
-      if (profile?.onboarding_complete) {
+      //
+      // PREVIEW-ONLY replay: the demo-club account has already "seen" the
+      // carousel after first view, so `?onboarding=replay` on a Vercel PREVIEW
+      // deploy forces the wizard to render again for review. Harmless (it's a
+      // UX gate, not a security boundary) and inert in production — the param is
+      // ignored unless NEXT_PUBLIC_VERCEL_ENV === 'preview'.
+      const replayPreview =
+        process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" &&
+        new URLSearchParams(window.location.search).get("onboarding") === "replay";
+      if (profile?.onboarding_complete && !replayPreview) {
         router.replace("/dashboard");
         return;
       }
