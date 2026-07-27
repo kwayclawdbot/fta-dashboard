@@ -12,6 +12,7 @@ import {
   Share2,
   GraduationCap,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
@@ -20,7 +21,6 @@ import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
-import KaiReportSection from "@/components/kai/KaiReportSection";
 import type { KaiReport } from "@/lib/kai/report";
 import SetAlertButton, { type AlertLevel } from "@/components/alerts/SetAlertButton";
 import Scorecard from "@/components/research/Scorecard";
@@ -61,6 +61,8 @@ import {
 } from "@/lib/community-watchlist";
 import ResearchCanvas from "./ResearchCanvas";
 import ClubRead from "./ClubRead";
+import ClubTickerStrip from "./ClubTickerStrip";
+import KaiReportPanel from "./KaiReportPanel";
 import TickerDiscussion from "./TickerDiscussion";
 
 const COMMENT_SELECT =
@@ -157,10 +159,19 @@ function researchLevels(
 
 export default function ResearchClient({
   initialResearch = null,
+  initialReport = null,
+  reportSeeded = false,
 }: {
   /** Server-fetched aggregate for instant first paint (Lane 12C). May be null
    *  when the server couldn't compose it; the client then fetches/refreshes. */
   initialResearch?: ResearchPayload | null;
+  /** Server-seeded Kai report (canvas v2 L3) — null when there isn't one. */
+  initialReport?: KaiReport | null;
+  /** Whether the server's report READ COMPLETED. Distinct from `initialReport
+   *  != null`: a completed read that found nothing is a resolved absence and the
+   *  Kai tab may show its founding state; a failed read is not, and the tab
+   *  stays on its skeleton until the client retry lands. */
+  reportSeeded?: boolean;
 }) {
   const supabase = createClient();
   const router = useRouter();
@@ -177,7 +188,8 @@ export default function ResearchClient({
   const [entries, setEntries] = useState<CommunityEntry[]>([]);
   const [comments, setComments] = useState<ThreadComment[]>([]);
   const [quote, setQuote] = useState<MarketQuote | null>(null);
-  const [report, setReport] = useState<KaiReport | null>(null);
+  const [report, setReport] = useState<KaiReport | null>(initialReport);
+  const [reportResolved, setReportResolved] = useState(reportSeeded);
   // Seed from the server payload so the hero + scorecard paint on first paint
   // (no client round-trip). The client still refreshes below to pick up live
   // momentum / a warm cache.
@@ -314,9 +326,16 @@ export default function ResearchClient({
         () => setCommentsResolved(true)
       );
 
-    supabase
-      .rpc("get_latest_kai_report", { p_ticker: ticker })
-      .then(({ data: rep }) => setReport((rep as KaiReport) ?? null), swallow);
+    // Refresh (and the retry path when the server seed failed). LOADING IS NOT
+    // EMPTY: `reportResolved` only ever goes true, so the Kai tab can tell "no
+    // report exists" from "the read hasn't answered".
+    supabase.rpc("get_latest_kai_report", { p_ticker: ticker }).then(
+      ({ data: rep }) => {
+        setReport((rep as KaiReport) ?? null);
+        setReportResolved(true);
+      },
+      () => setReportResolved(true)
+    );
 
     // Research Objects (structured theses) for this ticker (SOCIAL OBJECTS S1).
     fetchTickerTheses(supabase, ticker).then(
@@ -537,18 +556,33 @@ export default function ResearchClient({
               )}
             </Section>
 
-            {/* Kai's read — the derived Kai report; hidden when there's none */}
-            {report &&
-              (locked ? (
-                <UpsellCard context="watchlist" />
-              ) : (
-                <KaiReportSection
-                  report={report}
-                  ticker={ticker}
-                  companyName={companyName}
-                  quote={quote}
+            {/* Kai's read now has its own subpage (canvas board 14), so Overview
+                carries a POINTER rather than the whole report — the same read
+                printed twice on one page is what made this scroll interminable.
+                Kai blue, and only when a report actually exists. */}
+            {report && (
+              <button
+                type="button"
+                onClick={() => selectTab("kai")}
+                className="f0-focus group flex w-full items-center gap-3 border-y border-sand py-4 text-left"
+              >
+                <Sparkles
+                  className="h-4 w-4 shrink-0 text-kai-600 dark:text-kai-300"
+                  aria-hidden
                 />
-              ))}
+                <span className="min-w-0 flex-1">
+                  <span className="block font-mono text-[9.5px] font-semibold uppercase tracking-[0.18em] text-kai-600 dark:text-kai-300">
+                    Kai research report
+                  </span>
+                  <span className="mt-1 block truncate text-[14px] font-semibold text-ink">
+                    {report.sections.headline || `Kai's read on ${companyName}`}
+                  </span>
+                </span>
+                <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-kai-600 transition-colors group-hover:text-kai-500 dark:text-kai-300">
+                  Read
+                </span>
+              </button>
+            )}
 
             {/* Admin thesis (if this is an "our research" pick) — a ruled block
                 with a charged left edge, not an amber card. */}
@@ -795,6 +829,40 @@ export default function ResearchClient({
           </div>
         )}
 
+        {/* ── KAI REPORT — the canvas's fifth ticker subpage (board 14) ──────
+            Everything Kai has written on this name, or an honest founding state
+            when it hasn't. No verdict, no confidence dial, no options flow —
+            see KaiReportPanel for why each of the three is out. */}
+        {tab === "kai" && (
+          <div
+            id={panelId("kai")}
+            role="tabpanel"
+            aria-labelledby={tabId("kai")}
+            tabIndex={0}
+            className="mt-7 focus:outline-none"
+          >
+            <KaiReportPanel
+              ticker={ticker}
+              companyName={companyName}
+              report={report}
+              // The tier gate is part of "resolved" here: `locked` defaults to
+              // TRUE until the tier read lands, so without this a paying member
+              // would see the upsell wall flash before their own report. A
+              // skeleton is the honest thing to show while entitlement is
+              // unknown.
+              resolved={reportResolved && tierResolved}
+              locked={locked}
+              upsell={<UpsellCard context="watchlist" />}
+              onAskKai={() =>
+                openKai({
+                  chip: ticker,
+                  query: `What should I know about ${ticker} right now?`,
+                })
+              }
+            />
+          </div>
+        )}
+
         {tab === "news" && (
           <div
             id={panelId("news")}
@@ -865,6 +933,10 @@ export default function ResearchClient({
       <div id="practice" className="mt-12 scroll-mt-20">
         <ContinuePath pickup={null} ticker={ticker} />
       </div>
+
+      {/* The way out — nine identity marks and nine deltas (canvas TickerTile).
+          Outside the tabs, because leaving a ticker page is not an analysis. */}
+      <ClubTickerStrip ticker={ticker} />
 
       <footer className="f0-rule-top mt-10 pt-5">
         <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>

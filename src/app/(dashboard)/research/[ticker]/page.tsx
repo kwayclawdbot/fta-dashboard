@@ -2,6 +2,7 @@ import { normalizeSymbol } from "@/lib/market/polygon";
 import { getResearchPayload } from "@/lib/research/aggregate";
 import { createClient } from "@/lib/supabase/server";
 import ContextualWall from "@/components/entitlements/ContextualWall";
+import type { KaiReport } from "@/lib/kai/report";
 import ResearchClient from "./ResearchClient";
 
 /**
@@ -14,6 +15,15 @@ import ResearchClient from "./ResearchClient";
  * a failed compose just passes null and the client fetches/degrades honestly.
  * All interactivity (tabs, social, comments, charts, news, Kai) stays in the
  * client — this only pre-seeds the paint-critical payload.
+ *
+ * The Kai report is seeded here too (canvas v2 L3). It is one indexed RPC and it
+ * runs IN PARALLEL with the aggregate, so it costs the page nothing — and it is
+ * what lets the Kai Report tab know on first paint whether a report exists.
+ * Without the seed the tab would have to guess during the client read, and
+ * guessing is exactly how "loading" turned into "empty" the first time round.
+ * `reportSeeded` reports whether the READ COMPLETED, which is a different fact
+ * from whether a report came back: a completed read that returns nothing is a
+ * resolved absence, a failed read is not.
  */
 export const dynamic = "force-dynamic";
 
@@ -40,6 +50,22 @@ export default async function TickerResearchPage({
     );
   }
 
-  const initialResearch = await getResearchPayload(ticker).catch(() => null);
-  return <ResearchClient initialResearch={initialResearch} />;
+  const [initialResearch, kai] = await Promise.all([
+    getResearchPayload(ticker).catch(() => null),
+    supabase
+      .rpc("get_latest_kai_report", { p_ticker: ticker })
+      .then(({ data, error }) => ({
+        report: error ? null : ((data as KaiReport | null) ?? null),
+        seeded: !error,
+      }))
+      .then((r) => r, () => ({ report: null, seeded: false })),
+  ]);
+
+  return (
+    <ResearchClient
+      initialResearch={initialResearch}
+      initialReport={kai.report}
+      reportSeeded={kai.seeded}
+    />
+  );
 }
