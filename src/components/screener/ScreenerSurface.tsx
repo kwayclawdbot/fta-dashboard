@@ -24,9 +24,13 @@ import {
   Lock,
   X,
   Heart,
+  Sparkles,
+  CornerDownLeft,
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
+import { parseScreenerQuery } from "@/lib/screener-nl";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -144,6 +148,7 @@ interface Meta {
 export default function ScreenerSurface({ embedded = false }: { embedded?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
+  const isClub = useAppMode() === "club";
 
   const [loading, setLoading] = useState(true);
   const [tier, setTier] = useState<FamilyTier>("fic");
@@ -159,7 +164,21 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("mcap");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [sortTouched, setSortTouched] = useState(false);
   const [page, setPage] = useState(0);
+  const [nlInput, setNlInput] = useState("");
+  const [nlNote, setNlNote] = useState<string | null>(null);
+
+  // Club register default (canvas artboard 09): "sorted by club heat" — the
+  // names the Club is actually engaging with (♥ like_count) float to the top,
+  // instead of raw market cap. Fires once when the mode resolves and only while
+  // the member hasn't picked their own sort (or applied a preset) yet.
+  useEffect(() => {
+    if (isClub && !sortTouched) {
+      setSortKey("like_count");
+      setSortDir("desc");
+    }
+  }, [isClub, sortTouched]);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [explainerOpen, setExplainerOpen] = useState(false);
   // The "how to use a screener" explainer auto-opens for members still inside
@@ -299,6 +318,24 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setCustom((c) => ({ q: c.q, ...p.filters }));
     setSortKey(p.sort.key as SortKey);
     setSortDir(p.sort.dir);
+    setSortTouched(true);
+  }
+
+  // "Screen in plain English" — parse deterministically, apply as real filters.
+  // Graceful degrade: if nothing is recognised, fall back to keyword search.
+  function runNL(raw: string) {
+    const text = raw.trim();
+    if (!text) return;
+    const parsed = parseScreenerQuery(text);
+    setActivePresetId(null);
+    if (parsed.matched.length > 0) {
+      setCustom({ ...parsed.filters, q: parsed.leftover || null });
+      setNlNote(`Understood: ${parsed.matched.join(" · ")}`);
+    } else {
+      // Nothing structured — treat the whole phrase as a name/ticker search.
+      setCustom({ q: text });
+      setNlNote("No filters matched — searching by name instead.");
+    }
   }
   function patchFilter(patch: Partial<CustomFilters>) {
     setActivePresetId(null);
@@ -319,6 +356,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setCustom((c) => ({ q: c.q }));
   }
   function toggleSort(key: SortKey) {
+    setSortTouched(true);
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
@@ -423,6 +461,38 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
             <X className="h-4 w-4" />
           </button>
         )}
+      </div>
+
+      {/* Screen in plain English (canvas artboard 09) — deterministic parse to
+          real filters, graceful keyword fallback. */}
+      <div className="rounded-2xl border border-kai-blue/25 bg-kai-blue-soft/60 p-3">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-kai-blue">
+          <Sparkles className="h-3.5 w-3.5" />
+          Screen in plain English
+        </div>
+        <div className="relative">
+          <input
+            value={nlInput}
+            onChange={(e) => {
+              setNlInput(e.target.value);
+              if (nlNote) setNlNote(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") runNL(nlInput);
+            }}
+            placeholder="e.g. Semis under $60 with rising volume"
+            className="w-full rounded-xl border border-sand bg-paper py-2.5 pl-3.5 pr-11 text-sm font-medium text-ink outline-none transition focus:border-kai-blue"
+          />
+          <button
+            onClick={() => runNL(nlInput)}
+            disabled={!nlInput.trim()}
+            aria-label="Run plain-English screen"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg bg-kai-blue px-2 py-1.5 text-[11px] font-bold text-white transition disabled:opacity-40"
+          >
+            <CornerDownLeft className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        {nlNote && <p className="mt-1.5 text-[11px] font-medium text-soft">{nlNote}</p>}
       </div>
 
       {/* Preset quick-start chips */}
