@@ -15,6 +15,7 @@ import {
   Compass,
   User,
   Users,
+  Gamepad2,
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
@@ -37,10 +38,16 @@ interface Tab {
  * baseline; kids get their own map (Learn one tap; Missions; "Me"):
  *
  *   adult / solo   Home · Discover · Club · Watchlist · You
- *   parent         Home · Discover · Club · Family    · You
+ *   parent         Home · Learn    · Games · Family   · You   (family register = household lens)
  *   teen           Home · Learn    · Club · Watchlist · You
- *   kid            Home · Learn    · Club · Missions  · Me
+ *   kid            Home · Learn    · Games · Missions · Me     (Club stays kid-safe in the Me sheet)
  *   free           Home · Learn    · Club · Watchlist · You
+ *
+ * Family-register reconciliation (S5 canvas nav = Home · Learn · Games · Family · You):
+ * the household lens promotes Learn + Games over Discover + Club as primary slots.
+ * Discover/Club/Watchlist remain reachable in the "You" full-nav sheet, so nothing
+ * orphans. Kid keeps Missions + "Me" per the shipped kid bar, but its social slot
+ * becomes Games (kid-appropriate play) rather than the Club feed.
  *
  * The 5th slot ("You"/"Me") opens the full-nav bottom sheet — every non-primary
  * destination stays reachable there (it mirrors the sidebar), so nothing orphans.
@@ -53,6 +60,7 @@ const T = {
   Watchlist: { label: "Watchlist", href: "/watchlist/community", icon: Eye } as Tab,
   Missions: { label: "Missions", href: "/missions", icon: Target } as Tab,
   Family: { label: "Family", href: "/family", icon: Users } as Tab,
+  Games: { label: "Games", href: "/games", icon: Gamepad2 } as Tab,
 };
 
 /** The four navigable tabs (Home · slot2 · Club · slot4) + the "You"/"Me" label. */
@@ -69,11 +77,11 @@ function tabsFor(
   if (tier === "free")
     return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
   if (isKid)
-    return { tabs: [T.Home, T.Learn, T.Club, T.Missions], youLabel: "Me" };
+    return { tabs: [T.Home, T.Learn, T.Games, T.Missions], youLabel: "Me" };
   if (isTeen)
     return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
   if (canParent && !isSolo)
-    return { tabs: [T.Home, T.Discover, T.Club, T.Family], youLabel: "You" };
+    return { tabs: [T.Home, T.Learn, T.Games, T.Family], youLabel: "You" };
   // Solo adult / individual member.
   return { tabs: [T.Home, T.Discover, T.Club, T.Watchlist], youLabel: "You" };
 }
