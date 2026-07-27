@@ -31,8 +31,45 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/Toast";
 import { isIOS, isStandalone, pushSupported, subscribeToPush } from "@/lib/push";
 import { getInstallPrompt, fireInstallPrompt } from "@/lib/installPrompt";
+import OnboardingCarousel, {
+  type OnboardingPath,
+  type OnboardingRegister,
+} from "@/components/onboarding/OnboardingCarousel";
 
 const LEGACY_AGE_DAYS = 7;
+// Per-PROFILE (not device) marker that the cinematic onboarding carousel has
+// played, so a mid-first-run reload can't replay it. Keyed by uid so a second
+// account created on the SAME device still gets its own carousel (the invite
+// bug the whole FirstRun layer exists to avoid). The authoritative gate is the
+// per-profile tour_completed_at flag; this only suppresses same-device replays.
+const K_CAROUSEL = (uid: string) => `fic-onb-carousel:${uid}`;
+function carouselSeen(uid: string | null): boolean {
+  if (!uid) return false;
+  try {
+    return localStorage.getItem(K_CAROUSEL(uid)) === "1";
+  } catch {
+    return false;
+  }
+}
+function markCarouselSeen(uid: string | null) {
+  if (!uid) return;
+  try {
+    localStorage.setItem(K_CAROUSEL(uid), "1");
+  } catch {
+    /* ignore */
+  }
+}
+// The carousel plays BEFORE the walkthrough; the tour defers its auto-start
+// until this fires (see AppTour). FirstRun ALWAYS emits it for a brand-new user
+// — after the carousel closes, or immediately when no carousel is shown — so the
+// tour is never left waiting.
+function emitCarouselDone() {
+  try {
+    window.dispatchEvent(new CustomEvent("fic:onboarding-carousel-finished"));
+  } catch {
+    /* ignore */
+  }
+}
 // Keep the older device-keyed push engine (NotificationOnboard) quiet while
 // FirstRun owns the initial prompt, so a user never sees two push cards.
 const K_PUSH_LAST_PROMPT = "fic-push-last-prompt";
@@ -41,11 +78,37 @@ const K_PUSH_INTENT = "fic-push-intent-pending";
 interface FirstRunUser {
   display_name?: string;
   role?: string;
+  age_group?: string;
   isChallenge?: boolean;
   isSolo?: boolean;
+  /** Signup came through an invite/referral (drives the invite final card). */
+  viaInvite?: boolean;
+  /** Who invited them (optional; degrades gracefully). */
+  invitedBy?: string;
+  /** Household surname for the family final card (optional). */
+  householdName?: string;
 }
 
-type Phase = "idle" | "await-tour" | "install" | "push" | "done";
+type Phase = "idle" | "carousel" | "await-tour" | "install" | "push" | "done";
+
+// Which register the cinematic copy speaks in (kid / teen / adult).
+function onbRegister(u: FirstRunUser): OnboardingRegister {
+  if (u.age_group === "kids") return "kid";
+  if (u.age_group === "teens") return "teen";
+  if (u.age_group === "adults") return "adult";
+  if (u.role === "child") return "kid";
+  if (u.role === "teen") return "teen";
+  return "adult";
+}
+// Which signup path the final contribution card is tailored to. Priority:
+// kid > challenge > invite > family > organic.
+function onbPath(u: FirstRunUser): OnboardingPath {
+  if (u.role === "child") return "kid";
+  if (u.isChallenge) return "challenge";
+  if (u.viaInvite) return "invite";
+  if (u.isSolo === false) return "family"; // a real household (not a solo adult)
+  return "organic";
+}
 
 export default function FirstRun({ user }: { user: FirstRunUser }) {
   const supabase = createClient();
@@ -108,7 +171,16 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
       }
 
       if (needTour) {
-        // Wait for the walkthrough to finish, then continue to install/push.
+        // Brand-new members get the cinematic onboarding carousel BEFORE the
+        // walkthrough. Legacy accounts and same-device replays skip straight to
+        // the tour. Either way the tour is gated behind the carousel-finished
+        // signal, so emit it now when we're NOT showing a carousel.
+        const showCarousel = !legacyRef.current && !carouselSeen(authUser.id);
+        if (showCarousel) {
+          setPhase("carousel");
+          return;
+        }
+        emitCarouselDone();
         setPhase("await-tour");
         return;
       }
@@ -117,6 +189,14 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  // ── Carousel finished (or skipped): mark it seen, release the tour, and let
+  //    the walkthrough take over (it was deferred waiting on this signal). ──
+  const finishCarousel = useCallback(() => {
+    markCarouselSeen(uidRef.current);
+    emitCarouselDone();
+    setPhase("await-tour");
+  }, []);
 
   // ── After the tour finishes (event from AppTour.finish), advance. ──
   useEffect(() => {
@@ -235,6 +315,20 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
 
   return (
     <>
+      {/* ── Cinematic onboarding carousel (plays BEFORE the walkthrough) ── */}
+      <AnimatePresence>
+        {phase === "carousel" && (
+          <OnboardingCarousel
+            path={onbPath(user)}
+            register={onbRegister(user)}
+            firstName={firstName}
+            invitedBy={user.invitedBy}
+            householdName={user.householdName}
+            onFinish={finishCarousel}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ── Add-to-Home-Screen ─────────────────────────────────────────── */}
       <AnimatePresence>
         {phase === "install" && (

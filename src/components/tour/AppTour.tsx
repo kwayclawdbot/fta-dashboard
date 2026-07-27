@@ -480,6 +480,26 @@ export default function AppTour({ user }: { user: TourUser }) {
   // user has seen/finished it. Forced replay (?tour=1) bypasses this guard.
   const autoDecidedRef = useRef(false);
 
+  // ── Onboarding carousel handoff ──
+  // The cinematic onboarding carousel (owned by FirstRun) plays BEFORE the
+  // walkthrough for brand-new members. A fresh "welcome" tour therefore defers
+  // its auto-start until FirstRun signals the carousel is finished/skipped —
+  // FirstRun ALWAYS emits this for brand-new users (immediately when it shows no
+  // carousel), and an 8s safety fallback covers the case where FirstRun never
+  // mounts. "What's-new" (returning-member) tours are unaffected: no carousel.
+  const carouselDoneRef = useRef(false);
+  const startWelcomeRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    function onCarouselDone() {
+      carouselDoneRef.current = true;
+      const start = startWelcomeRef.current;
+      startWelcomeRef.current = null;
+      start?.();
+    }
+    window.addEventListener("fic:onboarding-carousel-finished", onCarouselDone);
+    return () => window.removeEventListener("fic:onboarding-carousel-finished", onCarouselDone);
+  }, []);
+
   // ── resume an in-progress tour after a route change / reload ──
   // The tour navigates between pages; on any page it may need to pick up where
   // it left off. Runs once on mount, before the auto-run decision.
@@ -574,7 +594,22 @@ export default function AppTour({ user }: { user: TourUser }) {
         stepsRef.current = buildSteps(user, framing);
         setIdx(0);
         // Small delay so the page settles before we spotlight it.
-        setTimeout(() => mounted && setActive(true), 1200);
+        const start = () => setTimeout(() => mounted && setActive(true), 1200);
+        // A brand-new "welcome" tour waits for the onboarding carousel to close
+        // first; a "what's new" tour has no carousel and starts right away.
+        if (framing === "welcome" && !carouselDoneRef.current) {
+          startWelcomeRef.current = start;
+          // Safety net: if the carousel-finished signal never arrives (FirstRun
+          // absent / errored), start the tour anyway so first-run never stalls.
+          setTimeout(() => {
+            if (mounted && startWelcomeRef.current) {
+              startWelcomeRef.current = null;
+              start();
+            }
+          }, 8000);
+        } else {
+          start();
+        }
       } else {
         try { localStorage.setItem(LSV_KEY, String(CURRENT_TOUR_VERSION)); } catch { /* ignore */ }
       }
