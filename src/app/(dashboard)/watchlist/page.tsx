@@ -642,7 +642,7 @@ export default function WatchlistPage() {
       >
         <div>
           <h1 className="font-display text-2xl font-bold text-ink">
-            {isSolo ? "Watchlist" : "Family Watchlist"}
+            {isSolo ? "My Signals" : "Family Watchlist"}
           </h1>
           <p className="mt-1 text-sm text-soft">
             {isSolo
