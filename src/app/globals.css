@@ -292,6 +292,14 @@
 /* Specificity (0,1,0) sits above bare :root (0,0,0) → wins in light.  */
 /* ------------------------------------------------------------------ */
 [data-mode="club"] {
+  /* Canvas semantic signal colours (App-UI artboards). --color-teal reads cyan
+     in club mode, so gains/losses use these dedicated ramp values instead:
+     light = deeper AA-on-sand, dark override below lifts them for obsidian. */
+  --cv-green: #15803D;
+  --cv-green-soft: rgba(21, 128, 61, 0.14);
+  --cv-red: #B91C1C;
+  --cv-red-soft: rgba(185, 28, 28, 0.12);
+
   /* Surfaces — sand page, cream cards, subtle neutral borders */
   --m50: #0F1115;   /* ink heading */
   --m100: #191C22;
@@ -361,6 +369,12 @@
 /* ------------------------------------------------------------------ */
 :root[data-theme="dark"][data-mode="club"],
 :root[data-theme="dark"] [data-mode="club"] {
+  /* Signal colours lifted for the obsidian base (match the artboard dark set). */
+  --cv-green: #22C55E;
+  --cv-green-soft: rgba(34, 197, 94, 0.14);
+  --cv-red: #EF4444;
+  --cv-red-soft: rgba(239, 68, 68, 0.14);
+
   --m50: #F2F4F8;   /* cool off-white heading (club/tech, vs family warm) */
   --m100: #E2E5EC;
   --m200: #C6CBD6;
