@@ -6,7 +6,6 @@ import { m } from "@/lib/motion";
 import {
   BookHeart,
   Lock,
-  MessageCircle,
   ShieldAlert,
   Sparkles,
   TimerReset,
@@ -14,15 +13,26 @@ import {
   Utensils,
   Lightbulb,
   Ban,
-  CheckCircle2,
-  Circle,
-  Target,
-  Zap,
+  ChevronRight,
+  Mail,
+  BookOpen,
+  MessagesSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentFicWeek, type FicWeek } from "@/lib/fic";
-import { researchComplete, type WatchlistItem } from "@/lib/watchlist";
 import Avatar from "@/components/Avatar";
+import {
+  PageIntro,
+  EditorialSection,
+  ObjectCard,
+  StatusChip,
+} from "@/components/grammar";
+import {
+  familyInsight,
+  type FamilyInsight,
+  type MasteryRow,
+  type SkillRow,
+} from "@/lib/family/insight";
 
 /** Evergreen parent guidance — always available regardless of the week. */
 const EVERGREEN = [
@@ -53,16 +63,13 @@ const EVERGREEN = [
   },
 ];
 
-/** One child's at-a-glance state for the per-child strip. */
-interface ChildStat {
+/** One child's weekly report — the deterministic insight + identity. */
+interface ChildReport {
   id: string;
   display_name: string;
   avatar_url: string | null;
   age_group: string | null;
-  missionsThisWeek: number;
-  watchlistCount: number;
-  researchedCount: number;
-  xpThisWeek: number;
+  insight: FamilyInsight;
 }
 
 export default function ParentCornerPage() {
@@ -70,7 +77,7 @@ export default function ParentCornerPage() {
   const [loading, setLoading] = useState(true);
   const [isParent, setIsParent] = useState(false);
   const [week, setWeek] = useState<FicWeek | null>(null);
-  const [children, setChildren] = useState<ChildStat[]>([]);
+  const [reports, setReports] = useState<ChildReport[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -86,18 +93,19 @@ export default function ParentCornerPage() {
       const parent = profile?.role === "parent" || profile?.role === "admin";
       setIsParent(parent);
       if (parent) {
-        setWeek(await getCurrentFicWeek(supabase));
+        const w = await getCurrentFicWeek(supabase);
+        setWeek(w);
         if (profile?.family_id) {
-          void loadChildStrip(profile.family_id).catch(() => {});
+          void loadReports(profile.family_id, w).catch(() => {});
         }
       }
       setLoading(false);
     }
 
-    // Per-child "your family this week" strip (audit #4). ONE batched fetch —
-    // roster + this-week missions + family watchlist + this-week XP — then all
-    // roll-ups happen in memory. No per-child round trips (no N+1).
-    async function loadChildStrip(familyId: string) {
+    // Per-child weekly report — DETERMINISTIC, no LLM. One batched read of the
+    // roster + every kid's skill_mastery + the skills graph, then the insight
+    // (ahead-on / behind-on + starters + strengths) is computed in memory.
+    async function loadReports(familyId: string, w: FicWeek | null) {
       const { data: roster } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url, age_group, role")
@@ -106,61 +114,48 @@ export default function ParentCornerPage() {
       if (kids.length === 0) return;
       const kidIds = kids.map((k) => k.id);
 
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const weekAgoIso = weekAgo.toISOString();
-
-      const [missionsRes, watchlistRes, xpRes] = await Promise.all([
+      const [masteryRes, skillsRes] = await Promise.all([
         supabase
-          .from("mission_completions")
-          .select("user_id")
-          .in("user_id", kidIds)
-          .gte("completed_at", weekAgoIso),
-        // Watchlist is family-scoped; filter by champion_id in memory so it's
-        // one query, not one per child.
-        supabase
-          .from("family_watchlist")
-          .select("champion_id, how_they_make_money, strength, risk, trend")
-          .eq("family_id", familyId),
-        supabase
-          .from("xp_events")
-          .select("user_id, amount")
-          .in("user_id", kidIds)
-          .gte("created_at", weekAgoIso),
+          .from("skill_mastery")
+          .select("user_id, skill_id, mastery_score, attempts")
+          .in("user_id", kidIds),
+        supabase.from("skills").select("id, domain"),
       ]);
 
-      const missionCount: Record<string, number> = {};
-      (missionsRes.data || []).forEach((r) => {
-        missionCount[r.user_id] = (missionCount[r.user_id] || 0) + 1;
-      });
-
-      const wlCount: Record<string, number> = {};
-      const researchedCount: Record<string, number> = {};
-      (watchlistRes.data || []).forEach((r) => {
-        const cid = (r as { champion_id: string | null }).champion_id;
-        if (!cid) return;
-        wlCount[cid] = (wlCount[cid] || 0) + 1;
-        if (researchComplete(r as Partial<WatchlistItem>)) {
-          researchedCount[cid] = (researchedCount[cid] || 0) + 1;
+      const skills = (skillsRes.data || []) as SkillRow[];
+      const masteryByKid: Record<string, MasteryRow[]> = {};
+      (masteryRes.data || []).forEach(
+        (r: MasteryRow & { user_id: string }) => {
+          (masteryByKid[r.user_id] ||= []).push({
+            skill_id: r.skill_id,
+            mastery_score: r.mastery_score,
+            attempts: r.attempts,
+          });
         }
-      });
+      );
 
-      const xpByKid: Record<string, number> = {};
-      (xpRes.data || []).forEach((r: { user_id: string; amount: number }) => {
-        xpByKid[r.user_id] = (xpByKid[r.user_id] || 0) + (r.amount || 0);
-      });
+      // Fallback conversation starters from the week's dinner questions.
+      const fallback = (w?.parent_dinner_questions || "")
+        .split(/\n+/)
+        .map((l) => l.trim())
+        .filter(Boolean);
 
-      setChildren(
-        kids.map((k) => ({
-          id: k.id,
-          display_name: k.display_name || "Member",
-          avatar_url: k.avatar_url,
-          age_group: k.age_group,
-          missionsThisWeek: missionCount[k.id] || 0,
-          watchlistCount: wlCount[k.id] || 0,
-          researchedCount: researchedCount[k.id] || 0,
-          xpThisWeek: xpByKid[k.id] || 0,
-        }))
+      setReports(
+        kids.map((k) => {
+          const name = (k.display_name || "Member").split(" ")[0];
+          return {
+            id: k.id,
+            display_name: k.display_name || "Member",
+            avatar_url: k.avatar_url,
+            age_group: k.age_group,
+            insight: familyInsight(
+              name,
+              masteryByKid[k.id] || [],
+              skills,
+              fallback
+            ),
+          };
+        })
       );
     }
 
@@ -171,8 +166,9 @@ export default function ParentCornerPage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-6 animate-pulse">
-        <div className="h-8 w-56 rounded-lg bg-sand/60" />
-        <div className="h-64 rounded-2xl bg-sand/40" />
+        <div className="h-9 w-56 rounded-lg bg-sand/60" />
+        <div className="h-48 rounded-2xl bg-sand/40" />
+        <div className="h-40 rounded-2xl bg-sand/40" />
       </div>
     );
   }
@@ -198,249 +194,277 @@ export default function ParentCornerPage() {
     );
   }
 
-  const parentSections: { icon: React.ElementType; title: string; body: string | null }[] =
-    week
-      ? [
-          {
-            icon: Sparkles,
-            title: "What your child learned",
-            body: week.parent_what_child_learned,
-          },
-          {
-            icon: Utensils,
-            title: "Dinner-table questions",
-            body: week.parent_dinner_questions,
-          },
-          {
-            icon: Lightbulb,
-            title: "Explain it simply",
-            body: week.parent_explain_simply,
-          },
-          {
-            icon: Ban,
-            title: "What not to do",
-            body: week.parent_what_not_to_do,
-          },
-          {
-            icon: ShieldAlert,
-            title: "The risk talk",
-            body: week.parent_risk_talk,
-          },
-          {
-            icon: TimerReset,
-            title: "On patience",
-            body: week.parent_patience,
-          },
-        ].filter((s) => s.body)
-      : [];
+  // The single primary child's starters lead the CONVERSATION STARTERS block;
+  // with multiple kids each report carries its own weakest-domain starters.
+  const leadStarters =
+    reports[0]?.insight.starters ??
+    (week?.parent_dinner_questions || "")
+      .split(/\n+/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+  const parentSections: {
+    icon: React.ElementType;
+    title: string;
+    body: string | null;
+  }[] = week
+    ? [
+        {
+          icon: Sparkles,
+          title: "What your child learned",
+          body: week.parent_what_child_learned,
+        },
+        {
+          icon: Utensils,
+          title: "Dinner-table questions",
+          body: week.parent_dinner_questions,
+        },
+        {
+          icon: Lightbulb,
+          title: "Explain it simply",
+          body: week.parent_explain_simply,
+        },
+        { icon: Ban, title: "What not to do", body: week.parent_what_not_to_do },
+        {
+          icon: ShieldAlert,
+          title: "The risk talk",
+          body: week.parent_risk_talk,
+        },
+        { icon: TimerReset, title: "On patience", body: week.parent_patience },
+      ].filter((s) => s.body)
+    : [];
+
+  const FOR_YOU = [
+    { icon: BookOpen, label: "Parent & teacher guide", href: "/parent-corner/guide" },
+    { icon: MessagesSquare, label: "Lesson plans pack", href: "/learn" },
+    { icon: MessagesSquare, label: "Ask a coach", href: "/community" },
+  ];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
-            <BookHeart className="w-3.5 h-3.5" />
-            Parent Corner
-          </span>
-        </div>
-        <h1 className="font-display text-2xl font-bold text-ink">
-          Coaching for the grown-ups
-        </h1>
-        <p className="text-soft mt-1 max-w-2xl leading-relaxed">
-          You don&apos;t need to be a market expert to lead this at home. Each
-          week we hand you the conversation — what your kids learned, how to talk
-          about it, and what to avoid.
-        </p>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-10 pb-16">
+      <PageIntro
+        eyebrow="Parent corner"
+        title="What to say, and when to say it"
+        context="You don’t need to be a market expert to lead this at home. Each week we hand you the conversation — what your kids learned, and how to talk about it."
+      />
 
-      {/* Per-child strip — "your family this week at a glance" (audit #4).
-          Sits above the weekly reading so the guiding parent sees where their
-          OWN kids are before the coaching text. */}
-      {children.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-            <h2 className="font-display text-lg font-semibold text-ink">
-              Your family this week
-            </h2>
-            <Link
-              href="/family/overview"
-              className="text-sm font-medium text-gold-700 hover:text-gold-800 shrink-0"
-            >
-              Full overview →
-            </Link>
+      {/* WEEKLY REPORT · READY — the signature deterministic insight, one card
+          per child. The headline + body + strengths are computed from
+          skill_mastery with zero LLM (lib/family/insight). */}
+      {reports.length > 0 && (
+        <EditorialSection
+          title="Weekly report"
+          lead="Derived from each child’s practice this week — no guesswork."
+        >
+          <div className="space-y-3">
+            {reports.map((r, i) => {
+              const strong = r.insight.strengths[0];
+              const weak =
+                r.insight.strengths[r.insight.strengths.length - 1];
+              return (
+                <m.div
+                  key={r.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <ObjectCard accent="accent" className="p-5">
+                    <div className="flex items-start gap-3">
+                      <Avatar
+                        name={r.display_name}
+                        avatarUrl={r.avatar_url}
+                        role="child"
+                        size="md"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex items-center gap-2">
+                          <StatusChip tone="accent" pulse={r.insight.hasSignal}>
+                            {r.insight.hasSignal ? "Report ready" : "Warming up"}
+                          </StatusChip>
+                        </div>
+                        <h3 className="font-display text-[17px] font-bold leading-snug text-ink">
+                          {r.insight.headline}
+                        </h3>
+                        <p className="mt-1.5 text-sm leading-relaxed text-soft">
+                          {r.insight.body}
+                        </p>
+
+                        {/* Strengths bars — same skill_mastery source as the
+                            kid Progress screen (spec artboard 08). */}
+                        {r.insight.hasSignal &&
+                          strong &&
+                          weak &&
+                          r.insight.strengths.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              {r.insight.strengths.slice(0, 3).map((s) => (
+                                <div
+                                  key={s.domain}
+                                  className="flex items-center gap-3"
+                                >
+                                  <span className="w-28 shrink-0 text-xs text-soft">
+                                    {s.label}
+                                  </span>
+                                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-sand">
+                                    <m.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${s.score}%` }}
+                                      transition={{
+                                        duration: 0.7,
+                                        ease: "easeOut",
+                                      }}
+                                      className="h-full rounded-full bg-[var(--accent-solid)]"
+                                    />
+                                  </div>
+                                  <span className="w-9 shrink-0 text-right text-xs font-semibold text-ink tabular-nums">
+                                    {s.score}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                        <div className="mt-4 flex items-center gap-4">
+                          <Link
+                            href="/progress"
+                            className="text-sm font-semibold text-gold-700 hover:text-gold-800"
+                          >
+                            Read report →
+                          </Link>
+                          <a
+                            href={`mailto:?subject=${encodeURIComponent(
+                              `${r.display_name}'s weekly report`
+                            )}&body=${encodeURIComponent(
+                              `${r.insight.headline}. ${r.insight.body}`
+                            )}`}
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-soft hover:text-ink"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                            Email me
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </ObjectCard>
+                </m.div>
+              );
+            })}
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {children.map((c, i) => (
-              <m.div
-                key={c.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="paper-card p-4 flex items-center gap-3"
-              >
-                <Avatar
-                  name={c.display_name}
-                  avatarUrl={c.avatar_url}
-                  role="child"
-                  size="md"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="font-display font-semibold text-ink text-sm truncate">
-                    {c.display_name}
-                    {c.age_group && (
-                      <span className="ml-1.5 text-xs font-body font-normal text-soft capitalize">
-                        {c.age_group}
-                      </span>
-                    )}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                    <span
-                      className="inline-flex items-center gap-1 text-xs text-soft"
-                      title="Missions completed this week"
-                    >
-                      {c.missionsThisWeek > 0 ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                      ) : (
-                        <Circle className="w-3.5 h-3.5 text-midnight-600" />
-                      )}
-                      {c.missionsThisWeek > 0
-                        ? `${c.missionsThisWeek} mission${c.missionsThisWeek === 1 ? "" : "s"}`
-                        : "No mission yet"}
-                    </span>
-                    <span
-                      className="inline-flex items-center gap-1 text-xs text-soft"
-                      title="Companies on the watchlist they champion (researched)"
-                    >
-                      <Target className="w-3.5 h-3.5 text-gold-600" />
-                      {c.watchlistCount > 0
-                        ? `${c.watchlistCount} pick${c.watchlistCount === 1 ? "" : "s"}${
-                            c.researchedCount > 0
-                              ? ` · ${c.researchedCount} researched`
-                              : ""
-                          }`
-                        : "No picks yet"}
-                    </span>
-                    <span
-                      className="inline-flex items-center gap-1 text-xs font-medium text-gold-700"
-                      title="XP earned this week"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-gold-500" />
-                      {c.xpThisWeek > 0 ? `+${c.xpThisWeek} XP` : "0 XP"}
-                    </span>
-                  </div>
-                </div>
-              </m.div>
-            ))}
-          </div>
-        </div>
+        </EditorialSection>
       )}
 
-      {/* This week's parent content */}
-      {week ? (
-        <div className="paper-card p-6 lg:p-7">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h2 className="font-display text-lg font-semibold text-ink">
-              This week: {week.class_title}
-            </h2>
-            {week.company_name && (
-              <span className="text-xs text-soft">
-                · {week.company_name}
-                {week.company_ticker ? ` (${week.company_ticker})` : ""}
-              </span>
-            )}
+      {/* CONVERSATION STARTERS — spec artboard 07. Keyed to the child's weakest
+          domain (deterministic), falling back to the week's dinner questions. */}
+      {leadStarters && leadStarters.length > 0 && (
+        <EditorialSection
+          title="Conversation starters"
+          lead="Three questions to ask at dinner this week."
+        >
+          <div className="space-y-2.5">
+            {leadStarters.slice(0, 3).map((q, i) => (
+              <div
+                key={i}
+                className="flex gap-3 border-l-[3px] border-[var(--accent-solid)] pl-4"
+              >
+                <p className="text-[15px] leading-relaxed text-ink">{q}</p>
+              </div>
+            ))}
           </div>
-          {parentSections.length === 0 ? (
-            <p className="text-sm text-soft mt-2">
-              This week&apos;s parent notes are being prepared.
-            </p>
-          ) : (
-            <div className="space-y-5 mt-4">
-              {parentSections.map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <m.div
-                    key={s.title}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="flex gap-3"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
-                      <Icon className="w-[18px] h-[18px] text-gold-700" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wider text-soft mb-0.5">
-                        {s.title}
-                      </p>
-                      <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
-                        {s.body}
-                      </p>
-                    </div>
-                  </m.div>
-                );
-              })}
-            </div>
-          )}
+        </EditorialSection>
+      )}
+
+      {/* This week's parent content — preserved data flow, restyled. */}
+      {week && parentSections.length > 0 && (
+        <EditorialSection
+          title={`This week: ${week.class_title}`}
+          lead={
+            week.company_name
+              ? `${week.company_name}${
+                  week.company_ticker ? ` · ${week.company_ticker}` : ""
+                }`
+              : undefined
+          }
+        >
+          <div className="space-y-5">
+            {parentSections.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <m.div
+                  key={s.title}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="flex gap-3"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-400/15">
+                    <Icon className="h-[18px] w-[18px] text-gold-700" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="mb-0.5 text-xs font-bold uppercase tracking-wider text-soft">
+                      {s.title}
+                    </p>
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-ink">
+                      {s.body}
+                    </p>
+                  </div>
+                </m.div>
+              );
+            })}
+          </div>
           {week.parent_prompt && (
-            <div className="mt-5 p-4 rounded-xl bg-chip-amber/60 border border-gold-200/60">
-              <p className="text-xs font-bold uppercase tracking-wider text-gold-800 mb-1">
-                This week&apos;s prompt
+            <div className="mt-5 rounded-xl border border-gold-200/60 bg-chip-amber/60 p-4">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wider text-gold-800">
+                This week’s prompt
               </p>
-              <p className="text-sm text-ink leading-relaxed">
+              <p className="text-sm leading-relaxed text-ink">
                 {week.parent_prompt}
               </p>
             </div>
           )}
-        </div>
-      ) : (
-        <div className="paper-card p-6">
-          <p className="text-sm text-soft">
-            This week&apos;s content is being prepared. The evergreen guidance
-            below always applies.
-          </p>
-        </div>
+        </EditorialSection>
       )}
 
-      {/* Evergreen guidance */}
-      <div>
-        <h2 className="font-display text-lg font-semibold text-ink mb-3">
-          Always-on guidance
-        </h2>
-        <div className="grid sm:grid-cols-2 gap-3">
+      {/* FOR YOU — spec artboard 07 link list. */}
+      <EditorialSection title="For you">
+        <div className="divide-y divide-sand">
+          {FOR_YOU.map((l) => {
+            const Icon = l.icon;
+            return (
+              <Link
+                key={l.label}
+                href={l.href}
+                className="group flex items-center gap-3 py-3.5"
+              >
+                <Icon className="h-[18px] w-[18px] text-gold-600" />
+                <span className="flex-1 text-[15px] text-ink group-hover:text-gold-800">
+                  {l.label}
+                </span>
+                <ChevronRight className="h-4 w-4 text-soft transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            );
+          })}
+        </div>
+      </EditorialSection>
+
+      {/* Always-on guidance — evergreen, preserved. */}
+      <EditorialSection title="Always-on guidance" divide>
+        <div className="grid gap-3 sm:grid-cols-2">
           {EVERGREEN.map((s) => {
             const Icon = s.icon;
             return (
               <div key={s.title} className="paper-card p-5">
-                <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center mb-3">
-                  <Icon className="w-5 h-5 text-gold-700" />
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-gold-400/15">
+                  <Icon className="h-5 w-5 text-gold-700" />
                 </div>
-                <h3 className="font-display font-semibold text-ink mb-1">
+                <h3 className="mb-1 font-display font-semibold text-ink">
                   {s.title}
                 </h3>
-                <p className="text-sm text-soft leading-relaxed">{s.body}</p>
+                <p className="text-sm leading-relaxed text-soft">{s.body}</p>
               </div>
             );
           })}
-          <div className="paper-card p-5 flex flex-col justify-center">
-            <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center mb-3">
-              <MessageCircle className="w-5 h-5 text-gold-700" />
-            </div>
-            <h3 className="font-display font-semibold text-ink mb-1">
-              Talk it out with other parents
-            </h3>
-            <p className="text-sm text-soft leading-relaxed mb-2">
-              Other families are learning alongside you. Swap questions and wins
-              in the community.
-            </p>
-            <Link
-              href="/community"
-              className="text-sm font-medium text-gold-700 hover:text-gold-800"
-            >
-              Open community →
-            </Link>
-          </div>
         </div>
-      </div>
+      </EditorialSection>
     </div>
   );
 }
