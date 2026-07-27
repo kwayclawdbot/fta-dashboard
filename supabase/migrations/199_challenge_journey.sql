@@ -70,8 +70,17 @@
 -- the final session, per src/app/api/free-class/register/route.ts:143) — it just
 -- never applied because the row exists. Align the stored value with it.
 --
--- challenge_start is likewise corrected to the first SESSION day rather than
--- Sept 1: the sessions run Wed Sept 2 → Sun Sept 6 (migration 171, owner-set).
+-- challenge_start is deliberately NOT touched. It still reads 2026-09-01 while
+-- the sessions run Wed Sept 2 → Sun Sept 6 (migration 171, owner-set), but a
+-- grep of src/ finds NO consumer of that key — correcting an unread row would
+-- be motion without effect. The dates the app actually draws come from
+-- challenge_cohorts/challenge_days below, which are the single source now.
+--
+-- NOTE (verified against production 2026-07-27): the challenge_end fix above is
+-- already applied there — the stored value is the corrected 2026-09-09T04:00:00Z
+-- and zero active challenge_pass rows carry the too-early expiry. Both updates
+-- are therefore no-ops in prod, and are kept because they are guarded by exact
+-- value predicates and any environment still seeded from 126 needs them.
 update app_settings
    set value = to_jsonb('2026-09-09T04:00:00Z'::text)
  where key = 'challenge_end'
