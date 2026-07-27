@@ -1,17 +1,27 @@
 "use client";
 
+/**
+ * /chart — the Practice Chart (canvas rebuild B: CHROME ONLY).
+ *
+ * The charting itself is untouched — same TradingView embed, same
+ * role-derived style default (kids → area, teens/parents → candles), same
+ * symbol plumbing through the URL. What changed is the furniture around it:
+ * a masthead, a ruled control strip, mono $CASHTAGs for the quick symbols,
+ * and one framed dark media object for the chart pane.
+ *
+ * COLOUR LAW: nothing on this surface is price, sentiment or Kai, so the only
+ * accent is brand orange (the active style, the active symbol, hovers) via the
+ * `gold-*` ramp, which is volt orange in club mode and flips for dark.
+ *
+ * COMPLIANCE: "Practice reading charts — this is learning, not financial
+ * advice." is rendered verbatim.
+ */
+
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import {
-  CandlestickChart,
-  LineChart,
-  Search,
-  Info,
-  Star,
-  ArrowLeft,
-} from "lucide-react";
+import { CandlestickChart, LineChart, Search, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import TradingViewAdvancedChart from "@/components/fic/TradingViewAdvancedChart";
 import ClubChatDrawer from "@/components/community/ClubChatDrawer";
@@ -88,108 +98,116 @@ function ChartInner() {
     if (s) router.replace(`/chart?symbol=${encodeURIComponent(s)}`);
   }
 
+  const shownSymbol = urlSymbol.includes(":") ? urlSymbol.split(":")[1] : urlSymbol;
+
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col gap-4">
-      {/* Header row */}
-      <m.div
+    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col">
+      {/* ── MASTHEAD ──────────────────────────────────────────────────────── */}
+      <m.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="flex flex-wrap items-center justify-between gap-3"
+        className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4"
       >
-        <div className="flex items-center gap-3">
+        <div className="min-w-0">
           <Link
             href="/watchlist"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-soft hover:text-ink"
+            className="inline-flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-soft transition-colors hover:text-gold-700"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Watchlist
+            <ArrowLeft className="h-3.5 w-3.5" /> Watchlist
           </Link>
-          <div className="h-4 w-px bg-sand" />
-          <div>
-            <h1 className="font-display text-xl font-bold text-ink">
-              Practice Chart
-            </h1>
-            <p className="flex items-center gap-1.5 text-xs text-soft">
-              <Info className="h-3 w-3" />
-              Practice reading charts — this is learning, not financial advice.
-            </p>
-          </div>
+          <h1 className="mt-2.5 font-display text-display-2 font-extrabold uppercase text-ink">
+            Practice Chart
+          </h1>
+          <p className="mt-2 max-w-[52ch] text-[14px] leading-relaxed text-soft">
+            Practice reading charts — this is learning, not financial advice.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Symbol search */}
-          <form onSubmit={submitSymbol} className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-midnight-500" />
+        {/* The symbol on the desk — the one number-register object up here. */}
+        <p className="font-mono text-[26px] font-semibold leading-none tracking-tight text-ink">
+          <span className="opacity-40">$</span>
+          {shownSymbol}
+        </p>
+      </m.header>
+
+      {/* ── CONTROL STRIP ─────────────────────────────────────────────────── */}
+      {/* Search, style, and the try-these symbols — one ruled band, no boxes. */}
+      <div className="f0-rule-top mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3">
+          <form onSubmit={submitSymbol} className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5 shrink-0 text-soft" />
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Symbol (e.g. AAPL)"
-              className="w-40 rounded-lg border border-sand bg-midnight-900 py-2 pl-8 pr-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+              placeholder="Symbol"
               aria-label="Chart symbol"
+              className="w-28 bg-transparent font-mono text-[13px] uppercase tracking-[0.06em] text-ink outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-soft/70 focus:w-36"
             />
+            <button
+              type="submit"
+              className="font-display text-eyebrow font-bold uppercase text-gold-700 transition-colors hover:text-gold-600"
+            >
+              Load
+            </button>
           </form>
-          {/* Style toggle */}
+
           {roleLoaded && (
-            <div className="flex overflow-hidden rounded-lg border border-sand">
-              <button
+            <div className="flex items-center gap-5" role="group" aria-label="Chart style">
+              <StyleButton
+                on={!!lineStyle}
                 onClick={() => setLineStyle(true)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-                  lineStyle
-                    ? "bg-chip-amber text-gold-700"
-                    : "bg-midnight-900 text-soft hover:bg-paper"
-                }`}
-                aria-pressed={!!lineStyle}
-              >
-                <LineChart className="h-3.5 w-3.5" />
-                Line
-              </button>
-              <button
+                icon={<LineChart className="h-3.5 w-3.5" />}
+                label="Line"
+              />
+              <StyleButton
+                on={lineStyle === false}
                 onClick={() => setLineStyle(false)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-                  !lineStyle
-                    ? "bg-chip-amber text-gold-700"
-                    : "bg-midnight-900 text-soft hover:bg-paper"
-                }`}
-                aria-pressed={lineStyle === false}
-              >
-                <CandlestickChart className="h-3.5 w-3.5" />
-                Candles
-              </button>
+                icon={<CandlestickChart className="h-3.5 w-3.5" />}
+                label="Candles"
+              />
             </div>
           )}
         </div>
-      </m.div>
-
-      {/* Quick symbols */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="flex items-center gap-1 text-xs text-soft">
-          <Star className="h-3 w-3 text-gold-400" /> Try:
-        </span>
-        {QUICK_SYMBOLS.map((s) => {
-          const shown = s.includes(":") ? s.split(":")[1] : s;
-          return (
-            <Link
-              key={s}
-              href={`/chart?symbol=${encodeURIComponent(s)}`}
-              className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                urlSymbol === s
-                  ? "border-gold-400 bg-chip-amber text-gold-700"
-                  : "border-sand bg-midnight-900 text-soft hover:border-gold-300"
-              }`}
-            >
-              {shown}
-            </Link>
-          );
-        })}
       </div>
 
-      {/* The chart — fills remaining height */}
+      <div className="f0-rule-top">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 py-2.5">
+          <span className="text-eyebrow font-display font-bold uppercase text-soft opacity-70">
+            Try
+          </span>
+          {QUICK_SYMBOLS.map((s) => {
+            const shown = s.includes(":") ? s.split(":")[1] : s;
+            const on = urlSymbol === s;
+            return (
+              <Link
+                key={s}
+                href={`/chart?symbol=${encodeURIComponent(s)}`}
+                className={`font-mono text-[12px] font-semibold tracking-[0.02em] transition-colors ${
+                  on ? "text-gold-700" : "text-soft hover:text-ink"
+                }`}
+              >
+                <span className="opacity-50">$</span>
+                {shown}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── THE CHART ─────────────────────────────────────────────────────── */}
+      {/* The one framed media object on the surface: a hairline frame and no
+          fill of its own, so the embed's own surface is what you see and the
+          pane is theme-correct by construction rather than by a dark: class.
+          (`.chart-frame` is deliberately dark in BOTH themes — right for the
+          simulator's lightweight-charts pane, wrong here, because this embed
+          renders its own LIGHT theme on a light page and would flip from a
+          dark frame to a light chart on load.) */}
       <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-sand bg-midnight-900 shadow-soft"
+        className="mt-4 min-h-0 flex-1 overflow-hidden rounded-2xl border border-sand"
       >
         {roleLoaded && lineStyle !== null ? (
           <TradingViewAdvancedChart symbol={urlSymbol} lineStyle={lineStyle} />
@@ -203,6 +221,39 @@ function ChartInner() {
       {/* Club Chat — shared drawer, one tap away while studying a chart */}
       <ClubChatDrawer key={tier} me={me} tier={tier} />
     </div>
+  );
+}
+
+/** A style choice reads as a heading with a volt underscore, not a pill. */
+function StyleButton({
+  on,
+  onClick,
+  icon,
+  label,
+}: {
+  on: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`relative inline-flex items-center gap-1.5 py-1 font-display text-eyebrow font-bold uppercase transition-colors ${
+        on ? "text-ink" : "text-soft hover:text-ink"
+      }`}
+    >
+      {icon}
+      {label}
+      {on && (
+        <span
+          aria-hidden
+          className="absolute inset-x-0 -bottom-0.5 h-[2px] rounded-full bg-gold-600"
+        />
+      )}
+    </button>
   );
 }
 

@@ -2,15 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
-  LifeBuoy,
   Send,
   Bot,
   User as UserIcon,
-  MessageSquarePlus,
   ChevronDown,
   ChevronRight,
   Loader2,
-  Headset,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -23,6 +20,19 @@ import {
   type TicketCategory,
   type TicketStatus,
 } from "@/lib/help/tickets";
+import { DisplayHead, SectionRule, TabRail, TextAction } from "@/components/f0/parts";
+
+/**
+ * /help — the support surface: a Kai help bot and a real ticket queue.
+ *
+ * REBUILD NOTE (canvas): the page previously wrote against the RAW midnight-*
+ * ramp (bg-midnight-900, text-midnight-100 …), which is INVERTED in light mode —
+ * it happened to work but described a dark app that no longer exists. Everything
+ * is now on semantic tokens (ink / soft / sand / card / paper) so both themes
+ * follow the surface vars, and every prose column is capped at a real reading
+ * measure (~65ch). Kai's identity colour is Kai blue by law; the send affordances
+ * are the brand action ramp with night-950 type (never white on gold).
+ */
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -37,17 +47,20 @@ const GREETING: ChatMsg = {
     "Hi! I'm Kai, your Cheat Code Club help assistant. Ask me how anything in the app works — courses, live classes, your family, billing, and more. (I can't give trading advice — for that, stick with the lessons!)",
 };
 
+/* COLOUR LAW: green/red are price-only, so ticket state is carried by the
+   neutral sand ramp plus the brand action tint for the one state that wants
+   the member's attention. The word itself is the signal. */
 const STATUS_STYLES: Record<TicketStatus, string> = {
   open: "bg-gold-400/15 text-gold-700",
-  pending: "bg-blue-400/15 text-blue-400",
-  resolved: "bg-emerald-400/15 text-emerald-400",
-  closed: "bg-midnight-700/40 text-midnight-400",
+  pending: "bg-sand text-ink",
+  resolved: "bg-sand/70 text-soft",
+  closed: "bg-sand/40 text-soft",
 };
 
 function StatusChip({ status }: { status: TicketStatus }) {
   return (
     <span
-      className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${STATUS_STYLES[status]}`}
+      className={`rounded-full px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-[0.1em] ${STATUS_STYLES[status]}`}
     >
       {status}
     </span>
@@ -65,6 +78,13 @@ function timeAgo(iso: string): string {
   if (d < 7) return `${d}d ago`;
   return new Date(iso).toLocaleDateString();
 }
+
+const fieldCls =
+  "w-full rounded-lg border border-sand bg-card px-3 py-2 text-sm text-ink placeholder:text-soft transition-colors focus:border-gold-500 focus:outline-none";
+const labelCls =
+  "mb-1.5 block text-eyebrow font-display font-bold uppercase text-soft";
+const sendBtnCls =
+  "shrink-0 flex items-center justify-center rounded-lg bg-gold-500 text-night-950 transition-colors hover:bg-gold-600 disabled:opacity-40";
 
 export default function HelpPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -225,48 +245,30 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-1">
-        <span className="w-9 h-9 rounded-lg bg-gold-400/15 text-gold-700 flex items-center justify-center">
-          <LifeBuoy className="w-5 h-5" />
-        </span>
-        <h1 className="font-display text-2xl font-bold text-midnight-100">
-          Help &amp; Support
-        </h1>
-      </div>
-      <p className="text-sm text-midnight-400 mb-5 ml-12">
-        Ask the help bot a quick question, or reach a real person on the team.
-      </p>
+    <div className="mx-auto max-w-3xl px-4 py-6 pb-16">
+      {/* Masthead */}
+      <DisplayHead
+        eyebrow="Support"
+        title="Help & Support"
+        lede="Ask the help bot a quick question, or reach a real person on the team."
+      />
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-lg bg-midnight-900 border border-midnight-800 mb-5 w-full max-w-md">
-        <button
-          onClick={() => setTab("bot")}
-          className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium py-2 rounded-md transition-colors ${
-            tab === "bot"
-              ? "bg-gold-400/15 text-gold-700"
-              : "text-midnight-400 hover:text-midnight-200"
-          }`}
-        >
-          <Bot className="w-4 h-4" /> Ask Kai&apos;s help bot
-        </button>
-        <button
-          onClick={() => setTab("team")}
-          className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium py-2 rounded-md transition-colors ${
-            tab === "team"
-              ? "bg-gold-400/15 text-gold-700"
-              : "text-midnight-400 hover:text-midnight-200"
-          }`}
-        >
-          <Headset className="w-4 h-4" /> Speak to the team
-        </button>
+      <div className="mt-8">
+        <TabRail
+          ariaLabel="Help channels"
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { id: "bot", label: "Ask Kai" },
+            { id: "team", label: "The team" },
+          ]}
+        />
       </div>
 
       {/* ── AI chat tab ─────────────────────────────────────────────────── */}
       {tab === "bot" && (
-        <div className="rounded-xl border border-midnight-800 bg-midnight-900/50 overflow-hidden">
-          <div className="h-[420px] overflow-y-auto p-4 space-y-4">
+        <div className="mt-6">
+          <div className="h-[440px] space-y-5 overflow-y-auto pr-1">
             {messages.map((m, i) => (
               <div
                 key={i}
@@ -275,23 +277,23 @@ export default function HelpPage() {
                 }`}
               >
                 <span
-                  className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                     m.role === "user"
-                      ? "bg-midnight-800 text-midnight-300"
-                      : "bg-gold-400/20 text-gold-700"
+                      ? "bg-sand text-soft"
+                      : "bg-kai-blue-soft text-kai-blue"
                   }`}
                 >
                   {m.role === "user" ? (
-                    <UserIcon className="w-4 h-4" />
+                    <UserIcon className="h-4 w-4" />
                   ) : (
-                    <Bot className="w-4 h-4" />
+                    <Bot className="h-4 w-4" />
                   )}
                 </span>
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
+                  className={`max-w-[52ch] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed text-ink ${
                     m.role === "user"
-                      ? "bg-gold-500 text-white rounded-tr-sm"
-                      : "bg-midnight-800 text-midnight-100 rounded-tl-sm"
+                      ? "rounded-tr-sm bg-sand"
+                      : "rounded-tl-sm border border-sand bg-card"
                   }`}
                 >
                   {m.content}
@@ -300,31 +302,21 @@ export default function HelpPage() {
             ))}
             {sending && (
               <div className="flex gap-3">
-                <span className="mt-0.5 w-7 h-7 rounded-full bg-gold-400/20 text-gold-700 flex items-center justify-center shrink-0">
-                  <Bot className="w-4 h-4" />
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-kai-blue-soft text-kai-blue">
+                  <Bot className="h-4 w-4" />
                 </span>
-                <div className="bg-midnight-800 text-midnight-400 rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="rounded-2xl rounded-tl-sm border border-sand bg-card px-4 py-2.5 text-soft">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Escalate */}
-          <div className="px-4 py-2 border-t border-midnight-800 bg-midnight-950/40">
-            <button
-              onClick={escalateToTeam}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-midnight-300 hover:text-gold-700 transition-colors"
-            >
-              <Headset className="w-3.5 h-3.5" /> Talk to a human instead
-            </button>
-          </div>
-
           {/* Composer */}
           <form
             onSubmit={sendChat}
-            className="flex items-end gap-2 p-3 border-t border-midnight-800"
+            className="f0-rule-top mt-2 flex items-end gap-2 pt-3"
           >
             <textarea
               value={input}
@@ -342,43 +334,41 @@ export default function HelpPage() {
                   ? "Chat limit reached — use Speak to the team for more help."
                   : "Ask a question…"
               }
-              className="flex-1 resize-none bg-midnight-950 border border-midnight-800 rounded-lg px-3 py-2 text-sm text-midnight-100 placeholder-midnight-600 focus:outline-none focus:border-gold-500/50 max-h-32"
+              className={`${fieldCls} max-h-32 flex-1 resize-none`}
             />
             <button
               type="submit"
               disabled={sending || !input.trim() || chatCapped}
-              className="shrink-0 w-10 h-10 rounded-lg bg-gold-500 text-white flex items-center justify-center disabled:opacity-40 hover:bg-gold-600 transition-colors"
+              className={`${sendBtnCls} h-10 w-10`}
               aria-label="Send"
             >
-              <Send className="w-4 h-4" />
+              <Send className="h-4 w-4" />
             </button>
           </form>
+
+          {/* Escalate */}
+          <div className="mt-3">
+            <TextAction onClick={escalateToTeam}>
+              Talk to a human instead
+              <ChevronRight className="h-3.5 w-3.5" />
+            </TextAction>
+          </div>
         </div>
       )}
 
       {/* ── Speak to the team tab ───────────────────────────────────────── */}
       {tab === "team" && (
-        <div className="space-y-6">
+        <div className="mt-8">
           {/* Form */}
-          <form
-            onSubmit={submitTicket}
-            className="rounded-xl border border-midnight-800 bg-midnight-900/50 p-5 space-y-3"
-          >
-            <div className="flex items-center gap-2 text-midnight-200">
-              <MessageSquarePlus className="w-4 h-4 text-gold-700" />
-              <span className="text-sm font-semibold">New support request</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-midnight-400 mb-1">
-                  Category
-                </label>
+          <form onSubmit={submitTicket}>
+            <SectionRule>New support request</SectionRule>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <div className="sm:w-56">
+                <label className={labelCls}>Category</label>
                 <select
                   value={category}
-                  onChange={(e) =>
-                    setCategory(e.target.value as TicketCategory)
-                  }
-                  className="w-full bg-midnight-950 border border-midnight-800 rounded-lg px-3 py-2 text-sm text-midnight-100 focus:outline-none focus:border-gold-500/50"
+                  onChange={(e) => setCategory(e.target.value as TicketCategory)}
+                  className={fieldCls}
                 >
                   {TICKET_CATEGORIES.map((c) => (
                     <option key={c} value={c}>
@@ -387,87 +377,82 @@ export default function HelpPage() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs text-midnight-400 mb-1">
-                  Subject
-                </label>
+              <div className="flex-1">
+                <label className={labelCls}>Subject</label>
                 <input
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="Short summary"
                   maxLength={200}
-                  className="w-full bg-midnight-950 border border-midnight-800 rounded-lg px-3 py-2 text-sm text-midnight-100 placeholder-midnight-600 focus:outline-none focus:border-gold-500/50"
+                  className={fieldCls}
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-xs text-midnight-400 mb-1">
-                How can we help?
-              </label>
+            <div className="mt-3">
+              <label className={labelCls}>How can we help?</label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={5}
                 placeholder="Tell us what's going on…"
-                className="w-full resize-y bg-midnight-950 border border-midnight-800 rounded-lg px-3 py-2 text-sm text-midnight-100 placeholder-midnight-600 focus:outline-none focus:border-gold-500/50"
+                className={`${fieldCls} resize-y`}
               />
             </div>
+            {/* COLOUR LAW: no danger red — the error signals by weight in the
+                action ramp. */}
             {formError && (
-              <p className="text-xs text-red-400">{formError}</p>
+              <p className="mt-2 text-xs font-semibold text-gold-700">
+                {formError}
+              </p>
             )}
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-gold-500 text-white font-semibold hover:bg-gold-600 disabled:opacity-50 transition-colors"
+              className="cta-button mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm disabled:opacity-50"
             >
               {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
               )}
               {submitting ? "Sending…" : "Send to the team"}
             </button>
           </form>
 
           {/* Existing tickets */}
-          <div>
-            <h2 className="text-sm font-semibold text-midnight-200 mb-3">
-              Your requests
-            </h2>
+          <div className="mt-11">
+            <SectionRule>Your requests</SectionRule>
             {loadingTickets ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="w-5 h-5 animate-spin text-gold-700" />
+                <Loader2 className="h-5 w-5 animate-spin text-gold-600" />
               </div>
             ) : tickets.length === 0 ? (
-              <p className="text-sm text-midnight-500 py-6 text-center rounded-xl border border-midnight-800 bg-midnight-900/30">
+              <p className="max-w-[62ch] py-6 text-sm leading-relaxed text-soft">
                 No requests yet. Send one above and we&apos;ll get back to you.
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="f0-ledger mt-1">
                 {tickets.map((t) => {
                   const open = expanded === t.id;
                   return (
-                    <div
-                      key={t.id}
-                      className="rounded-xl border border-midnight-800 bg-midnight-900/50 overflow-hidden"
-                    >
+                    <div key={t.id}>
                       <button
                         onClick={() => setExpanded(open ? null : t.id)}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-midnight-800/30 transition-colors"
+                        className="f0-ledger-row w-full text-left"
                       >
                         {open ? (
-                          <ChevronDown className="w-4 h-4 text-midnight-500 shrink-0" />
+                          <ChevronDown className="h-4 w-4 shrink-0 text-soft" />
                         ) : (
-                          <ChevronRight className="w-4 h-4 text-midnight-500 shrink-0" />
+                          <ChevronRight className="h-4 w-4 shrink-0 text-soft" />
                         )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-midnight-100 truncate">
+                            <span className="truncate font-display text-[15px] font-bold text-ink">
                               {t.subject}
                             </span>
                             <StatusChip status={t.status} />
                           </div>
-                          <p className="text-[11px] text-midnight-500 mt-0.5">
+                          <p className="mt-0.5 text-[12px] text-soft">
                             {CATEGORY_LABELS[t.category]} ·{" "}
                             {timeAgo(t.last_message_at)}
                           </p>
@@ -475,36 +460,34 @@ export default function HelpPage() {
                       </button>
 
                       {open && (
-                        <div className="border-t border-midnight-800 px-4 py-3 space-y-3">
-                          <div className="space-y-3">
-                            {t.help_messages?.map((m) => (
-                              <div
-                                key={m.id}
-                                className={`flex gap-2.5 ${
-                                  m.sender === "user" ? "flex-row-reverse" : ""
+                        <div className="space-y-4 pb-5 pl-8">
+                          {t.help_messages?.map((m) => (
+                            <div
+                              key={m.id}
+                              className={`flex gap-2.5 ${
+                                m.sender === "user" ? "flex-row-reverse" : ""
+                              }`}
+                            >
+                              <span
+                                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-display font-bold ${
+                                  m.sender === "user"
+                                    ? "bg-sand text-soft"
+                                    : "bg-gold-400/20 text-gold-700"
                                 }`}
                               >
-                                <span
-                                  className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${
-                                    m.sender === "user"
-                                      ? "bg-midnight-800 text-midnight-300"
-                                      : "bg-gold-400/20 text-gold-700"
-                                  }`}
-                                >
-                                  {m.sender === "user" ? "You" : "FTA"}
-                                </span>
-                                <div
-                                  className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
-                                    m.sender === "user"
-                                      ? "bg-gold-500 text-white rounded-tr-sm"
-                                      : "bg-midnight-800 text-midnight-100 rounded-tl-sm"
-                                  }`}
-                                >
-                                  {m.body}
-                                </div>
+                                {m.sender === "user" ? "You" : "FTA"}
+                              </span>
+                              <div
+                                className={`max-w-[52ch] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed text-ink ${
+                                  m.sender === "user"
+                                    ? "rounded-tr-sm bg-sand"
+                                    : "rounded-tl-sm border border-sand bg-card"
+                                }`}
+                              >
+                                {m.body}
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
 
                           {t.status !== "closed" && (
                             <div className="flex items-end gap-2 pt-1">
@@ -513,15 +496,15 @@ export default function HelpPage() {
                                 onChange={(e) => setReplyBody(e.target.value)}
                                 rows={1}
                                 placeholder="Write a reply…"
-                                className="flex-1 resize-none bg-midnight-950 border border-midnight-800 rounded-lg px-3 py-2 text-sm text-midnight-100 placeholder-midnight-600 focus:outline-none focus:border-gold-500/50 max-h-28"
+                                className={`${fieldCls} max-h-28 flex-1 resize-none`}
                               />
                               <button
                                 onClick={() => submitReply(t.id)}
                                 disabled={replyBusy || !replyBody.trim()}
-                                className="shrink-0 w-9 h-9 rounded-lg bg-gold-500 text-white flex items-center justify-center disabled:opacity-40 hover:bg-gold-600 transition-colors"
+                                className={`${sendBtnCls} h-9 w-9`}
                                 aria-label="Send reply"
                               >
-                                <Send className="w-4 h-4" />
+                                <Send className="h-4 w-4" />
                               </button>
                             </div>
                           )}

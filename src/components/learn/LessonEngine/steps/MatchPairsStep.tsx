@@ -66,8 +66,12 @@ export default function MatchPairsStep({
     }
   }
 
+  // COLOUR LAW: a match is not a price move, so a locked pair reads INK
+  // (settled) and a miss steps back to `soft` — never green/red.
   const cell =
-    "rounded-xl border px-4 py-3.5 text-left font-body text-[15px] transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.99]";
+    "rounded-xl border px-4 py-3.5 text-left text-[15px] transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.99]";
+  const cellIdle = "border-sand bg-card text-ink hover:border-gold-500";
+  const cellMatched = "border-ink bg-ink/[0.06] text-ink";
 
   return (
     <div>
@@ -87,16 +91,16 @@ export default function MatchPairsStep({
                 onClick={() => !isMatched && setSelectedLeft(i)}
                 className={`${cell} ${
                   isMatched
-                    ? "border-green-500 bg-chip-green text-green-900"
+                    ? cellMatched
                     : isSel
-                      ? "border-gold-400 bg-gold-400/10 text-ink"
-                      : "border-sand bg-white/60 text-ink hover:border-gold-300"
+                      ? "border-gold-500 bg-gold-400/10 text-ink"
+                      : cellIdle
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span className="min-w-0 flex-1">{p.left}</span>
                   {isMatched && (
-                    <Check className="h-4 w-4 shrink-0 text-green-600" />
+                    <Check className="h-4 w-4 shrink-0 text-ink" />
                   )}
                 </span>
               </button>
@@ -118,10 +122,10 @@ export default function MatchPairsStep({
                 transition={{ duration: 0.32, ease: EASE_OUT }}
                 className={`${cell} ${
                   isMatched
-                    ? "border-green-500 bg-chip-green text-green-900"
+                    ? cellMatched
                     : isWrong
-                      ? "border-red-400 bg-red-500/10 text-red-800"
-                      : "border-sand bg-white/60 text-ink hover:border-gold-300"
+                      ? "border-soft bg-transparent text-soft"
+                      : cellIdle
                 }`}
               >
                 <span className="flex items-center gap-2">
@@ -129,7 +133,7 @@ export default function MatchPairsStep({
                     {spec.pairs[origIdx].right}
                   </span>
                   {isMatched && (
-                    <Check className="h-4 w-4 shrink-0 text-green-600" />
+                    <Check className="h-4 w-4 shrink-0 text-ink" />
                   )}
                 </span>
               </m.button>

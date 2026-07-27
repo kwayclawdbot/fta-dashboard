@@ -2,17 +2,23 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { m } from "@/lib/motion";
-import { CheckCircle, Lock, BarChart3, CandlestickChart as CandlestickIcon } from "lucide-react";
-import { SCENARIOS, type ScenarioDefinition, type Difficulty } from "@/lib/simulator/scenarios";
+import { Check } from "lucide-react";
+import { SCENARIOS, type ScenarioDefinition } from "@/lib/simulator/scenarios";
 import { createClient } from "@/lib/supabase/client";
 import SimulatorTabs from "@/components/simulator/SimulatorTabs";
 
-const DIFFICULTY_COLORS: Record<Difficulty, string> = {
-  beginner: "bg-green-400/10 text-green-400 border-green-400/20",
-  intermediate: "bg-gold-400/10 text-gold-400 border-gold-400/20",
-  advanced: "bg-red-500/10 text-red-500 border-red-500/20",
-};
+/**
+ * PRACTICE · PATTERN PRACTICE — the index of scenarios.
+ *
+ * Same scenarios, same completion source (`sim_scenario_scores`, passed only),
+ * same links. The four-across card grid is gone: each pattern is now one ruled
+ * line in a hairline ledger under a section rule, which is also what lets the
+ * list carry the description without the cards all growing to match.
+ *
+ * COLOUR LAW: nothing here is a price, so nothing here is green or red — the
+ * old difficulty pills spent the price colours on a label. Difficulty and bias
+ * are mono type; a passed pattern is marked with the brand check.
+ */
 
 export default function LessonsPage() {
   const [completedScenarios, setCompletedScenarios] = useState<Set<string>>(new Set());
@@ -45,134 +51,136 @@ export default function LessonsPage() {
   const chartPatterns = SCENARIOS.filter((s) => s.category === "chart");
   const candlestickPatterns = SCENARIOS.filter((s) => s.category === "candlestick");
   const totalPassed = completedScenarios.size;
+  const pct = SCENARIOS.length > 0 ? (totalPassed / SCENARIOS.length) * 100 : 0;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
+      <div className="mx-auto max-w-4xl space-y-7 pb-24">
+        <SimulatorTabs />
+        <p className="py-16 text-center font-mono text-[11px] uppercase tracking-[0.16em] text-soft">
+          Loading your patterns…
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-8 pb-24">
       <SimulatorTabs />
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-display font-bold text-midnight-100">
-          Pattern Practice
-        </h1>
-        <p className="text-xs text-midnight-400">
-          Master chart and candlestick patterns through interactive scenarios
+
+      <header>
+        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          Practice
         </p>
-        <div className="mt-2 flex items-center gap-2">
-          <div className="h-1.5 flex-1 bg-midnight-800 rounded-full overflow-hidden max-w-xs">
+        <h1 className="mt-2 font-display text-display-1 font-extrabold text-ink">
+          Pattern practice
+        </h1>
+        <p className="mt-2.5 max-w-md text-[14px] leading-relaxed text-soft">
+          Watch a pattern form bar by bar, call it, then watch how it actually
+          resolved. Chart patterns and candlesticks, one decision at a time.
+        </p>
+
+        {/* Progress — a meter, not a stat card. Progress toward something you
+            can act on is volt by law. */}
+        <div className="mt-5 flex max-w-sm items-center gap-3">
+          <div
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-sand"
+            role="progressbar"
+            aria-valuenow={totalPassed}
+            aria-valuemin={0}
+            aria-valuemax={SCENARIOS.length}
+          >
             <div
-              className="h-full bg-gradient-to-r from-gold-400 to-gold-500 rounded-full transition-all"
-              style={{ width: `${(totalPassed / SCENARIOS.length) * 100}%` }}
+              className="h-full rounded-full bg-volt-500 transition-[width] duration-700 ease-out"
+              style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-xs text-midnight-400">
-            {totalPassed}/{SCENARIOS.length} completed
+          <span className="shrink-0 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+            {totalPassed}/{SCENARIOS.length} passed
           </span>
         </div>
-      </div>
+      </header>
 
-      {/* Chart Patterns Section */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <BarChart3 className="w-4 h-4 text-gold-400" />
-          <h2 className="text-sm font-display font-semibold text-midnight-100">
-            Chart Patterns
-          </h2>
-          <span className="text-[11px] text-midnight-500">({chartPatterns.length})</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {chartPatterns.map((s, i) => (
-            <ScenarioCard
-              key={s.id}
-              scenario={s}
-              completed={completedScenarios.has(s.id)}
-              index={i}
-            />
-          ))}
-        </div>
-      </section>
+      <ScenarioLedger
+        id="chart-patterns"
+        label={`Chart patterns · ${chartPatterns.length}`}
+        scenarios={chartPatterns}
+        completed={completedScenarios}
+      />
 
-      {/* Candlestick Patterns Section */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <CandlestickIcon className="w-4 h-4 text-gold-400" />
-          <h2 className="text-sm font-display font-semibold text-midnight-100">
-            Candlestick Patterns
-          </h2>
-          <span className="text-[11px] text-midnight-500">({candlestickPatterns.length})</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {candlestickPatterns.map((s, i) => (
-            <ScenarioCard
-              key={s.id}
-              scenario={s}
-              completed={completedScenarios.has(s.id)}
-              index={i}
-            />
-          ))}
-        </div>
-      </section>
+      <ScenarioLedger
+        id="candlestick-patterns"
+        label={`Candlestick patterns · ${candlestickPatterns.length}`}
+        scenarios={candlestickPatterns}
+        completed={completedScenarios}
+      />
     </div>
   );
 }
 
-function ScenarioCard({
-  scenario,
+function ScenarioLedger({
+  id,
+  label,
+  scenarios,
   completed,
-  index,
 }: {
-  scenario: ScenarioDefinition;
-  completed: boolean;
-  index: number;
+  id: string;
+  label: string;
+  scenarios: ScenarioDefinition[];
+  completed: Set<string>;
 }) {
   return (
-    <m.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
-    >
-      <Link
-        href={`/simulator/lessons/${scenario.id}`}
-        className={`block p-4 rounded-lg border transition-colors ${
-          completed
-            ? "bg-green-400/5 border-green-400/20 hover:border-green-400/40"
-            : "bg-midnight-900 border-midnight-700/50 hover:border-gold-400/30"
-        }`}
+    <section aria-labelledby={id}>
+      <h2
+        id={id}
+        className="f0-section-rule mb-1 font-display text-eyebrow font-bold uppercase text-soft"
       >
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="text-sm font-display font-semibold text-midnight-100">
-            {scenario.name}
-          </h3>
-          {completed && <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />}
-        </div>
-        <p className="text-[11px] text-midnight-400 leading-relaxed mb-3 line-clamp-2">
-          {scenario.description}
+        <span className="shrink-0 whitespace-nowrap">{label}</span>
+      </h2>
+
+      {scenarios.length === 0 ? (
+        <p className="py-4 text-[13.5px] leading-relaxed text-soft">
+          No patterns in this set yet.
         </p>
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
-              DIFFICULTY_COLORS[scenario.difficulty]
-            }`}
-          >
-            {scenario.difficulty}
-          </span>
-          <span className="text-[11px] text-midnight-500">
-            →{" "}
-            {scenario.correctAction === "buy"
-              ? "Bullish"
-              : scenario.correctAction === "sell"
-              ? "Bearish"
-              : "Neutral"}
-          </span>
+      ) : (
+        <div className="f0-ledger">
+          {scenarios.map((s) => {
+            const done = completed.has(s.id);
+            return (
+              <Link
+                key={s.id}
+                href={`/simulator/lessons/${s.id}`}
+                className="f0-ledger-row group"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 font-display text-[15px] font-extrabold tracking-tight text-ink">
+                    {s.name}
+                    {done && (
+                      <span className="inline-flex items-center gap-1 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-gold-700">
+                        <Check className="h-3 w-3" />
+                        Passed
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-1 max-w-xl text-[12.5px] leading-snug text-soft">
+                    {s.description}
+                  </p>
+                </div>
+                <span className="shrink-0 text-right font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                  <span className="block">{s.difficulty}</span>
+                  <span className="mt-0.5 block">
+                    {s.correctAction === "buy"
+                      ? "Bullish"
+                      : s.correctAction === "sell"
+                        ? "Bearish"
+                        : "Neutral"}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
         </div>
-      </Link>
-    </m.div>
+      )}
+    </section>
   );
 }

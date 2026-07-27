@@ -31,6 +31,11 @@ export type NewsBlock =
       url: string;
       publisher: string | null;
       published: string | null;
+      /** Publisher artwork for that story. Optional: articles generated before
+          the field was wired have none, and the feed's house OG placeholders
+          are rejected upstream (polygon.isGenericNewsImage), so this is either
+          a real picture of the story or absent. */
+      image?: string | null;
     };
 
 export interface NewsSections {

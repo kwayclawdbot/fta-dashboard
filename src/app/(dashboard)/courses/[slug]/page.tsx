@@ -3,17 +3,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { m as mm, AnimatePresence } from "@/lib/motion";
-import {
-  ChevronDown,
-  Play,
-  Check,
-  Lock,
-  Clock,
-  BookOpen,
-  ArrowLeft,
-} from "lucide-react";
+import { ChevronDown, Play, Check, Lock, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { Ledger, Meter, EmptyLine, TextAction } from "@/components/f0/parts";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COURSE DETAIL — /courses/[slug]
+
+   The path, opened. Composition follows the F0 vocabulary the Learn index was
+   rebuilt on: a masthead, ONE obsidian hero field (the continue/start object),
+   then the syllabus as hairline-ruled module sections. No card containers, no
+   equal-column grids — a module is a rule + a ledger, a lesson is a row.
+
+   COLOUR LAW: volt orange (the themed `gold-*` ramp) = brand + ACTION only, so
+   it marks the CTA, the meter and the "next up" affordance and nothing else.
+   Completion is ink + a check, never green: green/red belong to price.
+
+   BEHAVIOUR IS UNCHANGED from the previous viewer — same Supabase reads
+   (courses → modules → lessons → lesson_progress), same drip lock rule, same
+   mock-catalog fallback, same lesson hrefs.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 interface Lesson {
   id: string;
@@ -152,28 +162,18 @@ function formatDuration(sec: number | null) {
   return `${m} min`;
 }
 
-const statusIcon = (status: Lesson["status"]) => {
-  switch (status) {
-    case "completed":
-      return (
-        <div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center">
-          <Check className="w-3 h-3 text-green-400" />
-        </div>
-      );
-    case "available":
-      return (
-        <div className="w-6 h-6 rounded-full bg-gold-400/15 flex items-center justify-center group-hover:bg-gold-400/25 transition-colors">
-          <Play className="w-3 h-3 text-gold-400" />
-        </div>
-      );
-    case "locked":
-      return (
-        <div className="w-6 h-6 rounded-full bg-midnight-800 flex items-center justify-center">
-          <Lock className="w-3 h-3 text-midnight-500" />
-        </div>
-      );
+/** Lesson-state mark. Ink check = done · volt play = open · soft lock = drip. */
+function StatusMark({ status }: { status: Lesson["status"] }) {
+  if (status === "completed") {
+    return <Check className="h-4 w-4 shrink-0 self-center text-ink" aria-hidden />;
   }
-};
+  if (status === "locked") {
+    return <Lock className="h-3.5 w-3.5 shrink-0 self-center text-soft" aria-hidden />;
+  }
+  return (
+    <Play className="h-3.5 w-3.5 shrink-0 self-center text-gold-700" aria-hidden />
+  );
+}
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -182,7 +182,6 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState<CourseData>(DEFAULT_COURSE);
   const [loading, setLoading] = useState(true);
-  const [isMock, setIsMock] = useState(false);
 
   const loadCourse = useCallback(async () => {
     // Try Supabase first
@@ -290,10 +289,7 @@ export default function CourseDetailPage() {
 
     // Fallback to mock data
     const mock = MOCK_COURSES[slug];
-    if (mock) {
-      setCourse(mock);
-      setIsMock(true);
-    }
+    if (mock) setCourse(mock);
     setLoading(false);
   }, [supabase, slug]);
 
@@ -337,225 +333,243 @@ export default function CourseDetailPage() {
     });
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <CourseSkeleton />;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Back link */}
+    <div className="mx-auto max-w-2xl space-y-8 pb-16">
+      {/* ── Masthead ─────────────────────────────────────────────────── */}
       <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="mb-6"
+        transition={{ duration: 0.25 }}
       >
         <Link
           href="/courses"
-          className="inline-flex items-center gap-1.5 text-sm text-midnight-400 hover:text-midnight-200 transition-colors font-body"
+          className="inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to courses
+          <ArrowLeft className="h-3.5 w-3.5" />
+          All paths
         </Link>
-      </mm.div>
 
-      {/* Course Header */}
-      <mm.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="mb-8"
-      >
-        <h2 className="font-display text-2xl font-bold text-midnight-100 mb-2">
-          {course.title}
-        </h2>
-        <p className="text-sm text-midnight-400 font-body mb-4 max-w-xl">
-          {course.description}
+        <p className="mt-5 text-eyebrow font-display font-bold uppercase text-gold-700">
+          The path
         </p>
-        <div className="flex items-center gap-4 text-xs text-midnight-400 mb-4">
-          <span className="flex items-center gap-1">
-            <BookOpen className="w-3.5 h-3.5" />
-            {totalLessons} lessons
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            {completedLessons}/{totalLessons} completed
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <div className="w-full max-w-sm h-1.5 rounded-full bg-midnight-800 overflow-hidden">
-          <mm.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="h-full rounded-full bg-gold-400"
-          />
-        </div>
-        <p className="text-xs text-midnight-500 mt-1.5">{progress}% complete</p>
-
-        {/* Continue / Start button */}
-        {nextUp && (
-          <Link
-            href={`/courses/${slug}/${nextUp.moduleId}/${nextUp.id}`}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold-400 text-midnight-950 text-sm font-display font-semibold hover:bg-gold-300 transition-colors"
-          >
-            <Play className="w-4 h-4" />
-            {completedLessons > 0 ? "Continue Learning" : "Start Course"}
-          </Link>
+        <h1 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05] text-ink">
+          {course.title}
+        </h1>
+        {course.description && (
+          <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-soft">
+            {course.description}
+          </p>
+        )}
+        {totalLessons > 0 && (
+          <p className="mt-3 font-mono text-[12px] tabular-nums text-soft">
+            {totalLessons} lesson{totalLessons === 1 ? "" : "s"} ·{" "}
+            {completedLessons} complete
+          </p>
         )}
       </mm.div>
 
-      {/* Modules */}
-      <div className="border-t border-midnight-800/50">
-        {course.modules.map((module, mi) => {
-          const isExpanded = expandedModules.has(module.id);
-          const moduleCompleted = module.lessons.every(
-            (l) => l.status === "completed"
-          );
-          const moduleProgress = module.lessons.filter(
-            (l) => l.status === "completed"
-          ).length;
+      {/* ── The one dark object: pick the path back up ────────────────── */}
+      {nextUp && (
+        <mm.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+          className="f0-hero-field f0-grain p-6 sm:p-7"
+        >
+          <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
+            {completedLessons > 0 ? "Next up" : "Start here"}
+          </p>
+          <h2 className="mt-2 font-display text-display-3 font-extrabold leading-tight text-[#F7F3EA]">
+            {nextUp.title}
+          </h2>
 
-          return (
-            <mm.div
-              key={module.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: mi * 0.05, duration: 0.3 }}
-              className="border-b border-midnight-800/50"
-            >
-              {/* Module header */}
-              <button
-                onClick={() => toggleModule(module.id)}
-                className="w-full flex items-center justify-between py-4 hover:bg-midnight-900/30 transition-colors"
+          <Meter pct={progress} onDark className="mt-5" />
+          <p className="mt-2 font-mono text-[12px] tabular-nums text-[#F7F3EA]/60">
+            {progress}% of this path complete
+          </p>
+
+          <Link
+            href={`/courses/${slug}/${nextUp.moduleId}/${nextUp.id}`}
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
+          >
+            {completedLessons > 0 ? "Continue lesson" : "Open the first lesson"}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </mm.section>
+      )}
+
+      {!nextUp && totalLessons > 0 && (
+        <div className="f0-rule-top pt-4">
+          <p className="inline-flex items-center gap-2 font-display text-[15px] font-bold text-ink">
+            <Check className="h-4 w-4" />
+            Every lesson on this path is complete
+          </p>
+          <p className="mt-1 text-[13px] text-soft">
+            Nothing left open here — the rest of your journey is on the Learn
+            index.
+          </p>
+          <div className="mt-3">
+            <TextAction href="/courses">
+              Back to Learn <ArrowRight className="h-3.5 w-3.5" />
+            </TextAction>
+          </div>
+        </div>
+      )}
+
+      {/* ── Syllabus ─────────────────────────────────────────────────── */}
+      {course.modules.length > 0 && (
+        <div>
+          {course.modules.map((module, mi) => {
+            const isExpanded = expandedModules.has(module.id);
+            const moduleCompleted = module.lessons.every(
+              (l) => l.status === "completed"
+            );
+            const moduleProgress = module.lessons.filter(
+              (l) => l.status === "completed"
+            ).length;
+
+            return (
+              <mm.section
+                key={module.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: mi * 0.04, duration: 0.28 }}
+                className="f0-rule-top"
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-display font-bold ${
-                      moduleCompleted
-                        ? "bg-green-500/15 text-green-400"
-                        : "bg-midnight-800 text-midnight-300"
-                    }`}
-                  >
-                    {moduleCompleted ? (
-                      <Check className="w-3.5 h-3.5" />
-                    ) : (
-                      mi + 1
-                    )}
-                  </div>
-                  <div className="text-left">
-                    <p className="font-display text-sm font-medium text-midnight-100">
-                      {module.title}
-                    </p>
-                    <p className="text-xs text-midnight-500 font-body">
-                      {moduleProgress}/{module.lessons.length} lessons
-                    </p>
-                  </div>
-                </div>
-                <mm.div
-                  animate={{ rotate: isExpanded ? 180 : 0 }}
-                  transition={{ duration: 0.15 }}
+                {/* Module header — a line, not a card header */}
+                <button
+                  type="button"
+                  onClick={() => toggleModule(module.id)}
+                  aria-expanded={isExpanded}
+                  className="flex w-full items-center gap-4 py-4 text-left transition-colors"
                 >
-                  <ChevronDown className="w-4 h-4 text-midnight-400" />
-                </mm.div>
-              </button>
-
-              {/* Lessons */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <mm.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                    className="overflow-hidden"
+                  <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
+                    {String(mi + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-display text-[16px] font-bold leading-snug text-ink">
+                      {module.title}
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[12px] tabular-nums text-soft">
+                      {moduleCompleted && <Check className="h-3.5 w-3.5" />}
+                      {moduleProgress}/{module.lessons.length} lessons
+                    </span>
+                  </span>
+                  <mm.span
+                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="shrink-0"
                   >
-                    <div className="pl-10 pb-3">
-                      {module.lessons.map((lesson) => {
-                        const isLocked = lesson.status === "locked";
+                    <ChevronDown className="h-4 w-4 text-soft" />
+                  </mm.span>
+                </button>
 
-                        if (isLocked) {
-                          return (
-                            <div
-                              key={lesson.id}
-                              className="flex items-center gap-3 py-2.5 opacity-40"
-                            >
-                              {statusIcon(lesson.status)}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-body text-midnight-500">
+                {/* Lessons */}
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <mm.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <Ledger className="pb-3 pl-8">
+                        {module.lessons.map((lesson) => {
+                          const locked = lesson.status === "locked";
+
+                          const body = (
+                            <>
+                              <StatusMark status={lesson.status} />
+                              <span className="min-w-0 flex-1">
+                                <span
+                                  className={`block text-[15px] leading-snug ${
+                                    lesson.status === "completed"
+                                      ? "text-soft"
+                                      : locked
+                                        ? "text-soft"
+                                        : "font-display font-bold text-ink"
+                                  }`}
+                                >
                                   {lesson.title}
-                                </p>
-                                {lesson.dripDays && (
-                                  <p className="text-[11px] text-midnight-600 mt-0.5 flex items-center gap-1">
-                                    <Lock className="w-2.5 h-2.5" />
-                                    Available in {lesson.dripDays} days
-                                  </p>
+                                </span>
+                                {locked && lesson.dripDays && (
+                                  <span className="mt-0.5 block font-mono text-[12px] text-soft">
+                                    Unlocks in {lesson.dripDays} days
+                                  </span>
                                 )}
-                              </div>
-                              <span className="text-[11px] text-midnight-500 font-body flex items-center gap-1 shrink-0">
-                                <Clock className="w-3 h-3" />
-                                {lesson.duration}
                               </span>
-                            </div>
+                              {lesson.duration && (
+                                <span className="shrink-0 self-center font-mono text-[12px] tabular-nums text-soft">
+                                  {lesson.duration}
+                                </span>
+                              )}
+                            </>
                           );
-                        }
 
-                        return (
-                          <Link
-                            key={lesson.id}
-                            href={`/courses/${slug}/${module.id}/${lesson.id}`}
-                            className="flex items-center gap-3 py-2.5 cursor-pointer hover:opacity-80 transition-opacity group"
-                          >
-                            {statusIcon(lesson.status)}
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={`text-sm font-body ${
-                                  lesson.status === "completed"
-                                    ? "text-midnight-400 line-through"
-                                    : "text-midnight-100 group-hover:text-gold-400 transition-colors"
-                                }`}
+                          if (locked) {
+                            return (
+                              <div
+                                key={lesson.id}
+                                className="f0-ledger-row opacity-60"
                               >
-                                {lesson.title}
-                              </p>
-                            </div>
-                            <span className="text-[11px] text-midnight-500 font-body flex items-center gap-1 shrink-0">
-                              <Clock className="w-3 h-3" />
-                              {lesson.duration}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </mm.div>
-                )}
-              </AnimatePresence>
-            </mm.div>
-          );
-        })}
-      </div>
+                                {body}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <Link
+                              key={lesson.id}
+                              href={`/courses/${slug}/${module.id}/${lesson.id}`}
+                              className="f0-ledger-row group"
+                            >
+                              {body}
+                            </Link>
+                          );
+                        })}
+                      </Ledger>
+                    </mm.div>
+                  )}
+                </AnimatePresence>
+              </mm.section>
+            );
+          })}
+        </div>
+      )}
 
       {/* Empty state */}
       {course.modules.length === 0 && (
-        <mm.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="py-16 text-center"
-        >
-          <BookOpen className="w-8 h-8 text-midnight-500 mx-auto mb-3" />
-          <h3 className="font-display text-lg font-semibold text-midnight-200 mb-1">
-            Course Coming Soon
-          </h3>
-          <p className="text-midnight-400 text-sm font-body max-w-sm mx-auto">
-            We&apos;re putting the finishing touches on this course. Check back
-            soon!
-          </p>
-        </mm.div>
+        <EmptyLine
+          title="Nothing published yet"
+          body="This path is still being written. Lessons appear here the moment they're published — nothing is hidden behind a placeholder."
+          action={
+            <TextAction href="/courses">
+              Back to Learn <ArrowRight className="h-3.5 w-3.5" />
+            </TextAction>
+          }
+        />
       )}
+    </div>
+  );
+}
+
+function CourseSkeleton() {
+  return (
+    <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16">
+      <div className="space-y-3">
+        <div className="h-3 w-24 rounded bg-sand/60" />
+        <div className="h-9 w-64 rounded bg-sand/60" />
+        <div className="h-4 w-full max-w-md rounded bg-sand/40" />
+      </div>
+      <div className="h-48 rounded-[1.5rem] bg-sand/40" />
+      <div className="space-y-4">
+        <div className="h-12 rounded bg-sand/30" />
+        <div className="h-12 rounded bg-sand/30" />
+        <div className="h-12 rounded bg-sand/30" />
+      </div>
     </div>
   );
 }

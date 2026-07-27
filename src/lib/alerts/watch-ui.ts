@@ -95,10 +95,10 @@ export function toneClasses(tone: StateTone): {
   switch (tone) {
     case "volt":
       return {
-        text: "text-volt-600",
+        text: "text-gold-600",
         dot: "bg-volt-500",
         glow: "club-livedot-volt",
-        chip: "bg-volt-500/12 text-volt-700",
+        chip: "bg-volt-500/12 text-gold-700",
       };
     case "teal":
       return {

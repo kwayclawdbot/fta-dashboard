@@ -394,7 +394,7 @@ export default function AddFamily({
                               onClick={() => toggleRange(o.value)}
                               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                                 on
-                                  ? "bg-gold-500 text-white"
+                                  ? "bg-gold-500 text-night-950"
                                   : "bg-sand text-ink hover:bg-[#E0D6BE]"
                               }`}
                             >
@@ -510,7 +510,7 @@ function ChoiceCard({
     >
       <span
         className={`flex h-10 w-10 items-center justify-center rounded-full ${
-          active ? "bg-gold-500 text-white" : "bg-sand text-ink"
+          active ? "bg-gold-500 text-night-950" : "bg-sand text-ink"
         }`}
       >
         {icon}

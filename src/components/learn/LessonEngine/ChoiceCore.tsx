@@ -195,7 +195,7 @@ export default function ChoiceCore({
               <PrimaryButton
                 onClick={() => onResolve({ correct: true, firstTry: false })}
                 icon="arrow"
-                tone="green"
+                tone="confirm"
               >
                 Got it
               </PrimaryButton>

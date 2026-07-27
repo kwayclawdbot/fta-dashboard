@@ -3,36 +3,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { m } from "@/lib/motion";
 import {
-  ArrowLeft,
-  Send,
-  MessageCircle,
   ShieldCheck,
   Users2,
-  LineChart,
-  Sparkles,
-  Trash2,
-  StickyNote,
-  Lightbulb,
-  TriangleAlert,
   Newspaper,
-  HelpCircle,
-  TrendingUp,
   FileText,
   Eye,
   Share2,
   GraduationCap,
   Check,
 } from "lucide-react";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote, fetchNews, fetchBars, type MarketQuote, type MarketBar, type NewsHeadline } from "@/lib/market/client";
-import { formatExchange } from "@/lib/market/exchange";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
-import CompanyLogo from "@/components/fic/CompanyLogo";
-import LivePrice from "@/components/fic/LivePrice";
 import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
@@ -41,7 +25,12 @@ import type { KaiReport } from "@/lib/kai/report";
 import SetAlertButton, { type AlertLevel } from "@/components/alerts/SetAlertButton";
 import Scorecard from "@/components/research/Scorecard";
 import PriceTechnicals from "@/components/research/PriceTechnicals";
-import { type ResearchTabKey } from "@/components/research/ResearchTabs";
+import ResearchTabBar, {
+  RESEARCH_TABS,
+  tabId,
+  panelId,
+  type ResearchTabKey,
+} from "@/components/research/ResearchTabs";
 import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
 import ContinuePath from "@/components/learn/ContinuePath";
 import {
@@ -54,11 +43,7 @@ import { fetchResearch, type ResearchPayload } from "@/lib/research/types";
 import { fetchClubNewsForTicker } from "@/lib/news/client";
 import { KindChip } from "@/components/news/NewsCard";
 import { timeAgo as newsTimeAgo, type NewsCardData } from "@/lib/news/types";
-import {
-  CONTRIBUTION_TYPES,
-  contributionMeta,
-  type ContributionType,
-} from "@/lib/research/social";
+import { type ContributionType } from "@/lib/research/social";
 import TickerDebate from "@/components/social/TickerDebate";
 import ChangedMyMind from "@/components/social/ChangedMyMind";
 import ResearchObjectCard from "@/components/social/ResearchObjectCard";
@@ -74,6 +59,9 @@ import {
   COMMUNITY_DISCLAIMER,
   type CommunityEntry,
 } from "@/lib/community-watchlist";
+import ResearchCanvas from "./ResearchCanvas";
+import ClubRead from "./ClubRead";
+import TickerDiscussion from "./TickerDiscussion";
 
 const COMMENT_SELECT =
   "id, ticker, user_id, body, contribution_type, created_at, author:profiles(display_name, avatar_url, age_group, username)";
@@ -126,15 +114,6 @@ interface ThreadComment {
   } | null;
 }
 
-const CONTRIB_ICON: Record<string, React.ElementType> = {
-  StickyNote,
-  Lightbulb,
-  TriangleAlert,
-  Newspaper,
-  LineChart,
-  HelpCircle,
-};
-
 function normComment(r: unknown): ThreadComment {
   const row = r as ThreadComment & { author: ThreadComment["author"] | ThreadComment["author"][] };
   const a = row.author;
@@ -149,50 +128,12 @@ function normComment(r: unknown): ThreadComment {
   };
 }
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const h = Math.floor(mins / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return d === 1 ? "yesterday" : `${d}d ago`;
-}
+/* timeAgo / Avatar / the contribution-icon map moved to TickerDiscussion with
+   the thread itself — the client no longer renders a note. */
 
-function Avatar({ name, url, size = 28 }: { name?: string | null; url?: string | null; size?: number }) {
-  const dim = { width: size, height: size };
-  if (url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt={name || "Member"} style={dim} className="shrink-0 rounded-full object-cover" />;
-  }
-  const initials = (name || "?").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-  return (
-    <div style={dim} className="flex shrink-0 items-center justify-center rounded-full bg-chip-amber text-[10px] font-bold text-gold-700">
-      {initials}
-    </div>
-  );
-}
-
-/** 52-week range position marker (WSZ hero device). */
-function RangeBar({ low, high, price }: { low: number | null; high: number | null; price: number | null }) {
-  if (low == null || high == null || price == null || high <= low) return null;
-  const pos = Math.max(0, Math.min(1, (price - low) / (high - low)));
-  return (
-    <div className="mt-3">
-      <div className="relative h-1.5 rounded-full bg-sand">
-        <div
-          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-white bg-gold-500 shadow-soft"
-          style={{ left: `calc(${(pos * 100).toFixed(1)}% - 6px)` }}
-        />
-      </div>
-      <div className="mt-1 flex justify-between text-[10px] font-medium text-soft">
-        <span>52w low ${low.toFixed(2)}</span>
-        <span>52w high ${high.toFixed(2)}</span>
-      </div>
-    </div>
-  );
-}
+/* The 52-week range marker now lives on the canvas head (ResearchCanvas →
+   RangeRail), drawn as a hairline rail with an INK tick rather than a gold pill
+   — position is not a direction, so it never takes a semantic colour. */
 
 /** Key-level prefills for the research-page "Set alert" — the 52-week extremes
  *  the aggregate computed. Above the high / below the low are the levels members
@@ -249,20 +190,42 @@ export default function ResearchClient({
   const [newsState, setNewsState] = useState<"idle" | "loading" | "done">("idle");
   const [draft, setDraft] = useState("");
   const [draftType, setDraftType] = useState<ContributionType>("note");
-  const [filter, setFilter] = useState<string>("all");
   const [posting, setPosting] = useState(false);
   const [err, setErr] = useState("");
   const [theses, setTheses] = useState<ThesisCard[]>([]);
   const [showCompose, setShowCompose] = useState(false);
+
+  // ── TAB STATE ────────────────────────────────────────────────────────────
+  // Deep-linkable: `?tab=fundamentals` or `#fundamentals`. Resolved in an effect
+  // (not during render) so the server and the first client paint agree, then
+  // written back with replaceState so the URL is shareable without adding a
+  // history entry per tab. Only tab keys are matched, so the page's existing
+  // `#research-notes` / `#practice` anchors still behave as anchors.
+  const [tab, setTab] = useState<ResearchTabKey>("overview");
+
+  const selectTab = useCallback((k: ResearchTabKey) => {
+    setTab(k);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", k);
+      window.history.replaceState(null, "", url.toString());
+    } catch {
+      /* history unavailable — the tab still switches */
+    }
+  }, []);
 
   const [back, setBack] = useState<BackTarget>(BACK_DEFAULT);
   const barsReq = useRef(false);
   const newsReq = useRef(false);
   const initRef = useRef(false);
 
+  // Data lanes, deliberately NOT keyed to the tab union: bars feed the canvas
+  // head chart (always visible) as well as the Technicals panel, so both lanes
+  // stay eager. Tabs change what is COMPOSED, never what is fetched — switching
+  // a tab must not stall on a request.
   const ensureTabData = useCallback(
-    (tab: ResearchTabKey) => {
-      if (tab === "charts" && !barsReq.current) {
+    (lane: "charts" | "news") => {
+      if (lane === "charts" && !barsReq.current) {
         barsReq.current = true;
         setBarsState("loading");
         fetchBars(ticker, "2y").then((b) => {
@@ -270,7 +233,7 @@ export default function ResearchClient({
           setBarsState("done");
         });
       }
-      if (tab === "news" && !newsReq.current) {
+      if (lane === "news" && !newsReq.current) {
         newsReq.current = true;
         setNewsState("loading");
         Promise.all([fetchNews(ticker, 6), fetchClubNewsForTicker(supabase, ticker, 4)]).then(
@@ -361,7 +324,6 @@ export default function ResearchClient({
   useEffect(() => {
     // load() setStates only after awaits (data arrives async) — the initial
     // render is the skeleton; this fills it in once the session resolves.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -369,8 +331,19 @@ export default function ResearchClient({
   // can't cause a hydration mismatch — defaults to Community Watchlist).
   useEffect(() => {
     const next = backFromReferrer();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (next) setBack(next);
+  }, []);
+
+  // Deep-link the analysis tab (client-only, same hydration reasoning).
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const raw = (sp.get("tab") || window.location.hash.replace("#", "")).toLowerCase();
+      const hit = RESEARCH_TABS.find((t) => t.key === raw);
+      if (hit) setTab(hit.key);
+    } catch {
+      /* stay on Overview */
+    }
   }, []);
 
   // CONVERGENCE S2 — canonical single scroll: no tabs, so the formerly tab-gated
@@ -413,12 +386,6 @@ export default function ResearchClient({
     };
   }, [research, week52]);
 
-  const filteredComments = filter === "all" ? comments : comments.filter((c) => c.contribution_type === filter);
-  const presentTypes = useMemo(() => {
-    const set = new Set(comments.map((c) => c.contribution_type));
-    return CONTRIBUTION_TYPES.filter((t) => set.has(t.key));
-  }, [comments]);
-
   async function post() {
     const body = draft.trim();
     if (!body || posting) return;
@@ -459,156 +426,198 @@ export default function ResearchClient({
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
-      <Link
-        href={back.href}
-        className="inline-flex items-center gap-1.5 pt-4 text-sm font-medium text-soft hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" /> {back.label}
-      </Link>
-
-      {/* ── Masthead — the page's signature object ───────────────────────────
-          Company identity, the VERDICT GAUGE lifted out of its old card to be
-          the hero, then the social band. ONE surface, no card-in-card. */}
-      <m.div
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-4 mb-5 overflow-hidden rounded-2xl border border-sand bg-midnight-900 shadow-soft"
-      >
-        {/* Identity band */}
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <CompanyLogo symbol={ticker} name={companyName} size={52} />
-              <div className="min-w-0">
-                {/* Long company names wrap to 2 lines (and scale down on mobile)
-                    instead of truncating to "Apple In…"; the ticker below always
-                    stays visible on its own line. */}
-                <h1 className="font-display text-xl font-bold leading-tight text-ink line-clamp-2 sm:text-2xl sm:leading-snug">
-                  {companyName}
-                </h1>
-                <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-midnight-500">{ticker}</span>
-                  {research?.company.exchange && (
-                    <span className="rounded-full bg-sand px-2 py-0.5 text-[10px] font-semibold tracking-wider text-soft">
-                      {formatExchange(research.company.exchange)}
-                    </span>
-                  )}
-                  <LivePrice quote={quote} size="md" showDelayed />
-                </div>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col gap-1.5">
-              <Link
-                href={`/chart?symbol=${encodeURIComponent(ticker)}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1.5 text-xs font-semibold text-soft hover:bg-paper"
-              >
-                <LineChart className="h-3.5 w-3.5" /> Chart
-              </Link>
-            </div>
-          </div>
-
-          {keyStats && (
-            <RangeBar
-              low={keyStats.week52Low}
-              high={keyStats.week52High}
-              price={quote?.price ?? keyStats.week52High}
-            />
-          )}
-        </div>
-
-        {/* Verdict — the hero. Gauge + rings sit directly under the ticker
-            header (not in a separate card). Three honest states. */}
-        <div className="border-t border-sand px-5 py-6">
-          {research ? (
-            ungraded ? (
-              <p className="text-sm text-soft">
-                We don&apos;t have enough published financials to grade {companyName} yet — many smaller
-                companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
-                news, and community research still work in the tabs below.
-              </p>
-            ) : (
-              <>
-                <p className="mb-4 font-display text-[11px] font-bold uppercase tracking-[0.16em] text-soft">
-                  The verdict
-                </p>
-                <Scorecard grades={research.grades} locked={locked} mode="summary" />
-              </>
-            )
-          ) : researchResolved ? (
-            <p className="text-sm text-soft">
-              The scorecard for {companyName} is updating and will be back shortly. The price,
-              charts, news, and community research below still work.
-            </p>
-          ) : (
-            <div className="h-40 animate-pulse rounded-xl bg-sand/40" />
-          )}
-        </div>
-
-        {/* Social band — community aggregation. Per SOCIAL-OBJECTS.md the generic
-            👍/👎 like bar is retired on research surfaces (informational reactions
-            + the Changed-My-Mind stance flow in the Community tab carry the social
-            layer now); the ticker_sentiment table + SocialBar's other consumers
-            (news, community-watchlist, screener rows) are untouched. */}
-        <div className="border-t border-sand px-5 py-4">
-          <CommunityAggBar supabase={supabase} ticker={ticker} />
-        </div>
-      </m.div>
-
-      {/* ── 4 compact actions — Ask Kai · Watch · Practice · Share ──────────── */}
-      <TickerActions
+      {/* ── CANVAS HEAD — identity · fundamentals columns · chart · Ask Kai ──
+          One un-boxed composition: logo at scale, the name in display type, the
+          price as the dominant mono mark, then hairline-ruled fundamentals.
+          Rules carry the density; nothing is wrapped. */}
+      <ResearchCanvas
         ticker={ticker}
-        canAlert={ageGroup !== "kids" && ageGroup !== "teens"}
-        seedPrice={quote?.price ?? null}
-        levels={researchLevels(quote?.price ?? null, keyStats)}
+        companyName={companyName}
+        quote={quote}
+        research={research}
+        dailyBars={bars}
+        supabase={supabase}
+        back={back}
         onAskKai={() =>
           openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })
         }
       />
 
-      {/* ── Canonical single scroll (no tabs, no nested product feels) ───────
-          What changed → Kai's read → What the Club thinks → Best research →
-          Fundamentals → News → Practice. */}
-      <div className="mt-6 space-y-10">
-        {/* What changed */}
-        {(
-          <Section title="What changed" subtitle="Price action & momentum">
-            {research && barsState === "done" ? (
-              <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
-            ) : (
-              <div className="space-y-4">
-                <div className="h-8 w-48 animate-pulse rounded-lg bg-sand/40" />
-                <div className="h-[240px] animate-pulse rounded-xl bg-sand/40" />
-                <div className="h-20 animate-pulse rounded-xl bg-sand/40" />
-              </div>
+      {/* ── 3 compact actions — Watch · Practice · Share ───────────────────── */}
+      <TickerActions
+        ticker={ticker}
+        canAlert={ageGroup !== "kids" && ageGroup !== "teens"}
+        seedPrice={quote?.price ?? null}
+        levels={researchLevels(quote?.price ?? null, keyStats)}
+      />
+
+      {/* ── THE COMMUNITY LAYER — persistent, ABOVE the analysis ─────────────
+          Both blocks sit OUTSIDE the tab system, so they are on screen whichever
+          analysis tab is open. Placing them before the tab strip is what makes
+          the discussion reachable at 390px without scrolling past a whole panel
+          — and it is the honest order for a community product: what the club
+          thinks and what the club is saying come before the analyst tabs. */}
+      <div className="mt-9 space-y-9">
+        <ClubRead supabase={supabase} ticker={ticker} showSentiment={!isKid} />
+
+        <TickerDiscussion
+          ticker={ticker}
+          companyName={companyName}
+          comments={comments}
+          userId={userId}
+          role={role}
+          canPost={canVote}
+          draft={draft}
+          draftType={draftType}
+          posting={posting}
+          err={err}
+          onDraft={(v) => {
+            setDraft(v);
+            if (err) setErr("");
+          }}
+          onDraftType={setDraftType}
+          onPost={post}
+          onRemove={remove}
+        />
+      </div>
+
+      {/* ── THE ANALYSIS — four tabbed subpages ──────────────────────────────
+          Everything from strengths-and-weaknesses down used to be one vertical
+          scroll. It is now real navigation the member clicks through. */}
+      <div className="mt-10">
+        <ResearchTabBar active={tab} onSelect={selectTab} />
+
+        {tab === "overview" && (
+          <div
+            id={panelId("overview")}
+            role="tabpanel"
+            aria-labelledby={tabId("overview")}
+            tabIndex={0}
+            className="mt-7 space-y-10 focus:outline-none"
+          >
+            {/* The verdict — the grades gauge, un-boxed on the page. */}
+            <Section title="The verdict">
+              {research ? (
+                ungraded ? (
+                  <p className="text-sm text-soft">
+                    We don&apos;t have enough published financials to grade {companyName} yet — many smaller
+                    companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
+                    news, and community research below still work.
+                  </p>
+                ) : (
+                  <Scorecard grades={research.grades} locked={locked} mode="summary" />
+                )
+              ) : researchResolved ? (
+                <p className="text-sm text-soft">
+                  The scorecard for {companyName} is updating and will be back shortly. The price,
+                  charts, news, and community research below still work.
+                </p>
+              ) : (
+                <div className="h-40 animate-pulse rounded-xl bg-sand/40" />
+              )}
+            </Section>
+
+            {/* Kai's read — the derived Kai report; hidden when there's none */}
+            {report &&
+              (locked ? (
+                <UpsellCard context="watchlist" />
+              ) : (
+                <KaiReportSection
+                  report={report}
+                  ticker={ticker}
+                  companyName={companyName}
+                  quote={quote}
+                />
+              ))}
+
+            {/* Admin thesis (if this is an "our research" pick) — a ruled block
+                with a charged left edge, not an amber card. */}
+            {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
+              <section className="border-l-[3px] border-gold-500 py-1 pl-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <ShieldCheck className="h-3.5 w-3.5 text-gold-700" />
+                  <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-gold-700">
+                    Our research
+                  </span>
+                </div>
+                {adminEntry.headline && (
+                  <h2 className="font-display text-display-3 font-extrabold text-ink">
+                    {adminEntry.headline}
+                  </h2>
+                )}
+                <div className="mt-2.5 space-y-3">
+                  {toParagraphs(adminEntry.thesis).map((p, i) => (
+                    <p key={i} className="text-[13.5px] leading-relaxed text-midnight-200">
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              </section>
             )}
-          </Section>
-        )}
 
-        {/* Kai's read — the derived Kai report; hidden when there's none */}
-        {report && (
-          locked ? (
-            <UpsellCard context="watchlist" />
-          ) : (
-            <KaiReportSection report={report} ticker={ticker} companyName={companyName} quote={quote} />
-          )
-        )}
+            {/* Research Objects (structured theses) + the ONE gated publish entry
+                point (TODO(gate:research_publish) lives in the composer + API
+                route). Kids never see the composer. */}
+            <section>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="f0-section-rule flex-1">
+                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                    Theses on {ticker}
+                  </span>
+                </h2>
+                {canVote && !isKid && !showCompose && (
+                  <button
+                    onClick={() => setShowCompose(true)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gold-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-gold-600"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> Publish a thesis
+                  </button>
+                )}
+              </div>
+              <div className="mt-4">
+                {showCompose && (
+                  // Gate the structured-thesis composer (paid Cheat Code Club).
+                  // Free members get the contextual wall here; Challenge-Pass
+                  // holders get the countdown ribbon + the composer. Server
+                  // enforces the same on POST /api/social/research. The basic
+                  // free ticker post stays on the untouched community composer.
+                  <Gated
+                    feature="publish_thesis"
+                    fallback={<ContextualWall feature="publish_thesis" variant="band" />}
+                  >
+                    <ResearchObjectCompose
+                      ticker={ticker}
+                      companyName={companyName}
+                      onCancel={() => setShowCompose(false)}
+                      onPublished={(id) => {
+                        setShowCompose(false);
+                        fetchTickerTheses(supabase, ticker).then(setTheses, () => {});
+                        router.push(`/research/thesis/${id}`);
+                      }}
+                    />
+                  </Gated>
+                )}
+                {theses.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {theses.map((t) => (
+                      <ResearchObjectCard key={t.id} obj={t} currentPrice={quote?.price ?? null} />
+                    ))}
+                  </div>
+                ) : (
+                  !showCompose && (
+                    <p className="text-[13px] text-soft">
+                      No published theses yet
+                      {canVote && !isKid
+                        ? " — publish the first structured thesis for the club."
+                        : "."}
+                    </p>
+                  )
+                )}
+              </div>
+            </section>
 
-        {/* What the Club thinks → Best research (un-buried from the old tab) */}
-        {(
-          <div className="space-y-6">
-            {/* What the Club thinks — the bull/neutral/bear split of members who've
-                taken a stance, as a donut. Same RPC as the header agg bar; floors
-                at 4 positioned so a cold ticker shows nothing. */}
-            <ClubThinksDonut
-              supabase={supabase}
-              ticker={ticker}
-              onAskKai={() =>
-                openKai({ chip: ticker, query: `What's the club's read on ${ticker} right now?` })
-              }
-            />
-
-            {/* SOCIAL OBJECTS S1 — per-ticker debate (kid-walled in the RPC → renders
-                nothing for kids or tickers without a debate). */}
+            {/* SOCIAL OBJECTS S1 — per-ticker debate (kid-walled in the RPC →
+                renders nothing for kids or tickers without a debate). */}
             <TickerDebate
               supabase={supabase}
               ticker={ticker}
@@ -616,10 +625,10 @@ export default function ResearchClient({
               canParticipate={canVote && !isKid}
             />
 
-            {/* Changed My Mind — the member's stance + flip flow (kid-walled) + the
-                club's recent "changed their mind" moments. */}
+            {/* Changed My Mind — the member's stance + flip flow (kid-walled) +
+                the club's recent "changed their mind" moments. */}
             {!isKid && (
-              <section className="rounded-2xl border border-sand bg-card p-5">
+              <section className="f0-rule-top pt-6">
                 <ChangedMyMind
                   supabase={supabase}
                   ticker={ticker}
@@ -629,343 +638,230 @@ export default function ResearchClient({
               </section>
             )}
 
-            {/* Research Objects (structured theses) for this ticker + the ONE
-                gated publish entry point (TODO(gate:research_publish) lives in the
-                composer + API route). Kids never see the composer. */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
-                  Theses on {ticker}
-                </h2>
-                {canVote && !isKid && !showCompose && (
-                  <button
-                    onClick={() => setShowCompose(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-gold-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-gold-600"
-                  >
-                    <FileText className="h-3.5 w-3.5" /> Publish a thesis
-                  </button>
-                )}
-              </div>
-              {showCompose && (
-                // Gate the structured-thesis composer (paid Cheat Code Club). Free
-                // members get the contextual wall here; Challenge-Pass holders get
-                // the countdown ribbon + the composer. Server enforces the same on
-                // POST /api/social/research. The basic free ticker post stays on
-                // the untouched community composer.
-                <Gated
-                  feature="publish_thesis"
-                  fallback={<ContextualWall feature="publish_thesis" variant="band" />}
-                >
-                  <ResearchObjectCompose
-                    ticker={ticker}
-                    companyName={companyName}
-                    onCancel={() => setShowCompose(false)}
-                    onPublished={(id) => {
-                      setShowCompose(false);
-                      fetchTickerTheses(supabase, ticker).then(setTheses, () => {});
-                      router.push(`/research/thesis/${id}`);
-                    }}
-                  />
-                </Gated>
-              )}
-              {theses.length > 0 ? (
-                <div className="space-y-2.5">
-                  {theses.map((t) => (
-                    <ResearchObjectCard key={t.id} obj={t} currentPrice={quote?.price ?? null} />
-                  ))}
-                </div>
-              ) : (
-                !showCompose && (
-                  <p className="rounded-xl border border-dashed border-sand px-3 py-5 text-center text-sm text-soft">
-                    No published theses yet{canVote && !isKid ? " — publish the first structured thesis for the club." : "."}
-                  </p>
-                )
-              )}
-            </section>
-
-            {/* Admin thesis (if this is an "our research" pick) */}
-            {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
-              <section className="rounded-2xl border border-gold-300/40 bg-chip-amber/20 p-5">
-                <div className="mb-2 flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-gold-700" />
-                  <span className="font-display text-xs font-bold uppercase tracking-wider text-gold-700">
-                    Our research
-                  </span>
-                </div>
-                {adminEntry.headline && (
-                  <h2 className="font-display text-lg font-bold text-ink">{adminEntry.headline}</h2>
-                )}
-                <div className="mt-2 space-y-3">
-                  {toParagraphs(adminEntry.thesis).map((p, i) => (
-                    <p key={i} className="text-sm leading-relaxed text-midnight-200">
-                      {p}
-                    </p>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* On the board — dense hairline rows, not cards */}
             {entries.length > 0 && (
               <section>
-                <h2 className="mb-1 font-display text-sm font-bold uppercase tracking-wider text-ink">On the board</h2>
-                <div className="border-y border-sand">
-                {entries.map((e) => {
-                  const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
-                  const tone = pctTone(pct);
-                  return (
-                    <div key={e.id} className="flex items-center justify-between gap-3 border-t border-sand py-2.5 first:border-t-0">
-                      <div className="flex min-w-0 items-center gap-2 text-sm">
-                        {e.kind === "admin" ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
-                            <ShieldCheck className="h-3 w-3" /> Our research
+                <h2 className="f0-section-rule">
+                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                    On the board
+                  </span>
+                </h2>
+                <div className="f0-ledger mt-2">
+                  {entries.map((e) => {
+                    const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
+                    const tone = pctTone(pct);
+                    return (
+                      <div key={e.id} className="f0-ledger-row">
+                        <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                          {e.kind === "admin" ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
+                              <ShieldCheck className="h-3 w-3" /> Our research
+                            </span>
+                          ) : (
+                            <span className="inline-flex min-w-0 items-center gap-1.5 text-soft">
+                              <Users2 className="h-3.5 w-3.5 shrink-0 text-gold-600" />
+                              <span className="truncate font-semibold text-ink">
+                                {e.family_name || "A family"}
+                              </span>
+                              {e.promoter_age_group && <AgeBadge ageGroup={e.promoter_age_group} />}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3 font-mono text-[11px] tabular-nums text-soft">
+                          {e.snapshot_price != null && (
+                            <span>added {e.snapshot_price.toFixed(2)}</span>
+                          )}
+                          <span
+                            className={`font-semibold ${
+                              tone === "up"
+                                ? "text-price-up"
+                                : tone === "down"
+                                  ? "text-price-down"
+                                  : "text-soft"
+                            }`}
+                          >
+                            {formatPct(pct)}
                           </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-soft">
-                            <Users2 className="h-3.5 w-3.5 text-gold-600" />
-                            <span className="truncate font-semibold text-ink">{e.family_name || "A family"}</span>
-                            {e.promoter_age_group && <AgeBadge ageGroup={e.promoter_age_group} />}
-                          </span>
-                        )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-soft">
-                        {e.snapshot_price != null && <span>added ${e.snapshot_price.toFixed(2)}</span>}
-                        <span className={`font-mono font-bold tabular-nums ${tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"}`}>
-                          {formatPct(pct)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
                 </div>
               </section>
             )}
 
-            {/* Research notes thread (typed contributions) */}
-            <section id="research-notes" className="scroll-mt-20 space-y-3">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-gold-600" />
-                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
-                  Research notes ({comments.length})
-                </h2>
-              </div>
-              <p className="text-xs text-soft">
-                Study {companyName} together — what it makes, how it earns, what could go right or wrong.
-                Tag your note so the club can find theses, risks, and questions at a glance.
-              </p>
-
-              {/* type filter chips */}
-              {presentTypes.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  <FilterChip label="All" active={filter === "all"} onClick={() => setFilter("all")} />
-                  {presentTypes.map((t) => (
-                    <FilterChip key={t.key} label={t.label} active={filter === t.key} onClick={() => setFilter(t.key)} chip={t.chip} />
-                  ))}
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {filteredComments.map((c) => {
-                  const meta = contributionMeta(c.contribution_type);
-                  const Icon = CONTRIB_ICON[meta.icon] ?? StickyNote;
-                  return (
-                    <div key={c.id} className="flex items-start gap-2.5">
-                      <Avatar name={c.author?.display_name} url={c.author?.avatar_url} />
-                      <div className="min-w-0 flex-1 rounded-xl border border-sand bg-midnight-900 px-3 py-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {c.author?.username ? (
-                            <Link href={`/u/${c.author.username}`} className="text-[13px] font-semibold text-ink hover:text-gold-700">
-                              {c.author?.display_name || "Member"}
-                            </Link>
-                          ) : (
-                            <span className="text-[13px] font-semibold text-ink">{c.author?.display_name || "Member"}</span>
-                          )}
-                          <AgeBadge ageGroup={c.author?.age_group} />
-                          {c.contribution_type !== "note" && (
-                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${meta.chip}`}>
-                              <Icon className="h-2.5 w-2.5" />
-                              {meta.label}
-                            </span>
-                          )}
-                          <span className="text-[10px] text-midnight-500">· {timeAgo(c.created_at)}</span>
-                          {(c.user_id === userId || role === "admin") && (
-                            <button onClick={() => remove(c.id)} className="ml-auto text-midnight-500 hover:text-red-600" aria-label="Delete note">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">{c.body}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-                {filteredComments.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-sand px-3 py-6 text-center text-sm text-midnight-500">
-                    {comments.length === 0
-                      ? "No research notes yet — be the first to share what you found."
-                      : "No notes of this type yet."}
-                  </p>
-                )}
-              </div>
-
-              {/* Composer with type picker — members only (free tier reads only) */}
-              {!canVote ? (
-                <p className="rounded-xl border border-dashed border-sand px-3 py-4 text-center text-sm text-soft">
-                  Join the Club to add your own research notes.
-                </p>
-              ) : (
-                <div className="rounded-xl border border-sand bg-midnight-900 p-3">
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {CONTRIBUTION_TYPES.map((t) => {
-                      const Icon = CONTRIB_ICON[t.icon] ?? StickyNote;
-                      return (
-                        <button
-                          key={t.key}
-                          onClick={() => setDraftType(t.key)}
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold transition-colors ${
-                            draftType === t.key ? t.chip : "border border-sand text-soft hover:bg-paper"
-                          }`}
-                        >
-                          <Icon className="h-3 w-3" />
-                          {t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <textarea
-                    value={draft}
-                    onChange={(e) => {
-                      setDraft(e.target.value);
-                      if (err) setErr("");
-                    }}
-                    rows={2}
-                    placeholder={`Add a ${contributionMeta(draftType).label.toLowerCase()} about ${companyName}…`}
-                    className="w-full resize-none rounded-lg border border-sand bg-paper px-3 py-2 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
-                  />
-                  {err && <p className="mt-1 text-xs text-red-600">{err}</p>}
-                  <div className="mt-2 flex justify-end">
-                    <button onClick={post} disabled={posting || !draft.trim()} className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60">
-                      <Send className="h-4 w-4" />
-                      {posting ? "Posting…" : "Post note"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
+            {/* About — description + the company definition ledger */}
+            {research?.company.description && (
+              <Section title={`About ${companyName}`}>
+                <CompanyProfileCard company={research.company} kidsMode={isKid} />
+              </Section>
+            )}
           </div>
         )}
 
-        {/* Fundamentals — strengths & weaknesses, key stats, about */}
-        {(
-          <OverviewTab
-            research={research}
-            keyStats={keyStats}
-            companyName={companyName}
-            ungraded={ungraded}
-            locked={locked}
-            isKid={isKid}
-          />
-        )}
-
-        {/* Financials */}
-        {(
-          <Section title="Financials">
-            {!research || !keyStats ? (
-              <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
-            ) : research.insufficient ? (
-              <p className="border-y border-sand py-8 text-center text-sm text-soft">
-                We don&apos;t have enough published financials for {companyName} to chart yet — many
-                smaller companies and funds don&apos;t report the quarterly numbers these charts need.
-              </p>
-            ) : locked ? (
-              <UpsellCard context="watchlist" />
-            ) : (
-              <FinancialsSection
-                charts={research.charts}
-                keyStats={keyStats}
-                medians={research.sectorMedians}
-              />
-            )}
-          </Section>
-        )}
-
-        {/* News — keeps its own detail view (rows → /news/[slug]) */}
-        {(
-          <Section title="News" subtitle="Club recaps + headlines from around the web">
-            {newsState !== "done" ? (
-              <div className="space-y-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-14 animate-pulse rounded-xl bg-sand/40" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {clubNews.length > 0 && (
-                  <div>
-                    <h3 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
-                      <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
-                    </h3>
-                    <div className="border-y border-sand">
-                      {clubNews.map((a) => (
-                        <Link
-                          key={a.slug}
-                          href={`/news/${a.slug}`}
-                          className="group block border-t border-sand py-3 first:border-t-0"
-                        >
-                          <div className="mb-1 flex items-center gap-2">
-                            <KindChip kind={a.kind} />
-                            <span className="text-[10px] text-soft">{newsTimeAgo(a.generated_at)}</span>
-                          </div>
-                          <p className="text-sm font-semibold leading-snug text-ink group-hover:text-gold-700">{a.title}</p>
-                          {a.dek && <p className="mt-0.5 line-clamp-1 text-xs text-soft">{a.dek}</p>}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  {clubNews.length > 0 && (
-                    <h3 className="mb-2 font-display text-xs font-bold uppercase tracking-wider text-soft">
-                      Around the web
-                    </h3>
-                  )}
-                  <NewsList news={news} />
+        {tab === "technicals" && (
+          <div
+            id={panelId("technicals")}
+            role="tabpanel"
+            aria-labelledby={tabId("technicals")}
+            tabIndex={0}
+            className="mt-7 focus:outline-none"
+          >
+            <Section title="Momentum & technicals" subtitle="Trend, returns and the moving averages">
+              {research && barsState === "done" ? (
+                <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
+              ) : (
+                <div className="space-y-4">
+                  <div className="h-8 w-48 animate-pulse rounded-lg bg-sand/40" />
+                  <div className="h-[240px] animate-pulse rounded-xl bg-sand/40" />
+                  <div className="h-20 animate-pulse rounded-xl bg-sand/40" />
                 </div>
-              </div>
-            )}
-          </Section>
+              )}
+            </Section>
+          </div>
         )}
 
-        {/* Practice — the ticker-relevant Continue Path lesson (amendment #3) */}
-        <div id="practice">
-          <ContinuePath pickup={null} ticker={ticker} />
-        </div>
+        {tab === "fundamentals" && (
+          <div
+            id={panelId("fundamentals")}
+            role="tabpanel"
+            aria-labelledby={tabId("fundamentals")}
+            tabIndex={0}
+            className="mt-7 space-y-10 focus:outline-none"
+          >
+            {/* Strengths & weaknesses — the block the owner named. */}
+            {research && !ungraded && (
+              <Section title="Strengths & weaknesses">
+                <Scorecard
+                  grades={research.grades}
+                  locked={locked}
+                  upsell={<UpsellCard context="watchlist" />}
+                  mode="detail"
+                />
+              </Section>
+            )}
+
+            {keyStats && (
+              <Section title="Key stats">
+                <KeyStatsGrid k={keyStats} />
+              </Section>
+            )}
+
+            <Section title="Financials">
+              {!research || !keyStats ? (
+                <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
+              ) : research.insufficient ? (
+                <p className="border-y border-sand py-8 text-center text-sm text-soft">
+                  We don&apos;t have enough published financials for {companyName} to chart yet — many
+                  smaller companies and funds don&apos;t report the quarterly numbers these charts need.
+                </p>
+              ) : locked ? (
+                <UpsellCard context="watchlist" />
+              ) : (
+                <FinancialsSection
+                  charts={research.charts}
+                  keyStats={keyStats}
+                  medians={research.sectorMedians}
+                />
+              )}
+            </Section>
+          </div>
+        )}
+
+        {tab === "news" && (
+          <div
+            id={panelId("news")}
+            role="tabpanel"
+            aria-labelledby={tabId("news")}
+            tabIndex={0}
+            className="mt-7 focus:outline-none"
+          >
+            <Section title="News" subtitle="Club recaps + headlines from around the web">
+              {newsState !== "done" ? (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-14 animate-pulse rounded-xl bg-sand/40" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {clubNews.length > 0 && (
+                    <div>
+                      <h3 className="flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
+                        <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
+                      </h3>
+                      <div className="f0-ledger mt-1">
+                        {clubNews.map((a) => (
+                          <Link
+                            key={a.slug}
+                            href={`/news/${a.slug}`}
+                            className="f0-ledger-row group"
+                          >
+                            <span className="min-w-0 flex-1">
+                              <span className="mb-1 flex items-center gap-2">
+                                <KindChip kind={a.kind} />
+                                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
+                                  {newsTimeAgo(a.generated_at)}
+                                </span>
+                              </span>
+                              <span className="block text-[14px] font-semibold leading-snug text-ink group-hover:text-gold-700">
+                                {a.title}
+                              </span>
+                              {a.dek && (
+                                <span className="mt-0.5 block line-clamp-1 text-[12px] text-soft">
+                                  {a.dek}
+                                </span>
+                              )}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    {clubNews.length > 0 && (
+                      <h3 className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
+                        Around the web
+                      </h3>
+                    )}
+                    <NewsList news={news} />
+                  </div>
+                </div>
+              )}
+            </Section>
+          </div>
+        )}
       </div>
 
-      <footer className="mt-8 border-t border-sand pt-5">
+      {/* Practice — the ticker-relevant Continue Path lesson (amendment #3).
+          Outside the tabs so the "Practice" action always resolves. */}
+      <div id="practice" className="mt-12 scroll-mt-20">
+        <ContinuePath pickup={null} ticker={ticker} />
+      </div>
+
+      <footer className="f0-rule-top mt-10 pt-5">
         <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
       </footer>
     </div>
   );
 }
 
-/* ─────────────── 4 compact actions (Ask Kai · Watch · Practice · Share) ──────
+/* ─────────────── 3 compact actions (Watch · Practice · Share) ────────────────
    Canonical ticker page (CONVERGENCE S2): one compact action row directly under
-   the identity header. Ask Kai opens the S1 contextual Kai sheet with the ticker
-   as context; Watch = the kid-gated price-alert control; Practice jumps to the
-   ContinuePath lesson (amendment #3); Share copies / shares the page. */
+   the canvas head. Ask Kai is NOT here — it earned its own Kai-blue band inside
+   the head, so it stops competing as one pill among four. Watch = the kid-gated
+   price-alert control; Practice jumps to the ContinuePath lesson (amendment #3);
+   Share copies / shares the page. */
 function TickerActions({
   ticker,
   canAlert,
   seedPrice,
   levels,
-  onAskKai,
 }: {
   ticker: string;
   canAlert: boolean;
   seedPrice: number | null;
   levels: AlertLevel[];
-  onAskKai: () => void;
 }) {
   const [shared, setShared] = useState(false);
 
@@ -989,42 +885,41 @@ function TickerActions({
     document.getElementById("practice")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const pill =
-    "inline-flex items-center justify-center gap-1.5 rounded-xl border border-sand bg-card px-3 py-2.5 text-[13px] font-bold text-ink transition-colors hover:border-volt-400 hover:text-volt-700";
+  // Not pills-in-a-grid: one hairline strip, the actions divided by thin rules.
+  const cell =
+    "flex flex-1 items-center justify-center gap-1.5 py-3 font-display text-[13px] font-bold text-ink transition-colors hover:text-gold-700";
 
   return (
-    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-      <button
-        type="button"
-        onClick={onAskKai}
-        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-kai-blue/30 bg-kai-blue-soft px-3 py-2.5 text-[13px] font-bold text-kai-blue transition-colors hover:border-kai-blue/60"
-      >
-        <Sparkles className="h-4 w-4" /> Ask Kai
-      </button>
+    <div className="mt-6 flex border-y border-sand">
+      <div className="flex flex-1 items-center justify-center">
+        {canAlert ? (
+          <SetAlertButton
+            ticker={ticker}
+            surface="research"
+            defaultKind="price_cross"
+            seedPrice={seedPrice}
+            levels={levels}
+            variant="chip"
+            stopPropagation={false}
+            className="!border-0 !bg-transparent !py-3 !text-[13px]"
+          />
+        ) : (
+          <button type="button" onClick={onPractice} className={cell}>
+            <Eye className="h-4 w-4" /> Watch
+          </button>
+        )}
+      </div>
 
-      {canAlert ? (
-        <SetAlertButton
-          ticker={ticker}
-          surface="research"
-          defaultKind="price_cross"
-          seedPrice={seedPrice}
-          levels={levels}
-          variant="chip"
-          stopPropagation={false}
-          className="!w-full !justify-center"
-        />
-      ) : (
-        <button type="button" onClick={onPractice} className={pill}>
-          <Eye className="h-4 w-4" /> Watch
-        </button>
-      )}
+      <span className="w-px bg-sand" aria-hidden />
 
-      <button type="button" onClick={onPractice} className={pill}>
+      <button type="button" onClick={onPractice} className={cell}>
         <GraduationCap className="h-4 w-4" /> Practice
       </button>
 
-      <button type="button" onClick={onShare} className={pill}>
-        {shared ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
+      <span className="w-px bg-sand" aria-hidden />
+
+      <button type="button" onClick={onShare} className={cell}>
+        {shared ? <Check className="h-4 w-4 text-gold-700" /> : <Share2 className="h-4 w-4" />}
         {shared ? "Copied" : "Share"}
       </button>
     </div>
@@ -1032,9 +927,9 @@ function TickerActions({
 }
 
 /* ─────────────────────────── Editorial section ─────────────────────────── */
-// Un-boxed tab body: a confident heading, content flows on the page. The
-// content's own hairlines (ledger rows, stat table, definition list) carry
-// the structure — no bordered white card wrapping.
+// Un-boxed panel body: the eyebrow section-rule marks the block (a charged tick
+// + label + hairline running to the edge) and the content's own rules carry the
+// structure. No bordered card ever wraps a section.
 
 function Section({
   title,
@@ -1047,248 +942,13 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="font-display text-lg font-bold text-ink">{title}</h2>
-      {subtitle && <p className="mt-0.5 text-xs text-soft">{subtitle}</p>}
+      <h2 className="f0-section-rule">
+        <span className="font-display text-eyebrow font-bold uppercase text-ink">{title}</span>
+      </h2>
+      {subtitle && (
+        <p className="mt-2.5 text-[13px] leading-relaxed text-soft">{subtitle}</p>
+      )}
       <div className="mt-4">{children}</div>
     </section>
-  );
-}
-
-/* ─────────────────────────────── Overview tab ──────────────────────────── */
-
-function OverviewTab({
-  research,
-  keyStats,
-  companyName,
-  ungraded,
-  locked,
-  isKid,
-}: {
-  research: ResearchPayload | null;
-  keyStats: ResearchPayload["keyStats"] | null;
-  companyName: string;
-  ungraded: boolean;
-  locked: boolean;
-  isKid: boolean;
-}) {
-  // Editorial one-pager: verdict detail → the numbers → about, each an
-  // un-boxed section reading top-to-bottom. No card-in-card.
-  return (
-    <div className="space-y-8">
-      {/* Strengths & weaknesses — two-column editorial ledger */}
-      {research && !ungraded && (
-        <Section title="Strengths & weaknesses">
-          <Scorecard
-            grades={research.grades}
-            locked={locked}
-            upsell={<UpsellCard context="watchlist" />}
-            mode="detail"
-          />
-        </Section>
-      )}
-
-      {/* Key stats — designed data table */}
-      {keyStats && (
-        <Section title="Key stats">
-          <KeyStatsGrid k={keyStats} />
-        </Section>
-      )}
-
-      {/* About — description + definition list */}
-      {research?.company.description && (
-        <Section title={`About ${companyName}`}>
-          <CompanyProfileCard company={research.company} kidsMode={isKid} />
-        </Section>
-      )}
-
-    </div>
-  );
-}
-
-function FilterChip({
-  label,
-  active,
-  onClick,
-  chip,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  chip?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-        active ? chip || "bg-gold-500 text-white" : "border border-sand text-soft hover:bg-paper"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
-// R5 — ticker community aggregation header. One RPC (get_ticker_community_stats).
-// Counts hide below sane thresholds; the whole strip hides when nothing qualifies
-// so a cold ticker never shows sad zeros.
-interface CommunityStats {
-  watching: number;
-  discussions_week: number;
-  bull: number;
-  neutral: number;
-  bear: number;
-  positioned: number;
-}
-function CommunityAggBar({ supabase, ticker }: { supabase: SupabaseClient; ticker: string }) {
-  const [stats, setStats] = useState<CommunityStats | null>(null);
-  useEffect(() => {
-    let on = true;
-    supabase
-      .rpc("get_ticker_community_stats", { p_ticker: ticker })
-      .then(({ data }) => {
-        if (!on) return;
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row) setStats(row as CommunityStats);
-      });
-    return () => {
-      on = false;
-    };
-  }, [supabase, ticker]);
-  if (!stats) return null;
-
-  const showWatching = stats.watching >= 3;
-  const showDiscussions = stats.discussions_week >= 1;
-  const showBullish = stats.positioned >= 4;
-  const bullishPct = showBullish ? Math.round((stats.bull / stats.positioned) * 100) : 0;
-  if (!showWatching && !showDiscussions && !showBullish) return null;
-
-  const items: { icon: React.ElementType; text: React.ReactNode }[] = [];
-  if (showWatching) items.push({ icon: Users2, text: <><span className="font-bold text-ink">{stats.watching}</span> watching</> });
-  if (showDiscussions) items.push({ icon: MessageCircle, text: <><span className="font-bold text-ink">{stats.discussions_week}</span> {stats.discussions_week === 1 ? "discussion" : "discussions"} this week</> });
-  if (showBullish) items.push({ icon: TrendingUp, text: <><span className="font-bold text-ink">{bullishPct}%</span> leaning bullish</> });
-
-  return (
-    <div className="mt-3 flex items-center gap-x-4 gap-y-1.5 flex-wrap rounded-xl bg-chip-amber/25 border border-gold-300/60 px-3 py-2">
-      {items.map((it, i) => {
-        const Icon = it.icon;
-        return (
-          <span key={i} className="inline-flex items-center gap-1.5 text-xs text-soft font-body">
-            <Icon className="w-3.5 h-3.5 text-gold-600" />
-            {it.text}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-// "What the club thinks" — the bull/neutral/bear split as a donut, from the same
-// get_ticker_community_stats RPC. Floors at 4 positioned members so a cold ticker
-// renders nothing (never sad zeros). Ends in an Ask-Kai handoff into the S1 sheet.
-function ClubThinksDonut({
-  supabase,
-  ticker,
-  onAskKai,
-}: {
-  supabase: SupabaseClient;
-  ticker: string;
-  onAskKai: () => void;
-}) {
-  const [stats, setStats] = useState<CommunityStats | null>(null);
-  useEffect(() => {
-    let on = true;
-    supabase
-      .rpc("get_ticker_community_stats", { p_ticker: ticker })
-      .then(({ data }) => {
-        if (!on) return;
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row) setStats(row as CommunityStats);
-      });
-    return () => {
-      on = false;
-    };
-  }, [supabase, ticker]);
-
-  if (!stats || stats.positioned < 4) return null;
-
-  const total = stats.positioned;
-  const bull = Math.round((stats.bull / total) * 100);
-  const neutral = Math.round((stats.neutral / total) * 100);
-  const bear = Math.max(0, 100 - bull - neutral);
-
-  // Donut geometry — a single circle, three arcs via stroke-dasharray offsets.
-  const R = 42;
-  const C = 2 * Math.PI * R;
-  const segs = [
-    { pct: bull, color: "#15803d", label: "Bullish" },
-    { pct: neutral, color: "#d99a2b", label: "Neutral" },
-    { pct: bear, color: "#dc2626", label: "Bearish" },
-  ];
-  let offset = 0;
-
-  return (
-    <div className="rounded-2xl border border-sand bg-white/60 p-5">
-      <h3 className="font-display text-lg font-bold tracking-tight text-ink">
-        What the club thinks
-      </h3>
-      <p className="mt-0.5 text-xs text-soft">
-        <span className="font-semibold text-ink">{total}</span> member
-        {total === 1 ? "" : "s"} analyzing {ticker}
-      </p>
-
-      <div className="mt-4 flex items-center gap-5">
-        <div className="relative h-28 w-28 shrink-0">
-          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-            <circle cx="50" cy="50" r={R} fill="none" stroke="#eadfce" strokeWidth="12" />
-            {segs.map((s, i) => {
-              const len = (s.pct / 100) * C;
-              const dash = `${len} ${C - len}`;
-              const el = (
-                <circle
-                  key={i}
-                  cx="50"
-                  cy="50"
-                  r={R}
-                  fill="none"
-                  stroke={s.color}
-                  strokeWidth="12"
-                  strokeDasharray={dash}
-                  strokeDashoffset={-offset}
-                />
-              );
-              offset += len;
-              return el;
-            })}
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-mono text-xl font-bold leading-none text-ink">{bull}%</span>
-            <span className="text-[10px] uppercase tracking-wide text-soft">bullish</span>
-          </div>
-        </div>
-
-        <div className="flex-1 space-y-1.5">
-          {segs.map((s) => (
-            <div key={s.label} className="flex items-center gap-2 text-sm">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: s.color }}
-              />
-              <span className="font-mono font-semibold text-ink tabular-nums">{s.pct}%</span>
-              <span className="text-soft">{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <button
-        onClick={onAskKai}
-        className="mt-4 flex w-full items-center justify-between rounded-xl border border-sky-300/70 bg-chip-sky px-4 py-2.5 text-left transition-colors hover:bg-sky-100"
-      >
-        <span className="flex items-center gap-2 text-sm font-semibold text-sky-800">
-          <Sparkles className="h-4 w-4" /> Ask Kai
-        </span>
-        <span className="text-xs text-sky-700">Get deeper insight on {ticker} →</span>
-      </button>
-    </div>
   );
 }

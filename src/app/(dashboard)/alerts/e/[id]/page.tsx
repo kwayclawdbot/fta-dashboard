@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Activity, Users, TrendingUp, TrendingDown, Info, Zap } from "lucide-react";
+import { ArrowLeft, Sparkles, Activity, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getClubTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
@@ -17,7 +17,6 @@ import {
   SETUP_STATE_META,
   watchStateLine,
   setupStateLine,
-  toneClasses,
   freshnessLabel,
   type StateTone,
 } from "@/lib/alerts/watch-ui";
@@ -25,12 +24,49 @@ import {
 /**
  * /alerts/e/[id] — the alert-detail STORY screen (Kai Watch, Lane B).
  *
- * Why Kai alerted you (the changed condition, with numbers) → a derived "Kai's
- * read" ONLY when it is computable without a language model (hidden otherwise —
- * no fake AI) → a compact price chart → The Club block (attention + sentiment
- * from the ticker intel snapshot) → actions. Member-gated + adults-only, same
- * posture as the hub; the event RLS scopes it to the viewer's own alerts.
+ * CANVAS REBUILD: this is a piece of Kai's writing about one moment, so it is
+ * built like one — Kai's identity leads, the thing that actually CHANGED is the
+ * display headline (not a generic "Kai alerted you" label), and the body runs at
+ * a real reading measure. The old screen stacked five rounded panels of equal
+ * weight, so the reason for the alert carried no more authority than a chip.
+ *
+ * The one dark object is the Kai field at the top, tinted from the --color-kai-*
+ * tokens: on a Kai surface, blue leads. Everything below is hairlines on cream.
+ *
+ * COPY LAW: Kai reports SIGNALS + INTERPRETATION. "Kai's read" stays strictly
+ * DETERMINISTIC (no LLM) and is hidden entirely when nothing honest can be
+ * derived — never an invented thesis, never a forecast.
+ *
+ * COMPLIANCE: both regulated strings — the club-figures line and the footer
+ * disclaimer — are rendered VERBATIM, unchanged from the previous screen.
  */
+
+/** Kai-blue text: #2563FF is heavy on near-black, so it steps up the ramp. */
+const KAI_INK = "text-kai-600 dark:text-kai-300";
+
+/** The Kai tint over `.f0-hero-field` — mixed from tokens, never a literal hex. */
+const KAI_TINT: React.CSSProperties = {
+  background: [
+    "radial-gradient(118% 130% at 84% 2%, color-mix(in srgb, var(--color-kai-400) 52%, transparent) 0%, transparent 58%)",
+    "radial-gradient(104% 124% at 2% 102%, color-mix(in srgb, var(--color-kai-600) 44%, transparent) 0%, transparent 62%)",
+    "linear-gradient(155deg, color-mix(in srgb, var(--color-kai-700) 46%, transparent) 0%, transparent 72%)",
+  ].join(", "),
+};
+
+/** State colours INSIDE the dark field — the light step of each ramp. */
+function fieldTone(tone: StateTone): { text: string; dot: string } {
+  switch (tone) {
+    case "volt":
+      return { text: "text-volt-300", dot: "bg-volt-400" };
+    case "teal":
+      return { text: "text-teal-300", dot: "bg-teal-400" };
+    case "kai":
+      return { text: "text-kai-300", dot: "bg-kai-400" };
+    default:
+      return { text: "opacity-60", dot: "bg-current opacity-40" };
+  }
+}
+
 export default async function AlertDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -87,7 +123,7 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
         ? SETUP_STATE_META[stateStr as SetupState]?.tone
         : WATCH_STATE_META[stateStr as WatchState]?.tone) ?? "quiet"
     : "quiet";
-  const tc = toneClasses(tone);
+  const ft = fieldTone(tone);
   const isLive = stateStr
     ? (isSetupUpdate
         ? SETUP_STATE_META[stateStr as SetupState]?.live
@@ -123,139 +159,209 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
     .eq("ticker", ticker)
     .maybeSingle();
 
+  const stateLabel = stateStr
+    ? isSetupUpdate
+      ? SETUP_STATE_META[stateStr as SetupState]?.label
+      : WATCH_STATE_META[stateStr as WatchState]?.label
+    : null;
+
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6">
+    <div className="mx-auto w-full max-w-[72ch] px-4 pb-16 pt-5 sm:px-6">
       <Link
         href="/alerts"
-        className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-soft transition hover:text-ink"
+        className="inline-flex items-center gap-1.5 font-mono text-eyebrow font-semibold uppercase text-soft transition hover:text-ink"
       >
-        <ArrowLeft className="h-4 w-4" /> Kai Watch
+        <ArrowLeft className="h-3.5 w-3.5" /> Kai Watch
       </Link>
 
-      {/* Header */}
-      <div className={`overflow-hidden rounded-2xl p-5 ${tone === "quiet" ? "border border-sand bg-paper" : "club-field-pulse"}`}>
-        <div className="flex items-center gap-3">
-          <CompanyLogo symbol={ticker} name={companyName} size={44} />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-display text-lg font-bold text-ink">{ticker}</span>
-              {stateStr && (
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tc.chip}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${tc.dot} ${isLive ? tc.glow : ""}`} />
-                  {isSetupUpdate
-                    ? SETUP_STATE_META[stateStr as SetupState]?.label
-                    : WATCH_STATE_META[stateStr as WatchState]?.label}
-                </span>
-              )}
-            </div>
-            <p className="truncate text-[12px] text-soft">{companyName}</p>
-          </div>
-          {current != null && (
-            <div className="text-right">
-              <p className="text-[16px] font-bold tabular-nums text-ink">
-                ${current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              {perfPct != null && (
-                <p className={`inline-flex items-center gap-0.5 text-[12px] font-bold tabular-nums ${perfPct >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                  {perfPct >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {perfPct >= 0 ? "+" : ""}
-                  {perfPct.toFixed(1)}% since
-                </p>
-              )}
-            </div>
+      {/* ── The one dark object: Kai's own field ──────────────────────────── */}
+      <header className="f0-hero-field f0-grain mt-4 px-5 py-7 sm:px-7">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 opacity-90 dark:opacity-100"
+          style={KAI_TINT}
+        />
+
+        {/* attribution — Kai is the author of this page */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <span aria-hidden className="relative flex h-2.5 w-2.5 items-center justify-center">
+            {isLive && (
+              <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-kai-400/50 motion-safe:animate-ping" />
+            )}
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-kai-400" />
+          </span>
+          <span className="font-mono text-eyebrow font-semibold uppercase text-kai-300">
+            {headline}
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
+            {freshnessLabel(event.fired_at)}
+          </span>
+          {stateLabel && (
+            <span
+              className={`inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] ${ft.text}`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${ft.dot}`} />
+              {stateLabel}
+            </span>
           )}
         </div>
-        <p className="mt-1.5 text-[11px] text-soft/70">
-          {headline} · {freshnessLabel(event.fired_at)}
-        </p>
-      </div>
 
-      {/* Why Kai alerted you */}
-      <section className="mt-6">
-        <h2 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soft/70">
-          {isLive ? <Zap className="h-3.5 w-3.5 text-volt-600" /> : <Info className="h-3.5 w-3.5" />} Why Kai alerted you
-        </h2>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink">{whatChanged}</p>
+        {/* the display headline IS the thing that changed */}
+        <h1 className="mt-3.5 max-w-[46ch] font-display text-display-2 font-extrabold leading-tight tracking-tight">
+          {whatChanged}
+        </h1>
+
+        {/* the instrument line: which company, at what price */}
+        <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <span className="flex items-center gap-2.5">
+            <CompanyLogo symbol={ticker} name={companyName} size={34} rounded="rounded-lg" />
+            <span className="min-w-0">
+              <span className="block font-display text-[15px] font-extrabold tracking-tight">
+                ${ticker}
+              </span>
+              <span className="block truncate text-[11.5px] opacity-60">{companyName}</span>
+            </span>
+          </span>
+
+          {current != null && (
+            <span>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
+                Now
+              </span>
+              <span className="mt-0.5 block font-mono text-[19px] font-semibold tabular-nums">
+                {current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </span>
+          )}
+
+          {perfPct != null && (
+            <span>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
+                Since Kai flagged it
+              </span>
+              <span
+                className={`mt-0.5 block font-mono text-[19px] font-semibold tabular-nums ${
+                  perfPct >= 0 ? "text-price-up" : "text-price-down"
+                }`}
+              >
+                {perfPct >= 0 ? "+" : ""}
+                {perfPct.toFixed(1)}%
+              </span>
+            </span>
+          )}
+        </div>
+      </header>
+
+      {/* ── Why Kai alerted you ───────────────────────────────────────────── */}
+      <section className="mt-9">
+        <div className="f0-section-rule">
+          <span className="flex items-center gap-1.5 font-display text-eyebrow font-bold uppercase text-ink">
+            {isLive && <Zap className="h-3.5 w-3.5 text-gold-700" />}
+            Why Kai alerted you
+          </span>
+        </div>
+        <p className="mt-3 max-w-[65ch] text-[15px] leading-relaxed text-ink">{whatChanged}</p>
+
         {conditionLabel && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
-            <span className="rounded-lg bg-sand/70 px-2 py-1 font-mono text-[11px] text-soft">{conditionLabel}</span>
+          <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
+              Your condition
+            </span>
+            <span className="font-mono text-[12.5px] text-ink">{conditionLabel}</span>
             {snap != null && (
-              <span className="text-soft/80">
-                flagged near ${snap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="font-mono text-[11.5px] tabular-nums text-soft/80">
+                flagged near{" "}
+                {snap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             )}
-          </div>
+          </p>
         )}
       </section>
 
-      {/* Kai's read — only when computable without an LLM */}
+      {/* ── Kai's read — only when computable without an LLM ───────────────── */}
       {kaiRead && (
-        <section className="mt-5">
-          <div className="flex items-start gap-2.5 rounded-2xl bg-kai-blue-soft p-4">
-            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-blue text-white">
+        <section className="f0-rule-top mt-8 pt-5">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-500 text-white">
               <Sparkles className="h-4 w-4" />
             </span>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-kai-blue">Kai&apos;s read</p>
-              <p className="mt-0.5 text-[13px] leading-relaxed text-ink/85">{kaiRead}</p>
+            <div className="min-w-0">
+              <p className={`font-mono text-eyebrow font-semibold uppercase ${KAI_INK}`}>
+                Kai&apos;s read
+              </p>
+              <p className="mt-2 max-w-[65ch] text-[15px] leading-relaxed text-ink">{kaiRead}</p>
+              <p className="mt-2.5 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-soft/60">
+                An interpretation of what already happened — never a forecast.
+              </p>
             </div>
           </div>
         </section>
       )}
 
-      {/* Compact chart */}
-      <section className="mt-6">
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-soft/70">Recent price</h2>
-        <Sparkline symbol={ticker} height={90} />
+      {/* ── Recent price ──────────────────────────────────────────────────── */}
+      <section className="mt-9">
+        <div className="f0-section-rule">
+          <span className="font-display text-eyebrow font-bold uppercase text-ink">
+            Recent price
+          </span>
+        </div>
+        <div className="mt-3">
+          <Sparkline symbol={ticker} height={90} />
+        </div>
       </section>
 
-      {/* The Club */}
+      {/* ── The Club ──────────────────────────────────────────────────────── */}
       {intel && (
-        <section className="mt-6">
-          <h2 className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-soft/70">
-            <Users className="h-3.5 w-3.5 text-teal-600" /> The Club on {ticker}
-          </h2>
-          <div className="club-field-teal rounded-2xl p-4">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <ClubStat label="Club Score" value={intel.club_score != null ? String(Math.round(Number(intel.club_score))) : "—"} />
-              <ClubStat label="Watching" value={intel.watchers != null ? String(intel.watchers) : "—"} />
-              <ClubStat
-                label="Rank"
-                value={intel.rank != null ? `#${intel.rank}` : "—"}
-              />
-            </div>
-            {(intel.sentiment_bullish != null || intel.sentiment_bearish != null) && (
-              <SentimentSplit
-                bull={Number(intel.sentiment_bullish ?? 0)}
-                neutral={Number(intel.sentiment_neutral ?? 0)}
-                bear={Number(intel.sentiment_bearish ?? 0)}
-              />
-            )}
-            {intel.unusual_activity && (
-              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-volt-500/12 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-volt-700">
-                <Activity className="h-3.5 w-3.5" /> Unusual activity
-              </p>
-            )}
-            <Link
-              href={`/research/${encodeURIComponent(ticker)}`}
-              className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-teal-700 hover:underline"
-            >
-              See the full Club view →
-            </Link>
+        <section className="mt-9">
+          <div className="f0-section-rule">
+            <span className="font-display text-eyebrow font-bold uppercase text-ink">
+              The club on ${ticker}
+            </span>
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-soft/70">
+
+          <dl className="mt-4 flex flex-wrap items-end gap-x-9 gap-y-4">
+            <ClubStat
+              label="Club score"
+              value={intel.club_score != null ? String(Math.round(Number(intel.club_score))) : "—"}
+            />
+            <ClubStat label="Watching" value={intel.watchers != null ? String(intel.watchers) : "—"} />
+            <ClubStat label="Rank" value={intel.rank != null ? `#${intel.rank}` : "—"} />
+          </dl>
+
+          {(intel.sentiment_bullish != null || intel.sentiment_bearish != null) && (
+            <SentimentSplit
+              bull={Number(intel.sentiment_bullish ?? 0)}
+              neutral={Number(intel.sentiment_neutral ?? 0)}
+              bear={Number(intel.sentiment_bearish ?? 0)}
+            />
+          )}
+
+          {intel.unusual_activity && (
+            <p className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-gold-700">
+              <Activity className="h-3.5 w-3.5" /> Unusual activity
+            </p>
+          )}
+
+          <Link
+            href={`/research/${encodeURIComponent(ticker)}`}
+            className="mt-4 block text-[13px] font-semibold text-gold-700 transition hover:text-gold-600"
+          >
+            See the full club view →
+          </Link>
+
+          <p className="mt-3 max-w-[65ch] text-[11px] leading-relaxed text-soft/70">
             Club figures reflect member attention and sentiment — a measure of what the community is
             watching, not a recommendation.
           </p>
         </section>
       )}
 
-      {/* Actions */}
-      <section className="mt-7">
+      {/* ── Actions ───────────────────────────────────────────────────────── */}
+      <section className="f0-rule-top mt-9 pt-6">
         <DetailActions ruleId={event.rule_id} ticker={ticker} />
       </section>
 
-      <p className="mt-8 border-t border-sand pt-4 text-center text-[11px] leading-relaxed text-soft/70">
+      <p className="mt-10 max-w-[65ch] border-t border-sand pt-4 text-[11px] leading-relaxed text-soft/70">
         This is educational market analysis, not financial advice or a recommendation to buy or sell.
         Prices may be delayed. Past performance never guarantees future results.
       </p>
@@ -304,12 +410,19 @@ function deriveKaiRead({
 function ClubStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-display text-lg font-bold tabular-nums text-ink">{value}</p>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-soft/70">{label}</p>
+      <dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">{label}</dt>
+      <dd className="mt-1 font-mono text-[20px] font-semibold tabular-nums text-ink">{value}</dd>
     </div>
   );
 }
 
+/**
+ * Community sentiment — LIME by law, and lime ONLY. This used to render an
+ * emerald/red split bar, which collided with the price move sitting a few
+ * hundred pixels above it: two green/red readings on one screen meaning
+ * completely different things. Conviction is now carried by how much of the
+ * lime bar is lit; direction is carried by the words.
+ */
 function SentimentSplit({ bull, neutral, bear }: { bull: number; neutral: number; bear: number }) {
   const total = bull + neutral + bear;
   if (total <= 0) return null;
@@ -317,17 +430,19 @@ function SentimentSplit({ bull, neutral, bear }: { bull: number; neutral: number
   const pn = Math.round((neutral / total) * 100);
   const pbear = 100 - pb - pn;
   return (
-    <div className="mt-3">
-      <div className="flex h-2 overflow-hidden rounded-full bg-sand">
-        <span className="h-full bg-emerald-500" style={{ width: `${pb}%` }} />
-        <span className="h-full bg-soft/40" style={{ width: `${pn}%` }} />
-        <span className="h-full bg-red-500" style={{ width: `${pbear}%` }} />
+    <div className="mt-5 max-w-[42ch]">
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
+        Club sentiment
+      </p>
+      <div className="mt-2 flex h-[3px] overflow-hidden rounded-full bg-sand">
+        <span className="h-full bg-lime-500" style={{ width: `${pb}%` }} />
+        <span className="h-full bg-lime-500/35" style={{ width: `${pn}%` }} />
       </div>
-      <div className="mt-1 flex justify-between text-[10px] font-semibold text-soft/70">
-        <span className="text-emerald-600">{pb}% bullish</span>
-        <span>{pn}% neutral</span>
-        <span className="text-red-600">{pbear}% bearish</span>
-      </div>
+      <p className="mt-2 flex flex-wrap gap-x-3 font-mono text-[10.5px] uppercase tracking-[0.1em] tabular-nums">
+        <span className="text-lime-700 dark:text-lime-400">{pb}% bullish</span>
+        <span className="text-soft/70">{pn}% neutral</span>
+        <span className="text-soft/70">{pbear}% bearish</span>
+      </p>
     </div>
   );
 }

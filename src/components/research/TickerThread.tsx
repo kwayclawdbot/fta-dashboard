@@ -239,7 +239,7 @@ export default function TickerThread({
             <button
               onClick={submit}
               disabled={sending || !draft.trim()}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-500 text-white transition-colors hover:bg-gold-600 disabled:opacity-50"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-500 text-night-950 transition-colors hover:bg-gold-600 disabled:opacity-50"
               aria-label="Post note"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

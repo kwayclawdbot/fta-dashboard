@@ -114,7 +114,7 @@ export default function AuthCodeErrorPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="you@example.com"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-white border border-sand text-ink placeholder:text-soft/60 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-card border border-sand text-ink placeholder:text-soft/60 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
                   />
                 </div>
               </div>
@@ -140,7 +140,7 @@ export default function AuthCodeErrorPage() {
         )}
       </m.div>
 
-      <p className="mt-8 text-soft/70 text-xs">
+      <p className="mt-8 text-soft text-xs">
         &copy; {new Date().getFullYear()} Cheat Code Club. All rights reserved.
       </p>
     </div>

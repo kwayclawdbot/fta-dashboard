@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Play, Pause, Maximize2 } from "lucide-react";
+import { Play } from "lucide-react";
 
 interface VideoPlayerProps {
   videoId?: string;
@@ -30,7 +30,10 @@ export default function VideoPlayer({
 
   return (
     <div className="relative w-full">
-      <div className={`relative bg-midnight-950 rounded-lg overflow-hidden ${provider === "html" ? "aspect-[4/3] lg:aspect-[16/10]" : "aspect-video"}`}>
+      {/* The media well is a deliberate dark island (night-* is constant across
+          themes) framed by a sand hairline — NOT bg-midnight-950, which is the
+          CREAM page colour in light and would paint the player as paper. */}
+      <div className={`relative overflow-hidden rounded-2xl border border-sand bg-night-950 ${provider === "html" ? "aspect-[4/3] lg:aspect-[16/10]" : "aspect-video"}`}>
         {/* YouTube */}
         {provider === "youtube" && videoId && !playing && (
           <button
@@ -48,16 +51,16 @@ export default function VideoPlayer({
               }}
             />
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-midnight-950/80 via-midnight-950/20 to-transparent" />
-            {/* Play button */}
+            <div className="absolute inset-0 bg-gradient-to-t from-night-950/85 via-night-950/25 to-transparent" />
+            {/* Play button — volt, because play is the ACTION */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-gold-400/90 flex items-center justify-center shadow-lg group-hover:bg-gold-400 group-hover:scale-105 transition-all">
-                <Play className="w-7 h-7 text-midnight-950 ml-1" />
+              <div className="w-16 h-16 rounded-full bg-volt-500 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <Play className="w-7 h-7 text-white ml-1" />
               </div>
             </div>
             {/* Title overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <p className="text-sm font-display font-medium text-white/90 drop-shadow-lg">
+              <p className="font-display text-[14px] font-bold text-white drop-shadow-lg">
                 {title}
               </p>
             </div>
@@ -89,9 +92,7 @@ export default function VideoPlayer({
         {/* Mux placeholder */}
         {provider === "mux" && videoId && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-midnight-400 font-body">
-              Mux player loading...
-            </p>
+            <p className="text-sm text-night-200">Mux player loading…</p>
           </div>
         )}
 
@@ -103,7 +104,7 @@ export default function VideoPlayer({
             allow="autoplay; microphone"
             allowFullScreen
             title={title}
-            style={{ background: "#020408" }}
+            style={{ background: "var(--paper)" }}
           />
         )}
 
@@ -114,14 +115,14 @@ export default function VideoPlayer({
               className="absolute inset-0 opacity-5"
               style={{
                 backgroundImage:
-                  "linear-gradient(rgba(251,191,36,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(251,191,36,0.3) 1px, transparent 1px)",
+                  "linear-gradient(rgba(255,255,255,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.28) 1px, transparent 1px)",
                 backgroundSize: "40px 40px",
               }}
             />
-            <div className="relative z-10 w-16 h-16 rounded-full bg-gold-400/20 border border-gold-400/30 flex items-center justify-center">
-              <Play className="w-6 h-6 text-gold-400 ml-1" />
+            <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10">
+              <Play className="ml-1 h-6 w-6 text-white/80" />
             </div>
-            <p className="relative z-10 mt-4 text-sm text-midnight-400 font-body">
+            <p className="relative z-10 mt-4 text-sm text-night-200">
               Video coming soon
             </p>
           </div>

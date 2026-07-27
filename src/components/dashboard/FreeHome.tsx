@@ -184,7 +184,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
               {session && (
                 <button
                   onClick={() => downloadClassIcs(session)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-sand text-ink text-sm font-display font-semibold hover:bg-white/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-sand text-ink text-sm font-display font-semibold hover:bg-card transition-colors"
                 >
                   <CalendarPlus className="w-4 h-4 text-gold-600" /> Add to
                   calendar
@@ -252,7 +252,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
           ].map((f) => (
             <div
               key={f.label}
-              className="flex items-center gap-2.5 rounded-xl border border-sand bg-white/40 px-3 py-2.5"
+              className="flex items-center gap-2.5 rounded-xl border border-sand bg-card px-3 py-2.5"
             >
               <f.icon className="w-4 h-4 text-gold-600 shrink-0" />
               <span className="text-sm text-ink font-medium leading-tight flex-1 min-w-0">
@@ -267,7 +267,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
             identical buttons (UX audit #18). */}
         <Link
           href="/upgrade"
-          className="mt-5 w-full inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-white/50 transition-colors"
+          className="mt-5 w-full inline-flex items-center justify-center gap-1.5 px-6 py-3 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
         >
           See what $99/mo unlocks <ArrowRight className="w-4 h-4 text-gold-700" />
         </Link>
@@ -325,7 +325,7 @@ function JourneyCard({
                 className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
                   isDone
                     ? "border-green-500/30 bg-chip-green/40"
-                    : "border-sand bg-white/40 hover:border-gold-300"
+                    : "border-sand bg-card hover:border-gold-300"
                 }`}
               >
                 <span

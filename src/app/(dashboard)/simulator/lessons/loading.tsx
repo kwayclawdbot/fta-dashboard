@@ -1,5 +1,5 @@
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 
 export default function Loading() {
-  return <DashboardSkeleton variant="grid" />;
+  return <DashboardSkeleton variant="list" />;
 }

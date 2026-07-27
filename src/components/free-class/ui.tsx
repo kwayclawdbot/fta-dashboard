@@ -139,7 +139,7 @@ export function Field({
         readOnly={readOnly}
         onChange={(e) => onChange?.(e.target.value)}
         className={`w-full pl-11 pr-4 py-3.5 rounded-xl border border-sand text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400/20 transition-colors text-[15px] font-body ${
-          readOnly ? "bg-sand/40 text-soft cursor-default" : "bg-white/50"
+          readOnly ? "bg-sand/40 text-soft cursor-default" : "bg-card"
         }`}
       />
     </div>
@@ -174,7 +174,7 @@ export function QuizCard({
               className={`w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-xl border transition-colors ${
                 active
                   ? "border-gold-400 bg-gold-400/10"
-                  : "border-sand bg-white/40 hover:border-gold-300"
+                  : "border-sand bg-card hover:border-gold-300"
               }`}
             >
               <span

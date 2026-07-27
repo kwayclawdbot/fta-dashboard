@@ -74,7 +74,7 @@ export default function FtaChatRoom({ me }: { me: ChatMe }) {
           {/* Room header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-night-700/70 bg-night-900">
             <div className="flex items-center gap-2 min-w-0">
-              <Hash className="w-4 h-4 text-gold-500 shrink-0" />
+              <Hash className="w-4 h-4 text-ftagold-500 shrink-0" />
               <span className="font-display text-sm font-bold text-night-50 truncate">traders</span>
               <span className="hidden sm:inline text-[11px] text-night-300 truncate">
                 · FTA members only

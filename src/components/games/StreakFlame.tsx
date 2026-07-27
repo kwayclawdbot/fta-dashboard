@@ -38,10 +38,18 @@ export default function StreakFlame({
         transition={{ duration: 0.7, repeat: active && !reduce ? Infinity : 0, ease: "easeInOut" }}
       >
         <defs>
+          {/* An unlit flame is an EMPTY SLOT, so it takes the page's own sand
+              token and re-maps with the theme. The old hardcoded #D8CDB4 /
+              #E4DBC6 / #EAE2D0 were light-theme sand values and rendered as a
+              pale grey blob on the dark page. The lit flame keeps its intrinsic
+              amber in both themes — fire is fire. */}
           <linearGradient id="flame-g" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor={active ? "#D97706" : "#D8CDB4"} />
-            <stop offset="55%" stopColor={active ? "#F59E0B" : "#E4DBC6"} />
-            <stop offset="100%" stopColor={active ? (hot ? "#FDE68A" : "#FBBF24") : "#EAE2D0"} />
+            <stop offset="0%" stopColor={active ? "#D97706" : "var(--sand)"} />
+            <stop offset="55%" stopColor={active ? "#F59E0B" : "var(--sand)"} />
+            <stop
+              offset="100%"
+              stopColor={active ? (hot ? "#FDE68A" : "#FBBF24") : "var(--m800)"}
+            />
           </linearGradient>
         </defs>
         <path

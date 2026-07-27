@@ -2,11 +2,33 @@
 
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import { Trophy, RefreshCw, ArrowRight, Volume2, VolumeX } from "lucide-react";
+import { RefreshCw, ArrowRight, Volume2, VolumeX } from "lucide-react";
 import StreakFlame from "./StreakFlame";
 import Burst from "./Burst";
 
-/** Top bar shared by both games: score, streak flame, combo points, sound, dots. */
+/**
+ * SHARED GAME CHROME — the frame around both games. The play mechanics live in
+ * CandleBattleGame / TrendOrTrapGame and are untouched by this file; everything
+ * here is header, scoreboard, and result state.
+ *
+ * FORM: no card. The top bar is a display title over a mono scoreboard with a
+ * hairline beneath it, and the end screen is a display-scale result over a
+ * measure strip — the same vocabulary the rest of the app uses, so a game does
+ * not read as a different product.
+ *
+ * COLOUR LAW: the scoreboard carries no green/red. A score is not a price, so
+ * the correct-count, the streak, and the XP award all sit in ink with the mode
+ * accent (family gold / club volt orange / FTA metallic) reserved for progress
+ * and the play action. Green/red appear only inside the games themselves, where
+ * they mean buyers/sellers — i.e. price.
+ *
+ * DARK: every surface value is a semantic token (ink / soft / sand / paper) or
+ * the gold ramp, which flips at :root[data-theme="dark"]. The previous version
+ * of this file painted `bg-card`/`paper-card` boxes and a hardcoded green XP
+ * figure; both are gone.
+ */
+
+/** Top bar shared by both games: title, score, streak, sound, progress. */
 export function GameTopBar({
   title,
   tagline,
@@ -29,57 +51,68 @@ export function GameTopBar({
   onToggleSound: () => void;
 }) {
   return (
-    <div className="mb-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ink">{title}</h1>
-          <p className="text-soft text-sm">{tagline}</p>
+    <header className="mb-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+            Round {Math.min(index + 1, total)} of {total}
+          </p>
+          <h1 className="mt-1.5 font-display text-display-2 font-extrabold uppercase text-ink">
+            {title}
+          </h1>
+          <p className="mt-1.5 max-w-sm text-[14px] leading-relaxed text-soft">{tagline}</p>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex shrink-0 items-start gap-5">
           <div className="text-right">
-            <p className="font-display text-lg font-bold text-ink leading-none">
+            <p className="font-mono text-[20px] font-semibold leading-none tabular-nums text-ink">
               {score}
-              <span className="text-soft text-sm font-normal">/{total}</span>
+              <span className="text-soft">/{total}</span>
             </p>
-            <p className="text-[10px] text-soft mt-1">Score</p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              Score
+            </p>
           </div>
-          <div className="text-right min-w-[42px]">
+          <div className="min-w-[42px] text-right">
             <div className="flex justify-end">
               <StreakFlame streak={streak} showZero />
             </div>
-            <p className="text-[10px] text-soft mt-1">Streak</p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              Streak
+            </p>
           </div>
           <button
             onClick={onToggleSound}
             aria-label={muted ? "Unmute sounds" : "Mute sounds"}
-            className="w-11 h-11 shrink-0 rounded-xl border border-sand bg-white flex items-center justify-center text-soft hover:text-ink hover:bg-paper transition-colors"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sand text-soft transition-colors hover:text-ink"
           >
-            {muted ? <VolumeX className="w-4.5 h-4.5" /> : <Volume2 className="w-4.5 h-4.5" />}
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
         </div>
       </div>
 
-      {/* combo points + progress dots */}
-      <div className="flex items-center gap-3 mt-4">
-        <span className="text-xs font-display font-bold text-gold-700 tabular-nums">
+      {/* Progress — a run of ticks, not a pill. Accent = progress toward an
+          action, which is the one thing the accent is for. */}
+      <div className="mt-5 flex items-center gap-3">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700">
           {points} pts
         </span>
-        <div className="flex items-center gap-1.5 flex-1">
+        <span className="flex flex-1 items-center gap-1.5">
           {Array.from({ length: total }).map((_, i) => (
             <span
               key={i}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
+              className={`h-1 flex-1 rounded-full transition-colors ${
                 i < index ? "bg-gold-500" : i === index ? "bg-gold-400" : "bg-sand"
               }`}
             />
           ))}
-        </div>
+        </span>
       </div>
-    </div>
+    </header>
   );
 }
 
-/** End screen shared by both games: score, best streak, XP burst, replay. */
+/** End screen shared by both games: result, measures, XP, replay. */
 export function GameEndScreen({
   passed,
   score,
@@ -103,69 +136,79 @@ export function GameEndScreen({
 }) {
   const pct = Math.round((score / total) * 100);
   return (
-    <div className="max-w-2xl mx-auto">
-      <m.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="paper-card p-8 text-center relative overflow-hidden"
+    <div className="mx-auto max-w-2xl">
+      <m.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative"
       >
         {passed && <Burst count={26} power={150} />}
-        <m.div
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.1 }}
-          className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-            passed ? "bg-chip-green" : "bg-chip-amber"
-          }`}
-        >
-          <Trophy className={`w-8 h-8 ${passed ? "text-green-600" : "text-gold-600"}`} />
-        </m.div>
-        <h2 className="font-display text-2xl font-bold text-ink mb-1">
-          {passed ? "Great reading!" : "Good practice!"}
-        </h2>
-        <p className="text-soft mb-6">
-          You scored {score} of {total} ({pct}%) · {points} pts
+
+        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          Session complete
         </p>
-        <div className="flex items-center justify-center gap-8 mb-6">
-          <div>
-            <p className="font-display text-2xl font-bold text-ink">
-              {score}/{total}
+        <h2 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
+          {passed ? "Clean read" : "Good reps"}
+        </h2>
+        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
+          {passed
+            ? `You called ${score} of ${total} correctly (${pct}%). That clears the bar — the session paid XP.`
+            : `You called ${score} of ${total} correctly (${pct}%). The bar is 70% — run it again and the session pays XP.`}
+        </p>
+
+        {/* Measure strip — three measures on the paper, no boxes. */}
+        <div className="mt-8 flex items-stretch">
+          <div className="min-w-0 flex-1 pr-4 sm:pr-6">
+            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
+              {score}
+              <span className="text-soft">/{total}</span>
             </p>
-            <p className="text-xs text-soft">Correct</p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              Correct
+            </p>
           </div>
-          <div>
-            <div className="flex justify-center">
-              <StreakFlame streak={bestStreak} size={26} showZero />
-            </div>
-            <p className="text-xs text-soft mt-1">Best streak</p>
+          <div className="min-w-0 flex-1 border-l border-sand pl-4 pr-4 sm:pl-6 sm:pr-6">
+            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
+              {bestStreak}
+            </p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              Best streak
+            </p>
           </div>
-          <div>
+          <div className="min-w-0 flex-1 border-l border-sand pl-4 sm:pl-6">
             <m.p
-              initial={{ scale: 0.6, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
-              className="font-display text-2xl font-bold text-green-600"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="font-display text-display-2 font-extrabold tabular-nums text-ink"
             >
-              +{xpAwarded}
+              {xpAwarded > 0 ? `+${xpAwarded}` : "—"}
             </m.p>
-            <p className="text-xs text-soft">{passed ? "XP earned" : "XP (need 70%)"}</p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              {passed ? "XP earned" : "XP · need 70%"}
+            </p>
           </div>
         </div>
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={onReplay}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-sand text-ink text-sm font-medium hover:bg-paper"
-          >
-            <RefreshCw className="w-4 h-4" /> Play again
-          </button>
+
+        <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          {points} combo points this session · combo points are not saved
+        </p>
+
+        <div className="f0-rule-top mt-6 flex items-center gap-4 pt-6">
           <Link
             href={backHref}
-            className="cta-button inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm"
+            className="cta-button inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
           >
-            {backLabel} <ArrowRight className="w-4 h-4" />
+            {backLabel} <ArrowRight className="h-4 w-4" />
           </Link>
+          <button
+            onClick={onReplay}
+            className="inline-flex items-center gap-2 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+          >
+            <RefreshCw className="h-4 w-4" /> Play again
+          </button>
         </div>
-      </m.div>
+      </m.section>
     </div>
   );
 }

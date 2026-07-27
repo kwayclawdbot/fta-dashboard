@@ -649,6 +649,8 @@ export interface NewsItem {
   publisher: string | null;
   published: string | null; // ISO
   description: string | null;
+  /** Publisher artwork for THIS story, or null. See isGenericNewsImage. */
+  image_url: string | null;
 }
 
 interface NewsResult {
@@ -657,8 +659,42 @@ interface NewsResult {
     article_url?: string;
     published_utc?: string;
     description?: string;
+    image_url?: string;
     publisher?: { name?: string };
   }[];
+}
+
+/* A large share of the feed's `image_url` values are not a picture of the
+   story — they are the publisher's standing OG/share card (Investing.com's
+   investingcom_analysis_og.jpg, Zacks' default_article_images/…, bare
+   publisher logos). Illustrating a club article with one of those is worse
+   than showing nothing: it looks like real reporting art and carries none.
+   Anything matching a house-placeholder marker is dropped at the boundary, so
+   no consumer ever has to re-litigate it. */
+const GENERIC_NEWS_IMAGE_MARKERS = [
+  "investingcom_analysis_og",
+  "default_article_image",
+  "og-image",
+  "og_image",
+  "_og.",
+  "-og.",
+  "placeholder",
+  "share-image",
+  "share_image",
+  "social-share",
+  "generic",
+  "/logo",
+  "logo.png",
+  "logo.jpg",
+  "no-image",
+];
+
+/** True when the feed's artwork is a house placeholder rather than the story. */
+export function isGenericNewsImage(url: string | null | undefined): boolean {
+  if (!url) return true;
+  const u = url.trim().toLowerCase();
+  if (!u.startsWith("https://")) return true;
+  return GENERIC_NEWS_IMAGE_MARKERS.some((marker) => u.includes(marker));
 }
 
 /** Recent news headlines for a ticker (Ask Kai news tool → link cards). */
@@ -677,6 +713,7 @@ export async function getNews(symbol: string, limit = 6): Promise<NewsItem[]> {
       publisher: r.publisher?.name ?? null,
       published: r.published_utc ?? null,
       description: r.description ?? null,
+      image_url: isGenericNewsImage(r.image_url) ? null : r.image_url!,
     }));
 }
 

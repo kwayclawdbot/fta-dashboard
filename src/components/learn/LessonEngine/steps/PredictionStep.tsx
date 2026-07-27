@@ -84,17 +84,20 @@ export default function PredictionStep({
             transition={{ duration: 0.3, ease: EASE_OUT }}
             className="mt-5"
           >
-            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-ink to-night-700 px-5 py-5 text-paper">
-              <div className="flex items-center gap-2 text-gold-300">
+            {/* The reveal is the one dark object in a prediction step — an
+                obsidian field in BOTH themes, so its type is theme-invariant
+                cream (the standing rule for f0-hero-field). */}
+            <div className="f0-hero-field f0-grain px-5 py-6">
+              <div className="relative flex items-center gap-2 text-volt-400">
                 <TrendingUp className="h-4 w-4" />
-                <span className="font-display text-xs font-bold uppercase tracking-wider">
+                <span className="text-eyebrow font-display font-bold uppercase">
                   What actually happened
                 </span>
               </div>
-              <p className="mt-2 font-display text-xl font-bold leading-tight">
+              <p className="relative mt-3 max-w-[34ch] font-display text-display-3 font-extrabold leading-tight text-[#F7F3EA]">
                 {spec.reveal.headline}
               </p>
-              <p className="mt-2 font-body text-sm leading-relaxed text-paper/80">
+              <p className="relative mt-2.5 max-w-[58ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
                 {spec.reveal.body}
               </p>
             </div>

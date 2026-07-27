@@ -1,8 +1,20 @@
 "use client";
 
 import { m } from "@/lib/motion";
-import { CheckCircle, XCircle, RotateCcw, ArrowRight } from "lucide-react";
+import { Check, RotateCcw, ArrowRight } from "lucide-react";
 import type { Decision } from "@/lib/simulator/scenarios";
+
+/**
+ * THE RESULT — what you called, what the tape did, and what it scored.
+ *
+ * Same scoring inputs and same actions as before; the two little score tiles
+ * and the bordered explanation box are now ruled ledger rows and a ruled note.
+ *
+ * COLOUR LAW: a score is not a price, so pass/fail is NOT green/red — it is the
+ * brand check plus the word, and the meter is volt (progress you can act on).
+ * That also stops "PASSED" in green reading like a winning trade when the call
+ * itself may have lost money.
+ */
 
 interface ScenarioResultPanelProps {
   patternName: string;
@@ -40,97 +52,89 @@ export default function ScenarioResultPanel({
   const isCorrectDecision = userDecision === correctDecision;
 
   return (
-    <m.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-5"
-    >
-      {/* Score header */}
-      <div className="flex items-center gap-3 mb-4">
-        {passed ? (
-          <CheckCircle className="w-8 h-8 text-green-400" />
-        ) : (
-          <XCircle className="w-8 h-8 text-red-500" />
-        )}
-        <div>
-          <h3 className="text-lg font-display font-bold text-midnight-100">
-            {totalScore}/100
-          </h3>
-          <p
-            className={`text-xs font-medium ${
-              passed ? "text-green-400" : "text-red-500"
-            }`}
-          >
-            {passed ? "PASSED" : "NEEDS PRACTICE"} — {patternName}
-          </p>
-        </div>
-      </div>
+    <m.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <p className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
+        {patternName}
+      </p>
+      <p className="mt-2 font-display text-display-2 font-extrabold tabular-nums text-ink">
+        <span className="font-mono">{totalScore}</span>
+        <span className="text-soft">/100</span>
+      </p>
+      <p
+        className={`mt-1.5 inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${
+          passed ? "text-gold-700" : "text-soft"
+        }`}
+      >
+        {passed && <Check className="h-3.5 w-3.5" />}
+        {passed ? "Passed" : "Needs another rep"}
+      </p>
 
-      {/* Score breakdown */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <div className="bg-midnight-800/50 rounded-lg p-3">
-          <p className="text-[10px] text-midnight-400 mb-1">Pattern ID</p>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-mono font-medium text-midnight-100">
-              {patternScore}/50
-            </span>
-            {isCorrectDecision && (
-              <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-            )}
-          </div>
-          <p className="text-[10px] text-midnight-500 mt-0.5">
-            You: {DECISION_LABELS[userDecision]} → Correct:{" "}
-            {DECISION_LABELS[correctDecision]}
-          </p>
-        </div>
-        <div className="bg-midnight-800/50 rounded-lg p-3">
-          <p className="text-[10px] text-midnight-400 mb-1">Trade P&L</p>
-          <span className="text-sm font-mono font-medium text-midnight-100">
-            {tradeScore}/50
-          </span>
-          <p className="text-[10px] text-midnight-500 mt-0.5">
-            Based on outcome
-          </p>
-        </div>
-      </div>
-
-      {/* Score bar */}
-      <div className="h-2 bg-midnight-800 rounded-full mb-4 overflow-hidden">
+      <div
+        className="mt-3 h-1.5 overflow-hidden rounded-full bg-sand"
+        role="progressbar"
+        aria-valuenow={totalScore}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
         <m.div
           initial={{ width: 0 }}
           animate={{ width: `${totalScore}%` }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className={`h-full rounded-full ${
-            passed
-              ? "bg-gradient-to-r from-green-400 to-green-500"
-              : "bg-gradient-to-r from-red-500 to-red-400"
-          }`}
+          className="h-full rounded-full bg-volt-500"
         />
       </div>
 
-      {/* Explanation */}
-      <div className="bg-midnight-800/30 rounded-lg p-3 mb-4 border border-midnight-700/30">
-        <p className="text-xs text-midnight-300 leading-relaxed">
-          {explanation}
-        </p>
+      <div className="f0-ledger mt-3">
+        <div className="f0-ledger-row justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-display text-[13.5px] font-bold text-ink">
+              Pattern read
+            </p>
+            <p className="mt-0.5 text-[11.5px] leading-snug text-soft">
+              You called {DECISION_LABELS[userDecision]} · the pattern was{" "}
+              {DECISION_LABELS[correctDecision]}
+            </p>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[14px] font-semibold tabular-nums text-ink">
+            {isCorrectDecision && <Check className="h-3.5 w-3.5 text-gold-600" />}
+            {patternScore}/50
+          </span>
+        </div>
+
+        <div className="f0-ledger-row justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-display text-[13.5px] font-bold text-ink">Outcome</p>
+            <p className="mt-0.5 text-[11.5px] leading-snug text-soft">
+              Scored on what the tape actually did next
+            </p>
+          </div>
+          <span className="shrink-0 font-mono text-[14px] font-semibold tabular-nums text-ink">
+            {tradeScore}/50
+          </span>
+        </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2">
+      <p className="mt-4 border-l-2 border-sand py-1 pl-3.5 text-[13px] leading-relaxed text-soft">
+        {explanation}
+      </p>
+
+      <div className="mt-4 flex items-center gap-3">
         <button
+          type="button"
           onClick={onRetry}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-midnight-800 border border-midnight-700/50 text-midnight-300 hover:text-gold-400 hover:border-gold-400/30 transition-colors text-sm font-medium"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-sand px-4 py-2.5 font-display text-[13px] font-bold text-ink transition-colors hover:border-gold-400 hover:text-gold-700"
         >
-          <RotateCcw className="w-4 h-4" />
-          Retry
+          <RotateCcw className="h-4 w-4" />
+          Run it again
         </button>
         {hasNext && (
           <button
+            type="button"
             onClick={onNext}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-400 hover:bg-gold-400/20 transition-colors text-sm font-medium"
+            className="cta-button inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px]"
           >
-            Next Pattern
-            <ArrowRight className="w-4 h-4" />
+            Next pattern
+            <ArrowRight className="h-4 w-4" />
           </button>
         )}
       </div>

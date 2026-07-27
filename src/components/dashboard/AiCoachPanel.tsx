@@ -197,8 +197,8 @@ export default function AiCoachPanel({
   function renderMarkdown(text: string) {
     return text.split("\n").map((line, i) => {
       const formatted = line
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-midnight-100">$1</strong>')
-        .replace(/`(.*?)`/g, '<code class="text-gold-400 bg-midnight-800 px-1 rounded text-xs">$1</code>');
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-ink">$1</strong>')
+        .replace(/`(.*?)`/g, '<code class="text-kai-blue bg-sand px-1 rounded text-xs">$1</code>');
       return (
         <span
           key={i}
@@ -220,27 +220,27 @@ export default function AiCoachPanel({
           >
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                msg.role === "assistant" ? "bg-gold-400/15" : "bg-midnight-700"
+                msg.role === "assistant" ? "bg-kai-blue-soft" : "bg-sand"
               }`}
             >
               {msg.role === "assistant" ? (
-                <Bot className="w-3.5 h-3.5 text-gold-400" />
+                <Bot className="w-3.5 h-3.5 text-kai-blue" />
               ) : (
-                <User className="w-3.5 h-3.5 text-midnight-300" />
+                <User className="w-3.5 h-3.5 text-soft" />
               )}
             </div>
             <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm font-body leading-relaxed ${
+              className={`max-w-[85%] rounded-xl px-3 py-2 text-[14px] leading-relaxed ${
                 msg.role === "assistant"
-                  ? "bg-midnight-800/50 text-midnight-300"
-                  : "bg-gold-400/10 text-midnight-200"
+                  ? "bg-card text-ink"
+                  : "bg-sand/60 text-ink"
               }`}
             >
               {renderMarkdown(msg.content)}
               {msg.audioUrl && msg.role === "assistant" && (
                 <button
                   onClick={() => playAudio(msg.audioUrl!)}
-                  className="mt-1.5 flex items-center gap-1 text-xs text-gold-400/60 hover:text-gold-400 transition-colors"
+                  className="mt-1.5 flex items-center gap-1 text-xs text-soft hover:text-kai-blue transition-colors"
                 >
                   <Volume2 className="w-3 h-3" />
                   Play audio
@@ -252,11 +252,11 @@ export default function AiCoachPanel({
 
         {loading && (
           <div className="flex gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-gold-400/15 flex items-center justify-center shrink-0">
-              <Bot className="w-3.5 h-3.5 text-gold-400" />
+            <div className="w-6 h-6 rounded-full bg-kai-blue-soft flex items-center justify-center shrink-0">
+              <Bot className="w-3.5 h-3.5 text-kai-blue" />
             </div>
-            <div className="bg-midnight-800/50 rounded-lg px-3 py-2">
-              <Loader2 className="w-4 h-4 text-gold-400 animate-spin" />
+            <div className="bg-card rounded-xl px-3 py-2">
+              <Loader2 className="w-4 h-4 text-kai-blue animate-spin" />
             </div>
           </div>
         )}
@@ -271,7 +271,7 @@ export default function AiCoachPanel({
             <button
               key={prompt}
               onClick={() => handleSend(prompt)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-midnight-800 border border-midnight-700 text-xs text-midnight-400 hover:text-midnight-200 hover:border-midnight-600 transition-colors font-body"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-sand text-xs text-soft hover:text-ink hover:border-gold-500 transition-colors"
             >
               <Sparkles className="w-3 h-3" />
               {prompt}
@@ -281,7 +281,7 @@ export default function AiCoachPanel({
       )}
 
       {/* Input */}
-      <div className="p-3 border-t border-midnight-800">
+      <div className="f0-rule-top p-3">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -295,8 +295,8 @@ export default function AiCoachPanel({
               onClick={toggleRecording}
               className={`p-2 rounded-lg transition-colors ${
                 isRecording
-                  ? "bg-red-500/20 text-red-400 animate-pulse"
-                  : "bg-midnight-800 text-midnight-400 hover:text-midnight-200"
+                  ? "bg-gold-400/20 text-gold-700 animate-pulse"
+                  : "border border-sand text-soft hover:text-ink"
               }`}
             >
               {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -307,12 +307,12 @@ export default function AiCoachPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={isRecording ? "Listening..." : "Ask your coach..."}
-            className="flex-1 px-3 py-2 rounded-lg bg-midnight-800 border border-midnight-700 text-sm text-midnight-200 placeholder:text-midnight-600 focus:outline-none focus:border-gold-400/40 font-body"
+            className="flex-1 px-3 py-2 rounded-xl bg-card border border-sand text-[14px] text-ink placeholder:text-soft focus:outline-none focus:border-gold-500"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="p-2 rounded-lg bg-gold-400/15 text-gold-400 hover:bg-gold-400/25 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2 rounded-xl bg-kai-blue-soft text-kai-blue transition-opacity hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
           </button>

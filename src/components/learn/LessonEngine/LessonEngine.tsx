@@ -217,10 +217,10 @@ export default function LessonEngine({
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-center justify-center py-24 text-center">
         <div className="relative h-11 w-11">
-          <div className="absolute inset-0 rounded-full border-2 border-gold-400/25" />
-          <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-gold-500" />
+          <div className="absolute inset-0 rounded-full border-2 border-sand" />
+          <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-volt-500" />
         </div>
-        <p className="mt-3 font-display text-sm font-semibold text-soft">
+        <p className="mt-3 font-display text-sm font-bold text-soft">
           Picking up where you left off…
         </p>
       </div>
@@ -241,57 +241,59 @@ export default function LessonEngine({
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: EASE_OUT }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gold-400/15 via-paper to-chip-sky/30 px-6 py-10 text-center sm:px-10"
+          className="f0-hero-field f0-grain px-6 py-10 text-center sm:px-10"
         >
           {scale.burst > 0 && !reduce && (
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
               <Burst key={winBurst} count={scale.burst} power={scale.burstPower} />
             </div>
           )}
+          {/* Inside the obsidian field the type is theme-invariant cream — the
+              same rule the Learn hero follows. Volt is the only accent. */}
           <div className="relative">
-            <div className="font-display text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
+            <div className="text-eyebrow font-display font-bold uppercase text-volt-400">
               {moduleTitle}
             </div>
-            <h1 className="mt-2 font-display text-3xl font-black tracking-tight text-ink sm:text-4xl">
+            <h1 className="mt-3 font-display text-display-2 font-extrabold text-[#F7F3EA]">
               {register === "kid" ? "You did it!" : "Lesson complete"}
             </h1>
-            <p className="mx-auto mt-2 max-w-md font-body text-[15px] leading-relaxed text-soft">
+            <p className="mx-auto mt-3 max-w-[46ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
               {lesson.guide?.outro ??
                 "That concept is yours now. Take it into the market."}
             </p>
 
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-amber px-4 py-2 font-display text-sm font-bold text-gold-800">
-                +{summary.xp} XP
-              </span>
+            <div className="mt-7 flex items-center justify-center gap-6">
+              <div>
+                <p className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]">
+                  +{summary.xp}
+                </p>
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                  XP earned
+                </p>
+              </div>
               {summary.score != null && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-green px-4 py-2 font-display text-sm font-bold text-green-800">
-                  {summary.score}% right first try
-                </span>
+                <div className="border-l border-white/15 pl-6">
+                  <p className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]">
+                    {summary.score}%
+                  </p>
+                  <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                    Right first try
+                  </p>
+                </div>
               )}
             </div>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              {nextHref ? (
-                <Link
-                  href={nextHref}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-5 py-3 font-display text-sm font-semibold text-midnight-950 transition-[transform,background-color] duration-150 ease-out hover:bg-gold-300 active:scale-[0.97]"
-                >
-                  Next lesson
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              ) : (
-                <Link
-                  href={backHref}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gold-400 px-5 py-3 font-display text-sm font-semibold text-midnight-950 transition-[transform,background-color] duration-150 ease-out hover:bg-gold-300 active:scale-[0.97]"
-                >
-                  Back to course
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              )}
+              <Link
+                href={nextHref ?? backHref}
+                className="inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
+              >
+                {nextHref ? "Next lesson" : "Back to course"}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
               <button
                 onClick={replay}
-                className="inline-flex items-center gap-2 rounded-xl border border-sand bg-white/60 px-4 py-3 font-body text-sm text-soft transition-colors hover:text-ink"
+                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-[14px] font-bold text-[#F7F3EA]/80 transition-colors hover:text-[#F7F3EA]"
               >
                 <RotateCcw className="h-4 w-4" />
                 Replay
@@ -321,14 +323,14 @@ export default function LessonEngine({
           <Link
             href={backHref}
             aria-label="Exit lesson"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-sand bg-white/60 text-soft transition-colors hover:text-ink"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-sand text-soft transition-colors hover:text-ink"
           >
             <X className="h-4 w-4" />
           </Link>
           <div className="min-w-0 flex-1">
-            <div className="h-2 overflow-hidden rounded-full bg-sand">
+            <div className="h-1.5 overflow-hidden rounded-full bg-sand">
               <m.div
-                className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-500"
+                className="h-full rounded-full bg-volt-500"
                 initial={false}
                 animate={{ transform: `scaleX(${pct / 100})` }}
                 style={{ transformOrigin: "left", width: "100%" }}
@@ -336,15 +338,18 @@ export default function LessonEngine({
               />
             </div>
           </div>
-          <span className="shrink-0 font-display text-xs font-semibold text-soft">
+          <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
             {stepIndex + 1}/{total}
           </span>
         </div>
 
         {/* Lesson title (small) + guide intro on the first step */}
         {stepIndex === 0 && (
-          <div className="mb-5">
-            <h1 className="font-display text-lg font-bold text-ink">
+          <div className="mb-6">
+            <p className="text-eyebrow font-display font-bold uppercase text-soft">
+              {moduleTitle}
+            </p>
+            <h1 className="mt-2 max-w-[28ch] font-display text-display-3 font-extrabold text-ink">
               {lesson.title}
             </h1>
             {lesson.guide?.intro && (
@@ -355,8 +360,9 @@ export default function LessonEngine({
           </div>
         )}
 
-        {/* The step */}
-        <div className="rounded-3xl border border-sand bg-white/50 px-5 py-6 sm:px-7 sm:py-7">
+        {/* The step — no container. A hairline separates it from the header and
+            the type carries the hierarchy (the register bans card boxes). */}
+        <div className="f0-rule-top pt-7">
           <AnimatePresence mode="wait">
             <m.div
               key={`${stepIndex}-${spec.id}`}
@@ -375,7 +381,7 @@ export default function LessonEngine({
               ) : (
                 // Unknown step type — skip gracefully (forward-compat).
                 <div className="text-center">
-                  <p className="font-body text-sm text-soft">
+                  <p className="text-sm text-soft">
                     This step isn&apos;t available in your app version.
                   </p>
                   <div className="mt-4 flex justify-center">

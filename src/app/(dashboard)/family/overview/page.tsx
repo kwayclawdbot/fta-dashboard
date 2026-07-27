@@ -20,6 +20,7 @@ import { fetchXpForUsers } from "@/lib/belts";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import ReportCard from "@/components/dashboard/ReportCard";
+import { SectionRule, familyRegister } from "@/components/family/register";
 
 interface MemberSummary {
   id: string;
@@ -304,9 +305,13 @@ export default function FamilyOverviewPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    /* familyRegister re-points the F0 primitives' hardcoded volt stops at the
+       mode accent for this subtree — the composition is the Club's, the colour
+       stays warm gold. See src/components/family/register.tsx. */
+    <div className="max-w-5xl mx-auto" style={familyRegister}>
       {/* Family header card — name, crown, member avatars (mock panel 4, warm
-          gold). Keeps the existing Family Mode identity (no purple). */}
+          gold). Keeps the existing Family Mode identity (no purple). The family
+          name is the ONE display-1 voice on this screen. */}
       <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -319,8 +324,8 @@ export default function FamilyOverviewPage() {
               <Crown className="w-6 h-6 text-gold-400" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="font-display text-2xl font-bold text-midnight-50 truncate">
+              <div className="flex items-center gap-2.5">
+                <h2 className="font-display text-display-2 sm:text-display-1 font-bold text-midnight-50 truncate">
                   {overview.family_name}
                 </h2>
                 <TierBadge tier={overview.tier} size="md" />
@@ -362,13 +367,11 @@ export default function FamilyOverviewPage() {
           transition={{ delay: 0.04, duration: 0.3 }}
           className="mb-10"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider">
-              Weekly Family Research
-            </h3>
+          <div className="flex items-center gap-4 mb-3">
+            <SectionRule>Weekly Family Research</SectionRule>
             <Link
               href="/dashboard?tab=this-week"
-              className="text-xs font-display font-semibold text-gold-400 hover:text-gold-300 inline-flex items-center gap-1"
+              className="shrink-0 text-xs font-display font-semibold text-gold-400 hover:text-gold-300 inline-flex items-center gap-1"
             >
               See all <ArrowRight className="w-3 h-3" />
             </Link>
@@ -382,7 +385,7 @@ export default function FamilyOverviewPage() {
                 <span className="inline-block text-[10px] font-display font-bold uppercase tracking-wider text-gold-500 mb-1">
                   Teaching Moment
                 </span>
-                <h4 className="font-display text-lg font-bold text-midnight-50 leading-snug">
+                <h4 className="font-display text-display-3 font-bold text-midnight-50">
                   {weekly.class_title}
                 </h4>
                 {weekly.teaching && (
@@ -423,7 +426,7 @@ export default function FamilyOverviewPage() {
               <Sparkles className="w-6 h-6 text-gold-400" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-display text-lg font-bold text-midnight-50">
+              <h3 className="font-display text-display-3 font-bold text-midnight-50">
                 Your family&apos;s story starts this week
               </h3>
               <p className="text-sm text-midnight-300 font-body leading-relaxed mt-1 max-w-xl">
@@ -457,14 +460,14 @@ export default function FamilyOverviewPage() {
         transition={{ delay: 0.05, duration: 0.3 }}
         className="mb-10"
       >
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">
-          Family Progress
-        </h3>
+        <div className="mb-3">
+          <SectionRule>Family Progress</SectionRule>
+        </div>
         <div className="flex flex-wrap items-center gap-x-0 gap-y-4 py-5 border-y border-midnight-800">
         <div className="flex items-center gap-3 pr-8">
           <BookOpen className="w-4 h-4 text-midnight-400" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-display-3 font-bold text-midnight-50">
               {overview.total_lessons_completed}
             </p>
             <p className="text-xs text-midnight-400 font-body mt-0.5">
@@ -475,7 +478,7 @@ export default function FamilyOverviewPage() {
         <div className="flex items-center gap-3 px-8 border-l border-midnight-700/50">
           <Clock className="w-4 h-4 text-midnight-400" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-display-3 font-bold text-midnight-50">
               {overview.total_hours}
               <span className="text-midnight-500 text-base font-normal">h</span>
             </p>
@@ -487,7 +490,7 @@ export default function FamilyOverviewPage() {
         <div className="flex items-center gap-3 px-8 border-l border-midnight-700/50">
           <Flame className="w-4 h-4 text-midnight-400" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-display-3 font-bold text-midnight-50">
               {overview.average_streak}
             </p>
             <p className="text-xs text-midnight-400 font-body mt-0.5">
@@ -498,7 +501,7 @@ export default function FamilyOverviewPage() {
         <div className="flex items-center gap-3 pl-8 border-l border-midnight-700/50">
           <Users className="w-4 h-4 text-midnight-400" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-display-3 font-bold text-midnight-50">
               {overview.active_members}
             </p>
             <p className="text-xs text-midnight-400 font-body mt-0.5">
@@ -517,20 +520,20 @@ export default function FamilyOverviewPage() {
         transition={{ delay: 0.1, duration: 0.3 }}
         className="mb-10"
       >
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
-          Member Progress
-        </h3>
+        <div className="mb-3">
+          <SectionRule>Member Progress</SectionRule>
+        </div>
         {overview.members.length === 0 ? (
           <p className="text-sm text-midnight-500 font-body py-4">
             No members in your family yet.
           </p>
         ) : (
-          <div>
+          <div className="f0-ledger">
             {overview.members.map((member) => {
               return (
                 <div
                   key={member.id}
-                  className="flex items-center gap-4 py-4 border-b border-midnight-800/50 last:border-0"
+                  className="f0-ledger-row"
                 >
                   <Avatar
                     name={member.display_name}
@@ -586,10 +589,12 @@ export default function FamilyOverviewPage() {
           transition={{ delay: 0.12, duration: 0.3 }}
           className="mb-10"
         >
-          <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
-            Report Cards
-          </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="mb-1">
+            <SectionRule>Report Cards</SectionRule>
+          </div>
+          {/* Ledger, not a card grid — each child is a rule-separated entry so
+              the section reads as one document instead of a bento of boxes. */}
+          <div className="f0-ledger">
             {overview.members
               .filter((m) => m.role === "child")
               .map((m) => (
@@ -608,21 +613,23 @@ export default function FamilyOverviewPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.15, duration: 0.3 }}
-        className="border-t border-midnight-800/50 pt-6"
+        className="pt-6"
       >
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
-          This Week
-        </h3>
+        {/* The section rule is the marker now — the old standalone border-t on
+            top of it read as a double rule. */}
+        <div className="mb-3">
+          <SectionRule>This Week</SectionRule>
+        </div>
         {activities.length === 0 ? (
           <p className="text-sm text-midnight-500 font-body py-4">
             No activity this week yet.
           </p>
         ) : (
-          <div>
+          <div className="f0-ledger">
             {activities.slice(0, 10).map((activity, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 py-3 border-b border-midnight-800/50 last:border-0"
+                className="f0-ledger-row"
               >
                 <div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3 text-green-400" />

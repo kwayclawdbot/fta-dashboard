@@ -130,7 +130,7 @@ export default function SocialBar({
         title={`${s.likes} like${s.likes === 1 ? "" : "s"}`}
       >
         <Heart
-          className={`h-3.5 w-3.5 ${s.net > 0 ? "fill-red-500 text-red-500" : "text-soft"}`}
+          className={`h-3.5 w-3.5 ${s.net > 0 ? "fill-lime-500 text-lime-600 dark:text-lime-400" : "text-soft"}`}
         />
         {s.net > 0 ? s.net : "—"}
       </span>
@@ -148,12 +148,12 @@ export default function SocialBar({
           aria-pressed={s.myVote === 1}
           className={`inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold transition-colors ${
             s.myVote === 1
-              ? "bg-red-500/12 text-red-600"
+              ? "bg-lime-500/12 text-lime-700 dark:text-lime-400"
               : "text-soft hover:bg-paper disabled:hover:bg-transparent"
           } disabled:opacity-60`}
           title={labels.like}
         >
-          <Heart className={`h-3.5 w-3.5 ${s.myVote === 1 ? "fill-red-500" : ""}`} />
+          <Heart className={`h-3.5 w-3.5 ${s.myVote === 1 ? "fill-lime-500" : ""}`} />
           {s.likes}
         </button>
         {onCommentClick ? (
@@ -194,11 +194,11 @@ export default function SocialBar({
           aria-pressed={s.myVote === 1}
           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
             s.myVote === 1
-              ? "border-red-500/40 bg-red-500/12 text-red-600"
+              ? "border-lime-500/40 bg-lime-500/12 text-lime-700 dark:text-lime-400"
               : "border-sand text-soft hover:bg-paper"
           } disabled:opacity-60`}
         >
-          <ThumbsUp className={`h-4 w-4 ${s.myVote === 1 ? "fill-red-500/20" : ""}`} />
+          <ThumbsUp className={`h-4 w-4 ${s.myVote === 1 ? "fill-lime-500/25" : ""}`} />
           {labels.like}
           <span className="tabular-nums">{s.likes}</span>
           {labels.likeSub && s.myVote === 1 && (
@@ -259,7 +259,7 @@ export default function SocialBar({
 
       {consensus && (
         <p className="inline-flex items-center gap-1.5 text-xs text-soft">
-          <Heart className="h-3.5 w-3.5 fill-red-500/70 text-red-500" />
+          <Heart className="h-3.5 w-3.5 fill-lime-500/70 text-lime-600 dark:text-lime-400" />
           {consensus}
         </p>
       )}

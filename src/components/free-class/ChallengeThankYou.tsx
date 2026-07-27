@@ -299,7 +299,7 @@ export default function ChallengeThankYou({
 
           {/* Link + copy */}
           <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center">
-            <div className="flex-1 min-w-0 rounded-xl border border-sand bg-white px-4 py-3">
+            <div className="flex-1 min-w-0 rounded-xl border border-sand bg-card px-4 py-3">
               <p className="truncate font-mono text-sm text-ink" title={link}>
                 {link || "Preparing your link…"}
               </p>
@@ -327,7 +327,7 @@ export default function ChallengeThankYou({
               {canNativeShare && (
                 <button
                   onClick={nativeShare}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-white text-sm font-semibold hover:bg-gold-600 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-night-950 text-sm font-semibold hover:bg-gold-600 transition-colors"
                 >
                   <Share2 className="w-4 h-4" /> Share
                 </button>
@@ -418,13 +418,13 @@ export default function ChallengeThankYou({
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <button
                   onClick={() => downloadChallengeIcs(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-card transition-colors"
                 >
                   <CalendarPlus className="w-3.5 h-3.5" /> Add all 5 sessions
                 </button>
                 <button
                   onClick={() => downloadChallengeIcs(false)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-card transition-colors"
                 >
                   <CalendarPlus className="w-3.5 h-3.5" /> Just Day 1
                 </button>
@@ -601,7 +601,7 @@ function ActivationLink({
   return (
     <a
       href={href}
-      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-white/50 transition-colors"
+      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
     >
       <Icon className="w-4 h-4 text-gold-600" />
       {children}

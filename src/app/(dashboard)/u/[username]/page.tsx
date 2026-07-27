@@ -1,7 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Users2, Sparkles, ArrowLeft, Settings, Star, Heart, TrendingUp, TrendingDown, MessageSquareText } from "lucide-react";
+import {
+  Users2,
+  ArrowLeft,
+  Settings,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicProfile, mergeBadgeRows } from "@/lib/public-profile";
 import { levelProgress } from "@/lib/xp";
@@ -12,6 +18,7 @@ import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import BadgeCaseView from "@/components/BadgeCaseView";
+import { DisplayHead, SectionRule, TextAction } from "@/components/f0/parts";
 
 /**
  * /u/[username] — the public member profile. Authenticated-only (the whole app
@@ -19,6 +26,12 @@ import BadgeCaseView from "@/components/BadgeCaseView";
  * to /login before this renders). Reads exclusively through the kid-minimized
  * public_profile RPC, so a minor's page can never leak a family name, role, or
  * join date beyond the month.
+ *
+ * REBUILD NOTE (canvas): the consent/minimization gates are untouched — the
+ * family line and the parent/member distinction still render only when
+ * `!profile.is_minor`, and nothing new is read or shown. The page was recomposed
+ * so IDENTITY leads (avatar, name, standing) and everything below it reads as
+ * one contribution ledger instead of four stacked cards.
  */
 
 export default async function PublicProfilePage({
@@ -37,20 +50,18 @@ export default async function PublicProfilePage({
   // Friendly not-found (never a hard 404 wall).
   if (!profile) {
     return (
-      <div className="max-w-md mx-auto py-16 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-sand flex items-center justify-center mx-auto mb-4">
-          <Users2 className="w-7 h-7 text-midnight-400" />
-        </div>
-        <h1 className="font-display text-xl font-bold text-ink mb-1">Member not found</h1>
-        <p className="text-sm text-soft font-body mb-6">
-          We couldn&apos;t find a member with the handle{" "}
-          <span className="font-semibold text-ink">@{username}</span>. They may have changed it.
-        </p>
+      <div className="mx-auto max-w-md py-16">
+        <DisplayHead
+          eyebrow="No such handle"
+          title="Member not found"
+          lede={`We couldn't find a member with the handle @${username}. They may have changed it.`}
+          aside={<Users2 className="h-6 w-6 text-soft" />}
+        />
         <Link
           href="/community"
-          className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm"
+          className="cta-button mt-6 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to the community
+          <ArrowLeft className="h-4 w-4" /> Back to the community
         </Link>
       </div>
     );
@@ -72,118 +83,116 @@ export default async function PublicProfilePage({
   const nextBelt = lp.next ? beltForXp(lp.next.min) : null;
 
   return (
-    <div className="max-w-2xl mx-auto pb-12">
-      {/* Hero credential card */}
-      <div className="paper-card p-6 sm:p-8">
-        <div className="flex flex-col items-center text-center">
-          <Avatar
-            name={profile.display_name}
-            avatarUrl={profile.avatar_url}
-            role={profile.is_minor ? "child" : "parent"}
-            tier={profile.tier}
-            xp={profile.xp}
-            size="hero"
-          />
+    <div className="mx-auto max-w-2xl pb-14">
+      {/* ── IDENTITY ──────────────────────────────────────────────────────── */}
+      <header className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+        <Avatar
+          name={profile.display_name}
+          avatarUrl={profile.avatar_url}
+          role={profile.is_minor ? "child" : "parent"}
+          tier={profile.tier}
+          xp={profile.xp}
+          size="hero"
+        />
 
-          <h1 className="mt-4 font-display text-2xl font-bold text-ink leading-tight">
+        <div className="min-w-0">
+          <p className="font-mono text-[13px] text-soft">@{profile.username}</p>
+          <h1 className="mt-1 font-display text-display-1 font-extrabold leading-none text-ink">
             {profile.display_name || "Member"}
           </h1>
-          <p className="text-sm text-soft font-body">@{profile.username}</p>
 
           {/* Identity chips */}
-          <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <AgeBadge ageGroup={profile.age_group} showLabel />
             <TierBadge tier={profile.tier} size="md" />
             <BeltBadge rank={belt} size="md" />
             {/* Adults only: parent / member distinction */}
             {!profile.is_minor && profile.role_kind && (
-              <span className="text-[11px] font-display font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-chip-sky text-sky-800">
+              <span className="rounded-md bg-chip-sky px-2 py-0.5 text-eyebrow font-display font-bold uppercase text-sky-800">
                 {profile.role_kind === "parent" ? "Parent" : "Member"}
               </span>
             )}
           </div>
-
-          {/* Adults only: family line */}
-          {!profile.is_minor && profile.family_name && (
-            <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-midnight-200 font-body">
-              <Users2 className="w-4 h-4 text-gold-600" />
-              <span className="font-semibold text-ink">{profile.family_name}</span>
-            </p>
-          )}
-
-          <p className="mt-2 text-xs text-soft font-body">Member since {profile.member_since}</p>
-
-          {isOwn && (
-            <Link
-              href="/settings"
-              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-gold-700 hover:text-gold-600"
-            >
-              <Settings className="w-3.5 h-3.5" /> Edit in Settings
-            </Link>
-          )}
         </div>
+      </header>
 
-        {/* Belt + XP progress */}
-        <div className="mt-6 pt-6 border-t border-sand">
-          <div className="flex items-center justify-between mb-2">
-            <span className="inline-flex items-center gap-1.5 font-display text-sm font-bold text-ink">
-              <Star className="w-4 h-4 text-gold-600" />
-              {belt.label}
-              <span className="font-body font-normal text-soft">
-                · Level {lp.current.level} · {lp.current.name}
-              </span>
-            </span>
-            <span className="text-xs text-soft font-body">
+      {/* Standing line — family (adults only), join month, own-profile edit. */}
+      <div className="f0-rule-top mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 pt-4 text-[13px] text-soft">
+        {!profile.is_minor && profile.family_name && (
+          <span className="inline-flex items-center gap-1.5">
+            <Users2 className="h-4 w-4 text-gold-600" />
+            <span className="font-semibold text-ink">{profile.family_name}</span>
+          </span>
+        )}
+        <span>Member since {profile.member_since}</span>
+        {isOwn && (
+          <TextAction href="/settings">
+            <Settings className="h-3.5 w-3.5" /> Edit in Settings
+          </TextAction>
+        )}
+      </div>
+
+      {/* ── STANDING: belt + XP ───────────────────────────────────────────── */}
+      <section className="mt-9">
+        <SectionRule
+          action={
+            <span className="font-mono text-[13px] font-bold tabular-nums text-soft">
               {profile.xp.toLocaleString()} XP
             </span>
-          </div>
-          <div className="h-2.5 rounded-full bg-sand overflow-hidden">
+          }
+        >
+          Standing
+        </SectionRule>
+        <div className="mt-4">
+          <p className="font-display text-display-3 font-extrabold text-ink">
+            {belt.label}
+            <span className="ml-2 font-body text-sm font-normal text-soft">
+              Level {lp.current.level} · {lp.current.name}
+            </span>
+          </p>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-sand">
             <div
               className="h-full rounded-full"
               style={{ width: `${lp.pct}%`, backgroundColor: belt.belt.hex }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] text-soft font-body">
+          <p className="mt-2 text-[12px] text-soft">
             {lp.next && nextBelt
               ? `${lp.toNext.toLocaleString()} XP to ${nextBelt.label}`
               : "Black Belt earned — top of the ladder"}
           </p>
         </div>
-      </div>
+      </section>
 
-      {/* Community footprint — likes, picks, contributions (public for all,
-          incl. kids: these are already-public community actions). */}
+      {/* ── CONTRIBUTION LEDGER ───────────────────────────────────────────── */}
+      {/* Likes, picks and notes are already-public community actions — nothing
+          here is newly exposed, including for minors. */}
       {profile.liked_tickers.length > 0 && (
-        <div className="paper-card p-6 mt-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            <h2 className="font-display text-base font-bold text-ink">Favorite stocks</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
+        <section className="mt-11">
+          <SectionRule>Favorite stocks</SectionRule>
+          <div className="mt-4 flex flex-wrap gap-2">
             {profile.liked_tickers.map((t) => (
               <Link
                 key={t.ticker}
                 href={`/research/${encodeURIComponent(t.ticker)}`}
-                className="inline-flex items-center gap-2 rounded-full border border-sand bg-paper px-3 py-1.5 text-sm hover:border-gold-300"
+                className="inline-flex items-center gap-2 rounded-full border border-sand px-3 py-1.5 text-sm transition-colors hover:border-gold-500"
               >
                 <CompanyLogo symbol={t.ticker} name={t.company_name ?? t.ticker} size={20} />
                 <span className="font-semibold text-ink">{t.ticker}</span>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {profile.community_picks.length > 0 && (
-        <div className="paper-card p-6 mt-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Star className="w-4 h-4 text-gold-600" />
-            <h2 className="font-display text-base font-bold text-ink">Community picks</h2>
-          </div>
-          <p className="text-xs text-soft mb-3">
-            Companies {profile.display_name || "this member"} championed to the club&apos;s shared board — and how they&apos;ve done since.
+        <section className="mt-11">
+          <SectionRule>Community picks</SectionRule>
+          <p className="mt-3 max-w-[62ch] text-[13px] leading-relaxed text-soft">
+            Companies {profile.display_name || "this member"} championed to the
+            club&apos;s shared board — and how they&apos;ve done since.
           </p>
-          <div className="space-y-2">
+          <div className="f0-ledger mt-2">
             {profile.community_picks.map((p) => {
               const up = p.pct_since != null && p.pct_since > 0;
               const down = p.pct_since != null && p.pct_since < 0;
@@ -191,58 +200,60 @@ export default async function PublicProfilePage({
                 <Link
                   key={p.ticker}
                   href={`/research/${encodeURIComponent(p.ticker)}`}
-                  className="flex items-center gap-3 rounded-xl border border-sand bg-paper p-3 transition-colors hover:border-gold-300"
+                  className="f0-ledger-row"
                 >
                   <CompanyLogo symbol={p.ticker} name={p.company_name ?? p.ticker} size={32} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-ink">{p.company_name ?? p.ticker}</p>
-                    <p className="text-[11px] text-soft">{p.ticker}</p>
+                    <p className="truncate font-display text-[15px] font-bold text-ink">
+                      {p.company_name ?? p.ticker}
+                    </p>
+                    <p className="font-mono text-[11px] text-soft">{p.ticker}</p>
                   </div>
                   {p.pct_since != null ? (
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
-                        up ? "bg-green-500/10 text-green-600" : down ? "bg-red-500/10 text-red-600" : "bg-sand text-soft"
+                      className={`inline-flex shrink-0 items-center gap-1 font-mono text-[13px] font-bold tabular-nums ${
+                        up ? "text-price-up" : down ? "text-price-down" : "text-soft"
                       }`}
                       title="Change since it was added to the board"
                     >
-                      {up ? <TrendingUp className="h-3 w-3" /> : down ? <TrendingDown className="h-3 w-3" /> : null}
+                      {up ? (
+                        <TrendingUp className="h-3.5 w-3.5" />
+                      ) : down ? (
+                        <TrendingDown className="h-3.5 w-3.5" />
+                      ) : null}
                       {up ? "+" : ""}
                       {p.pct_since.toFixed(1)}%
                     </span>
                   ) : (
-                    <span className="text-[11px] text-soft">since added</span>
+                    <span className="shrink-0 text-[11px] text-soft">since added</span>
                   )}
                 </Link>
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
       {profile.contributions > 0 && (
-        <div className="paper-card p-4 mt-4 flex items-center gap-3">
-          <span className="w-9 h-9 rounded-xl bg-chip-amber flex items-center justify-center shrink-0">
-            <MessageSquareText className="w-4 h-4 text-gold-700" />
-          </span>
-          <p className="text-sm text-ink">
-            <span className="font-display font-bold">{profile.contributions}</span>{" "}
-            research {profile.contributions === 1 ? "note" : "notes"} shared with the club
-          </p>
-        </div>
+        <p className="f0-rule-top mt-8 pt-4 text-sm text-soft">
+          <span className="font-display font-extrabold text-ink">
+            {profile.contributions}
+          </span>{" "}
+          research {profile.contributions === 1 ? "note" : "notes"} shared with the club
+        </p>
       )}
 
-      {/* Badge case — the centerpiece */}
-      <div className="paper-card p-6 mt-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-4 h-4 text-gold-600" />
-          <h2 className="font-display text-base font-bold text-ink">Credentials</h2>
+      {/* ── CREDENTIALS — the centerpiece ─────────────────────────────────── */}
+      <section className="mt-11">
+        <SectionRule>Credentials</SectionRule>
+        <div className="mt-4">
+          <BadgeCaseView
+            rows={badgeRows}
+            title=""
+            emptyLine="Badges are earned, not given — this shelf fills as they learn."
+          />
         </div>
-        <BadgeCaseView
-          rows={badgeRows}
-          title=""
-          emptyLine="Badges are earned, not given — this shelf fills as they learn."
-        />
-      </div>
+      </section>
     </div>
   );
 }

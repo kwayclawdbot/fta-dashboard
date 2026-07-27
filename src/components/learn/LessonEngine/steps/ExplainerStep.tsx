@@ -14,15 +14,17 @@ export default function ExplainerStep({
   return (
     <div>
       {spec.heading && <StepPrompt>{spec.heading}</StepPrompt>}
-      <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-start">
-        <div className="space-y-3">
+      {/* Long-form reading: a real measure (~65ch), 17px, generous leading.
+          The figure is a typographic pull-quote on a rule — not a tinted box. */}
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+        <div className="min-w-0 flex-1 space-y-4">
           {spec.body.map((p, i) => (
             <m.p
               key={i}
               initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.28, delay: i * 0.06, ease: EASE_OUT }}
-              className="font-body text-[15px] leading-relaxed text-ink/85"
+              className="max-w-[65ch] text-[17px] leading-[1.65] text-ink"
             >
               {p}
             </m.p>
@@ -30,22 +32,22 @@ export default function ExplainerStep({
         </div>
         {spec.figure && (
           <m.figure
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1, ease: EASE_OUT }}
-            className="rounded-2xl bg-gradient-to-br from-gold-400/15 to-chip-sky/40 px-5 py-6 text-center sm:w-52"
+            className="shrink-0 border-l-2 border-gold-500 py-1 pl-4 sm:w-48"
           >
             {spec.figure.kind === "stat" ? (
-              <div className="font-display text-4xl font-black tracking-tight text-gold-700">
+              <div className="font-display text-display-2 font-extrabold tabular-nums text-ink">
                 {spec.figure.value}
               </div>
             ) : (
-              <div className="font-display text-lg font-semibold leading-snug text-ink">
+              <div className="font-display text-[19px] font-bold leading-snug text-ink">
                 “{spec.figure.value}”
               </div>
             )}
             {spec.figure.caption && (
-              <figcaption className="mt-2 font-body text-xs text-soft">
+              <figcaption className="mt-2 text-eyebrow font-display font-bold uppercase text-soft">
                 {spec.figure.caption}
               </figcaption>
             )}

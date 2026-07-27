@@ -77,7 +77,39 @@ export async function resolveHomeRoute(
 
     const firstName = prof.display_name?.split(" ")[0] || "";
     const familyId = prof.family_id;
-    const tier = await getFamilyTier(supabase, familyId);
+
+    // The solo gate needs NO query — role and family_id are already in `prof`.
+    // Resolving it here lets us skip the two solo-only reads for families/kids
+    // instead of fetching and discarding them.
+    const isParentRole = prof.role === "parent" || prof.role === "admin";
+    const needSolo = isParentRole && !!familyId;
+
+    // PERF: these three used to be three SEQUENTIAL awaits (tier → family_profiles
+    // → enrollments) on the critical path, so /dashboard cost FIVE serial Supabase
+    // round trips before a single byte of HTML streamed. They all depend only on
+    // familyId, which is known above — so they collapse into ONE round trip.
+    // Ordering of the GATES below is unchanged; only the fetching is parallel.
+    const [tier, fpRes, passRes] = await Promise.all([
+      getFamilyTier(supabase, familyId),
+      needSolo
+        ? supabase
+            .from("family_profiles")
+            .select("household, completed_at")
+            .eq("family_id", familyId)
+            .maybeSingle()
+        : Promise.resolve(null),
+      needSolo
+        ? supabase
+            .from("enrollments")
+            .select("expires_at")
+            .eq("family_id", familyId)
+            .eq("program", "challenge_pass")
+            .eq("status", "active")
+            .not("expires_at", "is", null)
+            .gt("expires_at", new Date().toISOString())
+            .maybeSingle()
+        : Promise.resolve(null),
+    ]);
 
     // FREE → the dedicated free home. Resolved server-side so it paints without
     // a client round trip (identical destination to the client short-circuit).
@@ -86,15 +118,8 @@ export async function resolveHomeRoute(
     // CLUB-SOLO fast-path — mirrors the client's isSolo gate exactly: a parent/
     // admin with a family_id and a COMPLETED solo household profile. Anything
     // else (families, kids, teens) falls through to the untouched client.
-    const isParentRole = prof.role === "parent" || prof.role === "admin";
-    if (!isParentRole || !familyId) return { kind: "client" };
-
-    const { data: fpRow } = await supabase
-      .from("family_profiles")
-      .select("household, completed_at")
-      .eq("family_id", familyId)
-      .maybeSingle();
-    if (!isSoloProfile(fpRow)) return { kind: "client" };
+    if (!needSolo) return { kind: "client" };
+    if (!isSoloProfile(fpRes?.data ?? null)) return { kind: "client" };
 
     // Solo Club member → server-render ClubHomeV2 with resolved props.
     const hs = state as HomeStateRow | null;
@@ -107,22 +132,10 @@ export async function resolveHomeRoute(
           }
         : null;
 
-    // Active 5-Day Challenge pass window (best-effort; null = common case).
-    let challengeExpiresAt: string | null = null;
-    try {
-      const { data: pass } = await supabase
-        .from("enrollments")
-        .select("expires_at")
-        .eq("family_id", familyId)
-        .eq("program", "challenge_pass")
-        .eq("status", "active")
-        .not("expires_at", "is", null)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-      challengeExpiresAt = (pass?.expires_at as string | null) ?? null;
-    } catch {
-      /* no active pass */
-    }
+    // Active 5-Day Challenge pass window — already fetched in the parallel batch
+    // above (best-effort; null is the common case and a failed read is non-fatal).
+    const challengeExpiresAt =
+      (passRes?.data?.expires_at as string | null | undefined) ?? null;
 
     return {
       kind: "club",

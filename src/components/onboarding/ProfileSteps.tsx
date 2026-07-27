@@ -250,7 +250,7 @@ export function ExperienceStep({
                   on ? "border-gold-500 bg-gold-500" : "border-midnight-500"
                 }`}
               >
-                {on && <Check className="w-3 h-3 text-midnight-950" />}
+                {on && <Check className="w-3 h-3 text-night-950" />}
               </span>
               <span className="min-w-0">
                 <span
@@ -305,7 +305,7 @@ export function MarketInterestStep({
                   on ? "border-gold-500 bg-gold-500" : "border-midnight-500"
                 }`}
               >
-                {on && <Check className="w-3 h-3 text-midnight-950" />}
+                {on && <Check className="w-3 h-3 text-night-950" />}
               </span>
               <span className="min-w-0">
                 <span
@@ -364,7 +364,7 @@ export function GoalsStep({
                   on ? "border-gold-500 bg-gold-500" : "border-midnight-500"
                 }`}
               >
-                {on && <Check className="w-3 h-3 text-midnight-950" />}
+                {on && <Check className="w-3 h-3 text-night-950" />}
               </span>
               <span className="min-w-0">
                 <span

@@ -65,7 +65,7 @@ export default function ResearchLadder({
               ? "bg-green-500 text-white ring-green-500"
               : "bg-red-500 text-white ring-red-500"
             : reached
-              ? "bg-gold-400 text-white ring-gold-400"
+              ? "bg-gold-400 text-night-950 ring-gold-400"
               : rung.key === "verdict" && researchDone
                 ? "bg-chip-amber text-gold-700 ring-gold-300"
                 : "bg-paper text-midnight-500 ring-sand";

@@ -90,7 +90,7 @@ export default function ConfirmationView({
                 <div className="flex flex-wrap items-center gap-2 mt-4">
                   <button
                     onClick={() => downloadClassIcs(session)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-card transition-colors"
                   >
                     <CalendarPlus className="w-3.5 h-3.5" /> Add to calendar
                   </button>
@@ -99,7 +99,7 @@ export default function ConfirmationView({
                       href={session.zoom_join_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-card transition-colors"
                     >
                       <Video className="w-3.5 h-3.5" /> Join link
                     </a>
@@ -165,7 +165,7 @@ export default function ConfirmationView({
           </a>
           <button
             onClick={onExplore}
-            className="mt-3 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-white/50 transition-colors"
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
           >
             Explore the app free
           </button>

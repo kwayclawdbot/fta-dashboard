@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getCurrentFicWeek, type FicWeek } from "@/lib/fic";
 import { researchComplete, type WatchlistItem } from "@/lib/watchlist";
 import Avatar from "@/components/Avatar";
+import { SectionRule, familyRegister } from "@/components/family/register";
 
 /** Evergreen parent guidance — always available regardless of the week. */
 const EVERGREEN = [
@@ -235,18 +236,22 @@ export default function ParentCornerPage() {
       : [];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    /* familyRegister re-points the F0 primitives' hardcoded volt stops at the
+       mode accent for this subtree — the composition is the Club's, the colour
+       stays warm gold. See src/components/family/register.tsx. */
+    <div className="max-w-3xl mx-auto space-y-10 pb-12" style={familyRegister}>
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-eyebrow font-bold uppercase">
             <BookHeart className="w-3.5 h-3.5" />
             Parent Corner
           </span>
         </div>
-        <h1 className="font-display text-2xl font-bold text-ink">
+        {/* The ONE display-1 voice on this screen. */}
+        <h1 className="font-display text-display-2 sm:text-display-1 font-bold text-ink max-w-[16ch]">
           Coaching for the grown-ups
         </h1>
-        <p className="text-soft mt-1 max-w-2xl leading-relaxed">
+        <p className="text-soft mt-3 max-w-2xl leading-relaxed">
           You don&apos;t need to be a market expert to lead this at home. Each
           week we hand you the conversation — what your kids learned, how to talk
           about it, and what to avoid.
@@ -258,10 +263,8 @@ export default function ParentCornerPage() {
           OWN kids are before the coaching text. */}
       {children.length > 0 && (
         <div>
-          <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-            <h2 className="font-display text-lg font-semibold text-ink">
-              Your family this week
-            </h2>
+          <div className="flex items-center gap-4 mb-1">
+            <SectionRule>Your family this week</SectionRule>
             <Link
               href="/family/overview"
               className="text-sm font-medium text-gold-700 hover:text-gold-800 shrink-0"
@@ -269,14 +272,16 @@ export default function ParentCornerPage() {
               Full overview →
             </Link>
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
+          {/* A ledger of children, not a bento of identical cards — each child
+              is a ruled entry so the strip reads as one roster. */}
+          <div className="f0-ledger">
             {children.map((c, i) => (
               <m.div
                 key={c.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="paper-card p-4 flex items-center gap-3"
+                className="f0-ledger-row"
               >
                 <Avatar
                   name={c.display_name}
@@ -337,24 +342,29 @@ export default function ParentCornerPage() {
 
       {/* This week's parent content */}
       {week ? (
-        <div className="paper-card p-6 lg:p-7">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h2 className="font-display text-lg font-semibold text-ink">
-              This week: {week.class_title}
-            </h2>
-            {week.company_name && (
-              <span className="text-xs text-soft">
-                · {week.company_name}
-                {week.company_ticker ? ` (${week.company_ticker})` : ""}
-              </span>
-            )}
+        /* The week's coaching is a DOCUMENT, not a panel: a section rule opens
+           it, the class title carries the weight, and each note is a ruled
+           passage. The old paper-card wrapped six more sub-blocks — a box of
+           boxes, which is what flattened this page. */
+        <div>
+          <div className="mb-4">
+            <SectionRule>This week</SectionRule>
           </div>
+          <h2 className="font-display text-display-3 font-bold text-ink">
+            {week.class_title}
+          </h2>
+          {week.company_name && (
+            <p className="text-sm text-soft mt-1">
+              {week.company_name}
+              {week.company_ticker ? ` (${week.company_ticker})` : ""}
+            </p>
+          )}
           {parentSections.length === 0 ? (
-            <p className="text-sm text-soft mt-2">
+            <p className="text-sm text-soft mt-4">
               This week&apos;s parent notes are being prepared.
             </p>
           ) : (
-            <div className="space-y-5 mt-4">
+            <div className="f0-ledger mt-5">
               {parentSections.map((s, i) => {
                 const Icon = s.icon;
                 return (
@@ -363,16 +373,16 @@ export default function ParentCornerPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    className="flex gap-3"
+                    className="flex gap-3.5 py-5 items-start"
                   >
                     <div className="w-8 h-8 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
                       <Icon className="w-[18px] h-[18px] text-gold-700" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wider text-soft mb-0.5">
+                      <p className="text-eyebrow font-display font-bold uppercase text-soft mb-1.5">
                         {s.title}
                       </p>
-                      <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
+                      <p className="text-[15px] text-ink leading-relaxed whitespace-pre-line">
                         {s.body}
                       </p>
                     </div>
@@ -382,18 +392,22 @@ export default function ParentCornerPage() {
             </div>
           )}
           {week.parent_prompt && (
-            <div className="mt-5 p-4 rounded-xl bg-chip-amber/60 border border-gold-200/60">
-              <p className="text-xs font-bold uppercase tracking-wider text-gold-800 mb-1">
+            /* Carried by a gold edge rule instead of a tinted box. */
+            <div className="mt-6 border-l-2 border-gold-400 pl-4">
+              <p className="text-eyebrow font-display font-bold uppercase text-gold-800 mb-1.5">
                 This week&apos;s prompt
               </p>
-              <p className="text-sm text-ink leading-relaxed">
+              <p className="text-[15px] text-ink leading-relaxed">
                 {week.parent_prompt}
               </p>
             </div>
           )}
         </div>
       ) : (
-        <div className="paper-card p-6">
+        <div>
+          <div className="mb-4">
+            <SectionRule>This week</SectionRule>
+          </div>
           <p className="text-sm text-soft">
             This week&apos;s content is being prepared. The evergreen guidance
             below always applies.
@@ -403,41 +417,48 @@ export default function ParentCornerPage() {
 
       {/* Evergreen guidance */}
       <div>
-        <h2 className="font-display text-lg font-semibold text-ink mb-3">
-          Always-on guidance
-        </h2>
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="mb-1">
+          <SectionRule>Always-on guidance</SectionRule>
+        </div>
+        {/* Ledger, not a 2-up card grid: the guidance is a list of principles
+            that reads top-to-bottom, and the last entry is the one with an
+            action so it earns its place at the end. */}
+        <div className="f0-ledger">
           {EVERGREEN.map((s) => {
             const Icon = s.icon;
             return (
-              <div key={s.title} className="paper-card p-5">
-                <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center mb-3">
+              <div key={s.title} className="flex gap-3.5 py-5 items-start">
+                <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-gold-700" />
                 </div>
-                <h3 className="font-display font-semibold text-ink mb-1">
-                  {s.title}
-                </h3>
-                <p className="text-sm text-soft leading-relaxed">{s.body}</p>
+                <div className="min-w-0">
+                  <h3 className="font-display font-semibold text-ink mb-1">
+                    {s.title}
+                  </h3>
+                  <p className="text-sm text-soft leading-relaxed">{s.body}</p>
+                </div>
               </div>
             );
           })}
-          <div className="paper-card p-5 flex flex-col justify-center">
-            <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center mb-3">
+          <div className="flex gap-3.5 py-5 items-start">
+            <div className="w-9 h-9 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
               <MessageCircle className="w-5 h-5 text-gold-700" />
             </div>
-            <h3 className="font-display font-semibold text-ink mb-1">
-              Talk it out with other parents
-            </h3>
-            <p className="text-sm text-soft leading-relaxed mb-2">
-              Other families are learning alongside you. Swap questions and wins
-              in the community.
-            </p>
-            <Link
-              href="/community"
-              className="text-sm font-medium text-gold-700 hover:text-gold-800"
-            >
-              Open community →
-            </Link>
+            <div className="min-w-0">
+              <h3 className="font-display font-semibold text-ink mb-1">
+                Talk it out with other parents
+              </h3>
+              <p className="text-sm text-soft leading-relaxed mb-2">
+                Other families are learning alongside you. Swap questions and
+                wins in the community.
+              </p>
+              <Link
+                href="/community"
+                className="text-sm font-medium text-gold-700 hover:text-gold-800"
+              >
+                Open community →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

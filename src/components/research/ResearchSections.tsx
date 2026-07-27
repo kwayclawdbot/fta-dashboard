@@ -1,9 +1,21 @@
 "use client";
 
 /**
- * Research page section blocks (Lane 9): key-stats grid, company profile card,
- * news link cards, and the fundamentals visuals (Quarterly|Yearly toggle + the
- * four concrete charts). Theme-aware, 390px-friendly, honest empty states.
+ * Research panel blocks — key stats, company profile, news list, and the
+ * financial visuals.
+ *
+ * REDESIGN (owner note: "the overview, technicals, fundamentals, news pages
+ * should be redesigned"). Every block here previously reached for a box: the
+ * key stats were an equal-column grid of cells, the financials were four
+ * bordered panels in a 2-up grid, headlines and dividends were chips. All of it
+ * is now RULED — hairline rows and hairline-separated columns — which is how
+ * this system expresses density. Fundamentals SHOULD be dense; density done
+ * well is a ledger, not a wall of cards.
+ *
+ * Laws held: mono for every number, "—" for anything the feed didn't supply,
+ * green/red reserved for price via text-price-up / text-price-down, orange
+ * reserved for brand + action (and taken from the themed gold ramp, never the
+ * frozen volt ramp).
  */
 
 import { useState } from "react";
@@ -38,15 +50,29 @@ export function KeyStatsGrid({ k }: { k: ResearchPayload["keyStats"] }) {
     { label: "Market cap", value: k.marketCapText ?? "—" },
     { label: "Dividend yield", value: k.divYield == null ? "—" : `${k.divYield.toFixed(2)}%` },
   ];
-  // A designed data table, not chip salad: label above value (mono numerics),
-  // cells divided by hairlines. Two columns on mobile, four on desktop.
+  // A ruled definition ledger: label + plain-English hint on the left, the mono
+  // figure on the right. Two ruled columns on sm+ — the rules are the grid, so
+  // no cell is ever a box.
   return (
-    <dl className="grid grid-cols-2 sm:grid-cols-4">
+    <dl className="grid grid-cols-1 border-b border-sand sm:grid-cols-2 sm:gap-x-10">
       {stats.map((s) => (
-        <div key={s.label} className="border-b border-sand py-3 pr-5">
-          <dt className="text-[10px] font-semibold uppercase tracking-wider text-soft">{s.label}</dt>
-          <dd className="mt-1 font-mono text-lg font-bold tabular-nums text-ink">{s.value}</dd>
-          {s.hint && <dd className="mt-0.5 text-[10px] text-soft/80">{s.hint}</dd>}
+        <div
+          key={s.label}
+          className="flex items-baseline justify-between gap-4 border-t border-sand py-3"
+        >
+          <dt className="min-w-0">
+            <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
+              {s.label}
+            </span>
+            {s.hint && <span className="mt-0.5 block text-[10.5px] text-soft/80">{s.hint}</span>}
+          </dt>
+          <dd
+            className={`shrink-0 font-mono text-[15px] font-semibold tabular-nums ${
+              s.value === "—" ? "text-soft/60" : "text-ink"
+            }`}
+          >
+            {s.value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -75,17 +101,24 @@ export function CompanyProfileCard({
   ].filter((r) => r.value);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {desc && (
         <div>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-midnight-200">{trimmed}</p>
+          <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-midnight-200">
+            {trimmed}
+          </p>
           {desc.length > 320 && (
-            <button onClick={() => setExpanded((v) => !v)} className="mt-1 text-xs font-semibold text-gold-700 hover:underline">
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold-700 transition-colors hover:text-ink"
+            >
               {expanded ? "Show less" : "Read more"}
             </button>
           )}
           {kidsMode && (
-            <p className="mt-3 rounded-lg bg-chip-green/40 px-3 py-2 text-xs leading-relaxed text-green-800">
+            /* Was a green-tinted block; green belongs to price, so the kid note
+               is now a ruled aside carrying the same copy verbatim. */
+            <p className="mt-4 border-l-[3px] border-sand py-1 pl-3.5 text-[12.5px] leading-relaxed text-soft">
               In simple terms: this is a real company that sells products or services to earn money. When
               you research it, you&apos;re learning how a business works — not being told to buy anything.
             </p>
@@ -93,14 +126,19 @@ export function CompanyProfileCard({
         </div>
       )}
       {rows.length > 0 && (
-        <dl className="border-y border-sand">
+        <dl className="border-b border-sand">
           {rows.map((r) => (
-            <div key={r.label} className="flex items-baseline justify-between gap-4 border-t border-sand py-2.5 first:border-t-0">
-              <dt className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-wider text-soft">
+            <div
+              key={r.label}
+              className="flex items-baseline justify-between gap-4 border-t border-sand py-2.5"
+            >
+              <dt className="flex shrink-0 items-center gap-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
                 <r.icon className="h-3.5 w-3.5 shrink-0" />
                 {r.label}
               </dt>
-              <dd className="min-w-0 flex-1 truncate text-right text-sm font-semibold text-ink">{r.value}</dd>
+              <dd className="min-w-0 flex-1 truncate text-right text-[13px] font-semibold text-ink">
+                {r.value}
+              </dd>
             </div>
           ))}
         </dl>
@@ -110,7 +148,7 @@ export function CompanyProfileCard({
           href={company.homepage}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-700 hover:underline"
+          className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold-700 hover:underline"
         >
           <ExternalLink className="h-3.5 w-3.5" /> Company website
         </a>
@@ -132,34 +170,34 @@ function timeAgo(iso: string | null): string {
 
 export function NewsList({ news }: { news: NewsHeadline[] }) {
   if (news.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-sand px-3 py-6 text-center text-sm text-soft">
-        No recent headlines found for this company.
-      </p>
-    );
+    return <p className="f0-rule-top pt-4 text-[13px] text-soft">No recent headlines found for this company.</p>;
   }
   return (
     <div>
-      <div className="border-y border-sand">
+      <div className="f0-ledger">
         {news.map((n, i) => (
           <a
             key={i}
             href={n.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group block border-t border-sand py-3 first:border-t-0"
+            className="f0-ledger-row group"
           >
-            <p className="text-sm font-semibold leading-snug text-ink group-hover:text-gold-700">{n.title}</p>
-            <p className="mt-1 flex items-center gap-1.5 text-[11px] text-soft">
-              {n.publisher && <span>{n.publisher}</span>}
-              {n.publisher && n.published && <span>·</span>}
-              <span>{timeAgo(n.published)}</span>
-              <ExternalLink className="h-3 w-3" />
-            </p>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold leading-snug text-ink group-hover:text-gold-700">
+                {n.title}
+              </span>
+              <span className="mt-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
+                {n.publisher && <span className="truncate">{n.publisher}</span>}
+                {n.publisher && n.published && <span aria-hidden>·</span>}
+                <span>{timeAgo(n.published)}</span>
+                <ExternalLink className="h-3 w-3 shrink-0" />
+              </span>
+            </span>
           </a>
         ))}
       </div>
-      <p className="pt-2 text-[10px] text-soft/80">
+      <p className="pt-3 text-[10px] text-soft/80">
         Headlines from third-party publishers, shown as links for context only.
       </p>
     </div>
@@ -168,12 +206,21 @@ export function NewsList({ news }: { news: NewsHeadline[] }) {
 
 /* ───────────────────────────── fundamentals ────────────────────────────── */
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * A financial view. Previously a bordered card in a 2-up grid — four boxes, the
+ * exact texture the register bans. Now each view is a full-width ruled block:
+ * a mono eyebrow over a hairline, then the chart. Full width also gives these
+ * charts the horizontal room they were being starved of at 2-up.
+ */
+function View({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-sand bg-paper p-4">
-      <h4 className="mb-3 font-display text-sm font-bold text-ink">{title}</h4>
-      {children}
-    </div>
+    <section className="f0-rule-top pt-4">
+      <h4 className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
+        {title}
+      </h4>
+      <div className="mt-3">{children}</div>
+      {note && <p className="mt-2.5 text-[10.5px] leading-relaxed text-soft/80">{note}</p>}
+    </section>
   );
 }
 
@@ -194,59 +241,66 @@ export function FinancialsSection({
       : charts.annual.map((a) => ({ label: a.label, revenue: a.revenue, netIncome: a.netIncome }));
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <div className="inline-flex rounded-lg border border-sand p-0.5">
-          {(["quarterly", "yearly"] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition-colors ${
-                period === p ? "bg-gold-500 text-white" : "text-soft hover:text-ink"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-6">
+      {/* period control — the same underline language as the tab strip */}
+      <div className="flex justify-end gap-5">
+        {(["quarterly", "yearly"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            aria-pressed={period === p}
+            className={`relative pb-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] capitalize transition-colors ${
+              period === p ? "text-ink" : "text-soft hover:text-ink"
+            }`}
+          >
+            {p}
+            {period === p && (
+              <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-gold-500" />
+            )}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel title="Revenue & profit margin">
-          <RevenueMarginChart periods={revProfitPeriods} />
-        </Panel>
-        <Panel title="Assets vs liabilities (quarterly)">
-          <AssetsLiabilitiesChart quarterly={charts.quarterly} />
-        </Panel>
-        <Panel title="Annual earnings per share">
-          <AnnualBarsChart annual={charts.annual} metric="eps" />
-        </Panel>
-        <Panel title="P/E vs industry vs market">
-          <PeComparisonChart
-            company={keyStats.pe}
-            industry={medians.sectorMedian}
-            market={medians.marketMedian}
-            sectorN={medians.sectorN}
-            marketN={medians.marketN}
-          />
-          <p className="mt-2 text-[10px] leading-relaxed text-soft/80">
-            Industry and market medians are computed in-house from the {medians.marketN} companies the
-            club has studied so far — they sharpen as more get analysed.
-          </p>
-        </Panel>
-      </div>
+      <View title="Revenue & profit margin">
+        <RevenueMarginChart periods={revProfitPeriods} />
+      </View>
+      <View title="Assets vs liabilities (quarterly)">
+        <AssetsLiabilitiesChart quarterly={charts.quarterly} />
+      </View>
+      <View title="Annual earnings per share">
+        <AnnualBarsChart annual={charts.annual} metric="eps" />
+      </View>
+      <View
+        title="P/E vs industry vs market"
+        note={`Industry and market medians are computed in-house from the ${medians.marketN} companies the club has studied so far — they sharpen as more get analysed.`}
+      >
+        <PeComparisonChart
+          company={keyStats.pe}
+          industry={medians.sectorMedian}
+          market={medians.marketMedian}
+          sectorN={medians.sectorN}
+          marketN={medians.marketN}
+        />
+      </View>
 
       {charts.dividends.length > 0 && (
-        <Panel title="Recent dividends">
-          <div className="flex flex-wrap gap-2">
+        <View title="Recent dividends">
+          <dl className="border-b border-sand">
             {charts.dividends.slice(0, 8).map((d, i) => (
-              <div key={i} className="rounded-lg border border-sand px-2.5 py-1.5 text-xs">
-                <span className="font-semibold text-ink">${d.cashAmount?.toFixed(2) ?? "—"}</span>
-                <span className="ml-1.5 text-soft">{d.exDate ?? ""}</span>
+              <div
+                key={i}
+                className="flex items-baseline justify-between gap-4 border-t border-sand py-2"
+              >
+                <dt className="font-mono text-[11px] uppercase tracking-[0.1em] text-soft">
+                  {d.exDate ?? "—"}
+                </dt>
+                <dd className="font-mono text-[13px] font-semibold tabular-nums text-ink">
+                  {d.cashAmount != null ? `$${d.cashAmount.toFixed(2)}` : "—"}
+                </dd>
               </div>
             ))}
-          </div>
-        </Panel>
+          </dl>
+        </View>
       )}
     </div>
   );

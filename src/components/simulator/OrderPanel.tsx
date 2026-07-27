@@ -1,6 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { TrendingUp, TrendingDown } from "lucide-react";
+import { SimSection, SimRow, SimValue, SimNumField, SimChip } from "./parts";
+
+/**
+ * THE ORDER TICKET — ruled field rows, not a bordered panel.
+ *
+ * Behaviour is unchanged: the same quantity / stop / target inputs, the same
+ * quick-size percentages of buying power, the same "can't spend more than the
+ * cash balance" guard, and the same submit payload.
+ *
+ * COLOUR LAW: the direction toggle does NOT wear green/red. Green and red are
+ * the price colours, and spending them on a control is exactly what made the
+ * old panel read as a terminal. Direction is the word plus its arrow; the
+ * selected state is the brand orange, because selecting is an action.
+ */
 
 interface OrderPanelProps {
   currentPrice: number;
@@ -50,117 +65,96 @@ export default function OrderPanel({
   }
 
   return (
-    <div className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-4">
-      <h3 className="text-sm font-display font-semibold text-midnight-100 mb-3">
-        Order — {symbol}
-      </h3>
+    <SimSection id="sim-order" label={`Order · $${symbol}`}>
+      <div className="f0-ledger">
+        <SimRow label="Direction" wrap>
+          <SimChip active={side === "long"} onClick={() => setSide("long")}>
+            <TrendingUp className="h-3.5 w-3.5" />
+            Buy
+          </SimChip>
+          <SimChip active={side === "short"} onClick={() => setSide("short")}>
+            <TrendingDown className="h-3.5 w-3.5" />
+            Sell short
+          </SimChip>
+        </SimRow>
 
-      {/* Buy/Sell tabs */}
-      <div className="flex gap-1 mb-4 bg-midnight-800 rounded-lg p-0.5">
-        <button
-          onClick={() => setSide("long")}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            side === "long"
-              ? "bg-green-400/15 text-green-400"
-              : "text-midnight-400 hover:text-midnight-200"
-          }`}
+        <SimRow label="Market price" hint="The last simulated print">
+          <SimValue>{currentPrice > 0 ? `$${currentPrice.toFixed(2)}` : "—"}</SimValue>
+        </SimRow>
+
+        <SimRow
+          label="Shares"
+          hint={
+            maxShares > 0
+              ? `${maxShares.toLocaleString()} affordable with your cash`
+              : "Waiting on a price"
+          }
+          wrap
         >
-          Buy
-        </button>
-        <button
-          onClick={() => setSide("short")}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            side === "short"
-              ? "bg-red-500/15 text-red-500"
-              : "text-midnight-400 hover:text-midnight-200"
-          }`}
-        >
-          Sell Short
-        </button>
-      </div>
-
-      {/* Price display */}
-      <div className="flex justify-between items-center mb-3 px-1">
-        <span className="text-xs text-midnight-400">Market Price</span>
-        <span className="text-sm font-mono text-midnight-100">
-          ${currentPrice.toFixed(2)}
-        </span>
-      </div>
-
-      {/* Quantity */}
-      <div className="mb-3">
-        <label className="text-xs text-midnight-400 mb-1 block">Shares</label>
-        <input
-          type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          placeholder="0"
-          min={0}
-          max={maxShares}
-          className="w-full bg-midnight-800 border border-midnight-700/50 rounded-lg px-3 py-2 text-sm font-mono text-midnight-100 placeholder:text-midnight-600 focus:outline-none focus:border-gold-400/30"
-        />
-        {/* Quick buttons */}
-        <div className="flex gap-1 mt-1.5">
+          <SimNumField
+            ariaLabel="Shares"
+            value={quantity}
+            onChange={setQuantity}
+            placeholder="0"
+            width="w-24"
+            min={0}
+            max={maxShares}
+          />
           {QUICK_PCTS.map((pct) => (
-            <button
+            <SimChip
               key={pct}
               onClick={() => handleQuickPct(pct)}
-              className="flex-1 py-1 rounded text-[11px] font-mono bg-midnight-800 border border-midnight-700/50 text-midnight-400 hover:text-gold-400 hover:border-gold-400/30 transition-colors"
+              disabled={maxShares <= 0}
+              title={`${pct}% of buying power`}
             >
               {pct}%
-            </button>
+            </SimChip>
           ))}
-        </div>
+        </SimRow>
+
+        <SimRow label="Stop loss" hint="Optional — closes you out if it goes against you">
+          <SimNumField
+            ariaLabel="Stop loss price"
+            prefix="$"
+            value={stopLoss}
+            onChange={setStopLoss}
+            step="0.01"
+          />
+        </SimRow>
+
+        <SimRow label="Take profit" hint="Optional — closes you out at your target">
+          <SimNumField
+            ariaLabel="Take profit price"
+            prefix="$"
+            value={takeProfit}
+            onChange={setTakeProfit}
+            step="0.01"
+          />
+        </SimRow>
+
+        <SimRow label="Estimated cost">
+          <SimValue tone={qty > 0 ? "text-ink" : "text-soft"}>
+            {qty > 0
+              ? `$${orderCost.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : "—"}
+          </SimValue>
+        </SimRow>
       </div>
 
-      {/* Stop Loss */}
-      <div className="mb-3">
-        <label className="text-xs text-midnight-400 mb-1 block">Stop Loss</label>
-        <input
-          type="number"
-          value={stopLoss}
-          onChange={(e) => setStopLoss(e.target.value)}
-          placeholder="Optional"
-          step="0.01"
-          className="w-full bg-midnight-800 border border-midnight-700/50 rounded-lg px-3 py-2 text-sm font-mono text-midnight-100 placeholder:text-midnight-600 focus:outline-none focus:border-gold-400/30"
-        />
-      </div>
-
-      {/* Take Profit */}
-      <div className="mb-4">
-        <label className="text-xs text-midnight-400 mb-1 block">Take Profit</label>
-        <input
-          type="number"
-          value={takeProfit}
-          onChange={(e) => setTakeProfit(e.target.value)}
-          placeholder="Optional"
-          step="0.01"
-          className="w-full bg-midnight-800 border border-midnight-700/50 rounded-lg px-3 py-2 text-sm font-mono text-midnight-100 placeholder:text-midnight-600 focus:outline-none focus:border-gold-400/30"
-        />
-      </div>
-
-      {/* Order summary */}
-      <div className="flex justify-between text-xs text-midnight-400 mb-3 px-1">
-        <span>Est. Cost</span>
-        <span className="font-mono">${orderCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
-      </div>
-      <div className="flex justify-between text-xs text-midnight-400 mb-4 px-1">
-        <span>Max Shares</span>
-        <span className="font-mono">{maxShares.toLocaleString()}</span>
-      </div>
-
-      {/* Submit */}
       <button
         onClick={handleSubmit}
         disabled={qty <= 0 || qty > maxShares}
-        className={`w-full py-2.5 rounded-lg text-sm font-display font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-          side === "long"
-            ? "bg-green-400/15 text-green-400 hover:bg-green-400/25 border border-green-400/30"
-            : "bg-red-500/15 text-red-500 hover:bg-red-500/25 border border-red-500/30"
-        }`}
+        className="cta-button mt-4 w-full rounded-xl py-3 text-[14px] disabled:cursor-not-allowed disabled:opacity-35"
       >
-        {side === "long" ? "Buy" : "Sell Short"} {qty > 0 ? `${qty} shares` : ""}
+        {side === "long" ? "Buy" : "Sell short"}
+        {qty > 0 ? ` ${qty.toLocaleString()} ${qty === 1 ? "share" : "shares"}` : ""}
       </button>
-    </div>
+      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+        Practice money · nothing here touches a real account
+      </p>
+    </SimSection>
   );
 }

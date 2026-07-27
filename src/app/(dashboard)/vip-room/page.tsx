@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Lock, Ticket, BookOpen, Sparkles, Loader2, Send, ShieldCheck, ArrowRight, PlayCircle } from "lucide-react";
+import {
+  Lock,
+  Ticket,
+  BookOpen,
+  Sparkles,
+  Loader2,
+  Send,
+  ShieldCheck,
+  ArrowRight,
+  PlayCircle,
+} from "lucide-react";
+import { DisplayHead, SectionRule } from "@/components/f0/parts";
 
 /**
  * VIP Room (Lane C9) — a private, gated space for Challenge VIP ticket holders,
@@ -11,6 +22,12 @@ import { Lock, Ticket, BookOpen, Sparkles, Loader2, Send, ShieldCheck, ArrowRigh
  * (including anyone who followed a vip_upsell email link) see the VIP offer
  * instead, so this doubles as the in-app VIP upsell surface. All data flows
  * through the gated /api/challenge/vip-room routes.
+ *
+ * REBUILD NOTE (canvas): the gate (`vip`), the checkout call, the `vipEnabled`
+ * and `windowOpen` flags and every word of the offer copy — the $197 price, the
+ * four perks, the renewal terms — are preserved exactly. Only the surface
+ * changed: the ringed card became a dark offer field over a hairline perk
+ * ledger, and the post feed became a ruled ledger.
  */
 
 interface VipPost {
@@ -99,8 +116,8 @@ export default function VipRoomPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gold-600" />
       </div>
     );
   }
@@ -108,122 +125,143 @@ export default function VipRoomPage() {
   // ── Non-VIP: the upsell / offer surface ──────────────────────────────────
   if (!vip) {
     return (
-      <div className="max-w-lg mx-auto px-4 py-8">
-        <div className="paper-card ring-2 ring-gold-400 p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center mx-auto mb-3 shadow-soft">
-            <Ticket className="w-6 h-6" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-ink">The VIP Room is for VIP members</h1>
-          <p className="text-soft text-sm mt-2 leading-relaxed max-w-sm mx-auto">
+      <div className="mx-auto max-w-xl px-4 py-8 pb-16">
+        {/* The one dark object on this surface — the ticket itself. */}
+        <div className="f0-hero-field f0-grain px-6 py-9 sm:px-8">
+          <p className="text-eyebrow font-display font-bold uppercase text-volt-300">
+            VIP ticket · optional
+          </p>
+          <h1 className="mt-3 font-display text-display-2 font-extrabold">
+            The VIP Room is for VIP members
+          </h1>
+          <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-white/70">
             Your free challenge is complete on its own — this is an optional extra.
             The VIP ticket adds a printed textbook, your first month of Club, this
             private room, and replays of every live session. The $197 is just the
             textbook&apos;s normal price — the rest comes on top.
           </p>
-          <div className="mt-5 space-y-2.5 text-left max-w-xs mx-auto">
+        </div>
+
+        <section className="mt-8">
+          <SectionRule>What the ticket adds</SectionRule>
+          <div className="f0-ledger mt-1">
             <Perk icon={BookOpen}>A printed textbook mailed to you</Perk>
             <Perk icon={Sparkles}>Your first month of Club included</Perk>
             <Perk icon={Lock}>This private VIP room during the challenge</Perk>
             <Perk icon={PlayCircle}>Replays of every live session</Perk>
           </div>
-          <button
-            onClick={startVipCheckout}
-            disabled={checkoutLoading}
-            className="cta-button mt-6 w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-[15px] disabled:opacity-60"
-          >
-            {checkoutLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Ticket className="w-4 h-4" /> Get the VIP ticket — $197 <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-          {checkoutMsg && <p className="mt-3 text-sm text-soft">{checkoutMsg}</p>}
-          {!vipEnabled && !checkoutMsg && (
-            <p className="mt-3 text-[12px] text-soft">VIP tickets open soon.</p>
+        </section>
+
+        <button
+          onClick={startVipCheckout}
+          disabled={checkoutLoading}
+          className="cta-button mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-[15px] disabled:opacity-60"
+        >
+          {checkoutLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Ticket className="h-4 w-4" /> Get the VIP ticket — $197{" "}
+              <ArrowRight className="h-4 w-4" />
+            </>
           )}
-          <p className="mt-4 text-[12px] text-soft leading-relaxed flex items-start justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+        </button>
+        {checkoutMsg && <p className="mt-3 text-sm text-soft">{checkoutMsg}</p>}
+        {!vipEnabled && !checkoutMsg && (
+          <p className="mt-3 text-[12px] text-soft">VIP tickets open soon.</p>
+        )}
+        <p className="mt-4 flex max-w-[60ch] items-start gap-1.5 text-[12px] leading-relaxed text-soft">
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
             $197 today · includes your first month of Club · $99/mo after — we&apos;ll
             remind you 3 days before, cancel in one click. Education, not financial advice.
-          </p>
-        </div>
+          </span>
+        </p>
       </div>
     );
   }
 
   // ── VIP: the private room ────────────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <div className="flex items-center gap-2 text-gold-700">
-        <Lock className="w-4 h-4" />
-        <span className="text-[11px] font-display font-bold uppercase tracking-wider">
-          VIP Room · private
-        </span>
-      </div>
-      <h1 className="font-display text-2xl font-bold text-ink mt-1">Welcome to the VIP room</h1>
-      <p className="text-soft text-sm mt-2 leading-relaxed">
-        A quieter space, just for VIP members, to ask questions and share what
-        you&apos;re working on through the challenge. Your session replays land
-        here after each live session — yours to rewatch anytime.
-        {windowOpen
-          ? " It's open now through the end of the challenge."
-          : " The challenge window has closed — thanks for being here."}
-      </p>
+    <div className="mx-auto max-w-2xl px-4 py-8 pb-16">
+      <DisplayHead
+        eyebrow="VIP Room · private"
+        title="Welcome to the VIP room"
+        lede={
+          "A quieter space, just for VIP members, to ask questions and share what you're working on through the challenge. Your session replays land here after each live session — yours to rewatch anytime." +
+          (windowOpen
+            ? " It's open now through the end of the challenge."
+            : " The challenge window has closed — thanks for being here.")
+        }
+        aside={<Lock className="h-5 w-5 text-gold-600" />}
+      />
 
       {/* Composer */}
-      <div className="paper-card p-4 mt-5">
+      <div className="mt-8">
         <textarea
           ref={composerRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={3}
           placeholder="Share a win, ask a question, or introduce yourself to the room…"
-          className="w-full rounded-xl border border-sand bg-white/50 px-4 py-3 text-[15px] text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400/20 transition-colors resize-none"
+          className="w-full resize-none rounded-xl border border-sand bg-card px-4 py-3 text-[15px] text-ink transition-colors placeholder:text-soft focus:border-gold-500 focus:outline-none focus:ring-1 focus:ring-gold-400/20"
         />
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        <div className="flex justify-end mt-2">
+        {/* COLOUR LAW: red belongs to price, so a form error signals in the
+            action ramp + weight rather than turning red. */}
+        {error && (
+          <p className="mt-2 text-sm font-semibold text-gold-700">{error}</p>
+        )}
+        <div className="mt-2 flex justify-end">
           <button
             onClick={submit}
             disabled={posting || !draft.trim()}
-            className="cta-button inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm disabled:opacity-50"
+            className="cta-button inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm disabled:opacity-50"
           >
-            {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {posting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             Post to VIP room
           </button>
         </div>
       </div>
 
       {/* Feed */}
-      <div className="mt-6 space-y-3">
-        {posts.length === 0 && (
-          <p className="text-center text-sm text-soft py-8">
+      <section className="mt-9">
+        <SectionRule>The room</SectionRule>
+        {posts.length === 0 ? (
+          <p className="py-8 text-sm text-soft">
             Be the first to say hi in the VIP room.
           </p>
-        )}
-        {posts.map((p) => (
-          <div key={p.id} className="paper-card p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="font-display font-semibold text-ink text-sm">
-                {p.author?.display_name || "VIP member"}
-              </span>
-              <span className="text-[11px] text-soft">
-                {new Date(p.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-            <p className="text-[15px] text-ink leading-relaxed whitespace-pre-wrap">{p.body}</p>
+        ) : (
+          <div className="f0-ledger mt-1">
+            {posts.map((p) => (
+              <div key={p.id} className="py-5">
+                <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                  <span className="font-display text-sm font-extrabold text-ink">
+                    {p.author?.display_name || "VIP member"}
+                  </span>
+                  <span className="font-mono text-[11px] text-soft">
+                    {new Date(p.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                <p className="mt-1.5 max-w-[64ch] whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
+                  {p.body}
+                </p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )}
+      </section>
 
-      <p className="mt-8 text-center text-xs text-soft flex items-center justify-center gap-1.5">
-        <ShieldCheck className="w-3.5 h-3.5" />
+      <p className="f0-rule-top mt-10 flex items-center gap-1.5 pt-5 text-xs text-soft">
+        <ShieldCheck className="h-3.5 w-3.5" />
         Education only — nothing here is financial advice.
       </p>
     </div>
@@ -238,11 +276,9 @@ function Perk({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="w-7 h-7 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-gold-700" />
-      </span>
-      <span className="text-[15px] text-ink leading-snug">{children}</span>
+    <div className="f0-ledger-row">
+      <Icon className="h-4 w-4 shrink-0 text-gold-700" />
+      <span className="text-[15px] leading-snug text-ink">{children}</span>
     </div>
   );
 }

@@ -121,8 +121,8 @@ export default function CandleBattleGame() {
 
   if (g.loading) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-500 rounded-full animate-spin" />
+      <div className="mx-auto flex max-w-2xl items-center justify-center py-24">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-500" />
       </div>
     );
   }
@@ -145,8 +145,14 @@ export default function CandleBattleGame() {
 
   if (!round || !data) {
     return (
-      <div className="max-w-2xl mx-auto paper-card p-10 text-center text-soft">
-        No rounds available yet.
+      <div className="mx-auto max-w-2xl border-l-2 border-sand py-1 pl-4">
+        <p className="font-display text-display-3 font-extrabold text-ink">
+          No rounds are loaded
+        </p>
+        <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
+          Candle Battle draws its rounds from the published set. There is nothing to play
+          right now — nothing is being generated in its place.
+        </p>
       </div>
     );
   }
@@ -165,13 +171,9 @@ export default function CandleBattleGame() {
         onToggleSound={sound.toggle}
       />
 
-      {/* scenario caption */}
-      <div className="mb-3 flex items-start gap-2">
-        <span className="mt-0.5 inline-flex shrink-0 items-center rounded-full bg-chip-sky px-2.5 py-1 text-[11px] font-semibold text-sky-800">
-          Round {g.index + 1}
-        </span>
-        <p className="text-sm text-soft leading-relaxed">{round.prompt}</p>
-      </div>
+      {/* Scenario. The round number lives in the top bar, so this is the ask
+          and nothing else — a lede over the stage, not a chip in a row. */}
+      <p className="mb-4 text-[15px] leading-relaxed text-ink">{round.prompt}</p>
 
       {/* dark night-island stage */}
       <m.div
@@ -180,7 +182,7 @@ export default function CandleBattleGame() {
         className="night-island relative p-4 sm:p-5"
       >
         <AnimatePresence>{correct && phase === "result" && <Burst key={burstKey} />}</AnimatePresence>
-        {correct && phase === "result" && <ScorePop key={popKey} label={`+${10 + Math.min(g.streak - 1, 5) * 2}`} tone="green" />}
+        {correct && phase === "result" && <ScorePop key={popKey} label={`+${10 + Math.min(g.streak - 1, 5) * 2}`} />}
 
         <FormingCandle data={data} progress={progress} reveal={phase === "result"} />
 
@@ -195,7 +197,10 @@ export default function CandleBattleGame() {
         )}
       </m.div>
 
-      {/* decision buttons */}
+      {/* Decision buttons. A control PAIR, not a content grid: the two calls are
+          mutually exclusive and must carry identical weight, which is the one
+          case where two equal columns is the correct form. Green/red here mean
+          buyers vs sellers — i.e. PRICE, the law's own exception. */}
       <AnimatePresence mode="wait">
         {phase === "decision" && (
           <m.div
@@ -203,17 +208,17 @@ export default function CandleBattleGame() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="grid grid-cols-2 gap-3 mt-5"
+            className="mt-5 grid grid-cols-2 gap-3"
           >
             <button
               onClick={() => choose("GREEN TEAM")}
-              className="min-h-[64px] rounded-xl border-2 border-green-500/40 bg-chip-green text-green-700 font-display font-extrabold text-lg hover:bg-green-500/15 active:scale-[0.98] transition"
+              className="min-h-[64px] rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20 active:scale-[0.98]"
             >
               GREEN TEAM
             </button>
             <button
               onClick={() => choose("RED TEAM")}
-              className="min-h-[64px] rounded-xl border-2 border-red-500/40 bg-red-500/5 text-red-600 font-display font-extrabold text-lg hover:bg-red-500/10 active:scale-[0.98] transition"
+              className="min-h-[64px] rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20 active:scale-[0.98]"
             >
               RED TEAM
             </button>
@@ -235,33 +240,26 @@ export default function CandleBattleGame() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-5"
           >
+            {/* The verdict. A hairline-ruled block, not a tinted bubble: the
+                only colour is on the outcome word, and it is a PRICE colour
+                because the outcome literally is who won the price battle. */}
             <div
-              className={`relative rounded-2xl border p-4 ${
-                correct
-                  ? "border-green-500/30 bg-chip-green/60"
-                  : "border-red-500/25 bg-red-500/5"
+              className={`border-l-2 pl-4 ${
+                correct ? "border-green-500/60" : "border-red-500/60"
               }`}
             >
-              {/* speech-bubble tail */}
-              <span
-                className={`absolute -top-2 left-8 h-4 w-4 rotate-45 border-l border-t ${
-                  correct
-                    ? "border-green-500/30 bg-chip-green/60"
-                    : "border-red-500/25 bg-red-50"
-                }`}
-              />
-              <p className="flex items-center gap-1.5 font-display font-bold text-sm mb-1">
+              <p className="mb-1.5 font-display text-eyebrow font-bold uppercase">
                 {correct ? (
-                  <span className="text-green-700 flex items-center gap-1.5">
-                    <Check className="w-4 h-4" /> Correct — {round.answer} won
+                  <span className="flex items-center gap-1.5 text-price-up">
+                    <Check className="h-3.5 w-3.5" /> Correct — {round.answer} won
                   </span>
                 ) : (
-                  <span className="text-red-600 flex items-center gap-1.5">
-                    <X className="w-4 h-4" /> The {round.answer} won this one
+                  <span className="flex items-center gap-1.5 text-price-down">
+                    <X className="h-3.5 w-3.5" /> The {round.answer} won this one
                   </span>
                 )}
               </p>
-              <p className="text-sm text-midnight-200 leading-relaxed">{round.why}</p>
+              <p className="text-[15px] leading-relaxed text-ink">{round.why}</p>
             </div>
             <button
               onClick={g.advance}
@@ -273,20 +271,21 @@ export default function CandleBattleGame() {
         )}
       </AnimatePresence>
 
-      {/* subtle intro art on first round, forming phase */}
+      {/* First-round primer — a hairline note, not a boxed tip card. */}
       {g.index === 0 && phase === "forming" && (
-        <div className="mt-5 flex items-center gap-3 rounded-xl border border-sand bg-white p-3">
+        <div className="f0-rule-top mt-6 flex items-center gap-3 pt-4">
           <Image
             src="/art/tug-of-war.jpg"
             alt=""
             width={64}
             height={64}
-            className="h-14 w-14 rounded-lg object-cover"
+            className="h-12 w-12 shrink-0 rounded-lg object-cover"
           />
-          <p className="text-xs text-soft leading-relaxed">
-            Every candle is a tug-of-war. The <b className="text-green-700">green team</b> (buyers)
-            pulls price up, the <b className="text-red-600">red team</b> (sellers) pulls it down.
-            The close tells you who won.
+          <p className="text-[13px] leading-relaxed text-soft">
+            Every candle is a tug-of-war. The{" "}
+            <b className="font-semibold text-price-up">green team</b> (buyers) pulls price up,
+            the <b className="font-semibold text-price-down">red team</b> (sellers) pulls it
+            down. The close tells you who won.
           </p>
         </div>
       )}

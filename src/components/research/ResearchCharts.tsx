@@ -18,10 +18,10 @@
 import type { ResearchQuarter, ResearchAnnual } from "@/lib/research/types";
 import { abbreviateMoney } from "@/lib/kai/report";
 
+/* An honest absence, stated on a rule rather than fenced in a dashed box —
+   a missing series is information, not an error state needing a container. */
 const EmptyNote = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-xl border border-dashed border-sand px-3 py-8 text-center text-sm text-soft">
-    {children}
-  </div>
+  <p className="f0-rule-top py-4 text-[13px] text-soft">{children}</p>
 );
 
 const LegendDot = ({ color, label }: { color: string; label: string }) => (
@@ -192,14 +192,14 @@ export function AssetsLiabilitiesChart({ quarterly }: { quarterly: ResearchQuart
         barA={q.map((p) => p.assets)}
         barB={q.map((p) => p.liabilities)}
         line={de}
-        barAColor="#1f2937"
+        barAColor="var(--ink)"
         barBColor={TEAL}
         lineColor={ORANGE}
         fmtBar={abbreviateMoney}
         fmtLine={(v) => v.toFixed(1)}
       />
       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-soft">
-        <LegendDot color="#1f2937" label="Assets" />
+        <LegendDot color="var(--ink)" label="Assets" />
         <LegendDot color={TEAL} label="Liabilities" />
         <LegendLine color={ORANGE} label="Debt / equity" />
       </div>
@@ -356,9 +356,9 @@ export function RsiDial({ rsi }: { rsi: number | null }) {
   return (
     <div className="flex flex-col items-center">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W }} role="img" aria-label="RSI dial">
-        {arc(0, 30, "#16a34a")}
-        {arc(30, 70, "#94a3b8")}
-        {arc(70, 100, "#dc2626")}
+        {arc(0, 30, "var(--m400)")}
+        {arc(30, 70, "var(--sand)")}
+        {arc(70, 100, "var(--m400)")}
         {clamped != null && (
           <>
             <line x1={cx} y1={cy} x2={nx.toFixed(1)} y2={ny.toFixed(1)} className="text-ink" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />

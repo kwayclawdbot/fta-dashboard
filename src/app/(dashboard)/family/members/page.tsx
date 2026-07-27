@@ -20,6 +20,7 @@ import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import { getBadgeSummaries, type BadgeSummary } from "@/lib/badges";
+import { SectionRule, familyRegister } from "@/components/family/register";
 
 interface FamilyMember {
   id: string;
@@ -180,7 +181,9 @@ export default function FamilyMembersPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    /* familyRegister keeps the shared F0 primitives in the warm-gold family
+       register — see src/components/family/register.tsx. */
+    <div className="max-w-4xl mx-auto" style={familyRegister}>
       {/* Header */}
       <mm.div
         initial={{ opacity: 0 }}
@@ -190,7 +193,7 @@ export default function FamilyMembersPage() {
       >
         <div>
           <div className="flex items-center gap-2.5">
-            <h2 className="font-display text-2xl font-bold text-midnight-100">
+            <h2 className="font-display text-display-2 sm:text-display-1 font-bold text-midnight-100">
               Manage Members
             </h2>
             <TierBadge tier={tier} size="md" />
@@ -218,6 +221,10 @@ export default function FamilyMembersPage() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.05, duration: 0.3 }}
       >
+        <div className="mb-3">
+          <SectionRule>The Household</SectionRule>
+        </div>
+        <div className="f0-ledger">
         {members.map((member) => {
           const isCurrentUser = member.id === currentUserId;
           const summary = summaries[member.id];
@@ -225,7 +232,7 @@ export default function FamilyMembersPage() {
           return (
             <div
               key={member.id}
-              className="flex items-center gap-4 py-4 border-b border-midnight-800/50 last:border-0"
+              className="f0-ledger-row"
             >
               {/* Avatar */}
               <Avatar
@@ -332,6 +339,7 @@ export default function FamilyMembersPage() {
             </div>
           );
         })}
+        </div>
       </mm.div>
 
       {/* Invite Modal */}

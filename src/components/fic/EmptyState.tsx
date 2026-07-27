@@ -70,8 +70,10 @@ export function EmptyWatchlist({ onAdd }: { onAdd?: () => void }) {
       </div>
       <div className="relative mx-auto mb-4 h-24 w-24">
         <svg viewBox="0 0 96 96" className="h-full w-full" aria-hidden="true">
-          <rect x="10" y="14" width="76" height="60" rx="6" fill="#FBF7EF" stroke="#D6C9A8" strokeWidth="2" />
-          <rect x="30" y="30" width="30" height="24" rx="2" fill="#FFFFFF" stroke="var(--g500)" strokeWidth="1.5" strokeDasharray="3 3" />
+          {/* Themed surfaces, not literal cream/white — on the dark theme the
+              hardcoded board lit up as a bright rectangle on near-black. */}
+          <rect x="10" y="14" width="76" height="60" rx="6" fill="var(--paper)" stroke="var(--sand)" strokeWidth="2" />
+          <rect x="30" y="30" width="30" height="24" rx="2" fill="var(--card)" stroke="var(--g500)" strokeWidth="1.5" strokeDasharray="3 3" />
           <circle cx="45" cy="26" r="4" fill="#DC2626" />
           <line x1="45" y1="30" x2="45" y2="34" stroke="#B91C1C" strokeWidth="1.5" />
           <g transform="translate(64 40)"><LeafSprig className="h-4 w-8" /></g>

@@ -5,20 +5,21 @@ import { getDiscoverExtras } from "@/lib/discover";
 import DiscoverClient from "./DiscoverClient";
 
 /**
- * /discover — the Club's discovery hub (Cheat Code Club redesign, R2 nav shell).
+ * /discover — the Club's discovery hub (canvas rebuild B).
  *
- * A NEW top-level surface introduced by the five-item nav. R2 ships the
- * functional shell: the five tabs (For You · Trending · Top Research · Most
- * Discussed · News) exist and each renders real content where it maps trivially
- * onto surfaces we already have — News = the newsroom feed, Trending / Most
- * Discussed = slices of the community board, and the Stock Finder (screener)
- * lives here now behind a "Launch Stock Finder" CTA. For You / Top Research are
- * honest placeholders that point at what exists today. R3 makes the shell rich
- * (ranked trending lists w/ sparklines, research author cards).
+ * The surface is composed in DiscoverClient to the club canvas system: a
+ * display-1 masthead, a ruled search field with the "or ask Kai" handoff, the
+ * shared <TickerCarousel />, a segmented control (For You · Trending · Top
+ * Research · Most Discussed) driving ONE ranked hairline ledger, the author-led
+ * research list, the orange Stock Finder band (the screener lives behind it),
+ * and the preserved newsroom.
  *
- * Server-first: news + the community board seed are fetched here and handed to
- * the client so the default tab paints without a hydrate round trip. A failed
- * seed just passes null and the client degrades gracefully.
+ * Server-first: news + the community board seed + the discover extras are
+ * fetched here and handed to the client so the surface paints without a hydrate
+ * round trip. The live community-attention ledger (/api/club/trending, which
+ * owns the entitlement cap and the compliance disclaimer) and the pulse series
+ * are read client-side. A failed seed just passes null and the client degrades
+ * to founding-era copy — never a fabricated number.
  */
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,15 @@
 "use client";
 
 import { Play, Pause, SkipForward, RotateCcw } from "lucide-react";
+import { SimChip, SimIconButton } from "./parts";
+
+/**
+ * TIME CONTROLS — the transport for the simulated tape.
+ *
+ * Same controls, same handlers; they now sit as quiet round buttons and mono
+ * chips directly on the paper instead of inside nested dark pill-boxes. The
+ * bar counter is mono because it is a market number.
+ */
 
 interface TimeControlsProps {
   isPlaying: boolean;
@@ -24,54 +33,36 @@ export default function TimeControls({
   onReset,
 }: TimeControlsProps) {
   return (
-    <div className="flex items-center gap-3">
-      {/* Play/Pause */}
-      <button
+    <div className="flex flex-wrap items-center gap-2.5">
+      <SimIconButton
         onClick={onTogglePlay}
-        className="flex items-center justify-center w-9 h-9 rounded-lg bg-midnight-800 border border-midnight-700/50 text-gold-400 hover:bg-midnight-700 transition-colors"
+        label={isPlaying ? "Pause the tape" : "Run the tape"}
+        active={isPlaying}
       >
-        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-      </button>
+        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+      </SimIconButton>
 
-      {/* Step Forward */}
-      <button
-        onClick={onStepForward}
-        disabled={isPlaying}
-        className="flex items-center justify-center w-9 h-9 rounded-lg bg-midnight-800 border border-midnight-700/50 text-midnight-300 hover:text-gold-400 hover:bg-midnight-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        <SkipForward className="w-4 h-4" />
-      </button>
+      <SimIconButton onClick={onStepForward} label="Step one bar" disabled={isPlaying}>
+        <SkipForward className="h-4 w-4" />
+      </SimIconButton>
 
-      {/* Speed selector */}
-      <div className="flex items-center gap-1 bg-midnight-800 border border-midnight-700/50 rounded-lg p-0.5">
+      <div className="flex items-center gap-1.5">
         {SPEEDS.map((s) => (
-          <button
-            key={s}
-            onClick={() => onSpeedChange(s)}
-            className={`px-2.5 py-1 rounded-md text-xs font-mono font-medium transition-colors ${
-              speed === s
-                ? "bg-gold-400/15 text-gold-400"
-                : "text-midnight-400 hover:text-midnight-200"
-            }`}
-          >
-            {s}x
-          </button>
+          <SimChip key={s} active={speed === s} onClick={() => onSpeedChange(s)}>
+            {s}×
+          </SimChip>
         ))}
       </div>
 
-      {/* Bar counter */}
-      <span className="text-xs font-mono text-midnight-400">
+      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
         Bar {barCount}
       </span>
 
-      {/* Reset */}
-      <button
-        onClick={onReset}
-        className="flex items-center justify-center w-9 h-9 rounded-lg bg-midnight-800 border border-midnight-700/50 text-midnight-400 hover:text-red-500 hover:bg-midnight-700 transition-colors ml-auto"
-        title="Reset simulation"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
+      <div className="ml-auto">
+        <SimIconButton onClick={onReset} label="Reset the simulation">
+          <RotateCcw className="h-4 w-4" />
+        </SimIconButton>
+      </div>
     </div>
   );
 }

@@ -5,8 +5,20 @@ import { Check, X, ArrowRight, Sparkles } from "lucide-react";
 import type { Register } from "@/lib/register";
 
 /**
- * Shared visual kit for LessonEngine steps. Warm-cream family register
- * (paper/ink/soft/sand/gold + chip accents) matching Celebrate + v3 Home.
+ * Shared visual kit for LessonEngine steps.
+ *
+ * COLOUR LAW (hard, and the reason this file no longer paints answers green or
+ * red): green/red are PRICE colours. A quiz result is not a price move, so
+ * correctness is carried by INK + a mark (the settled, "locked-in" register)
+ * and a wrong answer steps back into `soft` while the explanation does the
+ * teaching — which is exactly the mastery-loop pedagogy ChoiceCore already
+ * describes ("a wrong answer is NEVER just red + retry"). Volt orange is the
+ * ACTION colour, so it marks the primary button and the live selection only.
+ * Kai blue is the AI voice, so the guide line wears it.
+ *
+ * SURFACES are semantic tokens (paper/ink/soft/sand/card) — never bg-white,
+ * which renders a white slab on the dark theme.
+ *
  * Motion follows the emil-design framework: transform+opacity only, strong
  * ease-out under 300ms, scale-on-press feedback, prefers-reduced-motion honored.
  */
@@ -24,15 +36,16 @@ export function StepPrompt({
 }) {
   return (
     <div className="mb-6">
-      <h2 className="font-display text-[22px] leading-tight font-bold text-ink sm:text-2xl">
+      <h2 className="max-w-[34ch] font-display text-display-3 font-extrabold text-ink">
         {children}
       </h2>
-      {sub && <p className="mt-2 text-sm text-soft font-body">{sub}</p>}
+      {sub && <p className="mt-2.5 text-[14px] leading-snug text-soft">{sub}</p>}
     </div>
   );
 }
 
-/** An in-world guide line (Kai as subtle companion — authored, no live LLM). */
+/** An in-world guide line (Kai as subtle companion — authored, no live LLM).
+ *  Kai blue by law: this is the AI voice, and nothing else on the step is. */
 export function GuideLine({
   children,
   register,
@@ -50,13 +63,13 @@ export function GuideLine({
     >
       <span
         aria-hidden
-        className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gold-400/20 text-gold-700"
+        className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-kai-blue-soft text-kai-blue"
       >
         <Sparkles className="h-3.5 w-3.5" />
       </span>
       <p
-        className={`font-body text-[15px] leading-snug ${
-          register === "adult" ? "text-soft" : "text-ink/80"
+        className={`max-w-[58ch] text-[15px] leading-snug ${
+          register === "adult" ? "text-soft" : "text-ink"
         }`}
       >
         {children}
@@ -65,29 +78,30 @@ export function GuideLine({
   );
 }
 
-/** Primary action button — press feedback, single-line label. */
+/** Primary action button — press feedback, single-line label.
+ *  `action` = volt (do the thing) · `confirm` = ink (seal the thing). */
 export function PrimaryButton({
   children,
   onClick,
   disabled,
   icon = "arrow",
-  tone = "gold",
+  tone = "action",
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
   icon?: "arrow" | "check" | "none";
-  tone?: "gold" | "green";
+  tone?: "action" | "confirm";
 }) {
   const base =
-    tone === "green"
-      ? "bg-green-500 text-white hover:bg-green-600"
-      : "bg-gold-400 text-midnight-950 hover:bg-gold-300";
+    tone === "confirm"
+      ? "bg-ink text-paper hover:opacity-90"
+      : "bg-volt-500 text-white hover:bg-volt-600";
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 font-display text-sm font-semibold transition-[transform,background-color] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:bg-sand disabled:text-soft ${base}`}
+      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 font-display text-sm font-bold transition-[transform,background-color,opacity] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:bg-sand disabled:text-soft ${base}`}
     >
       {icon === "check" && <Check className="h-4 w-4" />}
       <span className="whitespace-nowrap">{children}</span>
@@ -116,21 +130,21 @@ export function FeedbackNote({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease: EASE_OUT }}
       role="status"
-      className={`mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3 ${
-        correct
-          ? "bg-chip-green text-green-800"
-          : "bg-chip-amber text-gold-800"
+      className={`mt-4 flex items-start gap-2.5 border-l-2 py-2 pl-3.5 ${
+        correct ? "border-ink" : "border-gold-500"
       }`}
     >
       <span
         aria-hidden
         className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full ${
-          correct ? "bg-green-500 text-white" : "bg-gold-500 text-white"
+          correct ? "bg-ink text-paper" : "bg-gold-500 text-night-950"
         }`}
       >
         {correct ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
       </span>
-      <div className="font-body text-sm leading-snug">{children}</div>
+      <div className="max-w-[58ch] text-[14px] leading-relaxed text-ink">
+        {children}
+      </div>
     </m.div>
   );
 }
@@ -153,25 +167,24 @@ export function OptionButton({
   disabled?: boolean;
 }) {
   const styles: Record<OptionState, string> = {
-    idle: "border-sand bg-white/60 text-ink hover:border-gold-300 hover:bg-white",
-    selected: "border-gold-400 bg-gold-400/10 text-ink",
-    correct: "border-green-500 bg-chip-green text-green-900",
-    wrong: "border-red-400 bg-red-500/10 text-red-800",
-    reveal: "border-green-500 bg-chip-green text-green-900 ring-1 ring-green-500",
+    idle: "border-sand bg-card text-ink hover:border-gold-500",
+    selected: "border-gold-500 bg-gold-400/10 text-ink",
+    correct: "border-ink bg-ink/[0.06] text-ink",
+    wrong: "border-sand bg-transparent text-soft",
+    reveal: "border-ink bg-ink/[0.06] text-ink ring-1 ring-ink/20",
   };
+  const quiet = state === "idle" || state === "selected";
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       aria-pressed={state === "selected"}
-      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left font-body text-[15px] transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.99] disabled:cursor-default ${styles[state]}`}
+      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-[15px] transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.99] disabled:cursor-default ${styles[state]}`}
     >
       {letter && (
         <span
           className={`grid h-6 w-6 shrink-0 place-items-center rounded-md font-display text-xs font-bold ${
-            state === "idle" || state === "selected"
-              ? "bg-sand/70 text-soft"
-              : "bg-white/70 text-ink"
+            quiet ? "bg-sand text-soft" : "bg-ink/10 text-ink"
           }`}
         >
           {letter}
@@ -179,9 +192,9 @@ export function OptionButton({
       )}
       <span className="min-w-0 flex-1">{label}</span>
       {state === "correct" || state === "reveal" ? (
-        <Check className="h-4 w-4 shrink-0 text-green-600" />
+        <Check className="h-4 w-4 shrink-0 text-ink" />
       ) : state === "wrong" ? (
-        <X className="h-4 w-4 shrink-0 text-red-500" />
+        <X className="h-4 w-4 shrink-0 text-soft" />
       ) : null}
     </button>
   );

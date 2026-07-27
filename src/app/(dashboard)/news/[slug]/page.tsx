@@ -1,19 +1,42 @@
 "use client";
 
+/**
+ * /news/[slug] — the article (canvas rebuild B).
+ *
+ * REGISTER: a read, not a dashboard. One column at a real reading measure
+ * (~65ch), a display headline, a dek, a ruled dateline strip, then the body.
+ * Nothing on this page is boxed: the only structures are the measure and the
+ * hairlines that separate the article from its apparatus.
+ *
+ * COLOUR LAW: the tickers ledger is the only place price appears, in
+ * `text-price-up` / `text-price-down` (never a dark: variant — those tokens
+ * already carry both themes). Sentiment stays inside SocialBar, the shared
+ * community control. Brand orange marks only the way back and the links.
+ *
+ * COMPLIANCE: NEWS_DISCLAIMER and the "Written by … from public market data"
+ * line are rendered verbatim, and the kid branch that suppresses the model
+ * credit is preserved exactly as it was.
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
-import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
+import {
+  fetchQuotes,
+  formatPrice,
+  formatChangePct,
+  changeTone,
+  type MarketQuote,
+} from "@/lib/market/client";
 import { fetchSocial, type TickerSocial } from "@/lib/research/social";
 import { fetchNewsArticle } from "@/lib/news/client";
 import { NEWS_DISCLAIMER, timeAgo, type NewsArticle } from "@/lib/news/types";
 import NewsBlocks from "@/components/news/NewsBlocks";
-import { KindChip, AiTag } from "@/components/news/NewsCard";
+import { AiTag, Dateline } from "@/components/news/NewsCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import LivePrice from "@/components/fic/LivePrice";
 import SocialBar from "@/components/research/SocialBar";
 
 export default function NewsArticlePage() {
@@ -71,106 +94,148 @@ export default function NewsArticlePage() {
 
   if (!article) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6">
-        <ShieldAlert className="mx-auto mb-3 h-10 w-10 text-gold-400/60" />
-        <h1 className="font-display text-xl font-bold text-ink">Story not found</h1>
-        <p className="mt-1 text-sm text-soft">This article may have been removed.</p>
-        <Link
-          href="/news"
-          className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-700 hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to the newsroom
-        </Link>
+      <div className="mx-auto max-w-2xl px-4 py-20 sm:px-6">
+        <div className="border-l-2 border-sand py-1 pl-4">
+          <h1 className="font-display text-display-3 font-extrabold text-ink">
+            Story not found
+          </h1>
+          <p className="mt-1.5 max-w-[46ch] text-[15px] leading-relaxed text-soft">
+            This article may have been removed.
+          </p>
+          <Link
+            href="/news"
+            className="mt-4 inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to the newsroom
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5 px-4 pb-24 sm:px-6">
+    <article className="mx-auto max-w-2xl px-4 pb-24 sm:px-6">
       <Link
         href="/news"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-soft hover:text-ink"
+        className="inline-flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-soft transition-colors hover:text-gold-700"
       >
-        <ArrowLeft className="h-4 w-4" /> Newsroom
+        <ArrowLeft className="h-3.5 w-3.5" /> Newsroom
       </Link>
 
-      {/* Header */}
-      <header className="space-y-2">
-        <div className="flex items-center gap-2">
-          <KindChip kind={article.kind} />
-          <span className="text-[11px] text-soft">{timeAgo(article.generated_at)}</span>
-        </div>
-        <h1 className="font-display text-2xl font-bold leading-tight text-ink sm:text-3xl">
+      {/* ── HEADLINE ──────────────────────────────────────────────────────── */}
+      <header className="mt-6">
+        <Dateline kind={article.kind} at={article.generated_at} />
+        <h1 className="mt-3 max-w-[20ch] font-display text-display-2 font-extrabold leading-[1.02] text-ink sm:text-display-1 sm:leading-[0.98]">
           {article.title}
         </h1>
-        {article.dek && <p className="text-base leading-relaxed text-soft">{article.dek}</p>}
-        <AiTag />
+        {article.dek && (
+          <p className="mt-4 max-w-[54ch] text-[17px] leading-relaxed text-soft">
+            {article.dek}
+          </p>
+        )}
       </header>
 
-      {/* Body */}
-      <NewsBlocks blocks={article.sections?.blocks ?? []} />
+      {/* ── DATELINE STRIP ────────────────────────────────────────────────── */}
+      {/* Provenance sits between the headline and the body the way a byline
+          does — ruled top and bottom, mono, quiet. */}
+      <div className="f0-rule-top mt-7">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5">
+          <AiTag />
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft opacity-70">
+            {timeAgo(article.generated_at)}
+          </span>
+        </div>
+      </div>
+      <div className="f0-rule-top" />
 
-      {/* Tickers in this story — live quotes + social bar */}
+      {/* ── BODY ──────────────────────────────────────────────────────────── */}
+      <div className="mt-7">
+        <NewsBlocks blocks={article.sections?.blocks ?? []} />
+      </div>
+
+      {/* ── TICKERS IN THIS STORY ─────────────────────────────────────────── */}
       {article.tickers.length > 0 && (
-        <section className="rounded-2xl border border-sand bg-paper/60 p-4">
-          <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wider text-soft">
-            Tickers in this story
+        <section className="mt-12">
+          <h2 className="f0-section-rule text-eyebrow font-display font-bold uppercase text-soft">
+            <span className="shrink-0 whitespace-nowrap">Tickers in this story</span>
           </h2>
-          <div className="space-y-2.5">
-            {article.tickers.map((t) => (
-              <div
-                key={t}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sand bg-card px-3 py-2.5"
-              >
-                <Link href={`/research/${t}`} className="flex items-center gap-2.5">
-                  <CompanyLogo symbol={t} size={28} rounded="rounded-lg" />
-                  <span className="font-mono text-sm font-bold text-ink">{t}</span>
-                  <LivePrice quote={quotes[t]} size="sm" />
-                </Link>
-                <SocialBar
-                  supabase={supabase}
-                  ticker={t}
-                  variant="card"
-                  initial={social[t]}
-                  userId={userId}
-                  ageGroup={ageGroup}
-                  canVote={canVote && !!userId}
-                  threadHref={`/research/${t}?tab=community`}
-                />
-              </div>
-            ))}
+          <div className="f0-ledger mt-1">
+            {article.tickers.map((t) => {
+              const q = quotes[t];
+              const tone = changeTone(q?.changePercent);
+              return (
+                <div key={t} className="f0-ledger-row flex-wrap justify-between">
+                  <Link href={`/research/${t}`} className="flex min-w-0 items-center gap-3">
+                    <CompanyLogo symbol={t} size={28} rounded="rounded-lg" />
+                    <span className="font-mono text-[14px] font-bold text-ink">
+                      <span className="opacity-50">$</span>
+                      {t}
+                    </span>
+                    {q?.price != null && (
+                      <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+                        {formatPrice(q.price)}
+                      </span>
+                    )}
+                    {q?.changePercent != null && (
+                      <span
+                        className={`font-mono text-[13px] font-semibold tabular-nums ${
+                          tone === "up"
+                            ? "text-price-up"
+                            : tone === "down"
+                              ? "text-price-down"
+                              : "text-soft"
+                        }`}
+                      >
+                        {formatChangePct(q.changePercent)}
+                      </span>
+                    )}
+                  </Link>
+                  <SocialBar
+                    supabase={supabase}
+                    ticker={t}
+                    variant="card"
+                    initial={social[t]}
+                    userId={userId}
+                    ageGroup={ageGroup}
+                    canVote={canVote && !!userId}
+                    threadHref={`/research/${t}?tab=community`}
+                  />
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* Compliance footer */}
-      <footer className="rounded-2xl border border-sand bg-paper/40 p-4">
-        <div className="flex items-start gap-2">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-soft" />
-          <p className="text-[11px] leading-relaxed text-soft">{NEWS_DISCLAIMER}</p>
-        </div>
+      {/* ── COMPLIANCE ────────────────────────────────────────────────────── */}
+      {/* Regulated copy — NEWS_DISCLAIMER is rendered verbatim, never reworded. */}
+      <footer className="f0-rule-top mt-12 pt-4">
+        <p className="max-w-[65ch] text-[11px] leading-relaxed text-soft">
+          {NEWS_DISCLAIMER}
+        </p>
         {!isKid && (
-          <p className="mt-2 pl-6 text-[10px] text-soft/70">
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-soft opacity-60">
             Written by {article.model || "AI"} from public market data.
           </p>
         )}
       </footer>
-    </div>
+    </article>
   );
 }
 
 function ArticleSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl space-y-5 px-4 pb-24 sm:px-6">
-      <div className="h-4 w-24 animate-pulse rounded bg-sand" />
-      <div className="space-y-2">
-        <div className="h-4 w-20 animate-pulse rounded-full bg-sand" />
-        <div className="h-8 w-4/5 animate-pulse rounded bg-sand" />
-        <div className="h-5 w-full animate-pulse rounded bg-sand/70" />
+    <div className="mx-auto max-w-2xl px-4 pb-24 sm:px-6">
+      <div className="h-2.5 w-20 animate-pulse rounded bg-sand" />
+      <div className="mt-6 space-y-3">
+        <div className="h-2.5 w-28 animate-pulse rounded bg-sand" />
+        <div className="h-9 w-4/5 animate-pulse rounded bg-sand" />
+        <div className="h-5 w-full max-w-[46ch] animate-pulse rounded bg-sand/70" />
       </div>
-      <div className="space-y-3">
+      <div className="f0-rule-top mt-7" />
+      <div className="mt-7 space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-4 w-full animate-pulse rounded bg-sand/60" />
+          <div key={i} className="h-4 w-full max-w-[65ch] animate-pulse rounded bg-sand/60" />
         ))}
       </div>
     </div>

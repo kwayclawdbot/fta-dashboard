@@ -117,7 +117,7 @@ export default function FtaCoursesPage() {
         <FtaCardsSkeleton />
       ) : cards.length === 0 ? (
         <div className="paper-card p-10 text-center">
-          <Sparkles className="w-7 h-7 text-gold-500 mx-auto mb-3" />
+          <Sparkles className="w-7 h-7 text-ftagold-500 mx-auto mb-3" />
           <p className="font-display text-base font-semibold text-ink mb-1">Your program is being prepared</p>
           <p className="text-sm text-soft max-w-sm mx-auto">
             Your FTA course modules will appear here as your coach publishes them.

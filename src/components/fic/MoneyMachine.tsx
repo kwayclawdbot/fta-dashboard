@@ -235,7 +235,7 @@ export default function MoneyMachine(props: Props) {
 
             {/* warning light — blinks once */}
             <m.span
-              className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow ring-1 ring-red-200"
+              className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-card shadow ring-1 ring-red-200"
               initial={anim ? { scale: 0 } : false}
               animate={anim ? { scale: 1 } : undefined}
               transition={{ delay: 0.5, type: "spring", stiffness: 300 }}

@@ -144,7 +144,7 @@ export default function ResearchObjectCompose({
               type="button"
               onClick={() => setHorizon(h)}
               className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                horizon === h ? "bg-gold-500 text-white" : "border border-sand text-soft hover:bg-paper"
+                horizon === h ? "bg-gold-500 text-night-950" : "border border-sand text-soft hover:bg-paper"
               }`}
             >
               {TIME_HORIZON_META[h].label}

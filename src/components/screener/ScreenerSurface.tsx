@@ -13,8 +13,6 @@ import {
   Rocket,
   Waves,
   BarChart3,
-  ArrowUp,
-  ArrowDown,
   ArrowRight,
   Plus,
   Users2,
@@ -23,13 +21,11 @@ import {
   Info,
   Lock,
   X,
-  Heart,
   Sparkles,
   CornerDownLeft,
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useAppMode } from "@/lib/useAppMode";
 import { parseScreenerQuery } from "@/lib/screener-nl";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote } from "@/lib/market/client";
@@ -67,7 +63,9 @@ function researchHref(ticker: string): string {
   return `/research/${encodeURIComponent(ticker)}?from=screener`;
 }
 
-/* ---------- formatting ---------- */
+/* ---------- formatting ----------
+   Every market number on this surface is MONO. `—` is a first-class value: a
+   metric the feed didn't supply renders a dash, never a zero or a guess. */
 function fmtPrice(v: number | null | undefined): string {
   if (v == null) return "—";
   return `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -76,9 +74,10 @@ function fmtPct(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
 }
+/** COLOUR LAW: green/red belong to PRICE. Nothing else on this surface uses them. */
 function pctTone(v: number | null | undefined): string {
   if (v == null || v === 0) return "text-soft";
-  return v > 0 ? "text-emerald-600" : "text-rose-600";
+  return v > 0 ? "text-price-up" : "text-price-down";
 }
 const fmtRatio = (v: number | null | undefined) => (v == null ? "—" : `${v.toFixed(1)}×`);
 const fmtRsi = (v: number | null | undefined) => (v == null ? "—" : v.toFixed(0));
@@ -95,37 +94,59 @@ type SortKey =
   | "mcap"
   | "rsi14"
   | "like_count";
-interface Col {
+
+/** The ledger's numeric columns (desktop). `width` is shared by the header and
+ *  the row so the hairline rules line up down the whole page. */
+const LEDGER_COLS: {
   key: SortKey;
   label: string;
-  align: "left" | "right";
-  render: (r: ScreenerRow) => React.ReactNode;
-  cls?: (r: ScreenerRow) => string;
-}
-const COLS: Col[] = [
-  { key: "price", label: "Price", align: "right", render: (r) => fmtPrice(r.price) },
-  { key: "chg_1d", label: "1d", align: "right", render: (r) => fmtPct(r.chg_1d), cls: (r) => pctTone(r.chg_1d) },
-  { key: "chg_5d", label: "5d", align: "right", render: (r) => fmtPct(r.chg_5d), cls: (r) => pctTone(r.chg_5d) },
-  { key: "chg_1m", label: "1m", align: "right", render: (r) => fmtPct(r.chg_1m), cls: (r) => pctTone(r.chg_1m) },
-  { key: "chg_3m", label: "3m", align: "right", render: (r) => fmtPct(r.chg_3m), cls: (r) => pctTone(r.chg_3m) },
-  { key: "vol_ratio", label: "Vol×", align: "right", render: (r) => fmtRatio(r.vol_ratio), cls: (r) => (r.vol_ratio != null && r.vol_ratio >= 2 ? "text-gold-700 font-bold" : "") },
-  { key: "mcap", label: "Mkt cap", align: "right", render: (r) => fmtMcap(r.mcap) },
-  { key: "rsi14", label: "RSI", align: "right", render: (r) => fmtRsi(r.rsi14) },
-  {
-    key: "like_count",
-    label: "♥",
-    align: "right",
-    render: (r) =>
-      r.like_count && r.like_count > 0 ? (
-        <span className="inline-flex items-center gap-0.5 font-bold text-red-500">
-          <Heart className="h-3 w-3 fill-red-500" />
-          {r.like_count}
-        </span>
-      ) : (
-        <span className="text-soft">—</span>
-      ),
-  },
+  width: string;
+  render: (r: ScreenerRow) => string;
+  tone?: (r: ScreenerRow) => string;
+}[] = [
+  { key: "price", label: "Price", width: "w-[76px]", render: (r) => fmtPrice(r.price) },
+  { key: "chg_1d", label: "1d", width: "w-[58px]", render: (r) => fmtPct(r.chg_1d), tone: (r) => pctTone(r.chg_1d) },
+  { key: "chg_1m", label: "1m", width: "w-[58px]", render: (r) => fmtPct(r.chg_1m), tone: (r) => pctTone(r.chg_1m) },
+  { key: "chg_3m", label: "3m", width: "w-[58px]", render: (r) => fmtPct(r.chg_3m), tone: (r) => pctTone(r.chg_3m) },
+  { key: "vol_ratio", label: "Vol", width: "w-[52px]", render: (r) => fmtRatio(r.vol_ratio) },
+  { key: "mcap", label: "Cap", width: "w-[64px]", render: (r) => fmtMcap(r.mcap) },
+  { key: "rsi14", label: "RSI", width: "w-[42px]", render: (r) => fmtRsi(r.rsi14) },
 ];
+
+/** The sort menu — club heat first, because that is where the surface opens. */
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "like_count", label: "Club heat" },
+  { key: "mcap", label: "Market cap" },
+  { key: "price", label: "Price" },
+  { key: "chg_1d", label: "1-day move" },
+  { key: "chg_5d", label: "5-day move" },
+  { key: "chg_1m", label: "1-month move" },
+  { key: "chg_3m", label: "3-month move" },
+  { key: "vol_ratio", label: "Relative volume" },
+  { key: "rsi14", label: "RSI" },
+  { key: "ticker", label: "Ticker" },
+];
+
+/* The ledger's vertical hairlines. --sand is lifted globally in dark by the
+   foundation, so a plain border-sand is correct in both themes now. */
+const RULE = "border-sand";
+
+/* ---------- club heat ----------
+   COLOUR LAW: heat is COMMUNITY SENTIMENT, so it is LIME — never the red heart
+   it used to be (red belongs to price, and a red heart next to a red 1d% made
+   the two read as the same signal). The mark is a physical bar scaled against
+   the hottest name on the page plus the mono count, so "hot" is legible before
+   the number is read. */
+function HeatMark({ n, max }: { n: number | null | undefined; max: number }) {
+  if (!n || n <= 0) return <span className="font-mono text-[12px] text-soft/60">—</span>;
+  const w = 6 + Math.round((Math.min(n, max) / Math.max(max, 1)) * 26);
+  return (
+    <span className="inline-flex items-center justify-end gap-1.5">
+      <span className="h-[7px] rounded-full bg-lime-400" style={{ width: w }} aria-hidden />
+      <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">{n}</span>
+    </span>
+  );
+}
 
 interface Meta {
   last_trading_day: string | null;
@@ -148,7 +169,6 @@ interface Meta {
 export default function ScreenerSurface({ embedded = false }: { embedded?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
-  const isClub = useAppMode() === "club";
 
   const [loading, setLoading] = useState(true);
   const [tier, setTier] = useState<FamilyTier>("fic");
@@ -162,23 +182,18 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
   const [custom, setCustom] = useState<CustomFilters>({});
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("mcap");
+  // CLUB HEAT is the default sort of the surface: the screener opens on the
+  // names the club is actually engaging with, not on the biggest companies in
+  // the index. Market cap is one selection away in the sort menu.
+  const [sortKey, setSortKey] = useState<SortKey>("like_count");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [sortTouched, setSortTouched] = useState(false);
   const [page, setPage] = useState(0);
   const [nlInput, setNlInput] = useState("");
   const [nlNote, setNlNote] = useState<string | null>(null);
 
-  // Club register default (canvas artboard 09): "sorted by club heat" — the
-  // names the Club is actually engaging with (♥ like_count) float to the top,
-  // instead of raw market cap. Fires once when the mode resolves and only while
-  // the member hasn't picked their own sort (or applied a preset) yet.
-  useEffect(() => {
-    if (isClub && !sortTouched) {
-      setSortKey("like_count");
-      setSortDir("desc");
-    }
-  }, [isClub, sortTouched]);
+  // (The club-heat default used to be applied by an effect once the app mode
+  // resolved, which meant the first paint sorted by market cap and then jumped.
+  // It is now the initial state above — one sort, no reshuffle.)
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [explainerOpen, setExplainerOpen] = useState(false);
   // The "how to use a screener" explainer auto-opens for members still inside
@@ -306,6 +321,12 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     [results, page]
   );
   const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  /** Heat is scaled against the hottest name ON THIS PAGE, so the bars stay
+   *  readable whether the top row has 3 hearts or 300. */
+  const maxHeat = useMemo(
+    () => pageRows.reduce((mx, r) => Math.max(mx, r.like_count ?? 0), 0),
+    [pageRows]
+  );
 
   function applyPreset(p: ScreenerPreset) {
     if (activePresetId === p.id) {
@@ -318,7 +339,6 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setCustom((c) => ({ q: c.q, ...p.filters }));
     setSortKey(p.sort.key as SortKey);
     setSortDir(p.sort.dir);
-    setSortTouched(true);
   }
 
   // "Screen in plain English" — parse deterministically, apply as real filters.
@@ -356,7 +376,6 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setCustom((c) => ({ q: c.q }));
   }
   function toggleSort(key: SortKey) {
-    setSortTouched(true);
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
@@ -423,39 +442,44 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
           : "mx-auto max-w-6xl space-y-4 px-4 pb-24 sm:px-6"
       }
     >
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-chip-amber text-gold-700">
-            <Telescope className="h-5 w-5" />
-          </span>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">Stock Screener</h1>
-            <p className="text-xs text-soft">Search and filter the entire US market.</p>
-          </div>
-        </div>
-        <p className="mt-1.5 text-[11px] text-soft/80">
-          Delayed data (~15 min)
+      {/* ── Masthead — display type, no icon-chip, no card ──────────────────
+          One dominant voice per surface: the headline is the object here, and
+          every number under it is mono so the page reads as a market document
+          rather than as a dashboard of tiles. */}
+      <header className={embedded ? "" : "pt-2"}>
+        <p className="font-mono text-eyebrow font-bold uppercase text-gold-700">
+          Screener
+        </p>
+        <h1 className="mt-2.5 font-display text-display-2 font-extrabold text-ink">
+          The whole US market,
+          <br className="hidden sm:block" /> filtered down to a short list.
+        </h1>
+        <p className="mt-3 max-w-xl text-[13.5px] leading-relaxed text-soft">
+          Every common stock and ETF on the NYSE, Nasdaq and AMEX. Candidates to{" "}
+          <em>research</em> — never a list of things to buy.
+        </p>
+        <p className="mt-4 border-t border-sand pt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          Delayed ~15 min
           {meta?.last_trading_day ? ` · ${meta.last_trading_day}` : ""}
           {meta?.universe_count ? ` · ${meta.universe_count.toLocaleString()} securities` : ""}
-          {coverage != null ? ` · market cap on ${coverage}% of stocks` : ""}
-          {meta?.history_days ? ` · ${meta.history_days}-day window` : ""}
+          {coverage != null ? ` · mkt cap on ${coverage}% of stocks` : ""}
+          {meta?.history_days ? ` · ${meta.history_days}d window` : ""}
         </p>
-      </div>
+      </header>
 
-      {/* Search — prominent, first-class */}
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-soft" />
+      {/* Search — a ruled input line, not a floating pill */}
+      <div className="relative border-b border-sand">
+        <Search className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-soft" />
         <input
           value={custom.q ?? ""}
           onChange={(e) => setCustom((c) => ({ ...c, q: e.target.value || null }))}
           placeholder="Search 10,000+ stocks by ticker or company name…"
-          className="w-full rounded-2xl border border-sand bg-paper py-3 pl-11 pr-10 text-sm font-medium text-ink shadow-soft outline-none transition focus:border-gold-400"
+          className="w-full bg-transparent py-3 pl-7 pr-8 font-display text-[15px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
         />
         {custom.q && (
           <button
             onClick={() => setCustom((c) => ({ ...c, q: null }))}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-soft hover:text-ink"
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full p-1 text-soft hover:text-ink"
             aria-label="Clear search"
           >
             <X className="h-4 w-4" />
@@ -463,11 +487,17 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         )}
       </div>
 
-      {/* Screen in plain English (canvas artboard 09) — deterministic parse to
-          real filters, graceful keyword fallback. */}
-      <div className="rounded-2xl border border-kai-blue/25 bg-kai-blue-soft/60 p-3">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-kai-blue">
-          <Sparkles className="h-3.5 w-3.5" />
+      {/* ── Screen in plain English ─────────────────────────────────────────
+          A KAI object, so it wears Kai blue and is allowed its own field — this
+          is the one AI affordance on the surface, not a generic card. The parse
+          is deterministic (src/lib/screener-nl.ts): it only ever produces
+          filters the panel below can also produce, so a parsed screen and a
+          hand-built one are indistinguishable, and the active-filter chips
+          narrate exactly what it understood. Nothing recognised → honest
+          keyword fallback. */}
+      <div className="relative overflow-hidden rounded-xl border-l-[3px] border-kai-500 bg-kai-500/8 py-3 pl-4 pr-3 dark:border-kai-400 dark:bg-kai-500/14">
+        <div className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
+          <Sparkles className="h-3 w-3" />
           Screen in plain English
         </div>
         <div className="relative">
@@ -481,23 +511,27 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
               if (e.key === "Enter") runNL(nlInput);
             }}
             placeholder="e.g. Semis under $60 with rising volume"
-            className="w-full rounded-xl border border-sand bg-paper py-2.5 pl-3.5 pr-11 text-sm font-medium text-ink outline-none transition focus:border-kai-blue"
+            className="w-full border-b border-kai-500/25 bg-transparent py-2 pr-10 font-display text-[14px] font-semibold text-ink outline-none transition placeholder:font-normal placeholder:text-soft/70 focus:border-kai-500 dark:border-kai-400/30 dark:focus:border-kai-300"
           />
           <button
             onClick={() => runNL(nlInput)}
             disabled={!nlInput.trim()}
             aria-label="Run plain-English screen"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-lg bg-kai-blue px-2 py-1.5 text-[11px] font-bold text-white transition disabled:opacity-40"
+            className="absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-lg bg-kai-500 px-2 py-1.5 text-[11px] font-bold text-white transition disabled:opacity-40 dark:bg-kai-400"
           >
             <CornerDownLeft className="h-3.5 w-3.5" />
           </button>
         </div>
-        {nlNote && <p className="mt-1.5 text-[11px] font-medium text-soft">{nlNote}</p>}
+        {nlNote && (
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+            {nlNote}
+          </p>
+        )}
       </div>
 
       {/* Preset quick-start chips */}
       <div className="flex flex-wrap gap-2">
-        <span className="flex items-center text-[11px] font-semibold uppercase tracking-wide text-soft/70">
+        <span className="flex items-center font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft/70">
           Quick start
         </span>
         {PRESETS.map((p) => {
@@ -521,7 +555,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         })}
       </div>
       {activePresetId && (
-        <div className="rounded-xl border border-gold-300/40 bg-chip-amber/40 px-3.5 py-2.5">
+        <div className="border-l-[3px] border-volt-500 py-1 pl-3.5">
           {(() => {
             const ap = getPreset(activePresetId)!;
             const Icon = ICONS[ap.icon] ?? Trophy;
@@ -532,7 +566,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
                   <span>{ap.blurb} These filters are applied below — tweak any of them.</span>
                 </p>
                 {!isKid && (
-                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-gold-300/30 pt-2">
+                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-sand pt-2">
                     <span className="text-[12px] font-medium text-soft">
                       Want a heads-up when new names enter this screen?
                     </span>
@@ -553,17 +587,17 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         </div>
       )}
 
-      {/* Filter panel — primary interface */}
-      <div className="rounded-2xl border border-sand bg-paper/60">
+      {/* Filter panel — a ruled disclosure, not a bordered card */}
+      <div className="border-y border-sand">
         <button
           onClick={() => setFiltersOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          className="flex w-full items-center justify-between gap-2 py-3 text-left"
         >
-          <span className="flex items-center gap-2 text-sm font-bold text-ink">
+          <span className="flex items-center gap-2 font-display text-[13px] font-bold uppercase tracking-[0.08em] text-ink">
             <SlidersHorizontal className="h-4 w-4 text-gold-600" />
             Filters
             {chips.length > 0 && (
-              <span className="rounded-full bg-chip-amber px-2 py-0.5 text-[11px] font-bold text-gold-700">
+              <span className="font-mono text-[11px] font-bold text-gold-700">
                 {chips.length}
               </span>
             )}
@@ -573,13 +607,15 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         <AnimatePresence initial={false}>
           {filtersOpen && (
             <m.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <FilterPanel
-                isFTA={isFTA}
-                isKid={isKid}
-                exchanges={exchanges}
-                value={custom}
-                patch={patchFilter}
-              />
+              <div className="pb-1">
+                <FilterPanel
+                  isFTA={isFTA}
+                  isKid={isKid}
+                  exchanges={exchanges}
+                  value={custom}
+                  patch={patchFilter}
+                />
+              </div>
             </m.div>
           )}
         </AnimatePresence>
@@ -592,7 +628,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
             <button
               key={c.key}
               onClick={() => clearFilter(c.key)}
-              className="inline-flex items-center gap-1 rounded-full border border-gold-300/50 bg-chip-amber/60 px-2.5 py-1 text-[11px] font-semibold text-gold-700 hover:bg-chip-amber"
+              className="inline-flex items-center gap-1 rounded-full border border-gold-400 bg-chip-amber px-2.5 py-1 text-[11px] font-semibold text-gold-700 transition hover:border-gold-500"
             >
               {c.label}
               <X className="h-3 w-3" />
@@ -604,23 +640,45 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         </div>
       )}
 
-      {/* Result count + how-to */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-bold text-ink">
+      {/* Result count · sort · how-to */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
           {results.length.toLocaleString()} {results.length === 1 ? "result" : "results"}
         </span>
-        <button
-          onClick={() => setExplainerOpen((v) => !v)}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-soft hover:text-ink"
-        >
-          <Info className="h-3.5 w-3.5" />
-          How to use a screener
-        </button>
+        <div className="flex items-center gap-4">
+          {/* The sort is a stated fact, not a hidden default: the surface opens
+              on CLUB HEAT — what the club is actually engaging with — and says
+              so, with the change one tap away on every breakpoint. */}
+          <label className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+            Sorted by
+            <select
+              value={sortKey}
+              onChange={(e) => {
+                            setSortKey(e.target.value as SortKey);
+                setSortDir(e.target.value === "ticker" ? "asc" : "desc");
+              }}
+              className="bg-transparent font-display text-[12px] font-bold uppercase tracking-normal text-ink outline-none"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={() => setExplainerOpen((v) => !v)}
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-soft hover:text-ink"
+          >
+            <Info className="h-3.5 w-3.5" />
+            How to use this
+          </button>
+        </div>
       </div>
       <AnimatePresence initial={false}>
         {explainerOpen && (
           <m.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="flex items-start gap-2 rounded-xl border border-sand bg-paper/60 px-4 py-3">
+            <div className="flex items-start gap-2 border-l-[3px] border-sand py-1 pl-3.5">
               <p className="text-[13px] leading-relaxed text-soft">
                 A screener filters thousands of stocks down to a short list that shares one trait — trading near a high, surging in volume, or looking oversold. It is a tool for finding candidates to <em>research</em>, never a list of things to buy. Combine a few filters, sort the columns, then dig into any company that catches your eye.
               </p>
@@ -635,95 +693,62 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         )}
       </AnimatePresence>
 
-      {/* Results */}
+      {/* ── Results — ONE hairline ledger, at every breakpoint ───────────────
+          Not a table in a bordered card on desktop and a stack of cards on
+          mobile: the same ruled ledger both times, shedding columns as the
+          viewport narrows. Rules do the separating; nothing is boxed. */}
       {results.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-sand bg-paper/60 py-16 text-center">
-          <Telescope className="mx-auto mb-3 h-10 w-10 text-gold-400/60" />
-          <h3 className="font-display text-lg font-bold text-ink">Nothing matches</h3>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-soft">
-            Loosen a filter or clear your search — the market shifts every day, so this list changes with it.
+        <div className="border-y border-sand py-14">
+          <Telescope className="mb-3 h-7 w-7 text-gold-500/60" />
+          <h3 className="font-display text-display-3 font-extrabold text-ink">Nothing matches</h3>
+          <p className="mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-soft">
+            Loosen a filter or clear your search — the market shifts every day, so this list changes
+            with it.
           </p>
         </div>
       ) : (
         <>
-          {/* Desktop dense table */}
-          <div className="hidden overflow-x-auto rounded-2xl border border-sand bg-paper md:block">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead>
-                <tr className="border-b border-sand text-[11px] uppercase tracking-wide text-soft">
-                  <Th align="left" onClick={() => toggleSort("ticker")} active={sortKey === "ticker"} dir={sortDir}>
-                    Company
-                  </Th>
-                  {COLS.map((c) => (
-                    <Th key={c.key} align={c.align} onClick={() => toggleSort(c.key)} active={sortKey === c.key} dir={sortDir}>
-                      {c.label}
-                    </Th>
-                  ))}
-                  <th className="px-3 py-2.5 text-right font-semibold" />
-                </tr>
-              </thead>
-              <tbody>
-                {pageRows.map((r) => (
-                  <tr
-                    key={r.ticker}
-                    role="link"
-                    tabIndex={0}
-                    aria-label={`Open ${r.ticker} research`}
-                    onClick={() => openResearch(r.ticker)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        openResearch(r.ticker);
-                      }
-                    }}
-                    className="cursor-pointer border-b border-sand/60 last:border-0 transition-colors hover:bg-chip-amber/20 focus:bg-chip-amber/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold-400"
-                  >
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <CompanyLogo symbol={r.ticker} name={r.name} size={30} />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-display text-[13px] font-bold text-ink">{r.ticker}</span>
-                            {r.type === "etf" && (
-                              <span className="rounded bg-sand px-1 py-px text-[9px] font-bold uppercase text-soft">ETF</span>
-                            )}
-                          </div>
-                          <p className="max-w-[220px] truncate text-[11px] text-soft">{r.name || "—"}</p>
-                        </div>
-                      </div>
-                    </td>
-                    {COLS.map((c) => (
-                      <td key={c.key} className={`px-3 py-2.5 text-right tabular-nums ${c.align === "right" ? "" : "text-left"} ${c.cls?.(r) ?? "text-ink"}`}>
-                        {c.render(r)}
-                      </td>
-                    ))}
-                    <td
-                      className="whitespace-nowrap px-3 py-2.5 text-right"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <RowActions
-                        r={r}
-                        busy={busy === r.ticker}
-                        added={added[r.ticker]}
-                        canAct={!!familyId}
-                        onAddFamily={() => addToFamily(r, false)}
-                        onSuggest={() => addToFamily(r, true)}
-                        allowAlert={!isKid}
-                        compact
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Column header — mono labels over a hairline, sortable. The gap and
+              the per-cell box model (transparent left border + pl-3) mirror the
+              row exactly, so every rule in the ledger runs straight down the
+              page instead of drifting a pixel per column. */}
+          <div className="hidden items-center gap-3.5 border-b border-sand pb-2 md:flex">
+            <button
+              onClick={() => toggleSort("ticker")}
+              className={`flex-1 text-left font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${
+                sortKey === "ticker" ? "text-gold-700" : "text-soft hover:text-ink"
+              }`}
+            >
+              Company {sortKey === "ticker" && (sortDir === "asc" ? "↑" : "↓")}
+            </button>
+            {LEDGER_COLS.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => toggleSort(c.key)}
+                className={`${c.width} shrink-0 border-l border-transparent pl-3 text-right font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${
+                  sortKey === c.key ? "text-gold-700" : "text-soft hover:text-ink"
+                }`}
+              >
+                {c.label} {sortKey === c.key && (sortDir === "asc" ? "↑" : "↓")}
+              </button>
+            ))}
+            <button
+              onClick={() => toggleSort("like_count")}
+              className={`w-[86px] shrink-0 border-l border-transparent pl-3 text-right font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${
+                sortKey === "like_count" ? "text-gold-700" : "text-soft hover:text-ink"
+              }`}
+            >
+              Heat {sortKey === "like_count" && (sortDir === "asc" ? "↑" : "↓")}
+            </button>
+            <span className="ml-1 w-[96px] shrink-0" aria-hidden />
           </div>
 
-          {/* Mobile / 390px card rows */}
-          <div className="space-y-2.5 md:hidden">
+          <div className="f0-ledger">
             {pageRows.map((r) => (
-              <CardRow
+              <LedgerRow
                 key={r.ticker}
                 r={r}
+                maxHeat={maxHeat}
                 busy={busy === r.ticker}
                 added={added[r.ticker]}
                 canAct={!!familyId}
@@ -737,21 +762,21 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
           {/* Pagination */}
           {pageCount > 1 && (
-            <div className="flex items-center justify-center gap-3 pt-2">
+            <div className="flex items-center justify-center gap-4 border-t border-sand pt-3">
               <button
                 disabled={page === 0}
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
-                className="rounded-lg border border-sand bg-paper px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-40"
+                className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
               >
                 ← Prev
               </button>
-              <span className="text-xs text-soft">
-                Page {page + 1} of {pageCount}
+              <span className="font-mono text-[11px] tabular-nums text-soft">
+                {page + 1} / {pageCount}
               </span>
               <button
                 disabled={page >= pageCount - 1}
                 onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                className="rounded-lg border border-sand bg-paper px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-40"
+                className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
               >
                 Next →
               </button>
@@ -764,31 +789,151 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 }
 
 /* ============================================================================
- * Sortable table header cell.
+ * LEDGER ROW — one result, one ruled line.
+ *
+ * The same component at every breakpoint. Desktop hangs the numeric cells off
+ * hairline vertical rules; below `md` those cells collapse into a mono strip
+ * under the company name and the price moves to the right edge. There is no
+ * card variant, because a card grid is exactly what the register bans — the
+ * separation is a rule, and the row's own type carries the hierarchy.
  * ==========================================================================*/
-function Th({
-  children,
-  align,
-  onClick,
-  active,
-  dir,
+function LedgerRow({
+  r,
+  maxHeat,
+  busy,
+  added,
+  canAct,
+  onOpen,
+  onAddFamily,
+  onSuggest,
+  allowAlert = true,
 }: {
-  children: React.ReactNode;
-  align: "left" | "right";
-  onClick: () => void;
-  active: boolean;
-  dir: SortDir;
+  r: ScreenerRow;
+  maxHeat: number;
+  busy: boolean;
+  added?: "family" | "community";
+  canAct: boolean;
+  onOpen: () => void;
+  onAddFamily: () => void;
+  onSuggest: () => void;
+  allowAlert?: boolean;
 }) {
   return (
-    <th className={`px-3 py-2.5 font-semibold ${align === "right" ? "text-right" : "text-left"}`}>
-      <button
-        onClick={onClick}
-        className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""} ${active ? "text-gold-700" : "hover:text-ink"}`}
+    <div
+      role="link"
+      tabIndex={0}
+      aria-label={`Open ${r.ticker} research`}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className="f0-ledger-row group cursor-pointer focus:outline-none focus-visible:bg-volt-50 dark:focus-visible:bg-volt-500/12"
+    >
+      {/* identity */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <CompanyLogo symbol={r.ticker} name={r.name} size={34} rounded="rounded-lg" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
+              {r.ticker}
+            </span>
+            {r.type === "etf" && (
+              <span className="font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
+                ETF
+              </span>
+            )}
+            {r.exchange && (
+              <span className="hidden font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70 sm:inline">
+                {formatExchange(r.exchange)}
+              </span>
+            )}
+          </div>
+          <p className="truncate text-[11.5px] leading-snug text-soft">{r.name || "—"}</p>
+
+          {/* sub-md: the numeric cells become one mono strip */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 font-mono text-[10.5px] tabular-nums text-soft md:hidden">
+            <span>
+              1m <span className={pctTone(r.chg_1m)}>{fmtPct(r.chg_1m)}</span>
+            </span>
+            <span>
+              3m <span className={pctTone(r.chg_3m)}>{fmtPct(r.chg_3m)}</span>
+            </span>
+            <span>
+              Vol <span className="text-ink">{fmtRatio(r.vol_ratio)}</span>
+            </span>
+            <span>
+              Cap <span className="text-ink">{fmtMcap(r.mcap)}</span>
+            </span>
+            {r.like_count != null && r.like_count > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <span className="h-[6px] w-[6px] rounded-full bg-lime-400" aria-hidden />
+                <span className="text-ink">{r.like_count}</span>
+              </span>
+            )}
+          </div>
+
+          {/* sub-md: the row actions can't hide behind hover, so they sit on
+              their own line rather than being lost on touch. */}
+          <div className="mt-2 flex md:hidden" onClick={(e) => e.stopPropagation()}>
+            <RowActions
+              r={r}
+              busy={busy}
+              added={added}
+              canAct={canAct}
+              onAddFamily={onAddFamily}
+              onSuggest={onSuggest}
+              allowAlert={allowAlert}
+              compact
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* sub-md: the mark, right-aligned */}
+      <div className="shrink-0 text-right md:hidden">
+        <div className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+          {fmtPrice(r.price)}
+        </div>
+        <div className={`font-mono text-[11.5px] font-semibold tabular-nums ${pctTone(r.chg_1d)}`}>
+          {fmtPct(r.chg_1d)}
+        </div>
+      </div>
+
+      {/* md+: hairline-ruled numeric cells */}
+      {LEDGER_COLS.map((c) => (
+        <div
+          key={c.key}
+          className={`hidden shrink-0 border-l pl-3 text-right font-mono text-[12.5px] tabular-nums md:block ${RULE} ${c.width} ${
+            c.tone?.(r) ?? "text-ink"
+          }`}
+        >
+          {c.render(r)}
+        </div>
+      ))}
+      <div className={`hidden w-[86px] shrink-0 border-l pl-3 text-right md:block ${RULE}`}>
+        <HeatMark n={r.like_count} max={maxHeat} />
+      </div>
+
+      {/* actions — quiet until the row is reached */}
+      <div
+        className="ml-1 hidden w-[96px] shrink-0 justify-end transition-opacity md:flex md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100"
+        onClick={(e) => e.stopPropagation()}
       >
-        {children}
-        {active && (dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
-      </button>
-    </th>
+        <RowActions
+          r={r}
+          busy={busy}
+          added={added}
+          canAct={canAct}
+          onAddFamily={onAddFamily}
+          onSuggest={onSuggest}
+          allowAlert={allowAlert}
+          compact
+        />
+      </div>
+    </div>
   );
 }
 
@@ -817,10 +962,11 @@ function RowActions({
   allowAlert?: boolean;
 }) {
   if (added) {
+    // Confirmation is a COMMUNITY act, so it wears lime — not green (price).
     return (
-      <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-lime-700 dark:text-lime-400">
         <Check className="h-3 w-3" />
-        {added === "community" ? "On the board" : "On watchlist"}
+        {added === "community" ? "On the board" : "Watching"}
       </span>
     );
   }
@@ -833,7 +979,7 @@ function RowActions({
           onAddFamily();
         }}
         title="Add to family watchlist"
-        className="inline-flex items-center gap-1 rounded-lg border border-sand bg-paper px-2 py-1 text-[11px] font-semibold text-ink transition hover:border-gold-300 disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-lg border border-sand px-2 py-1 text-[11px] font-semibold text-soft transition hover:border-volt-400 hover:text-gold-700 disabled:opacity-50"
       >
         <Plus className="h-3.5 w-3.5" />
         {compact ? "" : "Add to family watchlist"}
@@ -845,7 +991,7 @@ function RowActions({
           onSuggest();
         }}
         title="Suggest to community"
-        className="inline-flex items-center gap-1 rounded-lg border border-sand bg-paper px-2 py-1 text-[11px] font-semibold text-ink transition hover:border-gold-300 disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-lg border border-sand px-2 py-1 text-[11px] font-semibold text-soft transition hover:border-volt-400 hover:text-gold-700 disabled:opacity-50"
       >
         <Users2 className="h-3.5 w-3.5" />
         {compact ? "" : "Suggest to community"}
@@ -865,7 +1011,7 @@ function RowActions({
         href={researchHref(r.ticker)}
         onClick={(e) => e.stopPropagation()}
         title="Research"
-        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-gold-700 hover:underline"
+        className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-semibold text-gold-700 hover:underline"
       >
         Research
         <ArrowRight className="h-3.5 w-3.5" />
@@ -886,86 +1032,6 @@ function impliedLevels(r: ScreenerRow): { label: string; price: number; op?: "ab
     if (low > 0) out.push({ label: "52w low", price: low, op: "below" });
   }
   return out;
-}
-
-/* ============================================================================
- * 390px card row — the whole card deep-links to research; actions stop
- * propagation so they never trigger the card navigation.
- * ==========================================================================*/
-function CardRow({
-  r,
-  busy,
-  added,
-  canAct,
-  onOpen,
-  onAddFamily,
-  onSuggest,
-  allowAlert = true,
-}: {
-  r: ScreenerRow;
-  busy: boolean;
-  added?: "family" | "community";
-  canAct: boolean;
-  onOpen: () => void;
-  onAddFamily: () => void;
-  onSuggest: () => void;
-  allowAlert?: boolean;
-}) {
-  return (
-    <div
-      role="link"
-      tabIndex={0}
-      aria-label={`Open ${r.ticker} research`}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      className="paper-card cursor-pointer p-3.5 transition-colors hover:bg-chip-amber/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
-    >
-      <div className="flex items-center gap-3">
-        <CompanyLogo symbol={r.ticker} name={r.name} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="font-display text-sm font-bold text-ink">{r.ticker}</span>
-            {r.type === "etf" && (
-              <span className="rounded bg-sand px-1 py-px text-[9px] font-bold uppercase text-soft">ETF</span>
-            )}
-            {r.exchange && <span className="text-[10px] text-soft/70">{formatExchange(r.exchange)}</span>}
-          </div>
-          <p className="truncate text-xs text-soft">{r.name || "—"}</p>
-        </div>
-        <div className="text-right">
-          <div className="font-display text-sm font-bold text-ink tabular-nums">{fmtPrice(r.price)}</div>
-          <div className={`text-xs font-semibold tabular-nums ${pctTone(r.chg_1d)}`}>{fmtPct(r.chg_1d)}</div>
-        </div>
-      </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-        <Metric label="1m" value={fmtPct(r.chg_1m)} tone={pctTone(r.chg_1m)} />
-        <Metric label="3m" value={fmtPct(r.chg_3m)} tone={pctTone(r.chg_3m)} />
-        <Metric label="Vol" value={fmtRatio(r.vol_ratio)} tone={r.vol_ratio != null && r.vol_ratio >= 2 ? "text-gold-700" : "text-ink"} />
-        <Metric label="Cap" value={fmtMcap(r.mcap)} tone="text-ink" />
-        {r.rsi14 != null && <Metric label="RSI" value={fmtRsi(r.rsi14)} tone="text-ink" />}
-      </div>
-      <div
-        className="mt-3 flex items-center justify-between gap-2"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <RowActions r={r} busy={busy} added={added} canAct={canAct} onAddFamily={onAddFamily} onSuggest={onSuggest} allowAlert={allowAlert} />
-      </div>
-    </div>
-  );
-}
-
-function Metric({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className="text-soft/70">{label}</span>
-      <span className={`font-semibold tabular-nums ${tone}`}>{value}</span>
-    </span>
-  );
 }
 
 /* ============================================================================
@@ -1007,7 +1073,23 @@ function emaTrendLabel(t: NonNullable<CustomFilters["emaTrend"]>): string {
 }
 
 /* ============================================================================
- * Filter panel — basic (all tiers) + advanced (FTA). Kids see no upsell note.
+ * FILTER PANEL — ruled field groups, not a grid of boxes.
+ *
+ * The previous pass restyled the RESULTS into a hairline ledger but left the
+ * filters as `grid-cols-2 sm:grid-cols-4` blocks of bordered inputs, which made
+ * the dominant block on the surface the one thing still reading as the old app.
+ * It is now built from the same vocabulary as everything below it: a section
+ * rule per group, and one hairline-ruled row per filter — label and its plain-
+ * English hint on the left, the control itself on the right. Nothing is boxed;
+ * the controls are underlined fields and pill chips, so the panel reads as a
+ * form on paper rather than as a grid of cards.
+ *
+ * Every filter that existed still exists and still writes the SAME key on
+ * CustomFilters, so the preset buttons, the active-filter chips and the
+ * plain-English parser (src/lib/screener-nl.ts) all keep working untouched —
+ * a screen built here and a screen parsed from a sentence stay identical.
+ *
+ * Tiers: advanced technical filters stay FTA-only; kids never see the upsell.
  * ==========================================================================*/
 const MCAP_STEPS: { label: string; value: number }[] = [
   { label: "$50M+", value: 50_000_000 },
@@ -1015,6 +1097,14 @@ const MCAP_STEPS: { label: string; value: number }[] = [
   { label: "$2B+", value: 2_000_000_000 },
   { label: "$10B+", value: 10_000_000_000 },
   { label: "$50B+", value: 50_000_000_000 },
+];
+
+/** The four "minimum move" windows — one row, four inline mono fields. */
+const MOVE_FIELDS: { key: "minChg1d" | "minChg5d" | "minChg1m" | "minChg3m"; label: string }[] = [
+  { key: "minChg1d", label: "1d" },
+  { key: "minChg5d", label: "5d" },
+  { key: "minChg1m", label: "1m" },
+  { key: "minChg3m", label: "3m" },
 ];
 
 function FilterPanel({
@@ -1032,108 +1122,211 @@ function FilterPanel({
 }) {
   const selectedSector = (value.sector as Sector | null) ?? null;
   const subsectorOptions = selectedSector ? SUBSECTORS[selectedSector] : [];
-  return (
-    <div className="space-y-4 px-4 pb-4">
-      {/* Exchange + type + sector + dependent subsector */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Select label="Exchange" value={value.exchange ?? ""} onChange={(v) => patch({ exchange: v || null })}>
-          <option value="">Any exchange</option>
-          {exchanges.map((e) => (
-            <option key={e} value={e}>{formatExchange(e)}</option>
-          ))}
-        </Select>
-        <Select label="Type" value={value.type ?? ""} onChange={(v) => patch({ type: (v as CustomFilters["type"]) || null })}>
-          <option value="">Stocks + ETFs</option>
-          <option value="common">Common stocks</option>
-          <option value="etf">ETFs</option>
-        </Select>
-        <Select
-          label="Sector"
-          value={value.sector ?? ""}
-          // Changing the sector clears any subsector chosen under the old one.
-          onChange={(v) => patch({ sector: v || null, subsector: null })}
-        >
-          <option value="">Any sector</option>
-          {SECTORS.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </Select>
-        <Select
-          label="Subsector"
-          value={value.subsector ?? ""}
-          onChange={(v) => patch({ subsector: v || null })}
-          disabled={!selectedSector}
-        >
-          <option value="">{selectedSector ? "Any subsector" : "Pick a sector first"}</option>
-          {subsectorOptions.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </Select>
-      </div>
 
-      {/* Market cap */}
-      <div>
-        <label className="mb-1.5 block text-xs font-semibold text-ink">Company size (market cap)</label>
-        <div className="flex flex-wrap gap-1.5">
+  return (
+    <div className="pb-4">
+      {/* ── What to look at ─────────────────────────────────────────────── */}
+      <FieldGroup label="Universe">
+        <FieldRow label="Exchange">
+          <FieldSelect
+            ariaLabel="Exchange"
+            value={value.exchange ?? ""}
+            onChange={(v) => patch({ exchange: v || null })}
+          >
+            <option value="">Any exchange</option>
+            {exchanges.map((e) => (
+              <option key={e} value={e}>
+                {formatExchange(e)}
+              </option>
+            ))}
+          </FieldSelect>
+        </FieldRow>
+
+        <FieldRow label="Security type">
+          <FieldSelect
+            ariaLabel="Security type"
+            value={value.type ?? ""}
+            onChange={(v) => patch({ type: (v as CustomFilters["type"]) || null })}
+          >
+            <option value="">Stocks + ETFs</option>
+            <option value="common">Common stocks</option>
+            <option value="etf">ETFs</option>
+          </FieldSelect>
+        </FieldRow>
+
+        <FieldRow label="Sector">
+          <FieldSelect
+            ariaLabel="Sector"
+            value={value.sector ?? ""}
+            /* Changing the sector clears any subsector chosen under the old one. */
+            onChange={(v) => patch({ sector: v || null, subsector: null })}
+          >
+            <option value="">Any sector</option>
+            {SECTORS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </FieldSelect>
+        </FieldRow>
+
+        <FieldRow
+          label="Subsector"
+          hint={selectedSector ? undefined : "Choose a sector first"}
+        >
+          <FieldSelect
+            ariaLabel="Subsector"
+            value={value.subsector ?? ""}
+            onChange={(v) => patch({ subsector: v || null })}
+            disabled={!selectedSector}
+          >
+            <option value="">{selectedSector ? "Any subsector" : "—"}</option>
+            {subsectorOptions.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </FieldSelect>
+        </FieldRow>
+
+        <FieldRow label="Company size" hint="Smallest market cap you'll look at" wrap>
           <Chip active={value.minMcap == null} onClick={() => patch({ minMcap: null })}>
             Any
           </Chip>
           {MCAP_STEPS.map((s) => (
-            <Chip key={s.label} active={value.minMcap === s.value} onClick={() => patch({ minMcap: s.value })}>
+            <Chip
+              key={s.label}
+              active={value.minMcap === s.value}
+              onClick={() => patch({ minMcap: s.value })}
+            >
               {s.label}
             </Chip>
           ))}
-        </div>
-      </div>
+        </FieldRow>
+      </FieldGroup>
 
-      {/* Price + change + volume */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <NumberField label="Min price $" value={value.minPrice} onChange={(v) => patch({ minPrice: v })} />
-        <NumberField label="Max price $" value={value.maxPrice} onChange={(v) => patch({ maxPrice: v })} />
-        <NumberField label="Min 1d %" value={value.minChg1d} onChange={(v) => patch({ minChg1d: v })} />
-        <NumberField label="Min 5d %" value={value.minChg5d} onChange={(v) => patch({ minChg5d: v })} />
-        <NumberField label="Min 1m %" value={value.minChg1m} onChange={(v) => patch({ minChg1m: v })} />
-        <NumberField label="Min 3m %" value={value.minChg3m} onChange={(v) => patch({ minChg3m: v })} />
-        <NumberField label="Min volume ×" value={value.minVolRatio} onChange={(v) => patch({ minVolRatio: v })} />
-      </div>
+      {/* ── How it is trading ───────────────────────────────────────────── */}
+      <FieldGroup label="Price and movement">
+        <FieldRow label="Share price" hint="Leave either side blank for no limit">
+          <NumField
+            ariaLabel="Minimum price"
+            prefix="$"
+            value={value.minPrice}
+            onChange={(v) => patch({ minPrice: v })}
+          />
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">to</span>
+          <NumField
+            ariaLabel="Maximum price"
+            prefix="$"
+            value={value.maxPrice}
+            onChange={(v) => patch({ maxPrice: v })}
+          />
+        </FieldRow>
 
+        <FieldRow label="Minimum move" hint="Percent gained over each window" wrap>
+          {MOVE_FIELDS.map((f) => (
+            <NumField
+              key={f.key}
+              ariaLabel={`Minimum ${f.label} move percent`}
+              prefix={f.label}
+              suffix="%"
+              width="w-14"
+              value={value[f.key]}
+              onChange={(v) => patch({ [f.key]: v } as Partial<CustomFilters>)}
+            />
+          ))}
+        </FieldRow>
+
+        <FieldRow label="Relative volume" hint="Times its own 20-day average">
+          <NumField
+            ariaLabel="Minimum relative volume"
+            prefix="≥"
+            suffix="×"
+            value={value.minVolRatio}
+            onChange={(v) => patch({ minVolRatio: v })}
+          />
+        </FieldRow>
+      </FieldGroup>
+
+      {/* ── Advanced (FTA) ──────────────────────────────────────────────── */}
       {isFTA ? (
-        <div className="space-y-4 border-t border-sand pt-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-gold-700">Advanced technical filters</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <NumberField label="RSI below (oversold)" value={value.rsiMax} onChange={(v) => patch({ rsiMax: v })} />
-            <NumberField label="RSI above (strong)" value={value.rsiMin} onChange={(v) => patch({ rsiMin: v })} />
-            <NumberField label="Gap up ≥ %" value={value.minGap} onChange={(v) => patch({ minGap: v })} />
-            <NumberField label="Gap down ≤ %" value={value.maxGap} onChange={(v) => patch({ maxGap: v })} />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Select label="Moving-average trend" value={value.emaTrend ?? ""} onChange={(v) => patch({ emaTrend: (v as CustomFilters["emaTrend"]) || null })}>
+        <FieldGroup label="Advanced — Academy">
+          <FieldRow label="RSI" hint="Low reads oversold, high reads strong">
+            <NumField
+              ariaLabel="RSI at or below"
+              prefix="≤"
+              width="w-12"
+              value={value.rsiMax}
+              onChange={(v) => patch({ rsiMax: v })}
+            />
+            <NumField
+              ariaLabel="RSI at or above"
+              prefix="≥"
+              width="w-12"
+              value={value.rsiMin}
+              onChange={(v) => patch({ rsiMin: v })}
+            />
+          </FieldRow>
+
+          <FieldRow label="Opening gap" hint="Percent away from yesterday's close">
+            <NumField
+              ariaLabel="Gap up at or above percent"
+              prefix="Up ≥"
+              suffix="%"
+              width="w-14"
+              value={value.minGap}
+              onChange={(v) => patch({ minGap: v })}
+            />
+            <NumField
+              ariaLabel="Gap down at or below percent"
+              prefix="Down ≤"
+              suffix="%"
+              width="w-14"
+              value={value.maxGap}
+              onChange={(v) => patch({ maxGap: v })}
+            />
+          </FieldRow>
+
+          <FieldRow label="Moving-average trend">
+            <FieldSelect
+              ariaLabel="Moving-average trend"
+              value={value.emaTrend ?? ""}
+              onChange={(v) => patch({ emaTrend: (v as CustomFilters["emaTrend"]) || null })}
+            >
               <option value="">Any trend</option>
               <option value="above20">Above 20-day average</option>
               <option value="below20">Below 20-day average</option>
               <option value="above50">Above 50-day average</option>
               <option value="below50">Below 50-day average</option>
               <option value="above2050">Above both averages</option>
-            </Select>
-            <div className="flex items-end gap-4 pb-1">
-              <label className="flex items-center gap-2 text-xs font-semibold text-ink">
-                <input type="checkbox" checked={!!value.nearHigh} onChange={(e) => patch({ nearHigh: e.target.checked || null })} />
-                Near 52w high
-              </label>
-              <label className="flex items-center gap-2 text-xs font-semibold text-ink">
-                <input type="checkbox" checked={!!value.nearLow} onChange={(e) => patch({ nearLow: e.target.checked || null })} />
-                Near 52w low
-              </label>
-            </div>
-          </div>
-        </div>
+            </FieldSelect>
+          </FieldRow>
+
+          <FieldRow label="52-week position" hint="Where it sits in its own year" wrap>
+            <Chip
+              active={!!value.nearHigh}
+              onClick={() => patch({ nearHigh: value.nearHigh ? null : true })}
+            >
+              Near the high
+            </Chip>
+            <Chip
+              active={!!value.nearLow}
+              onClick={() => patch({ nearLow: value.nearLow ? null : true })}
+            >
+              Near the low
+            </Chip>
+          </FieldRow>
+        </FieldGroup>
       ) : (
         !isKid && (
-          <div className="flex items-start gap-2 border-t border-sand pt-4 text-[12px] leading-snug text-soft">
+          <div className="f0-rule-top mt-5 flex items-start gap-2 pt-3 text-[12.5px] leading-snug text-soft">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
             <span>
-              Advanced technical filters — RSI, moving-average trend, gap and 52-week highs/lows — are part of the Family Trading Academy.{" "}
-              <Link href="/upgrade" className="font-semibold text-gold-700">Explore FTA →</Link>
+              Advanced technical filters — RSI, moving-average trend, gap and 52-week
+              highs and lows — are part of the Family Trading Academy.{" "}
+              <Link href="/upgrade" className="font-semibold text-gold-700">
+                Explore FTA →
+              </Link>
             </span>
           </div>
         )
@@ -1142,62 +1335,138 @@ function FilterPanel({
   );
 }
 
-function Select({
+/* ── Field group ───────────────────────────────────────────────────────────
+   A section rule (charged tick + label + hairline to the edge) over a ledger
+   of filter rows. Replaces the bordered block of inputs. */
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="pt-5 first:pt-1">
+      <h3 className="f0-section-rule font-display text-eyebrow font-bold uppercase text-soft">
+        <span className="shrink-0 whitespace-nowrap">{label}</span>
+      </h3>
+      <div className="f0-ledger">{children}</div>
+    </section>
+  );
+}
+
+/* ── Field row ─────────────────────────────────────────────────────────────
+   One filter per ruled line. NOTE: `.f0-ledger-row` is UNLAYERED css, so it
+   beats Tailwind's `items-*` utilities — a wrapping row therefore aligns its
+   children with `self-start`, never with `items-start` on the row. */
+function FieldRow({
   label,
+  hint,
+  wrap = false,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  /** Control side wraps to several lines (chips, multi-field rows). */
+  wrap?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="f0-ledger-row justify-between gap-4">
+      <div className={`min-w-0 ${wrap ? "self-start pt-1" : ""}`}>
+        <p className="font-display text-[13.5px] font-bold text-ink">{label}</p>
+        {hint && <p className="mt-0.5 text-[11.5px] leading-snug text-soft">{hint}</p>}
+      </div>
+      <div
+        className={`flex min-w-0 flex-wrap items-center justify-end gap-x-2.5 gap-y-2 ${
+          wrap ? "self-start" : ""
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── Underlined select ─────────────────────────────────────────────────────
+   The same control idiom as the "Sorted by" select at the top of the surface:
+   type on a hairline, no box, no chrome. */
+function FieldSelect({
   value,
   onChange,
   children,
   disabled = false,
+  ariaLabel,
 }: {
-  label: string;
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
   disabled?: boolean;
+  ariaLabel: string;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-[11px] font-semibold text-ink">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="w-full rounded-lg border border-sand bg-paper px-2.5 py-2 text-xs text-ink disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {children}
-      </select>
-    </label>
+    <select
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className="max-w-[16rem] cursor-pointer truncate border-b border-sand bg-transparent py-1 text-right font-display text-[13px] font-bold text-ink outline-none transition-colors hover:border-gold-400 focus:border-gold-500 disabled:cursor-not-allowed disabled:opacity-45"
+    >
+      {children}
+    </select>
   );
 }
 
-function NumberField({
-  label,
+/* ── Underlined number field ───────────────────────────────────────────────
+   Every screener input is a market number, so it is MONO and tabular. The
+   affix carries the unit ($, %, ×, the window) so the field itself stays a
+   bare number; an unset filter shows the honest em-dash placeholder. */
+function NumField({
   value,
   onChange,
+  prefix,
+  suffix,
+  width = "w-16",
+  ariaLabel,
 }: {
-  label: string;
   value: number | null | undefined;
   onChange: (v: number | null) => void;
+  prefix?: string;
+  suffix?: string;
+  width?: string;
+  ariaLabel: string;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-[11px] font-medium text-soft">{label}</span>
+    <label className="inline-flex items-baseline gap-1 font-mono text-[11px] uppercase tracking-[0.1em] text-soft">
+      {prefix && <span aria-hidden>{prefix}</span>}
       <input
         type="number"
+        aria-label={ariaLabel}
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
-        className="w-full rounded-lg border border-sand bg-paper px-2.5 py-1.5 text-xs text-ink"
+        placeholder="—"
+        className={`${width} border-b border-sand bg-transparent py-1 text-right font-mono text-[13px] font-semibold tabular-nums tracking-normal text-ink outline-none transition-colors placeholder:text-soft/60 hover:border-gold-400 focus:border-gold-500`}
       />
+      {suffix && <span aria-hidden>{suffix}</span>}
     </label>
   );
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+/* A pill toggle. Selecting a filter is an ACTION, so the on-state wears the
+   brand orange (`text-gold-700` — the gold ramp IS volt orange in club mode
+   and, unlike the frozen volt ramp, it flips for the dark page). */
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-        active ? "border-gold-400 bg-chip-amber text-gold-700" : "border-sand bg-paper text-soft hover:border-gold-300"
+      className={`rounded-full border px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition ${
+        active
+          ? "border-gold-400 bg-chip-amber text-gold-700"
+          : "border-sand text-soft hover:border-gold-300 hover:text-ink"
       }`}
     >
       {children}

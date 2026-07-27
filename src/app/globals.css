@@ -143,6 +143,36 @@
   --font-body: var(--font-inter), sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
 
+  /* ---------------------------------------------------------------- */
+  /* DISPLAY SCALE (F0)                                                */
+  /* ---------------------------------------------------------------- */
+  /* The app audited at ~2,600 type usages between 9px and 14px against
+     178 at ≥24px — i.e. no display register at all, which is why every
+     surface flattened into equal-weight boxes. These steps give the
+     system real scale contrast so a surface can have ONE dominant voice.
+     Line-height tightens and tracking goes negative as size grows (large
+     Sora needs optical compensation); the label step goes the other way.
+     Paired --line-height / --letter-spacing are Tailwind v4 modifiers, so
+     `text-display-1` carries all three values. */
+  --text-display-1: 2.75rem;              /* 44px — one per screen, the hero voice */
+  --text-display-1--line-height: 0.95;
+  --text-display-1--letter-spacing: -0.03em;
+
+  --text-display-2: 2rem;                 /* 32px — section leads */
+  --text-display-2--line-height: 1;
+  --text-display-2--letter-spacing: -0.025em;
+
+  --text-display-3: 1.5rem;               /* 24px — object titles */
+  --text-display-3--line-height: 1.1;
+  --text-display-3--letter-spacing: -0.02em;
+
+  /* The small-caps label register that replaces bolded 11px body text as
+     the section marker. Positive tracking — the inverse of the display
+     steps — so it reads as a rule, not as shrunken content. */
+  --text-eyebrow: 0.6875rem;              /* 11px */
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.16em;
+
   /* Softer, friendlier shape language */
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
@@ -842,4 +872,359 @@ body {
 @media (prefers-reduced-motion: reduce) {
   /* keep sparklines fully drawn when motion is off */
   .club-spark-line { stroke-dasharray: none; }
+}
+
+/* ------------------------------------------------------------------ */
+/* F0 — SURFACE VOCABULARY                                             */
+/* ------------------------------------------------------------------ */
+/* The audit found 65 generic card containers and 172 equal-column grids:
+   every object rendered as border+shadow+bg-card inside a symmetric grid,
+   which is the pattern the brand register bans. These are the primitives
+   that replace it — each gives an object identity through field, rule, or
+   scale instead of through a box. */
+
+/* --- Grain: breaks digital flatness on any surface ------------------ */
+/* Fixed, non-interactive fibre laid over a field. Very low opacity — it
+   should never be visible as texture, only felt as "not a flat fill". */
+.f0-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme="dark"] .f0-grain::after { opacity: 0.22; }
+
+/* --- Hero field: the dominant object on a surface ------------------- */
+/* Deliberately obsidian in BOTH themes. The warm-sand canvas is light, so
+   a dark full-bleed field is the strongest value contrast available and is
+   what lets one object actually dominate a screen. Used ONCE per surface —
+   if everything is a hero field, nothing is. */
+.f0-hero-field {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  color: #F7F3EA;
+  background:
+    radial-gradient(120% 130% at 82% 6%, color-mix(in srgb, var(--color-volt-500) 26%, transparent) 0%, transparent 54%),
+    radial-gradient(100% 120% at 8% 96%, color-mix(in srgb, var(--color-teal-600) 20%, transparent) 0%, transparent 58%),
+    linear-gradient(155deg, #171A21 0%, #0F1115 62%, #0B0D11 100%);
+  box-shadow:
+    0 22px 44px -22px color-mix(in srgb, #0F1115 62%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #FFFFFF 12%, transparent);
+}
+/* Scrim so photography (tier-1 publisher imagery) never eats the type. */
+.f0-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #0B0D11 26%, transparent) 0%,
+    color-mix(in srgb, #0B0D11 58%, transparent) 52%,
+    color-mix(in srgb, #0B0D11 88%, transparent) 100%
+  );
+}
+
+/* --- Ledger: hairline-ruled rows, the card-stack replacement -------- */
+/* A list of objects separated by rules rather than wrapped in boxes. The
+   row itself carries no chrome; hierarchy comes from the type inside it. */
+.f0-ledger > * + * { border-top: 1px solid color-mix(in srgb, var(--sand) 78%, transparent); }
+.f0-ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding-block: 0.875rem;
+  transition: background-color 200ms ease, padding-inline 200ms ease;
+}
+@media (hover: hover) {
+  .f0-ledger-row:hover {
+    background: color-mix(in srgb, var(--color-volt-500) 6%, transparent);
+    padding-inline: 0.5rem;
+  }
+}
+
+/* --- Section rule: the eyebrow marker ------------------------------ */
+/* Replaces "bold 11px text floating above a grid" as the section marker:
+   a charged tick + label + hairline that runs to the edge. */
+.f0-section-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.f0-section-rule::before {
+  content: "";
+  width: 3px;
+  height: 0.875rem;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--color-volt-400), var(--color-volt-600));
+}
+.f0-section-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sand) 92%, transparent), transparent);
+}
+
+/* --- Staggered entry ----------------------------------------------- */
+/* Nothing mounts all at once. Children cascade using an index custom
+   property so a surface assembles itself instead of appearing. */
+@media (prefers-reduced-motion: no-preference) {
+  .f0-stagger > * {
+    animation: club-rise 0.52s cubic-bezier(0.23, 1, 0.32, 1) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* CLUB2 — the light-primary split system (owner picks, rounds 8-10)   */
+/* ------------------------------------------------------------------ */
+/* The screen splits cream → orange band → cream. The card splits its own
+   charcoal field around one dominant object. Same logic at two scales.
+
+   COLOUR LAW (settled across three rounds of renders):
+     green/red = price ONLY · lime = community sentiment ONLY ·
+     orange = brand + action ONLY · price NEVER sits on orange.
+   Every variation that put a percentage on an orange field became
+   illegible — the −0.8% rendered near-black on orange. */
+
+/* --- The carousel card: charcoal field, never a bordered container -- */
+.club2-card {
+  width: 82%;                 /* < full width, so card N+1 always peeks */
+  max-width: 340px;
+  color: #F7F3EA;
+  background:
+    radial-gradient(120% 140% at 88% 4%, color-mix(in srgb, var(--color-volt-500) 15%, transparent) 0%, transparent 56%),
+    linear-gradient(155deg, #1A1D23 0%, #101216 64%, #0C0E12 100%);
+  box-shadow: 0 16px 34px -20px color-mix(in srgb, #0F1115 58%, transparent);
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) { .club2-card:hover { transform: translateY(-2px); } }
+.club2-card:active { transform: scale(0.99); }
+
+/* --- The action band: full-bleed orange, edge to edge --------------- */
+/* Breaks the page container deliberately — the band is a FIELD, which is
+   what makes orange read as energy rather than trim. */
+.club2-band {
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(100deg, var(--color-volt-500) 0%, var(--color-volt-600) 100%);
+}
+
+/* --- Snap track: momentum scroll, no scrollbar chrome --------------- */
+.club2-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  scroll-padding-left: 1rem;
+}
+.club2-track::-webkit-scrollbar { display: none; }
+
+/* --- Score dial sweep ---------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .club-donut-arc {
+    animation: club-donut-sweep 1s cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* CLUB2 — DARK THEME                                                  */
+/* ------------------------------------------------------------------ */
+/* The light system works by value contrast: a CHARCOAL card on a CREAM
+   page is the darkest object on screen. That inverts in dark mode — the
+   page is already #17120B, so the same charcoal card disappears, and its
+   cool grey fights the warm brown-black base.
+
+   Dark therefore flips the card's role: it becomes a LIFTED WARM surface
+   sitting ABOVE the page rather than a dark well sunk into it. Same
+   composition, same hierarchy, opposite mechanism. */
+:root[data-theme="dark"] .club2-card,
+:root[data-theme="dark"] [data-mode] .club2-card {
+  background:
+    radial-gradient(120% 140% at 88% 4%, color-mix(in srgb, var(--color-volt-500) 20%, transparent) 0%, transparent 58%),
+    linear-gradient(155deg, #2C2418 0%, #241E15 62%, #1F1910 100%);
+  box-shadow:
+    0 18px 36px -22px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 color-mix(in srgb, #FFFFFF 8%, transparent);
+}
+
+/* The action band keeps its orange in both themes — orange IS the brand
+   signal and must not soften at night. It only loses a little luminance so
+   it doesn't glare against a near-black page. */
+:root[data-theme="dark"] .club2-band,
+:root[data-theme="dark"] [data-mode] .club2-band {
+  background: linear-gradient(100deg, var(--color-volt-600) 0%, var(--color-volt-700) 100%);
+}
+
+/* Ledger hairlines need lifting in dark — --sand at #38322A reads as a
+   near-invisible rule against #17120B at 1px. */
+:root[data-theme="dark"] .f0-ledger > * + * {
+  border-top-color: color-mix(in srgb, var(--sand) 100%, #FFFFFF 6%);
+}
+:root[data-theme="dark"] .f0-ledger-row:hover {
+  background: color-mix(in srgb, var(--color-volt-500) 10%, transparent);
+}
+
+/* The section rule's fade must run to the dark page, not to white. */
+:root[data-theme="dark"] .f0-section-rule::after {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sand) 100%, #FFFFFF 8%), transparent);
+}
+
+/* ------------------------------------------------------------------ */
+/* DARK-THEME FOUNDATION — round two                                   */
+/* ------------------------------------------------------------------ */
+/* Four surface lanes independently hit the SAME two defects and each
+   patched them differently (text-gold-*, dark:text-volt-400,
+   dark:text-volt-300, dark:text-green-400 vs dark:text-red-400/500).
+   That divergence is the thing a shared foundation exists to prevent, so
+   both are fixed here and the per-lane patches get normalised onto these.
+
+   ROOT CAUSE 1 — the volt ramp is FROZEN across themes by design, so
+   text-volt-700 (#C24400) lands ~2.5:1 on obsidian. In CLUB mode the gold
+   ramp already IS volt orange AND it flips (--g600 #E85400 → #FF8A47), so
+   themed orange was available all along.
+
+   ROOT CAUSE 2 — the market ramp is declared "constant across themes",
+   which is right for MEANING and wrong for LEGIBILITY: green-600 #15803D
+   and red-600 #B91C1C measure ~3.8:1 and ~2.9:1 on the dark page and fail
+   at 12px. Hue must not change; ramp POSITION must. */
+
+@theme inline {
+  /* Canonical price colours. Same hue in both themes, different ramp step.
+     Use text-price-up / text-price-down and never write a dark: variant. */
+  --color-price-up: var(--price-up);
+  --color-price-down: var(--price-down);
+}
+:root { --price-up: #15803D; --price-down: #B91C1C; }
+:root[data-theme="dark"] { --price-up: #4ADE80; --price-down: #F87171; }
+
+/* --- Hero field, dark ---------------------------------------------- */
+/* f0-hero-field was cool obsidian (#0B0D11) in BOTH themes — on the warm
+   brown-black page (#17120B) the edge softened and the cool grey fought
+   the warm base. Same defect club2-card had. Same remedy: it stays the
+   darkest object but warms and gains a defined edge so it still reads as
+   a deliberate island rather than a patch of page. */
+:root[data-theme="dark"] .f0-hero-field,
+:root[data-theme="dark"] [data-mode] .f0-hero-field {
+  background:
+    radial-gradient(120% 130% at 82% 6%, color-mix(in srgb, var(--color-volt-500) 30%, transparent) 0%, transparent 54%),
+    radial-gradient(100% 120% at 8% 96%, color-mix(in srgb, var(--color-teal-600) 22%, transparent) 0%, transparent 58%),
+    linear-gradient(155deg, #221B12 0%, #191309 62%, #140F07 100%);
+  box-shadow:
+    0 22px 44px -22px rgba(0, 0, 0, 0.82),
+    inset 0 0 0 1px color-mix(in srgb, #FFFFFF 9%, transparent);
+}
+
+/* --- Standalone hairline that lifts in dark ------------------------- */
+/* For rules OUTSIDE an .f0-ledger (section separators, presence rows).
+   Bare border-sand at 1px is near-invisible on #17120B. */
+.f0-rule-top { border-top: 1px solid var(--sand); }
+:root[data-theme="dark"] .f0-rule-top {
+  border-top-color: color-mix(in srgb, var(--sand) 100%, #FFFFFF 6%);
+}
+
+/* ------------------------------------------------------------------ */
+/* F0 PRIMITIVES — MODE CORRECTNESS + DARK HAIRLINES                   */
+/* ------------------------------------------------------------------ */
+/* DEFECT (found by the mode-isolation audit): three "neutral" primitives
+   hardcode the CLUB volt ramp, so any Family or FTA surface adopting the
+   new vocabulary silently paints Club orange. The tokens were never the
+   problem — the primitives were. The app already had the right precedent
+   one block away in `.ticker-row:hover`, which uses --accent-solid and is
+   mode-correct for free. These re-point onto the accent vars:
+     family → gold · club → volt orange · fta → metallic gold
+   This retires the `familyRegister` style-object bridge in
+   src/components/family/register.tsx — that can now be deleted. */
+.f0-section-rule::before {
+  background: linear-gradient(180deg, var(--accent-strong), var(--accent-solid));
+}
+@media (hover: hover) {
+  .f0-ledger-row:hover {
+    background: color-mix(in srgb, var(--accent-solid) 6%, transparent);
+  }
+}
+:root[data-theme="dark"] .f0-ledger-row:hover {
+  background: color-mix(in srgb, var(--accent-solid) 10%, transparent);
+}
+
+/* --- Dark hairlines, globally -------------------------------------- */
+/* --sand at #38322A on the #17120B page measures 1.52:1, so EVERY
+   `border-sand` rule in the app is near-invisible at night — hundreds of
+   separators, not just the ledgers. Lifting the token itself fixes them
+   all at once rather than per-component. #453E33 is the existing
+   border-strong step (--m700), so this borrows a value the system already
+   defines instead of inventing one. */
+:root[data-theme="dark"] { --sand: #453E33; }
+
+/* ------------------------------------------------------------------ */
+/* FAMILY-DARK GOLD LIFT                                               */
+/* ------------------------------------------------------------------ */
+/* Hole in the themed-orange fix. Every lane was told to use text-gold-700
+   for orange text because in CLUB mode the gold ramp is volt orange AND
+   lifts in dark (--g700 #C24400 → #FF9A5C). But that lift lives in the
+   club-dark block only. In FAMILY dark the ramp keeps its LIGHT values —
+   --g700 #B45309 on the #17120B page is ~2.6:1 and fails.
+
+   Family's identity is gold, so the fix is not to change hue, only the
+   ramp step: lift the two TEXT stops for dark. Surfaces/fills (g50-g500)
+   are untouched, so gold tints and buttons keep their weight. The club
+   block still overrides these to orange afterwards, and ftagold (--fg*)
+   is a separate ramp that already lifts. */
+:root[data-theme="dark"] {
+  --g600: #F0B44E;   /* was #D97706 — ~2.9:1 → ~8.1:1 on the dark page */
+  --g700: #FFC96B;   /* was #B45309 — ~2.6:1 → ~10.4:1 */
+}
+
+/* --- Hairline variants requested by multiple lanes ------------------ */
+/* f0-rule-top only covers a top edge, so lanes needing a vertical rule
+   (lesson companion rails, feedback notes, quote-style left rules) or a
+   full frame (chart panes, media wells) fell back to bare border-sand.
+   That is safe now only because --sand lifts globally in dark; these make
+   it explicit and keep the lift in one place. */
+.f0-rule-left { border-left: 1px solid var(--sand); }
+.f0-frame { border: 1px solid var(--sand); }
+:root[data-theme="dark"] .f0-rule-left { border-left-color: color-mix(in srgb, var(--sand) 100%, #FFFFFF 6%); }
+:root[data-theme="dark"] .f0-frame { border-color: color-mix(in srgb, var(--sand) 100%, #FFFFFF 6%); }
+
+/* --- Bottom rule + overridable row padding -------------------------- */
+/* Two more gaps lanes hit repeatedly:
+   1. No f0-rule-bottom, so footer disclaimers borrowed f0-rule-top with
+      padding-top, which reads backwards.
+   2. `.f0-ledger-row:hover` set `padding-inline` directly. Because
+      globals.css has no @layer, that unlayered rule (0,2,0) beats ANY
+      Tailwind pl-*/px-* utility, so a ledger row could never carry an
+      indent or a left rule without nesting an inner div. Routing it
+      through a custom property lets a component override the resting
+      padding while keeping the hover inset behaviour. */
+.f0-rule-bottom { border-bottom: 1px solid var(--sand); }
+:root[data-theme="dark"] .f0-rule-bottom {
+  border-bottom-color: color-mix(in srgb, var(--sand) 100%, #FFFFFF 6%);
+}
+
+.f0-ledger-row { padding-inline: var(--f0-row-pad, 0); }
+@media (hover: hover) {
+  .f0-ledger-row:hover { padding-inline: calc(var(--f0-row-pad, 0rem) + 0.5rem); }
+}
+
+/* --- Scrim ---------------------------------------------------------- */
+/* Sheets and modals used `bg-ink/40`, but --ink INVERTS to near-white in
+   dark — so every scrim became a LIGHT wash at night, brightening the page
+   it was meant to recede behind. A scrim is one of the few things that
+   must NOT flip: it is always a darkening. Constant near-black, slightly
+   deeper in dark where the page has less contrast to give. */
+.bg-scrim { background-color: rgba(9, 8, 6, 0.42); }
+:root[data-theme="dark"] .bg-scrim { background-color: rgba(0, 0, 0, 0.62); }
+
+/* .kai-gradient was teal→GREEN, putting the price colour on Kai surfaces.
+   Repointed to the Kai blue ramp so "blue means Kai" holds everywhere. */
+.kai-gradient {
+  background: linear-gradient(135deg, var(--color-kai-500) 0%, var(--color-kai-700) 100%);
+}
+:root[data-theme="dark"] .kai-gradient {
+  background: linear-gradient(135deg, var(--color-kai-400) 0%, var(--color-kai-600) 100%);
 }

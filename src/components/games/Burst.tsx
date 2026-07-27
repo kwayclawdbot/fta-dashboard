@@ -9,7 +9,12 @@ import { useMemo } from "react";
  * parent and is pointer-events-none so it never blocks the UI.
  */
 export default function Burst({
-  colors = ["#FBBF24", "#F59E0B", "#22C55E", "#38BDF8"],
+  // COLOUR LAW: the old default palette borrowed #22C55E (green) and #38BDF8
+  // (sky) — green belongs to PRICE and sky to nothing here, so a celebration
+  // was reading as a market signal. Confetti is a BRAND moment, so the default
+  // is the warm accent ramp plus a cream, which also holds up on the dark
+  // night-island stage and on the light page. Callers may still pass `colors`.
+  colors = ["#FF8A47", "#FBBF24", "#F59E0B", "#F7F3EA"],
   count = 18,
   power = 120,
 }: {

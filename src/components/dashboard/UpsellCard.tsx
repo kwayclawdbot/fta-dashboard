@@ -225,13 +225,13 @@ export default function UpsellCard({
       <div className="grid grid-cols-2 gap-2.5 mt-4">
         <Link
           href="/courses"
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-white/50 transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
         >
           <BookOpen className="w-4 h-4 text-gold-600" /> Free courses
         </Link>
         <Link
           href="/community"
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-white/50 transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
         >
           <MessageCircle className="w-4 h-4 text-gold-600" /> Community
         </Link>

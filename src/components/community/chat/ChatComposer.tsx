@@ -193,7 +193,7 @@ export default function ChatComposer({
           <Send className="w-3.5 h-3.5" />
         </button>
         {mention && mentionCandidates.length > 0 && (
-          <div className={`absolute bottom-full left-9 mb-1 w-56 rounded-lg shadow-lg overflow-hidden z-20 border ${dark ? "bg-night-900 border-night-700" : "bg-white border-sand"}`}>
+          <div className={`absolute bottom-full left-9 mb-1 w-56 rounded-lg shadow-lg overflow-hidden z-20 border ${dark ? "bg-night-900 border-night-700" : "bg-card border-sand"}`}>
             <p className={`flex items-center gap-1 px-2.5 pt-1.5 pb-1 text-[10px] font-display font-semibold uppercase tracking-wider ${dark ? "text-night-300" : "text-soft"}`}>
               <AtSign className="w-3 h-3" /> Mention
             </p>
@@ -203,7 +203,7 @@ export default function ChatComposer({
                 onMouseDown={(e) => { e.preventDefault(); insertMention(c); }}
                 onMouseEnter={() => setMentionIdx(i)}
                 className={`flex items-center gap-2 w-full px-2.5 py-1.5 text-left ${
-                  i === mentionIdx ? (dark ? "bg-night-800" : "bg-paper") : (dark ? "bg-night-900" : "bg-white")
+                  i === mentionIdx ? (dark ? "bg-night-800" : "bg-paper") : (dark ? "bg-night-900" : "bg-card")
                 }`}
               >
                 <Avatar name={c.name} avatarUrl={c.avatar_url} size="xs" />

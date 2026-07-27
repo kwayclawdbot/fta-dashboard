@@ -2,45 +2,78 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { MessageSquare, Users, Radio } from "lucide-react";
-import Avatar from "@/components/Avatar";
-import { EditorialSection } from "@/components/grammar";
+import { Radio } from "lucide-react";
 import { deriveRegister } from "@/lib/register";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
-import { LiveEventCard, LiveNowStrip } from "@/components/live";
 import CommunityClient from "./CommunityClient";
 import LiveRooms from "@/components/community/LiveRooms";
 import ClubLiveTab from "./ClubLiveTab";
+import { DisplayHead } from "@/components/f0/parts";
+import {
+  AvatarStack,
+  PresenceRail,
+  SegmentedControl,
+  useClubOrientation,
+  useClubPresence,
+  type Segment,
+} from "./parts";
 
 /**
- * THE CLUB — the biggest single lift of the convergence (amendment #1 is LAW):
- * NO landing layer above Feed / Lounge / Live. The Club opens DIRECTLY into the
- * three MODES OF HUMAN COMMUNICATION via a quiet strip. There is no parallel
- * social taxonomy — all the richness (live_events, and the rich objects the Feed
- * already mixes in) lives INSIDE the modes, never as sibling sections.
+ * THE CLUB — the Community surface, rebuilt to the locked system.
  *
- *   Feed   — one intelligently-ranked, persistent stream; rich objects
- *            (live_event cards) lead so it reads with rhythm, composer accessible
- *            but not the front door. (= the existing community feed, embedded.)
- *   Lounge — the always-on Main Circle chat, reframed with presence.
- *   Live   — the room list: on-air, scheduled, recent replays.
+ * Amendment #1 is still LAW: no landing layer above Feed / Lounge / Live. The
+ * Club opens DIRECTLY into the three modes of human communication. What changed
+ * is the composition:
  *
- * Amendment #2: when a room is live, a prominent LIVE NOW strip renders ABOVE the
- * mode strip. Kid register keeps the safe subset (Feed read-only posture + Lounge;
- * adult Live rooms deferred to the kid safety framework).
+ *   · ONE dominant voice — a text-display-1 masthead that names the room the
+ *     member is standing in, over a mono presence rail carrying REAL counts.
+ *   · A premium segmented control instead of the old underline tab strip.
+ *   · Amendment #2 preserved: when a room is on the air, an ON-AIR rule sits
+ *     ABOVE the control. It is a HAIRLINE, not a boxed strip — the dark
+ *     f0-hero-field inside the Live tab is the single dark object on this
+ *     surface, and a second heavy banner above it would break that.
+ *   · Kid register keeps the safe subset (Feed read-only posture + Lounge; adult
+ *     Live rooms stay deferred to the kid safety framework).
+ *
+ * PRESENCE is real (GET /api/club/collective) and floored: above the floor it
+ * states counts, below it (the founding club) it renders designed founding copy.
+ * No branch prints "0 online".
  */
 
 type Mode = "feed" | "lounge" | "live";
+
+/**
+ * The masthead voice per mode. `title` + `lede` are ORIENTATION — they render
+ * for new members only. `founding` is the presence rail's below-floor line and
+ * renders for everyone, because it is presence copy, not a title.
+ */
+const MODE_VOICE: Record<Mode, { title: string; lede: string; founding: string }> = {
+  feed: {
+    title: "The floor",
+    lede: "Where the club files its reads. Every entry is someone's actual position, with their name on it.",
+    founding: "The founding floor — small on purpose",
+  },
+  lounge: {
+    title: "The lounge",
+    lede: "The always-on room. Quicker than the floor, and the whole club can see it.",
+    founding: "Always on — the founding members are here",
+  },
+  live: {
+    title: "The room",
+    lede: "Market walk-throughs, classes and audio hangs — live, then kept as recordings.",
+    founding: "Rooms open with the challenge",
+  },
+};
 
 export default function ClubModeShell({
   initialData,
   demoEvents = false,
 }: {
   initialData: CommunityFeedSeed | null;
-  /** preview/dev only — surface fixture live_events so the Live mode + LIVE NOW
-   *  strip are reviewable before the S2.5 backend lands. */
+  /** preview/dev only — surface fixture live_events so the Live mode + on-air
+   *  rule are reviewable before the S2.5 backend lands. */
   demoEvents?: boolean;
 }) {
   const searchParams = useSearchParams();
@@ -70,8 +103,20 @@ export default function ClubModeShell({
       }
     : null;
 
-  // Real member faces for the Lounge presence strip (never fabricated) — the
-  // most recent distinct post authors from the seed.
+  const presence = useClubPresence();
+
+  // NEW vs RETURNING — profiles.created_at (24h window, via the app's existing
+  // first-run hook) AND real participation from the server seed. See
+  // useClubOrientation for the full rationale.
+  const orientation = useClubOrientation({
+    meId: me?.id,
+    posts: initialData?.posts ?? [],
+    likedByMe: initialData?.likedByMe ?? [],
+  });
+
+  // Real member faces + names for the Lounge (never fabricated) — the most
+  // recent DISTINCT post authors from the seed. These are people who actually
+  // spoke in the club, not a manufactured crowd.
   const loungeFaces = useMemo(() => {
     const seen = new Set<string>();
     const faces: { name: string; avatar_url: string | null }[] = [];
@@ -93,10 +138,30 @@ export default function ClubModeShell({
     ? events.filter((e) => e.status === "live" || e.status === "starting_soon").length
     : 0;
 
-  const modes: { id: Mode; label: string; icon: React.ElementType; hidden?: boolean }[] = [
-    { id: "feed", label: "Feed", icon: MessageSquare },
-    { id: "lounge", label: "Lounge", icon: Users },
-    { id: "live", label: "Live", icon: Radio, hidden: !showLive },
+  // The soonest scheduled room, for the quiet "next room" rule under the
+  // masthead when nothing is on the air.
+  const nextRoom = useMemo(() => {
+    if (!showLive) return null;
+    return (
+      [...events]
+        .filter((e) => e.status === "scheduled")
+        .sort((a, b) => (a.starts_at ?? "").localeCompare(b.starts_at ?? ""))[0] ?? null
+    );
+  }, [events, showLive]);
+  const nextRoomWhen = nextRoom
+    ? new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        hour: "numeric",
+        timeZone: "America/New_York",
+      }).format(new Date(nextRoom.starts_at)) + " ET"
+    : null;
+
+  const segments: Segment[] = [
+    { id: "feed", label: "Feed" },
+    { id: "lounge", label: "Lounge" },
+    ...(showLive
+      ? [{ id: "live", label: "Live", onAir: liveCount > 0, count: liveCount } as Segment]
+      : []),
   ];
 
   function selectMode(next: Mode) {
@@ -111,107 +176,139 @@ export default function ClubModeShell({
     }
   }
 
-  // The Club feed lead: live_event rich objects give the stream rhythm.
-  const feedLead =
-    showLive && events.length > 0 ? (
-      <EditorialSection title="Live in the Club">
-        <div className="space-y-3">
-          {[...events]
-            .sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1))
-            .slice(0, 2)
-            .map((e) => (
-              <LiveEventCard key={e.id} event={e} />
-            ))}
-        </div>
-      </EditorialSection>
-    ) : null;
+  const voice = MODE_VOICE[mode];
 
   return (
     <div className="mx-auto max-w-2xl px-0">
-      {/* Amendment #2 — LIVE NOW above the mode strip */}
-      {liveNow && (
-        <div className="mb-4">
-          <LiveNowStrip event={liveNow} />
-        </div>
+      {/* ── ORIENTATION MASTHEAD — NEW MEMBERS ONLY ─────────────────────────
+          Owner law: the Community board is not a landing page. A returning
+          member gets NO standing title — the board itself is the page, and the
+          first thing in the viewport is a real entry. A member still inside the
+          new-member window who has not yet posted or backed anything gets the
+          orienting title + lede once, because they do not yet know what this
+          surface is. See useClubOrientation for exactly what this keys off. */}
+      {orientation.show && (
+        <header className="pb-5">
+          <DisplayHead eyebrow="The Club" title={voice.title} lede={voice.lede} />
+        </header>
       )}
 
-      {/* The quiet mode strip — the ONLY navigation The Club exposes */}
-      <div className="mb-5 flex items-center gap-1 border-b border-sand">
-        {modes
-          .filter((m) => !m.hidden)
-          .map((m) => {
-            const active = mode === m.id;
-            const isLive = m.id === "live";
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => selectMode(m.id)}
-                className={`-mb-px flex items-center gap-1.5 border-b-2 px-4 py-2.5 font-display text-[15px] font-bold transition-colors ${
-                  active
-                    ? "border-volt-500 text-ink"
-                    : "border-transparent text-soft hover:text-ink"
-                }`}
-              >
-                {isLive && liveCount > 0 ? (
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-volt-500 opacity-70 motion-reduce:hidden" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-volt-500" />
-                  </span>
-                ) : (
-                  <m.icon className="h-4 w-4" />
-                )}
-                {m.label}
-                {isLive && liveCount > 0 && (
-                  <span className="ml-0.5 rounded-full bg-volt-500 px-1.5 py-0.5 text-[10px] font-black text-white">
-                    {liveCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {/* ── Amendment #2 — the ON-AIR rule, above the control ───────────────
+          A hairline, not a banner. It announces the room and hands the member
+          straight into the Live tab, where the dark hero field carries it.
+
+          COLOUR: the recording signal is the pulsing red DOT only — an icon, and
+          the universal "on air" mark, matching the shipped LiveEventCard. The
+          LABEL stays ink. Red as TEXT is reserved for price under the colour
+          law, and an "ON AIR" in the same red as a −2.4% two rows below would
+          read as a down move for a beat. The dot carries the urgency. */}
+      {liveNow && (
+        <button
+          type="button"
+          onClick={() => selectMode("live")}
+          className="mb-4 flex w-full items-center gap-3 f0-rule-top py-2.5 text-left transition-colors hover:bg-volt-500/[0.06]"
+        >
+          <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-70 motion-reduce:hidden" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+          </span>
+          <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink">
+            {liveNow.status === "live" ? "On air" : "Starting"}
+          </span>
+          <span className="min-w-0 flex-1 truncate font-display text-[14px] font-bold text-ink">
+            {liveNow.title}
+          </span>
+          <span className="shrink-0 font-mono text-[10.5px] tracking-wide text-soft">
+            {liveNow.host.name}
+          </span>
+          <Radio className="h-3.5 w-3.5 shrink-0 text-gold-600" aria-hidden />
+        </button>
+      )}
+
+      {/* Nothing on the air, but something is on the schedule. The Feed used to
+          lead with live_event CARDS for this; the same discovery now rides a
+          quiet hairline so the stream stays a stream. */}
+      {!liveNow && nextRoom && (
+        <button
+          type="button"
+          onClick={() => selectMode("live")}
+          className="mb-4 flex w-full items-center gap-3 f0-rule-top py-2.5 text-left transition-colors hover:bg-volt-500/[0.06]"
+        >
+          <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold-700">
+            Next room
+          </span>
+          <span className="min-w-0 flex-1 truncate font-display text-[14px] font-bold text-ink">
+            {nextRoom.title}
+          </span>
+          <span className="shrink-0 font-mono text-[10.5px] tracking-wide text-soft">
+            {nextRoomWhen}
+          </span>
+        </button>
+      )}
+
+      {/* ── The mode control — the ONLY navigation The Club exposes ───────────
+          Followed by the presence rail in its COMPACT form. Together they are
+          ~70px, so the first entry starts high instead of below a hero. */}
+      <div className="mb-4">
+        <SegmentedControl
+          segments={segments}
+          active={mode}
+          onSelect={(id) => selectMode(id as Mode)}
+          ariaLabel="The Club"
+        />
+        <div className="mt-2.5">
+          <PresenceRail presence={presence} founding={voice.founding} compact />
+        </div>
       </div>
 
       {mode === "feed" && (
-        <CommunityClient initialData={initialData} embedded leadSlot={feedLead} />
+        <CommunityClient
+          initialData={initialData}
+          embedded
+          showOrientation={orientation.show}
+        />
       )}
 
       {mode === "lounge" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="font-display text-[20px] font-bold tracking-tight text-ink">
-                The Lounge
-              </h2>
-              <p className="mt-0.5 flex items-center gap-2 text-sm text-soft">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-70 motion-reduce:hidden" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-400" />
-                </span>
-                {loungeFaces.length > 0
-                  ? "Members are around — say hi"
-                  : "Always-on chat — be the first voice today"}
+          {/* Lounge presence. The framing PARAGRAPH is orientation, so it is
+              new-member only; the FACES are content (real members who actually
+              spoke) and stay for everyone, on one compact line. */}
+          {orientation.show && (
+            <p className="max-w-[44ch] text-[14.5px] leading-relaxed text-soft">
+              {loungeFaces.length > 0
+                ? "Always-on chat. The whole club sees this room — say something and it lands with everyone."
+                : "The room is always on. Be the first voice today — it sets the tone for everyone who walks in after."}
+            </p>
+          )}
+          {loungeFaces.length > 0 && (
+            <div className="flex items-center gap-2.5">
+              <AvatarStack
+                faces={loungeFaces}
+                max={5}
+                size="xs"
+                label="Members who posted recently"
+              />
+              <p className="min-w-0 truncate font-mono text-[10.5px] tracking-wide text-soft">
+                {loungeFaces
+                  .slice(0, 3)
+                  .map((f) => f.name.split(" ")[0])
+                  .join(", ")}{" "}
+                have been through today
               </p>
             </div>
-            {loungeFaces.length > 0 && (
-              <div className="flex -space-x-2">
-                {loungeFaces.map((f, i) => (
-                  <Avatar
-                    key={i}
-                    name={f.name}
-                    avatarUrl={f.avatar_url ?? undefined}
-                    size="sm"
-                    className="ring-2 ring-paper"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          )}
           <LiveRooms me={chatMe} tier={tier} />
         </div>
       )}
 
-      {mode === "live" && showLive && <ClubLiveTab events={events} focusId={liveParam} />}
+      {mode === "live" && showLive && (
+        <ClubLiveTab
+          events={events}
+          focusId={liveParam}
+          onGoToLounge={() => selectMode("lounge")}
+        />
+      )}
     </div>
   );
 }

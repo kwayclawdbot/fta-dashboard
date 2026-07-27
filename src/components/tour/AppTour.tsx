@@ -762,7 +762,7 @@ export default function AppTour({ user }: { user: TourUser }) {
                 }}
               />
             ) : (
-              <div className="absolute inset-0 bg-ink/60" onClick={next} />
+              <div className="absolute inset-0 bg-scrim" onClick={next} />
             )}
 
             {/* coach card */}

@@ -63,8 +63,17 @@ export async function GET(req: NextRequest) {
   const ctx = await resolveClubCtx(supabase, req);
   if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  // Prime the shared read-through once (memoised; after()-deferred refresh).
-  await ctx.ensureFresh();
+  // PERF: this used to `await ctx.ensureFresh()` here, which serialised the
+  // metrics read-through AHEAD of all nine cores. The call is memoised and the
+  // cores that actually depend on it (trending, pulse) already await it
+  // themselves — so blocking here bought nothing and delayed the five sections
+  // that never touch it (thinking, debate, foryou, people, invite).
+  //
+  // Kicking it off WITHOUT awaiting keeps the single-flight behaviour (same
+  // memoised promise) while letting the independent cores start immediately.
+  // The floating promise is caught so a failed refresh can never reject the
+  // request — each core still degrades on its own.
+  void ctx.ensureFresh().catch(() => {});
 
   const settled = await Promise.all(
     KEYS.map(async (key) => {

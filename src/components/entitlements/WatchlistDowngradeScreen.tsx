@@ -69,14 +69,14 @@ export default function WatchlistDowngradeScreen({
               key={it.id}
               className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
                 active
-                  ? "border-sand bg-white/50"
+                  ? "border-sand bg-card"
                   : "border-sand/60 bg-transparent opacity-70"
               }`}
             >
               {active ? (
                 <Eye className="h-4 w-4 shrink-0 text-green-600" />
               ) : (
-                <EyeOff className="h-4 w-4 shrink-0 text-soft/60" />
+                <EyeOff className="h-4 w-4 shrink-0 text-soft" />
               )}
               <span className="font-display font-semibold text-ink">
                 {it.ticker}
@@ -86,7 +86,7 @@ export default function WatchlistDowngradeScreen({
               </span>
               <span
                 className={`shrink-0 text-xs font-medium ${
-                  active ? "text-green-600" : "text-soft/70"
+                  active ? "text-green-600" : "text-soft"
                 }`}
               >
                 {active ? "Monitored" : "Monitoring paused"}

@@ -205,7 +205,7 @@ export default function SavePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-5"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-scrim px-5"
             onClick={() => setShowExit(false)}
           >
             <m.div

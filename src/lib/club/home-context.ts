@@ -39,6 +39,13 @@ export interface ClubSnapshotRow {
   club_score: number | null;
   club_change_14d: number | null;
   participants: number | null;
+  /** Watchers + stance split — already written by refresh_club_metrics (mig 141).
+   *  Selected here so the canvas Home hero reads breadth + sentiment from the
+   *  SAME ledger read as the ranking (no extra fan-out). */
+  watchers: number | null;
+  sentiment_bullish: number | null;
+  sentiment_neutral: number | null;
+  sentiment_bearish: number | null;
   provenance: unknown;
   computed_at: string | null;
 }
@@ -117,7 +124,10 @@ export async function resolveClubCtx(
   const getSnapshots = once<ClubSnapshotRow[]>(async () => {
     const { data } = await supabase
       .from("ticker_intel_snapshots")
-      .select("ticker, rank, club_score, club_change_14d, participants, provenance, computed_at")
+      .select(
+        "ticker, rank, club_score, club_change_14d, participants, watchers, " +
+          "sentiment_bullish, sentiment_neutral, sentiment_bearish, provenance, computed_at"
+      )
       .order("rank", { ascending: true });
     return (data as ClubSnapshotRow[] | null) ?? [];
   });

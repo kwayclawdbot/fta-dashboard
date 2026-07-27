@@ -1,8 +1,22 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Minus, TrendingUp, Eraser, X, Plus } from "lucide-react";
+import { useState } from "react";
+import { Minus, Eraser, X, Plus } from "lucide-react";
 import type { ChartHandle } from "./CandlestickChart";
+import { SimChip, SimNumField } from "./parts";
+
+/**
+ * CHART DRAWING TOOLS — mark your levels on the practice chart.
+ *
+ * Behaviour is untouched (add a level at the current price, add one at a typed
+ * price, remove one, clear all — all through the same ChartHandle). The chrome
+ * is now chips and an underlined mono field on the paper, not a nested dark
+ * toolbar.
+ *
+ * The six swatch values are literal hex ON PURPOSE: they are passed to
+ * lightweight-charts as canvas stroke colours, which cannot read a CSS token,
+ * and they render on the chart's own always-dark pane rather than on the page.
+ */
 
 interface DrawnLine {
   id: string;
@@ -16,27 +30,20 @@ interface ChartDrawingToolsProps {
   currentPrice: number;
 }
 
-type Tool = "none" | "horizontal" | "trendline";
-
 const LINE_COLORS = [
-  { color: "#FBBF24", label: "Gold" },
+  { color: "#FF8A00", label: "Orange" },
   { color: "#4ADE80", label: "Green" },
   { color: "#EF4444", label: "Red" },
   { color: "#60A5FA", label: "Blue" },
   { color: "#A78BFA", label: "Purple" },
-  { color: "#F97316", label: "Orange" },
+  { color: "#FBBF24", label: "Gold" },
 ];
 
-export default function ChartDrawingTools({
-  chartRef,
-  currentPrice,
-}: ChartDrawingToolsProps) {
-  const [activeTool, setActiveTool] = useState<Tool>("none");
+export default function ChartDrawingTools({ chartRef, currentPrice }: ChartDrawingToolsProps) {
   const [drawnLines, setDrawnLines] = useState<DrawnLine[]>([]);
   const [selectedColor, setSelectedColor] = useState(LINE_COLORS[0].color);
   const [priceInput, setPriceInput] = useState("");
   const [showAddLine, setShowAddLine] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleAddLine() {
     if (!chartRef.current) return;
@@ -45,7 +52,10 @@ export default function ChartDrawingTools({
 
     const label = price > currentPrice ? "R" : "S";
     const id = chartRef.current.addHorizontalLine(price, selectedColor, label);
-    setDrawnLines((prev) => [...prev, { id, price, label: `${label} $${price.toFixed(2)}`, color: selectedColor }]);
+    setDrawnLines((prev) => [
+      ...prev,
+      { id, price, label: `${label} $${price.toFixed(2)}`, color: selectedColor },
+    ]);
     setPriceInput("");
     setShowAddLine(false);
   }
@@ -56,7 +66,12 @@ export default function ChartDrawingTools({
     const id = chartRef.current.addHorizontalLine(currentPrice, selectedColor, label);
     setDrawnLines((prev) => [
       ...prev,
-      { id, price: currentPrice, label: `${label} $${currentPrice.toFixed(2)}`, color: selectedColor },
+      {
+        id,
+        price: currentPrice,
+        label: `${label} $${currentPrice.toFixed(2)}`,
+        color: selectedColor,
+      },
     ]);
   }
 
@@ -73,112 +88,92 @@ export default function ChartDrawingTools({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Drawing tools */}
-      <div className="flex items-center gap-0.5 bg-midnight-900 border border-midnight-700/50 rounded-lg p-0.5">
-        <button
-          onClick={() => {
-            setActiveTool(activeTool === "horizontal" ? "none" : "horizontal");
-            handleAddAtPrice();
-          }}
-          title="Add S/R line at current price"
-          className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            activeTool === "horizontal"
-              ? "bg-gold-400/15 text-gold-400"
-              : "text-midnight-400 hover:text-midnight-200"
-          }`}
-        >
-          <Minus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">S/R Line</span>
-        </button>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
+        Levels
+      </span>
 
-        <button
-          onClick={() => setShowAddLine(!showAddLine)}
-          title="Add line at specific price"
-          className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            showAddLine
-              ? "bg-gold-400/15 text-gold-400"
-              : "text-midnight-400 hover:text-midnight-200"
-          }`}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">At Price</span>
-        </button>
+      <SimChip onClick={handleAddAtPrice} title="Draw a level at the current price">
+        <Minus className="h-3.5 w-3.5" />
+        At the mark
+      </SimChip>
 
-        {drawnLines.length > 0 && (
-          <button
-            onClick={handleClearAll}
-            title="Clear all lines"
-            className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium text-midnight-400 hover:text-red-500 transition-colors"
-          >
-            <Eraser className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Clear</span>
-          </button>
-        )}
-      </div>
+      <SimChip
+        active={showAddLine}
+        onClick={() => setShowAddLine((v) => !v)}
+        title="Draw a level at a price you type"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        At a price
+      </SimChip>
 
-      {/* Color picker */}
-      <div className="flex items-center gap-1">
+      {drawnLines.length > 0 && (
+        <SimChip onClick={handleClearAll} title="Clear every level">
+          <Eraser className="h-3.5 w-3.5" />
+          Clear
+        </SimChip>
+      )}
+
+      {/* Swatches — the stroke colour of the next level drawn. */}
+      <span className="flex items-center gap-1.5">
         {LINE_COLORS.map((c) => (
           <button
             key={c.color}
+            type="button"
             onClick={() => setSelectedColor(c.color)}
             title={c.label}
-            className={`w-4 h-4 rounded-full border-2 transition-all ${
+            aria-label={`${c.label} level colour`}
+            aria-pressed={selectedColor === c.color}
+            className={`h-3.5 w-3.5 rounded-full transition-transform ${
               selectedColor === c.color
-                ? "border-white scale-125"
-                : "border-transparent opacity-60 hover:opacity-100"
+                ? "scale-125 ring-2 ring-ink ring-offset-2 ring-offset-paper"
+                : "opacity-55 hover:opacity-100"
             }`}
             style={{ backgroundColor: c.color }}
           />
         ))}
-      </div>
+      </span>
 
-      {/* Price input for manual line */}
       {showAddLine && (
-        <div className="flex items-center gap-1">
-          <input
-            ref={inputRef}
-            type="number"
+        <span className="flex items-center gap-2">
+          <SimNumField
+            ariaLabel="Level price"
+            prefix="$"
             value={priceInput}
-            onChange={(e) => setPriceInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAddLine()}
-            placeholder="Price"
+            onChange={setPriceInput}
             step="0.01"
-            className="w-24 bg-midnight-800 border border-midnight-700/50 rounded-md px-2 py-1 text-xs font-mono text-midnight-100 placeholder:text-midnight-600 focus:outline-none focus:border-gold-400/30"
-            autoFocus
+            width="w-20"
           />
-          <button
-            onClick={handleAddLine}
-            className="px-2 py-1 rounded-md bg-gold-400/15 text-gold-400 text-xs font-medium hover:bg-gold-400/25 transition-colors"
-          >
-            Add
-          </button>
-        </div>
+          <SimChip onClick={handleAddLine} title="Draw the level">
+            Draw
+          </SimChip>
+        </span>
       )}
 
-      {/* Drawn lines list */}
       {drawnLines.length > 0 && (
-        <div className="flex items-center gap-1 flex-wrap">
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {drawnLines.map((line) => (
             <span
               key={line.id}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-midnight-800 border border-midnight-700/30 text-[10px] font-mono"
+              className="inline-flex items-center gap-1.5 font-mono text-[10.5px] tabular-nums text-soft"
             >
               <span
-                className="w-2 h-2 rounded-full"
+                className="h-2 w-2 rounded-full"
                 style={{ backgroundColor: line.color }}
+                aria-hidden
               />
-              <span className="text-midnight-300">{line.label}</span>
+              {line.label}
               <button
+                type="button"
                 onClick={() => handleRemoveLine(line.id)}
-                className="text-midnight-500 hover:text-red-500 transition-colors"
+                aria-label={`Remove level ${line.label}`}
+                className="text-soft transition-colors hover:text-ink"
               >
-                <X className="w-2.5 h-2.5" />
+                <X className="h-2.5 w-2.5" />
               </button>
             </span>
           ))}
-        </div>
+        </span>
       )}
     </div>
   );

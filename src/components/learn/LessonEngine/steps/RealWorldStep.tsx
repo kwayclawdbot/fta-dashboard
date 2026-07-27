@@ -79,26 +79,26 @@ export default function RealWorldStep({
 
       {/* The mission card — a designed object, not a generic container: a
           ticket-style band with the ticker and a real deep-link. */}
-      <div className="overflow-hidden rounded-2xl border border-gold-300/60 bg-white/70">
-        <div className="flex items-center gap-3 border-b border-dashed border-sand px-5 py-4">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold-400/20 text-gold-700">
+      <div className="border-y-2 border-dashed border-sand">
+        <div className="flex items-center gap-3.5 py-4">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold-400/15 text-gold-700">
             <Icon className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <div className="font-display text-base font-bold text-ink">
+            <div className="font-display text-[17px] font-bold text-ink">
               {spec.company}
             </div>
-            <div className="font-mono text-xs tracking-wide text-soft">
+            <div className="font-mono text-[12px] tracking-wide text-soft">
               {spec.ticker.toUpperCase()}
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-gold-400 bg-gold-400/10 px-4 py-2.5 font-display text-sm font-semibold text-gold-800 transition-[transform,background-color] duration-150 ease-out hover:bg-gold-400/20 active:scale-[0.97]"
+            className="inline-flex items-center gap-2 rounded-full border border-gold-500 px-4 py-2.5 font-display text-sm font-bold text-gold-700 transition-[transform,background-color] duration-150 ease-out hover:bg-gold-400/10 active:scale-[0.97]"
           >
             {spec.cta}
             <ExternalLink className="h-4 w-4" />
@@ -107,7 +107,7 @@ export default function RealWorldStep({
             onClick={() => void runCheck(false)}
             disabled={checking || confirmed}
             icon="none"
-            tone="green"
+            tone="confirm"
           >
             {checking ? (
               <span className="inline-flex items-center gap-2">
@@ -155,7 +155,7 @@ export default function RealWorldStep({
           </GuideLine>
           <button
             onClick={() => onResolve({})}
-            className="shrink-0 font-body text-xs text-soft underline underline-offset-2 transition-colors hover:text-ink"
+            className="shrink-0 text-xs text-soft underline underline-offset-2 transition-colors hover:text-ink"
           >
             I&apos;ll do this later
           </button>

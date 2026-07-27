@@ -112,11 +112,13 @@ export default function SimbotPage() {
         <SimulatorTabs />
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="relative mb-4 h-12 w-12">
-            <div className="absolute inset-0 rounded-full border-2 border-gold-400/20" />
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gold-400 animate-spin" />
-            <Bot className="absolute inset-0 m-auto h-5 w-5 text-gold-500" />
+            <div className="absolute inset-0 rounded-full border-2 border-sand" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-gold-500" />
+            <Bot className="absolute inset-0 m-auto h-5 w-5 text-gold-600" />
           </div>
-          <p className="font-display text-sm font-semibold text-midnight-200">Loading Simbot…</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-soft">
+            Loading Simbot…
+          </p>
         </div>
       </div>
     );
@@ -149,34 +151,33 @@ export default function SimbotPage() {
   )}&theme=${getResolvedTheme()}`;
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-6xl space-y-6 pb-10">
       <Celebrate
         opts={celebrateQueue[0] ?? null}
         onDone={() => setCelebrateQueue((q) => q.slice(1))}
       />
       <SimulatorTabs />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-display font-bold text-midnight-100">
-            <Bot className="h-5 w-5 text-gold-500" />
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+        <div className="min-w-0">
+          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+            Practice
+          </p>
+          <h1 className="mt-2 flex items-center gap-2.5 font-display text-display-1 font-extrabold text-ink">
             Simbot
             {simbotHint.showReopen && (
-              <HintReopen
-                onClick={simbotHint.reopen}
-                label="How Simbot works"
-              />
+              <HintReopen onClick={simbotHint.reopen} label="How Simbot works" />
             )}
           </h1>
-          <p className="text-xs text-midnight-400">
+          <p className="mt-2.5 max-w-md text-[14px] leading-relaxed text-soft">
             {simbotHint.show &&
               "A hands-on price-action simulator — lessons, practice trades, and a Live Market mode. "}
             Every price is practice; no real money.
           </p>
         </div>
-      </div>
+      </header>
 
       <div
-        className="relative w-full overflow-hidden rounded-lg border border-sand"
+        className="relative w-full overflow-hidden rounded-xl border border-sand"
         style={{ height: "calc(100vh - 190px)", minHeight: 520 }}
       >
         <iframe
@@ -201,20 +202,22 @@ export default function SimbotPage() {
               <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gold-500 animate-spin" />
               <Bot className="absolute inset-0 m-auto h-4 w-4 text-gold-600" />
             </div>
-            <p className="font-display text-sm font-semibold text-ink">Warming up Simbot…</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-soft">
+              Warming up Simbot…
+            </p>
           </div>
         )}
 
         {frameState === "error" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper px-6 text-center">
             <Bot className="h-8 w-8 text-gold-600" />
-            <p className="max-w-sm text-sm text-ink">
+            <p className="max-w-sm text-[13.5px] leading-relaxed text-ink">
               Simbot didn&apos;t load. Try again, or open it in a new tab.
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setFrameNonce((n) => n + 1)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-display font-semibold text-white transition-colors hover:bg-gold-600"
+                className="cta-button inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px]"
               >
                 <RotateCw className="h-4 w-4" />
                 Try again
@@ -223,7 +226,7 @@ export default function SimbotPage() {
                 href={src}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-white/60"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sand px-4 py-2 font-display text-[13px] font-bold text-ink transition-colors hover:border-gold-400 hover:text-gold-700"
               >
                 <ExternalLink className="h-4 w-4" />
                 Open

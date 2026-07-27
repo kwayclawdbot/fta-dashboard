@@ -109,9 +109,14 @@ export default function SetupTrail({
           const isNext = i === nextIdx && !allDone;
           const isFinal = i === total - 1;
           const Icon = done ? Check : NODE_ICONS[step.key] || PlayCircle;
-          const fill = done ? "var(--g500)" : isFinal && allDone ? "#16A34A" : "#FFFFFF";
+          /* Unreached stops take the themed CARD surface, not literal white —
+             a #FFFFFF node punched a hole in the page on the dark theme. The
+             icon inside follows the faint text step (--m600) for the same
+             reason. --g500/--g600 are the mode's own accent (gold in Family,
+             volt in Club) and are already theme-correct. */
+          const fill = done ? "var(--g500)" : isFinal && allDone ? "#16A34A" : "var(--card)";
           const stroke = done ? "var(--g600)" : isNext ? "var(--g500)" : "var(--sand)";
-          const iconColor = done ? "#FFFFFF" : isNext ? "var(--g700)" : "#98A2B3";
+          const iconColor = done ? "#FFFFFF" : isNext ? "var(--g700)" : "var(--m600)";
           return (
             <g key={step.key}>
               <m.circle

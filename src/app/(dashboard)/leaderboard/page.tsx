@@ -3,10 +3,8 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { m } from "@/lib/motion";
-import { Crown, Trophy, Users, Zap, Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAppMode } from "@/lib/useAppMode";
-import Tabs, { type TabItem } from "@/components/ui/Tabs";
 import type { FamilyTier } from "@/lib/tier";
 import { beltForXp } from "@/lib/belts";
 import Avatar from "@/components/Avatar";
@@ -16,16 +14,36 @@ import TierBadge from "@/components/TierBadge";
 import ProfileLink from "@/components/ProfileLink";
 
 /**
- * THE leaderboard — two dimensions (Families | Individuals) × three trailing
- * periods (Last 7 days | Last 30 days | All-time). Replaces the three old boards
- * (cross-family /leaderboard, within-family /family/leaderboard, and the deleted
- * sim board). Data comes from the definer RPCs in migration 099; belts + levels
- * derive client-side from the returned XP (src/lib/belts.ts).
+ * THE BOARD — two dimensions (Individuals | Families) × three trailing periods
+ * (Last 7 days | Last 30 days | All-time). Data comes from the definer RPCs in
+ * migration 099; belts + levels derive client-side from the returned XP
+ * (src/lib/belts.ts). Periods are trailing/rolling and labelled honestly
+ * ("Last 7 days") — never calendar buckets, so a window is always full. The
+ * Individuals dimension keeps its scope switch (Everyone | My family);
+ * ?scope=family still deep-links to the folded-in within-family view.
  *
- * Periods are trailing/rolling and labelled honestly ("Last 7 days") — never
- * calendar buckets, so a window is always full. The Individuals dimension has a
- * scope switch (Everyone | My family); ?scope=family deep-links straight to the
- * folded-in within-family view (the old /family/leaderboard target).
+ * FORM (canvas rebuild): a ranked HAIRLINE LEDGER, not a stack of bordered
+ * cards. The rank does the identity work as a LARGE numeral in the left margin
+ * — top three in full ink, the rest muted — so position is legible at a glance
+ * without a single box, chip, or medal. Everything else is type: name at the
+ * body weight, belt/age as the only badges, and the ranked metric in mono so
+ * the XP column aligns as a true column.
+ *
+ * COLOUR LAW: green/red belong to PRICE and appear nowhere on this surface —
+ * a leaderboard has no prices. The only accent is the mode accent (family gold
+ * / club volt orange / FTA metallic) on the "YOU" marker and the active tab
+ * underscore, both of which are brand/action. Belt colours are intrinsic to the
+ * belt and carried by <BeltBadge/>, which is theme-independent by design.
+ *
+ * DARK: every colour here is a semantic token (ink / soft / sand / paper) or a
+ * mode-accent ramp step that flips at :root[data-theme="dark"]. There is no
+ * `dark:` variant anywhere — orange TEXT uses text-gold-700 (the ramp that
+ * flips), never text-volt-* (frozen across themes).
+ *
+ * HONESTY: nothing is fabricated. There is no accuracy %, no win rate, and no
+ * "credibility" score, because no such column exists in the RPC payload — the
+ * board ranks XP over a window and says so. Absent rows produce a stated empty,
+ * never filler rows.
  */
 
 type Dimension = "individuals" | "families";
@@ -38,13 +56,13 @@ const PERIODS: { id: Period; label: string; short: string }[] = [
   { id: "all", label: "All-time", short: "All-time" },
 ];
 
-// Club register (canvas artboard 11): trader-voiced tabs that map onto the SAME
-// trailing XP windows the family board uses — no new data source. "Rookies" is
-// the recent (7-day) window where new members surface fastest.
-const CLUB_TABS: TabItem<Period>[] = [
-  { key: "30d", label: "This month" },
-  { key: "all", label: "All time" },
-  { key: "7d", label: "Rookies" },
+// Club register: trader-voiced windows that map onto the SAME trailing XP
+// windows the family board uses — no new data source. "Rookies" is the recent
+// (7-day) window, where new members surface fastest.
+const CLUB_PERIODS: { id: Period; label: string }[] = [
+  { id: "30d", label: "This month" },
+  { id: "all", label: "All time" },
+  { id: "7d", label: "Rookies" },
 ];
 
 interface IndRow {
@@ -78,24 +96,131 @@ interface FamRow {
   avatars: FamAvatar[];
 }
 
-function rankColor(rank: number) {
-  if (rank === 1) return "text-gold-600";
-  if (rank === 2) return "text-midnight-400";
-  if (rank === 3) return "text-amber-700";
-  return "text-soft";
+/* ── Surface primitives ───────────────────────────────────────────────────
+   Local, because the shared f0 masthead still carries a `dark:text-volt-*`
+   eyebrow and volt text is frozen across themes. These use the gold ramp,
+   which IS volt orange in club mode AND flips at night. */
+
+function Masthead({
+  eyebrow,
+  title,
+  lede,
+}: {
+  eyebrow: string;
+  title: string;
+  lede: React.ReactNode;
+}) {
+  return (
+    <header>
+      <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+        {eyebrow}
+      </p>
+      <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
+        {title}
+      </h1>
+      <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft">{lede}</p>
+    </header>
+  );
 }
 
-/* ── row skeleton (in-page, for tab switches) ─────────────────────────────── */
-function RowSkeleton() {
+/** A hairline-underscored rail. Not a segmented pill — the labels read as
+    headings and the active one is marked by weight plus an accent underscore. */
+function Rail<T extends string>({
+  items,
+  value,
+  onChange,
+  ariaLabel,
+  size = "lg",
+}: {
+  items: { id: T; label: string; short?: string }[];
+  value: T;
+  onChange: (id: T) => void;
+  ariaLabel: string;
+  size?: "lg" | "sm";
+}) {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl border border-sand paper-card">
-      <span className="w-7 h-6 rounded bg-sand animate-pulse" />
-      <span className="w-9 h-9 rounded-full bg-sand animate-pulse shrink-0" />
-      <div className="flex-1 space-y-2">
-        <span className="block h-3.5 w-32 rounded bg-sand animate-pulse" />
-        <span className="block h-2.5 w-20 rounded bg-sand animate-pulse" />
-      </div>
-      <span className="w-12 h-5 rounded bg-sand animate-pulse" />
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      className={`flex border-b border-sand ${size === "lg" ? "gap-7" : "gap-5"}`}
+    >
+      {items.map((t) => {
+        const on = value === t.id;
+        return (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            aria-selected={on}
+            onClick={() => onChange(t.id)}
+            className={`relative -mb-px font-display font-extrabold uppercase transition-colors ${
+              size === "lg"
+                ? "pb-3 text-[15px] tracking-[0.08em]"
+                : "pb-2.5 text-[12px] tracking-[0.12em]"
+            } ${on ? "text-ink" : "text-soft hover:text-ink"}`}
+          >
+            <span className={t.short ? "sm:hidden" : ""}>{t.short ?? t.label}</span>
+            {t.short && <span className="hidden sm:inline">{t.label}</span>}
+            {on && (
+              <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-gold-500" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The rank numeral — the identity object of every row. Large, tabular, and
+    muted except for the podium, which earns full ink. No medal, no box. */
+function Rank({ n }: { n: number }) {
+  return (
+    <span
+      className={`w-9 shrink-0 self-center text-right font-display text-display-3 font-extrabold tabular-nums sm:w-12 ${
+        n <= 3 ? "text-ink" : "text-soft"
+      }`}
+    >
+      <span className="sr-only">Rank </span>
+      {n}
+    </span>
+  );
+}
+
+/** The "this is you" marker. Accent = brand, and it sits on a fill, so the
+    label is night-950 (never text-ink, which flips near-white at night). */
+function YouMark() {
+  return (
+    <span className="shrink-0 rounded bg-gold-500 px-1.5 py-0.5 text-[9px] font-display font-bold uppercase tracking-[0.12em] text-night-950">
+      You
+    </span>
+  );
+}
+
+function StatedEmpty({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="border-l-2 border-sand py-1 pl-4">
+      <p className="font-display text-display-3 font-extrabold text-ink">{title}</p>
+      <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-soft">{body}</p>
+    </div>
+  );
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────
+   Ledger-shaped, so the wait looks like the thing that arrives. */
+function LedgerSkeleton() {
+  return (
+    <div className="f0-ledger">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="f0-ledger-row">
+          <span className="h-5 w-9 shrink-0 animate-pulse rounded bg-sand sm:w-12" />
+          <span className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-sand" />
+          <span className="min-w-0 flex-1 space-y-2">
+            <span className="block h-3.5 w-32 animate-pulse rounded bg-sand" />
+            <span className="block h-2.5 w-20 animate-pulse rounded bg-sand" />
+          </span>
+          <span className="h-4 w-12 shrink-0 animate-pulse rounded bg-sand" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -108,8 +233,6 @@ function LeaderboardInner() {
 
   // ?scope=family deep-links to the within-family view (old /family/leaderboard).
   const initialScope: Scope = searchParams.get("scope") === "family" ? "family" : "all";
-  // Both entry points land on the Individuals dimension; ?scope=family just
-  // preselects the within-family view (the folded-in /family/leaderboard).
   const [dimension, setDimension] = useState<Dimension>("individuals");
   const [period, setPeriod] = useState<Period>("7d");
   const [scope, setScope] = useState<Scope>(initialScope);
@@ -167,120 +290,102 @@ function LeaderboardInner() {
   const meInRows = ind.me ? ind.rows.some((r) => r.id === ind.me!.id) : false;
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Header — club register reframes the same board around conviction/reps */}
-      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Trophy className="w-5 h-5 text-gold-600" />
-          <h1 className="font-display text-2xl font-bold text-ink">Leaderboard</h1>
-        </div>
-        <p className="text-soft text-sm">
-          {isClub ? (
-            <>Ranked by the reps you put in — <span className="font-semibold text-ink">conviction, not luck</span>. Every rated call, lesson, and rep earns XP.</>
-          ) : (
-            <>
-              Every lesson, quiz, card, and game earns XP and moves your belt.{" "}
-              {dimension === "families" ? (
-                <>A family&apos;s score is the <span className="font-semibold text-ink">average XP of its members</span>, so families of every size compete fairly.</>
-              ) : (
-                <>Climb the belts — friendly kid-vs-kid competition welcome.</>
-              )}
-            </>
-          )}
-        </p>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <m.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+        <Masthead
+          eyebrow={isClub ? "Where you stand" : "Standing"}
+          title="Leaderboard"
+          lede={
+            isClub ? (
+              <>
+                Ranked by the reps you put in —{" "}
+                <span className="font-semibold text-ink">conviction, not luck</span>. Every
+                rated call, lesson, and rep earns XP.
+              </>
+            ) : dimension === "families" ? (
+              <>
+                A family&apos;s score is the{" "}
+                <span className="font-semibold text-ink">average XP of its members</span>, so
+                families of every size compete fairly.
+              </>
+            ) : (
+              <>
+                Every lesson, quiz, card, and game earns XP and moves your belt. Climb the
+                belts — friendly kid-vs-kid competition welcome.
+              </>
+            )
+          }
+        />
       </m.div>
 
-      {/* Club: canvas tabs (This month / All time / Rookies) over the same XP windows */}
-      {isClub && (
-        <div className="mb-5">
-          <Tabs
-            tabs={CLUB_TABS}
-            active={period}
-            onSelect={setPeriod}
+      {/* Controls. Club gets the trader-voiced window rail; family gets the
+          dimension rail plus a quieter period/scope rail beneath it. */}
+      <div className="space-y-4">
+        {isClub ? (
+          <Rail
+            items={CLUB_PERIODS}
+            value={period}
+            onChange={setPeriod}
             ariaLabel="Leaderboard window"
           />
-        </div>
-      )}
-
-      {/* Dimension toggle — family only (a solo club member has no family board) */}
-      {!isClub && (
-        <div className="inline-flex gap-1 mb-3 bg-chip-amber/40 border border-sand rounded-xl p-1">
-          {(["individuals", "families"] as Dimension[]).map((d) => (
-            <button
-              key={d}
-              onClick={() => setDimension(d)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                dimension === d ? "bg-chip-amber text-gold-800 shadow-soft" : "text-soft hover:text-ink"
-              }`}
-            >
-              {d === "individuals" ? "Individuals" : "Families"}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Period + scope controls — family only (club uses the Tabs strip above) */}
-      <div className={`flex-wrap items-center gap-3 mb-6 ${isClub ? "hidden" : "flex"}`}>
-        <div className="inline-flex gap-1 bg-white/60 dark:bg-transparent border border-sand rounded-xl p-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPeriod(p.id)}
-              className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
-                period === p.id ? "bg-chip-amber text-gold-800" : "text-soft hover:text-ink"
-              }`}
-            >
-              <span className="sm:hidden">{p.short}</span>
-              <span className="hidden sm:inline">{p.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {dimension === "individuals" && (
-          <div className="inline-flex gap-1 border border-sand rounded-xl p-1">
-            {(["all", "family"] as Scope[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => chooseScope(s)}
-                className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
-                  scope === s ? "bg-chip-amber text-gold-800" : "text-soft hover:text-ink"
-                }`}
-              >
-                {s === "all" ? "Everyone" : "My family"}
-              </button>
-            ))}
-          </div>
+        ) : (
+          <>
+            <Rail
+              items={[
+                { id: "individuals" as Dimension, label: "Individuals" },
+                { id: "families" as Dimension, label: "Families" },
+              ]}
+              value={dimension}
+              onChange={setDimension}
+              ariaLabel="Leaderboard dimension"
+            />
+            <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+              <Rail
+                items={PERIODS}
+                value={period}
+                onChange={setPeriod}
+                ariaLabel="Leaderboard period"
+                size="sm"
+              />
+              {dimension === "individuals" && (
+                <Rail
+                  items={[
+                    { id: "all" as Scope, label: "Everyone" },
+                    { id: "family" as Scope, label: "My family" },
+                  ]}
+                  value={scope}
+                  onChange={chooseScope}
+                  ariaLabel="Leaderboard scope"
+                  size="sm"
+                />
+              )}
+            </div>
+          </>
         )}
       </div>
 
       {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <RowSkeleton key={i} />
-          ))}
-        </div>
+        <LedgerSkeleton />
       ) : dimension === "individuals" ? (
         <IndividualsBoard ind={ind} meInRows={meInRows} periodLabel={periodLabel} scope={scope} />
       ) : (
         <FamiliesBoard fams={fams} myFamilyId={myFamilyId} periodLabel={periodLabel} />
       )}
 
-      {/* Club: How rank works — honest about the XP that actually drives rank
-          today (no fabricated accuracy %; conviction grading rolls out later). */}
+      {/* How rank works — honest about the XP that actually drives rank today.
+          No accuracy %, no win rate: neither exists in the payload. */}
       {isClub && (
-        <div className="mt-6 rounded-2xl border border-sand bg-chip-amber/30 p-5">
-          <div className="mb-2 flex items-center gap-2">
-            <Info className="h-4 w-4 text-gold-700" />
-            <p className="font-display text-sm font-bold text-ink">How rank works</p>
-          </div>
-          <p className="text-sm leading-relaxed text-soft">
-            Rank is your XP over the selected window — earned by rating calls,
-            finishing lessons, and showing up in the room. It rewards
-            consistent reps over one lucky week, so a loud one-off never
-            outranks a steady operator. Windows are trailing, so every board is
-            always a full period.
+        <section className="f0-rule-top pt-5">
+          <h2 className="text-eyebrow font-display font-bold uppercase text-soft">
+            How rank works
+          </h2>
+          <p className="mt-2.5 max-w-xl text-[14px] leading-relaxed text-soft">
+            Rank is your XP over the selected window — earned by rating calls, finishing
+            lessons, and showing up in the room. It rewards consistent reps over one lucky
+            week, so a loud one-off never outranks a steady operator. Windows are trailing,
+            so every board is always a full period.
           </p>
-        </div>
+        </section>
       )}
     </div>
   );
@@ -290,47 +395,35 @@ function LeaderboardInner() {
 function IndividualRow({ row, pinned }: { row: IndRow; pinned?: boolean }) {
   const belt = beltForXp(row.xp);
   return (
-    <div
-      className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border ${
-        row.is_me
-          ? "border-gold-400 bg-chip-amber/50 ring-1 ring-gold-300"
-          : row.is_my_family
-          ? "border-gold-300/60 paper-card"
-          : "border-sand paper-card"
-      }`}
-    >
-      <span className={`font-display text-base sm:text-lg font-bold w-6 sm:w-7 text-center shrink-0 ${rankColor(row.rank)}`}>
-        {row.rank}
-      </span>
-      <ProfileLink username={row.username} variant="avatar" className="shrink-0">
+    <div className="f0-ledger-row">
+      <Rank n={row.rank} />
+      <ProfileLink username={row.username} variant="avatar" className="shrink-0 self-center">
         <Avatar name={row.display_name} avatarUrl={row.avatar_url} xp={row.xp} size="md" />
       </ProfileLink>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <span className="min-w-0 flex-1 self-center">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <ProfileLink
             username={row.username}
-            className="font-display font-semibold text-ink truncate max-w-[9rem] sm:max-w-none"
+            className="max-w-[9rem] truncate font-display text-[15px] font-bold text-ink sm:max-w-none"
           >
             {row.display_name || "Member"}
           </ProfileLink>
           <AgeBadge role={row.role} ageGroup={row.age_group} />
           <BeltBadge rank={belt} size="xs" />
-          {row.rank === 1 && row.xp > 0 && <Crown className="w-4 h-4 text-gold-500 shrink-0" />}
-          {pinned && (
-            <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gold-500 text-white shrink-0">
-              You
-            </span>
-          )}
-        </div>
-        {row.family_name && <p className="text-xs text-soft truncate">{row.family_name}</p>}
-      </div>
-      <div className="text-right shrink-0">
-        <p className="font-display text-base sm:text-lg font-bold text-ink flex items-center gap-1 justify-end">
-          <Zap className="w-4 h-4 text-gold-500" />
+          {(row.is_me || pinned) && <YouMark />}
+        </span>
+        <span className="mt-1 block truncate font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          {row.family_name || (row.username ? `@${row.username}` : belt.label)}
+        </span>
+      </span>
+      <span className="shrink-0 self-center text-right">
+        <span className="block font-mono text-[15px] font-semibold tabular-nums text-ink">
           {row.xp.toLocaleString()}
-        </p>
-        <p className="text-[10px] text-soft">XP</p>
-      </div>
+        </span>
+        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
+          XP
+        </span>
+      </span>
     </div>
   );
 }
@@ -348,30 +441,29 @@ function IndividualsBoard({
 }) {
   if (ind.rows.length === 0) {
     return (
-      <EmptyState
+      <StatedEmpty
         title={scope === "family" ? "No family XP in this window" : "No XP yet in this window"}
         body={`Complete a lesson, play a game, or review your Daily 5 to appear on the ${periodLabel.toLowerCase()} board.`}
       />
     );
   }
   return (
-    <div className="space-y-2">
-      {ind.rows.map((row, i) => (
-        <m.div
-          key={row.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(i * 0.02, 0.18) }}
-        >
-          <IndividualRow row={row} />
-        </m.div>
-      ))}
+    <div>
+      <div className="f0-ledger f0-stagger">
+        {ind.rows.map((row, i) => (
+          <div key={row.id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
+            <IndividualRow row={row} />
+          </div>
+        ))}
+      </div>
       {/* Pin "me" when outside the visible rows. */}
       {ind.me && !meInRows && (
-        <>
-          <p className="text-center text-[11px] uppercase tracking-wider text-soft pt-2">Your rank</p>
-          <IndividualRow row={ind.me} pinned />
-        </>
+        <div className="mt-6">
+          <p className="text-eyebrow font-display font-bold uppercase text-soft">Your rank</p>
+          <div className="f0-ledger mt-1">
+            <IndividualRow row={ind.me} pinned />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -389,83 +481,63 @@ function FamiliesBoard({
 }) {
   if (fams.length === 0) {
     return (
-      <EmptyState
+      <StatedEmpty
         title="No family XP in this window"
         body={`Families appear here once a member earns XP in the ${periodLabel.toLowerCase()} window.`}
       />
     );
   }
   return (
-    <div className="space-y-2">
+    <div className="f0-ledger f0-stagger">
       {fams.map((row, i) => {
         const rank = i + 1;
         const mine = row.family_id === myFamilyId;
         return (
-          <m.div
-            key={row.family_id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: Math.min(i * 0.03, 0.2) }}
-            className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border ${
-              mine ? "border-gold-400 bg-chip-amber/50 ring-1 ring-gold-300" : "border-sand paper-card"
-            }`}
-          >
-            <span className={`font-display text-base sm:text-lg font-bold w-6 sm:w-7 text-center shrink-0 ${rankColor(rank)}`}>
-              {rank}
-            </span>
-            {/* Avatar cluster */}
-            <div className="flex -space-x-2 shrink-0">
-              {row.avatars.slice(0, 4).map((a, j) => (
-                <Avatar
-                  key={j}
-                  name={a.display_name}
-                  avatarUrl={a.avatar_url}
-                  xp={a.xp}
-                  size="sm"
-                  className="ring-2 ring-paper"
-                />
-              ))}
-              {row.members > 4 && (
-                <span className="w-8 h-8 rounded-full bg-sand text-soft text-[10px] font-bold flex items-center justify-center ring-2 ring-paper shrink-0">
-                  +{row.members - 4}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-display font-semibold text-ink truncate">{row.name}</p>
-                <TierBadge tier={row.tier} size="xs" />
-                {rank === 1 && <Crown className="w-4 h-4 text-gold-500 shrink-0" />}
-                {mine && (
-                  <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-gold-500 text-white shrink-0">
-                    You
+          <div key={row.family_id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
+            <div className="f0-ledger-row">
+              <Rank n={rank} />
+              {/* Avatar cluster — the family's identity object. */}
+              <span className="flex shrink-0 self-center -space-x-2">
+                {row.avatars.slice(0, 4).map((a, j) => (
+                  <Avatar
+                    key={j}
+                    name={a.display_name}
+                    avatarUrl={a.avatar_url}
+                    xp={a.xp}
+                    size="sm"
+                    className="ring-2 ring-paper"
+                  />
+                ))}
+                {row.members > 4 && (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sand font-mono text-[10px] font-bold text-soft ring-2 ring-paper">
+                    +{row.members - 4}
                   </span>
                 )}
-              </div>
-              <p className="text-xs text-soft">
-                {row.members} member{row.members === 1 ? "" : "s"}
-              </p>
+              </span>
+              <span className="min-w-0 flex-1 self-center">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="truncate font-display text-[15px] font-bold text-ink">
+                    {row.name}
+                  </span>
+                  <TierBadge tier={row.tier} size="xs" />
+                  {mine && <YouMark />}
+                </span>
+                <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                  {row.members} member{row.members === 1 ? "" : "s"}
+                </span>
+              </span>
+              <span className="shrink-0 self-center text-right">
+                <span className="block font-mono text-[15px] font-semibold tabular-nums text-ink">
+                  {row.xp.toLocaleString()}
+                </span>
+                <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
+                  Avg XP
+                </span>
+              </span>
             </div>
-            <div className="text-right shrink-0">
-              <p className="font-display text-base sm:text-lg font-bold text-ink flex items-center gap-1 justify-end">
-                <Zap className="w-4 h-4 text-gold-500" />
-                {row.xp.toLocaleString()}
-              </p>
-              <p className="text-[10px] text-soft">avg XP</p>
-            </div>
-          </m.div>
+          </div>
         );
       })}
-    </div>
-  );
-}
-
-function EmptyState({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="paper-card p-10 text-center">
-      <Users className="w-8 h-8 text-soft mx-auto mb-3" />
-      <p className="font-display text-base font-semibold text-ink mb-1">{title}</p>
-      <p className="text-sm text-soft max-w-sm mx-auto">{body}</p>
     </div>
   );
 }
@@ -474,10 +546,8 @@ export default function LeaderboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-3xl mx-auto space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <RowSkeleton key={i} />
-          ))}
+        <div className="mx-auto max-w-3xl">
+          <LedgerSkeleton />
         </div>
       }
     >

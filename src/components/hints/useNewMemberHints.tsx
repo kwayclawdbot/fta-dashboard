@@ -163,7 +163,7 @@ export function HintReopen({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className={`inline-flex items-center gap-1 text-[11px] font-semibold text-soft/70 hover:text-ink transition-colors ${className}`}
+      className={`inline-flex items-center gap-1 text-[11px] font-semibold text-soft hover:text-ink transition-colors ${className}`}
     >
       <HelpCircle className="h-3.5 w-3.5" />
     </button>
@@ -184,7 +184,7 @@ export function HintDismiss({
       onClick={onClick}
       title="Got it — hide this"
       aria-label="Dismiss hint"
-      className={`shrink-0 rounded-md p-0.5 text-soft/60 hover:bg-paper hover:text-ink transition-colors ${className}`}
+      className={`shrink-0 rounded-md p-0.5 text-soft hover:bg-paper hover:text-ink transition-colors ${className}`}
     >
       <X className="h-3.5 w-3.5" />
     </button>

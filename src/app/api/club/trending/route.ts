@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { FLOORS, TRENDING_DISCLAIMER, floorMet } from "@/lib/club/score";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
+import { getQuotes, isConfigured } from "@/lib/market/polygon";
 
 /** Free tier sees the top N of the attention ledger; Club/FTA see the full list. */
 const FREE_TRENDING_ROWS = 5;
@@ -44,16 +45,61 @@ export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
     : { data: [] as { ticker: string; name: string | null }[] };
   const nameByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
 
-  const all = data.map((r) => ({
-    rank: r.rank,
-    ticker: r.ticker,
-    company: nameByTicker.get((r.ticker || "").toUpperCase()) ?? null,
-    score: Number(r.club_score),
-    change: Number(r.club_change_14d),
-    participants: r.participants,
-    // Per-row scale awareness: only call a ticker "hot" once real breadth exists.
-    floorMet: floorMet(Number(r.club_score), FLOORS.trendingScore),
-  }));
+  // MARKET MARK — ONE batched Polygon snapshot for the whole ledger slice. The
+  // canvas Home leads with price, so a trending row that carries no quote must
+  // render as an honest absence (the UI hides the mark), NEVER as a "score N"
+  // stand-in — that fallback is what made the board read as placeholder data.
+  // Failure is non-fatal: no quotes → every price is null and the ranking still
+  // ships.
+  let quotes: Record<string, { price: number | null; changePercent: number | null }> = {};
+  if (isConfigured() && tickers.length) {
+    try {
+      quotes = await getQuotes(tickers);
+    } catch (err) {
+      console.error("[club/trending] quote join failed:", err);
+    }
+  }
+
+  // CLUB SCORE dial (mock: "94"). club_score is an unbounded weighted sum, so it
+  // is normalized against the top of the ledger to become a 0–100 read. Gated by
+  // the trendingScore floor: below it a founding club would show a manufactured
+  // 100 for whatever happens to rank first, so `heat` stays null and the UI runs
+  // its founding treatment instead.
+  const topScore = Math.max(...data.map((r) => Number(r.club_score) || 0), 0);
+
+  const all = data.map((r) => {
+    const q = quotes[(r.ticker || "").toUpperCase()];
+    const score = Number(r.club_score);
+    const rowFloorMet = floorMet(score, FLOORS.trendingScore);
+    const bull = r.sentiment_bullish ?? 0;
+    const neutral = r.sentiment_neutral ?? 0;
+    const bear = r.sentiment_bearish ?? 0;
+    const positioned = bull + neutral + bear;
+
+    return {
+      rank: r.rank,
+      ticker: r.ticker,
+      company: nameByTicker.get((r.ticker || "").toUpperCase()) ?? null,
+      score,
+      change: Number(r.club_change_14d),
+      participants: r.participants,
+      price: q?.price ?? null,
+      changePct: q?.changePercent ?? null,
+      watchers: r.watchers ?? 0,
+      sentiment: {
+        bull,
+        neutral,
+        bear,
+        bullPct: positioned > 0 ? Math.round((bull / positioned) * 100) : null,
+      },
+      heat:
+        rowFloorMet && topScore > 0
+          ? Math.max(1, Math.round((score / topScore) * 100))
+          : null,
+      // Per-row scale awareness: only call a ticker "hot" once real breadth exists.
+      floorMet: rowFloorMet,
+    };
+  });
   const rows = isFree ? all.slice(0, FREE_TRENDING_ROWS) : all;
 
   return {

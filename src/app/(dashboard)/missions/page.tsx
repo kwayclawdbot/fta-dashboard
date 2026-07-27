@@ -3,16 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { m as mm, AnimatePresence } from "@/lib/motion";
-import {
-  Compass,
-  Check,
-  Sparkles,
-  Trophy,
-  ChevronRight,
-  Lightbulb,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { Check, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { awardXp, hasXpForRef } from "@/lib/xp";
 import { beltCelebrateFields } from "@/lib/belts";
@@ -22,8 +13,37 @@ import Celebrate, {
   type CelebrateOptions,
   type Register,
 } from "@/components/fic/Celebrate";
-import { EmptyMissions } from "@/components/fic/EmptyState";
 import { deriveRegister, celebrateRegister } from "@/lib/register";
+
+/**
+ * MISSIONS — the quest set, rebuilt as a hairline LEDGER.
+ *
+ * DATA: everything on this surface is real. `get_missions_state` returns the
+ * profile register, the `fic_missions` rows, this user's `mission_completions`,
+ * the championed-companies count, and lifetime XP in one round trip. There is
+ * no `club_missions` table on this branch and nothing here invents one — the
+ * ledger renders exactly the missions the RPC hands back, and an empty payload
+ * produces a stated empty rather than placeholder rows.
+ *
+ * FORM: the emblem is the identity object of each row (a collectible patch, not
+ * a box), the title carries the ask, and the reward sits in the right-hand mono
+ * column so the XP reads as a true column down the page. No card, no border, no
+ * shadow — rows are separated by rules.
+ *
+ * COLOUR LAW: completion is NOT green. Green and red are price colours and a
+ * mission has no price, so a collected mission is marked by its emblem's earned
+ * ring, an ink-weight title, and a COLLECTED eyebrow — never by turning green.
+ * The only accent is the mode accent (family gold / club volt / FTA metallic) on
+ * the reward, the progress meter, and the start action: brand + action, by law.
+ *
+ * DARK: every colour is a semantic token or the gold ramp, which flips at
+ * :root[data-theme="dark"]. No `dark:` variants, and no frozen text-volt-*.
+ *
+ * REGISTER: kid / teen / parent copy is derived from age_group first (a teen is
+ * never handed the kid voice), and the sound opt-in only ever appears for kids.
+ * The adult voice is the default and the kid voice is the derivation — the set
+ * reads competitive, not cartoonish.
+ */
 
 interface Mission {
   id: string;
@@ -49,6 +69,12 @@ const EMBLEM_SRC: Record<string, string> = {
   "stock-vs-product": "/missions/stock-vs-product.webp",
   "family-ceo": "/missions/family-ceo.webp",
 };
+
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export default function MissionsPage() {
   const supabase = createClient();
@@ -96,7 +122,7 @@ export default function MissionsPage() {
     setFamilyId(state.family_id ?? null);
     // Single source of truth: age_group wins, role only disambiguates legacy
     // rows. A teen (age_group='teens') is never treated as a kid here, so the
-    // baby-talk copy + sound toggle never leak to teens (audit #5).
+    // kid copy + sound toggle never leak to teens.
     const reg = deriveRegister({ role: state.role, age_group: state.age_group });
     setIsKid(reg === "kid");
     setRegister(celebrateRegister(reg));
@@ -211,226 +237,286 @@ export default function MissionsPage() {
   }
 
   const doneCount = Object.keys(completions).length;
+  const earned = missions.reduce(
+    (sum, m) => sum + (completions[m.id] ? m.xp_reward : 0),
+    0
+  );
+  const outstanding = missions.reduce(
+    (sum, m) => sum + (completions[m.id] ? 0 : m.xp_reward),
+    0
+  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-500" />
       </div>
     );
   }
 
+  const title =
+    register === "kid" ? "My Missions" : register === "teen" ? "Missions" : "Family Missions";
+  const lede =
+    register === "kid"
+      ? "Little quests that turn you into an investor. Collect every emblem in the set."
+      : register === "teen"
+        ? "Quests that earn XP and move your belt. Finish the set."
+        : "Quests for your kids — run them together and they turn into real conversations.";
+
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       <Celebrate opts={queue[0] ?? null} onDone={() => setQueue((q) => q.slice(1))} />
 
-      {/* Header */}
-      <mm.div
-        initial={{ opacity: 0, y: -8 }}
+      {/* Masthead */}
+      <mm.header
+        initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-wrap items-end justify-between gap-4"
+        className="flex items-start justify-between gap-4"
       >
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-chip-amber text-gold-700">
-              <Compass className="h-5 w-5" />
-            </div>
-            <h1 className="font-display text-2xl font-bold text-ink">
-              {register === "kid"
-                ? "My Missions"
-                : register === "teen"
-                  ? "Missions"
-                  : "Family Missions"}
-            </h1>
+        <div className="min-w-0">
+          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+            The set
+          </p>
+          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
+            {title}
+          </h1>
+          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">{lede}</p>
+        </div>
+        {isKid && (
+          <button
+            onClick={toggleSound}
+            aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+            title={soundOn ? "Sound on" : "Sound off"}
+            className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sand text-soft transition-colors hover:text-ink"
+          >
+            {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          </button>
+        )}
+      </mm.header>
+
+      {/* The measure strip — three measures on the paper, no boxes. Every value
+          is derived from what the RPC actually returned. */}
+      {missions.length > 0 && (
+        <div className="flex items-stretch">
+          <div className="min-w-0 flex-1 pr-4 sm:pr-6">
+            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
+              {doneCount}
+              <span className="text-soft">/{missions.length}</span>
+            </p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              Collected
+            </p>
           </div>
-          <p className="text-sm text-soft">
-            {register === "kid"
-              ? "Little quests that turn you into an investor. Collect all the emblems!"
-              : register === "teen"
-                ? "Complete quests to earn XP and climb the ranks."
-                : "Playful quests for your kids — do them together to spark real conversations."}
+          <div className="min-w-0 flex-1 border-l border-sand pl-4 pr-4 sm:pl-6 sm:pr-6">
+            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
+              {earned}
+            </p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              XP banked
+            </p>
+          </div>
+          <div className="min-w-0 flex-1 border-l border-sand pl-4 sm:pl-6">
+            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
+              {outstanding}
+            </p>
+            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+              XP left
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* The ledger */}
+      {missions.length === 0 ? (
+        <div className="border-l-2 border-sand py-1 pl-4">
+          <p className="font-display text-display-3 font-extrabold text-ink">
+            No missions are published yet
+          </p>
+          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-soft">
+            The quest set lands here as soon as it is published. Nothing is hidden — there is
+            simply nothing to run today.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {isKid && (
-            <button
-              onClick={toggleSound}
-              aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
-              title={soundOn ? "Sound on" : "Sound off"}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-sand bg-midnight-900 text-soft shadow-soft hover:text-ink"
-            >
-              {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </button>
-          )}
-          <div className="flex items-center gap-2 rounded-xl border border-sand bg-midnight-900 px-4 py-2.5 shadow-soft">
-            <Trophy className="h-4 w-4 text-gold-500" />
-            <span className="font-display text-lg font-bold text-ink">{doneCount}</span>
-            <span className="text-sm text-soft">/ {missions.length} done</span>
-          </div>
-        </div>
-      </mm.div>
+      ) : (
+        <section>
+          <h2 className="f0-section-rule mb-1">
+            <span className="text-eyebrow font-display font-bold uppercase text-soft">
+              Missions
+            </span>
+          </h2>
 
-      {/* Mission cards */}
-      <div className="space-y-5">
-        {missions.map((m, i) => {
-          const done = !!completions[m.id];
-          const isBrand = m.slug === "brand-detective";
-          const brandPct = Math.min(
-            100,
-            Math.round((championedCount / BRAND_DETECTIVE_GOAL) * 100)
-          );
-          const open = openId === m.id;
+          <div className="f0-ledger f0-stagger">
+            {missions.map((m, i) => {
+              const completion = completions[m.id];
+              const done = !!completion;
+              const isBrand = m.slug === "brand-detective";
+              const brandPct = Math.min(
+                100,
+                Math.round((championedCount / BRAND_DETECTIVE_GOAL) * 100)
+              );
+              const open = openId === m.id;
 
-          return (
-            <mm.div
-              key={m.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: i * 0.05 }}
-              className={`relative overflow-hidden rounded-2xl border p-5 shadow-soft transition-colors ${
-                done ? "border-gold-400/40 bg-gold-50/40" : "border-sand bg-midnight-900"
-              }`}
-            >
-              <div className="flex gap-4">
-                {/* Bespoke mission emblem (collected state on complete) */}
-                <MissionEmblem slug={m.slug} title={m.title} collected={done} size={76} />
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-display text-[11px] font-bold uppercase tracking-wide text-gold-700">
-                      Mission {i + 1}
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-chip-amber px-2 py-0.5 font-display text-[11px] font-bold text-gold-700">
-                      <Sparkles className="h-3 w-3" />
-                      {m.xp_reward} XP
-                    </span>
-                    {done && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[11px] font-semibold text-green-600">
-                        <Check className="h-3 w-3" />
-                        Collected
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="mt-1 font-display text-xl font-bold text-ink">{m.title}</h2>
-
-                  {/* The kid-voiced ask — the hero line */}
-                  <p className="mt-1.5 text-[15px] leading-relaxed text-midnight-200">
-                    {m.kid_prompt || m.description}
-                  </p>
-
-                  {/* Grown-up helper (shown to parents only, never to teens) */}
-                  {register === "parent" && m.description && (
-                    <p className="mt-2 flex items-start gap-1.5 text-xs text-soft">
-                      <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-400" />
-                      {m.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Brand Detective: auto progress from watchlist adds */}
-              {isBrand && !done && (
-                <div className="mt-4">
-                  <div className="mb-1.5 flex items-center justify-between text-xs">
-                    <span className="font-medium text-soft">
-                      {championedCount} / {BRAND_DETECTIVE_GOAL} companies added
-                    </span>
-                    <Link
-                      href="/watchlist"
-                      className="font-medium text-gold-700 hover:text-gold-800"
-                    >
-                      Add companies →
-                    </Link>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-sand">
-                    <mm.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${brandPct}%` }}
-                      transition={{ duration: 0.7, ease: "easeOut" }}
-                      className="h-full rounded-full bg-gold-500"
+              return (
+                <div key={m.id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
+                  <div className="f0-ledger-row">
+                    <MissionEmblem
+                      slug={m.slug}
+                      title={m.title}
+                      collected={done}
+                      size={52}
+                      className="self-start"
                     />
+
+                    <div className="min-w-0 flex-1 self-center">
+                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                        <h3 className="font-display text-[17px] font-extrabold tracking-tight text-ink">
+                          {m.title}
+                        </h3>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                          Mission {i + 1}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[14px] leading-relaxed text-soft">
+                        {m.kid_prompt || m.description}
+                      </p>
+                      {/* Grown-up helper — parents only, never shown to teens. */}
+                      {register === "parent" && m.description && m.kid_prompt && (
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-soft">
+                          {m.description}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="shrink-0 self-center text-right">
+                      <p className="font-mono text-[15px] font-semibold tabular-nums text-ink">
+                        {m.xp_reward}
+                      </p>
+                      <p className="mt-0.5 text-eyebrow font-display font-bold uppercase text-soft">
+                        {done ? shortDate(completion.completed_at) : "XP"}
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-1.5 text-xs text-soft">
-                    Auto-completes when you add {BRAND_DETECTIVE_GOAL} companies to the
-                    Family Watchlist.
-                  </p>
-                </div>
-              )}
 
-              {/* Completed evidence */}
-              {done && completions[m.id].evidence && (
-                <div className="mt-3 rounded-lg border border-green-500/20 bg-midnight-900 p-3">
-                  <p className="text-xs font-semibold text-green-600">What you found</p>
-                  <p className="mt-0.5 text-sm text-midnight-200">
-                    {completions[m.id].evidence}
-                  </p>
-                </div>
-              )}
+                  {/* Collected — the emblem's earned ring plus this line carry the
+                      state. No green: green is price. */}
+                  {done && (
+                    <div className="pb-4 pl-[4.1rem]">
+                      <p className="flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+                        <Check className="h-3.5 w-3.5" />
+                        Collected
+                      </p>
+                      {completion.evidence && (
+                        <p className="mt-2 border-l-2 border-sand pl-3 text-[14px] leading-relaxed text-ink">
+                          {completion.evidence}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-              {/* Action row (non-brand, not done) */}
-              {!done && !isBrand && (
-                <div className="mt-4">
-                  <AnimatePresence initial={false}>
-                    {open ? (
-                      <mm.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
+                  {/* Brand Detective — auto-progress from real watchlist adds. */}
+                  {isBrand && !done && (
+                    <div className="pb-4 pl-[4.1rem]">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
+                          {championedCount} / {BRAND_DETECTIVE_GOAL} companies added
+                        </span>
+                        <Link
+                          href="/watchlist"
+                          className="font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                        >
+                          Add companies →
+                        </Link>
+                      </div>
+                      <div
+                        className="h-1.5 overflow-hidden rounded-full bg-sand"
+                        role="progressbar"
+                        aria-valuenow={brandPct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
                       >
-                        <label className="text-xs font-medium text-soft">
-                          What did you find?{" "}
-                          <span className="text-midnight-500">(optional)</span>
-                        </label>
-                        <textarea
-                          value={evidence}
-                          onChange={(e) => setEvidence(e.target.value)}
-                          rows={2}
-                          placeholder="Tell us in your own words..."
-                          className="mt-1 w-full resize-none rounded-lg border border-sand bg-midnight-900 p-3 text-sm text-ink placeholder:text-midnight-500 focus:border-gold-400 focus:outline-none"
+                        <mm.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${brandPct}%` }}
+                          transition={{ duration: 0.7, ease: "easeOut" }}
+                          className="h-full rounded-full bg-gold-500"
                         />
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            onClick={() => completeMission(m)}
-                            disabled={busy}
-                            className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                      </div>
+                      <p className="mt-2 text-[13px] leading-relaxed text-soft">
+                        Auto-completes when {BRAND_DETECTIVE_GOAL} companies are on the family
+                        watchlist.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action — everything except Brand Detective is self-reported. */}
+                  {!done && !isBrand && (
+                    <div className="pb-4 pl-[4.1rem]">
+                      <AnimatePresence initial={false}>
+                        {open ? (
+                          <mm.div
+                            key="form"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
                           >
-                            <Check className="h-4 w-4" />
-                            Mark complete (+{m.xp_reward} XP)
-                          </button>
+                            <label
+                              htmlFor={`evidence-${m.id}`}
+                              className="text-eyebrow font-display font-bold uppercase text-soft"
+                            >
+                              What did you find? (optional)
+                            </label>
+                            <textarea
+                              id={`evidence-${m.id}`}
+                              value={evidence}
+                              onChange={(e) => setEvidence(e.target.value)}
+                              rows={2}
+                              placeholder="In your own words…"
+                              className="mt-2 w-full resize-none rounded-lg border border-sand bg-transparent p-3 text-[14px] text-ink placeholder:text-soft focus:border-gold-500 focus:outline-none"
+                            />
+                            <div className="mt-3 flex items-center gap-4">
+                              <button
+                                onClick={() => completeMission(m)}
+                                disabled={busy}
+                                className="cta-button inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm disabled:opacity-60"
+                              >
+                                <Check className="h-4 w-4" />
+                                Mark complete · +{m.xp_reward} XP
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setOpenId(null);
+                                  setEvidence("");
+                                }}
+                                className="font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </mm.div>
+                        ) : (
                           <button
+                            key="start"
                             onClick={() => {
-                              setOpenId(null);
+                              setOpenId(m.id);
                               setEvidence("");
                             }}
-                            className="rounded-lg px-3 py-2 text-sm font-medium text-soft hover:text-ink"
+                            className="group inline-flex items-center gap-1 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
                           >
-                            Cancel
+                            Start this mission
+                            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
                           </button>
-                        </div>
-                      </mm.div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setOpenId(m.id);
-                          setEvidence("");
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gold-300 bg-chip-amber px-4 py-2 text-sm font-semibold text-gold-700 transition-colors hover:bg-gold-100"
-                      >
-                        Start this mission
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    )}
-                  </AnimatePresence>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
-              )}
-            </mm.div>
-          );
-        })}
-      </div>
-
-      {missions.length === 0 && <EmptyMissions />}
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

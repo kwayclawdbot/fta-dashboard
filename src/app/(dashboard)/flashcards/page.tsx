@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, useReducedMotion, type PanInfo } from "framer-motion";
-import { Layers, RotateCcw, Check, X, ArrowRight, Sparkles, Zap, ChevronLeft } from "lucide-react";
+import { RotateCcw, Check, X, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   pickDailyFive,
@@ -20,6 +20,32 @@ import { weekTheme } from "@/lib/games/art";
 import CandleRenderer from "@/components/games/CandleRenderer";
 import Burst from "@/components/games/Burst";
 import StreakFlame from "@/components/games/StreakFlame";
+import {
+  DisplayHead,
+  SectionRule,
+  Ledger,
+  EmptyLine,
+  TextAction,
+} from "@/components/f0/parts";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FLASHCARDS — recall practice.
+
+   Two states, one surface language:
+     · PICKER  — masthead, ONE obsidian field (Daily 5, the quick action), then
+                 every set as a hairline ledger row. The old version was a
+                 two-column grid of `paper-card` tiles — the exact pattern the
+                 register bans.
+     · SESSION — the card is the object. Its faces are `bg-card`, a semantic
+                 token (they were `bg-white`, a white slab with invisible type
+                 on the dark theme), and the art header keeps the storybook
+                 imagery because it IS the card's identity.
+
+   COLOUR LAW: green/red = price, so "Got it" / "Again" are differentiated by
+   WEIGHT, not by hue — Got it is the solid volt action, Again is a hairline
+   outline. Volt orange also carries the meter, the dots and every CTA.
+   Behaviour (SRS scheduling, once-a-day XP, streaks) is untouched.
+   ══════════════════════════════════════════════════════════════════════════ */
 
 type Mode = "picker" | "session";
 
@@ -171,8 +197,13 @@ export default function FlashcardsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-500 rounded-full animate-spin" />
+      <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16">
+        <div className="space-y-3">
+          <div className="h-3 w-32 rounded bg-sand/60" />
+          <div className="h-11 w-56 rounded bg-sand/60" />
+        </div>
+        <div className="h-44 rounded-[1.5rem] bg-sand/40" />
+        <div className="h-32 rounded bg-sand/30" />
       </div>
     );
   }
@@ -180,62 +211,86 @@ export default function FlashcardsPage() {
   /* ---------------- SET PICKER ---------------- */
   if (mode === "picker") {
     return (
-      <div className="max-w-3xl mx-auto">
-        <PickerHeader isKid={isKid} />
+      <div className="mx-auto max-w-2xl space-y-8 pb-16">
+        <DisplayHead
+          eyebrow="Recall practice"
+          title="Flashcards"
+          lede={
+            isKid
+              ? "Flip a card, make your guess, grow your streak. Five a day keeps it all sharp."
+              : "Run your Daily 5 for a fast sweep across everything, or drill one set until it's automatic."
+          }
+        />
 
-        {/* Daily 5 — the prominent quick action, across ALL sets */}
-        <button
-          onClick={startDaily}
-          disabled={starting}
-          className="cta-button w-full rounded-2xl p-5 mb-6 flex items-center gap-4 text-left disabled:opacity-60"
-        >
-          <span className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <Zap className="w-6 h-6" />
-          </span>
-          <span className="flex-1">
-            <span className="block font-display text-lg font-bold leading-tight">Daily 5</span>
-            <span className="block text-sm opacity-90">
-              {totalDue > 0
-                ? `${totalDue} card${totalDue === 1 ? "" : "s"} due — your quick daily review across every set`
-                : "Five cards to keep every concept sharp, pulled across all your sets"}
-            </span>
-          </span>
-          <ArrowRight className="w-5 h-5 shrink-0" />
-        </button>
+        {/* Daily 5 — the one dark object on this surface */}
+        <section className="f0-hero-field f0-grain p-6 sm:p-7">
+          <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
+            Today
+          </p>
+          <h2 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05] text-[#F7F3EA]">
+            Daily 5
+          </h2>
+          <p className="mt-2.5 max-w-[46ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
+            {totalDue > 0
+              ? `${totalDue} card${totalDue === 1 ? "" : "s"} are due across every set — five minutes closes them out.`
+              : "Five cards pulled across all your sets to keep every concept sharp."}
+          </p>
+          <button
+            onClick={startDaily}
+            disabled={starting}
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+          >
+            {starting ? "Dealing…" : "Start the Daily 5"}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-soft mb-3">Choose a set</p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {sets.map((s, i) => (
-            <motion.button
-              key={s.slug}
-              onClick={() => startSet(s)}
-              disabled={starting}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="paper-card overflow-hidden flex flex-col text-left group hover:shadow-[var(--shadow-lift)] transition-shadow disabled:opacity-60"
-            >
-              <SetThumb set={s} />
-              <div className="p-4 flex flex-col flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="font-display text-base font-bold text-ink">{s.title}</h2>
-                  {s.due > 0 ? (
-                    <span className="shrink-0 rounded-full bg-chip-green px-2 py-0.5 text-[11px] font-bold text-green-700">
-                      {s.due} due
+        {/* Sets — hairline rows, never a tile grid */}
+        <section className="space-y-4">
+          <SectionRule>Study sets</SectionRule>
+          {sets.length === 0 ? (
+            <EmptyLine
+              title="No sets yet"
+              body="Card sets appear here as your program unlocks them — nothing is listed until it has real cards behind it."
+              action={
+                <TextAction href="/courses">
+                  Go to Learn <ArrowRight className="h-3.5 w-3.5" />
+                </TextAction>
+              }
+            />
+          ) : (
+            <Ledger>
+              {sets.map((s) => (
+                <button
+                  key={s.slug}
+                  onClick={() => startSet(s)}
+                  disabled={starting}
+                  className="f0-ledger-row w-full justify-between text-left disabled:opacity-60"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-display text-[15px] font-bold text-ink">
+                      {s.title}
                     </span>
-                  ) : null}
-                </div>
-                <p className="text-xs text-soft leading-relaxed mt-1 flex-1">{s.blurb}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs text-soft">{s.count} cards</span>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-gold-700 group-hover:text-gold-800">
-                    Study <ArrowRight className="w-4 h-4" />
+                    <span className="mt-0.5 block max-w-[52ch] text-[13px] leading-snug text-soft">
+                      {s.blurb}
+                    </span>
                   </span>
-                </div>
-              </div>
-            </motion.button>
-          ))}
-        </div>
+                  <span className="shrink-0 self-center text-right">
+                    <span className="block font-mono text-[13px] font-semibold tabular-nums text-soft">
+                      {s.count} cards
+                    </span>
+                    {s.due > 0 && (
+                      <span className="mt-0.5 block font-display text-[12px] font-bold text-gold-700">
+                        {s.due} due
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 self-center text-soft" />
+                </button>
+              ))}
+            </Ledger>
+          )}
+        </section>
       </div>
     );
   }
@@ -243,98 +298,103 @@ export default function FlashcardsPage() {
   /* ---------------- SESSION ---------------- */
   if (cards.length === 0 && !done) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl space-y-8 pb-16">
         <SessionHeader label={sessionLabel} onBack={backToPicker} />
-        <div className="paper-card p-10 text-center">
-          <Sparkles className="w-8 h-8 text-gold-500 mx-auto mb-3" />
-          <p className="font-display text-lg font-semibold text-ink mb-1">
-            {isKid ? "All caught up!" : "Nothing due in this set"}
-          </p>
-          <p className="text-soft text-sm max-w-sm mx-auto mb-6">
-            {isKid
-              ? "You reviewed everything here for today. Try another set or come back tomorrow."
-              : "You have reviewed all of these cards for today. New cards unlock as your reviews come due."}
-          </p>
-          <button
-            onClick={backToPicker}
-            className="cta-button inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm"
-          >
-            <ChevronLeft className="w-4 h-4" /> Back to sets
-          </button>
-        </div>
+        <EmptyLine
+          title={isKid ? "All caught up!" : "Nothing due in this set"}
+          body={
+            isKid
+              ? "You reviewed everything here for today. Try another set, or come back tomorrow."
+              : "You have reviewed all of these cards for today. New cards unlock as your reviews come due."
+          }
+          action={
+            <TextAction onClick={backToPicker}>
+              <ChevronLeft className="h-3.5 w-3.5" /> Back to sets
+            </TextAction>
+          }
+        />
       </div>
     );
   }
 
   if (done) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="mx-auto max-w-2xl space-y-8 pb-16">
         <SessionHeader label={sessionLabel} onBack={backToPicker} />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
+        <motion.section
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="paper-card p-8 text-center relative overflow-hidden"
+          className="f0-hero-field f0-grain p-6 text-center sm:p-8"
         >
           <Burst count={26} power={150} />
-          <motion.div
-            initial={{ scale: 0, rotate: -20 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.1 }}
-            className="w-16 h-16 rounded-full bg-chip-green flex items-center justify-center mx-auto mb-4"
-          >
-            <Check className="w-8 h-8 text-green-600" />
-          </motion.div>
-          <h2 className={`font-display font-bold text-ink ${isKid ? "text-2xl" : "text-xl"} mb-1`}>
-            {isKid ? "You did it!" : `${sessionLabel} complete`}
-          </h2>
-          <p className="text-soft mb-6">
-            You reviewed {cards.length} card{cards.length === 1 ? "" : "s"} and got {gotCount} on the
-            first try.
-          </p>
-          <div className="flex items-center justify-center gap-8 mb-6">
-            <div>
-              <p className="font-display text-2xl font-bold text-ink">{cards.length}</p>
-              <p className="text-xs text-soft">Reviewed</p>
-            </div>
-            <div>
-              <div className="flex justify-center">
-                <StreakFlame streak={bestStreak} size={26} showZero />
+          <div className="relative">
+            <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
+              Session complete
+            </p>
+            <h2 className="mt-2 font-display text-display-2 font-extrabold text-[#F7F3EA]">
+              {isKid ? "You did it!" : sessionLabel}
+            </h2>
+            <p className="mx-auto mt-2.5 max-w-[46ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
+              You reviewed {cards.length} card{cards.length === 1 ? "" : "s"} and
+              got {gotCount} on the first try.
+            </p>
+
+            {/* Measures — hairline-separated, no boxes */}
+            <div className="mt-7 flex items-stretch justify-center">
+              <div className="px-5">
+                <p className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]">
+                  {cards.length}
+                </p>
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                  Reviewed
+                </p>
               </div>
-              <p className="text-xs text-soft mt-1">Best card streak</p>
+              <div className="border-l border-white/15 px-5">
+                <div className="flex justify-center">
+                  <StreakFlame streak={bestStreak} size={26} showZero />
+                </div>
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                  Best streak
+                </p>
+              </div>
+              <div className="border-l border-white/15 px-5">
+                <motion.p
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
+                  className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]"
+                >
+                  +{xpAwarded}
+                </motion.p>
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                  {xpAwarded > 0 ? "XP earned" : "XP (already today)"}
+                </p>
+              </div>
             </div>
-            <div>
-              <motion.p
-                initial={{ scale: 0.6, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
-                className="font-display text-2xl font-bold text-green-600"
+
+            <p className="mx-auto mt-6 max-w-[46ch] text-[13px] leading-relaxed text-[#F7F3EA]/60">
+              {dueTomorrow > 0
+                ? `${dueTomorrow} card${dueTomorrow === 1 ? "" : "s"} come back tomorrow to lock it in.`
+                : "Every card leveled up — nothing due tomorrow. Nice."}
+            </p>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/progress"
+                className="inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
               >
-                +{xpAwarded}
-              </motion.p>
-              <p className="text-xs text-soft">{xpAwarded > 0 ? "XP earned" : "XP (already today)"}</p>
+                See progress
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <button
+                onClick={backToPicker}
+                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-[14px] font-bold text-[#F7F3EA]/80 transition-colors hover:text-[#F7F3EA]"
+              >
+                <ChevronLeft className="h-4 w-4" /> Back to sets
+              </button>
             </div>
           </div>
-          <p className="text-sm text-soft mb-6">
-            {dueTomorrow > 0
-              ? `${dueTomorrow} card${dueTomorrow === 1 ? "" : "s"} will come back tomorrow to lock it in.`
-              : "Every card leveled up — nothing due tomorrow. Nice."}
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={backToPicker}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-sand text-ink text-sm font-medium hover:bg-paper"
-            >
-              <ChevronLeft className="w-4 h-4" /> Back to sets
-            </button>
-            <Link
-              href="/progress"
-              className="cta-button inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm"
-            >
-              See progress
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </motion.div>
+        </motion.section>
       </div>
     );
   }
@@ -344,16 +404,20 @@ export default function FlashcardsPage() {
     : { type: "spring" as const, stiffness: 260, damping: 22 };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <SessionHeader label={sessionLabel} onBack={backToPicker} sub={isDaily ? undefined : "Study set"} />
+    <div className="mx-auto max-w-2xl pb-16">
+      <SessionHeader
+        label={sessionLabel}
+        onBack={backToPicker}
+        sub={isDaily ? undefined : "Study set"}
+      />
 
       {/* progress dots */}
-      <div className="flex items-center justify-center gap-2 mb-6">
+      <div className="mb-6 flex items-center justify-center gap-2">
         {cards.map((_, i) => (
           <span
             key={i}
-            className={`h-2 rounded-full transition-all ${
-              i < index ? "w-2 bg-gold-500" : i === index ? "w-6 bg-gold-500" : "w-2 bg-sand"
+            className={`h-1.5 rounded-full transition-all ${
+              i < index ? "w-1.5 bg-volt-500" : i === index ? "w-6 bg-volt-500" : "w-1.5 bg-sand"
             }`}
           />
         ))}
@@ -364,11 +428,10 @@ export default function FlashcardsPage() {
         {[2, 1].map((depth) => {
           const peek = cards[index + depth];
           if (!peek) return null;
-          const t = weekTheme(cardThemeWeek(peek));
           return (
             <div
               key={`peek-${peek.id}`}
-              className={`absolute inset-x-0 top-0 rounded-2xl border bg-white ${t.ring}`}
+              className="absolute inset-x-0 top-0 rounded-2xl border border-sand bg-card"
               style={{
                 transform: `translateY(${depth * 12}px) scale(${1 - depth * 0.05})`,
                 zIndex: 1,
@@ -416,31 +479,31 @@ export default function FlashcardsPage() {
         </AnimatePresence>
       </div>
 
-      {/* actions */}
+      {/* actions — weight, not hue, separates the two calls */}
       <div className="mt-6">
         {!flipped ? (
           <button
             onClick={() => setFlipped(true)}
-            className="cta-button w-full min-h-[52px] rounded-xl text-base"
+            className="min-h-[52px] w-full rounded-full bg-volt-500 font-display text-[15px] font-bold text-white transition-transform active:scale-[0.99]"
           >
             {isKid ? "Flip the card" : "Reveal answer"}
           </button>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex gap-3">
             <button
               onClick={() => handleResult(false)}
               disabled={busy}
-              className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border-2 border-red-500/30 bg-red-500/5 text-red-600 font-display font-bold hover:bg-red-500/10 transition-colors disabled:opacity-50"
+              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full border border-sand font-display text-[15px] font-bold text-ink transition-colors hover:border-gold-500 disabled:opacity-50"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
               {isKid ? "Try again" : "Again"}
             </button>
             <button
               onClick={() => handleResult(true)}
               disabled={busy}
-              className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border-2 border-green-500/40 bg-chip-green text-green-700 font-display font-bold hover:bg-green-500/15 transition-colors disabled:opacity-50"
+              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-volt-500 font-display text-[15px] font-bold text-white transition-transform active:scale-[0.99] disabled:opacity-50"
             >
-              <Check className="w-5 h-5" />
+              <Check className="h-5 w-5" />
               {isKid ? "Nailed it!" : "Got it"}
             </button>
           </div>
@@ -450,33 +513,7 @@ export default function FlashcardsPage() {
   );
 }
 
-/* ---------- picker set thumbnail ---------- */
-function SetThumb({ set }: { set: SetSummary }) {
-  const t = weekTheme(set.themeWeek);
-  if (set.preview) {
-    const compact = set.preview.candles.length <= 3;
-    return (
-      <div className="relative h-28 night-island rounded-none flex items-center justify-center px-3">
-        <div className="w-full">
-          <CandleRenderer
-            candles={set.preview.candles}
-            revealed={set.preview.candles.length}
-            levels={set.preview.levels}
-            height={compact ? 104 : 112}
-          />
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="relative h-28">
-      <Image src={t.img} alt="" fill className="object-cover" />
-      <div className="absolute inset-0" style={{ background: t.bar, opacity: 0.55 }} />
-    </div>
-  );
-}
-
-/* ---------- the 3D collectible card ---------- */
+/* ---------- the collectible card ---------- */
 function FlipCard({
   card,
   flipped,
@@ -491,11 +528,14 @@ function FlipCard({
   reduce: boolean;
 }) {
   const t = weekTheme(cardThemeWeek(card));
-  const bigText = isKid ? "text-2xl" : "text-xl";
+  const bigText = isKid ? "text-[26px]" : "text-[22px]";
   const hasVisual = !!card.visual;
 
+  // Faces use the semantic card token (they were bg-white → a white slab with
+  // unreadable type on the dark theme) and a sand hairline; the storybook art
+  // header carries the set's identity instead of a coloured border.
   const faceBase =
-    "absolute inset-0 rounded-2xl border bg-white overflow-hidden flex flex-col " + t.ring;
+    "absolute inset-0 flex flex-col overflow-hidden rounded-2xl border border-sand bg-card";
 
   return (
     <div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }} onClick={onFlip}>
@@ -509,8 +549,8 @@ function FlipCard({
         <div className={faceBase} style={{ backfaceVisibility: "hidden", boxShadow: "var(--shadow-lift)" }}>
           <CardHeader t={t} card={card} face="Question" />
           {hasVisual ? (
-            <div className="flex-1 flex flex-col items-center justify-center px-4 py-3">
-              <div className="w-full night-island p-3">
+            <div className="flex flex-1 flex-col items-center justify-center px-4 py-3">
+              <div className="night-island w-full p-3">
                 <CandleRenderer
                   candles={card.visual!.candles}
                   revealed={card.visual!.candles.length}
@@ -518,17 +558,17 @@ function FlipCard({
                   height={card.visual!.candles.length <= 3 ? 150 : 168}
                 />
               </div>
-              <p className="mt-3 text-sm text-soft text-center">{card.front}</p>
+              <p className="mt-3 text-center text-[14px] text-soft">{card.front}</p>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center px-6 py-5 text-center">
-              <p className={`font-display font-semibold text-ink leading-snug ${bigText}`}>
+            <div className="flex flex-1 items-center justify-center px-6 py-5 text-center">
+              <p className={`font-display font-extrabold leading-snug text-ink ${bigText}`}>
                 {card.front}
               </p>
             </div>
           )}
-          <div className="px-5 pb-4 text-xs text-soft flex items-center gap-1.5 justify-center">
-            <RotateCcw className="w-3.5 h-3.5" />
+          <div className="flex items-center justify-center gap-1.5 px-5 pb-4 font-mono text-[11px] text-soft">
+            <RotateCcw className="h-3.5 w-3.5" />
             {isKid ? "Tap to flip" : "Tap to reveal the answer"}
           </div>
         </div>
@@ -543,27 +583,29 @@ function FlipCard({
           }}
         >
           <CardHeader t={t} card={card} face="Answer" />
-          <div className="flex-1 flex flex-col items-center justify-center px-6 py-5 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center px-6 py-5 text-center">
             {hasVisual && (
-              <p className={`font-display font-extrabold text-ink mb-2 ${isKid ? "text-2xl" : "text-2xl"}`}>
+              <p className="mb-2 font-display text-[24px] font-extrabold text-ink">
                 {card.visual!.name}
               </p>
             )}
             <p
-              className={`font-display font-semibold text-ink leading-snug ${
-                hasVisual ? "text-sm text-soft font-medium" : isKid ? "text-xl" : "text-lg"
-              }`}
+              className={
+                hasVisual
+                  ? "max-w-[42ch] text-[14px] leading-relaxed text-soft"
+                  : `font-display font-bold leading-snug text-ink ${isKid ? "text-[22px]" : "text-[19px]"}`
+              }
             >
               {card.back}
             </p>
           </div>
-          <div className="px-5 pb-4 flex items-center justify-center">
+          <div className="flex items-center justify-center px-5 pb-4">
             {card.source ? (
-              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${t.chip}`}>
+              <span className="inline-flex items-center rounded-full border border-sand px-2.5 py-1 font-mono text-[11px] text-soft">
                 {card.source}
               </span>
             ) : (
-              <span className="text-xs text-soft">Tap to flip back</span>
+              <span className="font-mono text-[11px] text-soft">Tap to flip back</span>
             )}
           </div>
         </div>
@@ -585,35 +627,22 @@ function CardHeader({
     <div className="relative h-20 shrink-0">
       <Image src={t.img} alt="" fill className="object-cover" />
       <div className="absolute inset-0" style={{ background: t.bar, opacity: 0.72 }} />
-      <div className="absolute inset-0 px-4 flex items-center justify-between">
-        <span className="font-display text-sm font-extrabold text-white drop-shadow">{face}</span>
+      {/* Type sits on artwork, so it is theme-invariant white by design. */}
+      <div className="absolute inset-0 flex items-center justify-between px-4">
+        <span className="text-eyebrow font-display font-bold uppercase text-white drop-shadow">
+          {face}
+        </span>
         <div className="flex items-center gap-2">
           {card.week ? (
-            <span className="rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-ink">
+            <span className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[10px] text-white">
               Week {card.week}
             </span>
           ) : null}
-          <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10px] font-semibold text-white">
+          <span className="rounded-full bg-black/30 px-2 py-0.5 font-mono text-[10px] text-white">
             {t.label}
           </span>
         </div>
       </div>
-    </div>
-  );
-}
-
-function PickerHeader({ isKid }: { isKid: boolean }) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center gap-2 mb-1">
-        <Layers className="w-5 h-5 text-gold-600" />
-        <h1 className="font-display text-2xl font-bold text-ink">Flashcards</h1>
-      </div>
-      <p className="text-soft text-sm">
-        {isKid
-          ? "Pick a deck of collectible cards. Flip, guess, and grow your streak."
-          : "Pick a set to study, or run your Daily 5 for a quick review across everything."}
-      </p>
     </div>
   );
 }
@@ -631,15 +660,14 @@ function SessionHeader({
     <div className="mb-6">
       <button
         onClick={onBack}
-        className="inline-flex items-center gap-1 text-sm text-soft hover:text-ink mb-2"
+        className="inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
       >
-        <ChevronLeft className="w-4 h-4" /> All sets
+        <ChevronLeft className="h-3.5 w-3.5" /> All sets
       </button>
-      <div className="flex items-center gap-2">
-        <Layers className="w-5 h-5 text-gold-600" />
-        <h1 className="font-display text-2xl font-bold text-ink">{label}</h1>
-      </div>
-      {sub ? <p className="text-soft text-sm">{sub}</p> : null}
+      <h1 className="mt-3 font-display text-display-2 font-extrabold leading-[1.05] text-ink">
+        {label}
+      </h1>
+      {sub ? <p className="mt-1.5 font-mono text-[12px] text-soft">{sub}</p> : null}
     </div>
   );
 }

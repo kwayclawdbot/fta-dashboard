@@ -37,10 +37,13 @@ const DIM_WHY: Record<Dimension, string> = {
   momentum: "Which way has the stock price been trending lately?",
 };
 
+/* COLOUR LAW: green and red mean PRICE on this product, nowhere else. A passed
+   or failed CHECK is not a price move, so the glyph carries the meaning and the
+   weight carries the emphasis — ink for a pass, soft for a miss. */
 function CheckIcon({ status }: { status: "pass" | "fail" | "neutral" }) {
-  if (status === "pass") return <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />;
-  if (status === "fail") return <Minus className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />;
-  return <CircleDot className="mt-0.5 h-4 w-4 shrink-0 text-soft" />;
+  if (status === "pass") return <Check className="mt-0.5 h-4 w-4 shrink-0 text-ink" />;
+  if (status === "fail") return <Minus className="mt-0.5 h-4 w-4 shrink-0 text-soft" />;
+  return <CircleDot className="mt-0.5 h-4 w-4 shrink-0 text-soft/60" />;
 }
 
 export default function Scorecard({
@@ -180,9 +183,9 @@ function LedgerColumn({
     <div>
       <h3 className="mb-1 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wider text-soft">
         {tone === "pass" ? (
-          <Check className="h-3.5 w-3.5 text-green-600" />
+          <Check className="h-3.5 w-3.5 text-ink" />
         ) : (
-          <Minus className="h-3.5 w-3.5 text-red-600" />
+          <Minus className="h-3.5 w-3.5 text-soft" />
         )}
         {title}
       </h3>

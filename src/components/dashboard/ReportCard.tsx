@@ -138,7 +138,7 @@ export default function ReportCard({
 
   if (loading) {
     return (
-      <div className="paper-card p-6 animate-pulse">
+      <div className="py-6 animate-pulse">
         <div className="h-5 w-40 bg-sand/70 rounded mb-4" />
         <div className="h-3 w-full bg-sand/50 rounded mb-2" />
         <div className="h-3 w-2/3 bg-sand/50 rounded" />
@@ -156,14 +156,19 @@ export default function ReportCard({
       : 0;
 
   return (
-    <div className="paper-card p-6">
+    /* A LEDGER ENTRY, not a card. The old treatment was a paper-card wrapping
+       three more boxed panels (stat tiles / needs-work / coach note) — cards
+       inside cards, the pattern the brand register bans. Hierarchy now comes
+       from the display scale and hairline rules; every colour is unchanged
+       family gold. */
+    <div className="py-7 first:pt-5">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
         <div className="w-10 h-10 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 font-display font-bold shrink-0">
           {(childName || "?")[0]?.toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-display font-bold text-ink">{childName}</p>
+          <p className="font-display text-display-3 font-bold text-ink truncate">{childName}</p>
           <p className="text-xs text-soft capitalize">
             {stats.track} track
             {stats.cohort_week ? ` · Week ${stats.cohort_week}` : ""}
@@ -220,8 +225,9 @@ export default function ReportCard({
         )}
       </div>
 
-      {/* Quiz + Practice + Badges */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      {/* Quiz + Practice + Badges — a ruled stat row (hairline dividers), not
+          three boxed tiles. */}
+      <div className="flex items-stretch py-4 mb-5 border-y border-sand">
         <Stat
           label="Quiz avg"
           value={stats.quiz_avg == null ? "—" : `${stats.quiz_avg}%`}
@@ -248,11 +254,11 @@ export default function ReportCard({
         />
       </div>
 
-      {/* Needs work */}
+      {/* Needs work — carried by a gold edge rule instead of a full box. */}
       {needsWork.length > 0 && (
-        <div className="mb-5 rounded-xl border border-gold-300 bg-chip-amber/30 p-4">
-          <p className="flex items-center gap-1.5 text-sm font-display font-bold text-gold-800 mb-2">
-            <AlertTriangle className="w-4 h-4" />
+        <div className="mb-5 border-l-2 border-gold-400 pl-4">
+          <p className="flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-gold-800 mb-2">
+            <AlertTriangle className="w-3.5 h-3.5" />
             Needs work
           </p>
           <ul className="space-y-1.5">
@@ -266,11 +272,11 @@ export default function ReportCard({
         </div>
       )}
 
-      {/* Coach note */}
-      <div className="rounded-xl bg-paper border border-sand p-4">
+      {/* Coach note — a quoted passage under a hairline, not a nested panel. */}
+      <div className="border-t border-sand pt-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="flex items-center gap-1.5 text-sm font-display font-bold text-ink">
-            <Sparkles className="w-4 h-4 text-gold-600" />
+          <p className="flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-soft">
+            <Sparkles className="w-3.5 h-3.5 text-gold-600" />
             Coach&apos;s note
           </p>
           <button
@@ -306,20 +312,20 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-sand bg-midnight-900 p-3 text-center">
-      <p className="text-[11px] text-soft uppercase tracking-wide flex items-center justify-center gap-1">
-        {label === "Practice" && <Target className="w-3 h-3" />}
-        {label === "Badges" && <Award className="w-3 h-3" />}
-        {label}
+    <div className="flex-1 min-w-0 px-4 first:pl-0 last:pr-0 border-l border-sand first:border-l-0">
+      <p className="text-eyebrow text-soft flex items-center gap-1">
+        {label === "Practice" && <Target className="w-3 h-3 shrink-0" />}
+        {label === "Badges" && <Award className="w-3 h-3 shrink-0" />}
+        <span className="truncate uppercase">{label}</span>
       </p>
       <p
-        className={`font-display text-xl font-bold mt-0.5 ${
+        className={`font-display text-display-3 font-bold mt-1.5 ${
           warn ? "text-red-600" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="text-[11px] text-soft mt-0.5 truncate">{sub}</p>
+      <p className="text-[11px] text-soft mt-1 truncate">{sub}</p>
     </div>
   );
 }

@@ -4,41 +4,59 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { m } from "@/lib/motion";
-import { ArrowRight, Gamepad2, Trophy, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 
-interface GameCard {
+/**
+ * THE TRAINING ROOM — the games index as a hairline LEDGER, not a card grid.
+ *
+ * Each game is a row: a large muted index numeral gives it identity, the title
+ * carries the ask, and the right-hand mono column holds YOUR record. Nothing is
+ * wrapped in a box, and the two games never sit in equal columns — a two-up grid
+ * of picture cards was the exact pattern the register bans.
+ *
+ * ONE DARK OBJECT: the masthead field. It is the only dark surface on the index
+ * (the games themselves carry their own night-island stage), which is what lets
+ * it actually dominate rather than compete.
+ *
+ * DATA HONESTY: "Best n/10" and the last-played date come from real `game_scores`
+ * rows. A game you have never played says so — it never shows a zero, and it
+ * never shows a fabricated streak or rating.
+ *
+ * COLOUR LAW: no green/red anywhere on this surface — nothing here is a price.
+ * The accent (family gold / club volt / FTA metallic) marks the play action and
+ * the lock upsell, which are actions. Orange TEXT uses the gold ramp, which
+ * flips at night; text-volt-* is frozen and never used.
+ */
+
+interface GameEntry {
   href: string;
   title: string;
+  /** The one-line ask. */
   desc: string;
-  art: string;
-  bar: string;
-  gameKey?: string;
-  scored: boolean; // shows best out of 10
-  /** Playable on the free tier. Others show a "FIC members" locked card. */
+  /** What the rep actually trains — the adult reason to play. */
+  trains: string;
+  gameKey: string;
+  /** Playable on the free tier. Others route to the upgrade surface. */
   freeOpen: boolean;
 }
 
-const GAMES: GameCard[] = [
+const GAMES: GameEntry[] = [
   {
     href: "/games/candle-battle",
     title: "Candle Battle",
-    desc: "One candle, one battle. Watch it form live, then call the winner — green team or red team.",
-    art: "/art/tug-of-war.jpg",
-    bar: "linear-gradient(135deg, rgba(34,197,94,0.85), rgba(220,38,38,0.75))",
+    desc: "One candle, one battle. Watch it form live, then call the winner — buyers or sellers.",
+    trains: "Reading a single bar",
     gameKey: "candle-battle",
-    scored: true,
     freeOpen: true,
   },
   {
     href: "/games/trend-or-trap",
     title: "Trend or Trap",
-    desc: "A chart is just battles in a row. Read the pattern and call it: climbing higher, or a trap?",
-    art: "/art/levelup-story.jpg",
-    bar: "linear-gradient(135deg, rgba(251,191,36,0.9), rgba(217,119,6,0.8))",
+    desc: "A chart is just battles in a row. Read the sequence and call it: continuation, or trap?",
+    trains: "Reading a sequence",
     gameKey: "trend-or-trap",
-    scored: true,
     freeOpen: false,
   },
 ];
@@ -56,6 +74,7 @@ export default function GamesHubPage() {
   const supabase = createClient();
   const [best, setBest] = useState<Record<string, number>>({});
   const [last, setLast] = useState<Record<string, string>>({});
+  const [plays, setPlays] = useState<Record<string, number>>({});
   const [tier, setTier] = useState<FamilyTier>("fic");
 
   useEffect(() => {
@@ -77,115 +96,134 @@ export default function GamesHubPage() {
         .order("created_at", { ascending: false });
       const bestMap: Record<string, number> = {};
       const lastMap: Record<string, string> = {};
+      const playMap: Record<string, number> = {};
       (data || []).forEach((r: { game: string; score: number; created_at: string }) => {
         bestMap[r.game] = Math.max(bestMap[r.game] || 0, r.score || 0);
+        playMap[r.game] = (playMap[r.game] || 0) + 1;
         if (!lastMap[r.game]) lastMap[r.game] = r.created_at;
       });
       setBest(bestMap);
       setLast(lastMap);
+      setPlays(playMap);
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const isFree = tier === "free";
+  const totalPlays = Object.values(plays).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* hero */}
-      <m.div
-        initial={{ opacity: 0, y: 10 }}
+    <div className="mx-auto max-w-3xl space-y-8">
+      {/* The one dark object on the surface. */}
+      <m.header
+        initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="paper-card overflow-hidden mb-6"
+        className="f0-hero-field f0-grain relative px-6 py-8 sm:px-9 sm:py-11"
       >
-        <div className="relative h-36 sm:h-44">
-          <Image
-            src="/art/tug-of-war.jpg"
-            alt="A tug-of-war between the green team and the red team"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-transparent" />
-          <div className="absolute inset-0 flex flex-col justify-center px-6 max-w-md">
-            <div className="flex items-center gap-2 mb-1">
-              <Gamepad2 className="w-5 h-5 text-gold-600" />
-              <h1 className="font-display text-2xl font-bold text-ink">Practice Games</h1>
-            </div>
-            <p className="text-soft text-sm leading-relaxed">
-              Every price move is a tug-of-war. Play quick rounds to train your eye — clear 70% to
-              earn XP.
-            </p>
-          </div>
+        <Image
+          src="/art/tug-of-war.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover opacity-30"
+        />
+        <div className="f0-hero-scrim" />
+        <div className="relative">
+          <p className="text-eyebrow font-display font-bold uppercase text-gold-600">
+            Training room
+          </p>
+          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase">
+            Practice Games
+          </h1>
+          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/70">
+            Every price move is a tug-of-war between buyers and sellers. Ten rounds a
+            session; clear 70% and the session pays XP.
+          </p>
         </div>
-      </m.div>
+      </m.header>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        {GAMES.map((g, i) => {
-          const locked = isFree && !g.freeOpen;
-          return (
-          <m.div
-            key={g.href}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.06 }}
-          >
-            <Link
-              href={locked ? "/upgrade" : g.href}
-              className="paper-card overflow-hidden flex flex-col h-full group hover:shadow-[var(--shadow-lift)] transition-shadow"
-            >
-              <div className="relative h-28">
-                <Image src={g.art} alt="" fill className="object-cover" />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: g.bar, opacity: locked ? 0.4 : 0.7 }}
-                />
-                {locked && <div className="absolute inset-0 bg-midnight-950/45" />}
-                <h2 className="absolute bottom-3 left-4 font-display text-lg font-extrabold text-white drop-shadow">
-                  {g.title}
-                </h2>
-                {locked && (
-                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-midnight-950/70 px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider text-white ring-1 ring-white/20">
-                    <Lock className="w-2.5 h-2.5" /> FIC members
+      <section>
+        <h2 className="f0-section-rule mb-1">
+          <span className="text-eyebrow font-display font-bold uppercase text-soft">
+            The reps
+          </span>
+        </h2>
+
+        <div className="f0-ledger f0-stagger">
+          {GAMES.map((g, i) => {
+            const locked = isFree && !g.freeOpen;
+            const bestScore = best[g.gameKey];
+            const played = bestScore !== undefined;
+            return (
+              <div key={g.href} style={{ "--i": i } as React.CSSProperties}>
+                <Link href={locked ? "/upgrade" : g.href} className="f0-ledger-row group">
+                  <span
+                    aria-hidden
+                    className="w-9 shrink-0 self-center text-right font-display text-display-3 font-extrabold tabular-nums text-soft sm:w-12"
+                  >
+                    {String(i + 1).padStart(2, "0")}
                   </span>
-                )}
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <p className="text-sm text-soft leading-relaxed flex-1">{g.desc}</p>
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-xs text-soft inline-flex items-center gap-1.5">
-                    {locked ? (
+
+                  <span className="min-w-0 flex-1 self-center">
+                    <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                      <span className="font-display text-display-3 font-extrabold tracking-tight text-ink">
+                        {g.title}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                        {locked ? "Members only" : g.trains}
+                      </span>
+                    </span>
+                    <span className="mt-1.5 block text-[14px] leading-relaxed text-soft">
+                      {g.desc}
+                    </span>
+                    <span className="mt-2.5 flex items-center gap-1 font-display text-[13px] font-bold text-gold-700">
+                      {locked ? (
+                        <>
+                          <Lock className="h-3.5 w-3.5" /> Join to play
+                        </>
+                      ) : (
+                        <>Play</>
+                      )}
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+                    </span>
+                  </span>
+
+                  <span className="shrink-0 self-center text-right">
+                    {played ? (
                       <>
-                        <Lock className="w-3.5 h-3.5 text-gold-600" /> Members only
+                        <span className="block font-mono text-[15px] font-semibold tabular-nums text-ink">
+                          {bestScore}/10
+                        </span>
+                        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
+                          Best · {timeAgo(last[g.gameKey])}
+                        </span>
                       </>
-                    ) : g.gameKey && best[g.gameKey] !== undefined ? (
-                      <>
-                        <Trophy className="w-3.5 h-3.5 text-gold-600" />
-                        Best {best[g.gameKey]}/10
-                        {last[g.gameKey] && (
-                          <span className="text-soft/70">· {timeAgo(last[g.gameKey])}</span>
-                        )}
-                      </>
-                    ) : g.scored ? (
-                      "Not played yet"
                     ) : (
-                      "Open the simulator"
+                      <>
+                        <span className="block font-mono text-[15px] font-semibold text-soft">
+                          —
+                        </span>
+                        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
+                          {locked ? "Locked" : "Not played"}
+                        </span>
+                      </>
                     )}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-gold-700 group-hover:text-gold-800">
-                    {locked ? (
-                      <>Join FIC <ArrowRight className="w-4 h-4" /></>
-                    ) : (
-                      <>Play <ArrowRight className="w-4 h-4" /></>
-                    )}
-                  </span>
-                </div>
+                </Link>
               </div>
-            </Link>
-          </m.div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Your record — stated, never inferred. Absent until there is one. */}
+      {totalPlays > 0 && (
+        <p className="f0-rule-top pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          {totalPlays} session{totalPlays === 1 ? "" : "s"} logged · a session is 10 rounds ·
+          70% pays XP
+        </p>
+      )}
     </div>
   );
 }

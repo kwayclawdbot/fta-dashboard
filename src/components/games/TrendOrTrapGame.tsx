@@ -115,8 +115,8 @@ export default function TrendOrTrapGame() {
 
   if (g.loading) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-gold-400/30 border-t-gold-500 rounded-full animate-spin" />
+      <div className="mx-auto flex max-w-2xl items-center justify-center py-24">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-500" />
       </div>
     );
   }
@@ -139,8 +139,14 @@ export default function TrendOrTrapGame() {
 
   if (!round || !data) {
     return (
-      <div className="max-w-2xl mx-auto paper-card p-10 text-center text-soft">
-        No rounds available yet.
+      <div className="mx-auto max-w-2xl border-l-2 border-sand py-1 pl-4">
+        <p className="font-display text-display-3 font-extrabold text-ink">
+          No rounds are loaded
+        </p>
+        <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
+          Trend or Trap draws its charts from the published set. There is nothing to play
+          right now — nothing is being generated in its place.
+        </p>
       </div>
     );
   }
@@ -161,12 +167,9 @@ export default function TrendOrTrapGame() {
         onToggleSound={sound.toggle}
       />
 
-      <div className="mb-3 flex items-start gap-2">
-        <span className="mt-0.5 inline-flex shrink-0 items-center rounded-full bg-chip-green px-2.5 py-1 text-[11px] font-semibold text-green-700">
-          Round {g.index + 1}
-        </span>
-        <p className="text-sm text-soft leading-relaxed">{round.prompt}</p>
-      </div>
+      {/* Scenario. The round number lives in the top bar, so this is the ask
+          and nothing else. The old round chip was green — green is price. */}
+      <p className="mb-4 text-[15px] leading-relaxed text-ink">{round.prompt}</p>
 
       <m.div
         animate={shake && !reduce ? { x: [-6, 6, -5, 4, 0] } : { x: 0 }}
@@ -174,7 +177,7 @@ export default function TrendOrTrapGame() {
         className="night-island relative p-4 sm:p-5"
       >
         <AnimatePresence>{correct && phase === "result" && <Burst key={burstKey} />}</AnimatePresence>
-        {correct && phase === "result" && <ScorePop key={popKey} label={pop} tone="green" />}
+        {correct && phase === "result" && <ScorePop key={popKey} label={pop} />}
 
         <CandleRenderer
           candles={data.candles}
@@ -208,22 +211,27 @@ export default function TrendOrTrapGame() {
             exit={{ opacity: 0 }}
             className="mt-5"
           >
-            <div className="flex items-center justify-center gap-2 mb-3">
+            <div className="mb-3 flex items-center justify-center gap-2">
               <TimerRing />
-              <span className="text-xs text-soft">Quick correct calls earn bonus points</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                Quick correct calls earn bonus points
+              </span>
             </div>
+            {/* A control PAIR, not a content grid — the two calls are mutually
+                exclusive and must carry identical weight. Green/red here are
+                the direction of PRICE, the law's own exception. */}
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => choose("CLIMBING")}
-                className="min-h-[64px] rounded-xl border-2 border-green-500/40 bg-chip-green text-green-700 font-display font-extrabold text-lg hover:bg-green-500/15 active:scale-[0.98] transition flex items-center justify-center gap-2"
+                className="flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20 active:scale-[0.98]"
               >
-                <TrendingUp className="w-5 h-5" /> CLIMBING
+                <TrendingUp className="h-5 w-5" /> CLIMBING
               </button>
               <button
                 onClick={() => choose("FALLING")}
-                className="min-h-[64px] rounded-xl border-2 border-red-500/40 bg-red-500/5 text-red-600 font-display font-extrabold text-lg hover:bg-red-500/10 active:scale-[0.98] transition flex items-center justify-center gap-2"
+                className="flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20 active:scale-[0.98]"
               >
-                <TrendingDown className="w-5 h-5" /> FALLING
+                <TrendingDown className="h-5 w-5" /> FALLING
               </button>
             </div>
           </m.div>
@@ -233,28 +241,27 @@ export default function TrendOrTrapGame() {
       <AnimatePresence>
         {phase === "result" && (
           <m.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+            {/* The verdict. A hairline-ruled block, not a tinted bubble: the
+                only colour is on the outcome word, and it is a PRICE colour
+                because the outcome is the direction price actually took. */}
             <div
-              className={`relative rounded-2xl border p-4 ${
-                correct ? "border-green-500/30 bg-chip-green/60" : "border-red-500/25 bg-red-500/5"
+              className={`border-l-2 pl-4 ${
+                correct ? "border-green-500/60" : "border-red-500/60"
               }`}
             >
-              <span
-                className={`absolute -top-2 left-8 h-4 w-4 rotate-45 border-l border-t ${
-                  correct ? "border-green-500/30 bg-chip-green/60" : "border-red-500/25 bg-red-50"
-                }`}
-              />
-              <p className="flex items-center gap-1.5 font-display font-bold text-sm mb-1">
+              <p className="mb-1.5 font-display text-eyebrow font-bold uppercase">
                 {correct ? (
-                  <span className="text-green-700 flex items-center gap-1.5">
-                    <Check className="w-4 h-4" /> Correct — it was {round.answer.toLowerCase()}
+                  <span className="flex items-center gap-1.5 text-price-up">
+                    <Check className="h-3.5 w-3.5" /> Correct — it was{" "}
+                    {round.answer.toLowerCase()}
                   </span>
                 ) : (
-                  <span className="text-red-600 flex items-center gap-1.5">
-                    <X className="w-4 h-4" /> It was {round.answer.toLowerCase()}
+                  <span className="flex items-center gap-1.5 text-price-down">
+                    <X className="h-3.5 w-3.5" /> It was {round.answer.toLowerCase()}
                   </span>
                 )}
               </p>
-              <p className="text-sm text-midnight-200 leading-relaxed">{round.why}</p>
+              <p className="text-[15px] leading-relaxed text-ink">{round.why}</p>
             </div>
             <button
               onClick={g.advance}
@@ -266,18 +273,20 @@ export default function TrendOrTrapGame() {
         )}
       </AnimatePresence>
 
+      {/* First-round primer — a hairline note, not a boxed tip card. */}
       {g.index === 0 && phase === "popin" && (
-        <div className="mt-5 flex items-center gap-3 rounded-xl border border-sand bg-white p-3">
+        <div className="f0-rule-top mt-6 flex items-center gap-3 pt-4">
           <Image
             src="/art/levelup-story.jpg"
             alt=""
             width={64}
             height={64}
-            className="h-14 w-14 rounded-lg object-cover"
+            className="h-12 w-12 shrink-0 rounded-lg object-cover"
           />
-          <p className="text-xs text-soft leading-relaxed">
-            Each candle is one battle. Line them up and they tell a story — climbing higher, or
-            rolling over. Some are <b className="text-gold-700">traps</b>: a fake move before the real
+          <p className="text-[13px] leading-relaxed text-soft">
+            Each candle is one battle. Line them up and they tell a story — climbing higher,
+            or rolling over. Some are{" "}
+            <b className="font-semibold text-gold-700">traps</b>: a fake move before the real
             one.
           </p>
         </div>
@@ -292,13 +301,16 @@ function TimerRing() {
   const C = 2 * Math.PI * 13;
   return (
     <svg width={34} height={34} viewBox="0 0 34 34">
-      <circle cx={17} cy={17} r={13} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={3} />
+      {/* Track + sweep read from theme tokens: the old rgba(0,0,0,0.08) track
+          vanished on the dark page and the hardcoded #F59E0B was family gold on
+          every mode. --sand and --accent-solid are both mode- and theme-correct. */}
+      <circle cx={17} cy={17} r={13} fill="none" stroke="var(--sand)" strokeWidth={3} />
       <m.circle
         cx={17}
         cy={17}
         r={13}
         fill="none"
-        stroke="#F59E0B"
+        stroke="var(--accent-solid)"
         strokeWidth={3}
         strokeLinecap="round"
         transform="rotate(-90 17 17)"

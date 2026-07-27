@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { m as mm } from "@/lib/motion";
 import {
-  CheckCircle2,
-  Circle,
-  Compass,
+  Check,
   ExternalLink,
   Landmark,
   PlayCircle,
@@ -27,6 +24,7 @@ import Celebrate, {
   type Register,
 } from "@/components/fic/Celebrate";
 import { KID_FIRST_ADVENTURE } from "@/lib/register";
+import { DisplayHead, LedgerLink, SectionRule, TextAction } from "@/components/f0/parts";
 
 const ORIENTATION_DECK_URL = "https://fta-start.vercel.app";
 const WALKTHROUGH_URL =
@@ -42,18 +40,18 @@ function TourVideo() {
 
   if (failed) {
     return (
-      <div className="aspect-[16/10] w-full bg-ink/90 flex flex-col items-center justify-center gap-3 text-center px-6">
-        <PlayCircle className="w-10 h-10 text-gold-400" />
-        <p className="text-sm text-paper/90 max-w-sm">
+      <div className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-3 bg-night-950 px-6 text-center">
+        <PlayCircle className="h-10 w-10 text-volt-400" />
+        <p className="max-w-sm text-sm text-night-100">
           The tour video didn&apos;t load. You can open it directly in a new tab.
         </p>
         <a
           href={WALKTHROUGH_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-500 text-ink text-sm font-semibold hover:bg-gold-400 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-display font-bold text-night-950 transition-colors hover:bg-gold-400"
         >
-          <ExternalLink className="w-4 h-4" />
+          <ExternalLink className="h-4 w-4" />
           Open the tour
         </a>
       </div>
@@ -67,11 +65,32 @@ function TourVideo() {
       playsInline
       poster={WALKTHROUGH_POSTER}
       onError={() => setFailed(true)}
-      className="w-full aspect-[16/10] bg-ink"
+      className="aspect-[16/10] w-full bg-night-950"
       src={WALKTHROUGH_URL}
     />
   );
 }
+
+/** The step marker: an ordinal in the mono register, or a completion tick.
+ *  Completion is NOT green — green belongs to price. Done reads in the brand
+ *  action colour and the row itself steps back. */
+function StepMark({ done, n }: { done: boolean; n: number }) {
+  if (done) {
+    return (
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gold-500">
+        <Check className="h-3.5 w-3.5 text-night-950" strokeWidth={3} />
+      </span>
+    );
+  }
+  return (
+    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-sand font-mono text-[11px] font-bold tabular-nums text-soft">
+      {n}
+    </span>
+  );
+}
+
+const quietAction =
+  "inline-flex items-center gap-1.5 rounded-lg border border-gold-400/40 bg-gold-400/10 px-4 py-2 text-sm font-display font-semibold text-gold-700 transition-colors hover:bg-gold-400/20";
 
 export default function StartHerePage() {
   const supabase = createClient();
@@ -164,182 +183,155 @@ export default function StartHerePage() {
   // here should be pointed at their first adventure, not a grown-up chore list.
   if (register === "kid") {
     return (
-      <div className="max-w-2xl mx-auto space-y-6 pb-12">
+      <div className="mx-auto max-w-2xl pb-14">
         <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
-            <Compass className="w-3.5 h-3.5" />
-            Start Here
-          </span>
-          <h1 className="font-display text-2xl font-bold text-ink mt-2">
-            Ready for your first adventure?
-          </h1>
-          <p className="text-soft mt-1 leading-relaxed">
-            Your grown-ups take care of the boring account stuff. Your job is the
-            fun part — learning how money grows, one adventure at a time.
-          </p>
-        </div>
+
+        <DisplayHead
+          eyebrow="Start Here"
+          title="Ready for your first adventure?"
+          lede="Your grown-ups take care of the boring account stuff. Your job is the fun part — learning how money grows, one adventure at a time."
+        />
 
         <Link
           href={KID_FIRST_ADVENTURE.href}
-          className="paper-card p-6 flex items-center gap-4 hover:border-gold-400/50 transition-colors group"
+          className="group mt-8 flex gap-4 border-l-[3px] border-gold-500 pl-4 sm:pl-5"
         >
-          <div className="w-14 h-14 rounded-2xl bg-gold-400/15 flex items-center justify-center shrink-0">
-            <PlayCircle className="w-8 h-8 text-gold-700" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-display text-lg font-bold text-ink">
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-display-3 font-extrabold text-ink">
               {KID_FIRST_ADVENTURE.title}
             </p>
-            <p className="text-sm text-soft mt-0.5">{KID_FIRST_ADVENTURE.body}</p>
-            <span className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-lg bg-gold-500 text-white text-sm font-display font-semibold group-hover:bg-gold-600 transition-colors">
-              <Sparkles className="w-4 h-4" />
+            <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
+              {KID_FIRST_ADVENTURE.body}
+            </p>
+            <span className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-5 py-2.5 text-sm font-display font-bold text-night-950 transition-colors group-hover:bg-gold-600">
+              <Sparkles className="h-4 w-4" />
               {KID_FIRST_ADVENTURE.cta}
             </span>
           </div>
         </Link>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            href="/missions"
-            className="paper-card p-4 flex items-center gap-2.5 hover:border-gold-400/50 transition-colors"
-          >
-            <span className="text-2xl leading-none">🎯</span>
-            <span className="font-display font-semibold text-ink text-sm">
-              My missions
-            </span>
-          </Link>
-          <Link
-            href="/games"
-            className="paper-card p-4 flex items-center gap-2.5 hover:border-gold-400/50 transition-colors"
-          >
-            <span className="text-2xl leading-none">🎮</span>
-            <span className="font-display font-semibold text-ink text-sm">
-              Play a game
-            </span>
-          </Link>
-        </div>
+        <section className="mt-10">
+          <SectionRule>Or jump straight in</SectionRule>
+          <div className="f0-ledger mt-1">
+            <LedgerLink href="/missions" label="My missions" sub="Small quests that earn XP." />
+            <LedgerLink href="/games" label="Play a game" sub="Learn by playing — no reading required." />
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="mx-auto max-w-3xl pb-14">
       <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
-      {/* Header — paints immediately (no data dependency) */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold">
-            <Compass className="w-3.5 h-3.5" />
-            Start Here
-          </span>
-        </div>
-        <h1 className="font-display text-2xl font-bold text-ink">
-          Welcome to the Club
-        </h1>
-        <p className="text-soft mt-1 max-w-2xl leading-relaxed">
-          We learn first and practice with pretend money. There is no pressure
-          to ever trade for real — this is a family classroom for building smart
-          money habits together. Finish these six steps to get your family set up.
-        </p>
-      </div>
-
-      {/* HERO — the setup journey. This is the make-or-break motivator, so it
-          leads and paints immediately from local state (0/6), then fills in as
-          orientation progress hydrates — no blank hero box, no loading gate. */}
-      <SetupTrail
-        steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
-        completed={completed}
-        allDone={allDone}
+      {/* Masthead — paints immediately (no data dependency) */}
+      <DisplayHead
+        eyebrow="Start Here"
+        title="Welcome to the Club"
+        lede="We learn first and practice with pretend money. There is no pressure to ever trade for real — this is a family classroom for building smart money habits together. Finish these six steps to get your family set up."
       />
+
+      {/* The setup journey. This is the make-or-break motivator, so it leads and
+          paints immediately from local state (0/6), then fills in as orientation
+          progress hydrates — no blank hero box, no loading gate. */}
+      <div className="mt-8">
+        <SetupTrail
+          steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
+          completed={completed}
+          allDone={allDone}
+        />
+      </div>
       {allDone && (
-        <p className="text-sm text-green-600 flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4" />
+        <p className="mt-3 flex items-center gap-1.5 text-sm font-display font-semibold text-gold-700">
+          <Sparkles className="h-4 w-4" />
           Head to your home page for This Week in the Club.
         </p>
       )}
 
-      {/* Checklist — the two-minute tour is folded into the "Watch the
-          orientation" step below (no standalone hero embed). */}
-      <div className="space-y-3">
-        {ORIENTATION_STEPS.map((step, i) => {
-          const done = completed.has(step.key);
-          const isAccounts = step.key === "open_accounts";
-          const isWatch = step.key === "watch_orientation";
-          return (
-            <mm.div
-              key={step.key}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={`paper-card p-5 ${done ? "border-green-500/30" : ""}`}
-            >
-              <div className="flex items-start gap-3">
-                {done ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
-                ) : (
-                  <Circle className="w-6 h-6 text-midnight-600 shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-display font-semibold text-ink">
-                    {i + 1}. {step.title}
-                  </h3>
-                  <p className="text-sm text-soft mt-1 leading-relaxed">
-                    {step.blurb}
-                  </p>
+      {/* The six steps — a ruled ledger, not a stack of boxes. The two-minute
+          tour is folded into the "Watch the orientation" step (no standalone
+          hero embed). */}
+      <section className="mt-10">
+        <SectionRule
+          action={
+            <span className="font-mono text-[13px] font-bold tabular-nums text-soft">
+              {doneCount}/{total}
+            </span>
+          }
+        >
+          Your six steps
+        </SectionRule>
 
-                  {!done && (
-                    <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      {step.ctaHref ? (
-                        <Link
-                          href={step.ctaHref}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-sm font-medium hover:bg-gold-400/25 transition-colors"
-                        >
-                          {step.ctaLabel}
-                        </Link>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            isWatch
-                              ? setOpenPanel(
-                                  openPanel === "watch" ? null : "watch"
-                                )
-                              : isAccounts
+        <div className="f0-ledger f0-stagger mt-1">
+          {ORIENTATION_STEPS.map((step, i) => {
+            const done = completed.has(step.key);
+            const isAccounts = step.key === "open_accounts";
+            const isWatch = step.key === "watch_orientation";
+            return (
+              <div
+                key={step.key}
+                style={{ "--i": i } as React.CSSProperties}
+                className="py-5"
+              >
+                <div className="flex gap-4">
+                  <StepMark done={done} n={i + 1} />
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      className={`font-display text-[17px] font-extrabold ${
+                        done ? "text-soft" : "text-ink"
+                      }`}
+                    >
+                      {step.title}
+                    </h3>
+                    <p className="mt-1.5 max-w-[62ch] text-[14px] leading-relaxed text-soft">
+                      {step.blurb}
+                    </p>
+
+                    {!done && (
+                      <div className="mt-4 flex flex-wrap items-center gap-4">
+                        {step.ctaHref ? (
+                          <Link href={step.ctaHref} className={quietAction}>
+                            {step.ctaLabel}
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              isWatch
                                 ? setOpenPanel(
-                                    openPanel === "accounts" ? null : "accounts"
+                                    openPanel === "watch" ? null : "watch"
                                   )
-                                : window.open(ORIENTATION_DECK_URL, "_blank")
-                          }
-                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-sm font-medium hover:bg-gold-400/25 transition-colors"
-                        >
-                          {isWatch ? (
-                            <PlayCircle className="w-4 h-4" />
-                          ) : null}
-                          {step.ctaLabel}
-                        </button>
-                      )}
-                      {step.kind === "attest" && (
-                        <button
-                          onClick={() => attest(step)}
-                          className="text-sm font-medium text-soft hover:text-ink transition-colors"
-                        >
-                          {step.attestLabel || "Mark done"}
-                        </button>
-                      )}
-                    </div>
-                  )}
+                                : isAccounts
+                                  ? setOpenPanel(
+                                      openPanel === "accounts" ? null : "accounts"
+                                    )
+                                  : window.open(ORIENTATION_DECK_URL, "_blank")
+                            }
+                            className={quietAction}
+                          >
+                            {isWatch ? <PlayCircle className="h-4 w-4" /> : null}
+                            {step.ctaLabel}
+                          </button>
+                        )}
+                        {step.kind === "attest" && (
+                          <button
+                            onClick={() => attest(step)}
+                            className="text-sm font-medium text-soft transition-colors hover:text-ink"
+                          >
+                            {step.attestLabel || "Mark done"}
+                          </button>
+                        )}
+                      </div>
+                    )}
 
-                  {/* Orientation step — the narrated walkthrough was recorded
-                      before the redesign (stale layouts), so the primary path is
-                      now the live interactive tour (?tour=1). The old video is
-                      kept for reference, folded away and labelled "older layout". */}
-                  {isWatch && openPanel === "watch" && (
-                    <div className="mt-4 space-y-3 rounded-xl border border-sand bg-paper p-4">
-                      <div className="flex items-start gap-3 rounded-xl border border-gold-300/40 bg-gold-400/10 p-3.5">
-                        <Compass className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
-                        <div className="space-y-2">
-                          <p className="text-sm leading-relaxed text-ink">
+                    {/* Orientation step — the narrated walkthrough was recorded
+                        before the redesign (stale layouts), so the primary path is
+                        now the live interactive tour (?tour=1). The old video is
+                        kept for reference, folded away and labelled "older layout". */}
+                    {isWatch && openPanel === "watch" && (
+                      <div className="f0-rule-top mt-5 space-y-4 pt-5">
+                        <div className="border-l-[3px] border-gold-500 pl-4">
+                          <p className="max-w-[60ch] text-sm leading-relaxed text-ink">
                             <span className="font-semibold">
                               The app has been updated.
                             </span>{" "}
@@ -349,111 +341,102 @@ export default function StartHerePage() {
                           </p>
                           <Link
                             href="/dashboard?tour=1"
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-gold-600"
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-gold-500 px-4 py-2 text-sm font-display font-bold text-night-950 transition-colors hover:bg-gold-600"
                           >
                             <Sparkles className="h-4 w-4" />
                             Take the new tour
                           </Link>
                         </div>
-                      </div>
 
-                      <details className="rounded-xl border border-sand bg-paper/60">
-                        <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-2.5 text-sm text-soft">
-                          <PlayCircle className="h-4 w-4 shrink-0 text-soft" />
-                          Prefer a video? Watch the original walkthrough
-                          <span className="ml-1 rounded bg-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-soft">
-                            older layout
-                          </span>
-                        </summary>
-                        <div className="border-t border-sand">
-                          <TourVideo />
-                          <div className="space-y-2 p-3.5">
-                            <p className="text-[13px] leading-relaxed text-soft">
-                              Recorded before the redesign — some screens look
-                              different now — but the club&apos;s rhythm (home,
-                              watchlist, missions, games and classes) is narrated
-                              in a hundred seconds.
-                            </p>
-                            <a
-                              href={ORIENTATION_DECK_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                              Want the fuller walkthrough? Open the slide deck
-                            </a>
+                        <details className="f0-rule-top pt-4">
+                          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-soft">
+                            <PlayCircle className="h-4 w-4 shrink-0" />
+                            Prefer a video? Watch the original walkthrough
+                            <span className="ml-1 text-eyebrow font-display font-bold uppercase text-soft">
+                              older layout
+                            </span>
+                          </summary>
+                          <div className="mt-3 overflow-hidden rounded-xl">
+                            <TourVideo />
                           </div>
-                        </div>
-                      </details>
+                          <p className="mt-3 max-w-[60ch] text-[13px] leading-relaxed text-soft">
+                            Recorded before the redesign — some screens look
+                            different now — but the club&apos;s rhythm (home,
+                            watchlist, missions, games and classes) is narrated
+                            in a hundred seconds.
+                          </p>
+                          <div className="mt-2">
+                            <TextAction href={ORIENTATION_DECK_URL} external>
+                              <ExternalLink className="h-4 w-4" />
+                              Want the fuller walkthrough? Open the slide deck
+                            </TextAction>
+                          </div>
+                        </details>
 
-                      <div>
                         <button
                           onClick={() => attest(step)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-gold-400/30 bg-gold-400/15 px-4 py-2 text-sm font-medium text-gold-700 transition-colors hover:bg-gold-400/25"
+                          className={quietAction}
                         >
-                          <CheckCircle2 className="w-4 h-4" />
+                          <Check className="h-4 w-4" />
                           {step.attestLabel || "Mark as watched"}
                         </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Accounts guide (education-first, no amount collection) */}
-                  {isAccounts && openPanel === "accounts" && (
-                    <div className="mt-4 p-4 rounded-xl bg-paper border border-sand space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Landmark className="w-4 h-4 text-gold-700" />
-                        <p className="font-display text-sm font-semibold text-ink">
+                    {/* Accounts guide (education-first, no amount collection) */}
+                    {isAccounts && openPanel === "accounts" && (
+                      <div className="f0-rule-top mt-5 space-y-3 pt-5">
+                        <p className="flex items-center gap-2 font-display text-sm font-extrabold uppercase tracking-[0.08em] text-ink">
+                          <Landmark className="h-4 w-4 text-gold-700" />
                           Opening accounts — the plain-English guide
                         </p>
+                        <p className="max-w-[62ch] text-sm leading-relaxed text-ink">
+                          A <strong>custodial account</strong> is an investing
+                          account a parent or guardian opens and manages on behalf
+                          of a child. A <strong>brokerage account</strong> is a
+                          regular investing account for an adult. Both are simply
+                          where investments can live one day — opening one is a
+                          personal family decision, and you never have to.
+                        </p>
+                        <p className="max-w-[62ch] text-sm leading-relaxed text-ink">
+                          We don&apos;t push any specific broker and we don&apos;t
+                          collect any dollar amounts. Whether your family sets aside
+                          a small weekly contribution, and how much, is entirely
+                          your own decision made privately at home. The habit
+                          matters far more than the number — even a few dollars a
+                          week teaches consistency.
+                        </p>
+                        <p className="max-w-[62ch] text-sm leading-relaxed text-soft">
+                          Everything in the club is education and practice. No real
+                          money is required to take part.
+                        </p>
+                        <button
+                          onClick={() => attest(step)}
+                          className={quietAction}
+                        >
+                          <Check className="h-4 w-4" />
+                          Mark as reviewed
+                        </button>
                       </div>
-                      <p className="text-sm text-ink leading-relaxed">
-                        A <strong>custodial account</strong> is an investing
-                        account a parent or guardian opens and manages on behalf
-                        of a child. A <strong>brokerage account</strong> is a
-                        regular investing account for an adult. Both are simply
-                        where investments can live one day — opening one is a
-                        personal family decision, and you never have to.
-                      </p>
-                      <p className="text-sm text-ink leading-relaxed">
-                        We don&apos;t push any specific broker and we don&apos;t
-                        collect any dollar amounts. Whether your family sets aside
-                        a small weekly contribution, and how much, is entirely
-                        your own decision made privately at home. The habit
-                        matters far more than the number — even a few dollars a
-                        week teaches consistency.
-                      </p>
-                      <p className="text-sm text-soft leading-relaxed">
-                        Everything in the club is education and practice. No real
-                        money is required to take part.
-                      </p>
-                      <button
-                        onClick={() => attest(step)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-sm font-medium hover:bg-gold-400/25 transition-colors"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Mark as reviewed
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </mm.div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Education-first footer */}
-      <div className="paper-card p-5 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-gold-600 shrink-0 mt-0.5" />
-        <p className="text-sm text-soft leading-relaxed">
-          <span className="text-ink font-medium">Our promise:</span> the Family
+      <p className="f0-rule-top mt-10 flex max-w-[64ch] items-start gap-3 pt-5 text-sm leading-relaxed text-soft">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
+        <span>
+          <span className="font-medium text-ink">Our promise:</span> the Family
           Investing Club is a learning space. We practice with pretend money,
           celebrate good thinking over quick wins, and never pressure any family
           to trade real money. Go at your family&apos;s own pace.
-        </p>
-      </div>
+        </span>
+      </p>
     </div>
   );
 }

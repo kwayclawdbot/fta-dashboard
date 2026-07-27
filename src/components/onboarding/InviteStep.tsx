@@ -104,7 +104,7 @@ export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
             {canNativeShare && (
               <button
                 onClick={nativeShare}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-white text-sm font-semibold hover:bg-gold-600 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-night-950 text-sm font-semibold hover:bg-gold-600 transition-colors"
               >
                 <Share2 className="w-4 h-4" /> Share
               </button>

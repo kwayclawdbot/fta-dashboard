@@ -181,14 +181,16 @@ export default function KaiWatch({
   }, [defaultTicker]);
 
   const body = (
-    <div className="overflow-hidden rounded-2xl border border-sand bg-paper shadow-soft">
-      {/* Gradient header — Kai identity */}
-      <div className="kai-gradient relative flex items-center gap-2.5 px-4 py-3">
+    <div className="overflow-hidden rounded-2xl border border-sand bg-card shadow-soft">
+      {/* Kai-BLUE header. The old fill was the teal→green "AI" gradient, which
+          broke the colour law: blue is what means Kai. White on saturated blue
+          is theme-invariant, exactly like the orange action band. */}
+      <div className="relative flex items-center gap-2.5 bg-gradient-to-br from-kai-500 to-kai-700 px-4 py-3">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur">
           <Sparkles className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-[15px] font-bold leading-tight text-white">
+          <p className="font-display text-[15px] font-extrabold leading-tight text-white">
             Kai Watch
           </p>
           <p className="text-[11px] leading-tight text-white/85">
@@ -215,7 +217,7 @@ export default function KaiWatch({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="rounded-xl border border-sand bg-paper/60 p-2 transition focus-within:border-kai-blue">
+              <div className="rounded-xl border border-sand p-2 transition focus-within:border-kai-500">
                 <textarea
                   ref={inputRef}
                   value={text}
@@ -235,7 +237,7 @@ export default function KaiWatch({
                   <button
                     onClick={parse}
                     disabled={phase === "parsing" || text.trim().length < 2}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-kai-blue px-3 py-1.5 text-[13px] font-semibold text-white shadow-soft transition hover:brightness-110 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-kai-500 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-soft transition hover:brightness-110 disabled:opacity-50"
                   >
                     {phase === "parsing" ? (
                       <>
@@ -251,7 +253,7 @@ export default function KaiWatch({
               </div>
 
               {phase === "error" && error && (
-                <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700">
+                <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] font-medium text-red-600 dark:text-red-500">
                   {error}
                 </p>
               )}
@@ -262,7 +264,7 @@ export default function KaiWatch({
                     <button
                       key={ex}
                       onClick={() => setText(ex)}
-                      className="rounded-full border border-sand bg-paper px-2.5 py-1 text-[11px] font-medium text-soft transition hover:border-kai-blue hover:text-ink"
+                      className="rounded-full border border-sand px-2.5 py-1 text-[11px] font-medium text-soft transition hover:border-kai-500 hover:text-ink"
                     >
                       {ex}
                     </button>
@@ -282,7 +284,7 @@ export default function KaiWatch({
               >
                 {phase === "created" ? (
                   <div className="flex flex-col items-center gap-2 py-6 text-center">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-green-500/12 text-green-600 dark:text-green-400">
                       <Check className="h-6 w-6" />
                     </span>
                     <p className="font-semibold text-ink">Kai&apos;s on it</p>
@@ -297,8 +299,8 @@ export default function KaiWatch({
                   <>
                     {result.supported ? (
                       <>
-                        <div className="flex items-start gap-2.5 rounded-xl bg-kai-blue-soft p-3">
-                          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-kai-blue text-white">
+                        <div className="flex items-start gap-2.5 rounded-xl bg-kai-500/10 p-3">
+                          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-kai-500 text-white">
                             <Sparkles className="h-3.5 w-3.5" />
                           </span>
                           <p className="text-[13px] leading-snug text-ink">
@@ -308,23 +310,20 @@ export default function KaiWatch({
                         </div>
 
                         {/* Structured interpretation (transparency) */}
-                        <p className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-soft/70">
-                          What I&apos;ll watch
+                        <p className="mb-1 mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
+                          Exactly what will trip
                         </p>
-                        <div className="space-y-1.5">
+                        <div className="f0-ledger border-y border-sand/70">
                           {result.rules.map((r, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2.5 rounded-xl border border-sand bg-paper p-2.5"
-                            >
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-blue-soft text-kai-blue">
+                            <div key={i} className="f0-ledger-row">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-500/10 text-kai-600">
                                 <Bell className="h-3.5 w-3.5" />
                               </span>
                               <div className="min-w-0 flex-1">
                                 <p className="truncate text-[13px] font-semibold text-ink">
                                   {r.label}
                                 </p>
-                                <p className="text-[11px] text-soft/70">
+                                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft/70">
                                   {KIND_TAG[r.kind]}
                                 </p>
                               </div>
@@ -333,7 +332,7 @@ export default function KaiWatch({
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-start gap-2.5 rounded-xl border border-sand bg-paper/60 p-3">
+                      <div className="flex items-start gap-2.5 rounded-xl border border-sand p-3">
                         <Info className="mt-0.5 h-4 w-4 shrink-0 text-soft" />
                         <p className="text-[13px] leading-snug text-ink">
                           {result.note ||
@@ -352,7 +351,7 @@ export default function KaiWatch({
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={reset}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-sand bg-paper px-3 py-2.5 text-[13px] font-semibold text-soft hover:bg-sand"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-sand px-3.5 py-2.5 text-[13px] font-semibold text-soft transition hover:text-ink"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         {result.supported ? "Not quite" : "Try again"}
@@ -361,7 +360,7 @@ export default function KaiWatch({
                         <button
                           onClick={create}
                           disabled={phase === "creating"}
-                          className="flex-1 rounded-xl bg-kai-blue py-2.5 text-[14px] font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60"
+                          className="flex-1 rounded-full bg-kai-500 py-2.5 text-[14px] font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60"
                         >
                           {phase === "creating" ? (
                             <Loader2 className="mx-auto h-5 w-5 animate-spin" />
@@ -375,7 +374,7 @@ export default function KaiWatch({
                     </div>
 
                     {error && (
-                      <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700">
+                      <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] font-medium text-red-600 dark:text-red-500">
                         {error}
                       </p>
                     )}
@@ -391,7 +390,7 @@ export default function KaiWatch({
   if (variant === "modal") {
     return (
       <m.div
-        className="fixed inset-0 z-[120] flex items-end justify-center bg-ink/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        className="fixed inset-0 z-[120] flex items-end justify-center bg-scrim p-0 backdrop-blur-sm sm:items-center sm:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

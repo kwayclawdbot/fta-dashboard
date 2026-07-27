@@ -143,7 +143,7 @@ export default function FtaRecordingsPage() {
         <FtaRecordingsListSkeleton />
       ) : recordings.length === 0 ? (
         <div className="paper-card p-10 text-center">
-          <Sparkles className="w-7 h-7 text-gold-500 mx-auto mb-3" />
+          <Sparkles className="w-7 h-7 text-ftagold-500 mx-auto mb-3" />
           <p className="font-display text-base font-semibold text-ink mb-1">No recordings yet</p>
           <p className="text-sm text-soft max-w-sm mx-auto">
             Your FTA class recordings land here right after each live session.
@@ -154,7 +154,7 @@ export default function FtaRecordingsPage() {
           {groups.map((group) => (
             <div key={group.key}>
               {group.label && (
-                <h2 className="font-display text-xs font-bold uppercase tracking-wider text-gold-700 mb-2">
+                <h2 className="font-display text-xs font-bold uppercase tracking-wider text-ftagold-700 mb-2">
                   {group.label}
                 </h2>
               )}
@@ -192,8 +192,8 @@ export default function FtaRecordingsPage() {
 function RecordingRow({ rec, onWatch }: { rec: Rec; onWatch: () => void }) {
   const external = rec.recordingKind === "external" && rec.recordingUrl;
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-gold-400/30 bg-gradient-to-br from-gold-400/[0.06] to-transparent p-4 hover:border-gold-400/60 transition-colors">
-      <div className="w-10 h-10 rounded-lg bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
+    <div className="flex items-start gap-3 rounded-xl border border-ftagold-400/30 bg-gradient-to-br from-ftagold-400/[0.06] to-transparent p-4 hover:border-ftagold-400/60 transition-colors">
+      <div className="w-10 h-10 rounded-lg bg-gradient-to-b from-ftagold-400 to-ftagold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
         <Play className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
@@ -209,14 +209,14 @@ function RecordingRow({ rec, onWatch }: { rec: Rec; onWatch: () => void }) {
           href={rec.recordingUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-xs font-semibold hover:bg-gold-400/25 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ftagold-400/15 text-ftagold-700 border border-ftagold-400/30 text-xs font-semibold hover:bg-ftagold-400/25 transition-colors shrink-0"
         >
           <Play className="w-3 h-3" /> Watch <ExternalLink className="w-3 h-3" />
         </a>
       ) : (
         <button
           onClick={onWatch}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gold-400/15 text-gold-700 border border-gold-400/30 text-xs font-semibold hover:bg-gold-400/25 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ftagold-400/15 text-ftagold-700 border border-ftagold-400/30 text-xs font-semibold hover:bg-ftagold-400/25 transition-colors shrink-0"
         >
           <Play className="w-3 h-3" /> Watch
         </button>

@@ -84,16 +84,46 @@ export interface BriefResponse {
 }
 
 // ── §6 Trending in the Club ──────────────────────────────────────────────────
+/** Community stance split carried on a trending row (from the snapshot ledger). */
+export interface TrendingSentiment {
+  bull: number;
+  neutral: number;
+  bear: number;
+  /** bull ÷ positioned, 0–100. null when nobody has positioned yet. */
+  bullPct: number | null;
+}
 export interface TrendingRow {
   rank: number;
   ticker: string;
   company?: string | null;
   score: number;            // weighted community-attention score
   change: number;           // rank/score delta vs prior window
+  /** Market mark, joined from ONE batched Polygon snapshot. null when the feed
+   *  is unavailable — never fabricated, and never a "score N" stand-in. */
+  price?: number | null;
+  changePct?: number | null;
+  /** Distinct members watching (all-time). Floor-gated by the UI, not here. */
+  watchers?: number;
+  participants?: number;
+  sentiment?: TrendingSentiment;
+  /** club_score normalized to 0–100 against the top of the ledger — the mock's
+   *  "CLUB SCORE 94" dial. null below FLOORS.trendingScore so a founding club
+   *  never shows a manufactured 100. */
+  heat?: number | null;
+  floorMet?: boolean;
 }
 export interface TrendingResponse {
   rows: TrendingRow[];
   updatedAt: string;
+  /** Free tier receives a capped ledger (server-authoritative). The UI renders a
+   *  "see the full rankings" wall when this is true — it never re-requests. */
+  locked?: boolean;
+  lockedFeature?: string;
+  /** Rows the server actually ranked, before the free cap. */
+  totalCount?: number;
+  freeCap?: number;
+  /** Verbatim compliance line the trending UI MUST render (attention ≠ advice). */
+  disclaimer?: string;
 }
 
 // ── §7 Today's Best Thinking ─────────────────────────────────────────────────

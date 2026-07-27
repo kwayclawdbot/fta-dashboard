@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { m, AnimatePresence } from "@/lib/motion";
-import { ArrowLeft, BookOpen, Play } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 import Link from "next/link";
 import ScenarioDecisionPanel from "@/components/simulator/ScenarioDecisionPanel";
 import ScenarioResultPanel from "@/components/simulator/ScenarioResultPanel";
@@ -242,10 +242,19 @@ export default function ScenarioPracticePage() {
 
   if (!scenario) {
     return (
-      <div className="text-center py-20">
-        <p className="text-midnight-400">Pattern not found</p>
-        <Link href="/simulator/lessons" className="text-gold-400 text-sm mt-2 inline-block">
-          Back to lessons
+      <div className="mx-auto max-w-4xl py-20">
+        <p className="font-display text-display-3 font-extrabold text-ink">
+          That pattern isn&apos;t here
+        </p>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-soft">
+          The link may be stale — the full set is one step back.
+        </p>
+        <Link
+          href="/simulator/lessons"
+          className="mt-3 inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All patterns
         </Link>
       </div>
     );
@@ -256,44 +265,35 @@ export default function ScenarioPracticePage() {
   const currentPrice = visibleBars.length > 0 ? visibleBars[visibleBars.length - 1].close : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-6xl space-y-6 pb-24">
       <Link
         href="/simulator/lessons"
-        className="inline-flex items-center gap-1.5 text-xs text-midnight-400 hover:text-gold-400 transition-colors"
+        className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        All Patterns
+        <ArrowLeft className="h-3.5 w-3.5" />
+        All patterns
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left: Chart */}
-        <div className="lg:col-span-8 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-display font-bold text-midnight-100">
-                {scenario.name}
-              </h1>
-              <p className="text-xs text-midnight-400">{scenario.description}</p>
-            </div>
-            <span
-              className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
-                scenario.difficulty === "beginner"
-                  ? "bg-green-400/10 text-green-400 border-green-400/20"
-                  : scenario.difficulty === "intermediate"
-                  ? "bg-gold-400/10 text-gold-400 border-gold-400/20"
-                  : "bg-red-500/10 text-red-500 border-red-500/20"
-              }`}
-            >
-              {scenario.difficulty}
-            </span>
-          </div>
+      {/* Chart canvas + the learn / decide rail. Asymmetric page layout, not an
+          equal-column card grid — the canvas takes the room it needs. */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="min-w-0 space-y-4">
+          <header>
+            <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+              Pattern practice · {scenario.difficulty}
+            </p>
+            <h1 className="mt-2 font-display text-display-2 font-extrabold text-ink">
+              {scenario.name}
+            </h1>
+            <p className="mt-2 max-w-lg text-[13.5px] leading-relaxed text-soft">
+              {scenario.description}
+            </p>
+          </header>
 
-          {/* Drawing tools */}
           {visibleBars.length > 0 && (
             <ChartDrawingTools chartRef={chartRef} currentPrice={currentPrice} />
           )}
 
-          {/* Chart */}
           <div className="chart-frame p-2">
             {visibleBars.length > 0 ? (
               <CandlestickChart
@@ -303,59 +303,56 @@ export default function ScenarioPracticePage() {
                 height={380}
               />
             ) : (
+              /* Inside .chart-frame the foreground is the frame's own cream, so
+                 this placeholder inherits it — no hex, no bg-white. */
               <div className="flex items-center justify-center" style={{ height: 380 }}>
-                <p className="text-midnight-500 text-sm">
-                  Press Start to begin
+                <p className="font-mono text-[11px] uppercase tracking-[0.16em] opacity-60">
+                  Press start to run the tape
                 </p>
               </div>
             )}
           </div>
 
-          {/* Bar counter */}
           {phase !== "intro" && (
-            <p className="text-[11px] text-midnight-500 px-1">
-              Bar {visibleBars.length} •{" "}
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+              Bar {visibleBars.length} ·{" "}
               {phase === "playing"
-                ? "Watching pattern form..."
+                ? "Watching the pattern form"
                 : phase === "decision"
-                ? "Make your decision"
-                : phase === "resolution"
-                ? "Resolution playing..."
-                : "Complete"}
+                  ? "Make your call"
+                  : phase === "resolution"
+                    ? "Resolution playing"
+                    : "Complete"}
             </p>
           )}
         </div>
 
-        {/* Right: Education + Decision/Result */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-midnight-900 border border-midnight-700/50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="w-4 h-4 text-gold-400" />
-              <h3 className="text-sm font-display font-semibold text-midnight-100">
-                Learn
-              </h3>
-            </div>
-            <p className="text-xs text-midnight-300 leading-relaxed">
-              {scenario.education}
-            </p>
+        {/* Right rail: what to look for, then the call, then the result. */}
+        <div className="min-w-0 space-y-6">
+          <section aria-labelledby="scenario-learn">
+            <h2
+              id="scenario-learn"
+              className="f0-section-rule mb-2 font-display text-eyebrow font-bold uppercase text-soft"
+            >
+              <span className="shrink-0 whitespace-nowrap">What to look for</span>
+            </h2>
+            <p className="text-[13px] leading-relaxed text-ink/85">{scenario.education}</p>
             {hintPriceLines.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-midnight-700/30">
-                <p className="text-[11px] text-midnight-500">
-                  Hint: greyed-out S/R levels are drawn on the chart
-                </p>
-              </div>
+              <p className="f0-rule-top mt-3 pt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                Greyed support and resistance are drawn on the chart
+              </p>
             )}
-          </div>
+          </section>
 
           <AnimatePresence mode="wait">
             {phase === "intro" && (
               <m.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button
                   onClick={startPlayback}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-400 hover:bg-gold-400/20 transition-colors text-sm font-display font-semibold"
+                  className="cta-button flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px]"
                 >
-                  <Play className="w-4 h-4" />
-                  Start Practice
+                  <Play className="h-4 w-4" />
+                  Start practice
                 </button>
               </m.div>
             )}

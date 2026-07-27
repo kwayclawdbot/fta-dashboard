@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { m, AnimatePresence } from "@/lib/motion";
 import {
-  AtSign, Send, Trophy, Heart, MessageCircle, Sparkles,
+  AtSign, Send, Trophy, Heart, Sparkles,
   ArrowRight, Paperclip, X, Film, Loader2, Link2,
   Award, Eye, CheckCircle2, Target, Calendar,
-  Tag, TrendingUp, TrendingDown, Minus, MessageSquare,
+  Tag,
   ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,7 +21,7 @@ import { fetchXpForUsers } from "@/lib/belts";
 import { evaluateBadges } from "@/lib/badges";
 import { checkClean, PROFANITY_MESSAGE } from "@/lib/profanity";
 import {
-  activityLine, isWatchlistShare, timeAgo, parseTickerTags, parseCashtags, POSITION_META,
+  activityLine, isWatchlistShare, timeAgo, parseTickerTags, parseCashtags,
   TIME_HORIZON_META, CONTENT_TYPE_META,
   type WatchlistSharePayload, type PostPosition, type TimeHorizon, type ContentType,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
@@ -35,14 +34,20 @@ import {
   KID_FEED_READONLY_NOTE,
 } from "@/lib/social/kid-posting";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
-import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import ProfileLink from "@/components/ProfileLink";
 import AgeBadge from "@/components/community/AgeBadge";
 import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import AnnouncementCard from "@/components/community/AnnouncementCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import Tabs from "@/components/ui/Tabs";
+import { TextAction } from "@/components/f0/parts";
+import {
+  Cashtag,
+  CredibilityTag,
+  FoundingNote,
+  StanceLabel,
+  VoltAction,
+} from "./parts";
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   award: Award, eye: Eye, check: CheckCircle2, target: Target,
@@ -88,15 +93,18 @@ function normAuthor(a: FeedAuthor | FeedAuthor[] | null): FeedAuthor | null {
 export default function CommunityClient({
   initialData = null,
   embedded = false,
-  leadSlot = null,
+  showOrientation = false,
 }: {
   initialData?: CommunityFeedSeed | null;
   /** Rendered inside The Club's Feed mode — the mode shell owns the Lounge chat,
    *  so the always-on ClubChatDrawer is suppressed to avoid a duplicate chat. */
   embedded?: boolean;
-  /** Rich objects (live_event cards) injected at the top of the ranked stream so
-   *  the Feed reads as one stream with object rhythm, not a post wall. */
-  leadSlot?: ReactNode;
+  /** New-member orientation is ON. Resolved once in ClubModeShell (account age +
+   *  participation) and passed down, so the whole surface agrees on new vs
+   *  returning. Gates the "This week in the Club" anchor, which the owner
+   *  explicitly named: it is a standing title, and the board is not a landing
+   *  page. Returning members open straight onto entries. */
+  showOrientation?: boolean;
 }) {
   const supabase = createClient();
   // Server-first: when the feed is seeded, the states below start populated so
@@ -724,46 +732,74 @@ export default function CommunityClient({
   );
 
   const TABS = [
-    { key: "foryou", label: "For You" },
+    { key: "foryou", label: "All" },
     { key: "following", label: "Following" },
     { key: "research", label: "Research" },
-    { key: "discussions", label: "Discussions" },
+    { key: "discussions", label: "Tickers" },
   ] as const;
 
-  const EMPTY_COPY: Record<typeof tab, { title: string; body: string }> = {
+  // FOUNDING STATE COPY. Every one of these takes a position instead of
+  // apologising for a small room — the surface most exposed to emptiness earns
+  // the most deliberate writing.
+  const EMPTY_COPY: Record<
+    typeof tab,
+    { eyebrow: string; title: string; body: string }
+  > = {
     foryou: {
-      title: "The club is just getting started",
-      body: "Share a win, ask a question, or post your family's pick. Every badge, mission, and watchlist add shows up here too.",
+      eyebrow: "The floor is open",
+      title: "Nothing on the floor yet.",
+      body: "The first entry sets the tone for every member who walks in after it. Share a read, ask the thing you're stuck on, or post your family's pick.",
     },
     following: {
-      title: "You're not following anyone yet",
-      body: "Like a member's post and their updates gather here — a quieter feed of the people whose picks you trust.",
+      eyebrow: "Nobody followed yet",
+      title: "You haven't picked your people.",
+      body: "Like a member's entry and their writing gathers here — a narrower floor of the few voices you actually trust.",
     },
     research: {
-      title: "No research shared yet",
-      body: "Tag a ticker on your next post to add it here — the club's running stream of ideas, notes, and theses.",
+      eyebrow: "No theses filed",
+      title: "The research shelf is empty.",
+      body: "Tag a ticker on your next entry and it files here — the club's running record of ideas, notes and theses, with the date attached.",
     },
     discussions: {
-      title: "No ticker discussions yet",
-      body: "Tag a ticker like $NVDA on a post to start a thread. Every tagged post joins that ticker's conversation.",
+      eyebrow: "No ticker threads",
+      title: "No ticker has a thread yet.",
+      body: "Tag a ticker on an entry and every other tagged entry joins it. That's how a name gets a conversation instead of a mention.",
     },
   };
+
+  // Real ledger counts for the founding note — the club's actual numbers,
+  // stated rather than hidden. Never inferred, never rounded up, and ZEROS ARE
+  // DROPPED rather than printed: "3 entries · 2 voices" owns a small room,
+  // "0 entries · 0 voices" is the exact failure this surface must never show.
+  // With nothing to count the note falls back to type alone.
+  const voiceCount = new Set(
+    threadPosts.map((p) => p.author?.id).filter(Boolean)
+  ).size;
+  const foundingLedger = [
+    threadPosts.length > 0
+      ? `${threadPosts.length} ${threadPosts.length === 1 ? "entry" : "entries"}`
+      : null,
+    voiceCount > 0 ? `${voiceCount} ${voiceCount === 1 ? "voice" : "voices"}` : null,
+    activityItems.length > 0 ? `${activityItems.length} moves today` : null,
+  ].filter((x): x is string => x !== null);
 
   return (
     <MentionProvider map={mentions}>
     <div className="max-w-2xl mx-auto">
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Main feed — full width now that Club Chat lives in a drawer */}
-        <div className="min-w-0 space-y-4">
-          {/* Rich objects lead the stream (live_event cards from the mode shell). */}
-          {leadSlot}
-
+        <div className="min-w-0 space-y-6">
           {/* VIP Room entry — gated: only renders for Challenge VIP members. */}
           <VipRoomBanner />
 
-          {/* Weekly anchor — editorial masthead. Leads the room so a thin feed
-              still opens on the week's teaching thesis, not a barren card. */}
-          {anchor && <AnchorMasthead post={anchor} expanded={threadPosts.length < 4} />}
+          {/* Weekly anchor ("This week in the Club") — ORIENTATION ONLY.
+              The owner named this one directly: it is a standing title on a
+              board that is not a landing page. A new member gets it once as
+              framing for what the club is working through; a returning member
+              opens on entries and reaches the class from Home. */}
+          {showOrientation && anchor && (
+            <AnchorMasthead post={anchor} expanded={threadPosts.length < 4} />
+          )}
 
           {/* Pinned latest announcement (first 7 days) */}
           {pinnedAnnouncement && <AnnouncementCard post={pinnedAnnouncement} pinned />}
@@ -771,9 +807,11 @@ export default function CommunityClient({
           {/* Composer — or a read-only upsell for free members. Render NEITHER
               until the tier is known, so a free viewer never flashes the member
               composer while getFamilyTier is still in flight. A quiet skeleton
-              holds the slot's height to avoid a layout jump. */}
+              holds the slot's height to avoid a layout jump.
+              The composer is NOT a card: it is the first entry on the ledger,
+              opened by the same hairline every post below it sits on. */}
           {!tierResolved ? (
-            <div className="paper-card p-4">
+            <div className="f0-rule-top py-4">
               <div className="flex gap-3 animate-pulse">
                 <div className="w-11 h-11 rounded-full bg-sand/60 shrink-0" />
                 <div className="flex-1 h-[76px] rounded-lg bg-sand/40" />
@@ -784,7 +822,7 @@ export default function CommunityClient({
           ) : feedReadOnlyKid ? (
             <KidFeedReadOnlyNote />
           ) : (
-          <div className="paper-card p-4">
+          <div className="f0-rule-top py-4">
             <div className="flex gap-3">
               <Avatar name={me?.display_name} avatarUrl={me?.avatar_url} role={me?.role} tier={(me?.family_id && tiers[me.family_id]) || myTier} size="lg" />
               <div className="flex-1 min-w-0">
@@ -802,12 +840,12 @@ export default function CommunityClient({
                       }
                     }}
                     onBlur={() => setTimeout(() => setMention(null), 150)}
-                    placeholder={me?.role === "child" ? "Share what your family learned today…" : "Share a win, ask a question, or post your family's pick…"}
-                    rows={3}
-                    className="w-full bg-paper border border-sand rounded-lg p-3 text-sm text-ink placeholder:text-soft font-body resize-none focus:outline-none focus:border-gold-400"
+                    placeholder={me?.role === "child" ? "Share what your family learned today…" : "Write an entry — a read, a question, or your family's pick…"}
+                    rows={2}
+                    className="w-full resize-none bg-transparent p-0 font-body text-[15px] leading-relaxed text-ink placeholder:text-soft focus:outline-none"
                   />
                   {mention && mentionCandidates.length > 0 && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-midnight-900 border border-sand rounded-lg shadow-lg overflow-hidden z-20">
+                    <div className="absolute top-full left-0 mt-1 w-64 bg-card border border-sand rounded-lg shadow-lg overflow-hidden z-20">
                       <p className="flex items-center gap-1 px-3 pt-2 pb-1 text-[10px] font-display font-semibold uppercase tracking-wider text-soft">
                         <AtSign className="w-3 h-3" /> Mention someone
                       </p>
@@ -817,7 +855,7 @@ export default function CommunityClient({
                           type="button"
                           onMouseDown={(e) => { e.preventDefault(); insertMention(c); }}
                           onMouseEnter={() => setMentionIdx(i)}
-                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left ${i === mentionIdx ? "bg-paper" : "bg-midnight-900"}`}
+                          className={`flex items-center gap-2.5 w-full px-3 py-2 text-left ${i === mentionIdx ? "bg-paper" : "bg-card"}`}
                         >
                           <Avatar name={c.name} avatarUrl={c.avatar_url} size="xs" />
                           <span className="min-w-0">
@@ -842,21 +880,21 @@ export default function CommunityClient({
                       <p className="text-xs font-display font-semibold text-ink truncate max-w-[180px]">{attachment.file.name}</p>
                       <p className="text-[11px] text-soft">{uploading ? "Uploading…" : `${attachment.kind === "image" ? "Photo" : "Video"} · ${(attachment.file.size / (1024 * 1024)).toFixed(1)} MB`}</p>
                     </div>
-                    {uploading ? <Loader2 className="w-4 h-4 text-gold-600 animate-spin shrink-0" /> : (
-                      <button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="w-6 h-6 rounded-full bg-sand flex items-center justify-center text-midnight-300 shrink-0"><X className="w-3.5 h-3.5" /></button>
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin text-gold-600 shrink-0" /> : (
+                      <button type="button" onClick={clearAttachment} aria-label="Remove attachment" className="w-6 h-6 rounded-full bg-sand flex items-center justify-center text-soft shrink-0"><X className="w-3.5 h-3.5" /></button>
                     )}
                   </div>
                 )}
-                {composerError && <p className="mt-2 text-xs text-red-600 font-body">{composerError}</p>}
+                {composerError && <p className="mt-2 font-body text-xs font-semibold text-ink">{composerError}</p>}
 
                 {/* R5 ticker tagger + positioning */}
                 {showTagger && (
-                  <div className="mt-2 rounded-lg border border-sand bg-paper p-2.5">
+                  <div className="mt-3 f0-rule-top pt-3">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {tickerTags.map((t) => (
-                        <span key={t} className="inline-flex items-center gap-1 bg-chip-amber text-gold-800 text-[11px] font-mono font-bold px-1.5 py-0.5 rounded">
+                        <span key={t} className="inline-flex items-center gap-1 bg-teal-400/15 text-teal-700 dark:text-teal-300 text-[11px] font-mono font-bold px-1.5 py-0.5 rounded">
                           ${t}
-                          <button type="button" onClick={() => removeTicker(t)} aria-label={`Remove ${t}`} className="hover:text-gold-900">
+                          <button type="button" onClick={() => removeTicker(t)} aria-label={`Remove ${t}`} className="hover:text-teal-800 dark:hover:text-teal-200">
                             <X className="w-2.5 h-2.5" />
                           </button>
                         </span>
@@ -878,7 +916,7 @@ export default function CommunityClient({
                       )}
                     </div>
                     {/* KAI §2b — optional "what kind of post" (any post) */}
-                    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-sand flex-wrap">
+                    <div className="flex items-center gap-1.5 mt-2 pt-2 f0-rule-top flex-wrap">
                       <span className="text-[10px] text-soft font-display uppercase tracking-wider mr-0.5">Type</span>
                       {(["thesis", "question", "news_reaction"] as ContentType[]).map((c) => {
                         const active = contentType === c;
@@ -894,21 +932,31 @@ export default function CommunityClient({
                         );
                       })}
                     </div>
+                    {/* STANCE PICKER — must speak the same lime-keyed vocabulary
+                        the published entry does. The old picker used POSITION_META's
+                        green/red chips, which broke the colour law right at the
+                        moment the member declares a stance (and taught them that
+                        bull == green == price). Selected state is carried by the
+                        StanceLabel mark itself plus a volt ring: the accent means
+                        "this is your choice", the label means bull/bear. */}
                     {tickerTags.length > 0 && (
-                      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-sand">
-                        <span className="text-[10px] text-soft font-display uppercase tracking-wider mr-0.5">Leaning</span>
+                      <div className="flex items-center gap-2 mt-2 pt-2 f0-rule-top">
+                        <span className="mr-0.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">Leaning</span>
                         {(["bull", "neutral", "bear"] as PostPosition[]).map((p) => {
-                          const meta = POSITION_META[p];
-                          const Icon = p === "bull" ? TrendingUp : p === "bear" ? TrendingDown : Minus;
                           const active = position === p;
                           return (
                             <button
                               key={p}
                               type="button"
+                              aria-pressed={active}
                               onClick={() => setPosition(active ? null : p)}
-                              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? meta.chip + " ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
+                              className={`inline-flex items-center rounded-full px-2 py-1 transition-colors ${
+                                active
+                                  ? "bg-volt-500/12 ring-1 ring-volt-500/40"
+                                  : "opacity-55 hover:opacity-100"
+                              }`}
                             >
-                              <Icon className="w-3 h-3" />{meta.label}
+                              <StanceLabel position={p} size="sm" />
                             </button>
                           );
                         })}
@@ -925,7 +973,7 @@ export default function CommunityClient({
                               key={h}
                               type="button"
                               onClick={() => setTimeHorizon(active ? null : h)}
-                              className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? "bg-chip-amber text-gold-800 ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
+                              className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${active ? "bg-teal-400/15 text-teal-700 dark:text-teal-300 ring-1 ring-current" : "bg-sand/60 text-soft hover:text-ink"}`}
                             >
                               {TIME_HORIZON_META[h].label}
                             </button>
@@ -936,14 +984,14 @@ export default function CommunityClient({
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+                  <div className="flex items-center gap-3">
                     <input ref={fileRef} type="file" accept={[...IMAGE_MIMES, ...VIDEO_MIMES].join(",")} className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
-                    <button type="button" onClick={() => fileRef.current?.click()} disabled={posting} aria-label="Attach a photo or video" title="Attach a photo or video" className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 disabled:opacity-40"><Paperclip className="w-4 h-4" /></button>
-                    <button type="button" onClick={insertLink} disabled={posting} aria-label="Add a link" title="Add a link" className="flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-gold-700 hover:border-gold-300 disabled:opacity-40"><Link2 className="w-4 h-4" /></button>
-                    <button type="button" onClick={() => setShowTagger((v) => !v)} disabled={posting} aria-label="Tag a ticker" title="Tag a ticker" className={`flex items-center justify-center w-8 h-8 rounded-lg border disabled:opacity-40 ${showTagger || tickerTags.length ? "border-gold-300 text-gold-700 bg-chip-amber/40" : "border-sand text-soft hover:text-gold-700 hover:border-gold-300"}`}><Tag className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={posting} aria-label="Attach a photo or video" title="Attach a photo or video" className="text-soft transition-colors hover:text-ink disabled:opacity-40"><Paperclip className="w-4 h-4" /></button>
+                    <button type="button" onClick={insertLink} disabled={posting} aria-label="Add a link" title="Add a link" className="text-soft transition-colors hover:text-ink disabled:opacity-40"><Link2 className="w-4 h-4" /></button>
+                    <button type="button" onClick={() => setShowTagger((v) => !v)} disabled={posting} aria-label="Tag a ticker" title="Tag a ticker" className={`transition-colors disabled:opacity-40 ${showTagger || tickerTags.length ? "text-teal-600 dark:text-teal-300" : "text-soft hover:text-ink"}`}><Tag className="w-4 h-4" /></button>
                   </div>
-                  <button onClick={submitPost} disabled={(!text.trim() && !attachment) || posting || !me} className="cta-button flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs disabled:opacity-40 disabled:cursor-not-allowed">
+                  <button onClick={submitPost} disabled={(!text.trim() && !attachment) || posting || !me} className="inline-flex items-center gap-1.5 rounded-full bg-volt-500 dark:bg-volt-600 px-4 py-2 font-display text-[12px] font-bold uppercase tracking-[0.08em] text-white transition-transform hover:-translate-y-px hover:bg-volt-600 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:hover:translate-y-0">
                     <Send className="w-3.5 h-3.5" />{uploading ? "Uploading…" : posting ? "Posting…" : "Post"}
                   </button>
                 </div>
@@ -952,24 +1000,41 @@ export default function CommunityClient({
           </div>
           )}
 
-          {/* R5 feed tabs */}
-          <Tabs
-            ariaLabel="Community feed"
-            size="sm"
-            tabs={TABS.map((t) => ({ key: t.key, label: t.label }))}
-            active={tab}
-            onSelect={setTab}
-          />
+          {/* R5 feed filters — a quiet mono rail, NOT a second segmented control.
+              The surface already has one (Feed / Lounge / Live); a second pill
+              group at the same weight would read as two competing navigations. */}
+          <div role="tablist" aria-label="Filter the feed" className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-sand pb-3">
+            {TABS.map((t) => {
+              const on = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  role="tab"
+                  type="button"
+                  aria-selected={on}
+                  onClick={() => setTab(t.key)}
+                  className={`font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                    on
+                      ? "text-ink underline decoration-volt-500 decoration-2 underline-offset-[6px]"
+                      : "text-soft hover:text-ink"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* ── Feed ─────────────────────────────────────────────────────────
               Two lanes. The ambient strip carries the auto-activity as a quiet
               pulse; the editorial thread carries the real conversation as the
-              dominant, typography-led lane. Discussions keeps its per-ticker
-              aggregation. */}
+              dominant, typography-led lane — hairline-ruled ENTRIES (f0-ledger),
+              never a stack of cards. Discussions keeps its per-ticker
+              aggregation, also as a ledger. */}
           {loading ? (
-            <div className="paper-card divide-y divide-sand/70">
+            <div className="f0-ledger">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="p-4 animate-pulse">
+                <div key={i} className="py-5 animate-pulse">
                   <div className="flex gap-3">
                     <div className="w-10 h-10 rounded-full bg-sand/60 shrink-0" />
                     <div className="flex-1">
@@ -983,58 +1048,106 @@ export default function CommunityClient({
             </div>
           ) : tab === "discussions" ? (
             discussionThreads.length === 0 ? (
-              <EmptyRoom tab={tab} copy={EMPTY_COPY[tab]} />
+              <EmptyRoom copy={EMPTY_COPY[tab]} ledger={foundingLedger} onStart={!readOnly ? focusComposer : undefined} />
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-8">
                 {discussionThreads.map(({ ticker, list }) => (
-                  <div key={ticker} className="paper-card p-4">
-                    {/* ticker aggregation header */}
-                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-sand/70">
-                      <Link href={`/research/${encodeURIComponent(ticker)}`} className="inline-flex items-center gap-1.5 font-mono text-base font-bold text-ink hover:text-gold-700">
-                        <span className="text-gold-600">$</span>{ticker}
+                  <section key={ticker}>
+                    {/* Ticker thread header — a hairline row, not a card lid.
+                        This one does NOT use the shared SectionRule: that
+                        primitive types its own label (eyebrow / uppercase /
+                        soft) and the head here is a $CASHTAG mark carrying its
+                        own mono treatment, which the label classes would fight. */}
+                    <div className="flex items-center gap-3 pb-2.5">
+                      <Link href={`/research/${encodeURIComponent(ticker)}`} className="group/tag shrink-0">
+                        <Cashtag ticker={ticker} />
                       </Link>
-                      <span className="text-[11px] text-soft font-body">{list.length} {list.length === 1 ? "post" : "posts"}</span>
-                      <Link href={`/research/${encodeURIComponent(ticker)}`} className="ml-auto text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">Research <ArrowRight className="w-3.5 h-3.5" /></Link>
+                      <span className="shrink-0 font-mono text-[10px] tracking-[0.14em] text-soft">
+                        {list.length} {list.length === 1 ? "entry" : "entries"}
+                      </span>
+                      <span aria-hidden className="h-px min-w-4 flex-1 bg-sand" />
+                      <TextAction href={`/research/${encodeURIComponent(ticker)}`}>
+                        Research <ArrowRight className="w-3.5 h-3.5" />
+                      </TextAction>
                     </div>
-                    <div className="space-y-3.5">
+                    <div className="f0-ledger">
                       {list.slice(0, 4).map((p) => (
                         <DiscussionRow key={p.id} post={p} tier={tierOf(p.author)} xpOf={xpOf} />
                       ))}
                     </div>
-                  </div>
+                  </section>
                 ))}
               </div>
             )
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* In-feed announcements (rare — pinned ones live above) */}
               {feedAnnouncements.map((p) => (
                 <AnnouncementCard key={p.id} post={p} />
               ))}
 
               {/* Ambient activity — collapsed grouped strip (For You only) */}
-              {activityItems.length > 0 && <AmbientActivityStrip items={activityItems} xpOf={xpOf} />}
+              {activityItems.length > 0 && <AmbientActivityStrip items={activityItems} />}
 
               {/* Editorial thread — the dominant conversation lane */}
               {threadPosts.length === 0 ? (
-                activityItems.length > 0 || feedAnnouncements.length > 0 ? (
-                  <QuietThreadPrompt readOnly={readOnly} onStart={focusComposer} />
-                ) : (
-                  <EmptyRoom tab={tab} copy={EMPTY_COPY[tab]} onStart={!readOnly && isForYou ? focusComposer : undefined} />
-                )
+                <EmptyRoom
+                  copy={EMPTY_COPY[tab]}
+                  ledger={foundingLedger}
+                  onStart={!readOnly && !feedReadOnlyKid && isForYou ? focusComposer : undefined}
+                />
               ) : (
-                <div className="paper-card divide-y divide-sand/70 overflow-hidden">
-                  {threadPosts.map((p, i) => (
-                    <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.2) }}>
-                      <PostEntry
-                        post={p} me={me} tier={tierOf(p.author)} readOnly={readOnly}
-                        likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
-                        commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
-                        comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
+                <>
+                  <div className="f0-ledger">
+                    {threadPosts.map((p, i) => (
+                      <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.2) }}>
+                        <PostEntry
+                          post={p} me={me} tier={tierOf(p.author)} readOnly={readOnly}
+                          likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
+                          commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
+                          comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
+                        />
+                      </m.div>
+                    ))}
+                  </div>
+
+                  {/* FOUNDING TAIL — the club has ~3 entries. Rather than let the
+                      ledger stop dead after the last one, the floor stays open as
+                      the NEXT entry on the same hairline: same rhythm, real
+                      counts, one action. A thin room reads as a room that
+                      started, not one that failed. */}
+                  {threadPosts.length < 6 && (
+                    <div className="f0-rule-top">
+                      <FoundingNote
+                        eyebrow="The floor is open"
+                        headline={
+                          threadPosts.length === 1
+                            ? "One entry in. The next one is yours."
+                            : `${threadPosts.length} entries in. The next one is yours.`
+                        }
+                        body={
+                          readOnly
+                            ? "Members write the floor. Join the Club to file your own entry alongside them."
+                            : feedReadOnlyKid
+                              ? "Read everything here. Your own space to post is being built."
+                              : "Nobody is waiting for permission. File a read, a question, or the trade you're still arguing with yourself about."
+                        }
+                        ledger={foundingLedger}
+                        action={
+                          readOnly ? (
+                            <VoltAction href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a">
+                              Join the Club
+                            </VoltAction>
+                          ) : feedReadOnlyKid ? undefined : (
+                            <TextAction onClick={focusComposer}>
+                              Write an entry
+                            </TextAction>
+                          )
+                        }
                       />
-                    </m.div>
-                  ))}
-                </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -1051,12 +1164,51 @@ export default function CommunityClient({
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/**
+ * Split an entry into HEADLINE + prose.
+ *
+ * Members write posts, not articles — so the headline is not invented, it is
+ * FOUND: the entry's own first line or first sentence, promoted typographically.
+ * Nothing is ever truncated away; whatever isn't the headline renders below it
+ * verbatim. When an entry has no natural break inside 140 chars it gets NO
+ * headline and runs as prose — a fabricated headline would be worse than none.
+ */
+function splitEntry(raw: string | null | undefined): {
+  headline: string | null;
+  rest: string;
+} {
+  const body = (raw ?? "").trim();
+  if (!body) return { headline: null, rest: "" };
+
+  const nl = body.indexOf("\n");
+  if (nl > 0 && nl <= 140) {
+    return { headline: body.slice(0, nl).trim(), rest: body.slice(nl).trim() };
+  }
+  const sentence = body.slice(0, 140).match(/^[\s\S]*?[.!?…](\s|$)/);
+  if (sentence && sentence[0].trim().length >= 12) {
+    return {
+      headline: sentence[0].trim(),
+      rest: body.slice(sentence[0].length).trim(),
+    };
+  }
+  if (body.length <= 140) return { headline: body, rest: "" };
+  return { headline: null, rest: body };
+}
+
+/** The entry's promoted opening line — display-3 weight, the loudest type in the row. */
+function EntryHeadline({ text }: { text: string }) {
+  return (
+    <h3 className="mt-1.5 font-display text-[20px] font-extrabold leading-[1.18] tracking-[-0.015em] text-ink">
+      <RichBody body={text} />
+    </h3>
+  );
+}
+
 function PostBody({ body }: { body: string }) {
   if (!body) return null;
-  // Editorial weight: the post body is the substance of the room, so it reads a
-  // notch larger and darker than chrome text — author + substance forward.
+  // Prose under the headline: quieter, so the headline carries the row.
   return (
-    <p className="text-[15px] text-ink font-body leading-relaxed mt-1.5 whitespace-pre-wrap break-words">
+    <p className="mt-2 whitespace-pre-wrap break-words font-body text-[15px] leading-relaxed text-soft">
       <RichBody body={body} />
     </p>
   );
@@ -1080,6 +1232,9 @@ function PostAttachment({ url, type, name }: { url: string | null; type: "image"
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt={name || "Shared image"} loading="lazy" className="max-h-[360px] w-auto max-w-full rounded-xl border border-sand" />
       </button>
+      {/* The lightbox scrim is theme-INVARIANT on purpose: a full-screen media
+          viewer neutralises the surrounding UI in both themes, so black/85 and
+          white chrome are correct here and must NOT follow the page tokens. */}
       <AnimatePresence>
         {lightbox && (
           <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} onClick={() => setLightbox(false)} className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4 cursor-zoom-out">
@@ -1092,13 +1247,6 @@ function PostAttachment({ url, type, name }: { url: string | null; type: "image"
     </>
   );
 }
-
-const ROLE_CHIP: Record<string, string> = {
-  coach: "bg-chip-amber text-gold-800",
-  admin: "bg-chip-amber text-gold-800",
-  parent: "bg-chip-sky text-sky-800",
-  child: "bg-chip-green text-green-700",
-};
 
 interface EngagementProps {
   post: FeedPost;
@@ -1116,46 +1264,64 @@ interface EngagementProps {
   xpOf?: (userId: string | null | undefined) => number;
 }
 
+/**
+ * The reaction rail — a tight MONO ledger line, not a button bar.
+ *
+ * COLOUR: a like is COMMUNITY SENTIMENT, so an active like is LIME. The old red
+ * heart is gone: red belongs to price under the colour law, and a red heart next
+ * to a $CASHTAG entry reads as a down move for a beat before it reads as a like.
+ * Free members keep the counts (they can read the room) but the like is inert.
+ */
 function LikeCommentBar({ liked, likeCount, onLike, commentCount, onToggleComments, readOnly }: {
   liked: boolean; likeCount: number; onLike: () => void; commentCount: number; onToggleComments: () => void; readOnly?: boolean;
 }) {
-  // Free members: counts stay visible (they can read the conversation) but the
-  // like affordance is inert. The comment button still opens the thread to read.
   return (
-    <div className="flex items-center gap-4 mt-3">
+    <div className="mt-3.5 flex items-center gap-5 font-mono text-[10.5px] font-bold uppercase tracking-[0.14em]">
       <button
         onClick={readOnly ? undefined : onLike}
         disabled={readOnly}
-        className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${readOnly ? "text-soft cursor-default" : liked ? "text-red-500" : "text-soft hover:text-red-500"}`}
+        className={`inline-flex items-center gap-1.5 transition-colors ${
+          readOnly
+            ? "cursor-default text-soft"
+            : liked
+              ? "text-lime-700 dark:text-lime-400"
+              : "text-soft hover:text-ink"
+        }`}
       >
-        <Heart className={`w-4 h-4 ${liked && !readOnly ? "fill-red-500" : ""}`} />
-        {likeCount > 0 ? likeCount : "Like"}
+        <Heart className={`h-3.5 w-3.5 ${liked && !readOnly ? "fill-lime-500 text-lime-600 dark:fill-lime-400 dark:text-lime-400" : ""}`} />
+        {likeCount > 0 && <span className="tabular-nums">{likeCount}</span>}
+        <span>{liked && !readOnly ? "Liked" : "Like"}</span>
       </button>
-      <button onClick={onToggleComments} className="flex items-center gap-1.5 text-xs font-medium text-soft hover:text-gold-700 transition-colors">
-        <MessageCircle className="w-4 h-4" />
-        {commentCount > 0 ? `${commentCount} ${commentCount === 1 ? "comment" : "comments"}` : "Comment"}
+      <button
+        onClick={onToggleComments}
+        className="inline-flex items-center gap-1.5 text-soft transition-colors hover:text-ink"
+      >
+        <span>Reply</span>
+        {commentCount > 0 && <span className="tabular-nums text-ink">{commentCount}</span>}
       </button>
     </div>
   );
 }
 
-// Read-only community composer for free members — a warm "Join FIC to post" card.
+// Read-only composer slot for free members — a hairline entry, not an upsell box.
 function FreeComposerUpsell() {
   return (
-    <div className="paper-card p-5 flex items-center gap-4 ring-1 ring-gold-300">
-      <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-        <Sparkles className="w-6 h-6 text-gold-700" />
+    <div className="f0-rule-top py-5">
+      <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
+        Reading as a free member
+      </p>
+      <p className="mt-2 max-w-[38ch] font-display text-display-3 font-extrabold text-ink">
+        You can read the floor. Members write it.
+      </p>
+      <p className="mt-2 max-w-[46ch] text-[15px] leading-relaxed text-soft">
+        Join the Club to file entries, back the ones you agree with, and reply in
+        the threads.
+      </p>
+      <div className="mt-4">
+        <VoltAction href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a">
+          Join the Club <ArrowRight className="w-3.5 h-3.5" />
+        </VoltAction>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-display font-semibold text-ink">You&apos;re viewing the club as a free member</p>
-        <p className="text-sm text-soft">Join FIC to post, like, and comment with the community.</p>
-      </div>
-      <a
-        href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a"
-        className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs shrink-0"
-      >
-        Join FIC <ArrowRight className="w-3.5 h-3.5" />
-      </a>
     </div>
   );
 }
@@ -1165,14 +1331,16 @@ function FreeComposerUpsell() {
 // A warm, non-punishing note in place of the composer — no upsell shown to a child.
 function KidFeedReadOnlyNote() {
   return (
-    <div className="paper-card p-5 flex items-center gap-4">
-      <div className="w-11 h-11 rounded-xl bg-chip-green flex items-center justify-center shrink-0">
-        <Sparkles className="w-6 h-6 text-green-700" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-display font-semibold text-ink">Your space is coming!</p>
-        <p className="text-sm text-soft">{KID_FEED_READONLY_NOTE}</p>
-      </div>
+    <div className="f0-rule-top py-5">
+      <p className="font-display text-eyebrow font-bold uppercase text-teal-700 dark:text-teal-300">
+        Your space is coming
+      </p>
+      <p className="mt-2 max-w-[38ch] font-display text-display-3 font-extrabold text-ink">
+        Read everything. Back what you like.
+      </p>
+      <p className="mt-2 max-w-[46ch] text-[15px] leading-relaxed text-soft">
+        {KID_FEED_READONLY_NOTE}
+      </p>
     </div>
   );
 }
@@ -1191,85 +1359,99 @@ function TickerRow({
   timeHorizon?: TimeHorizon | null;
   contentType?: ContentType | null;
 }) {
-  const pmeta = position ? POSITION_META[position] : null;
-  const PIcon = position === "bull" ? TrendingUp : position === "bear" ? TrendingDown : Minus;
-  const hasMeta = !!tags?.length || !!contentType || !!timeHorizon;
+  const hasMeta = !!tags?.length || !!contentType || !!timeHorizon || !!position;
   if (!hasMeta) return null;
   return (
-    <div className="flex items-center gap-1.5 flex-wrap mt-2">
+    <div className="mt-2.5 flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
       {(tags ?? []).map((t) => (
-        <Link key={t} href={`/research/${encodeURIComponent(t)}`} className="inline-flex items-center bg-chip-amber text-gold-800 text-[11px] font-mono font-bold px-1.5 py-0.5 rounded hover:bg-gold-400/30">
-          ${t}
+        <Link key={t} href={`/research/${encodeURIComponent(t)}`} className="group/tag">
+          <Cashtag ticker={t} />
         </Link>
       ))}
-      {pmeta && (
-        <span className={`inline-flex items-center gap-1 text-[11px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${pmeta.chip}`}>
-          <PIcon className="w-3 h-3" />{pmeta.label}
-        </span>
-      )}
-      {contentType && (
-        <span className="text-[10px] font-display uppercase tracking-wider text-soft">
-          {CONTENT_TYPE_META[contentType].label}
-        </span>
-      )}
-      {contentType && timeHorizon && <span className="text-[10px] text-soft">·</span>}
-      {timeHorizon && (
-        <span className="text-[10px] font-display uppercase tracking-wider text-soft" title={TIME_HORIZON_META[timeHorizon].full}>
-          {TIME_HORIZON_META[timeHorizon].label}
+      {position && <StanceLabel position={position} />}
+      {(contentType || timeHorizon) && (
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
+          {contentType ? CONTENT_TYPE_META[contentType].label : null}
+          {contentType && timeHorizon ? " · " : null}
+          {timeHorizon ? TIME_HORIZON_META[timeHorizon].label : null}
         </span>
       )}
     </div>
   );
 }
 
-// R5 — compact post row inside a Discussions ticker thread.
+// R5 — compact entry inside a ticker thread. Same editorial grammar as the main
+// ledger, one register quieter: byline, promoted opening line, stance.
 function DiscussionRow({ post, tier, xpOf }: { post: FeedPost; tier: FamilyTier; xpOf?: (id: string | null | undefined) => number }) {
-  const pmeta = post.position ? POSITION_META[post.position] : null;
+  const { headline, rest } = splitEntry(post.body);
   return (
-    <div className="flex items-start gap-2.5">
+    <div className="flex items-start gap-3 py-3.5">
       <ProfileLink username={post.author?.username} variant="avatar">
         <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={post.author?.role} tier={tier} xp={xpOf?.(post.author?.id)} size="sm" />
       </ProfileLink>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <ProfileLink username={post.author?.username} className="font-display text-xs font-semibold text-ink">{post.author?.display_name || "Member"}</ProfileLink>
-          {pmeta && <span className={`inline-flex items-center gap-0.5 text-[10px] font-display font-bold uppercase tracking-wider px-1 py-0.5 rounded ${pmeta.chip}`}><span className={`w-1.5 h-1.5 rounded-full ${pmeta.dot}`} />{pmeta.label}</span>}
-          <span className="text-[10px] text-soft">{timeAgo(post.created_at)}</span>
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+          <ProfileLink username={post.author?.username} className="font-display text-[13px] font-bold text-ink">{post.author?.display_name || "Member"}</ProfileLink>
+          <CredibilityTag role={post.author?.role} xp={xpOf?.(post.author?.id)} />
+          {post.position && <StanceLabel position={post.position} size="sm" />}
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">{timeAgo(post.created_at)}</span>
         </div>
-        {post.body && <p className="text-xs text-midnight-200 mt-0.5 line-clamp-3 whitespace-pre-wrap break-words"><RichBody body={post.body} /></p>}
+        {headline && (
+          <p className="mt-1 font-display text-[15px] font-bold leading-snug text-ink">
+            <RichBody body={headline} />
+          </p>
+        )}
+        {rest && (
+          <p className="mt-1 line-clamp-2 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-soft">
+            <RichBody body={rest} />
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-// One post as an editorial thread entry — NOT a bordered card. The parent
-// container owns the surface + hairline dividers, so entries read as a
-// continuous conversation (a living room), not a wall of interchangeable cards.
-// Coach/admin keep an authority chip; parent/child are already covered by the
-// age badge, so their redundant role chip is dropped to quiet the byline.
+/**
+ * ONE ENTRY on the ledger — an editorial record, not a card and not a chat
+ * bubble. The parent owns the hairline (f0-ledger); the row itself carries zero
+ * chrome, so hierarchy has to come from type alone:
+ *
+ *   byline      avatar · name · CREDIBILITY (belt or authority) · age · time
+ *   headline    the entry's own opening line, promoted to 20px Sora extrabold
+ *   prose       the remainder, quiet
+ *   marks       $CASHTAG (mono, teal-underlined) + BULL/BEAR stance (lime-keyed)
+ *   reactions   a tight mono rail
+ *
+ * The credibility tag is EARNED standing (belt) or ROLE authority — the paid
+ * tier badge was dropped from the byline on purpose: a tier is a purchase, not
+ * credibility, and it was the loudest thing in the row.
+ */
 function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
   const { post, tier } = props;
   const role = post.author?.role || "parent";
-  const showRoleChip = role === "coach" || role === "admin";
+  const xp = props.xpOf?.(post.author?.id);
+  const { headline, rest } = splitEntry(post.body);
   return (
-    <div className="p-4 sm:p-5 transition-colors hover:bg-sand/15">
+    <div className="py-5 transition-colors">
       <div className="flex items-start gap-3">
         <ProfileLink username={post.author?.username} variant="avatar">
-          <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} xp={props.xpOf?.(post.author?.id)} size="lg" />
+          <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} xp={xp} size="lg" />
         </ProfileLink>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap leading-tight">
-            <ProfileLink username={post.author?.username} className="font-display text-[15px] font-bold text-ink">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 leading-tight">
+            <ProfileLink username={post.author?.username} className="font-display text-[14px] font-bold text-ink">
               {post.author?.display_name || "Member"}
             </ProfileLink>
+            <CredibilityTag role={role} xp={xp} />
             <AgeBadge role={post.author?.role} ageGroup={post.author?.age_group} />
-            <TierBadge tier={tier} size="xs" />
-            {showRoleChip && (
-              <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${ROLE_CHIP[role]}`}>{role}</span>
-            )}
-            <span className="text-[11px] text-soft font-body">· {timeAgo(post.created_at)}</span>
+            <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+              {timeAgo(post.created_at)}
+            </span>
           </div>
-          <PostBody body={post.body} />
+
+          {headline && <EntryHeadline text={headline} />}
+          {rest && <PostBody body={rest} />}
+
           <TickerRow tags={post.ticker_tags} position={post.position} timeHorizon={post.time_horizon} contentType={post.content_type} />
           {isWatchlistShare(post.activity_payload) && (
             <WatchlistShareCard payload={post.activity_payload} />
@@ -1289,13 +1471,7 @@ function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
 // Here it collapses into ONE quiet strip: a live pulse + a grouped summary line,
 // expandable into a compact ledger. Visible pulse, zero noise — the real
 // conversation below stays dominant.
-function AmbientActivityStrip({
-  items,
-  xpOf,
-}: {
-  items: FeedPost[];
-  xpOf?: (id: string | null | undefined) => number;
-}) {
+function AmbientActivityStrip({ items }: { items: FeedPost[] }) {
   const [open, setOpen] = useState(false);
 
   // Grouped summary: how many updates + the standout tickers/companies moving
@@ -1313,22 +1489,22 @@ function AmbientActivityStrip({
       : "badges, missions, and picks moving through the club";
 
   return (
-    <div className="rounded-xl bg-sand/25 border border-sand/70">
+    <div className="f0-rule-top">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left"
+        className="flex w-full items-center gap-2.5 py-2.5 text-left"
       >
-        <span className="relative flex h-2 w-2 shrink-0">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-60 animate-ping" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500" />
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-60 motion-reduce:hidden" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
         </span>
-        <span className="text-xs text-soft font-body min-w-0 truncate">
-          <span className="font-display font-semibold text-ink">{items.length} update{items.length === 1 ? "" : "s"}</span>{" "}
-          <span className="hidden xs:inline">· </span>{summary}
+        <span className="min-w-0 truncate font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft">
+          <span className="font-bold text-ink tabular-nums">{items.length}</span>{" "}
+          {items.length === 1 ? "move" : "moves"} · {summary}
         </span>
-        <ChevronDown className={`ml-auto w-4 h-4 text-soft shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`ml-auto h-4 w-4 shrink-0 text-soft transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence initial={false}>
@@ -1340,7 +1516,7 @@ function AmbientActivityStrip({
             transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
             className="overflow-hidden"
           >
-            <ul className="px-3.5 pb-3 pt-0.5 space-y-2 max-h-72 overflow-y-auto">
+            <ul className="max-h-72 space-y-2 overflow-y-auto pb-3 pt-0.5">
               {items.map((p) => {
                 const pay = p.activity_payload as ActivityPayload;
                 const line = activityLine(pay);
@@ -1356,7 +1532,7 @@ function AmbientActivityStrip({
                       </ProfileLink>{" "}
                       {line.verb}{" "}
                       {pay.type === "ticker_like_milestone" && pay.ticker ? (
-                        <Link href={`/research/${encodeURIComponent(pay.ticker)}`} className="font-medium text-gold-700 hover:text-gold-800">{line.target}</Link>
+                        <Link href={`/research/${encodeURIComponent(pay.ticker)}`} className="font-medium text-gold-700 hover:text-gold-600">{line.target}</Link>
                       ) : (
                         <span className="font-medium text-ink">{line.target}</span>
                       )}
@@ -1373,55 +1549,50 @@ function AmbientActivityStrip({
   );
 }
 
-// Warm empty-thread prompt — shown when the room has ambient activity but no
-// real posts yet, so it never reads as barren.
-function QuietThreadPrompt({ readOnly, onStart }: { readOnly?: boolean; onStart: () => void }) {
-  return (
-    <div className="rounded-xl border border-dashed border-sand px-5 py-6 text-center">
-      <p className="font-display text-[15px] font-semibold text-ink">The floor is open</p>
-      <p className="text-sm text-soft font-body mt-1 max-w-sm mx-auto">
-        The club is active today. Be the first to start the conversation — share a win, a question, or your family&apos;s pick.
-      </p>
-      {!readOnly && (
-        <button type="button" onClick={onStart} className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs mt-3">
-          Start a post <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Per-tab empty state — composed, warm, and directive (never a bare card).
+/**
+ * The FOUNDING STATE for a filter with nothing in it.
+ *
+ * Not a centred card with a grey icon. It is a left-aligned editorial note on
+ * the same measure and rhythm as an entry — eyebrow rule, a display-3 line that
+ * takes a position, the real ledger counts when we have them, one action. A
+ * member reading this should feel early, not stranded.
+ */
 function EmptyRoom({
-  tab,
   copy,
+  ledger,
   onStart,
 }: {
-  tab: string;
-  copy: { title: string; body: string };
+  copy: { eyebrow: string; title: string; body: string };
+  ledger?: string[];
   onStart?: () => void;
 }) {
   return (
-    <div className="paper-card px-6 py-10 text-center">
-      <span className="inline-flex w-11 h-11 rounded-xl bg-gold-400/15 items-center justify-center mb-3">
-        {tab === "discussions" ? <MessageSquare className="w-5 h-5 text-gold-600" /> : <Sparkles className="w-5 h-5 text-gold-600" />}
-      </span>
-      <p className="font-display text-base font-semibold text-ink mb-1">{copy.title}</p>
-      <p className="text-sm text-soft font-body max-w-sm mx-auto">{copy.body}</p>
-      {onStart && (
-        <button type="button" onClick={onStart} className="cta-button inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs mt-4">
-          Share the first post <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      )}
+    <div className="border-b border-sand">
+      <FoundingNote
+        eyebrow={copy.eyebrow}
+        headline={copy.title}
+        body={copy.body}
+        ledger={ledger}
+        action={
+          onStart ? (
+            <TextAction onClick={onStart}>
+              Write the first entry <ArrowRight className="w-3.5 h-3.5" />
+            </TextAction>
+          ) : undefined
+        }
+      />
     </div>
   );
 }
 
-const SHARE_STATUS_CHIP: Record<string, { label: string; chip: string }> = {
-  watch: { label: "Watching", chip: "bg-chip-sky text-sky-800" },
-  study: { label: "Studying", chip: "bg-chip-amber text-gold-800" },
-  favorite: { label: "Family favorite", chip: "bg-chip-green text-green-700" },
-  avoid: { label: "Decided to avoid", chip: "bg-sand text-red-700" },
+// Status is a member's DECLARED relationship to a name — community sentiment,
+// not price and not an action. It renders as a mono caps label, so it never
+// competes with the green/red price mark two lines below it.
+const SHARE_STATUS_LABEL: Record<string, string> = {
+  watch: "Watching",
+  study: "Studying",
+  favorite: "Family favourite",
+  avoid: "Decided to avoid",
 };
 
 function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
@@ -1443,38 +1614,42 @@ function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
     };
   }, [payload.ticker]);
 
-  const status = SHARE_STATUS_CHIP[payload.status] || SHARE_STATUS_CHIP.watch;
+  const status = SHARE_STATUS_LABEL[payload.status] || SHARE_STATUS_LABEL.watch;
   const thesis = payload.why_we_picked || payload.bull_case;
   return (
     <Link
       href={`/research/${encodeURIComponent(payload.ticker)}`}
-      className="mt-2 block rounded-xl border border-sand bg-paper p-3 hover:border-gold-300 transition-colors"
+      className="mt-3 block border-l-2 border-teal-500/45 py-1 pl-3.5 transition-colors hover:border-teal-500"
     >
       <div className="flex items-center gap-3">
-        <CompanyLogo symbol={payload.ticker} name={payload.company_name} size={40} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-display text-sm font-bold text-ink truncate">{payload.company_name}</span>
-            <span className="text-[11px] font-mono text-soft">{payload.ticker}</span>
-            <span className={`text-[10px] font-display font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${status.chip}`}>{status.label}</span>
+        <CompanyLogo symbol={payload.ticker} name={payload.company_name} size={36} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2.5">
+            <span className="truncate font-display text-[14px] font-bold text-ink">{payload.company_name}</span>
+            <span className="font-mono text-[11px] font-bold text-ink">
+              <span className="text-teal-600 dark:text-teal-300">$</span>
+              {payload.ticker}
+            </span>
+            <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.14em] text-soft">{status}</span>
           </div>
+          {/* PRICE — the one place green/red is correct on this surface. */}
           {quote && (
-            <p className="text-xs font-body mt-0.5">
-              <span className="font-semibold text-ink">${quote.price.toFixed(2)}</span>{" "}
-              <span className={quote.changePct >= 0 ? "text-green-700" : "text-red-700"}>
+            <p className="mt-0.5 font-mono text-[11.5px] tabular-nums">
+              <span className="font-bold text-ink">${quote.price.toFixed(2)}</span>{" "}
+              <span className={quote.changePct >= 0 ? "text-price-up" : "text-price-down"}>
                 {quote.changePct >= 0 ? "+" : ""}
-                {quote.changePct.toFixed(2)}% today
+                {quote.changePct.toFixed(2)}%
               </span>{" "}
-              <span className="text-soft">· delayed</span>
+              <span className="text-soft">delayed</span>
             </p>
           )}
         </div>
       </div>
       {thesis && (
-        <p className="mt-2 text-xs text-soft font-body italic line-clamp-2">&ldquo;{thesis}&rdquo;</p>
+        <p className="mt-2 line-clamp-2 font-body text-[13.5px] italic leading-relaxed text-soft">&ldquo;{thesis}&rdquo;</p>
       )}
       {payload.champion_name && (
-        <p className="mt-1 text-[11px] text-soft font-body">Championed by {payload.champion_name}</p>
+        <p className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">Championed by {payload.champion_name}</p>
       )}
     </Link>
   );
@@ -1497,51 +1672,54 @@ function CommentThread(props: EngagementProps) {
     setSending(false);
   }
 
+  // Replies are INDENTED LEDGER ROWS under the entry — a marginal rule and a
+  // byline, never chat bubbles. The reply is a continuation of the record.
   return (
-    <div className="mt-3 pt-3 border-t border-sand space-y-3">
+    <div className="mt-4 space-y-3.5 border-l border-sand pl-4">
       {comments === undefined ? (
-        <div className="flex justify-center py-2"><Loader2 className="w-4 h-4 text-gold-500 animate-spin" /></div>
+        <div className="flex justify-center py-2"><Loader2 className="h-4 w-4 animate-spin text-gold-600" /></div>
       ) : comments.length === 0 ? (
-        <p className="text-xs text-soft">No comments yet — be the first to reply.</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">No replies yet</p>
       ) : (
         comments.map((c) => (
-          <div key={c.id} className="flex items-start gap-2">
+          <div key={c.id} className="flex items-start gap-2.5">
             <ProfileLink username={c.author?.username} variant="avatar">
               <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} xp={xpOf?.(c.author?.id)} size="sm" />
             </ProfileLink>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <ProfileLink username={c.author?.username} className="font-display text-xs font-semibold text-ink">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                <ProfileLink username={c.author?.username} className="font-display text-[12.5px] font-bold text-ink">
                   {c.author?.display_name || "Member"}
                 </ProfileLink>
+                <CredibilityTag role={c.author?.role} xp={xpOf?.(c.author?.id)} />
                 <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
-                <span className="text-[10px] text-soft">{timeAgo(c.created_at)}</span>
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">{timeAgo(c.created_at)}</span>
               </div>
-              <p className="text-xs text-midnight-200 whitespace-pre-wrap break-words mt-0.5"><RichBody body={c.body} /></p>
+              <p className="mt-0.5 whitespace-pre-wrap break-words text-[14px] leading-relaxed text-soft"><RichBody body={c.body} /></p>
             </div>
           </div>
         ))
       )}
       {me && readOnly && (
-        <p className="text-xs text-soft">
-          <a href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a" className="text-gold-700 font-semibold">Join FIC</a>{" "}
-          to join the conversation.
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          <a href="https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a" className="font-bold text-gold-700">Join the Club</a>{" "}
+          to reply
         </p>
       )}
       {me && !readOnly && (
         <div>
-          {err && <p className="text-[11px] text-red-600 mb-1">{err}</p>}
-          <div className="flex items-end gap-2">
+          {err && <p className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">{err}</p>}
+          <div className="flex items-end gap-2.5">
             <Avatar name={me.display_name} avatarUrl={me.avatar_url} role={me.role} size="sm" />
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
               rows={1}
-              placeholder="Write a reply…"
-              className="flex-1 resize-none bg-paper border border-sand rounded-lg px-2.5 py-1.5 text-xs text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 max-h-24"
+              placeholder="Reply…"
+              className="max-h-24 flex-1 resize-none border-b border-sand bg-transparent pb-1.5 text-[14px] text-ink placeholder:text-soft focus:border-volt-500 focus:outline-none"
             />
-            <button onClick={submit} disabled={!draft.trim() || sending} aria-label="Reply" className="cta-button w-8 h-8 shrink-0 rounded-lg flex items-center justify-center disabled:opacity-40"><Send className="w-3.5 h-3.5" /></button>
+            <button onClick={submit} disabled={!draft.trim() || sending} aria-label="Reply" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-volt-500 dark:bg-volt-600 text-white transition-colors hover:bg-volt-600 disabled:opacity-40"><Send className="h-3.5 w-3.5" /></button>
           </div>
         </div>
       )}
@@ -1561,42 +1739,38 @@ function AnchorMasthead({ post, expanded }: { post: FeedPost; expanded: boolean 
   const title = a.class_title || "This week in the club";
   const thesis = a.discussion_question;
   return (
-    <Link
-      href="/dashboard?tab=this-week"
-      className="group block relative overflow-hidden rounded-2xl border border-gold-300/70 bg-gradient-to-br from-chip-amber/60 via-paper to-paper shadow-soft transition-colors hover:border-gold-400"
-    >
-      <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-gold-400 to-gold-600" />
-      <div className="p-4 sm:p-5 pl-5 sm:pl-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-display text-[11px] font-bold uppercase tracking-[0.14em] text-gold-700">
-            This Week in the Club
+    <Link href="/dashboard?tab=this-week" className="group block border-b border-sand pb-5">
+      <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
+        This week in the Club
+      </p>
+      <div className="mt-2.5 flex items-start gap-3.5">
+        {a.company_ticker && (
+          <span className="mt-1 shrink-0">
+            <CompanyLogo symbol={a.company_ticker} name={a.company_name || undefined} size={expanded ? 44 : 36} />
           </span>
-        </div>
-        <div className="flex items-start gap-3.5">
-          {a.company_ticker && (
-            <span className="shrink-0 mt-0.5">
-              <CompanyLogo symbol={a.company_ticker} name={a.company_name || undefined} size={expanded ? 44 : 36} />
-            </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <h2
+            className={`font-display font-extrabold text-ink ${
+              expanded ? "text-display-2" : "text-display-3"
+            }`}
+          >
+            {title}
+          </h2>
+          {a.company_name && (
+            <p className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft">
+              {a.company_name}
+              {a.company_ticker && ` · ${a.company_ticker}`}
+            </p>
           )}
-          <div className="min-w-0 flex-1">
-            <h2 className={`font-display font-extrabold text-ink leading-tight ${expanded ? "text-xl sm:text-2xl" : "text-base sm:text-lg"}`}>
-              {title}
-            </h2>
-            {a.company_name && (
-              <p className="text-xs font-body text-soft mt-0.5">
-                {a.company_name}
-                {a.company_ticker && <span className="font-mono text-soft"> · {a.company_ticker}</span>}
-              </p>
-            )}
-            {expanded && thesis && (
-              <p className="text-sm sm:text-[15px] text-ink/80 font-body leading-relaxed mt-2.5 border-l-2 border-gold-300 pl-3">
-                {thesis}
-              </p>
-            )}
-            <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-display font-semibold text-gold-700 group-hover:text-gold-600">
-              Open this week&apos;s class <ArrowRight className="w-3.5 h-3.5" />
-            </span>
-          </div>
+          {expanded && thesis && (
+            <p className="mt-3 max-w-[52ch] border-l-2 border-volt-500/50 pl-3.5 font-body text-[15px] leading-relaxed text-soft">
+              {thesis}
+            </p>
+          )}
+          <span className="mt-3.5 inline-flex items-center gap-1.5 font-display text-[11px] font-bold uppercase tracking-[0.1em] text-gold-700 group-hover:text-gold-600">
+            Open this week&apos;s class <ArrowRight className="h-3.5 w-3.5" />
+          </span>
         </div>
       </div>
     </Link>
@@ -1624,20 +1798,16 @@ function VipRoomBanner() {
   return (
     <Link
       href="/vip-room"
-      className="paper-card ring-1 ring-gold-300 p-4 flex items-center gap-3 hover:ring-gold-400 transition-colors"
+      className="flex items-center gap-3 f0-rule-top py-3 transition-colors hover:bg-volt-500/[0.06]"
     >
-      <span className="w-10 h-10 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 text-white flex items-center justify-center shrink-0 shadow-soft">
-        <Sparkles className="w-5 h-5" />
+      <Sparkles className="h-4 w-4 shrink-0 text-gold-600" aria-hidden />
+      <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold-700">
+        VIP
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-display font-bold text-ink text-[15px] leading-snug">
-          Your VIP Room
-        </span>
-        <span className="block text-xs text-soft">
-          A private space for VIP members — open through the challenge.
-        </span>
+      <span className="min-w-0 flex-1 truncate font-display text-[14px] font-bold text-ink">
+        Your private room is open
       </span>
-      <ArrowRight className="w-4 h-4 text-gold-600 shrink-0" />
+      <ArrowRight className="h-4 w-4 shrink-0 text-gold-600" />
     </Link>
   );
 }

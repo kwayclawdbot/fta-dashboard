@@ -434,6 +434,7 @@ Write the short ticker note. The page renders the exact figures separately, so t
         url: h.url,
         publisher: h.publisher,
         published: h.published,
+        image: h.image_url,
       });
     }
 

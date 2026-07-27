@@ -14,7 +14,7 @@ import { USD, type BumpChoice, type CheckoutFlow } from "@/lib/checkout-bumps";
  */
 
 const inputCls =
-  "w-full rounded-xl border border-sand bg-white px-3.5 py-3 text-[15px] text-ink outline-none transition-colors placeholder:text-soft/70 focus:border-gold-500 focus:ring-4 focus:ring-gold-500/15";
+  "w-full rounded-xl border border-sand bg-card px-3.5 py-3 text-[15px] text-ink outline-none transition-colors placeholder:text-soft/70 focus:border-gold-500 focus:ring-4 focus:ring-gold-500/15";
 const labelCls =
   "mb-1.5 block font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-soft";
 

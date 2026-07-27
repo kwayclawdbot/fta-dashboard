@@ -209,7 +209,7 @@ export default function VipSuccess({
                 {hasAddress ? " to:" : " to the address you entered at checkout."}
               </p>
               {hasAddress && (
-                <div className="mt-3 rounded-xl border border-sand bg-white px-4 py-3 text-sm text-ink leading-relaxed">
+                <div className="mt-3 rounded-xl border border-sand bg-card px-4 py-3 text-sm text-ink leading-relaxed">
                   {shippingName && <div className="font-semibold">{shippingName}</div>}
                   {address?.line1 && <div>{address.line1}</div>}
                   {address?.line2 && <div>{address.line2}</div>}
@@ -282,13 +282,13 @@ export default function VipSuccess({
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <button
                   onClick={() => downloadChallengeIcs(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-card transition-colors"
                 >
                   <CalendarPlus className="w-3.5 h-3.5" /> Add all 5 sessions
                 </button>
                 <button
                   onClick={() => downloadChallengeIcs(false)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-white/50 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-sand text-ink text-xs font-display font-semibold hover:bg-card transition-colors"
                 >
                   <CalendarPlus className="w-3.5 h-3.5" /> Just Day 1
                 </button>
@@ -320,7 +320,7 @@ export default function VipSuccess({
             {canNativeShare && (
               <button
                 onClick={nativeShare}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-white text-sm font-semibold hover:bg-gold-600 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-night-950 text-sm font-semibold hover:bg-gold-600 transition-colors"
               >
                 <Share2 className="w-4 h-4" /> Share
               </button>

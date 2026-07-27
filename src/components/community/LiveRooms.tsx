@@ -83,7 +83,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
                     key={r.id}
                     onClick={() => setActiveRoomId(r.id)}
                     className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-display font-semibold border transition-colors ${
-                      active ? "bg-chip-amber border-gold-300 text-gold-800" : "bg-white border-sand text-soft hover:text-ink"
+                      active ? "bg-chip-amber border-gold-300 text-gold-800" : "bg-card border-sand text-soft hover:text-ink"
                     }`}
                   >
                     <Hash className="w-3 h-3" />
@@ -96,7 +96,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
                   key={r.id}
                   href="/upgrade"
                   title="Members chat — join the Club"
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-display font-semibold border border-sand bg-paper text-soft/80 hover:text-gold-700 hover:border-gold-300 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-display font-semibold border border-sand bg-paper text-soft hover:text-gold-700 hover:border-gold-300 transition-colors"
                 >
                   <Lock className="w-3 h-3" />
                   {r.name}
@@ -105,7 +105,7 @@ export default function LiveRooms({ me, tier }: { me: ChatMe | null; tier: Famil
             </div>
           )}
           {tier === "free" && (
-            <p className="text-[11px] text-soft/80 mt-1.5">
+            <p className="text-[11px] text-soft mt-1.5">
               <Lock className="inline w-3 h-3 -mt-0.5 mr-0.5" />
               Main Circle is the members&apos; room —{" "}
               <Link href="/upgrade" className="text-gold-700 font-semibold">

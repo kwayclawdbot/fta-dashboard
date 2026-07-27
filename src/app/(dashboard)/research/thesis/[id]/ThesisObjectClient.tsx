@@ -1,16 +1,30 @@
 "use client";
 
 /**
- * ThesisObjectClient — the Research Object page body. Renders the structured
- * thesis (stance + hook + horizon + live move since publish), informational
- * reactions, the four body sections with section-anchored comments, and the
- * THESIS UPDATE lifecycle (author posts strengthened / weakened / changed
- * entries; each stamped with the price at update).
+ * THESIS OBJECT — canvas rebuild (light-primary club system).
+ *
+ * A member's structured thesis, rendered as LONG-FORM: author identity leads,
+ * the headline carries the display voice, and the body runs at a real reading
+ * measure (~65ch) instead of full-bleed inside bordered boxes. The old surface
+ * wrapped every update and every comment in its own rounded container, which
+ * turned a piece of writing into a stack of widgets; sections and responses are
+ * now separated by rules and attribution — the same vocabulary the Kai surface
+ * and the ledgers use.
+ *
+ * COLOUR LAW: the only green/red on this page is the PRICE move since publish
+ * (text-price-up / text-price-down). Stance and update kind used to render as
+ * green/red chips — a second, competing green/red on a page that already shows
+ * a price — so a reader could not tell "the author is bullish" from "the stock
+ * is up". They now read as typographic labels in the accent register.
+ *
+ * COMPLIANCE: the disclaimer is COMMUNITY_DISCLAIMER, the approved club string,
+ * rendered VERBATIM. Kid-walling on both composers, the profanity check, the
+ * definer-RPC reads and the THESIS UPDATE lifecycle are untouched.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, FileText, Loader2, Send, TrendingUp } from "lucide-react";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
@@ -18,7 +32,9 @@ import { timeAgo } from "@/lib/feed";
 import { checkClean } from "@/lib/profanity";
 import { fetchQuote } from "@/lib/market/client";
 import ReactionBar from "@/components/social/ReactionBar";
+import { SectionRule } from "@/components/f0/parts";
 import { STANCE_META } from "@/lib/social/stance";
+import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import {
   SECTION_META,
   TIME_HORIZON_META,
@@ -46,12 +62,19 @@ const AUTHOR_SEL = "author:profiles!research_object_comments_author_id_fkey(disp
 
 const UPDATE_KINDS: ThesisUpdateKind[] = ["strengthened", "weakened", "changed"];
 
+/** Split a body into real paragraphs — this is prose, not a form field. */
+function paragraphs(text: string): string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+
 export default function ThesisObjectClient({
   object,
   initialUpdates,
   userId,
   isKid,
-  isMember,
 }: {
   object: ResearchObject;
   initialUpdates: ThesisUpdate[];
@@ -95,7 +118,8 @@ export default function ThesisObjectClient({
   }, [loadComments]);
 
   const pct = pctSincePublish(object.price_at_publish, price);
-  const moveTone = pct == null ? "text-soft" : pct >= 0 ? "text-green-600" : "text-red-600";
+  const moveTone =
+    pct == null ? "text-soft" : pct >= 0 ? "text-price-up" : "text-price-down";
 
   const sectionBody: Record<ThesisSection, string> = {
     thesis: object.thesis,
@@ -105,58 +129,91 @@ export default function ThesisObjectClient({
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
+    <div className="mx-auto max-w-[72ch] px-4 pb-24 sm:px-6">
       <Link
         href={`/research/${object.ticker}`}
-        className="inline-flex items-center gap-1.5 pt-4 text-sm font-medium text-soft hover:text-ink"
+        className="inline-flex items-center gap-1.5 pt-5 font-mono text-eyebrow font-semibold uppercase text-soft transition hover:text-ink"
       >
-        <ArrowLeft className="h-4 w-4" /> {object.ticker.toUpperCase()} research
+        <ArrowLeft className="h-3.5 w-3.5" /> ${object.ticker.toUpperCase()} research
       </Link>
 
-      {/* header */}
-      <header className="mt-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <FileText className="h-4 w-4 text-gold-600" />
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider ${stance.chip}`}>
-            {stance.label}
-          </span>
-          <span className="font-mono text-sm font-bold text-ink">{object.ticker.toUpperCase()}</span>
-          {object.company_name && <span className="text-sm text-soft">{object.company_name}</span>}
-          {object.time_horizon && (
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-soft">
-              · {TIME_HORIZON_META[object.time_horizon].label}
+      {/* ── Masthead: the argument's provenance, then its headline ────────── */}
+      <header className="mt-5">
+        <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-eyebrow font-semibold uppercase text-soft">
+          <span className="text-ink">${object.ticker.toUpperCase()}</span>
+          {object.company_name && (
+            <span className="normal-case tracking-normal text-soft">
+              {object.company_name}
             </span>
           )}
-        </div>
-        <h1 className="mt-2 font-display text-2xl font-extrabold leading-tight tracking-tight text-ink">
+          <span aria-hidden className="text-soft/40">·</span>
+          <span className="text-gold-700">{stance.label} case</span>
+          {object.time_horizon && (
+            <>
+              <span aria-hidden className="text-soft/40">·</span>
+              <span>{TIME_HORIZON_META[object.time_horizon].label}</span>
+            </>
+          )}
+        </p>
+
+        <h1 className="mt-3 max-w-[65ch] font-display text-display-2 font-extrabold leading-tight tracking-tight text-ink">
           {object.headline}
         </h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-soft">
-          <Avatar name={object.author?.display_name} avatarUrl={object.author?.avatar_url} role={object.author?.role} size="xs" />
-          <span className="font-semibold text-ink">{object.author?.display_name || "Member"}</span>
+
+        {/* byline — a thesis belongs to whoever staked their name on it */}
+        <div className="f0-rule-top mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 pt-4">
+          <Avatar
+            name={object.author?.display_name}
+            avatarUrl={object.author?.avatar_url}
+            role={object.author?.role}
+            size="sm"
+          />
+          <span className="text-[13.5px] font-semibold text-ink">
+            {object.author?.display_name || "Member"}
+          </span>
           <AgeBadge role={object.author?.role} ageGroup={object.author?.age_group} />
-          <span>· {timeAgo(object.created_at)}</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-soft/75">
+            {timeAgo(object.created_at)}
+          </span>
+
           {object.price_at_publish != null && (
-            <span className="ml-1">
-              published at ${object.price_at_publish.toFixed(2)}
-            </span>
-          )}
-          {pct != null && (
-            <span className={`inline-flex items-center gap-1 font-mono font-bold tabular-nums ${moveTone}`}>
-              <TrendingUp className="h-3.5 w-3.5" /> {formatPctMove(pct)}
+            <span className="ml-auto flex items-baseline gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
+                Published at
+              </span>
+              <span className="font-mono text-[13px] font-semibold tabular-nums text-ink">
+                {object.price_at_publish.toFixed(2)}
+              </span>
+              {pct != null && (
+                <span className={`font-mono text-[13px] font-semibold tabular-nums ${moveTone}`}>
+                  {formatPctMove(pct)}
+                </span>
+              )}
             </span>
           )}
         </div>
       </header>
 
       {/* informational reactions */}
-      <div className="mt-4 border-y border-sand py-4">
-        <ReactionBar supabase={supabase} targetType="research_object" targetId={object.id} userId={userId} canReact={!!userId} />
+      <div className="mt-4 border-y border-sand py-3.5">
+        <ReactionBar
+          supabase={supabase}
+          targetType="research_object"
+          targetId={object.id}
+          userId={userId}
+          canReact={!!userId}
+        />
       </div>
 
-      {/* THESIS UPDATE lifecycle */}
-      <section className="mt-6">
-        <h2 className="mb-2 font-display text-sm font-bold uppercase tracking-wider text-ink">Thesis updates</h2>
+      {/* ── THESIS UPDATE lifecycle ───────────────────────────────────────── */}
+      <section className="mt-9">
+        <SectionRule>Thesis updates</SectionRule>
+        <p className="mb-3 mt-2 max-w-[62ch] text-[12.5px] leading-relaxed text-soft">
+          A thesis is a living argument. Every update is stamped with the price
+          at the moment it was written, so the record can&apos;t be tidied up
+          after the fact.
+        </p>
+
         {isAuthor && !isKid && (
           <UpdateComposer
             onPost={async (kind, body) => {
@@ -180,38 +237,51 @@ export default function ThesisObjectClient({
             }}
           />
         )}
+
         {updates.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-sand px-3 py-3 text-center text-xs text-soft">
-            No updates yet{isAuthor ? " — post one as the thesis evolves." : "."}
+          <p className="f0-rule-top pt-3 text-[13px] leading-relaxed text-soft">
+            No updates yet
+            {isAuthor
+              ? " — post one when the argument strengthens, weakens or changes."
+              : ". The author hasn't revisited this one publicly."}
           </p>
         ) : (
-          <div className="space-y-2">
+          <div className="f0-ledger f0-rule-top">
             {updates.map((u) => {
               const meta = UPDATE_META[u.kind];
               return (
-                <div key={u.id} className="flex items-start gap-2">
-                  <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${meta.dot}`} aria-hidden />
-                  <div className="min-w-0 flex-1 rounded-lg border border-sand bg-paper px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${meta.chip}`}>
-                        {meta.label}
+                <article key={u.id} className="py-3.5">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <span
+                      aria-hidden
+                      className="h-3 w-[3px] shrink-0 rounded-full bg-accent"
+                    />
+                    <span className="font-mono text-eyebrow font-semibold uppercase text-gold-700">
+                      {meta.label}
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft/70">
+                      {timeAgo(u.created_at)}
+                    </span>
+                    {u.price_at_update != null && (
+                      <span className="font-mono text-[11px] tabular-nums text-soft/80">
+                        at {u.price_at_update.toFixed(2)}
                       </span>
-                      <span className="text-[10px] text-soft">· {timeAgo(u.created_at)}</span>
-                      {u.price_at_update != null && (
-                        <span className="text-[10px] text-soft">at ${u.price_at_update.toFixed(2)}</span>
-                      )}
-                    </div>
-                    {u.body && <p className="mt-0.5 whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">{u.body}</p>}
+                    )}
                   </div>
-                </div>
+                  {u.body && (
+                    <p className="mt-1.5 max-w-[65ch] whitespace-pre-wrap text-[14px] leading-relaxed text-ink/85">
+                      {u.body}
+                    </p>
+                  )}
+                </article>
               );
             })}
           </div>
         )}
       </section>
 
-      {/* body sections with section-anchored comments */}
-      <div className="mt-6 space-y-6">
+      {/* ── The argument itself ───────────────────────────────────────────── */}
+      <div className="mt-10 space-y-10">
         {SECTION_META.map((sec) => (
           <SectionBlock
             key={sec.key}
@@ -240,6 +310,12 @@ export default function ThesisObjectClient({
           onPosted={loadComments}
         />
       </div>
+
+      <footer className="mt-12 border-t border-sand pt-5">
+        <p className="max-w-[65ch] text-[11px] leading-relaxed text-soft">
+          {COMMUNITY_DISCLAIMER}
+        </p>
+      </footer>
     </div>
   );
 }
@@ -265,33 +341,36 @@ function UpdateComposer({ onPost }: { onPost: (kind: ThesisUpdateKind, body: str
   }
 
   return (
-    <div className="mb-3 rounded-xl border border-sand bg-paper p-2.5">
-      <div className="mb-1.5 inline-flex rounded-lg border border-sand p-0.5">
+    <div className="f0-rule-top mb-4 pt-3.5">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
+          The thesis
+        </span>
         {UPDATE_KINDS.map((k) => (
           <button
             key={k}
             onClick={() => setKind(k)}
-            className={`rounded-md px-2.5 py-1 text-[11px] font-bold capitalize transition-colors ${
-              kind === k ? UPDATE_META[k].chip : "text-soft"
+            className={`font-mono text-[11px] uppercase tracking-[0.1em] transition ${
+              kind === k ? "text-gold-700" : "text-soft/70 hover:text-ink"
             }`}
           >
             {UPDATE_META[k].label}
           </button>
         ))}
       </div>
-      {err && <p className="mb-1 text-[11px] text-red-600">{err}</p>}
-      <div className="flex items-end gap-2">
+      {err && <p className="mt-1.5 text-[11.5px] text-soft">{err}</p>}
+      <div className="mt-1.5 flex items-end gap-3">
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={1}
           placeholder="What changed?"
-          className="max-h-24 flex-1 resize-none rounded-lg border border-sand bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-soft focus:border-gold-400 focus:outline-none"
+          className="max-h-28 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-gold-400 focus:outline-none"
         />
         <button
           onClick={submit}
           disabled={busy}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-500 text-white transition-colors hover:bg-gold-600 disabled:opacity-50"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-volt-500 text-white transition hover:brightness-110 disabled:opacity-50"
           aria-label="Post update"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -351,56 +430,88 @@ function SectionBlock({
 
   return (
     <section id={`section-${section}`} className="scroll-mt-20">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink">{label}</h2>
-        {comments.length > 0 && <span className="text-[11px] text-soft">{comments.length} note{comments.length === 1 ? "" : "s"}</span>}
-      </div>
+      <SectionRule
+        action={
+          comments.length > 0 ? (
+            <span className="font-mono text-[11px] tabular-nums text-soft/70">
+              {comments.length} note{comments.length === 1 ? "" : "s"}
+            </span>
+          ) : undefined
+        }
+      >
+        {label}
+      </SectionRule>
+
       {body ? (
-        <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-midnight-200">{body}</p>
+        <div className="mt-3 max-w-[65ch] space-y-3.5">
+          {paragraphs(body).map((para, i) => (
+            <p
+              key={i}
+              className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink/90"
+            >
+              {para}
+            </p>
+          ))}
+        </div>
       ) : section !== "general" ? (
-        <p className="mt-1.5 text-sm text-soft/80">The author didn&apos;t add this section.</p>
+        <p className="mt-3 text-[13.5px] text-soft/80">
+          The author didn&apos;t write this section.
+        </p>
       ) : null}
 
+      {/* Responses — attributed entries on hairlines, never chat bubbles. */}
       {comments.length > 0 && (
-        <div className="mt-3 space-y-2 border-l-2 border-sand pl-3">
+        <div className="f0-ledger mt-5 max-w-[65ch] border-l-2 border-sand pl-4">
           {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-2">
-              <Avatar name={c.author?.display_name} avatarUrl={c.author?.avatar_url} role={c.author?.role} size="xs" />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {c.author?.username ? (
-                    <Link href={`/u/${c.author.username}`} className="text-[12px] font-semibold text-ink hover:text-gold-700">
-                      {c.author?.display_name || "Member"}
-                    </Link>
-                  ) : (
-                    <span className="text-[12px] font-semibold text-ink">{c.author?.display_name || "Member"}</span>
-                  )}
-                  <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
-                  <span className="text-[10px] text-soft">· {timeAgo(c.created_at)}</span>
-                </div>
-                <p className="whitespace-pre-wrap text-[13px] leading-snug text-midnight-200">{c.body}</p>
+            <article key={c.id} className="py-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <Avatar
+                  name={c.author?.display_name}
+                  avatarUrl={c.author?.avatar_url}
+                  role={c.author?.role}
+                  size="xs"
+                />
+                {c.author?.username ? (
+                  <Link
+                    href={`/u/${c.author.username}`}
+                    className="text-[12.5px] font-semibold text-ink transition hover:text-gold-700"
+                  >
+                    {c.author?.display_name || "Member"}
+                  </Link>
+                ) : (
+                  <span className="text-[12.5px] font-semibold text-ink">
+                    {c.author?.display_name || "Member"}
+                  </span>
+                )}
+                <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
+                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft/70">
+                  {timeAgo(c.created_at)}
+                </span>
               </div>
-            </div>
+              <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink/85">
+                {c.body}
+              </p>
+            </article>
           ))}
         </div>
       )}
 
-      {canComment && (
-        open ? (
-          <div className="mt-2 rounded-lg border border-sand bg-paper p-2">
-            {err && <p className="mb-1 text-[11px] text-red-600">{err}</p>}
-            <div className="flex items-end gap-2">
+      {canComment &&
+        (open ? (
+          <div className="mt-4 max-w-[65ch]">
+            {err && <p className="mb-1 text-[11.5px] text-soft">{err}</p>}
+            <div className="flex items-end gap-3">
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 rows={1}
                 placeholder={`Respond to ${label.toLowerCase()}…`}
-                className="max-h-24 flex-1 resize-none rounded-lg border border-sand bg-card px-2.5 py-1.5 text-[13px] text-ink placeholder:text-soft focus:border-gold-400 focus:outline-none"
+                className="max-h-28 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[14px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-gold-400 focus:outline-none"
               />
               <button
                 onClick={submit}
                 disabled={sending || !draft.trim()}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gold-500 text-white transition-colors hover:bg-gold-600 disabled:opacity-50"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-volt-500 text-white transition hover:brightness-110 disabled:opacity-50"
                 aria-label="Post response"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -408,11 +519,13 @@ function SectionBlock({
             </div>
           </div>
         ) : (
-          <button onClick={() => setOpen(true)} className="mt-2 text-xs font-semibold text-gold-700 hover:underline">
+          <button
+            onClick={() => setOpen(true)}
+            className="mt-3 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+          >
             + Respond to {label.toLowerCase()}
           </button>
-        )
-      )}
+        ))}
     </section>
   );
 }
