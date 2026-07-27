@@ -1390,6 +1390,13 @@ body {
   box-shadow: 0 0 0 2px var(--f0-stack-ring, var(--paper));
 }
 .f0-stack > * + * { margin-left: -0.4rem; }
+/* A stack sitting ON the obsidian hero field needs a ring the colour of that
+   field, not --paper. Scoping the variable to the field means callers stop
+   hardcoding a hex to get it (three lanes independently did, and they did not
+   all pick the same value), and the ring follows the field if it ever moves.
+   One value serves both themes because .f0-hero-field is obsidian in both by
+   design — at a 2px ring the light/dark delta is not resolvable. */
+.f0-hero-field { --f0-stack-ring: #191512; }
 
 /* ══════════════════════════════════════════════════════════════════════ */
 /* CANVAS V2 — FOUNDATION (lane L0)                                       */

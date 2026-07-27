@@ -45,11 +45,21 @@ export function dash(n: number | null | undefined): string {
 export function DisplayHead({
   eyebrow,
   title,
+  mark,
+  markStyle = "underline",
   lede,
   aside,
 }: {
   eyebrow?: string;
+  /** Rendered before the marked word. */
   title: string;
+  /** The ONE word carrying the canvas's drawn emphasis. Never a phrase — a mark
+   *  spanning several words stops meaning anything. Without this prop callers
+   *  hand-composed the whole masthead just to annotate a word (flashcards, help
+   *  and start-here each did), which is how three surfaces drift apart. Mirrors
+   *  the contract FamilyMast already ships. */
+  mark?: string;
+  markStyle?: "underline" | "circle";
   /** ReactNode, not string: the lede routinely needs ONE emphasised span
    *  (a count, a name) and typing it as a string forced callers off the shared
    *  masthead to keep that emphasis. */
@@ -67,6 +77,16 @@ export function DisplayHead({
         )}
         <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
           {title}
+          {mark && (
+            <>
+              {" "}
+              <span
+                className={markStyle === "circle" ? "f0-circle-mark" : "f0-underline-mark"}
+              >
+                {mark}
+              </span>
+            </>
+          )}
         </h1>
         {lede && <p className="mt-2 max-w-md text-[15px] text-soft">{lede}</p>}
       </div>
