@@ -44,7 +44,8 @@ type NotifType =
   | "recording_posted"
   | "broadcast"
   | "alert"
-  | "live_starting";
+  | "live_starting"
+  | "challenge";
 
 /**
  * Map a notification type → the notification_prefs push-toggle key that gates
@@ -71,6 +72,11 @@ const PREF_KEY_FOR: Record<NotifType, string | null> = {
   // notification row is only created for members who opted into Remind Me, so
   // this gate is a second, per-member mute — not the audience selector.
   live_starting: "push_lives",
+  // 5-Day Challenge day reminders (migration 199). Opt-OUT via push_challenge:
+  // absent/true = send, matching every other category. The notification ROW is
+  // only created for enrolled cohort members, so this gate is a per-member mute,
+  // not the audience selector.
+  challenge: "push_challenge",
 };
 
 function pushAllowed(prefs: Record<string, unknown> | null, type: NotifType): boolean {
@@ -111,6 +117,10 @@ function titleFor(n: NotificationRow, actorName: string): string {
       // The contextual, room-type line lives in n.body ("🎓 Live class starting
       // now · {title}"); the title is the brand anchor.
       return "Cheat Code Club";
+    case "challenge":
+      // The day + mission line lives in n.body; the title anchors the product
+      // so the notification is recognisable on a lock screen.
+      return "5-Day Investing Challenge";
   }
 }
 

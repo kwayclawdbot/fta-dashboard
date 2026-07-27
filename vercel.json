@@ -58,6 +58,14 @@
       "schedule": "10 23 * * *"
     },
     {
+      "path": "/api/cron/challenge-day-push?kind=mission",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/challenge-day-push?kind=session",
+      "schedule": "30 22 * * *"
+    },
+    {
       "path": "/api/club/refresh",
       "schedule": "*/15 * * * *"
     },

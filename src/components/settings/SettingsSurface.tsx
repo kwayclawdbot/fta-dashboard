@@ -66,6 +66,8 @@ interface NotificationPrefs {
   push_recordings: boolean;
   /** Live class go-live. Opt-OUT at dispatch (absent/true = send). */
   push_lives: boolean;
+  /** 5-Day Challenge day reminders. Opt-OUT at dispatch (absent/true = send). */
+  push_challenge: boolean;
 }
 
 const DEFAULT_PREFS: NotificationPrefs = {
@@ -79,6 +81,7 @@ const DEFAULT_PREFS: NotificationPrefs = {
   push_lessons: true,
   push_recordings: true,
   push_lives: true,
+  push_challenge: true,
 };
 
 const DELIVERY: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
@@ -107,6 +110,7 @@ const PUSH: { key: keyof NotificationPrefs; label: string; sub: string }[] = [
   { key: "push_lessons", label: "New lessons", sub: "A lesson lands in a course you're taking" },
   { key: "push_recordings", label: "Class recordings", sub: "A class you RSVP'd to is posted" },
   { key: "push_lives", label: "Class going live", sub: "A live class you asked to be reminded about starts" },
+  { key: "push_challenge", label: "Challenge days", sub: "Your daily 5-Day Challenge mission and when the class starts" },
 ];
 
 /* Every key above maps 1:1 onto the real gate map in

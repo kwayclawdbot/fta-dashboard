@@ -76,7 +76,12 @@ export default function ChallengeThankYouPage() {
       isVip={isVip}
       vipIntent={vipIntent}
       vipEnabled={vipEnabled}
-      onExplore={() => router.push("/dashboard?tour=1")}
+      // The pre-season journey (Lane M7) is the real next step now: MINUTE 0
+      // confirmation → the four questions → the Day-0 first win. The old target
+      // was the generic dashboard tour, which dropped a brand-new registrant
+      // into the whole app with no next action. The thank-you itself — its
+      // referral loop, VIP surface and commercial copy — is unchanged.
+      onExplore={() => router.push("/challenge/welcome")}
     />
   );
 }
