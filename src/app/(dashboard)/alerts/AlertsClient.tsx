@@ -1297,6 +1297,23 @@ function HistoryTab({
     return rows.filter((r) => r.ticker.toUpperCase().includes(needle));
   }, [rows, q]);
 
+  // Canvas artboard 14: Today / Yesterday timeline grouping. Rows arrive sorted
+  // newest-first, so a single pass into ordered buckets keeps that order and
+  // drops empty buckets (no "Yesterday" header on a day with no yesterday rows).
+  const groups = useMemo(() => {
+    const out: { label: string; rows: FeedRow[] }[] = [];
+    let cur: { label: string; rows: FeedRow[] } | null = null;
+    for (const r of filtered) {
+      const label = dateBucket(r.at);
+      if (!cur || cur.label !== label) {
+        cur = { label, rows: [] };
+        out.push(cur);
+      }
+      cur.rows.push(r);
+    }
+    return out;
+  }, [filtered]);
+
   return (
     <div className="space-y-4">
       <SectionIntro title="History" blurb="Everything Kai has told you — searchable by ticker." />
@@ -1321,14 +1338,23 @@ function HistoryTab({
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-sand/70 border-y border-sand/70">
-          {filtered.map((row) =>
-            row.type === "broadcast" ? (
-              <HistoryBroadcastRow key={`b-${row.b.id}`} b={row.b} current={priceMap[row.ticker] ?? null} />
-            ) : (
-              <HistoryEventRow key={`e-${row.e.id}`} e={row.e} current={priceMap[row.ticker] ?? null} />
-            )
-          )}
+        <div className="space-y-5">
+          {groups.map((g) => (
+            <div key={g.label}>
+              <p className="sticky top-[7.5rem] z-[1] -mx-1 mb-1 bg-paper/95 px-1 py-1 text-[11px] font-bold uppercase tracking-wide text-soft/70 backdrop-blur-sm">
+                {g.label}
+              </p>
+              <div className="divide-y divide-sand/70 border-y border-sand/70">
+                {g.rows.map((row) =>
+                  row.type === "broadcast" ? (
+                    <HistoryBroadcastRow key={`b-${row.b.id}`} b={row.b} current={priceMap[row.ticker] ?? null} />
+                  ) : (
+                    <HistoryEventRow key={`e-${row.e.id}`} e={row.e} current={priceMap[row.ticker] ?? null} />
+                  )
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -1933,6 +1959,19 @@ function SectionIntro({ title, blurb }: { title: string; blurb: string }) {
       <p className="mt-0.5 text-[13px] leading-snug text-soft">{blurb}</p>
     </div>
   );
+}
+
+/** Calendar-relative bucket label for the History timeline (canvas artboard 14). */
+function dateBucket(iso: string): string {
+  const then = new Date(iso);
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(then)) / 86400000);
+  if (dayDiff <= 0) return "Today";
+  if (dayDiff === 1) return "Yesterday";
+  if (dayDiff < 7) return "Earlier this week";
+  if (dayDiff < 30) return "Earlier this month";
+  return then.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
 function timeAgo(iso: string): string {
