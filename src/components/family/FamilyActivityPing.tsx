@@ -1,0 +1,64 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+/**
+ * THE METER BEHIND THE DAILY LIMIT (canvas F3).
+ *
+ * The parental control offers "Daily limit · 45 min". Nothing in this schema
+ * measured time in the app, so before this component that control could only
+ * ever have been a switch that persisted a number nobody read — the exact thing
+ * this lane refuses to ship. `family_activity_ping()` (migration 190 §6) credits
+ * one minute per 50s of wall clock, rate-limited server-side so two open tabs or
+ * a reload storm cannot inflate it, and `family_writes_allowed()` reads the same
+ * row when it decides whether to accept a write.
+ *
+ * COVERAGE, STATED PLAINLY: minutes accrue while a surface that mounts this
+ * component is open. This lane mounts it on every /family route. Making it
+ * whole-app is one <FamilyActivityPing /> in the dashboard shell — a file this
+ * lane does not own. The digest labels the number for exactly what it measures.
+ *
+ * When the server says the account is locked (downtime window, or the limit is
+ * spent) this renders the lock plainly. It is not decoration: the database is
+ * already refusing the writes, and a teen deserves to be told why rather than
+ * watching posts fail silently.
+ */
+export default function FamilyActivityPing({ active = true }: { active?: boolean }) {
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    if (!active) return;
+    const supabase = createClient();
+    let cancelled = false;
+
+    const ping = async () => {
+      if (document.visibilityState === "hidden") return;
+      const { data, error } = await supabase.rpc("family_activity_ping");
+      if (cancelled || error || !data) return;
+      setLocked(Boolean((data as { locked?: boolean }).locked));
+    };
+
+    ping();
+    const id = window.setInterval(ping, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [active]);
+
+  if (!locked) return null;
+
+  return (
+    <div className="f0-rule-left mb-8 py-1 pl-4" role="status">
+      <p className="font-display text-[15px] font-extrabold text-ink">
+        Your account is resting
+      </p>
+      <p className="mt-1 max-w-md text-[14px] leading-relaxed text-soft">
+        A guardrail on this account is active right now — either downtime or the
+        daily limit. Reading stays open; posting, paper trades and Circle
+        messages resume when it lifts.
+      </p>
+    </div>
+  );
+}
