@@ -127,7 +127,7 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
   const reports = extras?.reports ?? [];
 
   // The community-attention ledger + the pulse series the carousel charts.
-  const { trending, pulse } = useClubLedger();
+  const { trending, pulse, loading: ledgerLoading } = useClubLedger();
   const trendingRows = useMemo(() => trending?.rows ?? [], [trending]);
 
   const byDiscussion = useMemo(
@@ -309,6 +309,7 @@ export default function DiscoverClient({ initialNews, board, extras }: DiscoverC
             <>
               <Ledger
                 items={trendingItems}
+                loading={ledgerLoading}
                 empty={
                   <FoundingNote>
                     The Club hasn&apos;t formed a read yet. Rate a ticker on the{" "}
@@ -409,6 +410,10 @@ function stanceOf(r?: TrendingRow | null): Pick<
 function useClubLedger() {
   const [trending, setTrending] = useState<TrendingResponse | null>(null);
   const [pulse, setPulse] = useState<PulseResponse | null>(null);
+  // LOADING IS NOT EMPTY. Trending is the DEFAULT segment for any member without
+  // For-You movers, so without this flag every Discover open rendered "The Club
+  // hasn't formed a read yet" before the ranked ledger swapped in.
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -424,12 +429,18 @@ function useClubLedger() {
         return null;
       }
     };
-    void get<TrendingResponse>("/api/club/trending").then((d) => d && setTrending(d));
+    // The ledger's founding state is gated on the TRENDING read specifically —
+    // Pulse only decorates rows with a series, so it must not hold the gate.
+    void get<TrendingResponse>("/api/club/trending")
+      .then((d) => {
+        if (d) setTrending(d);
+      })
+      .finally(() => setLoading(false));
     void get<PulseResponse>("/api/club/pulse").then((d) => d && setPulse(d));
     return () => ctrl.abort();
   }, []);
 
-  return { trending, pulse };
+  return { trending, pulse, loading };
 }
 
 /* ── SEARCH ANCHOR ───────────────────────────────────────────────────────── */
@@ -558,7 +569,30 @@ function Segmented<T extends string>({
 }
 
 /* ── THE RANKED LEDGER ───────────────────────────────────────────────────── */
-function Ledger({ items, empty }: { items: LedgerItem[]; empty: React.ReactNode }) {
+function Ledger({
+  items,
+  empty,
+  loading = false,
+}: {
+  items: LedgerItem[];
+  empty: React.ReactNode;
+  /** Still arriving. Renders ruled placeholder rows instead of the founding
+   *  note, so "loading" is never mistaken for "the club has ranked nothing". */
+  loading?: boolean;
+}) {
+  if (loading && items.length === 0) {
+    return (
+      <ol className="f0-ledger" aria-busy="true">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <li key={i} className="flex items-center justify-between gap-4 py-3.5">
+            <div className="h-3.5 w-20 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+            <div className="h-3.5 w-24 rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
+          </li>
+        ))}
+        <span className="sr-only">Loading the ledger</span>
+      </ol>
+    );
+  }
   if (items.length === 0) return <>{empty}</>;
   return (
     <ol className="f0-ledger f0-stagger">

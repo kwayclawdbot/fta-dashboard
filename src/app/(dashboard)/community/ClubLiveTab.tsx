@@ -394,10 +394,16 @@ function ReplayRow({ event }: { event: LiveEvent }) {
 
 export default function ClubLiveTab({
   events,
+  loading = false,
   focusId = null,
   onGoToLounge,
 }: {
   events: LiveEvent[];
+  /** LOADING IS NOT EMPTY. The /api/live read starts at `[]`, so without this
+   *  the tab rendered "Nobody is on the air." — its largest type — on every
+   *  open, then swapped in the real rooms. The dark-room copy is TRUE only once
+   *  the read has come back with nothing. */
+  loading?: boolean;
   focusId?: string | null;
   /** Never dead-end a dark room — hand the member to the always-on Lounge. */
   onGoToLounge?: () => void;
@@ -456,6 +462,13 @@ export default function ClubLiveTab({
       <div ref={heroRef} style={{ ["--i" as string]: 0 }}>
         {hero ? (
           <RoomHero event={hero} faces={faces} now={now} />
+        ) : loading ? (
+          <div className="space-y-3" aria-busy="true">
+            <div className="h-3 w-28 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+            <div className="h-[0.9em] w-[80%] rounded-full bg-ink/10 text-display-2 motion-safe:animate-pulse" />
+            <div className="h-[0.9em] w-[48%] rounded-full bg-ink/10 text-display-2 motion-safe:animate-pulse" />
+            <span className="sr-only">Loading live rooms</span>
+          </div>
         ) : (
           <DarkRoomHero faces={faces} onGoToLounge={onGoToLounge ?? (() => {})} />
         )}
@@ -486,7 +499,7 @@ export default function ClubLiveTab({
       {/* Founding tail: a dark room with nothing scheduled and nothing recorded
           is the club's real state today. Say what happens next instead of
           leaving the tab to end on silence. */}
-      {!hero && replays.length === 0 && (
+      {!hero && !loading && replays.length === 0 && (
         <section style={{ ["--i" as string]: 1 }} className="f0-rule-top pt-1">
           <FoundingNote
             eyebrow="What lands here"

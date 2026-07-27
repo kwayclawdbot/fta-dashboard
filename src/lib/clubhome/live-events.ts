@@ -127,7 +127,16 @@ interface LiveListResponse {
  * viewer) or network error degrades to [] so the surfaces render nothing rather
  * than a fabricated room.
  */
-export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
+/**
+ * Same load, but with the in-flight signal exposed. LOADING IS NOT EMPTY: the
+ * hook starts at `[]`, so any consumer that renders "nobody is on the air" copy
+ * off an empty array flashes that copy on every load. Callers that own such copy
+ * must use THIS hook and gate on `loading`; `useLiveEvents` below is the
+ * unchanged array-returning wrapper for callers that only render when non-empty.
+ */
+export function useLiveEventsState(
+  opts: UseLiveEventsOptions = {}
+): { events: LiveEvent[]; loading: boolean } {
   const usingFixtures = !!opts.fixtures && fixturesAllowed();
   const scale: ClubScale = opts.scale ?? "scale";
 
@@ -139,6 +148,7 @@ export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
   // Live fetch state only — the fixtures path is derived synchronously below, so
   // no setState runs inside the effect body (react-hooks/set-state-in-effect).
   const [fetched, setFetched] = useState<LiveEvent[]>([]);
+  const [loading, setLoading] = useState(!usingFixtures);
   const started = useRef(false);
 
   useEffect(() => {
@@ -162,6 +172,8 @@ export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
         if (mounted) setFetched(merged);
       } catch {
         /* network/abort → stay [] */
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
     return () => {
@@ -170,5 +182,13 @@ export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
     };
   }, [usingFixtures]);
 
-  return usingFixtures ? fixtureData ?? [] : fetched;
+  return usingFixtures
+    ? { events: fixtureData ?? [], loading: false }
+    : { events: fetched, loading };
+}
+
+/** The original array-returning hook — unchanged behaviour for every existing
+ *  caller (they only render when the list is non-empty, so they never flash). */
+export function useLiveEvents(opts: UseLiveEventsOptions = {}): LiveEvent[] {
+  return useLiveEventsState(opts).events;
 }

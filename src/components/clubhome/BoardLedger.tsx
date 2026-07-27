@@ -98,9 +98,18 @@ function SentimentBar({ row }: { row: TrendingRow }) {
 export default function BoardLedger({
   trending,
   isKid,
+  loading = false,
 }: {
   trending?: TrendingResponse | null;
   isKid: boolean;
+  /**
+   * LOADING IS NOT EMPTY. On any load without a server seed (client navigation,
+   * the family/kid client home) `trending` is null while the fetch is in flight,
+   * and without this flag the ledger rendered its founding line — "the board is
+   * still forming" — on every single load before the real rows swapped in. The
+   * founding copy is TRUE only when the club has genuinely ranked nothing.
+   */
+  loading?: boolean;
 }) {
   const rows = [...(trending?.rows ?? [])].sort(byStance).slice(0, 8);
 
@@ -112,7 +121,22 @@ export default function BoardLedger({
         </span>
       </h2>
 
-      {rows.length === 0 ? (
+      {loading && rows.length === 0 ? (
+        /* Still arriving — ruled rows shaped like the real ledger, claiming
+           nothing. Never the founding sentence. */
+        <div className="f0-ledger" aria-busy="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between gap-4 py-3.5 motion-safe:animate-pulse"
+            >
+              <div className="h-3.5 w-16 rounded-full bg-ink/10" />
+              <div className="h-3.5 w-24 rounded-full bg-ink/[0.07]" />
+            </div>
+          ))}
+          <span className="sr-only">Loading the board</span>
+        </div>
+      ) : rows.length === 0 ? (
         <p className="py-4 text-[14px] leading-relaxed text-soft">
           The board is still forming. Rate a ticker and yours is the first stance on
           it.

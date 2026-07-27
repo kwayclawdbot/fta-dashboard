@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { use, useEffect } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
-import { useClubData, fixturesAllowed } from "@/lib/clubhome/client";
+import { useClubData, fixturesAllowed, type ClubHomeSeed } from "@/lib/clubhome/client";
 import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
 import { useLiveAlert } from "@/lib/clubhome/alerts";
 import ContinuePath from "@/components/learn/ContinuePath";
@@ -77,6 +77,7 @@ export default function ClubHomeV2({
   learning,
   challengeExpiresAt = null,
   preview,
+  seedPromise,
 }: {
   firstName?: string;
   register: Register;
@@ -84,16 +85,35 @@ export default function ClubHomeV2({
   challengeExpiresAt?: string | null;
   /** design-review only — force fixtures + a scale state (guarded to dev/preview) */
   preview?: { fixtures: boolean; scale: ClubScale };
+  /**
+   * SERVER SEED (the empty-first fix). The /dashboard server component builds
+   * the whole club payload with the same assembler the API route uses and hands
+   * the PROMISE across the RSC boundary; `use()` suspends this component until
+   * it resolves, so what streams in is already populated — the founding branches
+   * are never rendered on the way there. Omitted on the fixtures/preview path
+   * and on client navigation, where the hook's own fetch is the fallback.
+   *
+   * It is guaranteed non-rejecting (buildClubHomeSeed catches), so `use()` here
+   * can never throw into an error boundary.
+   */
+  seedPromise?: Promise<ClubHomeSeed | null>;
 }) {
   const isKid = register === "kid";
 
-  // `loading` matters: the club data is client-fetched, so `trending` is null
-  // through SSR and the first client paint. Handed to the carousel so it can
-  // tell "still arriving" apart from "the club has ranked nothing" — without it
-  // every load rendered the founding empty-state card.
+  // `use()` is legal in a conditional — and `seedPromise` is either always or
+  // never present for a given mount, so the branch is stable.
+  const seed = seedPromise ? use(seedPromise) : null;
+
+  // `loading` matters: without a seed the club data is client-fetched, so
+  // `trending` is null through SSR and the first client paint. Handed to the
+  // carousel so it can tell "still arriving" apart from "the club has ranked
+  // nothing" — without it every load rendered the founding empty-state card.
+  // With a seed, `loading` is false from the very first render because the data
+  // is already here.
   const { data, loading, usingFixtures } = useClubData({
     fixtures: preview?.fixtures,
     scale: preview?.scale,
+    seed,
   });
 
   // live_events (S2.5 object). Kid register never sees adult live rooms; the
@@ -184,10 +204,10 @@ export default function ClubHomeV2({
       <ActionBand items={items} />
 
       {/* 5 — who else is in the room */}
-      <PresenceRow collective={data.collective} isKid={isKid} />
+      <PresenceRow collective={data.collective} isKid={isKid} loading={loading} />
 
       {/* 6 — the hairline ledger */}
-      <BoardLedger trending={data.trending} isKid={isKid} />
+      <BoardLedger trending={data.trending} isKid={isKid} loading={loading} />
 
       {/* 7 — the single primary action. Orange in both themes; dark steps to
           volt-600 for the same reason .club2-band does (no glare against a

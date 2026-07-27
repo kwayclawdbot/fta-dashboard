@@ -193,6 +193,13 @@ export default function ResearchClient({
   const [posting, setPosting] = useState(false);
   const [err, setErr] = useState("");
   const [theses, setTheses] = useState<ThesisCard[]>([]);
+  // LOADING IS NOT EMPTY. `loading` is cleared by the TIER read, but comments and
+  // theses are secondary reads kicked off AFTER it — so the page un-skeletons
+  // with both still `[]` and flashed "No published theses yet" / "No research
+  // notes yet". These two flags follow the same pattern the file already uses
+  // for `researchResolved` / `barsState` / `newsState`.
+  const [thesesResolved, setThesesResolved] = useState(false);
+  const [commentsResolved, setCommentsResolved] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
 
   // ── TAB STATE ────────────────────────────────────────────────────────────
@@ -299,14 +306,26 @@ export default function ResearchClient({
       .select(COMMENT_SELECT)
       .eq("ticker", ticker)
       .order("created_at", { ascending: true })
-      .then(({ data: rows }) => setComments((rows || []).map(normComment)), swallow);
+      .then(
+        ({ data: rows }) => {
+          setComments((rows || []).map(normComment));
+          setCommentsResolved(true);
+        },
+        () => setCommentsResolved(true)
+      );
 
     supabase
       .rpc("get_latest_kai_report", { p_ticker: ticker })
       .then(({ data: rep }) => setReport((rep as KaiReport) ?? null), swallow);
 
     // Research Objects (structured theses) for this ticker (SOCIAL OBJECTS S1).
-    fetchTickerTheses(supabase, ticker).then(setTheses, swallow);
+    fetchTickerTheses(supabase, ticker).then(
+      (t) => {
+        setTheses(t);
+        setThesesResolved(true);
+      },
+      () => setThesesResolved(true)
+    );
 
     // Eager: hero + Overview data. Charts (bars) and News fetch lazily per-tab.
     // Both helpers already swallow errors (return null); mark research resolved
@@ -464,6 +483,7 @@ export default function ResearchClient({
           ticker={ticker}
           companyName={companyName}
           comments={comments}
+          commentsResolved={commentsResolved}
           userId={userId}
           role={role}
           canPost={canVote}
@@ -603,6 +623,13 @@ export default function ResearchClient({
                       <ResearchObjectCard key={t.id} obj={t} currentPrice={quote?.price ?? null} />
                     ))}
                   </div>
+                ) : !thesesResolved ? (
+                  /* Still arriving — claim nothing. "No published theses yet" is
+                     only true once the read has actually come back. */
+                  <div
+                    className="h-3.5 w-56 max-w-full rounded-full bg-ink/10 motion-safe:animate-pulse"
+                    aria-hidden
+                  />
                 ) : (
                   !showCompose && (
                     <p className="text-[13px] text-soft">

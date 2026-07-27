@@ -120,6 +120,7 @@ export default function TickerDiscussion({
   ticker,
   companyName,
   comments,
+  commentsResolved = true,
   userId,
   role,
   canPost,
@@ -135,6 +136,10 @@ export default function TickerDiscussion({
   ticker: string;
   companyName: string;
   comments: DiscussionComment[];
+  /** LOADING IS NOT EMPTY. False while the parent's comment read is still in
+   *  flight, so "No research notes yet" can't flash before the thread lands.
+   *  Defaults true so any other caller keeps its current behaviour. */
+  commentsResolved?: boolean;
   userId: string;
   role: string;
   /** free tier reads only — same wall as before */
@@ -301,6 +306,12 @@ export default function TickerDiscussion({
               </div>
             );
           })}
+        </div>
+      ) : !commentsResolved && comments.length === 0 ? (
+        /* Still arriving — a measure-shaped shimmer, never the founding line. */
+        <div className="f0-rule-top mt-4 pt-4" aria-busy="true">
+          <div className="h-3.5 w-64 max-w-full rounded-full bg-ink/10 motion-safe:animate-pulse" />
+          <span className="sr-only">Loading research notes</span>
         </div>
       ) : (
         <p className="f0-rule-top mt-4 pt-4 text-[13px] text-soft">

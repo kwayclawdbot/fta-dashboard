@@ -79,10 +79,28 @@ async function fetchClubHome(signal: AbortSignal): Promise<ClubHomeBatch | null>
   }
 }
 
+/**
+ * The SERVER SEED: the exact same envelope, built by the /dashboard server
+ * component (src/lib/club/home-payload.ts) and handed across the RSC boundary
+ * instead of being fetched. Values arrive as `unknown` because they crossed a
+ * serialization boundary — they are cast on assignment exactly like the fetched
+ * bodies are (`as ClubData[K]`), since both come from the same assembler.
+ */
+export type ClubHomeSeed = { [K in ClubEndpoint]?: unknown } & {
+  _errors?: unknown;
+};
+
 export interface UseClubDataOptions {
   /** design-review only — force fixture data (ignored in production) */
   fixtures?: boolean;
   scale?: ClubScale;
+  /**
+   * Server-rendered payload. When present the hook starts ALREADY POPULATED and
+   * skips its initial client fetch entirely — that is the whole fix for the
+   * "board says empty first, then populates" flash. Absent/null → the original
+   * client fetch path runs unchanged (the fallback).
+   */
+  seed?: ClubHomeSeed | null;
 }
 
 export interface UseClubDataResult {
@@ -96,6 +114,47 @@ export interface UseClubDataResult {
  * no loading flash). Live mode fetches all endpoints concurrently and hydrates
  * each independently so one slow/absent endpoint never blocks the others.
  */
+/** Merge a server seed (or a fetched batch) onto a state, ignoring null sections
+ *  so an absent section never overwrites what is already there. */
+function applyBatch(
+  prev: ClubDataState,
+  batch: ClubHomeSeed | ClubHomeBatch
+): ClubDataState {
+  const next: Record<string, unknown> = { ...prev };
+  for (const key of ENDPOINTS) {
+    const value = (batch as Record<string, unknown>)[key];
+    if (value != null) next[key] = value;
+  }
+  return next as ClubDataState;
+}
+
+/** The `_errors` keys of a batch/seed, defensively filtered to known endpoints. */
+function errorKeys(batch: ClubHomeSeed | ClubHomeBatch | null): ClubEndpoint[] {
+  const raw = (batch as { _errors?: unknown } | null)?._errors;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((k): k is ClubEndpoint =>
+    (ENDPOINTS as string[]).includes(k as string)
+  );
+}
+
+/**
+ * Load every ClubHome section in parallel. Three modes, in priority order:
+ *
+ *   1. FIXTURES  — synchronous, no loading flash (design review only).
+ *   2. SEEDED    — the server already built the payload (src/lib/club/home-payload.ts)
+ *                  and handed it across the RSC boundary. First paint carries
+ *                  real data; the initial client fetch is SKIPPED entirely. Only
+ *                  the sections the server flagged in `_errors` are re-fetched
+ *                  individually, preserving per-section degradation.
+ *   3. LIVE      — the original path: ONE batched GET /api/club/home, with the
+ *                  nine-way fan-out as its own fallback. Still used whenever the
+ *                  seed is absent (client navigation, persona fell through, or
+ *                  an RSC failure), so nothing regresses.
+ *
+ * `loading` is deliberately NOT "data is empty". It means "still arriving", and
+ * a seeded mount with no errored sections is not loading at all — that
+ * distinction is what stops the founding state from flashing.
+ */
 export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
   const usingFixtures = !!opts.fixtures && fixturesAllowed();
   const scale: ClubScale = opts.scale ?? "scale";
@@ -105,8 +164,25 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
     return clubFixtures(scale) as ClubDataState;
   }, [usingFixtures, scale]);
 
-  const [data, setData] = useState<ClubDataState>(() => fixtureData ?? EMPTY_STATE);
-  const [loading, setLoading] = useState(!usingFixtures);
+  // The seed is read ONCE, at mount. It arrives from a server component and is
+  // referentially stable for the life of the mount; pinning it in a ref keeps it
+  // out of the effect's dependency list so a re-render can never restart the
+  // load.
+  const seedRef = useRef<ClubHomeSeed | null | undefined>(undefined);
+  if (seedRef.current === undefined) seedRef.current = opts.seed ?? null;
+  const seed = usingFixtures ? null : seedRef.current;
+
+  const [data, setData] = useState<ClubDataState>(() => {
+    if (fixtureData) return fixtureData;
+    return seed ? applyBatch(EMPTY_STATE, seed) : EMPTY_STATE;
+  });
+  // Seeded AND complete → nothing is in flight, so we are not loading. Seeded
+  // with errored sections → those are still arriving, so we are.
+  const [loading, setLoading] = useState(() => {
+    if (usingFixtures) return false;
+    if (seed) return errorKeys(seed).length > 0;
+    return true;
+  });
   const startedRef = useRef(false);
 
   useEffect(() => {
@@ -120,10 +196,9 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
 
     const ctrl = new AbortController();
     let mounted = true;
-    setLoading(true);
 
     // Per-section individual fallback (original behavior) — used when the whole
-    // batch request fails, or for the specific sections the batch flags in
+    // batch request fails, or for the specific sections the batch/seed flags in
     // `_errors`. A null value means "absent" and never overwrites founding state.
     const hydrateOne = (key: ClubEndpoint) => {
       void fetchEndpoint(key, ctrl.signal).then((value) => {
@@ -131,6 +206,40 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
         setData((prev) => ({ ...prev, [key]: value }));
       });
     };
+
+    const seeded = seedRef.current;
+    if (seeded) {
+      // SEEDED: the payload is already on screen. No batch fetch — only the
+      // sections whose core threw on the server get an individual retry.
+      const errors = errorKeys(seeded);
+      if (errors.length === 0) {
+        setLoading(false);
+        return () => {
+          mounted = false;
+          ctrl.abort();
+        };
+      }
+      let pending = errors.length;
+      const settleOne = () => {
+        if (--pending <= 0 && mounted) setLoading(false);
+      };
+      for (const key of errors) {
+        void fetchEndpoint(key, ctrl.signal).then((value) => {
+          if (mounted && value != null) {
+            setData((prev) => ({ ...prev, [key]: value }));
+          }
+          settleOne();
+        });
+      }
+      const tSeed = setTimeout(() => mounted && setLoading(false), 1200);
+      return () => {
+        mounted = false;
+        ctrl.abort();
+        clearTimeout(tSeed);
+      };
+    }
+
+    setLoading(true);
 
     // ONE round trip: GET /api/club/home. Sections resolve together; a section
     // the server couldn't produce (`_errors`) degrades to its individual
@@ -141,18 +250,8 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
         ENDPOINTS.forEach(hydrateOne);
         return;
       }
-      setData((prev) => {
-        const next: Record<string, unknown> = { ...prev };
-        for (const key of ENDPOINTS) {
-          const value = batch[key];
-          if (value != null) next[key] = value;
-        }
-        return next as ClubDataState;
-      });
-      const errors = Array.isArray(batch._errors) ? batch._errors : [];
-      for (const key of errors) {
-        if ((ENDPOINTS as string[]).includes(key)) hydrateOne(key);
-      }
+      setData((prev) => applyBatch(prev, batch));
+      for (const key of errorKeys(batch)) hydrateOne(key);
       setLoading(false);
     });
 

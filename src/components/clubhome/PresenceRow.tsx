@@ -30,9 +30,17 @@ import type { CollectiveResponse } from "@/lib/clubhome/contract";
 export default function PresenceRow({
   collective,
   isKid,
+  loading = false,
 }: {
   collective: CollectiveResponse | null;
   isKid: boolean;
+  /**
+   * LOADING IS NOT EMPTY. Without a server seed `collective` is null while the
+   * fetch is in flight, and the floor-not-met branch below ("You're in the
+   * founding room…") was rendering on every load before the real member count
+   * arrived. That copy is TRUE only when the club is genuinely below the floor.
+   */
+  loading?: boolean;
 }) {
   const floorMet = collective?.floorMet ?? false;
   const minds = collective?.connectedMinds ?? 0;
@@ -83,7 +91,13 @@ export default function PresenceRow({
       )}
 
       <p className="mt-2 w-full min-w-0 text-[14px] leading-snug text-soft sm:mt-0 sm:w-auto sm:flex-1">
-        {floorMet ? (
+        {loading && !collective ? (
+          /* Still arriving — a measure-shaped shimmer, never the founding line. */
+          <span
+            className="inline-block h-3.5 w-48 max-w-full rounded-full bg-ink/10 align-middle motion-safe:animate-pulse"
+            aria-hidden
+          />
+        ) : floorMet ? (
           <>
             <span className="font-display font-extrabold tabular-nums text-ink">
               {minds.toLocaleString()}

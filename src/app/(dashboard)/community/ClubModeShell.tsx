@@ -6,7 +6,7 @@ import { Radio } from "lucide-react";
 import { deriveRegister } from "@/lib/register";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
-import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
+import { useLiveEventsState, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
 import CommunityClient from "./CommunityClient";
 import LiveRooms from "@/components/community/LiveRooms";
 import ClubLiveTab from "./ClubLiveTab";
@@ -130,7 +130,9 @@ export default function ClubModeShell({
     return faces;
   }, [initialData]);
 
-  const events = useLiveEvents({ fixtures: demoEvents });
+  // LOADING IS NOT EMPTY: the live tab owns "Nobody is on the air." at
+  // display-2, so it needs the in-flight signal, not just an empty array.
+  const { events, loading: eventsLoading } = useLiveEventsState({ fixtures: demoEvents });
   const showLive = !isKid;
   const primaryLive = showLive ? primaryLiveEvent(events) : null;
   const liveNow = primaryLive && isEventUrgent(primaryLive) ? primaryLive : null;
@@ -305,6 +307,7 @@ export default function ClubModeShell({
       {mode === "live" && showLive && (
         <ClubLiveTab
           events={events}
+          loading={eventsLoading}
           focusId={liveParam}
           onGoToLounge={() => selectMode("lounge")}
         />
