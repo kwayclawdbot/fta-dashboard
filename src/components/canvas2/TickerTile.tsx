@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -41,6 +42,47 @@ const SIZES: Record<
 /** Signed, two-decimal, always with an explicit + so a gain never reads flat. */
 function formatDelta(pct: number): string {
   return `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct).toFixed(2)}%`;
+}
+
+/* The mark inside the field. The letter is the DEFAULT, not the fallback: it is
+   the canvas's own device, it is always legible on the dark ground, and it never
+   loads. `logoUrl` is offered for the surfaces that already hold real branding —
+   and a failed fetch reverts to the letter rather than leaving a broken-image
+   box, which is the same contract CompanyLogo honours. `object-contain` because
+   a logo is not a photograph: cover would crop a wordmark. */
+function TileMark({
+  logoUrl,
+  glyph,
+  markClass,
+}: {
+  logoUrl?: string | null;
+  glyph: string;
+  markClass: string;
+}) {
+  const [broken, setBroken] = useState(false);
+
+  if (logoUrl && !broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={logoUrl}
+        alt=""
+        loading="lazy"
+        onError={() => setBroken(true)}
+        className="h-full w-full object-contain p-1.5"
+      />
+    );
+  }
+  // No colour of its own: currentColor is the field's constant cream, so the
+  // mark can never invert to black-on-black in dark.
+  return (
+    <span
+      className={`font-display font-black leading-none tracking-tight ${markClass}`}
+      aria-hidden
+    >
+      {glyph}
+    </span>
+  );
 }
 
 export interface TickerTileProps {
@@ -146,24 +188,7 @@ export default function TickerTile({
         }`}
         style={{ height: s.box, borderRadius: s.radius }}
       >
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt=""
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          // No colour of its own: currentColor is the field's constant cream, so
-          // the mark can never invert to black-on-black in dark.
-          <span
-            className={`font-display font-black leading-none tracking-tight ${s.mark}`}
-            aria-hidden
-          >
-            {glyph}
-          </span>
-        )}
+        <TileMark logoUrl={logoUrl} glyph={glyph} markClass={s.mark} />
       </div>
       {showDelta && (
         <p
