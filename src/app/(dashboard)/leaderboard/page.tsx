@@ -3,8 +3,10 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { m } from "@/lib/motion";
-import { Crown, Trophy, Users, Zap } from "lucide-react";
+import { Crown, Trophy, Users, Zap, Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
+import Tabs, { type TabItem } from "@/components/ui/Tabs";
 import type { FamilyTier } from "@/lib/tier";
 import { beltForXp } from "@/lib/belts";
 import Avatar from "@/components/Avatar";
@@ -34,6 +36,15 @@ const PERIODS: { id: Period; label: string; short: string }[] = [
   { id: "7d", label: "Last 7 days", short: "7 days" },
   { id: "30d", label: "Last 30 days", short: "30 days" },
   { id: "all", label: "All-time", short: "All-time" },
+];
+
+// Club register (canvas artboard 11): trader-voiced tabs that map onto the SAME
+// trailing XP windows the family board uses — no new data source. "Rookies" is
+// the recent (7-day) window where new members surface fastest.
+const CLUB_TABS: TabItem<Period>[] = [
+  { key: "30d", label: "This month" },
+  { key: "all", label: "All time" },
+  { key: "7d", label: "Rookies" },
 ];
 
 interface IndRow {
@@ -93,6 +104,7 @@ function LeaderboardInner() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isClub = useAppMode() === "club";
 
   // ?scope=family deep-links to the within-family view (old /family/leaderboard).
   const initialScope: Scope = searchParams.get("scope") === "family" ? "family" : "all";
@@ -156,39 +168,59 @@ function LeaderboardInner() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Header */}
+      {/* Header — club register reframes the same board around conviction/reps */}
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-5">
         <div className="flex items-center gap-2 mb-1">
           <Trophy className="w-5 h-5 text-gold-600" />
           <h1 className="font-display text-2xl font-bold text-ink">Leaderboard</h1>
         </div>
         <p className="text-soft text-sm">
-          Every lesson, quiz, card, and game earns XP and moves your belt.{" "}
-          {dimension === "families" ? (
-            <>A family&apos;s score is the <span className="font-semibold text-ink">average XP of its members</span>, so families of every size compete fairly.</>
+          {isClub ? (
+            <>Ranked by the reps you put in — <span className="font-semibold text-ink">conviction, not luck</span>. Every rated call, lesson, and rep earns XP.</>
           ) : (
-            <>Climb the belts — friendly kid-vs-kid competition welcome.</>
+            <>
+              Every lesson, quiz, card, and game earns XP and moves your belt.{" "}
+              {dimension === "families" ? (
+                <>A family&apos;s score is the <span className="font-semibold text-ink">average XP of its members</span>, so families of every size compete fairly.</>
+              ) : (
+                <>Climb the belts — friendly kid-vs-kid competition welcome.</>
+              )}
+            </>
           )}
         </p>
       </m.div>
 
-      {/* Dimension toggle */}
-      <div className="inline-flex gap-1 mb-3 bg-chip-amber/40 border border-sand rounded-xl p-1">
-        {(["individuals", "families"] as Dimension[]).map((d) => (
-          <button
-            key={d}
-            onClick={() => setDimension(d)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-              dimension === d ? "bg-chip-amber text-gold-800 shadow-soft" : "text-soft hover:text-ink"
-            }`}
-          >
-            {d === "individuals" ? "Individuals" : "Families"}
-          </button>
-        ))}
-      </div>
+      {/* Club: canvas tabs (This month / All time / Rookies) over the same XP windows */}
+      {isClub && (
+        <div className="mb-5">
+          <Tabs
+            tabs={CLUB_TABS}
+            active={period}
+            onSelect={setPeriod}
+            ariaLabel="Leaderboard window"
+          />
+        </div>
+      )}
 
-      {/* Period + scope controls */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      {/* Dimension toggle — family only (a solo club member has no family board) */}
+      {!isClub && (
+        <div className="inline-flex gap-1 mb-3 bg-chip-amber/40 border border-sand rounded-xl p-1">
+          {(["individuals", "families"] as Dimension[]).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDimension(d)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                dimension === d ? "bg-chip-amber text-gold-800 shadow-soft" : "text-soft hover:text-ink"
+              }`}
+            >
+              {d === "individuals" ? "Individuals" : "Families"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Period + scope controls — family only (club uses the Tabs strip above) */}
+      <div className={`flex-wrap items-center gap-3 mb-6 ${isClub ? "hidden" : "flex"}`}>
         <div className="inline-flex gap-1 bg-white/60 dark:bg-transparent border border-sand rounded-xl p-1">
           {PERIODS.map((p) => (
             <button
@@ -231,6 +263,24 @@ function LeaderboardInner() {
         <IndividualsBoard ind={ind} meInRows={meInRows} periodLabel={periodLabel} scope={scope} />
       ) : (
         <FamiliesBoard fams={fams} myFamilyId={myFamilyId} periodLabel={periodLabel} />
+      )}
+
+      {/* Club: How rank works — honest about the XP that actually drives rank
+          today (no fabricated accuracy %; conviction grading rolls out later). */}
+      {isClub && (
+        <div className="mt-6 rounded-2xl border border-sand bg-chip-amber/30 p-5">
+          <div className="mb-2 flex items-center gap-2">
+            <Info className="h-4 w-4 text-gold-700" />
+            <p className="font-display text-sm font-bold text-ink">How rank works</p>
+          </div>
+          <p className="text-sm leading-relaxed text-soft">
+            Rank is your XP over the selected window — earned by rating calls,
+            finishing lessons, and showing up in the room. It rewards
+            consistent reps over one lucky week, so a loud one-off never
+            outranks a steady operator. Windows are trailing, so every board is
+            always a full period.
+          </p>
+        </div>
       )}
     </div>
   );
