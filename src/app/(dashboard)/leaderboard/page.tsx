@@ -69,7 +69,7 @@ interface FamRow {
 
 function rankColor(rank: number) {
   if (rank === 1) return "text-gold-600";
-  if (rank === 2) return "text-midnight-400";
+  if (rank === 2) return "text-soft";
   if (rank === 3) return "text-amber-700";
   return "text-soft";
 }
