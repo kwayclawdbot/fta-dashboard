@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { m } from "@/lib/motion";
 import {
   Video,
@@ -467,7 +467,7 @@ function SessionRow({
           <button
             onClick={onRsvp}
             aria-pressed={going}
-            className={`f0-chip f0-focus f0-press px-3 py-1.5 text-[12.5px] font-semibold ${
+            className={`f0-chip f0-focus f0-press text-[12.5px] font-semibold ${
               going ? "f0-chip-on" : "text-soft hover:text-ink"
             }`}
           >
@@ -524,6 +524,25 @@ function WhenColumn({ session }: { session: LiveSession }) {
 
 type TabType = "live" | "upcoming" | "recordings";
 
+/* The viewer's clock as an EXTERNAL STORE, bucketed to the hour.
+   The staleness filter below ("is this class already over?") needs the viewer's
+   wall clock, which the server cannot know — but a component may not read an
+   impure function during render, and `const now = Date.now()` in the body was
+   exactly that. It was also non-idempotent: two renders either side of a class's
+   end time silently disagreed about whether it was still upcoming.
+
+   useSyncExternalStore is the sanctioned bridge, and the snapshot must be STABLE
+   between calls or React spins — hence the hour bucket rather than the raw
+   millisecond. An hour is far finer than this filter needs: it only decides
+   whether a scheduled class has already finished, and it already adds the
+   session's full duration before comparing. The server snapshot is null, and the
+   filter simply does not run until the client supplies an hour — the list is
+   complete either way, never wrong, at worst briefly unpruned. */
+const HOUR_MS = 3_600_000;
+const CLOCK_SUBSCRIBE = () => () => {};
+const CLOCK_CLIENT = () => Math.floor(Date.now() / HOUR_MS);
+const CLOCK_SERVER = () => null;
+
 function formatScheduledAt(dateStr: string | null, status: string): string {
   if (!dateStr) return "";
   if (status === "live") return "LIVE NOW";
@@ -558,6 +577,8 @@ export default function LiveSessionsPage() {
   >({});
   /** Real RSVP'd members per session, for the room roster. */
   const [roster, setRoster] = useState<Record<string, RosterMember[]>>({});
+  /** Viewer clock, hour-bucketed. See CLOCK_* above — never Date.now() in render. */
+  const nowHour = useSyncExternalStore(CLOCK_SUBSCRIBE, CLOCK_CLIENT, CLOCK_SERVER);
 
   const loadRsvps = useCallback(
     async (uid: string) => {
@@ -775,15 +796,16 @@ export default function LiveSessionsPage() {
     return { locked: false, reason: undefined };
   };
 
-  const now = Date.now();
   const liveSession = sessions.find((s) => s.status === "live");
   // Only genuinely future (or in-progress) classes count as upcoming —
   // stale past-dated rows shouldn't masquerade as a schedule.
   const upcoming = sessions.filter(
     (s) =>
       s.status === "upcoming" &&
-      (!s.scheduledIso ||
-        new Date(s.scheduledIso).getTime() + s.durationMin * 60_000 >= now)
+      (nowHour == null ||
+        !s.scheduledIso ||
+        new Date(s.scheduledIso).getTime() + s.durationMin * 60_000 >=
+          nowHour * HOUR_MS)
   );
   const recordings = sessions
     .filter((s) => s.status === "completed")

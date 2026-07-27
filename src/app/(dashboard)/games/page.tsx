@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { m } from "@/lib/motion";
@@ -72,13 +72,31 @@ const GAMES: GameEntry[] = [
   },
 ];
 
-function timeAgo(iso: string): string {
+/* The viewer's clock as an EXTERNAL STORE, bucketed to the hour. "Last played"
+   is relative to the VIEWER's wall clock, which the server cannot know, and a
+   component may not read an impure function during render — `timeAgo` called
+   Date.now() and was invoked straight from JSX, which is that violation one step
+   removed. The snapshot must be stable between calls or React spins, hence the
+   hour bucket; "3 days ago" needs nothing finer. Server snapshot is null, and
+   `timeAgo` then returns the absolute date — a true statement, never a guess. */
+const HOUR_MS = 3_600_000;
+const CLOCK_SUBSCRIBE = () => () => {};
+const CLOCK_CLIENT = () => Math.floor(Date.now() / HOUR_MS);
+const CLOCK_SERVER = () => null;
+
+/** Pure once the clock is handed in. */
+function timeAgo(iso: string, nowHour: number | null): string {
+  const abs = new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  if (nowHour == null) return abs;
   const d = new Date(iso).getTime();
-  const days = Math.floor((Date.now() - d) / 86400000);
+  const days = Math.floor((nowHour * HOUR_MS - d) / 86400000);
   if (days <= 0) return "today";
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return abs;
 }
 
 export default function GamesHubPage() {
@@ -87,6 +105,7 @@ export default function GamesHubPage() {
   const [last, setLast] = useState<Record<string, string>>({});
   const [plays, setPlays] = useState<Record<string, number>>({});
   const [tier, setTier] = useState<FamilyTier>("fic");
+  const nowHour = useSyncExternalStore(CLOCK_SUBSCRIBE, CLOCK_CLIENT, CLOCK_SERVER);
 
   useEffect(() => {
     async function load() {
@@ -210,7 +229,7 @@ export default function GamesHubPage() {
                           {bestScore}/10
                         </span>
                         <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
-                          Best · {timeAgo(last[g.gameKey])}
+                          Best · {timeAgo(last[g.gameKey], nowHour)}
                         </span>
                       </>
                     ) : (

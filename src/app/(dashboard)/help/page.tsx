@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
 import {
   Send,
   Bot,
@@ -39,6 +46,10 @@ import { SectionRule, TabRail, TextAction } from "@/components/f0/parts";
  * so the page is mode-correct; and both empty branches are designed FOUNDING
  * STATES rather than one grey sentence — "no tickets yet" is the state almost
  * every member is in, so it is the state worth designing.
+ *
+ * KAI'S MARK: the bot avatar uses the shared `.f0-kai-mark` (M1) rather than a
+ * local bg-kai-blue-soft/text-kai-blue pair. Kai blue is an IDENTITY colour
+ * reserved for Kai/AI by law, and one class is how it stays that way.
  *
  * THE SUPPORT ADDRESS: `support@cheatcode.com` is the ONLY support email in the
  * product. It is stated once, at the foot, as the last resort behind the bot and
@@ -82,16 +93,29 @@ function StatusChip({ status }: { status: TicketStatus }) {
   );
 }
 
-function timeAgo(iso: string): string {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
+/* The viewer's clock as an EXTERNAL STORE, bucketed to the hour. Ticket
+   timestamps are relative to the VIEWER's wall clock, which the server cannot
+   know, and a component may not read an impure function during render —
+   `timeAgo` called Date.now() and was invoked straight from JSX. The snapshot
+   must be stable between calls or React spins, hence the hour bucket. That does
+   cost the sub-hour steps ("just now", "12m ago"): a support thread is measured
+   in hours and days, and a stale "just now" that never advances is worse than an
+   honest "today". Server snapshot is null → the absolute date, always true. */
+const HOUR_MS = 3_600_000;
+const CLOCK_SUBSCRIBE = () => () => {};
+const CLOCK_CLIENT = () => Math.floor(Date.now() / HOUR_MS);
+const CLOCK_SERVER = () => null;
+
+/** Pure once the clock is handed in. */
+function timeAgo(iso: string, nowHour: number | null): string {
+  const abs = new Date(iso).toLocaleDateString();
+  if (nowHour == null) return abs;
+  const h = Math.floor((nowHour * HOUR_MS - new Date(iso).getTime()) / HOUR_MS);
+  if (h < 1) return "today";
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
+  return abs;
 }
 
 const fieldCls =
@@ -105,6 +129,7 @@ export default function HelpPage() {
   const supabase = useMemo(() => createClient(), []);
   const [userId, setUserId] = useState<string | null>(null);
   const [tab, setTab] = useState<"bot" | "team">("bot");
+  const nowHour = useSyncExternalStore(CLOCK_SUBSCRIBE, CLOCK_CLIENT, CLOCK_SERVER);
 
   // ── AI chat ────────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<ChatMsg[]>([GREETING]);
@@ -301,7 +326,7 @@ export default function HelpPage() {
                   className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                     m.role === "user"
                       ? "bg-sand text-soft"
-                      : "bg-kai-blue-soft text-kai-blue"
+                      : "f0-kai-mark"
                   }`}
                 >
                   {m.role === "user" ? (
@@ -323,7 +348,7 @@ export default function HelpPage() {
             ))}
             {sending && (
               <div className="flex gap-3">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-kai-blue-soft text-kai-blue">
+                <span className="f0-kai-mark mt-0.5 h-7 w-7 shrink-0">
                   <Bot className="h-4 w-4" />
                 </span>
                 <div className="rounded-2xl rounded-tl-sm f0-frame bg-card px-4 py-2.5 text-soft">
@@ -493,7 +518,7 @@ export default function HelpPage() {
                           </div>
                           <p className="mt-0.5 text-[12px] text-soft">
                             {CATEGORY_LABELS[t.category]} ·{" "}
-                            {timeAgo(t.last_message_at)}
+                            {timeAgo(t.last_message_at, nowHour)}
                           </p>
                         </div>
                       </button>

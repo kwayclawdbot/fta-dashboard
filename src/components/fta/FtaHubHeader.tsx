@@ -29,7 +29,9 @@ import { m } from "@/lib/motion";
  * TABS: three real destinations, so these are LINKS with aria-current, not a
  * radiogroup. They reuse the shared `.f0-seg-bar` geometry (a 3px bar on a
  * hairline rail) so the FTA rail and every other rail in the app are visibly
- * one mechanism.
+ * one mechanism. Three long labels overflow at 390px, so the track scrolls
+ * behind the shared `.f0-strip-fade` — the peek alone is too quiet to read as
+ * "this scrolls".
  */
 
 const TABS: { label: string; href: string }[] = [
@@ -84,23 +86,26 @@ export default function FtaHubHeader({
       </div>
 
       {/* The desk's three rooms. */}
-      <nav aria-label="FTA desk" className="mt-7 flex gap-7 border-b border-sand">
-        {TABS.map((t) => {
-          const active = pathname === t.href || pathname.startsWith(t.href + "/");
-          return (
-            <Link
-              key={t.href}
-              href={t.href}
-              aria-current={active ? "page" : undefined}
-              className={`f0-focus relative -mb-px shrink-0 whitespace-nowrap pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.1em] transition-colors ${
-                active ? "text-ink" : "text-soft hover:text-ink"
-              }`}
-            >
-              {t.label}
-              {active && <span className="f0-seg-bar metal-gold" aria-hidden />}
-            </Link>
-          );
-        })}
+      <nav aria-label="FTA desk" className="relative mt-7">
+        <div className="club2-track flex gap-7 overflow-x-auto border-b border-sand">
+          {TABS.map((t) => {
+            const active = pathname === t.href || pathname.startsWith(t.href + "/");
+            return (
+              <Link
+                key={t.href}
+                href={t.href}
+                aria-current={active ? "page" : undefined}
+                className={`f0-focus relative -mb-px shrink-0 whitespace-nowrap pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.1em] transition-colors ${
+                  active ? "text-ink" : "text-soft hover:text-ink"
+                }`}
+              >
+                {t.label}
+                {active && <span className="f0-seg-bar metal-gold" aria-hidden />}
+              </Link>
+            );
+          })}
+        </div>
+        <span className="f0-strip-fade" aria-hidden />
       </nav>
     </m.header>
   );

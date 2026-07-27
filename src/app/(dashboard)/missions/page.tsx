@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { awardXp, hasXpForRef } from "@/lib/xp";
 import { beltCelebrateFields } from "@/lib/belts";
 import MissionEmblem from "@/components/fic/MissionEmblem";
+import { Meter } from "@/components/f0/parts";
 import Celebrate, {
   useSoundOptIn,
   type CelebrateOptions,
@@ -54,9 +55,10 @@ import { deriveRegister, celebrateRegister } from "@/lib/register";
  * a spinner is indistinguishable from "nothing published", which is a state this
  * page genuinely has (§0.4).
  *
- * NO RINGS: Brand Detective's progress is a BAR and a numeral. A single number
- * on a radial reads worse and the plan explicitly calls mission progress out as
- * the place rings are tempting (§1.5).
+ * NO RINGS: Brand Detective's progress is a BAR and a numeral — the shared
+ * `f0 Meter`, whose fill is `bg-accent`, so it is mode-correct with no override.
+ * A single number on a radial reads worse and the plan explicitly calls mission
+ * progress out as the place rings are tempting (§1.5).
  *
  * XP IS UNTOUCHED: both award paths (the deferred Brand Detective auto-complete
  * and the self-reported completion) still insert into `mission_completions`,
@@ -482,20 +484,11 @@ export default function MissionsPage() {
                           Add companies →
                         </Link>
                       </div>
-                      <div
-                        className="h-1.5 overflow-hidden rounded-full bg-sand"
-                        role="progressbar"
-                        aria-valuenow={brandPct}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        <mm.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${brandPct}%` }}
-                          transition={{ duration: 0.7, ease: "easeOut" }}
-                          className="h-full rounded-full bg-accent"
-                        />
-                      </div>
+                      {/* Shared meter: same geometry, same accent fill and the
+                          same 700ms ease as every other progress bar in the app
+                          (Meter animates its width in CSS, so the hand-rolled
+                          framer wrapper bought nothing). */}
+                      <Meter pct={brandPct} />
                       <p className="mt-2 text-[13px] leading-relaxed text-soft">
                         Auto-completes when {BRAND_DETECTIVE_GOAL} companies are on the family
                         watchlist.

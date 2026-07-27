@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useFtaViewer } from "@/components/fta/useFtaViewer";
 import FtaHubHeader from "@/components/fta/FtaHubHeader";
 import LockedState from "@/components/dashboard/LockedState";
+import { MeasureStrip, Meter } from "@/components/f0/parts";
 
 /**
  * /fta/courses — the FTA Course Library, canvas v2.
@@ -24,6 +25,15 @@ import LockedState from "@/components/dashboard/LockedState";
  * the desk rule, the ftagold measures and the metal progress fills. Everything
  * else is the same vocabulary the rest of the app speaks, which is what makes the
  * metal register as premium rather than as a different product.
+ *
+ * SHARED PRIMITIVES (M1): the progress bars are `f0 Meter` and the measure row is
+ * `f0 MeasureStrip`, both hand-rolled here before M1 landed. Meter's fill is now
+ * `bg-accent`, which on an /fta route resolves through data-mode="fta" to the
+ * metallic stop — so the desk paints its OWN accent with no `metal-gold`
+ * override and no fork. MeasureStrip's `loading` variant replaces the bespoke
+ * skeleton: it keeps the columns and labels and shimmers only the numerals, so a
+ * mid-fetch strip never renders an em-dash and claims a number is absent when it
+ * has merely not arrived.
  *
  * WIRING UNTOUCHED: the FTA gate (`useFtaViewer`), the courses+lesson_progress
  * reads, and the deep link into the EXISTING lesson player
@@ -125,7 +135,10 @@ export default function FtaCoursesPage() {
       />
 
       {loading ? (
-        <FtaListSkeleton />
+        <>
+          <FtaMeasures cards={[]} loading />
+          <FtaListSkeleton />
+        </>
       ) : cards.length === 0 ? (
         /* FOUNDING STATE (§0.5) — a desk with nothing published on it yet.
            A stated absence, not a decorative empty card. */
@@ -189,19 +202,10 @@ export default function FtaCoursesPage() {
                         {/* Progress — a bar and a numeral. No ring: a single
                             number reads more legibly on a bar (plan §1.5). */}
                         <span className="mt-3 flex items-center gap-3">
-                          <span
-                            className="h-1.5 w-28 overflow-hidden rounded-full bg-sand"
-                            role="progressbar"
-                            aria-valuenow={pct}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label={`${course.title} progress`}
-                          >
-                            <span
-                              className="metal-gold block h-full rounded-full transition-[width] duration-700 ease-out"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </span>
+                          {/* Default fill: bg-accent → metallic on the FTA desk
+                              for free. barClassName is deliberately NOT used —
+                              it is a belt escape hatch, not a tint hook. */}
+                          <Meter pct={pct} className="w-28" />
                           <span className="font-mono text-[11px] font-semibold tabular-nums text-soft">
                             {done}/{total} lessons
                           </span>
@@ -235,36 +239,31 @@ export default function FtaCoursesPage() {
   );
 }
 
-/** The measure row — hairline-separated numerals on the paper, no tile grid. */
-function FtaMeasures({ cards }: { cards: { total: number; done: number }[] }) {
+/** The desk's measures — the shared strip, so the columns and the loading
+ *  behaviour match every other measure row in the app. */
+function FtaMeasures({
+  cards,
+  loading = false,
+}: {
+  cards: { total: number; done: number }[];
+  loading?: boolean;
+}) {
   const courses = cards.length;
   const totalLessons = cards.reduce((s, c) => s + c.total, 0);
   const doneLessons = cards.reduce((s, c) => s + c.done, 0);
   const completeCourses = cards.filter((c) => c.total > 0 && c.done >= c.total).length;
   const pct = totalLessons > 0 ? Math.round((doneLessons / totalLessons) * 100) : 0;
-  const ITEMS = [
-    { label: "Courses", value: String(courses) },
-    { label: "Lessons done", value: `${doneLessons}/${totalLessons}` },
-    { label: "Finished", value: `${completeCourses}/${courses}` },
-    { label: "Overall", value: `${pct}%` },
-  ];
   return (
-    <div className="mt-10 flex items-stretch">
-      {ITEMS.map((s, i) => (
-        <div
-          key={s.label}
-          className={`min-w-0 flex-1 ${
-            i > 0 ? "border-l border-sand/70 pl-3 sm:pl-5" : ""
-          } ${i < ITEMS.length - 1 ? "pr-3 sm:pr-5" : ""}`}
-        >
-          <p className="font-display text-[26px] font-extrabold tabular-nums leading-none text-ink sm:text-display-2">
-            {s.value}
-          </p>
-          <p className="mt-2 text-eyebrow font-display font-bold uppercase text-soft">
-            {s.label}
-          </p>
-        </div>
-      ))}
+    <div className="mt-10">
+      <MeasureStrip
+        loading={loading}
+        items={[
+          { label: "Courses", value: String(courses) },
+          { label: "Lessons done", value: `${doneLessons}/${totalLessons}` },
+          { label: "Finished", value: `${completeCourses}/${courses}` },
+          { label: "Overall", value: `${pct}%` },
+        ]}
+      />
     </div>
   );
 }
