@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import ModeManager from "@/components/ModeManager";
 import { Toaster } from "@/components/ui/Toast";
@@ -16,6 +17,10 @@ import type { Register } from "@/lib/register";
  */
 
 const SCALES: ClubScale[] = ["scale", "founding"];
+
+const SUBSCRIBE = () => () => {};
+const CLIENT_HOUR = () => Math.floor(Date.now() / 3_600_000);
+const SERVER_HOUR = () => null;
 const REGISTERS: Register[] = ["adult", "teen", "kid"];
 
 export default function PreviewShell({
@@ -30,9 +35,15 @@ export default function PreviewShell({
   /** live=true → fixtures OFF: fetch the real /api/club/* and show graceful fallback */
   live?: boolean;
 }) {
-  const challengeExpiresAt = challenge
-    ? new Date(Date.now() + 3 * 86_400_000).toISOString()
-    : null;
+  // Preview-only stand-in for an active pass. Read through the same hour-bucket
+  // external store ChallengeSlot uses, so this harness does not call an impure
+  // function during render either (and the fake expiry is stable per hour rather
+  // than moving on every re-render).
+  const hour = useSyncExternalStore(SUBSCRIBE, CLIENT_HOUR, SERVER_HOUR);
+  const challengeExpiresAt =
+    challenge && hour != null
+      ? new Date(hour * 3_600_000 + 3 * 86_400_000).toISOString()
+      : null;
   const qs = (over: {
     scale?: ClubScale;
     register?: Register;
