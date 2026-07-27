@@ -12,6 +12,7 @@ export default function TrueFalseStep({
   spec,
   register,
   soundOn,
+  xpNote,
   onResolve,
 }: StepComponentProps<Spec>) {
   const trueLabel = spec.trueLabel ?? "True";
@@ -32,6 +33,8 @@ export default function TrueFalseStep({
         layout="split"
         showLetters={false}
         reaskLabel="Read it once more, then decide."
+        ariaLabel="True or false"
+        footerNote={xpNote}
       />
     </div>
   );

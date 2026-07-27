@@ -19,6 +19,12 @@ import {
   TabRail,
   TextAction,
 } from "@/components/f0/parts";
+import LearnPath, {
+  LearnPathSkeleton,
+  PathUnitHead,
+  type PathNode,
+  type PathNodeKind,
+} from "@/components/learn/LearnPath";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LEARN — "Grow your edge". Route: /courses (the Learn nav slot).
@@ -67,6 +73,22 @@ interface MissionLine {
   done: boolean;
 }
 
+interface RawLesson {
+  id: string;
+  title: string;
+  sort_order: number;
+  is_free: boolean;
+  node_kind: string | null;
+}
+
+interface RawModule {
+  id: string;
+  title: string | null;
+  track: string | null;
+  sort_order: number;
+  lessons: RawLesson[] | null;
+}
+
 interface RawCourse {
   id: string;
   slug: string;
@@ -74,14 +96,18 @@ interface RawCourse {
   description: string | null;
   program: "fic" | "fta";
   sort_order: number;
-  modules:
-    | {
-        id: string;
-        track: string | null;
-        sort_order: number;
-        lessons: { id: string; title: string; sort_order: number; is_free: boolean }[] | null;
-      }[]
-    | null;
+  modules: RawModule[] | null;
+}
+
+/** The unit the member is standing in, drawn as the path (canvas App 20). */
+interface ActiveUnit {
+  courseSlug: string;
+  courseTitle: string;
+  unitTitle: string;
+  unitIndex: number;
+  unitCount: number;
+  done: number;
+  nodes: PathNode[];
 }
 
 interface LearnState {
@@ -89,6 +115,10 @@ interface LearnState {
   isKid: boolean;
   /** The single most-recent unfinished lesson — the Continue target. */
   pickup: (LessonRef & { courseTitle: string; pct: number; index: number; total: number }) | null;
+  /** The path strand for the unit that contains `pickup`. */
+  activeUnit: ActiveUnit | null;
+  /** The unit after the active one — drawn as the honest "what's next" line. */
+  nextUnit: { title: string; lessons: number } | null;
   paths: PathLine[];
   /** Free tier only: the fully-playable sampler. */
   sampler: LessonRef[];
@@ -99,10 +129,18 @@ const EMPTY: LearnState = {
   tier: "fic",
   isKid: false,
   pickup: null,
+  activeUnit: null,
+  nextUnit: null,
   paths: [],
   sampler: [],
   lockedLessonCount: 0,
 };
+
+const NODE_KINDS: PathNodeKind[] = ["lesson", "game", "challenge", "boss", "mission"];
+
+function toNodeKind(raw: unknown): PathNodeKind {
+  return NODE_KINDS.includes(raw as PathNodeKind) ? (raw as PathNodeKind) : "lesson";
+}
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "journey", label: "Journey" },
@@ -142,7 +180,7 @@ export default function LearnSurface() {
         supabase
           .from("courses")
           .select(
-            "id, slug, title, description, program, sort_order, modules(id, track, sort_order, lessons(id, title, sort_order, is_free))"
+            "id, slug, title, description, program, sort_order, modules(id, title, track, sort_order, lessons(id, title, sort_order, is_free, node_kind))"
           )
           .in("program", ["fic", "fta"])
           .eq("published", true)
@@ -165,6 +203,12 @@ export default function LearnSurface() {
       let pickup: LearnState["pickup"] = null;
       /** The path whose most recent completion is newest wins the Continue slot. */
       let pickupRank = Number.POSITIVE_INFINITY;
+      /** Ordered units per course slug — the strand's source, kept so the path
+       *  can be drawn for whichever course wins the Continue slot. */
+      const unitsBySlug = new Map<string, RawModule[]>();
+      const titleBySlug = new Map<string, string>();
+      /** Lessons a free family can see listed but not open. */
+      const gatedLessonIds = new Set<string>();
 
       for (const c of all) {
         // A kid never sees the FTA day-trading cohort above their own content.
@@ -181,6 +225,15 @@ export default function LearnSurface() {
           }
         }
         if (ordered.length === 0) continue;
+
+        unitsBySlug.set(
+          c.slug,
+          modules.map((m) => ({
+            ...m,
+            lessons: [...(m.lessons ?? [])].sort((a, b) => a.sort_order - b.sort_order),
+          }))
+        );
+        titleBySlug.set(c.slug, c.title);
 
         const moduleOfLesson = new Map<string, string>();
         for (const m of modules) for (const l of m.lessons ?? []) moduleOfLesson.set(l.id, m.id);
@@ -213,6 +266,7 @@ export default function LearnSurface() {
               });
             } else {
               lockedLessonCount += 1;
+              gatedLessonIds.add(l.id);
             }
           }
         }
@@ -268,7 +322,65 @@ export default function LearnSurface() {
         }
       }
 
-      setState({ tier, isKid, pickup, paths, sampler, lockedLessonCount });
+      /* ── The strand ──────────────────────────────────────────────────
+         The path is drawn for the unit that CONTAINS the pickup lesson —
+         the canvas's "Unit 2 · Markets 101" band plus its nodes. A member
+         at lesson 0 gets the first unit with node 1 marked current, which
+         is the real founding state, not an empty screen. */
+      let activeUnit: ActiveUnit | null = null;
+      let nextUnit: LearnState["nextUnit"] = null;
+      if (pickup) {
+        const units = unitsBySlug.get(pickup.courseSlug) ?? [];
+        const unitIdx = units.findIndex((m) =>
+          (m.lessons ?? []).some((l) => l.id === pickup!.lessonId)
+        );
+        const unit = unitIdx >= 0 ? units[unitIdx] : null;
+        if (unit) {
+          const lessons = unit.lessons ?? [];
+          activeUnit = {
+            courseSlug: pickup.courseSlug,
+            courseTitle: titleBySlug.get(pickup.courseSlug) ?? pickup.courseTitle,
+            unitTitle: unit.title ?? `Unit ${unitIdx + 1}`,
+            unitIndex: unitIdx + 1,
+            unitCount: units.length,
+            done: lessons.filter((l) => completed.has(l.id)).length,
+            nodes: lessons.map((l) => {
+              const gated = gatedLessonIds.has(l.id);
+              return {
+                id: l.id,
+                title: l.title,
+                href: gated ? null : `/courses/${pickup!.courseSlug}/${unit.id}/${l.id}`,
+                kind: toNodeKind(l.node_kind),
+                state: completed.has(l.id)
+                  ? "done"
+                  : gated
+                    ? "locked"
+                    : l.id === pickup!.lessonId
+                      ? "current"
+                      : "open",
+              } satisfies PathNode;
+            }),
+          };
+          const after = units[unitIdx + 1];
+          if (after) {
+            nextUnit = {
+              title: after.title ?? `Unit ${unitIdx + 2}`,
+              lessons: (after.lessons ?? []).length,
+            };
+          }
+        }
+      }
+
+      setState({
+        tier,
+        isKid,
+        pickup,
+        activeUnit,
+        nextUnit,
+        paths,
+        sampler,
+        lockedLessonCount,
+      });
       setLoading(false);
     } catch {
       setFailed(true);
@@ -331,7 +443,7 @@ export default function LearnSurface() {
 /* ── JOURNEY ─────────────────────────────────────────────────────────────── */
 
 function JourneyTab({ state }: { state: LearnState }) {
-  const { pickup, paths, tier, sampler, lockedLessonCount } = state;
+  const { pickup, paths, tier, sampler, lockedLessonCount, activeUnit, nextUnit } = state;
   const started = pickup ? pickup.index > 1 : false;
 
   return (
@@ -379,6 +491,59 @@ function JourneyTab({ state }: { state: LearnState }) {
         />
       )}
 
+      {/* ── THE PATH ─────────────────────────────────────────────────────
+          The unit you are standing in, drawn as a strand. Nodes are real
+          lessons; the walked strand is your actual completion. A single
+          untouched lesson still draws — node 1, marked current — because a
+          learner at zero is the real state, not an empty screen. */}
+      {activeUnit && activeUnit.nodes.length > 0 && (
+        <section>
+          <PathUnitHead
+            index={activeUnit.unitIndex}
+            title={activeUnit.unitTitle}
+            done={activeUnit.done}
+            total={activeUnit.nodes.length}
+            eyebrow={activeUnit.courseTitle}
+          />
+          <LearnPath
+            nodes={activeUnit.nodes}
+            ariaLabel={`${activeUnit.unitTitle} lessons`}
+            className="mt-6"
+          />
+
+          {nextUnit ? (
+            <div className="f0-rule-top flex items-baseline gap-4 pt-4">
+              <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
+                {String(activeUnit.unitIndex + 1).padStart(2, "0")}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-eyebrow font-display font-bold uppercase text-soft">
+                  Up next
+                </span>
+                <span className="block font-display text-[15px] font-bold leading-snug text-soft">
+                  {nextUnit.title}
+                </span>
+              </span>
+              <span className="shrink-0 font-mono text-[12px] tabular-nums text-soft">
+                {nextUnit.lessons} lesson{nextUnit.lessons === 1 ? "" : "s"}
+              </span>
+            </div>
+          ) : (
+            <div className="f0-rule-top pt-4">
+              <p className="text-[13px] leading-relaxed text-soft">
+                Last unit on this path — finish it and the whole path is yours.
+              </p>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <TextAction href={`/courses/${activeUnit.courseSlug}`}>
+              See the whole path <ArrowRight className="h-3.5 w-3.5" />
+            </TextAction>
+          </div>
+        </section>
+      )}
+
       {/* ── FREE SAMPLER ─────────────────────────────────────────────────── */}
       {tier === "free" && sampler.length > 0 && (
         <section className="space-y-4">
@@ -400,7 +565,7 @@ function JourneyTab({ state }: { state: LearnState }) {
               you join the Club.{" "}
               <Link
                 href="/upgrade"
-                className="font-display font-bold text-volt-700 dark:text-volt-400"
+                className="font-display font-bold text-gold-700"
               >
                 See the plans
               </Link>
@@ -642,7 +807,7 @@ function ClassRow({ event }: { event: LiveEventCardData }) {
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-eyebrow font-display font-bold uppercase text-soft">
           {isLive && (
-            <span className="inline-flex items-center gap-1.5 text-volt-700 dark:text-volt-400">
+            <span className="inline-flex items-center gap-1.5 text-gold-700">
               <span className="h-1.5 w-1.5 rounded-full bg-volt-500 motion-safe:animate-pulse" />
               {event.status === "live" ? "Live now" : "Starting soon"}
             </span>
@@ -685,8 +850,8 @@ function ClassRow({ event }: { event: LiveEventCardData }) {
             aria-pressed={interested}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-display text-[13px] font-bold transition-colors disabled:opacity-60 ${
               interested
-                ? "border-volt-500 text-volt-700 dark:text-volt-400"
-                : "border-sand text-soft hover:border-volt-500 hover:text-volt-700 dark:hover:text-volt-400"
+                ? "border-volt-500 text-gold-700"
+                : "border-sand text-soft hover:border-volt-500 hover:text-gold-700"
             }`}
           >
             {interested ? (
@@ -855,7 +1020,10 @@ function LearnSkeleton() {
       </div>
       <div className="h-10 rounded bg-sand/40" />
       <div className="h-56 rounded-[1.5rem] bg-sand/40" />
-      <div className="h-32 rounded bg-sand/30" />
+      {/* The strand's silhouette — loading must not be mistaken for an empty
+          path (plan §0.4). */}
+      <div className="h-4 w-40 rounded bg-sand/40" />
+      <LearnPathSkeleton count={3} />
     </div>
   );
 }

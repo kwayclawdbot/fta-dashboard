@@ -2,27 +2,40 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { m as mm, AnimatePresence } from "@/lib/motion";
-import { ChevronDown, Play, Check, Lock, ArrowLeft, ArrowRight } from "lucide-react";
+import { m as mm } from "@/lib/motion";
+import { Check, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Ledger, Meter, EmptyLine, TextAction } from "@/components/f0/parts";
+import { Meter, EmptyLine, TextAction } from "@/components/f0/parts";
+import LearnPath, {
+  LearnPathSkeleton,
+  PathUnitHead,
+  type PathNode,
+  type PathNodeKind,
+} from "@/components/learn/LearnPath";
 
 /* ══════════════════════════════════════════════════════════════════════════
    COURSE DETAIL — /courses/[slug]
 
-   The path, opened. Composition follows the F0 vocabulary the Learn index was
-   rebuilt on: a masthead, ONE obsidian hero field (the continue/start object),
-   then the syllabus as hairline-ruled module sections. No card containers, no
-   equal-column grids — a module is a rule + a ledger, a lesson is a row.
+   The path, opened — now drawn as the path (canvas App 20). Composition follows
+   the F0 vocabulary the Learn index was rebuilt on: a masthead, ONE obsidian
+   hero field (the continue/start object), then the syllabus as a winding strand
+   of nodes grouped by hairline-ruled unit heads. No card containers, no
+   equal-column grids.
+
+   The accordion this replaces hid the shape of the program behind a chevron:
+   you could see "Module 2, 3/6" but never how far in you were. The strand
+   answers that in one glance and still opens the exact same lesson URLs.
 
    COLOUR LAW: volt orange (the themed `gold-*` ramp) = brand + ACTION only, so
-   it marks the CTA, the meter and the "next up" affordance and nothing else.
-   Completion is ink + a check, never green: green/red belong to price.
+   it marks the CTA, the meter, the walked strand and the node fills.
+   Completion is the accent fill + a check, never green: green/red belong to
+   price.
 
    BEHAVIOUR IS UNCHANGED from the previous viewer — same Supabase reads
    (courses → modules → lessons → lesson_progress), same drip lock rule, same
-   mock-catalog fallback, same lesson hrefs.
+   mock-catalog fallback, same lesson hrefs. No progress or XP write lives on
+   this route; it only reads `lesson_progress`.
    ══════════════════════════════════════════════════════════════════════════ */
 
 interface Lesson {
@@ -31,6 +44,10 @@ interface Lesson {
   duration: string;
   status: "completed" | "available" | "locked";
   dripDays?: number;
+  /** lessons.node_kind (migration 162) — drives the node glyph on the path.
+   *  Absent on the mock catalog, which has no node kinds → falls back to
+   *  "lesson", exactly the column's own default. */
+  kind?: PathNodeKind;
 }
 
 interface Module {
@@ -162,17 +179,10 @@ function formatDuration(sec: number | null) {
   return `${m} min`;
 }
 
-/** Lesson-state mark. Ink check = done · volt play = open · soft lock = drip. */
-function StatusMark({ status }: { status: Lesson["status"] }) {
-  if (status === "completed") {
-    return <Check className="h-4 w-4 shrink-0 self-center text-ink" aria-hidden />;
-  }
-  if (status === "locked") {
-    return <Lock className="h-3.5 w-3.5 shrink-0 self-center text-soft" aria-hidden />;
-  }
-  return (
-    <Play className="h-3.5 w-3.5 shrink-0 self-center text-gold-700" aria-hidden />
-  );
+const NODE_KINDS: PathNodeKind[] = ["lesson", "game", "challenge", "boss", "mission"];
+
+function toNodeKind(raw: unknown): PathNodeKind {
+  return NODE_KINDS.includes(raw as PathNodeKind) ? (raw as PathNodeKind) : "lesson";
 }
 
 export default function CourseDetailPage() {
@@ -237,7 +247,7 @@ export default function CourseDetailPage() {
           const { data: lessons } = await supabase
             .from("lessons")
             .select(
-              "id, title, video_duration_sec, drip_week, sort_order"
+              "id, title, video_duration_sec, drip_week, sort_order, node_kind"
             )
             .eq("module_id", mod.id)
             .order("sort_order");
@@ -249,6 +259,7 @@ export default function CourseDetailPage() {
               video_duration_sec: number | null;
               drip_week: number | null;
               sort_order: number;
+              node_kind: string | null;
             }) => {
               // Determine status
               let status: "completed" | "available" | "locked" = "available";
@@ -266,6 +277,7 @@ export default function CourseDetailPage() {
                 duration: formatDuration(l.video_duration_sec),
                 status,
                 dripDays: l.drip_week ? l.drip_week * 7 : undefined,
+                kind: toNodeKind(l.node_kind),
               };
             }
           );
@@ -312,26 +324,6 @@ export default function CourseDetailPage() {
     m.lessons.map((l) => ({ ...l, moduleId: m.id }))
   );
   const nextUp = allLessons.find((l) => l.status === "available");
-
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(
-    new Set(course.modules.length > 0 ? [course.modules[0].id] : [])
-  );
-
-  // Update expanded when course loads
-  useEffect(() => {
-    if (course.modules.length > 0) {
-      setExpandedModules(new Set([course.modules[0].id]));
-    }
-  }, [course]);
-
-  function toggleModule(id: string) {
-    setExpandedModules((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   if (loading) return <CourseSkeleton />;
 
@@ -418,17 +410,38 @@ export default function CourseDetailPage() {
         </div>
       )}
 
-      {/* ── Syllabus ─────────────────────────────────────────────────── */}
+      {/* ── The path ─────────────────────────────────────────────────────
+          One strand per unit. Every node is a real lesson row and opens the
+          same URL the ledger opened; locked nodes stay drawn (a drip lock is
+          information, not an absence). */}
       {course.modules.length > 0 && (
-        <div>
+        <div className="space-y-10">
           {course.modules.map((module, mi) => {
-            const isExpanded = expandedModules.has(module.id);
-            const moduleCompleted = module.lessons.every(
-              (l) => l.status === "completed"
-            );
             const moduleProgress = module.lessons.filter(
               (l) => l.status === "completed"
             ).length;
+
+            const nodes: PathNode[] = module.lessons.map((lesson) => ({
+              id: lesson.id,
+              title: lesson.title,
+              href:
+                lesson.status === "locked"
+                  ? null
+                  : `/courses/${slug}/${module.id}/${lesson.id}`,
+              kind: lesson.kind ?? "lesson",
+              state:
+                lesson.status === "completed"
+                  ? "done"
+                  : lesson.status === "locked"
+                    ? "locked"
+                    : nextUp && lesson.id === nextUp.id
+                      ? "current"
+                      : "open",
+              meta:
+                lesson.status === "locked" && lesson.dripDays
+                  ? `Unlocks in ${lesson.dripDays} days`
+                  : lesson.duration || undefined,
+            }));
 
             return (
               <mm.section
@@ -436,104 +449,24 @@ export default function CourseDetailPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: mi * 0.04, duration: 0.28 }}
-                className="f0-rule-top"
               >
-                {/* Module header — a line, not a card header */}
-                <button
-                  type="button"
-                  onClick={() => toggleModule(module.id)}
-                  aria-expanded={isExpanded}
-                  className="flex w-full items-center gap-4 py-4 text-left transition-colors"
-                >
-                  <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
-                    {String(mi + 1).padStart(2, "0")}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-display text-[16px] font-bold leading-snug text-ink">
-                      {module.title}
-                    </span>
-                    <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[12px] tabular-nums text-soft">
-                      {moduleCompleted && <Check className="h-3.5 w-3.5" />}
-                      {moduleProgress}/{module.lessons.length} lessons
-                    </span>
-                  </span>
-                  <mm.span
-                    animate={{ rotate: isExpanded ? 180 : 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="shrink-0"
-                  >
-                    <ChevronDown className="h-4 w-4 text-soft" />
-                  </mm.span>
-                </button>
-
-                {/* Lessons */}
-                <AnimatePresence initial={false}>
-                  {isExpanded && (
-                    <mm.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <Ledger className="pb-3 pl-8">
-                        {module.lessons.map((lesson) => {
-                          const locked = lesson.status === "locked";
-
-                          const body = (
-                            <>
-                              <StatusMark status={lesson.status} />
-                              <span className="min-w-0 flex-1">
-                                <span
-                                  className={`block text-[15px] leading-snug ${
-                                    lesson.status === "completed"
-                                      ? "text-soft"
-                                      : locked
-                                        ? "text-soft"
-                                        : "font-display font-bold text-ink"
-                                  }`}
-                                >
-                                  {lesson.title}
-                                </span>
-                                {locked && lesson.dripDays && (
-                                  <span className="mt-0.5 block font-mono text-[12px] text-soft">
-                                    Unlocks in {lesson.dripDays} days
-                                  </span>
-                                )}
-                              </span>
-                              {lesson.duration && (
-                                <span className="shrink-0 self-center font-mono text-[12px] tabular-nums text-soft">
-                                  {lesson.duration}
-                                </span>
-                              )}
-                            </>
-                          );
-
-                          if (locked) {
-                            return (
-                              <div
-                                key={lesson.id}
-                                className="f0-ledger-row opacity-60"
-                              >
-                                {body}
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <Link
-                              key={lesson.id}
-                              href={`/courses/${slug}/${module.id}/${lesson.id}`}
-                              className="f0-ledger-row group"
-                            >
-                              {body}
-                            </Link>
-                          );
-                        })}
-                      </Ledger>
-                    </mm.div>
-                  )}
-                </AnimatePresence>
+                <PathUnitHead
+                  index={mi + 1}
+                  title={module.title}
+                  done={moduleProgress}
+                  total={module.lessons.length}
+                />
+                {module.lessons.length === 0 ? (
+                  <p className="pt-4 text-[13px] text-soft">
+                    No lessons published in this unit yet.
+                  </p>
+                ) : (
+                  <LearnPath
+                    nodes={nodes}
+                    ariaLabel={`${module.title} lessons`}
+                    className="mt-6"
+                  />
+                )}
               </mm.section>
             );
           })}
@@ -565,11 +498,9 @@ function CourseSkeleton() {
         <div className="h-4 w-full max-w-md rounded bg-sand/40" />
       </div>
       <div className="h-48 rounded-[1.5rem] bg-sand/40" />
-      <div className="space-y-4">
-        <div className="h-12 rounded bg-sand/30" />
-        <div className="h-12 rounded bg-sand/30" />
-        <div className="h-12 rounded bg-sand/30" />
-      </div>
+      {/* Loading is the STRAND's silhouette, not an empty path (plan §0.4). */}
+      <div className="h-4 w-40 rounded bg-sand/40" />
+      <LearnPathSkeleton count={4} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import type { Register } from "@/lib/register";
 import type { StepResult } from "@/lib/learn/schema";
 import { playCue } from "@/lib/learn/feedback";
 import {
+  ChoiceGroup,
   FeedbackNote,
   GuideLine,
   OptionButton,
@@ -40,6 +41,8 @@ export default function ChoiceCore({
   layout = "list",
   showLetters = true,
   reaskLabel = "Let's try that again.",
+  ariaLabel = "Answer choices",
+  footerNote,
 }: {
   options: ChoiceOption[];
   correctIndex: number;
@@ -51,6 +54,10 @@ export default function ChoiceCore({
   layout?: "list" | "split";
   showLetters?: boolean;
   reaskLabel?: string;
+  ariaLabel?: string;
+  /** Quiet line beside Check (the canvas's "+10 XP"). Callers must only pass
+   *  XP that will actually be awarded — see LessonEngine's xpNote. */
+  footerNote?: string;
 }) {
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("first");
@@ -115,14 +122,21 @@ export default function ChoiceCore({
     setPhase("reask");
   }
 
+  // The roving tab stop: the chosen answer, or the first one when nothing is
+  // chosen — an untouched radiogroup must still be reachable by keyboard.
+  const focusPos = Math.max(
+    0,
+    activeOrder.findIndex((optIdx) => optIdx === selected)
+  );
+
   return (
     <div>
-      <div
-        className={
-          layout === "split"
-            ? "grid grid-cols-1 gap-3 sm:grid-cols-2"
-            : "flex flex-col gap-2.5"
-        }
+      <ChoiceGroup
+        ariaLabel={ariaLabel}
+        layout={layout}
+        count={activeOrder.length}
+        disabled={locked}
+        onSelect={(pos) => !locked && setSelected(activeOrder[pos])}
       >
         {activeOrder.map((optIdx, pos) => (
           <OptionButton
@@ -131,10 +145,11 @@ export default function ChoiceCore({
             letter={showLetters ? String.fromCharCode(65 + pos) : undefined}
             state={stateFor(optIdx)}
             disabled={locked}
+            tabIndex={pos === focusPos ? 0 : -1}
             onClick={() => !locked && setSelected(optIdx)}
           />
         ))}
-      </div>
+      </ChoiceGroup>
 
       <AnimatePresence mode="wait">
         {phase === "first" || phase === "reask" ? (
@@ -144,8 +159,13 @@ export default function ChoiceCore({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: EASE_OUT }}
-            className="mt-5 flex justify-end"
+            className="mt-5 flex items-center justify-end gap-4"
           >
+            {footerNote && (
+              <span className="mr-auto font-mono text-[11px] tabular-nums text-gold-700">
+                {footerNote}
+              </span>
+            )}
             <PrimaryButton
               onClick={check}
               disabled={selected === null}

@@ -20,6 +20,7 @@ import {
   completeLesson,
   recordQuizAttempt,
 } from "@/lib/learn/engine-io";
+import { hasXpForRef } from "@/lib/xp";
 import { useSoundOptIn } from "@/components/fic/Celebrate";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
 import Burst from "@/components/games/Burst";
@@ -82,6 +83,10 @@ export default function LessonEngine({
   });
   const [celebrateQueue, setCelebrateQueue] = useState<CelebrateOptions[]>([]);
   const [winBurst, setWinBurst] = useState(0);
+  // Has this lesson's XP already been banked? READ ONLY — it decides whether we
+  // are allowed to print "+N XP", nothing else. The award itself is still
+  // de-duped inside completeLesson(); this never gates a write.
+  const [xpBanked, setXpBanked] = useState(false);
 
   // Score accumulator across scored steps (first-try correctness).
   const scored = useRef<{ total: number; correct: number }>({
@@ -107,6 +112,8 @@ export default function LessonEngine({
         );
         // A finished row (>= total) means a prior completion — replay from 0.
         if (alive) setStepIndex(saved >= total ? 0 : Math.max(0, saved));
+        const banked = await hasXpForRef(supabase, userId, "lesson", lessonId);
+        if (alive) setXpBanked(banked);
       }
       if (alive) setHydrated(true);
     })();
@@ -310,6 +317,14 @@ export default function LessonEngine({
   const StepComp = STEP_REGISTRY[spec.type];
   const pct = Math.round(((stepIndex + 1) / total) * 100);
 
+  // The canvas prints "+10 XP" beside Check on every micro-lesson question. Our
+  // XP is per-lesson and de-duped by ref, so it is shown ONCE — on the step that
+  // actually banks it — and never on a replay of a lesson already paid out.
+  const xpNote =
+    !xpBanked && userId && stepIndex === total - 1 && lesson.xp > 0
+      ? `+${lesson.xp} XP`
+      : undefined;
+
   return (
     <EngineProvider value={{ supabase, userId, familyId }}>
       <div className="mx-auto max-w-2xl">
@@ -376,6 +391,7 @@ export default function LessonEngine({
                   spec={spec}
                   register={register}
                   soundOn={soundOn}
+                  xpNote={xpNote}
                   onResolve={handleResolve}
                 />
               ) : (

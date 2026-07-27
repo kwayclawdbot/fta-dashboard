@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { m, useReducedMotion } from "@/lib/motion";
 import { Check, X, ArrowRight, Sparkles } from "lucide-react";
 import type { Register } from "@/lib/register";
@@ -26,20 +27,106 @@ import type { Register } from "@/lib/register";
 // Strong ease-out (easing.dev) — the built-in CSS easings are too weak.
 export const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-/** Big question / prompt headline for a step. */
+/** Big question / prompt headline for a step.
+ *
+ *  `mark` annotates ONE word or phrase inside a string headline with the drawn
+ *  circle (f0-circle-mark) — the canvas's handwritten lasso, done with the
+ *  system's own marker instead of a script font we do not load. It is ignored
+ *  unless the headline is a plain string containing that exact phrase. */
 export function StepPrompt({
   children,
   sub,
+  mark,
 }: {
   children: React.ReactNode;
   sub?: string;
+  mark?: string;
 }) {
+  let head: React.ReactNode = children;
+  if (mark && typeof children === "string") {
+    const at = children.indexOf(mark);
+    if (at >= 0) {
+      head = (
+        <>
+          {children.slice(0, at)}
+          <span className="f0-circle-mark">{mark}</span>
+          {children.slice(at + mark.length)}
+        </>
+      );
+    }
+  }
   return (
     <div className="mb-6">
       <h2 className="max-w-[34ch] font-display text-display-3 font-extrabold text-ink">
-        {children}
+        {head}
       </h2>
       {sub && <p className="mt-2.5 text-[14px] leading-snug text-soft">{sub}</p>}
+    </div>
+  );
+}
+
+/**
+ * The answer group. A "pick one of N" form control, so it carries the same
+ * semantics the canvas-v2 foundation settled on for SegmentedRail:
+ * role=radiogroup, ONE tab stop, arrows move within it. The rail itself is the
+ * wrong shape for four sentence-length answers, but the keyboard model must not
+ * fork — a member who learns arrows on the stance control should not meet a
+ * different model on a lesson.
+ *
+ * `onSelect` receives the POSITION in the rendered order, which is not the
+ * option index once the mastery loop reshuffles for a re-ask; the caller maps.
+ */
+export function ChoiceGroup({
+  ariaLabel,
+  count,
+  onSelect,
+  disabled = false,
+  layout = "list",
+  className = "",
+  children,
+}: {
+  ariaLabel: string;
+  count: number;
+  onSelect: (position: number) => void;
+  disabled?: boolean;
+  layout?: "list" | "split";
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  function move(delta: number) {
+    if (disabled || count === 0) return;
+    const btns = Array.from(
+      ref.current?.querySelectorAll<HTMLButtonElement>("[data-choice]") ?? []
+    );
+    const active = btns.findIndex((b) => b === document.activeElement);
+    const next = ((active >= 0 ? active : 0) + delta + count) % count;
+    onSelect(next);
+    btns[next]?.focus();
+  }
+
+  return (
+    <div
+      ref={ref}
+      role="radiogroup"
+      aria-label={ariaLabel}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          move(1);
+        } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          move(-1);
+        }
+      }}
+      className={`${
+        layout === "split"
+          ? "grid grid-cols-1 gap-3 sm:grid-cols-2"
+          : "flex flex-col gap-2.5"
+      } ${className}`}
+    >
+      {children}
     </div>
   );
 }
@@ -159,42 +246,54 @@ export function OptionButton({
   state,
   onClick,
   disabled,
+  tabIndex,
 }: {
   label: string;
   letter?: string;
   state: OptionState;
   onClick: () => void;
   disabled?: boolean;
+  /** Roving tab stop when inside a <ChoiceGroup/>. */
+  tabIndex?: number;
 }) {
+  // f0-chip carries the structure (hairline, radius, transition) and f0-chip-on
+  // is the selected field — the foundation's own selection chip, so a lesson
+  // answer and a stance chip are the SAME object at different sizes. Choosing
+  // and being right are told apart by the mark and by weight, never by the
+  // price ramp: green on a right answer would put price colour on a quiz.
   const styles: Record<OptionState, string> = {
-    idle: "border-sand bg-card text-ink hover:border-gold-500",
-    selected: "border-gold-500 bg-gold-400/10 text-ink",
-    correct: "border-ink bg-ink/[0.06] text-ink",
-    wrong: "border-sand bg-transparent text-soft",
-    reveal: "border-ink bg-ink/[0.06] text-ink ring-1 ring-ink/20",
+    idle: "text-ink",
+    selected: "f0-chip-on",
+    correct: "f0-chip-on",
+    wrong: "text-soft opacity-70",
+    reveal: "f0-chip-on",
   };
-  const quiet = state === "idle" || state === "selected";
+  const on = state === "selected" || state === "correct" || state === "reveal";
   return (
     <button
+      data-choice
+      type="button"
+      role="radio"
+      aria-checked={on}
+      tabIndex={tabIndex}
       onClick={onClick}
       disabled={disabled}
-      aria-pressed={state === "selected"}
-      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-[15px] transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.99] disabled:cursor-default ${styles[state]}`}
+      className={`f0-chip f0-press f0-focus w-full gap-3 px-4 py-3.5 text-left text-[15px] disabled:cursor-default ${styles[state]}`}
     >
       {letter && (
         <span
-          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md font-display text-xs font-bold ${
-            quiet ? "bg-sand text-soft" : "bg-ink/10 text-ink"
+          className={`w-4 shrink-0 self-start pt-0.5 text-center font-mono text-[11px] font-semibold ${
+            on ? "" : "text-soft"
           }`}
         >
           {letter}
         </span>
       )}
-      <span className="min-w-0 flex-1">{label}</span>
+      <span className={`min-w-0 flex-1 ${on ? "font-semibold" : ""}`}>{label}</span>
       {state === "correct" || state === "reveal" ? (
-        <Check className="h-4 w-4 shrink-0 text-ink" />
+        <Check className="h-4 w-4 shrink-0 self-center" strokeWidth={2.5} />
       ) : state === "wrong" ? (
-        <X className="h-4 w-4 shrink-0 text-soft" />
+        <X className="h-4 w-4 shrink-0 self-center" />
       ) : null}
     </button>
   );

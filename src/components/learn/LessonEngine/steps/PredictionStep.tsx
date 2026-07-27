@@ -8,7 +8,14 @@ import type {
   StepComponentProps,
 } from "@/lib/learn/schema";
 import { playCue } from "@/lib/learn/feedback";
-import { OptionButton, PrimaryButton, StepPrompt, GuideLine, EASE_OUT } from "../ui";
+import {
+  ChoiceGroup,
+  OptionButton,
+  PrimaryButton,
+  StepPrompt,
+  GuideLine,
+  EASE_OUT,
+} from "../ui";
 
 /**
  * Prediction → reveal. The member commits to a call, THEN sees what actually
@@ -40,11 +47,21 @@ export default function PredictionStep({
         {spec.question}
       </StepPrompt>
 
-      <div className="flex flex-col gap-2.5">
-        {spec.options.map((o) => (
+      <ChoiceGroup
+        ariaLabel="Your call"
+        count={spec.options.length}
+        disabled={revealed}
+        onSelect={(pos) => !revealed && setPicked(spec.options[pos].value)}
+      >
+        {spec.options.map((o, i) => (
           <OptionButton
             key={o.value}
             label={o.label}
+            tabIndex={
+              (picked === null ? 0 : spec.options.findIndex((x) => x.value === picked)) === i
+                ? 0
+                : -1
+            }
             state={
               revealed
                 ? o.value === spec.outcomeValue
@@ -60,7 +77,7 @@ export default function PredictionStep({
             onClick={() => !revealed && setPicked(o.value)}
           />
         ))}
-      </div>
+      </ChoiceGroup>
 
       <AnimatePresence mode="wait">
         {!revealed ? (

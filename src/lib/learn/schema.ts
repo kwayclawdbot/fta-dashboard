@@ -38,10 +38,47 @@ export interface ExplainerStep extends BaseStep {
   figure?: { kind: "stat" | "quote"; value: string; caption?: string };
 }
 
-/** Multiple choice (QuizPanel restyle, single question). */
+/* ── Scene ──────────────────────────────────────────────────────────────
+   The micro-lesson figure (canvas App 21): the tape that sets up the
+   question — "the company beat earnings but the stock dropped 8%".
+
+   AUTHORED, NOT LIVE. These are hand-written teaching shapes, never a real
+   quote feed, so a lesson reads the same in five years. `points` are
+   normalised 0–1 heights in time order; the leg colours are DERIVED from
+   those points, not declared, so the drawing can never contradict itself.
+
+   COLOUR: the two legs are genuine price, so they wear text-price-up /
+   text-price-down. The event marker is the accent (it is the annotation,
+   not the price). Nothing here is a directive verdict. */
+export interface LessonSceneSpec {
+  kind: "price_event";
+  /** Mono caption above the figure, e.g. "The tape around the print". */
+  caption?: string;
+  /** Normalised 0–1 heights, in time order. Minimum two. */
+  points: number[];
+  /** Index in `points` where the event landed (the pivot the legs split on). */
+  eventIndex: number;
+  /** Short mono tag at the pivot, e.g. "EPS BEAT". */
+  eventLabel?: string;
+  /** Short mono tag at the last point, e.g. "−8%". */
+  endLabel?: string;
+}
+
+/** Multiple choice (QuizPanel restyle, single question).
+ *
+ *  THIS IS ALSO THE MICRO-LESSON FORMAT (canvas App 21). A lesson whose
+ *  `steps` array holds a single `multiple_choice` step with a `scene` IS a
+ *  micro-lesson: one framed question, an authored figure, four choices, one
+ *  Check. It runs through <LessonEngine> like any other lesson, which means
+ *  it writes the SAME lesson_progress / quiz_attempts / xp_events intents —
+ *  there is deliberately no second XP path for micro-lessons. */
 export interface MultipleChoiceStep extends BaseStep {
   type: "multiple_choice";
   question: string;
+  /** One word or phrase inside `question` to annotate with the drawn mark. */
+  framing?: string;
+  /** Optional authored figure drawn above the choices. */
+  scene?: LessonSceneSpec;
   options: string[];
   correctIndex: number;
   /** Shown after a wrong pick, before the mastery-loop re-ask. */
@@ -142,6 +179,10 @@ export interface StepComponentProps<T extends StepSpec = StepSpec> {
   register: Register;
   /** Whether the viewer opted into kid sound (from Celebrate's opt-in). */
   soundOn: boolean;
+  /** Quiet "+N XP" line a step may show beside its action, supplied by the
+   *  engine. It is ABSENT once the lesson's XP has already been banked, so the
+   *  number is never a promise the de-duped award will not keep. */
+  xpNote?: string;
   /** Call once, when the step is fully resolved and the engine may advance. */
   onResolve: (result: StepResult) => void;
 }
