@@ -296,7 +296,7 @@ export default function FamilyOverviewPage() {
   if (error || !overview) {
     return (
       <div className="max-w-5xl mx-auto py-16 text-center">
-        <p className="text-midnight-400 text-sm font-body">
+        <p className="text-soft text-sm font-body">
           {error || "No data available"}
         </p>
       </div>
@@ -320,12 +320,12 @@ export default function FamilyOverviewPage() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-2xl font-bold text-midnight-50 truncate">
+                <h2 className="font-display text-2xl font-bold text-ink truncate">
                   {overview.family_name}
                 </h2>
                 <TierBadge tier={overview.tier} size="md" />
               </div>
-              <p className="text-midnight-400 text-sm font-body">
+              <p className="text-soft text-sm font-body">
                 {overview.members.length}{" "}
                 {overview.members.length === 1 ? "member" : "members"}
               </p>
@@ -363,7 +363,7 @@ export default function FamilyOverviewPage() {
           className="mb-10"
         >
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider">
+            <h3 className="font-display text-sm font-semibold text-ink uppercase tracking-wider">
               Weekly Family Research
             </h3>
             <Link
@@ -382,11 +382,11 @@ export default function FamilyOverviewPage() {
                 <span className="inline-block text-[10px] font-display font-bold uppercase tracking-wider text-gold-500 mb-1">
                   Teaching Moment
                 </span>
-                <h4 className="font-display text-lg font-bold text-midnight-50 leading-snug">
+                <h4 className="font-display text-lg font-bold text-ink leading-snug">
                   {weekly.class_title}
                 </h4>
                 {weekly.teaching && (
-                  <p className="text-sm text-midnight-300 font-body leading-relaxed mt-1.5 line-clamp-3">
+                  <p className="text-sm text-soft font-body leading-relaxed mt-1.5 line-clamp-3">
                     {weekly.teaching}
                   </p>
                 )}
@@ -423,10 +423,10 @@ export default function FamilyOverviewPage() {
               <Sparkles className="w-6 h-6 text-gold-400" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-display text-lg font-bold text-midnight-50">
+              <h3 className="font-display text-lg font-bold text-ink">
                 Your family&apos;s story starts this week
               </h3>
-              <p className="text-sm text-midnight-300 font-body leading-relaxed mt-1 max-w-xl">
+              <p className="text-sm text-soft font-body leading-relaxed mt-1 max-w-xl">
                 This is where you&apos;ll watch lessons stack up, streaks catch
                 fire, and badges roll in. Kick it off together — start today&apos;s
                 one thing on the home screen, and the numbers here fill in as
@@ -457,51 +457,51 @@ export default function FamilyOverviewPage() {
         transition={{ delay: 0.05, duration: 0.3 }}
         className="mb-10"
       >
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-3">
+        <h3 className="font-display text-sm font-semibold text-ink uppercase tracking-wider mb-3">
           Family Progress
         </h3>
-        <div className="flex flex-wrap items-center gap-x-0 gap-y-4 py-5 border-y border-midnight-800">
+        <div className="flex flex-wrap items-center gap-x-0 gap-y-4 py-5 border-y border-sand">
         <div className="flex items-center gap-3 pr-8">
-          <BookOpen className="w-4 h-4 text-midnight-400" />
+          <BookOpen className="w-4 h-4 text-soft" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-2xl font-bold text-ink leading-none">
               {overview.total_lessons_completed}
             </p>
-            <p className="text-xs text-midnight-400 font-body mt-0.5">
+            <p className="text-xs text-soft font-body mt-0.5">
               Lessons completed
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-8 border-l border-midnight-700/50">
-          <Clock className="w-4 h-4 text-midnight-400" />
+        <div className="flex items-center gap-3 px-8 border-l border-sand">
+          <Clock className="w-4 h-4 text-soft" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-2xl font-bold text-ink leading-none">
               {overview.total_hours}
-              <span className="text-midnight-500 text-base font-normal">h</span>
+              <span className="text-soft text-base font-normal">h</span>
             </p>
-            <p className="text-xs text-midnight-400 font-body mt-0.5">
+            <p className="text-xs text-soft font-body mt-0.5">
               Total hours
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-8 border-l border-midnight-700/50">
-          <Flame className="w-4 h-4 text-midnight-400" />
+        <div className="flex items-center gap-3 px-8 border-l border-sand">
+          <Flame className="w-4 h-4 text-soft" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-2xl font-bold text-ink leading-none">
               {overview.average_streak}
             </p>
-            <p className="text-xs text-midnight-400 font-body mt-0.5">
+            <p className="text-xs text-soft font-body mt-0.5">
               Avg streak
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 pl-8 border-l border-midnight-700/50">
-          <Users className="w-4 h-4 text-midnight-400" />
+        <div className="flex items-center gap-3 pl-8 border-l border-sand">
+          <Users className="w-4 h-4 text-soft" />
           <div>
-            <p className="font-display text-2xl font-bold text-midnight-50 leading-none">
+            <p className="font-display text-2xl font-bold text-ink leading-none">
               {overview.active_members}
             </p>
-            <p className="text-xs text-midnight-400 font-body mt-0.5">
+            <p className="text-xs text-soft font-body mt-0.5">
               Active this week
             </p>
           </div>
@@ -517,11 +517,11 @@ export default function FamilyOverviewPage() {
         transition={{ delay: 0.1, duration: 0.3 }}
         className="mb-10"
       >
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+        <h3 className="font-display text-sm font-semibold text-ink uppercase tracking-wider mb-4">
           Member Progress
         </h3>
         {overview.members.length === 0 ? (
-          <p className="text-sm text-midnight-500 font-body py-4">
+          <p className="text-sm text-soft font-body py-4">
             No members in your family yet.
           </p>
         ) : (
@@ -530,7 +530,7 @@ export default function FamilyOverviewPage() {
               return (
                 <div
                   key={member.id}
-                  className="flex items-center gap-4 py-4 border-b border-midnight-800/50 last:border-0"
+                  className="flex items-center gap-4 py-4 border-b border-sand last:border-0"
                 >
                   <Avatar
                     name={member.display_name}
@@ -543,7 +543,7 @@ export default function FamilyOverviewPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-display font-semibold text-midnight-100 truncate">
+                      <p className="text-sm font-display font-semibold text-ink truncate">
                         {member.display_name || "Member"}
                       </p>
                       {member.role === "parent" && (
@@ -552,20 +552,20 @@ export default function FamilyOverviewPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 text-xs text-midnight-400 font-body shrink-0">
+                  <div className="flex items-center gap-6 text-xs text-soft font-body shrink-0">
                     <span>
-                      <span className="text-midnight-200 font-medium">
+                      <span className="text-ink font-medium">
                         {member.lessons_completed}
                       </span>{" "}
                       lessons
                     </span>
                     <span className="hidden sm:inline">
-                      <span className="text-midnight-200 font-medium">
+                      <span className="text-ink font-medium">
                         {member.current_streak}
                       </span>{" "}
                       day streak
                     </span>
-                    <span className="hidden md:inline text-midnight-500">
+                    <span className="hidden md:inline text-soft">
                       {member.last_active
                         ? formatRelativeTime(member.last_active)
                         : "Not active"}
@@ -586,7 +586,7 @@ export default function FamilyOverviewPage() {
           transition={{ delay: 0.12, duration: 0.3 }}
           className="mb-10"
         >
-          <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+          <h3 className="font-display text-sm font-semibold text-ink uppercase tracking-wider mb-4">
             Report Cards
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -608,13 +608,13 @@ export default function FamilyOverviewPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.15, duration: 0.3 }}
-        className="border-t border-midnight-800/50 pt-6"
+        className="border-t border-sand pt-6"
       >
-        <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider mb-4">
+        <h3 className="font-display text-sm font-semibold text-ink uppercase tracking-wider mb-4">
           This Week
         </h3>
         {activities.length === 0 ? (
-          <p className="text-sm text-midnight-500 font-body py-4">
+          <p className="text-sm text-soft font-body py-4">
             No activity this week yet.
           </p>
         ) : (
@@ -622,21 +622,21 @@ export default function FamilyOverviewPage() {
             {activities.slice(0, 10).map((activity, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 py-3 border-b border-midnight-800/50 last:border-0"
+                className="flex items-center gap-3 py-3 border-b border-sand last:border-0"
               >
                 <div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3 text-green-400" />
                 </div>
-                <p className="text-sm text-midnight-200 font-body flex-1 min-w-0 truncate">
-                  <span className="text-midnight-400">
+                <p className="text-sm text-ink font-body flex-1 min-w-0 truncate">
+                  <span className="text-soft">
                     {activity.member_name || "Member"}
                   </span>{" "}
                   completed{" "}
-                  <span className="text-midnight-100">
+                  <span className="text-ink">
                     {activity.lesson_title}
                   </span>
                 </p>
-                <span className="text-xs text-midnight-500 font-body shrink-0">
+                <span className="text-xs text-soft font-body shrink-0">
                   {formatRelativeTime(activity.completed_at)}
                 </span>
               </div>
@@ -660,10 +660,10 @@ export default function FamilyOverviewPage() {
             <Sparkles className="w-5 h-5 text-gold-400" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-display font-semibold text-midnight-50">
+            <p className="font-display font-semibold text-ink">
               Refer other families
             </p>
-            <p className="text-sm text-midnight-400 font-body">
+            <p className="text-sm text-soft font-body">
               Invite families you know to the club and earn rewards together.
             </p>
           </div>
