@@ -30,6 +30,7 @@ const ROUTE_TITLES: [string, string][] = [
   ["/simulator/lessons", "Pattern Practice"],
   ["/simulator/simbot", "Simbot"],
   ["/simulator", "Trading Floor"],
+  ["/family/corner", "Parent Corner"],
   ["/family/overview", "Family Overview"],
   ["/family/members", "Family Members"],
   ["/family", "Family"],

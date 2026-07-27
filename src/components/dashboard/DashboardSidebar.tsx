@@ -209,7 +209,9 @@ const FAMILY_ITEM: NavItem = {
   subItems: [
     { label: "Overview & Report Cards", href: "/family/overview" },
     { label: "Members", href: "/family/members" },
-    { label: "Parent Corner", href: "/parent-corner" },
+    // Points at the canvas board F8 directly. `/parent-corner` still resolves
+    // (it redirects here), but the nav should not route through a redirect.
+    { label: "Parent Corner", href: "/family/corner" },
     { label: "Refer Families", href: "/referrals" },
     { label: "My Progress", href: "/progress" },
   ],

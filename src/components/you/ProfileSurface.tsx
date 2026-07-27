@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight, Pencil, RotateCcw } from "lucide-react";
 
@@ -141,8 +141,18 @@ function weekKey(d: Date): string {
   return t.toISOString().slice(0, 10);
 }
 
-function relative(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+/* THE VIEWER'S CLOCK, hour-bucketed. `relative()` read `Date.now()` and was
+   called straight from JSX, which is the impure-call rule and is non-idempotent
+   (the same row re-renders as "1h" then "2h" with no data change). Snapshot is
+   stable between calls; `null` on the server so the first client render agrees,
+   and an unresolved clock renders an honest em-dash rather than a wrong age. */
+const SUBSCRIBE = () => () => {};
+const CLIENT_HOUR = () => Math.floor(Date.now() / 3_600_000);
+const SERVER_HOUR = () => null;
+
+function relative(dateStr: string, nowHour: number | null): string {
+  if (nowHour == null) return "—";
+  const diff = nowHour * 3_600_000 - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `${Math.max(mins, 0)}m`;
   const hours = Math.floor(diff / 3600000);
@@ -152,6 +162,8 @@ function relative(dateStr: string): string {
 }
 
 export default function ProfileSurface() {
+  /** Viewer clock, hour-bucketed. See `relative` above. */
+  const nowHour = useSyncExternalStore(SUBSCRIBE, CLIENT_HOUR, SERVER_HOUR);
   const [state, setState] = useState<ProfileState>(EMPTY);
   const [badges, setBadges] = useState<BadgeRow[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -639,7 +651,7 @@ export default function ProfileSurface() {
                 sub={`${
                   f.from_stance ? STANCE_WORD[f.from_stance] ?? f.from_stance : "No position"
                 } → ${STANCE_WORD[f.to_stance] ?? f.to_stance}`}
-                value={relative(f.created_at)}
+                value={relative(f.created_at, nowHour)}
               />
             ))}
           </Ledger>
@@ -732,7 +744,7 @@ export default function ProfileSurface() {
               <LedgerRow
                 key={r.lessonId}
                 label={r.title}
-                value={relative(r.completedAt)}
+                value={relative(r.completedAt, nowHour)}
               />
             ))}
           </Ledger>

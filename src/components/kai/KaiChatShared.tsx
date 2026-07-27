@@ -664,7 +664,11 @@ export default function KaiChatShared({
                   </button>
                   <button
                     onClick={() => deleteThread(t.id)}
-                    className="f0-focus shrink-0 rounded text-soft/50 opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 dark:hover:text-red-500"
+                    /* COLOUR LAW: there is no "danger red" tone — red is PRICE.
+                       A destructive control is differentiated by position and
+                       by the confirm it triggers, never by turning the colour
+                       of a down move (see the f0 parts header). */
+                    className="f0-focus shrink-0 rounded text-soft/50 opacity-0 transition hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label="Delete chat"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

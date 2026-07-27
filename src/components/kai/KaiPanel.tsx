@@ -18,6 +18,23 @@ import KaiChatShared from "@/components/kai/KaiChatShared";
  * page renders, so thread/usage/streaming behavior is identical with no server
  * changes. Mode/register skin (club volt · family gold · kid) cascades in from
  * the dashboard's data-mode wrapper automatically.
+ *
+ * ── CANVAS V2 (cohesion lane) ────────────────────────────────────────────────
+ * This is chrome, not content — KaiChatShared owns every pixel inside it,
+ * including the Kai identity (`.f0-kai-mark`). So the migration is about the
+ * two things the shell itself was getting wrong in dark:
+ *
+ *   · THE SCRIM was `bg-black/45`. Tailwind's `black` is a constant, so the wash
+ *     was identical on a cream page and on the obsidian one, where 45% is far
+ *     too weak to separate a sheet from its ground. `.bg-scrim` is the system's
+ *     scrim and it deepens at night (the same fix every other sheet took).
+ *   · THE ELEVATION was two hardcoded `rgba(16,24,40,…)` shadows — a cool
+ *     blue-grey on a warm system, and a light-page shadow that simply vanishes
+ *     against a near-black page. `shadow-lift` is the themed token: warm and
+ *     subtle on cream, deep and wide on obsidian.
+ *
+ * Both were invisible-in-light bugs, which is exactly why they survived: the
+ * panel was only ever looked at in the light theme.
  */
 export default function KaiPanel({
   open,
@@ -91,7 +108,7 @@ export default function KaiPanel({
       {/* Scrim — mobile only; desktop leaves the page interactive. */}
       <div
         onClick={onClose}
-        className={`absolute inset-0 bg-black/45 transition-opacity duration-300 md:hidden ${
+        className={`absolute inset-0 bg-scrim transition-opacity duration-300 md:hidden ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       />
@@ -102,8 +119,7 @@ export default function KaiPanel({
         role="dialog"
         aria-modal="false"
         aria-label="Ask Kai"
-        className={`pointer-events-auto absolute flex flex-col bg-paper
-          shadow-[0_-12px_48px_rgba(16,24,40,0.3)] md:shadow-[-12px_0_48px_rgba(16,24,40,0.22)]
+        className={`pointer-events-auto absolute flex flex-col bg-paper shadow-lift
           transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none
           bottom-0 inset-x-0 h-[85vh] rounded-t-2xl
           md:inset-y-0 md:left-auto md:right-0 md:h-full md:w-[420px] md:max-w-[92vw] md:rounded-none md:border-l md:border-sand

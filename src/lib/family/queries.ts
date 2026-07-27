@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FamilyGuardrails } from "@/lib/family/guardrails";
 import { DEFAULT_GUARDRAILS } from "@/lib/family/guardrails";
+import { researchComplete, type WatchlistItem } from "@/lib/watchlist";
 
 /**
  * FAMILY MODE — server reads (canvas F1–F9).
@@ -470,6 +471,93 @@ export async function getFamilyMissions(
     completed_by: byMission.get(m.id) ?? [],
   }));
 }
+
+/**
+ * "Your family this week" — the per-child at-a-glance strip.
+ *
+ * Carried across from the retired `/parent-corner` route, where it ran on the
+ * BROWSER client after mount. Moving it server-side is the point: on the old
+ * route the strip simply did not exist until a fetch resolved, so a household
+ * with children rendered as a household without any (loading read as empty,
+ * adoption plan §0.4). Here the roll-up is resolved before the markup exists.
+ *
+ * Still ONE batched read per source — roster missions, the family watchlist and
+ * this week's XP — with every roll-up done in memory. No per-child round trips.
+ */
+export interface ChildWeek {
+  id: string;
+  missionsThisWeek: number;
+  watchlistCount: number;
+  researchedCount: number;
+  xpThisWeek: number;
+}
+
+export async function getChildWeek(
+  db: DB,
+  familyId: string,
+  kidIds: string[]
+): Promise<Map<string, ChildWeek>> {
+  const out = new Map<string, ChildWeek>();
+  if (!kidIds.length) return out;
+
+  const weekAgoIso = new Date(Date.now() - 7 * 864e5).toISOString();
+
+  const [missionsRes, watchlistRes, xpRes] = await Promise.all([
+    db
+      .from("mission_completions")
+      .select("user_id")
+      .in("user_id", kidIds)
+      .gte("completed_at", weekAgoIso),
+    // Watchlist is family-scoped; champion_id is filtered in memory so this is
+    // one query rather than one per child.
+    db
+      .from("family_watchlist")
+      .select("champion_id, how_they_make_money, strength, risk, trend")
+      .eq("family_id", familyId),
+    db
+      .from("xp_events")
+      .select("user_id, amount")
+      .in("user_id", kidIds)
+      .gte("created_at", weekAgoIso),
+  ]);
+
+  for (const id of kidIds) {
+    out.set(id, {
+      id,
+      missionsThisWeek: 0,
+      watchlistCount: 0,
+      researchedCount: 0,
+      xpThisWeek: 0,
+    });
+  }
+
+  for (const r of (missionsRes.data ?? []) as { user_id: string }[]) {
+    const e = out.get(r.user_id);
+    if (e) e.missionsThisWeek += 1;
+  }
+
+  for (const r of (watchlistRes.data ?? []) as WatchlistResearchRow[]) {
+    const e = r.champion_id ? out.get(r.champion_id) : undefined;
+    if (!e) continue;
+    e.watchlistCount += 1;
+    if (researchComplete(r as Partial<WatchlistItem>)) e.researchedCount += 1;
+  }
+
+  for (const r of (xpRes.data ?? []) as { user_id: string; amount: number }[]) {
+    const e = out.get(r.user_id);
+    if (e) e.xpThisWeek += r.amount ?? 0;
+  }
+
+  return out;
+}
+
+type WatchlistResearchRow = {
+  champion_id: string | null;
+  how_they_make_money: string | null;
+  strength: string | null;
+  risk: string | null;
+  trend: string | null;
+};
 
 // ── shared ──────────────────────────────────────────────────────────────────
 

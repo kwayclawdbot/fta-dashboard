@@ -327,8 +327,12 @@ function JourneyLedger({
             >
               <span
                 className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
+                  /* COLOUR LAW: green is PRICE. A completed setup step is an
+                     ACTION finished, so the done disc is the mode-correct
+                     accent fill (the same `bg-accent text-night-950` pairing
+                     settings and the learn path use), not a green tick. */
                   isDone
-                    ? "bg-green-500 text-white"
+                    ? "bg-accent text-night-950"
                     : "bg-[color-mix(in_srgb,var(--accent-solid)_14%,transparent)] text-gold-700"
                 }`}
               >

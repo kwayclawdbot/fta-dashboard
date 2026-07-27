@@ -48,6 +48,79 @@ export const AGE_BANDS: BandGuidance[] = [
   },
 ];
 
+/**
+ * ALWAYS-ON GUIDANCE — the five standing principles.
+ *
+ * These are carried across VERBATIM from the retired `/parent-corner` route,
+ * which held the substantial education-first material this surface was missing.
+ * They are the most load-bearing copy in Family Mode: the first ("Education
+ * first, never a stock tip") and the last ("Keep it safe and pressure-free")
+ * are compliance posture as much as they are parenting advice, and the wording
+ * is deliberate. Restyle freely; do not rewrite, summarise or drop one.
+ *
+ * The old route rendered each of these behind a gold icon disc. The icons are
+ * gone (canvas language: hierarchy from type and rules, not from chrome) but
+ * every word is intact.
+ */
+export interface GuidancePrinciple {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export const ALWAYS_ON_GUIDANCE: GuidancePrinciple[] = [
+  {
+    id: "education-first",
+    title: "Education first, never a stock tip",
+    body: "Nothing in the club is advice to buy or sell. We study how real businesses work so your kids build judgment. If a lesson ever starts to feel like a hot tip, steer it back to “what does this company actually do, and how does it make money?”",
+  },
+  {
+    id: "risk",
+    title: "How to talk about risk",
+    body: "Every company — even the biggest — has things that could go wrong. Normalize this. When your child names a strength, gently ask for a risk too. “What could make people buy less of this?” builds the habit of looking at both sides before forming an opinion.",
+  },
+  {
+    id: "patience",
+    title: "Patience and the long game",
+    body: "Investing rewards patience, and kids feel the pull to “win” fast. Remind them we’re building a habit — one company a week — not chasing quick money. The gambler hopes; the investor studies and waits.",
+  },
+  {
+    id: "process",
+    title: "Praise the process, not the price",
+    body: "Celebrate good questions and careful research, not whether a practice pick went up. “Great thinking on that risk” teaches more than “nice, it went up.” This keeps confidence tied to effort, which is the skill that lasts.",
+  },
+  {
+    id: "pressure-free",
+    title: "Keep it safe and pressure-free",
+    body: "No real money is required to take part, and there’s no pressure to open accounts or contribute. Whether and how much your family sets aside is a private decision you make at home. Let each kid go at their own pace.",
+  },
+];
+
+/**
+ * THIS WEEK'S COACHING — the labels for the six parent fields on `fic_weeks`.
+ *
+ * Also carried from the retired route. The order is editorial (what happened →
+ * how to open it → how to explain it → what to avoid → risk → patience) and the
+ * icons that used to sit beside each are gone for the same reason as above.
+ */
+export const WEEKLY_PARENT_FIELDS: {
+  key:
+    | "parent_what_child_learned"
+    | "parent_dinner_questions"
+    | "parent_explain_simply"
+    | "parent_what_not_to_do"
+    | "parent_risk_talk"
+    | "parent_patience";
+  title: string;
+}[] = [
+  { key: "parent_what_child_learned", title: "What your child learned" },
+  { key: "parent_dinner_questions", title: "Dinner-table questions" },
+  { key: "parent_explain_simply", title: "Explain it simply" },
+  { key: "parent_what_not_to_do", title: "What not to do" },
+  { key: "parent_risk_talk", title: "The risk talk" },
+  { key: "parent_patience", title: "On patience" },
+];
+
 export interface ConversationTopic {
   id: string;
   title: string;

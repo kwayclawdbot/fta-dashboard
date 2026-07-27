@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -129,8 +129,18 @@ function heroArt(track?: string, caughtUp?: boolean) {
   return "/art/fd-walkthrough.jpg";
 }
 
-function greeting() {
-  const h = new Date().getHours();
+/* THE GREETING'S CLOCK. `greeting()` read `new Date().getHours()` and was
+   invoked straight from JSX in two places — an impure read during render, and a
+   hydration mismatch on any viewer whose part-of-day differs from the server's.
+   HomeMasthead already took this fix; this is the same one, bucketed to the hour
+   so the snapshot is stable between calls. `null` on the server and on the first
+   client render, so both agree; the greeting fills in immediately after. */
+const SUBSCRIBE = () => () => {};
+const CLIENT_HOUR = () => new Date().getHours();
+const SERVER_HOUR = () => null;
+
+function greetingFor(h: number | null): string {
+  if (h == null) return "Welcome";
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
@@ -141,6 +151,9 @@ function greeting() {
 export default function DashboardHomeClient() {
   const supabase = createClient();
   const searchParams = useSearchParams();
+  /** Viewer clock, hour-bucketed. See greetingFor above — never a bare
+   *  `new Date()` in the render body. */
+  const greetingHour = useSyncExternalStore(SUBSCRIBE, CLIENT_HOUR, SERVER_HOUR);
   const [home, setHome] = useState<HomeState | null>(null);
   const [firstName, setFirstName] = useState("");
   const [family, setFamily] = useState<FamilyMember[]>([]);
@@ -520,6 +533,7 @@ export default function DashboardHomeClient() {
   }
 
   const isKid = home?.role === "child" && home?.track === "kids";
+  const greeting = greetingFor(greetingHour);
   const isTeen = home?.role === "child" && home?.track === "teens";
   const isParent = !isKid && !isTeen;
   const orientationComplete = orientationDone >= ORIENTATION_TOTAL;
@@ -552,7 +566,7 @@ export default function DashboardHomeClient() {
           style={{ "--i": 0 } as React.CSSProperties}
         >
           <p className="font-display text-eyebrow font-bold uppercase text-soft">
-            {isKid ? "Today" : greeting()}
+            {isKid ? "Today" : greeting}
           </p>
           {home?.cohort && (
             <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
@@ -568,7 +582,7 @@ export default function DashboardHomeClient() {
         >
           {isKid
             ? `Hey ${firstName || "Explorer"}!`
-            : `${greeting()}, ${firstName || "there"}`}
+            : `${greeting}, ${firstName || "there"}`}
         </h1>
 
         <p
@@ -912,8 +926,12 @@ export default function DashboardHomeClient() {
                     {home.this_week.lessons.map((l) => (
                       <div key={l.id} className="f0-ledger-row">
                         {l.completed ? (
+                          /* COLOUR LAW: green is PRICE. A finished lesson is
+                             not a gain, so the completed tick rides the ACTION
+                             ramp (gold-700 — themed orange, no dark: variant)
+                             like every other completion mark in the system. */
                           <CheckCircle2
-                            className="h-5 w-5 shrink-0 self-start text-green-500"
+                            className="h-5 w-5 shrink-0 self-start text-gold-700"
                             aria-hidden
                           />
                         ) : (

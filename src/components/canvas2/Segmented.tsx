@@ -51,6 +51,7 @@ export default function SegmentedRail<T extends string>({
   fill = false,
   size = "md",
   className = "",
+  railClassName = "border-b border-sand",
 }: {
   options: SegmentedOption<T>[];
   value: T | null;
@@ -62,6 +63,16 @@ export default function SegmentedRail<T extends string>({
   fill?: boolean;
   size?: "sm" | "md";
   className?: string;
+  /**
+   * The RAIL itself — its hairline. Defaults to the underscored rail the
+   * canvas draws. The escape hatch exists because the hairline is what stops
+   * this primitive sitting INLINE in a compact transport row (a strip of
+   * controls that already has its own rule beneath it gets a second one), and
+   * the simulator forked a private `SimChipGroup` rather than fight it. Pass
+   * `railClassName=""` to drop the rule; pair it with `--f0-seg-bar-offset` if
+   * the selected bar then needs to sit somewhere other than -1px.
+   */
+  railClassName?: string;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
 
@@ -99,7 +110,7 @@ export default function SegmentedRail<T extends string>({
       ref={railRef}
       role="radiogroup"
       aria-label={ariaLabel}
-      className={`flex border-b border-sand ${fill ? "" : "club2-track gap-6 overflow-x-auto"} ${className}`}
+      className={`flex ${railClassName} ${fill ? "" : "club2-track gap-6 overflow-x-auto"} ${className}`}
     >
       {options.map((o, i) => {
         const on = value === o.id;

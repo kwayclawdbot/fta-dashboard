@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
@@ -49,6 +49,18 @@ function startOfWeekISO(): string {
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
 }
+
+/* THE DATELINE'S CLOCK, as an external store bucketed to the hour.
+   `new Date().toLocaleDateString()` was called in the render body: an impure
+   read during render (the compiler rule), non-idempotent across a midnight
+   re-render, and — because this component is server-rendered before it hydrates
+   — a hydration mismatch waiting on any viewer whose date differs from the
+   server's. Same remedy as ChallengeSlot: a stable hour-bucket snapshot, null on
+   the server so the first client render agrees, and the dateline fills in after
+   hydration. */
+const SUBSCRIBE = () => () => {};
+const CLIENT_HOUR = () => Math.floor(Date.now() / 3_600_000);
+const SERVER_HOUR = () => null;
 
 function pctText(v: number | null | undefined): string {
   if (v == null) return "—";
@@ -111,11 +123,15 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
     };
   }, [supabase, isKid]);
 
-  const dateLabel = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
+  const nowHour = useSyncExternalStore(SUBSCRIBE, CLIENT_HOUR, SERVER_HOUR);
+  const dateLabel =
+    nowHour == null
+      ? null
+      : new Date(nowHour * 3_600_000).toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+        });
 
   // Numeral columns — real counts, each a door to its surface. Kids get the two
   // warm community counts; adults also get the Kai alerts count.

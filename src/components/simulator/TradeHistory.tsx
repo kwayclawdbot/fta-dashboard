@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import type { Trade } from "@/lib/simulator/portfolio-manager";
 
 /**
@@ -30,15 +31,27 @@ function tone(n: number): string {
   return n > 0 ? "text-price-up" : "text-price-down";
 }
 
+/* THE MEMBER'S CLOCK, as an external store bucketed to the hour. `dayOf` read
+   `new Date()` / `Date.now()` and ran in the render body, which is the impure-
+   call rule and is non-idempotent across midnight: a re-render at 00:00 silently
+   relabels "Today" without the data changing. Hour buckets keep the snapshot
+   stable between calls; `null` on the server so the first client render agrees,
+   and until it resolves every day carries its absolute date (never a wrong
+   "Today"). Same pattern as ChallengeSlot. */
+const SUBSCRIBE = () => () => {};
+const CLIENT_HOUR = () => Math.floor(Date.now() / 3_600_000);
+const SERVER_HOUR = () => null;
+
 /** Day key + human label, resolved against the member's own clock. */
-function dayOf(iso: string | undefined): { key: string; label: string } {
+function dayOf(iso: string | undefined, nowHour: number | null): { key: string; label: string } {
   const d = iso ? new Date(iso) : null;
   if (!d || Number.isNaN(d.getTime())) return { key: "unknown", label: "Undated" };
   const key = d.toDateString();
-  const today = new Date().toDateString();
-  const yesterday = new Date(Date.now() - 86_400_000).toDateString();
-  if (key === today) return { key, label: "Today" };
-  if (key === yesterday) return { key, label: "Yesterday" };
+  const nowMs = nowHour == null ? null : nowHour * 3_600_000;
+  const today = nowMs == null ? null : new Date(nowMs).toDateString();
+  const yesterday = nowMs == null ? null : new Date(nowMs - 86_400_000).toDateString();
+  if (today && key === today) return { key, label: "Today" };
+  if (yesterday && key === yesterday) return { key, label: "Yesterday" };
   return {
     key,
     label: d.toLocaleDateString(undefined, {
@@ -50,13 +63,14 @@ function dayOf(iso: string | undefined): { key: string; label: string } {
 }
 
 export default function TradeHistory({ trades }: TradeHistoryProps) {
+  const nowHour = useSyncExternalStore(SUBSCRIBE, CLIENT_HOUR, SERVER_HOUR);
   // Newest close first, then bucketed by day in that same order.
   const ordered = [...trades].sort(
     (a, b) => new Date(b.closedAt ?? 0).getTime() - new Date(a.closedAt ?? 0).getTime()
   );
   const days: { key: string; label: string; rows: Trade[] }[] = [];
   for (const t of ordered) {
-    const { key, label } = dayOf(t.closedAt);
+    const { key, label } = dayOf(t.closedAt, nowHour);
     const last = days[days.length - 1];
     if (last && last.key === key) last.rows.push(t);
     else days.push({ key, label, rows: [t] });

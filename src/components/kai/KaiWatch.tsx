@@ -35,6 +35,33 @@ import {
  *
  * Two shapes: an inline "panel" (watchlist / alerts hub) and a "modal" launched
  * prefilled from a ticker row ("Watch with Kai").
+ *
+ * ── CANVAS V2 (cohesion lane) ────────────────────────────────────────────────
+ * This was the last pre-canvas Kai surface. Four things changed and none of them
+ * is cosmetic:
+ *
+ *   1. THE CONTAINER. It was `rounded-2xl border bg-card shadow-soft` — a
+ *      generic card box, which the brand register bans, wrapping a saturated
+ *      kai→kai gradient BAR that repeated the identity the mark already carries.
+ *      Inline (panel) it is now an object on the paper: a mark, a masthead, a
+ *      composer, hairlines. Floating (modal) it keeps a real surface, because a
+ *      sheet over a scrim genuinely needs a ground — `bg-paper` + `.f0-frame`,
+ *      not `bg-card` + a shadow.
+ *
+ *   2. THE MARK. The header hand-rolled a Kai avatar (`bg-white/20` + Sparkles
+ *      on the gradient). `.f0-kai-mark` is the canonical one, shared with Home,
+ *      Help, the chat and the loading states, so Kai looks like Kai everywhere
+ *      and there is one place to change it.
+ *
+ *   3. COLOUR LAW. The success state was `bg-green-500/12 text-green-600` and
+ *      every error line was `text-red-600 dark:text-red-500`. Green and red are
+ *      PRICE — a confirmation that shares a colour with an up move, and a
+ *      validation message that shares one with a down move, are both violations.
+ *      Success is now Kai's own blue (Kai is the one confirming) and errors
+ *      carry WEIGHT instead of hue, matching the feed composer and ChangedMyMind.
+ *
+ *   4. Kai blue is the ONLY identity colour on this surface, and nothing that is
+ *      not Kai wears it.
  */
 
 interface ParsedRule {
@@ -180,35 +207,43 @@ export default function KaiWatch({
     setText(defaultTicker ? `Watch ${defaultTicker} for me — ` : "");
   }, [defaultTicker]);
 
+  const isModal = variant === "modal";
+
   const body = (
-    <div className="overflow-hidden rounded-2xl border border-sand bg-card shadow-soft">
-      {/* Kai-BLUE header. The old fill was the teal→green "AI" gradient, which
-          broke the colour law: blue is what means Kai. White on saturated blue
-          is theme-invariant, exactly like the orange action band. */}
-      <div className="relative flex items-center gap-2.5 bg-gradient-to-br from-kai-500 to-kai-700 px-4 py-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white backdrop-blur">
-          <Sparkles className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-[15px] font-extrabold leading-tight text-white">
-            Kai Watch
-          </p>
-          <p className="text-[11px] leading-tight text-white/85">
-            Tell Kai what to watch — in plain English
-          </p>
-        </div>
-        {variant === "modal" && (
+    <section
+      className={isModal ? "f0-frame overflow-hidden rounded-2xl bg-paper p-5" : ""}
+    >
+      {/* IDENTITY — MODAL ONLY. The mark IS the branding: no gradient bar, no
+          second blue object, and `.f0-kai-mark` is the same one Home, Help and
+          the chat wear. The PANEL deliberately has no masthead: it is embedded
+          under the alerts hub's own "Tell Kai what to watch" heading, and a
+          second title one line below the first is the drift this lane exists to
+          remove. Inline, Kai's identity appears where Kai actually speaks — the
+          interpretation and the confirmation below. */}
+      {isModal && (
+        <header className="mb-4 flex items-start gap-3">
+          <span className="f0-kai-mark h-10 w-10 shrink-0" aria-hidden>
+            <Sparkles className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[17px] font-extrabold leading-tight text-ink">
+              Kai Watch
+            </p>
+            <p className="mt-0.5 text-[13px] leading-snug text-soft">
+              Tell Kai what to watch — in plain English
+            </p>
+          </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-1 text-white/90 hover:bg-white/20"
+            className="f0-focus f0-press -mr-1 -mt-1 rounded-lg p-1 text-soft transition-colors hover:text-ink"
           >
             <X className="h-5 w-5" />
           </button>
-        )}
-      </div>
+        </header>
+      )}
 
-      <div className="p-4">
+      <div>
         <AnimatePresence mode="wait">
           {(phase === "idle" || phase === "parsing" || phase === "error") && (
             <m.div
@@ -217,7 +252,10 @@ export default function KaiWatch({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="rounded-xl border border-sand p-2 transition focus-within:border-kai-500">
+              {/* Plain Tailwind border, NOT .f0-frame: globals.css has no
+                  @layer, so an unlayered .f0-frame would outrank the
+                  focus-within border utility and the field would never light. */}
+              <div className="rounded-xl border border-sand p-2 transition-colors focus-within:border-kai-500">
                 <textarea
                   ref={inputRef}
                   value={text}
@@ -230,14 +268,14 @@ export default function KaiWatch({
                   placeholder="e.g. Tell me if NVDA drops below $150 and volume spikes"
                   className="w-full resize-none bg-transparent px-2 py-1.5 text-[14px] leading-snug text-ink outline-none placeholder:text-soft/50"
                 />
-                <div className="flex items-center justify-between px-1 pt-1">
-                  <span className="text-[11px] text-soft/60">
+                <div className="flex items-center justify-between gap-3 px-1 pt-1">
+                  <span className="text-[11px] text-soft/70">
                     Kai turns this into a real alert.
                   </span>
                   <button
                     onClick={parse}
                     disabled={phase === "parsing" || text.trim().length < 2}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-kai-500 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-soft transition hover:brightness-110 disabled:opacity-50"
+                    className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full bg-kai-500 px-3.5 py-1.5 font-display text-[13px] font-bold text-white transition hover:brightness-110 disabled:opacity-50"
                   >
                     {phase === "parsing" ? (
                       <>
@@ -252,8 +290,9 @@ export default function KaiWatch({
                 </div>
               </div>
 
+              {/* Red is PRICE. A validation message carries weight, not hue. */}
               {phase === "error" && error && (
-                <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] font-medium text-red-600 dark:text-red-500">
+                <p className="f0-rule-left mt-3 py-0.5 pl-3 text-[12.5px] font-semibold leading-snug text-ink">
                   {error}
                 </p>
               )}
@@ -264,7 +303,7 @@ export default function KaiWatch({
                     <button
                       key={ex}
                       onClick={() => setText(ex)}
-                      className="rounded-full border border-sand px-2.5 py-1 text-[11px] font-medium text-soft transition hover:border-kai-500 hover:text-ink"
+                      className="f0-chip f0-focus f0-press px-2.5 py-1 text-[11px] font-medium text-soft transition-colors hover:text-ink"
                     >
                       {ex}
                     </button>
@@ -283,12 +322,16 @@ export default function KaiWatch({
                 exit={{ opacity: 0 }}
               >
                 {phase === "created" ? (
-                  <div className="flex flex-col items-center gap-2 py-6 text-center">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-green-500/12 text-green-600 dark:text-green-400">
+                  /* Kai is the one confirming, so the confirmation wears Kai's
+                     blue. It was a green disc — green is PRICE. */
+                  <div className="flex flex-col items-center gap-2.5 py-6 text-center">
+                    <span className="f0-kai-mark h-11 w-11" aria-hidden>
                       <Check className="h-6 w-6" />
                     </span>
-                    <p className="font-semibold text-ink">Kai&apos;s on it</p>
-                    <p className="text-[13px] text-soft">
+                    <p className="font-display text-[17px] font-extrabold text-ink">
+                      Kai&apos;s on it
+                    </p>
+                    <p className="max-w-[38ch] text-[13px] leading-relaxed text-soft">
                       {result.rules.length === 1
                         ? "Your alert is live."
                         : `${result.rules.length} alerts are live.`}{" "}
@@ -299,28 +342,30 @@ export default function KaiWatch({
                   <>
                     {result.supported ? (
                       <>
-                        <div className="flex items-start gap-2.5 rounded-xl bg-kai-500/10 p-3">
-                          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-kai-500 text-white">
+                        {/* Kai speaking: the mark, then the sentence. Not a
+                            tinted box — the mark already says who this is. */}
+                        <div className="flex items-start gap-2.5">
+                          <span className="f0-kai-mark mt-0.5 h-6 w-6 shrink-0" aria-hidden>
                             <Sparkles className="h-3.5 w-3.5" />
                           </span>
-                          <p className="text-[13px] leading-snug text-ink">
+                          <p className="text-[14px] leading-relaxed text-ink">
                             Got it — I&apos;ll tell you when{" "}
                             {joinLabels(result.rules.map((r) => r.label))}.
                           </p>
                         </div>
 
                         {/* Structured interpretation (transparency) */}
-                        <p className="mb-1 mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
+                        <p className="mb-1 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
                           Exactly what will trip
                         </p>
-                        <div className="f0-ledger border-y border-sand/70">
+                        <div className="f0-ledger f0-rule-top f0-rule-bottom">
                           {result.rules.map((r, i) => (
                             <div key={i} className="f0-ledger-row">
-                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-500/10 text-kai-600">
+                              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-500/10 text-kai-600 dark:text-kai-300">
                                 <Bell className="h-3.5 w-3.5" />
                               </span>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-[13px] font-semibold text-ink">
+                                <p className="truncate font-display text-[14px] font-bold text-ink">
                                   {r.label}
                                 </p>
                                 <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft/70">
@@ -332,9 +377,9 @@ export default function KaiWatch({
                         </div>
                       </>
                     ) : (
-                      <div className="flex items-start gap-2.5 rounded-xl border border-sand p-3">
+                      <div className="f0-rule-left flex items-start gap-2.5 py-0.5 pl-3">
                         <Info className="mt-0.5 h-4 w-4 shrink-0 text-soft" />
-                        <p className="text-[13px] leading-snug text-ink">
+                        <p className="text-[14px] leading-relaxed text-ink">
                           {result.note ||
                             "That's not something I can watch directly yet. I can watch price levels, big moves, volume spikes, new highs/lows, the club's sentiment, and fresh news — want to try one of those?"}
                         </p>
@@ -342,16 +387,16 @@ export default function KaiWatch({
                     )}
 
                     {result.supported && result.note && (
-                      <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-snug text-soft/80">
+                      <p className="mt-2.5 flex items-start gap-1.5 text-[11.5px] leading-snug text-soft">
                         <Info className="mt-0.5 h-3 w-3 shrink-0" />
                         {result.note}
                       </p>
                     )}
 
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-5 flex gap-2">
                       <button
                         onClick={reset}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-sand px-3.5 py-2.5 text-[13px] font-semibold text-soft transition hover:text-ink"
+                        className="f0-chip f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 px-3.5 py-2.5 font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         {result.supported ? "Not quite" : "Try again"}
@@ -360,7 +405,7 @@ export default function KaiWatch({
                         <button
                           onClick={create}
                           disabled={phase === "creating"}
-                          className="flex-1 rounded-full bg-kai-500 py-2.5 text-[14px] font-bold text-white shadow-soft transition hover:brightness-110 disabled:opacity-60"
+                          className="f0-focus f0-press flex-1 rounded-lg bg-kai-500 py-2.5 font-display text-[14px] font-extrabold text-white transition hover:brightness-110 disabled:opacity-60"
                         >
                           {phase === "creating" ? (
                             <Loader2 className="mx-auto h-5 w-5 animate-spin" />
@@ -374,7 +419,7 @@ export default function KaiWatch({
                     </div>
 
                     {error && (
-                      <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] font-medium text-red-600 dark:text-red-500">
+                      <p className="f0-rule-left mt-3 py-0.5 pl-3 text-[12.5px] font-semibold leading-snug text-ink">
                         {error}
                       </p>
                     )}
@@ -384,10 +429,10 @@ export default function KaiWatch({
             )}
         </AnimatePresence>
       </div>
-    </div>
+    </section>
   );
 
-  if (variant === "modal") {
+  if (isModal) {
     return (
       <m.div
         className="fixed inset-0 z-[120] flex items-end justify-center bg-scrim p-0 backdrop-blur-sm sm:items-center sm:p-4"
