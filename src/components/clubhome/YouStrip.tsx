@@ -83,7 +83,11 @@ export default function YouStrip({
               ? `${xp.toLocaleString()} XP · ${toNext.toLocaleString()} to ${next.label}`
               : `${xp.toLocaleString()} XP · top of the ladder`}
           </p>
-          <Meter pct={pct} className="mt-2 max-w-xs" />
+          <Meter
+            pct={pct}
+            className="mt-2 max-w-xs"
+            barStyle={{ backgroundColor: current.belt.hex }}
+          />
         </div>
 
         <Link

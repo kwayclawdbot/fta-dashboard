@@ -50,7 +50,10 @@ export function DisplayHead({
 }: {
   eyebrow?: string;
   title: string;
-  lede?: string;
+  /** ReactNode, not string: the lede routinely needs ONE emphasised span
+   *  (a count, a name) and typing it as a string forced callers off the shared
+   *  masthead to keep that emphasis. */
+  lede?: React.ReactNode;
   /** Optional right-hand object (a back link, an action). */
   aside?: React.ReactNode;
 }) {
@@ -234,9 +237,22 @@ export interface Measure {
   tone?: "ink" | "sentiment";
 }
 
-export function MeasureStrip({ items }: { items: Measure[] }) {
+export function MeasureStrip({
+  items,
+  loading = false,
+}: {
+  items: Measure[];
+  /**
+   * LOADING IS NOT EMPTY (plan §0.4). Without this every caller invented its own
+   * skeleton — which is exactly how a surface ends up rendering "—" (an honest
+   * ABSENCE) while a fetch is still in flight, claiming the club has no number
+   * when the number simply has not arrived. The strip keeps its columns and its
+   * labels and shimmers only the numerals, so the swap is a fill, not a reflow.
+   */
+  loading?: boolean;
+}) {
   return (
-    <div className="flex items-stretch">
+    <div className="flex items-stretch" aria-busy={loading || undefined}>
       {items.map((m, i) => (
         <div
           key={m.label}
@@ -244,15 +260,22 @@ export function MeasureStrip({ items }: { items: Measure[] }) {
             i > 0 ? "border-l border-sand/70 pl-4 sm:pl-6" : "pr-4 sm:pr-6"
           } ${i > 0 && i < items.length - 1 ? "pr-4 sm:pr-6" : ""}`}
         >
-          <p
-            className={`font-display text-display-2 font-extrabold tabular-nums ${
-              m.tone === "sentiment"
-                ? "text-sentiment"
-                : "text-ink"
-            }`}
-          >
-            {m.value}
-          </p>
+          {loading ? (
+            <div
+              className="h-[1em] w-16 max-w-full rounded-full bg-ink/10 text-display-2 motion-safe:animate-pulse"
+              aria-hidden
+            />
+          ) : (
+            <p
+              className={`font-display text-display-2 font-extrabold tabular-nums ${
+                m.tone === "sentiment"
+                  ? "text-sentiment"
+                  : "text-ink"
+              }`}
+            >
+              {m.value}
+            </p>
+          )}
           <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
             {m.label}
           </p>
@@ -278,10 +301,21 @@ export function Meter({
   pct,
   onDark = false,
   className = "",
+  barClassName,
+  barStyle,
 }: {
   pct: number;
   onDark?: boolean;
   className?: string;
+  /**
+   * Escape hatch for a fill that is NOT the action colour. There is exactly one
+   * legitimate case today: a BELT-coloured bar, where the colour is intrinsic to
+   * the belt (a blue belt is blue in every theme) and comes from BELTS via
+   * `barStyle`. It is not a general tint hook — a progress bar that is neither
+   * the accent nor a belt is a colour-law question, not a prop question.
+   */
+  barClassName?: string;
+  barStyle?: React.CSSProperties;
 }) {
   const w = Math.max(0, Math.min(100, pct));
   return (
@@ -295,8 +329,10 @@ export function Meter({
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out"
-        style={{ width: `${w}%` }}
+        className={`h-full rounded-full transition-[width] duration-700 ease-out ${
+          barClassName ?? "bg-accent"
+        }`}
+        style={{ width: `${w}%`, ...barStyle }}
       />
     </div>
   );

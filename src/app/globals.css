@@ -1304,6 +1304,32 @@ body {
     border-color: color-mix(in srgb, var(--accent-solid) 45%, var(--sand));
   }
 }
+/* RESTING PADDING (three lanes reported this independently). The chip shipped
+   with NO padding at all, so every caller hand-added its own and they drifted:
+   two call sites rendered ZERO-padding chips in production while others used
+   px-3 py-1.5. The default cannot be declared unlayered — globals.css has no
+   @layer, and an unlayered `padding` outranks EVERY Tailwind padding utility on
+   every existing caller, which would silently re-space a dozen shipped controls.
+   (Never write the px-star and py-star utility names side by side with a slash
+   between them in a comment: star-then-slash closes the comment and kills every
+   rule below it. That exact bug shipped once already.)
+
+   So this one rule lives in @layer components deliberately: utilities beat it,
+   so every caller that already sets its own padding is untouched, and a caller
+   that sets none finally gets a chip-shaped chip. --f0-chip-pad is the hook for
+   anything that wants a different resting value without a utility. */
+@layer components {
+  .f0-chip { padding: var(--f0-chip-pad, 0.375rem 0.75rem); }
+}
+
+/* CHARGED RESTING STATE. An accent-outlined chip that is NOT selected — the
+   canvas's "add / new / suggested" affordance. It drives the same
+   --f0-chip-line hook the dark rule already reads, so it is one declaration
+   rather than a second border rule to keep in sync, and it is mode-correct
+   (family gold / club orange / FTA metallic) for free. Two lanes were setting
+   this by inline style. */
+.f0-chip-accent { --f0-chip-line: var(--accent-solid); }
+
 .f0-chip-on {
   background: #14110F;
   color: #F7F3EA;
@@ -1465,10 +1491,15 @@ body {
    authoring action (orange) and stance is community sentiment (lime), and
    those must not be allowed to drift into one shared "selected" colour.
    The class supplies geometry and the motion only. */
+/* --f0-seg-bar-offset: the rail hairline is not always directly under the
+   button. Where a host pads the strip before its rule (the newsroom section
+   bar), the default -1px reads as a label underline floating above the rail
+   instead of sitting on it. Hosts set the property to place the bar exactly;
+   the default is unchanged, so every existing rail is untouched. */
 .f0-seg-bar {
   position: absolute;
   inset-inline: 0;
-  bottom: -1px;              /* sits ON the rail hairline, not above it */
+  bottom: var(--f0-seg-bar-offset, -1px);
   height: 3px;
   border-radius: 2px;
 }

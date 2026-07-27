@@ -46,7 +46,14 @@ export default function BeltHeroStrip({ xp, isKid = false }: { xp: number; isKid
             </span>
           </div>
 
-          <Meter pct={pct} className="mt-2" />
+          {/* Belt-coloured fill via the Meter escape hatch — the belt colour is
+              intrinsic (a blue belt is blue in every theme), which is the one
+              case the shared meter allows off the accent. */}
+          <Meter
+            pct={pct}
+            className="mt-2"
+            barStyle={{ backgroundColor: current.belt.hex }}
+          />
 
           <p className="mt-1.5 text-[12px] text-soft">
             {next
