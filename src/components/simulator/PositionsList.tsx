@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import type { Position } from "@/lib/simulator/portfolio-manager";
+import CompanyLogo from "@/components/fic/CompanyLogo";
 
 interface PositionsListProps {
   positions: Position[];
@@ -45,6 +46,7 @@ export default function PositionsList({
               className="flex items-center justify-between py-2 px-3 rounded-lg bg-midnight-800/50 border border-midnight-700/30"
             >
               <div className="flex items-center gap-3">
+                <CompanyLogo symbol={pos.symbol} name={pos.symbol} size={28} rounded="rounded-md" />
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-mono font-medium text-midnight-100">
