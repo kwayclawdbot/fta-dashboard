@@ -98,7 +98,23 @@ export default async function GuardrailsPage({
       </header>
 
       <div className="mt-7">
-        <GuardrailControls initial={guardrails} childName={name} />
+        {/* THE WRITE GATE IS THE SERVER'S, not this page's. `isParent` admits
+            `parent || admin` so an admin-parent reaches this screen at all;
+            whether the RPC accepts the write is decided by
+            set_family_guardrail. The controls therefore start live for anyone
+            who got here, and drop to a stated read-only posture the moment the
+            server refuses — which is the correct behaviour both before and
+            after migration 200 widens the RPC to `role in ('parent','admin')`.
+            A viewer with no parent role at all is handed the read-only surface
+            up front rather than switches that will bounce. */}
+        <GuardrailControls
+          initial={guardrails}
+          childName={name}
+          canWrite={ctx.isParent}
+          readOnlyReason={
+            "This account can see these guardrails but not change them — a guardrail write is accepted only from a parent in this household."
+          }
+        />
       </div>
 
       {/* ── The weekly digest ────────────────────────────────────────────*/}
