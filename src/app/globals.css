@@ -620,13 +620,12 @@ body {
   border-color: var(--accent-strong);
 }
 
-/* Warm paper card — the default surface of the redesign */
-.paper-card {
-  background: var(--card);
-  border: 1px solid var(--sand);
-  border-radius: 1rem;
-  box-shadow: var(--shadow-soft);
-}
+/* `.paper-card` — the pre-canvas default surface — was DELETED here once its
+   last call site went (FamilyProfileHome, R10). Its replacement is
+   `.club-b-card` in the board card system at the foot of this file: same idea,
+   but on the canvases' 14px radius with no shadow in light. Several component
+   headers still name it in prose describing what they were rebuilt away from;
+   those are history, not references. */
 
 /* Deliberate dark island (pro chart pane, special moments) */
 .night-island {
