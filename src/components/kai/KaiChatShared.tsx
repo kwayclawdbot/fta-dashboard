@@ -21,6 +21,8 @@ import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister, type Register } from "@/lib/register";
 import type { KaiChatSeed } from "@/lib/kai/chat-seed";
 import { KAI_CHAT_DAILY_CAP, type KaiProfile } from "@/lib/kai/persona";
+import { wallFor } from "@/lib/entitlements";
+import UnlockLine from "@/components/entitlements/UnlockLine";
 import { PriceChart } from "@/components/kai/ReportCharts";
 import Markdown from "@/components/kai/Markdown";
 import { Card, CardLabel, SectionMark } from "@/components/research/board";
@@ -61,6 +63,9 @@ interface Thread {
 
 /** Kai-blue text: #2563FF is heavy on near-black, so it steps up the ramp. */
 const KAI_INK = "text-kai-600 dark:text-kai-300";
+
+/** Ratified Club words for a spent Kai meter. Resolved once, at module load. */
+const KAI_FULL_WALL = wallFor("kai_chat_full");
 
 /**
  * The Kai tint laid over `.f0-hero-field` — mixed from the --color-kai-* tokens
@@ -552,9 +557,7 @@ export default function KaiChatShared({
   function capLine() {
     return isKid
       ? "That's all your Kai questions for today — come back tomorrow!"
-      : `You've used all ${cap} of today's Ask Kai messages. Come back tomorrow${
-          register === "adult" && tier === "fic" ? "." : "."
-        }`;
+      : `You've used all ${cap} of today's Ask Kai messages. Come back tomorrow.`;
   }
 
   if (!ready) {
@@ -765,9 +768,11 @@ export default function KaiChatShared({
               </p>
             </div>
             {cap > 0 && (
+              /* The meter reads FORWARD, not backward: a free member should see
+                 what they have spent of a known allowance, not a countdown to
+                 zero. Both numbers are interpolated — never a hardcoded "3". */
               <span className="f0-chip shrink-0 px-2.5 py-1 font-mono text-[10px] tabular-nums text-soft">
-                {Math.max(cap - usedToday, 0)}
-                <span className="text-soft/55">/{cap}</span> left today
+                {Math.min(usedToday, cap)} of {cap} questions used today
               </span>
             )}
             <button
@@ -908,9 +913,19 @@ export default function KaiChatShared({
         {/* Composer — a ruled line, not a boxed input. */}
         <div className="border-t border-sand px-4 py-3.5">
           {capReached ? (
-            <p className="py-1.5 text-center text-[13px] leading-relaxed text-soft">
-              {capLine()}
-            </p>
+            /* Spent meter. The fact first, then — for a free adult only — the
+               door, in the ratified Club words. A kid never sees commercial
+               copy, so the kid branch ends at the sentence. */
+            <div className="mx-auto max-w-[65ch]">
+              <p className="py-1.5 text-center text-[13px] leading-relaxed text-soft">
+                {capLine()}
+              </p>
+              {!isKid && tier === "free" && (
+                <UnlockLine cta={KAI_FULL_WALL.cta} href="/pricing" rule={false}>
+                  {KAI_FULL_WALL.body}
+                </UnlockLine>
+              )}
+            </div>
           ) : (
             <>
               {capNote && (

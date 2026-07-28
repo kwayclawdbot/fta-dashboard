@@ -24,8 +24,11 @@
  *      task with its own primary action at the bottom; a second floating button
  *      over it is noise at best and a mis-tap at worst.
  *
- * Free tier is excluded everywhere — /kai is members-gated server-side, so a FAB
- * there would only bounce.
+ * The free tier is NOT a fourth reason. /kai used to be members-gated outright,
+ * so a FAB for a free member was a button that only bounced; it is now a METERED
+ * free surface (KAI_CHAT_DAILY_CAP.free questions a day, enforced server-side in
+ * the chat route). A free member who taps the FAB lands on a working Kai and
+ * spends a question, so the button leads somewhere and stays.
  */
 
 /** The surface floats its own bottom-right affordance. */
@@ -53,9 +56,12 @@ function matches(pathname: string, prefixes: string[]): boolean {
  * Kept free of React so the shell can call it during render to decide how much
  * bottom room the scroll container has to reserve — the FAB is the reason the
  * last row of a list was unreachable on a phone.
+ *
+ * `_tier` is retained for call-site compatibility (and because a future tier may
+ * yet want its own corner); route is now the only thing that decides.
  */
-export function showsKaiFab(pathname: string, tier: string | undefined): boolean {
-  if ((tier ?? "fic") === "free") return false;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function showsKaiFab(pathname: string, _tier: string | undefined): boolean {
   if (pathname === "/kai" || pathname.startsWith("/kai/")) return false;
   if (matches(pathname, SURFACE_OWNS_CORNER)) return false;
   if (matches(pathname, FULL_SCREEN_FLOW)) return false;
