@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { m, AnimatePresence } from "@/lib/motion";
 import { Bell, BellPlus, X, Check, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "@/components/ui/Toast";
 import {
   ruleLabel,
   MAX_ACTIVE_RULES,
@@ -215,16 +216,21 @@ function AlertModal({
       active: true,
     });
     if (err) {
-      setError(
-        /cap reached/i.test(err.message)
-          ? `You've hit the ${MAX_ACTIVE_RULES}-alert limit. Pause one in your Alerts hub first.`
-          : "Could not save that alert. Try again."
-      );
+      const message = /cap reached/i.test(err.message)
+        ? `You've hit the ${MAX_ACTIVE_RULES}-alert limit. Pause one in your Alerts hub first.`
+        : "Could not save that alert. Try again.";
+      setError(message);
+      toast(message, "error");
       setBusy(false);
       return;
     }
     setDone(true);
     setBusy(false);
+    // The sheet's own "Alert set" panel lives for ~1s and then the sheet is
+    // gone — which read as "nothing happened" even though the row was written.
+    // The toast outlives the sheet, so the confirmation is still on screen
+    // when the member is back on the surface they started from.
+    toast(`Alert set — ${label}`);
     setTimeout(onClose, 1100);
   }, [isPreset, presetId, presetLabel, kind, ticker, params, label, digest, surface, onClose]);
 
