@@ -22,6 +22,7 @@ import Burst from "@/components/games/Burst";
 import StreakFlame from "@/components/games/StreakFlame";
 import { DisplayHead, Meter, EmptyLine, TextAction } from "@/components/f0/parts";
 import { BoardSection } from "@/components/clubhome/board";
+import TodaysReview from "@/components/review/TodaysReview";
 
 /* ══════════════════════════════════════════════════════════════════════════
    FLASHCARDS — recall practice, drawn in the BOARD's card language.
@@ -322,6 +323,13 @@ export default function FlashcardsPage() {
             </button>
           </div>
         </section>
+
+        {/* TODAY'S REVIEW — the SRS unlock. `skill_mastery.next_review_at` has
+            been scheduled on every lesson interaction since migration 166 and
+            read by nothing; this is its first consumer, and it sits directly
+            under the Daily 5 because it is the same promise made specific:
+            not "five cards", but THESE concepts, now, before you lose them. */}
+        {userId && <TodaysReview userId={userId} onStartCards={startDaily} starting={starting} />}
 
         {/* Sets — white cards on the paper, never a tile grid. */}
         {sets.length === 0 ? (
