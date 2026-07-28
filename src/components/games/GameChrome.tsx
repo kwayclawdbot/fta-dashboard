@@ -143,6 +143,7 @@ export function GameEndScreen({
   onReplay,
   backHref,
   backLabel,
+  footer,
 }: {
   passed: boolean;
   score: number;
@@ -153,6 +154,10 @@ export function GameEndScreen({
   onReplay: () => void;
   backHref: string;
   backLabel: string;
+  /** OPTIONAL slot between the measures and the CTA row — a game may put one
+   *  quiet contextual line here. Absent for every game that doesn't pass it, so
+   *  the end screen is byte-identical to what it always drew. */
+  footer?: React.ReactNode;
 }) {
   const pct = Math.round((score / total) * 100);
   return (
@@ -239,6 +244,8 @@ export function GameEndScreen({
         <p className="relative mt-4 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft tabular-nums">
           {points} combo points this session · combo points are not saved
         </p>
+
+        {footer && <div className="relative">{footer}</div>}
 
         <div className="relative mt-6 flex flex-wrap items-center gap-4">
           <Link

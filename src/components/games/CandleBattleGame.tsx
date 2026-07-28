@@ -13,6 +13,8 @@ import Burst from "./Burst";
 import ScorePop from "./ScorePop";
 import { GameTopBar, GameEndScreen } from "./GameChrome";
 import { useGameSound } from "./useGameSound";
+import UnlockLine from "@/components/entitlements/UnlockLine";
+import { useEntitlements } from "@/components/entitlements/EntitlementsProvider";
 
 type Phase = "forming" | "decision" | "resolving" | "result";
 const FORM_MS = 2200;
@@ -163,6 +165,7 @@ export default function CandleBattleGame() {
         onReplay={g.replay}
         backHref="/games"
         backLabel="Back to games"
+        footer={<ClubDoorAfterClearing passed={g.score / g.total >= 0.7} />}
       />
     );
   }
@@ -323,5 +326,27 @@ export default function CandleBattleGame() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * THE MOMENT OF MAXIMUM IMPRESSION. A free adult has just read a set of candles
+ * correctly and been told so — that is the one instant in the whole app where
+ * the Club's proposition is self-evident, because they've just done the thing.
+ * One quiet line under the measures; no banner, no urgency, no countdown.
+ *
+ * Rendered ONLY for a free ADULT member who CLEARED the bar (the same 70% that
+ * decides `passed` and pays XP — this reads that verdict, it never sets it).
+ * Kids and teens never see a commercial ask; paying members have no door to
+ * open. Purely presentational: no entitlement is granted or checked for access.
+ */
+function ClubDoorAfterClearing({ passed }: { passed: boolean }) {
+  const { tier, register } = useEntitlements();
+  if (!passed) return null;
+  if (tier !== "free" || register !== "adult") return null;
+  return (
+    <UnlockLine href="/pricing" cta="Join the Club" className="mt-5">
+      You read that chart right. Members do this with real companies
+    </UnlockLine>
   );
 }
