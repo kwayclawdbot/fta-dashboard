@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { beltProgress } from "@/lib/belts";
+import { Belt, BeltMark } from "@/components/art";
 
 /**
  * Persistent self-visibility belt chip. Shows the member's current belt (color
@@ -10,8 +11,16 @@ import { beltProgress } from "@/lib/belts";
  * the earned axis.
  *
  * Two shapes:
- *   compact — TopBar (sm+). Swatch + name + slim bar in a rounded pill.
+ *   compact — TopBar (sm+). Belt mark + name + slim bar in a rounded pill.
  *   full    — mobile More-sheet header. Adds the "N XP to <next>" line.
+ *
+ * Both shapes used to draw the belt as a coloured tile with the belt's first
+ * LETTER in it ("W", "B", "B" — Black and Blue collided, which is how you know
+ * an initial was never the right mark). Both now draw the belt object itself at
+ * a size that resolves it: 34px in the sheet header, 20px in the top bar. The
+ * chip is not a LevelObject and shouldn't be — it lives in the dark chrome on
+ * midnight tokens, not on the page surface, and it is a NAVIGATION affordance
+ * whose bar is a hint rather than a readout.
  *
  * XP is resolved by the parent (DashboardShell) so both instances share one
  * fetch; while it is null a neutral skeleton renders so layout never jumps.
@@ -62,12 +71,12 @@ export default function BeltChip({
         onClick={onNavigate}
         className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-midnight-950 transition-colors"
       >
-        <span
-          className="w-9 h-9 rounded-lg flex items-center justify-center font-display text-[11px] font-black shrink-0"
-          style={{ backgroundColor: belt.hex, color: belt.onHex, boxShadow: `inset 0 0 0 1px ${belt.borderHex}` }}
-        >
-          {belt.name[0]}
-        </span>
+        <Belt
+          belt={belt.key}
+          degree={bp.current.degree}
+          size={34}
+          className="shrink-0"
+        />
         <div className="min-w-0 flex-1">
           <p className="font-display text-sm font-bold text-midnight-50 truncate">
             {bp.current.label}
@@ -92,12 +101,7 @@ export default function BeltChip({
       aria-label={`${bp.current.label}, ${toNextLabel}. Open leaderboard`}
       className="hidden sm:flex items-center gap-2 h-8 pl-1.5 pr-2.5 rounded-full border border-midnight-700/60 hover:border-midnight-600 hover:bg-midnight-800/40 transition-colors"
     >
-      <span
-        className="w-5 h-5 rounded-full flex items-center justify-center font-display text-[9px] font-black shrink-0"
-        style={{ backgroundColor: belt.hex, color: belt.onHex, boxShadow: `inset 0 0 0 1px ${belt.borderHex}` }}
-      >
-        {belt.name[0]}
-      </span>
+      <BeltMark belt={belt.key} size={20} className="shrink-0" />
       <span className="hidden md:inline font-display text-[11px] font-bold text-midnight-100 whitespace-nowrap">
         {bp.current.short}
       </span>

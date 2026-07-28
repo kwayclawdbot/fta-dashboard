@@ -1,15 +1,21 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { m } from "@/lib/motion";
+// `m` is the LazyMotion primitive and covers everything on this page EXCEPT
+// layout animation, which the domAnimation feature bundle does not ship. The
+// board re-orders itself when a window changes, and rows sliding to their new
+// positions is the one moment this surface has to show that rank MOVED rather
+// than that a different list appeared — so the rows use the full `motion`
+// primitive imported directly. Nothing else on the page does.
+import { motion } from "framer-motion";
+import { m, useReducedMotion } from "@/lib/motion";
 import { createClient } from "@/lib/supabase/client";
 import { useAppMode } from "@/lib/useAppMode";
 import type { FamilyTier } from "@/lib/tier";
 import { beltForXp } from "@/lib/belts";
 import Avatar from "@/components/Avatar";
 import BeltBadge from "@/components/BeltBadge";
-import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
 import ProfileLink from "@/components/ProfileLink";
 import { SegmentedRail } from "@/components/canvas2";
@@ -418,7 +424,107 @@ function LeaderboardInner() {
   );
 }
 
-/* ── Individuals ──────────────────────────────────────────────────────────── */
+/* ── Individuals ──────────────────────────────────────────────────────────
+
+   THE PODIUM. A board's top three are the reason anyone opens a leaderboard,
+   and rendering them as "the first three rows of a list" throws that away. So
+   the top three leave the list and become a podium object: 2nd and 3rd flank a
+   1st place that sits physically higher, each drawn vertically — face, name,
+   belt, number — the way a podium actually reads.
+
+   THE RISE. On first paint the three rise into place from the BOTTOM of the
+   podium up: 3rd, then 2nd, then 1st, 100ms apart. The order is the point. A
+   top-down reveal walks the eye off the winner; this one walks it up and lands
+   on them. Spring 300/22 — quick, one small settle, no bounce that would read
+   as a toy.
+
+   REDUCED MOTION collapses every one of these to a 120ms opacity fade with no
+   delay and no travel, here and in the rows below.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** The rise, shared by the podium and the rows so one preference check governs
+    the whole board. `place` is 1-based from the top of the podium. */
+function riseProps(reduce: boolean, place = 1) {
+  if (reduce) {
+    return {
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
+      transition: { duration: 0.12 },
+    } as const;
+  }
+  return {
+    initial: { opacity: 0, y: 16 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 22,
+      delay: (3 - place) * 0.1,
+    },
+  };
+}
+
+/** One plinth. Vertical, because a podium is vertical. */
+function PodiumCard({ row, place, reduce }: { row: IndRow; place: number; reduce: boolean }) {
+  const belt = beltForXp(row.xp);
+  const lead = place === 1;
+  return (
+    <motion.div
+      layout
+      {...riseProps(reduce, place)}
+      // DOM order stays 1-2-3 so reading and tab order match rank; only the
+      // painted order is the podium's 2-1-3.
+      className={`relative pt-1.5 ${
+        lead ? "sm:order-2 sm:-mt-3" : place === 2 ? "sm:order-1" : "sm:order-3"
+      }`}
+    >
+      <span
+        className={`club-b-pip absolute left-2 top-0 z-10 ${lead ? "club-b-pip-lead" : ""}`}
+        style={{ width: 18, height: 18, fontSize: 10 }}
+      >
+        <span className="sr-only">Rank </span>
+        {place}
+      </span>
+      <div
+        className={`club-b-card flex h-full flex-col items-center gap-1.5 rounded-[14px] px-3 pb-3.5 text-center ${
+          lead ? "club-b-card-lead pt-6" : "pt-5"
+        }`}
+      >
+        <ProfileLink username={row.username} variant="avatar" className="shrink-0">
+          <Avatar
+            name={row.display_name}
+            avatarUrl={row.avatar_url}
+            xp={row.xp}
+            size={lead ? "xl" : "lg"}
+          />
+        </ProfileLink>
+        <ProfileLink
+          username={row.username}
+          className="mt-0.5 max-w-full truncate font-display text-[13px] font-bold text-ink"
+        >
+          {row.display_name || "Member"}
+        </ProfileLink>
+        <span className="flex flex-wrap items-center justify-center gap-1.5">
+          <BeltBadge rank={belt} size="xs" />
+          {row.is_me && <YouMark />}
+        </span>
+        <span className="mt-0.5">
+          <span
+            className={`block font-mono font-semibold tabular-nums text-ink ${
+              lead ? "text-[20px]" : "text-[16px]"
+            }`}
+          >
+            {row.xp.toLocaleString()}
+          </span>
+          <span className="mt-0.5 block font-display text-[8px] font-bold uppercase tracking-[0.14em] text-soft">
+            XP
+          </span>
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
 function IndividualRow({ row, pinned }: { row: IndRow; pinned?: boolean }) {
   const belt = beltForXp(row.xp);
   return (
@@ -434,8 +540,13 @@ function IndividualRow({ row, pinned }: { row: IndRow; pinned?: boolean }) {
           >
             {row.display_name || "Member"}
           </ProfileLink>
-          <AgeBadge role={row.role} ageGroup={row.age_group} />
-          <BeltBadge rank={belt} size="xs" />
+          {/* The grey person-icon chip that used to sit here is GONE. It was a
+              lucide glyph in a neutral lozenge repeating what the avatar and
+              the name already said, and on a rank board the reader is scanning
+              for a belt and a number — a second grey chip in that scan path is
+              pure interference. Age stays where it belongs: on posts and
+              comments, where it is a safety cue. */}
+          <BeltBadge rank={belt} size="sm" />
           {(row.is_me || pinned) && <YouMark />}
         </span>
         <span className="mt-0.5 block truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
@@ -454,6 +565,10 @@ function IndividualRow({ row, pinned }: { row: IndRow; pinned?: boolean }) {
   );
 }
 
+/** How many trailing zero-XP rows it takes before hiding them is worth a
+    control. Below this the fold costs more attention than it saves. */
+const TAIL_FOLD_MIN = 3;
+
 function IndividualsBoard({
   ind,
   meInRows,
@@ -467,6 +582,17 @@ function IndividualsBoard({
   scope: Scope;
   meOffBoard?: boolean;
 }) {
+  const reduce = useReducedMotion() ?? false;
+  const [showTail, setShowTail] = useState(false);
+
+  // SELF-VISIBILITY. The member's own row is the one row they came to find, and
+  // on a full board it is usually below the fold. An observer on the real row
+  // tells us when it has scrolled away; while it has, a copy of it pins to the
+  // bottom of the viewport. No polling, no scroll handler, and the pin is never
+  // on screen at the same time as the row it duplicates.
+  const selfRef = useRef<HTMLDivElement | null>(null);
+  const [selfVisible, setSelfVisible] = useState(true);
+
   if (ind.rows.length === 0) {
     return (
       <EmptyCard
@@ -481,15 +607,65 @@ function IndividualsBoard({
   const everyoneFirstRung = ind.rows.every((r) => beltForXp(r.xp).belt.key === "white");
   const thin = ind.rows.length < 4;
 
+  // THE ZERO TAIL. A window's board ends in a run of members who earned nothing
+  // in it. Those rows are true and they belong to real people, so they are not
+  // dropped — but a screen of 0s buries the part of the board that has movement
+  // in it, so the run folds behind a control that says exactly how many. If
+  // EVERY row is a zero the fold is skipped: that is not a tail, that is the
+  // whole board, and hiding it would leave nothing.
+  let cut = ind.rows.length;
+  while (cut > 0 && ind.rows[cut - 1].xp === 0) cut--;
+  const tailCount = cut === 0 ? 0 : ind.rows.length - cut;
+  const folded = tailCount >= TAIL_FOLD_MIN && !showTail;
+  const visible = folded ? ind.rows.slice(0, cut) : ind.rows;
+
+  // The podium only exists once there are three to stand on it. Below that the
+  // board is a short list and should look like one.
+  const hasPodium = visible.length >= 3;
+  const podium = hasPodium ? visible.slice(0, 3) : [];
+  const rest = hasPodium ? visible.slice(3) : visible;
+
+  const myRow = ind.rows.find((r) => r.is_me) ?? ind.me;
+  // The observed element is wherever the member actually is — their row, or the
+  // podium block when they are standing on it. Without this second case a top-3
+  // member scrolls past themselves and never gets the pin.
+  const myInPodium = !!myRow && podium.some((r) => r.id === myRow.id);
+  const selfOnScreen = !!myRow && visible.some((r) => r.id === myRow.id) && selfVisible;
+
   return (
     <div>
-      <div className="f0-stagger space-y-2">
-        {ind.rows.map((row, i) => (
-          <div key={row.id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
+      {hasPodium && (
+        <div className="grid gap-2 sm:grid-cols-3 sm:items-end" ref={myInPodium ? selfRef : undefined}>
+          {podium.map((row, i) => (
+            <PodiumCard key={row.id} row={row} place={i + 1} reduce={reduce} />
+          ))}
+        </div>
+      )}
+
+      <div className={hasPodium ? "mt-2 space-y-2" : "space-y-2"}>
+        {rest.map((row) => (
+          <motion.div
+            key={row.id}
+            // FLIP. `layout` is what makes a rank CHANGE legible: when the
+            // window switches and a member moves from 9th to 4th, the row
+            // travels there instead of teleporting.
+            layout
+            {...riseProps(reduce)}
+            ref={myRow && row.id === myRow.id ? selfRef : undefined}
+          >
             <IndividualRow row={row} />
-          </div>
+          </motion.div>
         ))}
       </div>
+
+      {folded && (
+        <div className="pt-3">
+          <TextAction onClick={() => setShowTail(true)}>
+            Show all {ind.rows.length.toLocaleString()} — {tailCount.toLocaleString()} member
+            {tailCount === 1 ? "" : "s"} earned no XP in this window
+          </TextAction>
+        </div>
+      )}
 
       {everyoneFirstRung ? (
         <FoundingNote>
@@ -504,14 +680,6 @@ function IndividualsBoard({
         </FoundingNote>
       ) : null}
 
-      {/* Pin "me" when outside the visible rows. */}
-      {ind.me && !meInRows && (
-        <div className="mt-5 space-y-2.5">
-          <ListHead charged={false}>Your rank</ListHead>
-          <IndividualRow row={ind.me} pinned />
-        </div>
-      )}
-
       {/* A staff or fixture account has no rank here BY DESIGN. Saying so beats
           a missing row the viewer has to guess at. */}
       {meOffBoard && (
@@ -520,8 +688,51 @@ function IndividualsBoard({
           rank on it.
         </FoundingNote>
       )}
+
+      {/* THE PIN. Sticky to the bottom of the viewport for as long as the real
+          row is out of sight — including the case where the member is off the
+          returned window entirely and has no real row at all, which is exactly
+          when knowing your rank matters most. */}
+      {myRow && !selfOnScreen && (
+        <div className="sticky bottom-2 z-20 mt-3 [filter:drop-shadow(0_6px_16px_rgba(0,0,0,0.18))]">
+          <IndividualRow row={myRow} pinned={!meInRows} />
+        </div>
+      )}
+
+      <SelfObserver targetRef={selfRef} onChange={setSelfVisible} deps={[visible.length, myRow?.id, myInPodium]} />
     </div>
   );
+}
+
+/**
+ * The observer, split out so IndividualsBoard's early return for the empty
+ * board cannot sit above a hook. It renders nothing; it exists to own an
+ * effect. State is only ever written from the observer callback — never
+ * synchronously in the effect body — which is the same rule the data loads on
+ * this page follow (react-hooks/set-state-in-effect).
+ */
+function SelfObserver({
+  targetRef,
+  onChange,
+  deps,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>;
+  onChange: (visible: boolean) => void;
+  deps: unknown[];
+}) {
+  useEffect(() => {
+    const el = targetRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => onChange(entry.isIntersecting), {
+      // A row half-under the pin still counts as gone — otherwise the pin
+      // flickers in and out as the row grazes the bottom edge.
+      rootMargin: "0px 0px -72px 0px",
+    });
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return null;
 }
 
 /* ── Families ─────────────────────────────────────────────────────────────── */

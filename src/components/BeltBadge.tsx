@@ -1,4 +1,5 @@
 import { beltForXp, type BeltRank } from "@/lib/belts";
+import { BeltMark } from "@/components/art";
 
 /**
  * Belt name pill — the spelled-out belt indicator for leaderboards, the public
@@ -24,6 +25,25 @@ const SWATCH: Record<keyof typeof SIZES, string> = {
 };
 
 /**
+ * THE PILL KEEPS ITS PILL, BUT LOSES THE DOT WHERE THERE IS ROOM FOR A BELT.
+ *
+ * A round colour swatch is the same mark a status dot, an unread pip and a
+ * legend key use — it says "a colour lives here", never "a belt lives here".
+ * Where the pill is big enough to resolve the drawn belt, it draws the drawn
+ * belt instead, so the rank object is the SAME object in the ladder, the
+ * leaderboard and the chip next to a name.
+ *
+ * `xs` is the exception and stays a dot. At 9px type the pill is ~14px tall;
+ * a belt drawn into that is a smudge, and a smudge is worse than an honest
+ * dot. Pass `mark` explicitly to override in either direction.
+ */
+const MARK_WIDTH: Record<keyof typeof SIZES, number> = {
+  xs: 14,
+  sm: 16,
+  md: 20,
+};
+
+/**
  * THE TWO ENDS OF THE LADDER CANNOT COLOUR THEIR OWN LABEL. Every other belt
  * hex is a mid-tone that reads on both papers, so the pill can tint itself and
  * write the word in its own colour. White (#E8EAF0) and Black (#1F2430) cannot:
@@ -42,17 +62,21 @@ export function BeltBadge({
   rank,
   xp,
   size = "sm",
+  mark,
   className = "",
 }: {
   /** Provide a resolved rank, or an xp total to resolve one. */
   rank?: BeltRank;
   xp?: number;
   size?: keyof typeof SIZES;
+  /** Draw the belt object instead of the colour dot. Defaults on above `xs`. */
+  mark?: boolean;
   className?: string;
 }) {
   const r = rank ?? beltForXp(xp ?? 0);
   const { belt } = r;
   const neutral = NEUTRAL_BELTS.has(belt.key);
+  const drawBelt = mark ?? size !== "xs";
   return (
     <span
       title={`${r.label} · Level ${r.level.level} (${r.level.name})`}
@@ -65,10 +89,14 @@ export function BeltBadge({
         border: `1px solid ${belt.borderHex}${neutral ? "" : "55"}`,
       }}
     >
-      <span
-        className={`rounded-full shrink-0 ${SWATCH[size]}`}
-        style={{ backgroundColor: belt.hex, border: `1px solid ${belt.borderHex}` }}
-      />
+      {drawBelt ? (
+        <BeltMark belt={belt.key} degree={r.degree} size={MARK_WIDTH[size]} className="shrink-0" />
+      ) : (
+        <span
+          className={`rounded-full shrink-0 ${SWATCH[size]}`}
+          style={{ backgroundColor: belt.hex, border: `1px solid ${belt.borderHex}` }}
+        />
+      )}
       {r.short}
     </span>
   );

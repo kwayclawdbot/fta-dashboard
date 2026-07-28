@@ -27,20 +27,24 @@ import {
   WarmCard,
   ListHead,
   RowCard,
-  BeltDisc,
   BeltChip,
-  MiniMeter,
   EmptyCard,
   TextAction,
 } from "@/components/you/parts";
+// The drawn belt. Aliased because `Belt` is already the belt TYPE from
+// lib/belts in this file, and the object and its data shape both deserve the
+// obvious name in their own layer.
+import { Belt as BeltObject, EmptyBeltOnPeg, EmptyStateNote } from "@/components/art";
+import { XpLevelObject } from "@/components/canvas2";
 
 /* ══════════════════════════════════════════════════════════════════════════
    BELTS — the rank ladder. Route: /belts. Built to App Light board 22
    "Belts · Rank System": the "belts" wordmark with a back chevron, the stack of
    rung cards each with a belt disc / name / gate line / share-of-club figure,
    the current rung as a warm glowing card with a star pip and "— YOU ARE HERE",
-   the "HOW BELTS SHOW UP" explainer card, and the footer "Next:" bar with its
-   40px meter.
+   the "HOW BELTS SHOW UP" explainer card. The board's footer "Next:" bar is
+   deliberately not built: its three numbers are the hero object's three
+   numbers, and the hero is where a member looks first.
 
    ── WHAT EACH DRAWN FIGURE ACTUALLY SHOWS ─────────────────────────────────
    drawn                              ships
@@ -57,8 +61,14 @@ import {
                                       reps and this screen says exactly that.
    "62% OF CLUB" / "21%" / "0.4%"     the REAL share of ranked members sitting
                                       on that rung, from the XP leaderboard
-                                      RPC. A rung nobody stands on reads "—",
-                                      never a manufactured percentage.
+                                      RPC — demoted to a quiet mono line, and
+                                      SUPPRESSED ENTIRELY when it would be
+                                      noise. This used to be the loudest figure
+                                      on the page, which made the screen about
+                                      the club's shape rather than the member's
+                                      own position; the hero object below the
+                                      mast is the answer to "where am I", and
+                                      the share is a footnote to it.
    "Next: Red-stripe Black Belt /     the real next belt or degree, the real XP
     Keep 70%+ accuracy for 2 months"  remaining, and the real progress bar.
    named example members              the same three-row explainer card, but
@@ -76,7 +86,8 @@ import {
      · per-source breakdown  → own rows of `xp_events`
      · belt distribution     → xp_leaderboard_individuals (mig. 099)
    FOUNDING STATE: production is a handful of members, all of them White. The
-   distribution renders that truth — empty rungs read "—", and the surface says
+   distribution renders that truth — empty rungs carry no figure at all, the
+   unclaimed top rung is drawn as a belt on an empty peg, and the surface says
    out loud that the ladder is empty on purpose.
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -191,6 +202,11 @@ interface BeltState {
 /** One page of XP events — PostgREST caps a select, so we read a page and say
  *  so when the page is full rather than pretending it is the whole ledger. */
 const EVENT_PAGE = 1000;
+
+/** Below this many ranked members a share-of-club percentage is noise wearing a
+ *  number's clothes — one signup moves a rung double digits — so it is not
+ *  published at all. See shareLabel(). */
+const SHARE_FLOOR = 5;
 
 const EMPTY: BeltState = {
   xp: 0,
@@ -334,13 +350,23 @@ export default function BeltLadder() {
   const everyoneOnFirstRung =
     !!dist && state.clubTotal > 0 && dist[RUNGS[0].belt.key] === state.clubTotal;
 
-  /** Real share of ranked members on a rung. "—" when nobody stands there. */
-  function shareLabel(key: BeltKey): string {
-    if (!dist || state.clubTotal === 0) return "—";
+  /**
+   * Real share of ranked members on a rung, or NOTHING.
+   *
+   * The old version returned "—" for an empty rung, which put a placeholder
+   * glyph on four of five rungs at founding scale and made the column look
+   * broken rather than young. Worse, a percentage computed over three people is
+   * arithmetic, not information: one member joining swings a rung by 33 points.
+   * So the figure only exists when it can survive being read — a non-empty rung
+   * counted across at least SHARE_FLOOR ranked members. Everything else renders
+   * no element at all, and the paragraph under the ladder carries the truth.
+   */
+  function shareLabel(key: BeltKey): string | null {
+    if (!dist || state.clubTotal < SHARE_FLOOR) return null;
     const n = dist[key];
-    if (n === 0) return "—";
+    if (!n) return null;
     const pct = (n / state.clubTotal) * 100;
-    return `${pct >= 10 ? Math.round(pct) : pct.toFixed(1)}%`;
+    return `${pct >= 10 ? Math.round(pct) : pct.toFixed(1)}% of club`;
   }
 
   return (
@@ -351,20 +377,48 @@ export default function BeltLadder() {
         lede="Rank is earned from reps, not follower counts. Your belt travels with you everywhere in the Club."
       />
 
+      {/* ── WHERE YOU STAND ─────────────────────────────────────────────────
+          The page used to open on the ladder, which meant the first thing a
+          member read was somebody else's rung and a share-of-club percentage.
+          The hero is now the member's own position, drawn with the canonical XP
+          object (canvas2/LevelObject): their belt at a size you can actually
+          see, the belt they hold, how much of it is behind them, and — as the
+          loudest figure on the screen — what the next belt costs. Every number
+          in it comes from the same beltProgress() call the footer used to make,
+          so nothing new is computed and nothing can drift. */}
+      <XpLevelObject
+        xp={state.xp}
+        ladder="belt"
+        leading={<BeltObject rank={prog.current} size={64} title={prog.current.label} />}
+        className="pt-1"
+      />
+
       {/* ── THE LADDER ──────────────────────────────────────────────────────
           One card per rung, as drawn. The rung the member stands on is the warm
-          card with the orange edge, the star pip and "— YOU ARE HERE". */}
+          card with the orange edge and "— YOU ARE HERE".
+
+          Each rung wears the DRAWN belt rather than the old coloured lozenge.
+          Degree follows the member's real standing: a rung already behind them
+          shows every notch that belt carries, the rung they stand on shows the
+          degree they actually hold, and a rung ahead is drawn locked — the same
+          belt in line only, so the ladder reads as one object photographed at
+          five stages rather than five unrelated chips. */}
       <section className="space-y-2 pt-1">
         {RUNGS.map((rung, i) => {
           const isCurrent = i === currentIndex;
           const earned = i <= currentIndex;
           const share = shareLabel(rung.belt.key);
+          const degree = isCurrent
+            ? prog.current.degree
+            : earned
+              ? rung.levels.length
+              : 1;
           const disc = (
-            <BeltDisc
-              hex={rung.belt.hex}
-              borderHex={rung.belt.borderHex}
-              starred={isCurrent}
-              muted={!earned}
+            <BeltObject
+              belt={rung.belt.key}
+              degree={degree}
+              size={38}
+              locked={!earned}
             />
           );
 
@@ -384,16 +438,11 @@ export default function BeltLadder() {
               )}
             </span>
           );
-          const value = (
-            <span
-              className={`font-mono text-[9px] tabular-nums ${
-                isCurrent ? "text-gold-700" : "text-soft"
-              }`}
-            >
-              {share}
-              {i === 0 && share !== "—" ? " OF CLUB" : ""}
-            </span>
-          );
+          // Quiet, and absent when it has nothing to say. No accent colour: the
+          // share is a footnote, and a footnote in gold is not a footnote.
+          const value = share ? (
+            <span className="font-mono text-[10.5px] tabular-nums text-soft">{share}</span>
+          ) : undefined;
 
           if (isCurrent) {
             return (
@@ -405,7 +454,7 @@ export default function BeltLadder() {
                     {gateLine(i)}
                   </span>
                 </span>
-                <span className="shrink-0">{value}</span>
+                {value ? <span className="shrink-0">{value}</span> : null}
               </WarmCard>
             );
           }
@@ -423,12 +472,36 @@ export default function BeltLadder() {
         })}
       </section>
 
+      {/* THE TOP RUNG, EMPTY — drawn rather than stated.
+          "No Black Belts yet" as a line of text reads like a missing feature.
+          The belt on the peg says the same thing as a picture: the rank exists,
+          the peg is hung, nobody has taken it down. Shown only once there IS a
+          club to be absent from — with nobody ranked at all, the paragraph
+          below already carries it. */}
+      {dist && state.clubTotal > 0 && dist[RUNGS[RUNGS.length - 1].belt.key] === 0 && (
+        <EmptyStateNote
+          art={<EmptyBeltOnPeg size={72} />}
+          title={`No ${RUNGS[RUNGS.length - 1].belt.name} Belts yet`}
+        >
+          The top rung is unclaimed. It takes {RUNGS[RUNGS.length - 1].minXp.toLocaleString()} XP
+          of real reps to reach, and nobody in the Club has put them in — so the peg stays empty
+          until somebody does.
+        </EmptyStateNote>
+      )}
+
       {/* The distribution, told honestly at the scale it actually has. */}
       <p className="text-[11px] leading-relaxed text-soft">
         {dist == null ? (
-          "The club-wide share couldn't be read just now, so every rung shows — rather than a number we can't stand behind."
+          "The club-wide share couldn't be read just now, so no rung carries a percentage — we'd rather show you nothing than a number we can't stand behind."
         ) : state.clubTotal === 0 ? (
           "Nobody is ranked yet. The shares fill in as members earn their first XP."
+        ) : state.clubTotal < SHARE_FLOOR ? (
+          <>
+            {state.clubTotal === 1 ? "One member is" : `${state.clubTotal} members are`} ranked so
+            far — too few for a share-of-club percentage to mean anything, so the ladder carries
+            none. It starts showing shares once the board passes{" "}
+            {SHARE_FLOOR.toLocaleString()} ranked members.
+          </>
         ) : everyoneOnFirstRung ? (
           <>
             All {state.clubTotal.toLocaleString()} ranked{" "}
@@ -442,7 +515,7 @@ export default function BeltLadder() {
             Shares are counted across {state.clubTotal.toLocaleString()} ranked member
             {state.clubTotal === 1 ? "" : "s"}
             {state.clubCapped ? " (the top 100 by lifetime XP)" : ""}. A rung with nobody on it
-            reads &ldquo;—&rdquo;. No belt is gated on accuracy or a win rate — we don&apos;t
+            carries no figure at all. No belt is gated on accuracy or a win rate — we don&apos;t
             publish either.
           </>
         )}
@@ -457,11 +530,7 @@ export default function BeltLadder() {
         <Card className="rounded-[14px] px-3.5 py-3">
           <div className="f0-ledger">
             <div className="flex items-center gap-2.5 py-2.5">
-              <BeltDisc
-                hex={BELTS.blue.hex}
-                borderHex={BELTS.blue.borderHex}
-                size={34}
-              />
+              <BeltObject belt="blue" degree={2} size={40} />
               <div className="min-w-0 flex-1">
                 <p className="font-display text-[12px] font-bold text-ink">
                   Your avatar ring
@@ -472,12 +541,7 @@ export default function BeltLadder() {
               </div>
             </div>
             <div className="flex items-center gap-2.5 py-2.5">
-              <BeltDisc
-                hex={BELTS.black.hex}
-                borderHex={BELTS.black.borderHex}
-                size={34}
-                starred
-              />
+              <BeltObject belt="black" size={40} />
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-1.5 font-display text-[12px] font-bold text-ink">
                   Beside your name
@@ -493,11 +557,7 @@ export default function BeltLadder() {
               </div>
             </div>
             <div className="flex items-center gap-2.5 py-2.5">
-              <BeltDisc
-                hex={BELTS.yellow.hex}
-                borderHex={BELTS.yellow.borderHex}
-                size={34}
-              />
+              <BeltObject belt="yellow" size={40} />
               <div className="min-w-0 flex-1">
                 <p className="font-display text-[12px] font-bold text-ink">
                   On the leaderboard
@@ -547,27 +607,13 @@ export default function BeltLadder() {
         </p>
       </section>
 
-      {/* ── THE FOOTER BAR — board 22's "Next:" object ───────────────────── */}
-      <Card className="mt-2 flex items-center gap-3 rounded-[14px] px-3.5 py-3">
-        <span className="text-[14px] leading-none" aria-hidden>
-          🎯
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[11.5px] font-bold text-ink">
-            {prog.next ? `Next: ${prog.next.label}` : "Top of the ladder — every belt earned"}
-          </p>
-          <p className="mt-0.5 truncate text-[9.5px] text-soft">
-            {prog.next
-              ? `${prog.toNext.toLocaleString()} XP to go${
-                  prog.nextIsNewBelt ? " — a new belt" : ""
-                }`
-              : `${state.xp.toLocaleString()} XP earned`}
-          </p>
-        </div>
-        <MiniMeter pct={prog.pct} />
-      </Card>
+      {/* The board's footer "Next:" bar is GONE. It carried the same three
+          numbers as the hero object at the top of the page — belt, remaining
+          XP, progress — which meant the screen asked and answered "where am I"
+          twice, once in 9.5px at the bottom where nobody was looking. One
+          object, at the top, is the whole point of LevelObject existing. */}
 
-      <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+      <div className="flex flex-wrap gap-x-6 gap-y-2 pt-3">
         <TextAction href="/progress">Your profile</TextAction>
         <TextAction href="/leaderboard">Leaderboard</TextAction>
         <TextAction href="/missions">Ways to earn today</TextAction>
