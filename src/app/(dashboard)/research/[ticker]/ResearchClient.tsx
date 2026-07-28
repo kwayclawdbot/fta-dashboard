@@ -66,6 +66,7 @@ import ClubRead, { useClubRead } from "./ClubRead";
 import ClubTickerStrip from "./ClubTickerStrip";
 import KaiReportPanel from "./KaiReportPanel";
 import TickerDiscussion from "./TickerDiscussion";
+import FtaDoor from "@/components/entitlements/FtaDoor";
 
 const COMMENT_SELECT =
   "id, ticker, user_id, body, contribution_type, created_at, author:profiles(display_name, avatar_url, age_group, username)";
@@ -975,6 +976,15 @@ export default function ResearchClient({
                 </div>
                 <Card radius="md" className="h-[188px] motion-safe:animate-pulse" />
               </div>
+            )}
+
+            {/* THE FOOT OF THE TAPE. Indicators are a record of what already
+                happened; the plan you act on is the thing FTA teaches. Only
+                under a drawn tape — never over an error or a skeleton — and
+                never to kids (belt and braces over FtaDoor's own register
+                check, which also excludes teens and existing FTA members). */}
+            {barsState === "done" && !isKid && (
+              <FtaDoor line="Indicators tell you what happened. FTA teaches the plan you act on." />
             )}
           </div>
         )}

@@ -22,6 +22,7 @@ import AgeBadge from "@/components/community/AgeBadge";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import WatchRail from "@/components/watch/WatchRail";
 import { SegmentedRail, TickerTile, TickerTileStrip } from "@/components/canvas2";
+import { EmptyPinBoard, EmptyStateNote } from "@/components/art";
 import {
   Card,
   CardLink,
@@ -1090,17 +1091,19 @@ function PickRecord({
   quotes: Record<string, MarketQuote>;
 }) {
   if (best.length === 0) {
+    // The record is empty because the board is young, not because anything
+    // broke — so it is drawn as a wall waiting to be filled (one pennant hung,
+    // the other hooks empty) rather than announced in a card of its own. The
+    // sentence names the exact condition that ends the emptiness: a landing
+    // price plus one close after it.
     return (
-      <Card className="px-4 py-6">
-        <BoardEyebrow>No record yet</BoardEyebrow>
-        <h2 className="mt-2.5 max-w-md font-display text-[18px] font-extrabold text-ink">
-          A record needs a starting price
-        </h2>
-        <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
-          Once a company has a snapshot from the day it landed and at least one
-          daily close after it, its move shows up here.
-        </p>
-      </Card>
+      <EmptyStateNote
+        art={<EmptyPinBoard size={80} title="A board with one company pinned" />}
+        title="No record yet"
+      >
+        Once a company has a snapshot from the day it landed and at least one
+        daily close after it, its move since it landed shows up here.
+      </EmptyStateNote>
     );
   }
   return (

@@ -369,7 +369,11 @@ export function Dial({
 export function RewardTiles({
   items,
 }: {
-  items: { icon?: string; value: string; label: string; lead?: boolean }[];
+  /* `icon` is a NODE, not a string, so the streak tile can hand in the drawn
+     ember from the art layer instead of the 🔥 emoji the member's operating
+     system would otherwise draw for us. Callers that still pass a character
+     (the ⚡) keep working unchanged. */
+  items: { icon?: React.ReactNode; value: string; label: string; lead?: boolean }[];
 }) {
   return (
     <div className="grid grid-cols-3 gap-3">
@@ -382,7 +386,7 @@ export function RewardTiles({
         >
           <p className="font-display text-[19px] font-extrabold leading-none tabular-nums text-ink">
             {it.icon && (
-              <span className="mr-1 text-[14px]" aria-hidden>
+              <span className="mr-1 inline-flex items-center align-middle text-[14px]" aria-hidden>
                 {it.icon}
               </span>
             )}

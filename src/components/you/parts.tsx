@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+import { StreakPip } from "@/components/art";
+
 /* ══════════════════════════════════════════════════════════════════════════
    YOU · BOARD VOCABULARY — the objects drawn on App Light board 07 (You ·
    Profile), board 22 (Belts · Rank System) and Club Screens board 09 (Member
@@ -385,19 +387,29 @@ export function BarRow({
    where the day carries a real XP event — so the row is a record, not a
    decoration that always looks half-full. */
 export function StreakPips({ days }: { days: boolean[] }) {
+  // The last entry is TODAY, and today is the only cell that can change while
+  // the member is looking at it. It gets the art layer's <StreakPip today/> so
+  // the row has one moment of feedback — a spring pop as it lands — instead of
+  // silently re-rendering seven identical bars. The other six are history and
+  // are drawn flat, because history does not animate.
+  const last = days.length - 1;
   return (
     <div className="flex shrink-0 items-center gap-1" aria-hidden>
-      {days.map((on, i) => (
-        <span
-          key={i}
-          className="block h-[22px] w-2 rounded-[4px]"
-          style={{
-            background: on
-              ? "var(--accent-solid)"
-              : "color-mix(in srgb, var(--accent-solid) 22%, var(--sand))",
-          }}
-        />
-      ))}
+      {days.map((on, i) =>
+        i === last ? (
+          <StreakPip key={i} filled={on} today size={12} />
+        ) : (
+          <span
+            key={i}
+            className="block h-[22px] w-2 rounded-[4px]"
+            style={{
+              background: on
+                ? "var(--accent-solid)"
+                : "color-mix(in srgb, var(--accent-solid) 22%, var(--sand))",
+            }}
+          />
+        )
+      )}
     </div>
   );
 }

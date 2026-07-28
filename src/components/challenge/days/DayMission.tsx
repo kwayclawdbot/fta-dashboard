@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { StreakFlame } from "@/components/art";
 import { completeStep, postArtifact, setSmsOptIn } from "@/lib/challenge/state";
 import { useCountdown, pad2 } from "@/lib/challenge/clock";
 import { CHALLENGE_SESSION_TIME_LABEL } from "@/lib/free-class";
@@ -269,7 +270,10 @@ export default function DayMission({
           items={[
             { icon: "⚡", value: `+${day.xp_award}`, label: "Earned", lead: true },
             {
-              icon: state.streak > 0 ? "🔥" : undefined,
+              icon:
+                state.streak > 0 ? (
+                  <StreakFlame streak={state.streak} size={15} showCount={false} ignite />
+                ) : undefined,
               value: state.streak > 0 ? `${state.streak}` : "—",
               label: "Day streak",
             },

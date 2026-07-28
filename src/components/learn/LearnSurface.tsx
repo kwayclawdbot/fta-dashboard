@@ -31,6 +31,7 @@ import {
 } from "@/components/learn/kit";
 import type { PathNodeKind } from "@/components/learn/LearnPath";
 import { fetchStreak } from "@/lib/streak";
+import { StreakFlame } from "@/components/art";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LEARN — route /courses (the Learn nav slot). Built to board 08

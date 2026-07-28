@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type React from "react";
 import { Check, Trophy } from "lucide-react";
 import { SOCIAL_FLOORS } from "@/lib/social/reactions";
+import { StreakFlame } from "@/components/art";
 import type { Stance } from "@/lib/social/stance";
 import type { ChallengeDay, ChallengeState } from "@/lib/challenge/types";
 import { RESEARCH_QUESTIONS, fmtUsd, type DaySeed } from "./data";
@@ -90,7 +91,10 @@ export default function DayShare({
       items={[
         { icon: "⚡", value: `+${day.xp_award}`, label: "Mission complete", lead: true },
         {
-          icon: state.streak > 0 ? "🔥" : undefined,
+          icon:
+                state.streak > 0 ? (
+                  <StreakFlame streak={state.streak} size={15} showCount={false} ignite />
+                ) : undefined,
           value: state.streak > 0 ? `${state.streak}` : "—",
           label: state.streak > 0 ? "Streak alive" : "Streak starts here",
         },

@@ -1,5 +1,6 @@
 import { Kaushan_Script } from "next/font/google";
 import { computeStreak as computeStreakImpl } from "@/lib/streak";
+import { StreakFlame } from "@/components/art";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LEARN KIT — the shared vocabulary of the Learn boards (canvas 08 / 20 / 21).
@@ -92,7 +93,7 @@ export const KIND_GLYPH: Record<NodeGlyphKind, string> = {
 };
 
 /* ── Stat rail ────────────────────────────────────────────────────────────
-   Board 20's header: 🔥 streak · ⚡ lifetime XP. Both are read off real rows
+   Board 20's header: ember streak · ⚡ lifetime XP. Both are read off real rows
    by the caller; this only draws them. `null` renders nothing rather than a
    zero that was never measured. */
 

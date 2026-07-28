@@ -7,10 +7,13 @@ import { ArrowRight, Bot, Search, Sparkles, X } from "lucide-react";
 
 import NewsClient from "../news/NewsClient";
 import ScreenerSurface from "@/components/screener/ScreenerSurface";
+import UnlockLine from "@/components/entitlements/UnlockLine";
+import { wallFor } from "@/lib/entitlements/paywall";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
 import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
+import { EmptyStateNote, EmptyTwoArrows } from "@/components/art";
 import {
   Bone,
   BoardCard,
@@ -91,6 +94,15 @@ interface DiscoverClientProps {
 type Tab = "foryou" | "screener" | "trending";
 
 const PANEL_ID = "discover-panel";
+
+/**
+ * The metering line under the capped ledger. Its second clause is DERIVED from
+ * the ratified wall body (`wallFor("trending_full").body`) rather than retyped,
+ * so what the ledger promises can never drift from the pricing promise.
+ */
+const TRENDING_WALL = wallFor("trending_full");
+const TRENDING_WALL_DETAIL =
+  TRENDING_WALL.body.split("Club members get ")[1] ?? TRENDING_WALL.body;
 
 /* ── the surface ─────────────────────────────────────────────────────────── */
 export default function DiscoverClient({
@@ -583,11 +595,21 @@ function MostDivisive({ row, loading }: { row: TrendingRow | null; loading: bool
           </p>
         </>
       ) : (
-        <FoundingLine className="mt-3">
-          Nothing is contested yet — a split needs at least{" "}
-          {DIVISIVE_MIN_POSITIONED} members on the same name taking opposite
-          sides. Take a position on any ticker and the argument starts here.
-        </FoundingLine>
+        /* An absence with a picture in it. "Nothing is contested yet" is a
+           true sentence and a dead one — the member reads it and leaves. The
+           two-arrows drawing shows what is missing (two positions passing
+           without meeting), and the sentence names the exact thing that would
+           fill the block, so the empty state is a brief rather than a shrug.
+           It sits on the section's own rule line, not inside a card. */
+        <EmptyStateNote
+          className="mt-1"
+          art={<EmptyTwoArrows size={72} title="Two positions passing without meeting" />}
+          title="Nothing is contested yet"
+        >
+          A split needs at least {DIVISIVE_MIN_POSITIONED} members on the same
+          company taking opposite sides. Take a position on any ticker and the
+          argument starts here.
+        </EmptyStateNote>
       )}
     </section>
   );
@@ -817,6 +839,18 @@ function TrendingPanel({
     [stanced]
   );
 
+  // The free cap, straight from the server's own account of it. Absent (a Club
+  // member, or a response that carried no cap) → nothing extra is drawn: no
+  // orphan rule, no empty line.
+  const freeCap = trending?.freeCap;
+  const totalCount = trending?.totalCount;
+  const withheldRanks = useMemo(() => {
+    if (!trending?.locked || freeCap == null || totalCount == null) return [];
+    const n = totalCount - freeCap;
+    if (n <= 0) return [];
+    return Array.from({ length: n }, (_, i) => freeCap + i + 1);
+  }, [trending?.locked, freeCap, totalCount]);
+
   return (
     <>
       <SectionMark
@@ -863,22 +897,32 @@ function TrendingPanel({
         </div>
       )}
 
-      {trending?.locked && (
-        <BoardCard radius={12} className="mt-2.5 px-[13px] py-3">
-          <p className="font-display text-[13px] font-bold text-ink">
-            You&apos;re seeing the top {rows.length} of {trending.totalCount ?? rows.length}.
+      {/* THE CAP, DRAWN HONESTLY. The server ships free callers the top 5 and
+          says so (`locked` + `totalCount`/`freeCap`); the ranks it withheld are
+          drawn as REDACTIONS — a real rank number beside an obscured bar — never
+          as invented tickers or figures. Nothing here fetches a row the member
+          could not already fetch. A Club member has no cap, so nothing renders. */}
+      {withheldRanks.length > 0 && (
+        <>
+          <p className="sr-only">
+            {withheldRanks.length} further{" "}
+            {withheldRanks.length === 1 ? "rank is" : "ranks are"} withheld from
+            this ledger.
           </p>
-          <p className="mt-1 max-w-[52ch] text-[11.5px] leading-relaxed text-soft">
-            The full attention ledger — every rank, plus its history — is part of
-            the Club.
-          </p>
-          <Link
-            href="/upgrade"
-            className="f0-focus mt-2 inline-flex items-center gap-1.5 rounded font-display text-[12px] font-bold text-gold-700"
+          <div
+            role="presentation"
+            aria-hidden
+            className="pointer-events-none mt-[7px] flex flex-col gap-[7px]"
           >
-            See the full rankings <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </BoardCard>
+            {withheldRanks.map((rank) => (
+              <RedactedSignalRow key={rank} rank={rank} />
+            ))}
+          </div>
+          <UnlockLine cta={TRENDING_WALL.cta}>
+            {freeCap} of {totalCount} names shown. The Club opens{" "}
+            {TRENDING_WALL_DETAIL}
+          </UnlockLine>
+        </>
       )}
 
       {rows.length > 0 && (
@@ -1018,6 +1062,32 @@ function SignalRow({
           </span>
         )}
       </Link>
+    </BoardCard>
+  );
+}
+
+/**
+ * A rank the free tier does not receive, drawn as a REDACTION of the row above
+ * it — the real rank number, and obscured bars where the mark, ticker, price,
+ * move and signal would sit. No ticker, price or score is ever invented here:
+ * the point is that the member can see something was withheld, not guess at it.
+ * Inert by construction (`pointer-events-none` on the wrapper, no link).
+ */
+function RedactedSignalRow({ rank }: { rank: number }) {
+  const bar = "rounded-[4px] bg-soft/15 blur-[5px]";
+  return (
+    <BoardCard radius={12} className="select-none">
+      <div className="flex items-center gap-2.5 px-[11px] py-[9px]">
+        <span className="w-4 shrink-0 text-right font-mono text-[10px] tabular-nums text-soft">
+          {rank}
+        </span>
+        <span aria-hidden className={`h-[26px] w-[26px] shrink-0 rounded-[8px] bg-soft/15 blur-[5px]`} />
+        <span aria-hidden className={`h-[10px] w-[46px] shrink-0 ${bar}`} />
+        <span aria-hidden className={`hidden h-[10px] w-[52px] shrink-0 sm:block ${bar}`} />
+        <span aria-hidden className={`ml-auto h-[10px] w-[54px] ${bar}`} />
+        <span aria-hidden className={`h-[10px] w-[34px] shrink-0 ${bar}`} />
+        <span aria-hidden className={`h-[10px] w-[26px] shrink-0 ${bar}`} />
+      </div>
     </BoardCard>
   );
 }

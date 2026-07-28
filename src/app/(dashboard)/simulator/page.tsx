@@ -14,6 +14,7 @@ import PortfolioSummary, {
 import PositionsList from "@/components/simulator/PositionsList";
 import TradeHistory from "@/components/simulator/TradeHistory";
 import { Card, PillTabs, RangePills } from "@/components/research/board";
+import FtaDoor from "@/components/entitlements/FtaDoor";
 import {
   MarketEngine,
   SYMBOL_PRESETS,
@@ -79,6 +80,10 @@ export default function SimulatorPage() {
   const [portfolio, dispatch] = useReducer(portfolioReducer, initialPortfolioState);
   const [loading, setLoading] = useState(true);
   const [ledgerTab, setLedgerTab] = useState<LedgerTab>("positions");
+  /* The symbol of the last position closed THIS SESSION — the only trace of a
+     close the ledger keeps, and the trigger for the FTA line above the tabs.
+     A stop-out or a target fill sets it too; that is exactly the moment. */
+  const [lastClosedSymbol, setLastClosedSymbol] = useState<string | null>(null);
 
   // Real equity history (migration 197). `historyLoading` is kept distinct from
   // an empty result so the hero can tell "still reading" from "nothing yet".
@@ -291,6 +296,7 @@ export default function SimulatorPage() {
     if (!pos) return;
 
     dispatch({ type: "CLOSE_POSITION", positionId, exitPrice: currentPrice });
+    setLastClosedSymbol(pos.symbol);
 
     if (portfolio.portfolioId) {
       removePositionFromSupabase(positionId).catch(() => {});
@@ -526,6 +532,17 @@ export default function SimulatorPage() {
           match the owner's mockup. These are real tabs over real panels, so the
           semantics stay tablist/tab/tabpanel. */}
       <section aria-label="Account record">
+        {/* THE MOMENT OF DESIRE. A position just closed — by feel, on a hunch,
+            with no plan written down. One quiet line, above the ledger that
+            records it. Suppressed for kids, teens and existing FTA members
+            inside FtaDoor. */}
+        {lastClosedSymbol && (
+          <FtaDoor
+            className="mb-5"
+            line={`${lastClosedSymbol} closed. You just ran that by feel — FTA is six weeks of doing it by plan`}
+          />
+        )}
+
         <PillTabs<LedgerTab>
           tabs={[
             {

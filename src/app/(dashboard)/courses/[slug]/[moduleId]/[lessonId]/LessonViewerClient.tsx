@@ -35,6 +35,7 @@ import PracticeInSimbotLink from "@/components/simulator/PracticeInSimbotLink";
 import LessonEngine from "@/components/learn/LessonEngine/LessonEngine";
 import { parseLessonSteps } from "@/lib/learn/schema";
 import { SectionRule } from "@/components/f0/parts";
+import FtaDoor from "@/components/entitlements/FtaDoor";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LESSON VIEWER — /courses/[slug]/[moduleId]/[lessonId]
@@ -738,6 +739,14 @@ export default function LessonViewerClient() {
             />
             <PracticeInSimbotLink lessonId={lessonId} />
           </div>
+
+          {/* THE MOMENT AFTER. A lesson just landed; this is when the longer
+              road is worth naming — once, quietly, under the Completed pill.
+              Never to kids (belt and braces over FtaDoor's own register check,
+              which also excludes teens and existing FTA members). */}
+          {isCompleted && register !== "kid" && (
+            <FtaDoor line="You finished the lesson. FTA is the six-week version — live, coached, all the way to trade ready." />
+          )}
 
           {/* Prose — a real reading measure, editorial scale */}
           {currentLesson.description && (

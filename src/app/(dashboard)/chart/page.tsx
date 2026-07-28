@@ -54,6 +54,7 @@ import {
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import type { LiveRoomsMe } from "@/components/community/LiveRooms";
 import type { Role } from "@/lib/feed";
+import FtaDoor from "@/components/entitlements/FtaDoor";
 
 function normalizeSymbol(raw: string): string {
   return raw.trim().toUpperCase().replace(/\s+/g, "");
@@ -447,6 +448,14 @@ function ChartInner() {
           </div>
         )}
       </m.div>
+
+      {/* THE PAGE FOOT. A chart teaches a read; it cannot teach the plan that
+          follows one. One quiet line at the true bottom of the surface —
+          suppressed for kids, teens and existing FTA members inside FtaDoor. */}
+      <FtaDoor
+        className="shrink-0"
+        line="Reading the chart is the first half. FTA is the six weeks that turn a read into a plan."
+      />
 
       {/* Club Chat — shared drawer, one tap away while studying a chart */}
       <ClubChatDrawer key={tier} me={me} tier={tier} />
