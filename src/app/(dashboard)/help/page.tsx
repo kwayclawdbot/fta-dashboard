@@ -173,8 +173,23 @@ export default function HelpPage() {
     loadTickets();
   }, [loadTickets]);
 
+  /* WHY THIS IS GUARDED. The chat is not its own scroll container — it sits in
+     the page flow — so `scrollIntoView` scrolls the WHOLE DOCUMENT. Running it
+     unconditionally meant the greeting (present on first render) scrolled the
+     page the moment /help mounted, dragging the "HELP & SUPPORT" masthead up
+     under the sticky app bar, which then sliced it in half. The bar was never
+     the bug; the page was scrolling itself out from under it.
+
+     So: never on mount, and `block: "nearest"` afterwards so a reply brings the
+     end of the thread just into view instead of pinning it to the top of the
+     viewport and taking the header with it. */
+  const chatMounted = useRef(false);
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!chatMounted.current) {
+      chatMounted.current = true;
+      return;
+    }
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
   const userTurns = messages.filter((m) => m.role === "user").length;
