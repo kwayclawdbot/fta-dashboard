@@ -26,6 +26,27 @@ import { Belt, BeltMark } from "@/components/art";
  * fetch; while it is null a neutral skeleton renders so layout never jumps.
  */
 
+/**
+ * THE BAR THAT LOOKED EMPTY. Both bars filled themselves in `belt.hex`, which
+ * works for the three mid-tone belts and fails completely for the two ends of
+ * the ladder — exactly the failure BeltBadge already documents for its label.
+ * A White Belt (#E8EAF0) painting onto the midnight-800 track (#EFEAE1 on the
+ * light board) is white on off-white: the fill IS there, at the right width,
+ * and no one can see it. Since every new member starts on White, the drawer
+ * read as a broken empty bar to precisely the people whose first impression it
+ * was. Black had the mirror-image problem on the night board.
+ *
+ * So the two neutral belts hand the FILL back to the progress accent — the same
+ * gold the canonical LevelObject uses — and keep their identity in the drawn
+ * belt sitting next to it, which is what the belt drawing is for. The three
+ * belts that can colour a bar still do.
+ */
+const NEUTRAL_BELTS = new Set(["white", "black"]);
+
+function barFill(belt: { key: string; hex: string }): string {
+  return NEUTRAL_BELTS.has(belt.key) ? "var(--color-gold-600, #C24400)" : belt.hex;
+}
+
 export default function BeltChip({
   xp,
   variant = "compact",
@@ -84,7 +105,7 @@ export default function BeltChip({
           <div className="mt-1 h-1.5 rounded-full bg-midnight-800 overflow-hidden">
             <span
               className="block h-full rounded-full"
-              style={{ width: `${bp.pct}%`, backgroundColor: belt.hex }}
+              style={{ width: `${bp.pct}%`, backgroundColor: barFill(belt) }}
             />
           </div>
           <p className="mt-1 text-[11px] text-midnight-500 truncate">{toNextLabel}</p>
@@ -108,7 +129,7 @@ export default function BeltChip({
       <span className="w-12 h-1.5 rounded-full bg-midnight-800 overflow-hidden">
         <span
           className="block h-full rounded-full"
-          style={{ width: `${bp.pct}%`, backgroundColor: belt.hex }}
+          style={{ width: `${bp.pct}%`, backgroundColor: barFill(belt) }}
         />
       </span>
     </Link>
