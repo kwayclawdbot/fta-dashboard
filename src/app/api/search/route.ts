@@ -81,7 +81,12 @@ export async function GET(req: NextRequest) {
   const lessonsP = (async (): Promise<SearchHit[]> => {
     const { data } = await admin
       .from("lessons")
-      .select("id, title, module_id, modules(id, courses(slug, title))")
+      // This client is service-role, so RLS does NOT filter it. Search was
+      // therefore the one path that could surface a retired or unpublished
+      // lesson's title and deep-link a member (including a kid) at it. Both
+      // gates are applied explicitly here.
+      .select("id, title, module_id, modules(id, courses(slug, title, published))")
+      .eq("retired", false)
       .ilike("title", `%${like}%`)
       .limit(5);
     return (
@@ -89,10 +94,13 @@ export async function GET(req: NextRequest) {
         id: string;
         title: string;
         module_id: string;
-        modules: { id: string; courses: { slug: string; title: string } | null } | null;
+        modules: {
+          id: string;
+          courses: { slug: string; title: string; published: boolean } | null;
+        } | null;
       }[]) ?? []
     )
-      .filter((l) => l.modules?.courses?.slug)
+      .filter((l) => l.modules?.courses?.slug && l.modules.courses.published)
       .map((l) => ({
         id: `l:${l.id}`,
         title: l.title,

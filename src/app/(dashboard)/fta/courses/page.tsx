@@ -68,7 +68,13 @@ export default function FtaCoursesPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      // LOADING IS NOT EMPTY — but a signed-out session is not loading either.
+      // This used to `return` before clearing the flag, which left the skeleton
+      // spinning forever. Now the surface resolves to its founding state.
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const [{ data: courses }, { data: prog }] = await Promise.all([
         supabase

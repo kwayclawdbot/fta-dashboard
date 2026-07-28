@@ -307,9 +307,13 @@ export default function CourseDetailPage() {
       }
     }
 
-    // Fallback to mock data
-    const mock = MOCK_COURSES[slug];
-    if (mock) setCourse(mock);
+    // No published course under this slug. The old behaviour fell back to
+    // MOCK_COURSES and shipped a fabricated lesson list — invented units with
+    // dead links, indistinguishable from real content. Post-curriculum-reset
+    // that is exactly the wrong answer: an unpublished course must read as
+    // "not published", never as a catalogue we do not have. DEFAULT_COURSE
+    // carries the designed empty state.
+    setCourse(DEFAULT_COURSE);
     setLoading(false);
   }, [supabase, slug]);
 
@@ -510,11 +514,11 @@ export default function CourseDetailPage() {
       {/* Empty state */}
       {course.modules.length === 0 && (
         <EmptyLine
-          title="Nothing published yet"
-          body="This path is still being written. Lessons appear here the moment they're published — nothing is hidden behind a placeholder."
+          title="This path has come down"
+          body="The old lessons have been retired while the curriculum is rebuilt. The new path goes up a block at a time — the first lesson is live now."
           action={
-            <TextAction href="/courses">
-              Back to Learn <ArrowRight className="h-3.5 w-3.5" />
+            <TextAction href="/courses/investing-explained-simply">
+              Go to the first lesson <ArrowRight className="h-3.5 w-3.5" />
             </TextAction>
           }
         />
