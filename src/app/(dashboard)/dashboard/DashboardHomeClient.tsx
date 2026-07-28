@@ -556,39 +556,26 @@ export default function DashboardHomeClient() {
     isParent && hasFamily && !!familyId && (showProfileFirst || setupResolved);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 pb-14">
+    <div className="mx-auto max-w-5xl space-y-4 pb-14">
       {/* ── Masthead ────────────────────────────────────────────────────────
           The canvas opens every board with an eyebrow, one display headline
           and a lede — three registers, not three sizes of the same thing. */}
-      <header className="f0-stagger">
-        <div
-          className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2"
-          style={{ "--i": 0 } as React.CSSProperties}
-        >
-          <p className="font-display text-eyebrow font-bold uppercase text-soft">
-            {isKid ? "Today" : greeting}
-          </p>
-          {home?.cohort && (
-            <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
-              <Flame className="h-3 w-3" aria-hidden />
-              {home.cohort}
-            </span>
-          )}
-        </div>
+      <header>
+        {home?.cohort && (
+          <span className="mb-1.5 inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
+            <Flame className="h-3 w-3" aria-hidden />
+            {home.cohort}
+          </span>
+        )}
 
-        <h1
-          className="mt-3 font-display text-display-1 font-black text-ink"
-          style={{ "--i": 1 } as React.CSSProperties}
-        >
+        <h1 className="font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[30px]">
           {isKid
             ? `Hey ${firstName || "Explorer"}!`
-            : `${greeting}, ${firstName || "there"}`}
+            : `${greeting}, ${firstName || "there"}`}{" "}
+          <span aria-hidden>👋</span>
         </h1>
 
-        <p
-          className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft"
-          style={{ "--i": 2 } as React.CSSProperties}
-        >
+        <p className="mt-1.5 max-w-lg text-[13px] leading-snug text-soft">
           {home?.program === "fta" && home.week ? (
             <>
               Week {home.week} of 6 —{" "}
@@ -694,8 +681,8 @@ export default function DashboardHomeClient() {
       {isFta && (
         <section aria-labelledby="fta-rail">
           <div className="flex items-end justify-between gap-3">
-            <h2 id="fta-rail" className="f0-section-rule min-w-0 flex-1">
-              <span className="font-display text-eyebrow font-bold uppercase text-ink">
+            <h2 id="fta-rail" className="min-w-0 flex-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+              <span>
                 Family Trading Academy
               </span>
             </h2>
@@ -712,11 +699,11 @@ export default function DashboardHomeClient() {
             Your premium trading hub
           </p>
 
-          <div className="f0-ledger mt-3">
+          <div className="club-b-stack mt-3">
             {/* Next live class — the live JOIN stays on Live Classes; the hub
                 doors below open the FTA section. */}
             {ftaNextClass && (
-              <Link href="/live-sessions" className="f0-ledger-row f0-focus group">
+              <Link href="/live-sessions" className="club-b-card f0-ledger-row f0-focus group">
                 <Video className="h-4 w-4 shrink-0 text-gold-700" aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">
@@ -899,8 +886,8 @@ export default function DashboardHomeClient() {
               {home.this_week && (
                 <section aria-labelledby="this-week">
                   <div className="flex items-end justify-between gap-3">
-                    <h2 id="this-week" className="f0-section-rule min-w-0 flex-1">
-                      <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                    <h2 id="this-week" className="min-w-0 flex-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                      <span>
                         Your live class + drills
                       </span>
                     </h2>
@@ -922,9 +909,9 @@ export default function DashboardHomeClient() {
                     </p>
                   )}
 
-                  <div className="f0-ledger mt-3">
+                  <div className="club-b-stack mt-3">
                     {home.this_week.lessons.map((l) => (
-                      <div key={l.id} className="f0-ledger-row">
+                      <div key={l.id} className="club-b-card f0-ledger-row">
                         {l.completed ? (
                           /* COLOUR LAW: green is PRICE. A finished lesson is
                              not a gain, so the completed tick rides the ACTION
@@ -969,8 +956,8 @@ export default function DashboardHomeClient() {
               {isParent && family.length > 0 && (
                 <section aria-labelledby="family-week">
                   <div className="flex items-end justify-between gap-3">
-                    <h2 id="family-week" className="f0-section-rule min-w-0 flex-1">
-                      <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                    <h2 id="family-week" className="min-w-0 flex-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                      <span>
                         Your family this week
                       </span>
                     </h2>
@@ -981,9 +968,9 @@ export default function DashboardHomeClient() {
                       Full overview <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                     </Link>
                   </div>
-                  <div className="f0-ledger mt-2">
+                  <div className="club-b-stack mt-2">
                     {family.map((member) => (
-                      <div key={member.id} className="f0-ledger-row">
+                      <div key={member.id} className="club-b-card f0-ledger-row">
                         <Avatar
                           name={member.display_name}
                           avatarUrl={member.avatar_url}
@@ -1011,14 +998,14 @@ export default function DashboardHomeClient() {
               {/* Kid: House Rules */}
               {isKid && (
                 <section aria-labelledby="house-rules">
-                  <h2 id="house-rules" className="f0-section-rule">
-                    <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                  <h2 id="house-rules" className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                    <span>
                       Our House Rules
                     </span>
                   </h2>
-                  <ol className="f0-ledger mt-2">
+                  <ol className="club-b-stack mt-2">
                     {HOUSE_RULES.map((rule, i) => (
-                      <li key={rule} className="f0-ledger-row">
+                      <li key={rule} className="club-b-card f0-ledger-row">
                         <span className="f0-rank shrink-0" aria-hidden>
                           {i + 1}
                         </span>
@@ -1034,12 +1021,12 @@ export default function DashboardHomeClient() {
 
               {/* Everyone: quick links */}
               <section aria-labelledby="keep-going">
-                <h2 id="keep-going" className="f0-section-rule">
-                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
+                <h2 id="keep-going" className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                  <span>
                     {isKid ? "More fun" : "Keep going"}
                   </span>
                 </h2>
-                <div className="f0-ledger mt-2">
+                <div className="club-b-stack mt-2">
                   <QuickLink
                     href="/flashcards"
                     icon={Layers}
@@ -1151,7 +1138,7 @@ function QuickLink({
   sub: string;
 }) {
   return (
-    <Link href={href} className="f0-ledger-row f0-focus group">
+    <Link href={href} className="club-b-card f0-ledger-row f0-focus group">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--accent-solid)_12%,transparent)] text-gold-700">
         <Icon className="h-[18px] w-[18px]" />
       </span>
@@ -1181,7 +1168,7 @@ function FtaDoor({
   action: string;
 }) {
   return (
-    <Link href={href} className="f0-ledger-row f0-focus group">
+    <Link href={href} className="club-b-card f0-ledger-row f0-focus group">
       <Icon className="h-4 w-4 shrink-0 self-start text-gold-700" />
       <span className="min-w-0 flex-1">
         <span className="block font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-gold-700">

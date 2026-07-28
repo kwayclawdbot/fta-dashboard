@@ -1,63 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import type { BriefResponse } from "@/lib/clubhome/contract";
+import IndexChips from "./IndexChips";
 
 /**
- * TODAY IN 30 SECONDS — canvas v2, board 01, the day's read.
+ * TODAY IN 30 SECONDS — board 01's digest, built as drawn.
  *
- * The canvas draws this as a warm brand-tinted banner with an oversized title, a
- * one-line summary and an audio play button. We have no audio, so the play
- * affordance is replaced by the thing it stood for: Kai. The object is the Kai
- * brief, given the presentation the canvas gave the digest.
+ * The board draws a peach-tinted card: a 14.5px uppercase title, ONE line of
+ * summary under it, a 36px circular orange button on the right, and a row of
+ * three index chips along the bottom. An earlier pass rendered this as a tall
+ * editorial field with an eyebrow, a display heading, a Kai mark, a stacked
+ * ledger of four lines and a text link. This is the card.
  *
- * WHY IT MOVED OUT OF THE ORANGE BAND. Before this pass the brief's lead line
- * was a chip on the full-bleed action band, which meant the single richest
- * paragraph on Home was rendered as ~40 characters of pill text. The band now
- * carries only things that have FIRED (an alert, a catalyst, a mission) and this
- * carries the read. Two objects, two jobs.
+ * THE ROUND BUTTON. The board's glyph is a play triangle. There is no audio
+ * digest in this app and there is no plan for one on this surface, so a play
+ * triangle would promise a thing that does not exist. The affordance the board
+ * drew — a single round orange button, top-right, taking you deeper into the
+ * read — ships with an arrow instead. Same object, honest glyph.
  *
- * COLOUR LAW:
- *   · the field is BRAND (accent-tinted paper) → nothing here may carry a price.
- *     Every line is prose and $CASHTAGS; no percentage lands on the tint.
- *   · Kai is kai blue and only Kai is (.f0-kai-mark).
- *   · the marked word in the title rides --accent-solid via .f0-underline-mark,
- *     so it is gold in Family, orange in Club, metallic on the FTA desk.
+ * THE SUMMARY LINE is the Kai brief's lead item, verbatim. Three states, all
+ * distinct: loading shimmers inside the real card; `available:false` renders the
+ * preserved unavailable line; no items at all renders the founding line.
  *
- * STATES, all three distinct:
- *   loading    → shimmer lines inside the real field (it claims content is coming)
- *   degraded   → `available:false`, the verbatim "temporarily unavailable" line,
- *                and the derived deltas are still shown (they are real)
- *   founding   → no items at all: the honest "your brief fills in" line
+ * COLOUR LAW: the card is brand-tinted, so nothing on the tint carries a price
+ * EXCEPT the index chips, which sit in their own wells with their own hairline
+ * — the board draws them that way, and they are the one place on this surface a
+ * market number belongs.
  *
  * KID: the caller strips sentiment items before they reach here (ClubHomeV2), so
  * no bull/bear read can arrive on this surface.
  */
-
-function Line({ ticker, text }: { ticker?: string | null; text: string }) {
-  const body = (
-    <>
-      {ticker && (
-        <span className="mr-1.5 font-mono text-[12.5px] font-bold text-ink">
-          ${ticker}
-        </span>
-      )}
-      <span className="text-[13.5px] leading-relaxed text-soft">{text}</span>
-    </>
-  );
-  if (!ticker) return <div className="py-2.5">{body}</div>;
-  return (
-    <Link
-      href={`/research/${encodeURIComponent(ticker)}`}
-      className="f0-focus block rounded-md py-2.5 transition-colors hover:text-ink"
-    >
-      {body}
-    </Link>
-  );
-}
-
 export default function TodayIn30({
   brief,
   loading = false,
@@ -70,85 +45,65 @@ export default function TodayIn30({
   const available = brief?.available ?? true;
   const derived = brief?.source === "derived";
   const lead = items[0] ?? null;
-  const rest = items.slice(1, 4);
 
   return (
     <section
-      className="f0-brief-field f0-grain px-5 py-5"
+      className="club-b-warm f0-grain px-[15px] py-[14px]"
       aria-labelledby="club-today"
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-soft">
-            Kai&apos;s read
-          </p>
+        <div className="min-w-0 flex-1">
           <h2
             id="club-today"
-            className="mt-2 font-display text-display-3 font-extrabold uppercase tracking-tight text-ink"
+            className="text-[14.5px] font-bold uppercase leading-[1.3] text-ink"
           >
-            Today in{" "}
-            <span className="f0-underline-mark">30 seconds</span>
+            Today in 30 seconds
           </h2>
-        </div>
-        <span className="f0-kai-mark h-10 w-10 shrink-0" aria-hidden>
-          <Sparkles className="h-5 w-5" />
-        </span>
-      </div>
 
-      {loading ? (
-        <div className="mt-4 space-y-2.5" aria-busy="true">
-          <div className="h-3.5 w-[88%] rounded-full bg-ink/10 motion-safe:animate-pulse" />
-          <div className="h-3.5 w-[64%] rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
-          <span className="sr-only">Loading today&apos;s read</span>
-        </div>
-      ) : (
-        <>
-          {!available && (
-            <p className="mt-3 text-[13px] font-semibold text-kai-600">
+          {loading ? (
+            <div className="mt-[6px] space-y-2" aria-busy="true">
+              <div className="h-2.5 w-[88%] max-w-[220px] rounded-full bg-ink/10 motion-safe:animate-pulse" />
+              <div className="h-2.5 w-[56%] max-w-[220px] rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
+              <span className="sr-only">Loading today&apos;s read</span>
+            </div>
+          ) : !available ? (
+            <p className="mt-1 max-w-[240px] text-[12px] font-medium leading-snug text-soft">
               Kai is temporarily unavailable — here&apos;s what the Club&apos;s
               activity shows.
             </p>
-          )}
-
-          {lead ? (
-            <>
-              <p className="mt-3 font-display text-[16.5px] font-bold leading-snug text-ink">
-                {lead.ticker && (
-                  <span className="mr-1.5 font-mono text-[15px]">${lead.ticker}</span>
-                )}
-                {lead.text}
-              </p>
-              {rest.length > 0 && (
-                <div className="f0-ledger mt-3">
-                  {rest.map((it, i) => (
-                    <Line key={`${it.ticker ?? "x"}-${i}`} ticker={it.ticker} text={it.text} />
-                  ))}
-                </div>
+          ) : lead ? (
+            <p className="mt-1 max-w-[240px] text-[12px] font-medium leading-snug text-soft">
+              {lead.ticker && (
+                <span className="mr-1 font-mono font-bold text-ink">
+                  ${lead.ticker}
+                </span>
               )}
-            </>
+              {lead.text}
+            </p>
           ) : (
-            <p className="mt-3 text-[14px] leading-relaxed text-soft">
-              Check back after the Club logs a little more activity — your brief
-              fills in as the network moves.
+            <p className="mt-1 max-w-[240px] text-[12px] font-medium leading-snug text-soft">
+              Your brief fills in as the Club moves — check back once a little
+              more activity lands.
             </p>
           )}
-        </>
-      )}
+        </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
         <Link
           href="/kai"
-          className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-md font-display text-[14px] font-bold text-kai-600 hover:text-kai-500"
+          aria-label="Open the full read with Kai"
+          className="club-b-orb f0-focus f0-press h-9 w-9 shrink-0"
         >
-          Ask Kai anything
-          <ArrowUpRight className="h-4 w-4" aria-hidden />
+          <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
-        {derived && (
-          <span className="shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
-            derived from Club activity
-          </span>
-        )}
       </div>
+
+      <IndexChips />
+
+      {derived && (
+        <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.12em] text-soft">
+          derived from Club activity
+        </p>
+      )}
     </section>
   );
 }

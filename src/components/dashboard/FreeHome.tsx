@@ -36,6 +36,7 @@ import {
   type JourneyStepKey,
 } from "@/lib/free-journey";
 import { Meter } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
  * FREE-tier dashboard home. Leads with the "Your first week, free" checklist
@@ -119,25 +120,13 @@ export default function FreeHome({ firstName }: { firstName: string }) {
   const classPassed = !!journey?.class_passed;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 pb-14">
+    <div className="mx-auto max-w-3xl space-y-4 pb-14">
       {/* ── Masthead ──────────────────────────────────────────────────────── */}
-      <header className="f0-stagger">
-        <p
-          className="font-display text-eyebrow font-bold uppercase text-gold-700"
-          style={{ "--i": 0 } as React.CSSProperties}
-        >
-          Free member
-        </p>
-        <h1
-          className="mt-3 font-display text-display-1 font-black text-ink"
-          style={{ "--i": 1 } as React.CSSProperties}
-        >
-          Welcome{firstName ? `, ${firstName}` : ""}
+      <header>
+        <h1 className="font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[30px]">
+          Welcome{firstName ? `, ${firstName}` : ""} <span aria-hidden>👋</span>
         </h1>
-        <p
-          className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft"
-          style={{ "--i": 2 } as React.CSSProperties}
-        >
+        <p className="mt-1.5 max-w-lg text-[13px] leading-snug text-soft">
           {classPassed
             ? "Hope the class was a good one. Here's how to keep the momentum going."
             : "Your free seat is saved. Here's your first week — and a look at what the club unlocks."}
@@ -176,13 +165,8 @@ export default function FreeHome({ firstName }: { firstName: string }) {
       {journey && <JourneyLedger journey={journey} onGo={markWatched} />}
 
       {/* ── Your free class ───────────────────────────────────────────────── */}
-      <section aria-labelledby="free-class">
-        <h2 id="free-class" className="f0-section-rule">
-          <span className="font-display text-eyebrow font-bold uppercase text-ink">
-            Your free class
-          </span>
-        </h2>
-        <p className="mt-3 font-display text-display-3 font-extrabold leading-snug text-ink">
+      <BoardSection id="free-class" label="Your free" mark="class">
+        <p className="mt-2.5 font-display text-[17px] font-extrabold leading-snug text-ink">
           {session?.title || "Cheat Code Club — Free Class"}
         </p>
         <p className="mt-2 flex items-center gap-2 text-[14px] text-soft">
@@ -211,13 +195,13 @@ export default function FreeHome({ firstName }: { firstName: string }) {
             </button>
           )}
         </div>
-      </section>
+      </BoardSection>
 
       {/* ── Community (read-only) ─────────────────────────────────────────── */}
-      <section className="f0-rule-top pt-5">
+      <section>
         <Link
           href="/community"
-          className="f0-ledger-row f0-focus group"
+          className="club-b-card f0-focus f0-press group flex items-center gap-3 px-3.5 py-3"
         >
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--accent-solid)_12%,transparent)] text-gold-700">
             <MessageCircle className="h-5 w-5" />
@@ -236,19 +220,15 @@ export default function FreeHome({ firstName }: { firstName: string }) {
       </section>
 
       {/* ── What membership unlocks ───────────────────────────────────────── */}
-      <section aria-labelledby="free-unlocks">
-        <h2 id="free-unlocks" className="f0-section-rule">
-          <span className="font-display text-eyebrow font-bold uppercase text-ink">
-            Everything the club unlocks
-          </span>
-        </h2>
-        <p className="mt-2.5 text-[14px] text-soft">
-          One membership. The whole family.
-        </p>
-
-        <div className="f0-ledger mt-3">
+      <BoardSection
+        id="free-unlocks"
+        label="Everything the club"
+        mark="unlocks"
+        sub="One membership. The whole family."
+      >
+        <div className="mt-2.5 flex flex-col gap-[7px]">
           {UNLOCKS.map((f) => (
-            <div key={f.label} className="f0-ledger-row">
+            <div key={f.label} className="club-b-card flex items-center gap-3 px-3.5 py-2.5">
               <f.icon className="h-4 w-4 shrink-0 text-gold-700" />
               <span className="min-w-0 flex-1 font-display text-[15px] font-bold text-ink">
                 {f.label}
@@ -268,7 +248,7 @@ export default function FreeHome({ firstName }: { firstName: string }) {
         >
           See what $99/mo unlocks <ArrowRight className="h-4 w-4 text-gold-700" />
         </Link>
-      </section>
+      </BoardSection>
     </div>
   );
 }
@@ -291,30 +271,28 @@ function JourneyLedger({
   const pct = Math.round((done / total) * 100);
 
   return (
-    <section aria-labelledby="free-journey">
-      <div className="flex items-end justify-between gap-3">
-        <h2 id="free-journey" className="f0-section-rule min-w-0 flex-1">
-          <span className="font-display text-eyebrow font-bold uppercase text-ink">
-            Your first week, free
-          </span>
-        </h2>
-        <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-soft">
+    <BoardSection
+      id="free-journey"
+      label="Your first week,"
+      mark="free"
+      action={
+        <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-soft">
           {done}/{total}
         </span>
-      </div>
-
-      <h3 className="mt-3 font-display text-display-2 font-extrabold leading-tight text-ink">
+      }
+    >
+      <h3 className="mt-2.5 font-display text-[19px] font-extrabold leading-tight text-ink">
         {complete ? "You did the whole tour" : "A few steps to get the most out of it"}
       </h3>
-      <p className="mt-2 text-[14px] text-soft">
+      <p className="mt-1.5 text-[13px] text-soft">
         {complete
           ? "You've seen what's inside. Ready for the full club?"
           : "Try the tools, meet the club, then decide."}
       </p>
 
-      <Meter pct={pct} className="mt-4 max-w-sm" />
+      <Meter pct={pct} className="mt-3 max-w-sm" />
 
-      <div className="f0-ledger mt-4">
+      <div className="mt-3 flex flex-col gap-[7px]">
         {STEPS.map((s) => {
           const isDone = !!journey[s.key];
           const Icon = s.icon;
@@ -323,7 +301,7 @@ function JourneyLedger({
               key={s.key}
               href={s.href}
               onClick={s.markOnGo ? onGo : undefined}
-              className="f0-ledger-row f0-focus group"
+              className="club-b-card f0-focus f0-press group flex items-center gap-3 px-3.5 py-2.5"
             >
               <span
                 className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
@@ -372,6 +350,6 @@ function JourneyLedger({
           </Link>
         )
       )}
-    </section>
+    </BoardSection>
   );
 }

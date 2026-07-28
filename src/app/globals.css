@@ -214,7 +214,7 @@
   --accent-b: #F59E0B;
   --accent-solid: #F59E0B;
   --accent-strong: #FBBF24;
-  --accent-on: #101828;
+  --accent-on: #1A1614;
   --accent-gradient: linear-gradient(135deg, var(--accent-a), var(--accent-b));
 
   /* Signature gradients — the club's dual-brand hero fill (orange→teal) and the
@@ -230,29 +230,41 @@
   --kai-blue-soft: rgba(37, 99, 255, 0.10);
   --grad-kai-header: linear-gradient(135deg, #FF7A1A 0%, #00B4D8 100%);
 
-  --m50: #101828;
-  --m100: #1D2939;
-  --m200: #344054;
-  --m300: #475467;
-  --m400: #5B6472;
-  --m500: #667085;
-  --m600: #98A2B3;
-  --m700: #E4DBC6;
-  --m800: #EAE2D0;
-  --m900: #FFFFFF;
-  --m950: #FBF7EF;
+  /* NEUTRALS — BOARD-EXACT, and shared with club mode.
+     The reference canvases (.planning/design-project-v2) draw ONE warm neutral
+     system across every board: paper #F7F4EF, white cards, an #E5DFD5 hairline
+     and the warm-charcoal ink/soft pair #1A1614 / #7B7369. What separates the
+     registers is the ACCENT — family gold, club orange, FTA metallic — not the
+     ground under it.
 
-  --paper: #FBF7EF;
-  --ink: #101828;
-  --soft: #5B6472;
-  --sand: #EAE2D0;
+     These used to be a cool slate ramp (#101828 ink on #FBF7EF paper) inherited
+     from the pre-canvas system, which is why every family surface read a step
+     bluer than its mockup. Moving the base here fixes all of them at once
+     without a single component edit; nothing downstream hardcodes the old
+     values, and the club/FTA modes that override this block are unaffected. */
+  --m50: #1A1614;
+  --m100: #241F1C;
+  --m200: #2E2925;
+  --m300: #4E463E;
+  --m400: #6A6259;
+  --m500: #7B7369;
+  --m600: #9B9289;
+  --m700: #E5DFD5;
+  --m800: #EFEAE1;
+  --m900: #FFFFFF;
+  --m950: #F7F4EF;
+
+  --paper: #F7F4EF;
+  --ink: #1A1614;
+  --soft: #7B7369;
+  --sand: #E5DFD5;
   --card: #FFFFFF;
   --chip-amber: #FEF3C7;
   --chip-sky: #E0F2FE;
   --chip-green: #DCFCE7;
 
-  --sh-soft: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 16px rgba(16, 24, 40, 0.06);
-  --sh-lift: 0 2px 4px rgba(16, 24, 40, 0.06), 0 12px 32px rgba(16, 24, 40, 0.10);
+  --sh-soft: 0 1px 2px rgba(26, 22, 20, 0.04), 0 4px 16px rgba(26, 22, 20, 0.06);
+  --sh-lift: 0 2px 4px rgba(26, 22, 20, 0.06), 0 12px 32px rgba(26, 22, 20, 0.11);
 
   --sb-track: #F3EDE1;
   --sb-thumb: #D8CDB4;
@@ -322,56 +334,63 @@
 /* Specificity (0,1,0) sits above bare :root (0,0,0) → wins in light.  */
 /* ------------------------------------------------------------------ */
 [data-mode="club"] {
-  /* Surfaces — sand page, cream cards, subtle neutral borders */
-  --m50: #0F1115;   /* ink heading */
-  --m100: #191C22;
-  --m200: #2A2E37;
-  --m300: #4C4A42;  /* gray */
-  --m400: #5C5648;
-  --m500: #6E6656;
-  --m600: #8C8474;  /* faint */
-  --m700: #E4D5BB;  /* sand border-strong */
-  --m800: #EADCC5;  /* light sand */
-  --m900: #FBF3E4;  /* card / cream */
-  --m950: #F3E7D0;  /* page bg / warm sand (NOT pure white) */
+  /* Surfaces — BOARD-EXACT (.planning/design-project-v2, "Cheat Code App
+     Light.dc.html"). The page is a warm PAPER off-white #F7F4EF, cards are
+     pure white #FFFFFF and the hairline is #E5DFD5. The previous values
+     (#F3E7D0 page / #FBF3E4 card) were a full step more saturated than the
+     reference board and read tan next to it, which is the first thing the
+     owner sees on every screen. Ink and soft are the board's warm-charcoal
+     pair, not the cool slate they used to be. */
+  --m50: #1A1614;   /* ink heading */
+  --m100: #241F1C;
+  --m200: #2E2925;
+  --m300: #4E463E;  /* gray */
+  --m400: #6A6259;
+  --m500: #7B7369;
+  --m600: #9B9289;  /* faint */
+  --m700: #E5DFD5;  /* sand border-strong */
+  --m800: #EFEAE1;  /* light sand */
+  --m900: #FFFFFF;  /* card / white */
+  --m950: #F7F4EF;  /* page bg / warm paper */
 
-  --paper: #F3E7D0;
-  --ink: #0F1115;
-  --soft: #5C5648;
-  --sand: #E4D5BB;
-  --card: #FBF3E4;
+  --paper: #F7F4EF;
+  --ink: #1A1614;
+  --soft: #7B7369;
+  --sand: #E5DFD5;
+  --card: #FFFFFF;
   --chip-amber: #FFE9C7;
   --chip-sky: #E0F2FE;
   --chip-green: #DCFCE7;
 
-  --sh-soft: 0 1px 2px rgba(15, 17, 21, 0.05), 0 4px 16px rgba(15, 17, 21, 0.07);
-  --sh-lift: 0 2px 4px rgba(15, 17, 21, 0.07), 0 12px 32px rgba(15, 17, 21, 0.13);
+  --sh-soft: 0 1px 2px rgba(26, 22, 20, 0.04), 0 4px 16px rgba(26, 22, 20, 0.06);
+  --sh-lift: 0 2px 4px rgba(26, 22, 20, 0.06), 0 12px 32px rgba(26, 22, 20, 0.11);
 
-  --sb-track: #EADCC5;
-  --sb-thumb: #D8C7A6;
-  --sb-thumb-hover: #FF6A00;
+  --sb-track: #EFEAE1;
+  --sb-thumb: #D8D0C4;
+  --sb-thumb-hover: #FF7A1A;
 
   --urgency-bg: #FFE9C7;
   --urgency-border: #FFC79A;
 
-  /* Gold ramp → VOLT ORANGE. Light-oriented (700 = dark burnt orange text). */
+  /* Gold ramp → VOLT ORANGE, board-tuned to #FF7A1A at the 500 step.
+     Light-oriented (700 = dark burnt orange text). */
   --g50: #FFF3EA;
   --g100: #FFE3CC;
   --g200: #FFC79A;
   --g300: #FFA766;
   --g400: #FF8C33;
-  --g500: #FF6A00;
+  --g500: #FF7A1A;
   --g600: #E85400;
   --g700: #C24400;  /* active text on sand/cream — AA on light tints */
   --g800: #963400;
   --g900: #6E2600;
 
-  /* Accent = volt orange gradient. Endpoint tuned to #FF8A00 (still clearly
-     orange) so it never reads as FTA gold #F59E0B. */
-  --accent-a: #FF5A00;
-  --accent-b: #FF8A00;
-  --accent-solid: #FF6A00;
-  --accent-strong: #FF8C33;
+  /* Accent = the board's signal orange. Endpoint tuned to #FF9A45 (still
+     clearly orange) so it never reads as FTA gold #F59E0B. */
+  --accent-a: #FF6A00;
+  --accent-b: #FF9A45;
+  --accent-solid: #FF7A1A;
+  --accent-strong: #FF9A45;
   --accent-on: #FFFFFF;
   /* --accent-gradient / --grad-* inherit their :root definitions (they read
      the accent-a/b vars we just re-set, so the CTA gradient is now orange). */
@@ -391,23 +410,25 @@
 /* ------------------------------------------------------------------ */
 :root[data-theme="dark"][data-mode="club"],
 :root[data-theme="dark"] [data-mode="club"] {
-  --m50: #F2F4F8;   /* cool off-white heading (club/tech, vs family warm) */
-  --m100: #E2E5EC;
-  --m200: #C6CBD6;
-  --m300: #9AA0AD;
-  --m400: #7C828F;
-  --m500: #666C78;
-  --m600: #545A66;
-  --m700: #2A2E37;  /* border-strong */
-  --m800: #21242C;
-  --m900: #191C22;  /* card — lighter charcoal */
-  --m950: #0F1115;  /* page bg — obsidian */
+  /* BOARD-EXACT dark twin ("Cheat Code App.dc.html"): near-black plum page
+     #0D0B0E, lifted card #17141A, #2A2530 hairline, warm off-white ink. */
+  --m50: #F4F0EC;   /* off-white heading */
+  --m100: #EAE6EE;
+  --m200: #DCD7E0;
+  --m300: #C8C2CE;
+  --m400: #A69FAC;
+  --m500: #8F8894;
+  --m600: #6E6774;
+  --m700: #2A2530;  /* border-strong */
+  --m800: #211D26;
+  --m900: #17141A;  /* card — lifted charcoal */
+  --m950: #0D0B0E;  /* page bg — near-black */
 
-  --paper: #0F1115;
-  --ink: #F2F4F8;
-  --soft: #9AA0AD;
-  --sand: #2A2E37;
-  --card: #191C22;
+  --paper: #0D0B0E;
+  --ink: #F4F0EC;
+  --soft: #8F8894;
+  --sand: #2A2530;
+  --card: #17141A;
   --chip-amber: rgba(255, 138, 0, 0.16);
   --chip-sky: rgba(56, 189, 248, 0.15);
   --chip-green: rgba(52, 211, 153, 0.15);
@@ -415,9 +436,9 @@
   --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.55);
   --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.66);
 
-  --sb-track: #0F1115;
-  --sb-thumb: #2A2E37;
-  --sb-thumb-hover: #FF6A00;
+  --sb-track: #0D0B0E;
+  --sb-thumb: #2A2530;
+  --sb-thumb-hover: #FF7A1A;
 
   --urgency-bg: rgba(255, 138, 0, 0.12);
   --urgency-border: rgba(255, 138, 0, 0.24);
@@ -1102,6 +1123,12 @@ body {
 }
 :root { --price-up: #15803D; --price-down: #B91C1C; }
 :root[data-theme="dark"] { --price-up: #4ADE80; --price-down: #F87171; }
+/* CLUB mode carries the reference board's own market pair — a slightly
+   brighter emerald and the board's magenta-leaning pink for the downside.
+   Hue holds across themes; only the ramp step moves. */
+[data-mode="club"] { --price-up: #0BA05A; --price-down: #D92652; }
+:root[data-theme="dark"][data-mode="club"],
+:root[data-theme="dark"] [data-mode="club"] { --price-up: #4AE383; --price-down: #FF4D6D; }
 
 /* --- Hero field, dark ---------------------------------------------- */
 /* f0-hero-field was cool obsidian (#0B0D11) in BOTH themes — on the warm
@@ -1643,4 +1670,143 @@ body {
   pointer-events: none;
   background: linear-gradient(90deg, transparent, var(--paper));
   transition: opacity 300ms ease;
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/* BOARD 01 — HOME, built as drawn                                        */
+/* ══════════════════════════════════════════════════════════════════════ */
+/* The reference board (.planning/design-project-v2, screen "01 Home") is
+   composed from CARDS: a white rounded rectangle with a hairline border,
+   14–16px radius, no shadow in light. An earlier pass read the standing
+   "no generic card containers" rule as forbidding that and rebuilt Home
+   out of hairline ledgers instead; the owner overruled it — the board is
+   the spec, so the card vocabulary lives here, once, and every board-01
+   object is composed from it.
+
+   Two grounds only:
+     .club-b-card       neutral card — the ranked ticker card, a signal row
+     .club-b-warm       brand-tinted card — the digest and the YOU strip
+
+   Both flip on the semantic tokens, so dark is not hand-rolled: the light
+   system's white-card-on-paper becomes lifted-charcoal-on-near-black. */
+
+.club-b-card {
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--sand);
+}
+
+/* The #1 object in a ranked strip. Orange edge plus a soft bloom — the
+   only chromatic thing on the card, exactly as drawn. */
+.club-b-card-lead {
+  border-color: var(--accent-solid);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-solid) 20%, transparent);
+}
+
+/* Warm brand-tinted card. Peach wash running to the card colour, warm
+   hairline. Distinct from .f0-brief-field only in radius and tint depth;
+   kept separate so the challenge surfaces that already use that class are
+   untouched by this lane. */
+.club-b-warm {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent-solid) 26%, var(--sand));
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--accent-solid) 17%, var(--card)) 0%,
+      color-mix(in srgb, var(--accent-solid) 8%, var(--card)) 55%,
+      var(--card) 100%
+    );
+}
+:root[data-theme="dark"] .club-b-warm,
+:root[data-theme="dark"] [data-mode] .club-b-warm {
+  border-color: color-mix(in srgb, var(--accent-solid) 30%, var(--sand));
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--accent-solid) 22%, var(--card)) 0%,
+      color-mix(in srgb, var(--accent-solid) 9%, var(--card)) 55%,
+      var(--card) 100%
+    );
+}
+
+/* Round orange action button on a warm card (the board's play affordance).
+   Fill is the accent in both themes; the glyph is the declared on-accent
+   colour, so it can never invert into the fill. */
+.club-b-orb {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--accent-on);
+  background: var(--accent-solid);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-solid) 30%, transparent);
+}
+
+/* Index chip on the warm card — a translucent well so the peach reads
+   through it, with the same warm hairline as its host. */
+.club-b-chip {
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent-solid) 24%, var(--sand));
+  background: color-mix(in srgb, var(--card) 55%, transparent);
+}
+:root[data-theme="dark"] .club-b-chip,
+:root[data-theme="dark"] [data-mode] .club-b-chip {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Ranked-card rank pip. The board hangs it off the top-left corner of the
+   card, half outside it — geometry belongs to the caller, this owns shape
+   and the lead state. */
+.club-b-pip {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sand) 100%, var(--ink) 6%);
+  color: var(--soft);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.club-b-pip-lead {
+  background: var(--accent-solid);
+  color: var(--accent-on);
+}
+
+/* Brand identity tile. The board paints these per company (a green NVIDIA
+   mark on near-black, a red Tesla mark) rather than using one achromatic
+   ground; the ground and mark arrive as inline custom properties from the
+   ticker map so no colour is baked into this rule. */
+.club-b-tile {
+  display: grid;
+  place-items: center;
+  background: var(--tile-bg, #141216);
+  color: var(--tile-fg, #F4F0EC);
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* --- Ledger row, promoted to a board card ---------------------------- */
+/* The surfaces that were built from hairline ledgers before board 01
+   landed (free home, the family board) move onto the card vocabulary
+   without re-authoring every row: the row keeps its own flex geometry and
+   hover, the card supplies the ground, the edge and the inset. Pair
+   `.club-b-stack` on the wrapper so the rules between rows give way to the
+   board's 7px gap. */
+.club-b-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.club-b-stack > * + * {
+  border-top: 0;
+}
+.club-b-card.f0-ledger-row {
+  --f0-row-pad: 0.875rem;
+  padding-block: 0.625rem;
 }

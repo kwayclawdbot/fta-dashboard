@@ -2,13 +2,10 @@
 
 import { Suspense, use, useEffect } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight, PlayCircle } from "lucide-react";
 
 import { useClubData, fixturesAllowed, type ClubHomeSeed } from "@/lib/clubhome/client";
 import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
-import { useLiveAlert } from "@/lib/clubhome/alerts";
-import ContinuePath from "@/components/learn/ContinuePath";
-import { EditorialSection } from "@/components/grammar";
 import type { BriefResponse, ClubScale } from "@/lib/clubhome/contract";
 import type { Register } from "@/lib/register";
 
@@ -17,75 +14,64 @@ import HomeMasthead from "./HomeMasthead";
 import TopInTheClub from "./TopInTheClub";
 import TodayIn30 from "./TodayIn30";
 import YourSignals from "./YourSignals";
-import PresenceRow from "./PresenceRow";
-import BoardLedger from "./BoardLedger";
 import YouStrip from "./YouStrip";
-import ActionBand, { buildActionQueue, type ActionItem } from "@/components/club2/ActionBand";
-import { LiveEventCard, LiveNowStrip } from "@/components/live";
+import { LiveNowStrip } from "@/components/live";
 
 /**
- * CLUB HOME — canvas v2, board 01.
+ * CLUB HOME — board 01, rebuilt screen-for-screen.
  *
- * LIGHT PRIMARY, and now composed to the canvas's own rhythm. Board 01 reads
- * top-to-bottom as: who you are → what the club is on → the day in one
- * paragraph → what moved on YOUR tickers → where you stand. This surface is that
- * board, built from the L0 primitives and our own law objects.
+ * The reference board (.planning/design-project-v2, "01 Home", light and dark
+ * twins) reads top to bottom as FIVE objects and nothing else:
  *
- * Composition, top to bottom:
+ *   1  masthead        — "GM, Marcus 👋" + "Here's what the Club is seeing"
+ *   2  TOP IN THE CLUB — a horizontal strip of white ranked ticker CARDS
+ *   3  TODAY IN 30 SECONDS — a peach card: title, one line, round orange
+ *                        button, three index chips
+ *   4  YOUR SIGNALS    — white card rows: tile, ticker, one human line, a
+ *                        trailing mark
+ *   5  YOU             — a peach card: belt, XP bar, and a conic dial
  *
- *   ·  ChallengeSlot            — preserved law, only during an active pass
- *   ·  LIVE NOW strip           — preserved law, only when a room is on the air
- *   1  masthead                 — greeting eyebrow · one display headline with a
- *                                 DRAWN accent word · the canvas's orienting line
- *   2  TOP IN THE CLUB          — the dense ranked TILE STRIP (canvas §1.3)
- *   3  TODAY IN 30 SECONDS      — Kai's read on the warm brand-tinted field
- *   4  ACT ON THIS              — the full-bleed orange band, ESCALATION ONLY
- *   5  YOUR SIGNALS             — your watched tickers, as a hairline ledger
- *   6  member presence          — faces + one plain sentence about the room
- *   7  WHERE THE CLUB STANDS    — the ledger, stance lens, lime sentiment
- *   8  one primary action       — the single orange button on the surface
- *   ·  live_event rooms         — preserved law, canvas-styled
- *   9  YOU                      — belt + XP, the board's closing object
- *   ·  Keep learning            — preserved law, the shared ContinuePath object
+ * WHAT WAS REMOVED, and why. The previous pass composed Home from the f0
+ * hairline vocabulary and added four objects the board does not draw. All four
+ * are gone from this surface:
  *
- * WHAT CHANGED IN THIS PASS, and why:
+ *   · ACT ON THIS      — the full-bleed orange escalation band. Not on the
+ *                        board. Alerts keep their own surface.
+ *   · member presence  — the avatar row. Not on the board; it belongs to the
+ *                        Club screen (board 04), where the room is the subject.
+ *   · WHERE THE CLUB STANDS — a long stance ledger. Not on the board; the
+ *                        ranked strip above is the attention object, and it now
+ *                        carries the verbatim compliance line the ledger used
+ *                        to.
+ *   · "Add your read to the board" — a full-width orange pill CTA. Not on the
+ *                        board; the tab bar is the way into the Club.
+ *   · Live in the Club — a two-column grid of large bordered event cards, the
+ *                        single loudest piece of the old system on this screen.
+ *                        Live rooms are board 05's subject. The URGENT case
+ *                        survives as the LIVE NOW strip, which is preserved law
+ *                        and only fires when a room is actually on the air.
  *
- *   · The swipeable score-card carousel became the canvas's dense ranked strip.
- *     One screen now carries five to ten tickers instead of one and a half, the
- *     swipe stops being load-bearing, and the score dial — the app's only gauge —
- *     stays alive on /discover, which still renders the carousel.
- *   · The Kai brief was promoted out of the orange band into its own field.
- *     It was previously rendered as ~40 characters of pill text, which is the
- *     worst possible presentation for the single richest paragraph on Home.
- *   · The band therefore stops carrying Kai and becomes pure ESCALATION: it
- *     renders only when something has actually fired. A band that is always
- *     there is a band nobody reads, and the "never dead" fallback chip it used
- *     to carry now duplicates the field above it. Orange presence on the
- *     surface is guaranteed by the primary action button regardless.
- *   · YOUR SIGNALS and YOU are new objects, both on real reads (the watchlist
- *     delta feed and `xp_for_users`).
+ * WHAT WAS KEPT DESPITE NOT BEING DRAWN, and why:
  *
- * NO generic card containers and no equal-column card grids: every object earns
- * identity from a field (the tile ground, the brief field, the orange band), a
- * rule (ledgers, presence, the belt strip) or the type scale (masthead).
+ *   · ChallengeSlot — preserved law, and only during an active pass.
+ *   · LIVE NOW strip — preserved law, and only when a room is on the air.
+ *   · KEEP LEARNING — preserved law (Learn is not a primary nav slot for
+ *     adults, so it stays visible through this contextual object). It is no
+ *     longer the old ObjectCard: it is rebuilt here as one board card row, the
+ *     same object YOUR SIGNALS is made of, so it speaks the board's language
+ *     instead of the previous system's.
  *
- * KID REGISTER keeps the safe subset: sentiment signals are stripped from the
- * brief BEFORE it reaches the field, YourSignals drops sentiment lines, the
- * ledger drops its stance bar, presence goes faceless, and the alert feed — an
- * adult trading object — is never fetched.
+ * REAL DATA ONLY. Every numeral on this surface resolves to a real read, and
+ * where a source genuinely does not exist the object says so instead of
+ * borrowing the mockup's number — see the section headers for exactly which.
  *
- * REAL DATA ONLY. Every count-bearing surface is floor-aware and renders
- * founding-era copy or an em-dash where a metric is absent; nothing is invented.
+ * THEMES. Everything is built from semantic tokens (paper / ink / soft / sand /
+ * card / accent) plus the `.club-b-*` board classes, so the light board's trick
+ * — white cards on warm paper — inverts correctly into the dark board's lifted
+ * charcoal on near-black with no hand-rolled dark surface anywhere.
  *
- * THEMES. The surface is built from semantic tokens (paper / ink / soft / sand /
- * card) plus the foundation classes, so it flips with :root[data-theme="dark"]
- * for free. The light system's trick — a DARK object on a CREAM page — inverts
- * at night, and the foundation handles that: .f0-tile-field, .f0-brief-field and
- * .club2-band each become LIFTED warm surfaces above the obsidian page rather
- * than wells sunk into it. Nothing here hand-rolls a dark surface. The only
- * theme-invariant colours are the law colours: orange (brand/action), lime
- * (sentiment), kai blue (Kai) and green/red (price) keep their MEANING in both
- * themes and move only along their own ramps for legibility.
+ * KID REGISTER keeps the safe subset: sentiment items are stripped from the
+ * brief BEFORE it reaches the card, and YOUR SIGNALS drops sentiment lines.
  */
 
 export interface LearningPickup {
@@ -98,7 +84,7 @@ export interface LearningPickup {
  * The brief's own Suspense payload. `briefCore` is the board's long pole (~2.9s),
  * so /dashboard hands it across as a SEPARATE promise from the other eight
  * sections; this is the only thing that waits on it. Kid-walling happens here,
- * before a single sentiment line can reach the field.
+ * before a single sentiment line can reach the card.
  */
 function BriefField({
   promise,
@@ -115,6 +101,38 @@ function BriefField({
   return <TodayIn30 brief={brief} />;
 }
 
+/* KEEP LEARNING — preserved law, in the board's card vocabulary. Same row
+   geometry as a YOUR SIGNALS card so the surface has one card language rather
+   than two. */
+function KeepLearning({ pickup }: { pickup: LearningPickup | null }) {
+  const href = pickup?.href ?? "/courses";
+  const title = pickup?.title ?? "Pick up the Foundations";
+  const context = pickup?.context ?? "One concept, one company, every week.";
+  return (
+    <Link
+      href={href}
+      className="club-b-card f0-focus f0-press flex items-center gap-2.5 px-3 py-[10px]"
+    >
+      <span
+        className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] text-accent"
+        style={{
+          background: "color-mix(in srgb, var(--accent-solid) 13%, transparent)",
+        }}
+        aria-hidden
+      >
+        <PlayCircle className="h-3.5 w-3.5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[12px] font-semibold text-ink">
+          {title}
+        </span>
+        <span className="block truncate text-[11px] text-soft">{context}</span>
+      </span>
+      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-soft" aria-hidden />
+    </Link>
+  );
+}
+
 export default function ClubHomeV2({
   firstName,
   register,
@@ -129,7 +147,7 @@ export default function ClubHomeV2({
   register: Register;
   learning: LearningPickup | null;
   challengeExpiresAt?: string | null;
-  /** Lifetime XP for the closing belt strip. null = unavailable, not zero. */
+  /** Lifetime XP for the closing belt card. null = unavailable, not zero. */
   xp?: number | null;
   /** design-review only — force fixtures + a scale state (guarded to dev/preview) */
   preview?: { fixtures: boolean; scale: ClubScale };
@@ -138,19 +156,10 @@ export default function ClubHomeV2({
    * the club payload with the same assembler the API route uses and hands the
    * PROMISE across the RSC boundary; `use()` suspends this component until it
    * resolves, so what streams in is already populated — the founding branches
-   * are never rendered on the way there. Omitted on the fixtures/preview path
-   * and on client navigation, where the hook's own fetch is the fallback.
-   *
-   * It is guaranteed non-rejecting (buildClubHomeSeedSplit catches), so `use()`
-   * here can never throw into an error boundary.
+   * are never rendered on the way there.
    */
   seedPromise?: Promise<ClubHomeSeed | null>;
-  /**
-   * The brief, on its OWN boundary. Split out of the seed because it alone cost
-   * ~2.9s and was gating the other eight sections. When present it is the sole
-   * source of the brief; when absent (client navigation, fixtures) the hook's
-   * batched fetch supplies it exactly as before.
-   */
+  /** The brief, on its OWN boundary — it alone costs ~2.9s. */
   briefPromise?: Promise<unknown>;
 }) {
   const isKid = register === "kid";
@@ -159,33 +168,20 @@ export default function ClubHomeV2({
   // never present for a given mount, so the branch is stable.
   const seed = seedPromise ? use(seedPromise) : null;
 
-  // `loading` matters: without a seed the club data is client-fetched, so
-  // `trending` is null through SSR and the first client paint. Handed to each
-  // section so it can tell "still arriving" apart from "the club has nothing" —
-  // without it every load rendered the founding empty state first. With a seed,
-  // `loading` is false from the very first render because the data is here.
+  // `loading` lets each section tell "still arriving" apart from "the club has
+  // nothing". With a seed it is false from the very first render.
   const { data, loading, usingFixtures } = useClubData({
     fixtures: preview?.fixtures,
     scale: preview?.scale,
     seed,
   });
 
-  // live_events (S2.5 object). Kid register never sees adult live rooms; the
-  // endpoint 404s until S2.5 lands, so live mode simply renders nothing.
+  // LIVE NOW (preserved law): a live/starting room is urgent, above all. Kid
+  // register never sees adult live rooms. The rest of the live tier is board
+  // 05's subject and no longer renders here.
   const liveEvents = useLiveEvents({ fixtures: preview?.fixtures, scale: preview?.scale });
-  const showLive = !isKid && liveEvents.length > 0;
-  const primaryLive = showLive ? primaryLiveEvent(liveEvents) : null;
+  const primaryLive = !isKid && liveEvents.length > 0 ? primaryLiveEvent(liveEvents) : null;
   const liveNow = primaryLive && isEventUrgent(primaryLive) ? primaryLive : null;
-  // Cards in the live tier: the upcoming/live/replay rooms (LIVE NOW already
-  // carries the single most urgent one, so the tier shows the rest as objects).
-  const liveTierEvents = showLive
-    ? liveEvents.filter((e) => e.id !== liveNow?.id).slice(0, 3)
-    : [];
-
-  // No tier/entitlement walls here: ClubHomeV2 is only reached by NON-FREE solo
-  // members (free short-circuits to FreeHome upstream in dashboard/page.tsx), so
-  // every viewer passes trending_full / foryou_deep / kai_brief. The kid register
-  // axis is still enforced below (sentiment strips + kid-walled objects).
 
   // Kid-safe subset for the FALLBACK brief path (no briefPromise). The seeded
   // path is walled inside BriefField instead.
@@ -201,58 +197,32 @@ export default function ClubHomeV2({
     console.info(
       `[ClubHome] trending rows=${trendingRows}` +
         ` totalCount=${data.trending?.totalCount ?? "n/a"}` +
-        ` locked=${data.trending?.locked ?? false}` +
-        ` → strip renders ${Math.min(trendingRows, 10)} tile(s)`
+        ` locked=${data.trending?.locked ?? false}`
     );
   }, [loading, trendingRows, data.trending?.totalCount, data.trending?.locked]);
 
-  // ── the action band's priority queue ──────────────────────────────────────
-  // P1 alert   — WIRED to the setup lifecycle (confirmed setups only).
-  // P2 Kai     — DELIBERATELY NOT HERE ANY MORE. The brief now has its own field
-  //              above the band, where a paragraph can read as a paragraph; a
-  //              chip repeating it would be the same sentence twice.
-  // P3 catalyst— NO SOURCE EXISTS. There is no earnings or economic calendar in
-  //              this app (Polygon financials report what has been FILED, not
-  //              what is scheduled), so the slot stays honest instead of
-  //              inventing dates.
-  // P4 mission — NO SOURCE EXISTS. `club_missions` is not in this tree and
-  //              `fic_missions` is the FAMILY/kid ladder — the wrong register.
-  //
-  // With nothing fired the queue is EMPTY and the band does not render at all.
-  // That is the intent: the band is an escalation, and a permanent orange strip
-  // carrying a standing suggestion is exactly the thing members stop seeing. The
-  // surface's orange presence is carried by the primary action button below.
-  const alert = useLiveAlert(!isKid && !usingFixtures);
-  const items: ActionItem[] = buildActionQueue({
-    alert,
-    brief: null,
-    catalysts: [],
-    mission: null,
-  });
-
   return (
-    <div className="mx-auto max-w-2xl space-y-7 pb-16 lg:max-w-3xl">
+    <div className="mx-auto max-w-2xl space-y-4 pb-16 lg:max-w-3xl">
       {usingFixtures && (
         <div className="pointer-events-none fixed bottom-4 left-4 z-50 rounded-full border border-volt-500/40 bg-card/95 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-gold-700 shadow-soft">
           fixtures · {preview?.scale ?? "scale"} · {register}
         </div>
       )}
 
-      {/* §12 Challenge slot — high priority, only during an active pass (preserved law) */}
+      {/* Preserved law — only during an active pass */}
       <ChallengeSlot challengeExpiresAt={challengeExpiresAt} />
 
-      {/* LIVE NOW (amendment #2): a live/starting room is urgent, above all
-          (preserved law) */}
+      {/* Preserved law — only when a room is actually on the air */}
       {liveNow && <LiveNowStrip event={liveNow} />}
 
-      {/* 1 — greeting, the one display voice, and the orienting line */}
-      <HomeMasthead firstName={firstName} trending={data.trending} />
+      {/* 1 — the greeting */}
+      <HomeMasthead firstName={firstName} isKid={isKid} />
 
-      {/* 2 — the dense ranked strip (canvas board 01's first content object) */}
+      {/* 2 — the ranked card strip */}
       <TopInTheClub trending={data.trending} loading={loading} isKid={isKid} />
 
-      {/* 3 — the day's read. Its own Suspense boundary when seeded, so the ~2.9s
-          brief never gates the eight sections around it. */}
+      {/* 3 — the day's read. Its own Suspense boundary when seeded, so the
+          ~2.9s brief never gates the sections around it. */}
       {briefPromise ? (
         <Suspense fallback={<TodayIn30 loading />}>
           <BriefField promise={briefPromise} isKid={isKid} />
@@ -261,52 +231,14 @@ export default function ClubHomeV2({
         <TodayIn30 brief={fallbackBrief} loading={loading} />
       )}
 
-      {/* 4 — the full-bleed orange band. Escalation only; no price ever lands here. */}
-      <ActionBand items={items} />
-
-      {/* 5 — what moved on YOUR tickers */}
+      {/* 4 — what moved on YOUR tickers */}
       <YourSignals foryou={data.foryou} isKid={isKid} loading={loading} />
 
-      {/* 6 — who else is in the room */}
-      <PresenceRow collective={data.collective} isKid={isKid} loading={loading} />
-
-      {/* 7 — the hairline ledger */}
-      <BoardLedger trending={data.trending} isKid={isKid} loading={loading} />
-
-      {/* 8 — the single primary action. Orange in both themes; dark steps to
-          volt-600 for the same reason .club2-band does (no glare against a
-          near-black page) — the hue never softens, it only loses luminance.
-          `text-white` here is deliberately theme-invariant: it is the system's
-          declared on-accent colour (--accent-on: #FFFFFF) and matches the
-          band's own white-on-orange. */}
-      <Link
-        href="/discover"
-        className="f0-grain f0-focus relative flex w-full items-center justify-between gap-3 rounded-full bg-volt-500 px-6 py-4 shadow-soft transition-transform active:scale-[0.99] dark:bg-volt-600"
-      >
-        <span className="font-display text-[16px] font-extrabold tracking-tight text-white">
-          {isKid ? "Explore the board" : "Add your read to the board"}
-        </span>
-        <ArrowUpRight className="h-5 w-5 shrink-0 text-white" aria-hidden />
-      </Link>
-
-      {/* live_event rooms — canvas-styled additions when rooms are on air
-          (preserved law: live_event cards) */}
-      {liveTierEvents.length > 0 && (
-        <EditorialSection title="Live in the Club" divide>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {liveTierEvents.map((e) => (
-              <LiveEventCard key={e.id} event={e} />
-            ))}
-          </div>
-        </EditorialSection>
-      )}
-
-      {/* 9 — YOU: the board's closing object (canvas board 01) */}
+      {/* 5 — the board's closing object */}
       <YouStrip xp={xp} isKid={isKid} />
 
-      {/* Keep learning — the shared ContinuePath object (amendment #3): Learn
-          stays reachable for adults through this contextual object (preserved law). */}
-      <ContinuePath pickup={learning} />
+      {/* Preserved law, in the board's card vocabulary */}
+      <KeepLearning pickup={learning} />
     </div>
   );
 }
