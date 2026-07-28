@@ -167,15 +167,17 @@ export function canAccessSessionEffective(
   return canAccessSession(effectiveClubTier(tier, clubLapsed), minTier);
 }
 
-// ── Mode-aware display relabel (Cheat Code Club umbrella) ────────────────────
-// The DB program (free|fic|fta) is fixed; how its NAME renders depends on the
-// viewer's member mode (src/lib/mode.ts). The same fic membership reads as
-// "Club" in the individual door and "FIC" in the family door — one membership,
-// two brand identities under the Cheat Code Club umbrella. FTA is an add-on
-// tier on top of either: its chip stays the gold "FTA", long-form "Club + FTA".
-// Chip STYLING (gold / sand / outline) always comes from TIER_CONFIG — only the
-// label + accessible name are mode-aware. Defaults to "family" so any surface
-// that doesn't yet thread mode keeps the current FIC-flavored labels.
+// ── Membership display name (Cheat Code Club umbrella) ───────────────────────
+// The DB program (free|fic|fta) is fixed; this is the ONE place that says what a
+// member's badge is CALLED. It used to split on member mode — "Club" at the
+// individual door, "FIC" at the family door — which put two product names on a
+// single $99 membership and let /pricing and /upgrade disagree about what the
+// member was buying. There is one membership and one name: Cheat Code Club.
+// Family Investing Club is FAMILY MODE within the Club (src/lib/mode.ts) — the
+// shell wordmark and the family context, not a competing product, and never a
+// price tag of its own. FTA is an add-on on top: gold "FTA", long-form
+// "Club + FTA". Chip STYLING (gold / sand / outline) always comes from
+// TIER_CONFIG; only the label + accessible name come from here.
 
 export interface TierDisplay {
   /** Short chip label. */
@@ -186,15 +188,16 @@ export interface TierDisplay {
 
 export function tierDisplay(
   tier: FamilyTier,
-  mode: MemberMode = "family"
+  // Retained for call-site compatibility (positional; TierBadge still passes the
+  // viewer's mode). It no longer selects a brand — see the note above.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _mode: MemberMode = "family"
 ): TierDisplay {
   if (tier === "fta") return { label: "FTA", name: "Club + FTA" };
   if (tier === "free")
     return { label: TIER_CONFIG.free.label, name: TIER_CONFIG.free.name };
-  // fic — the membership that carries the umbrella brand split.
-  return mode === "individual"
-    ? { label: "Club", name: "Cheat Code Club" }
-    : { label: "FIC", name: "Family Investing Club" };
+  // fic — the $99 membership. ONE name, in every mode.
+  return { label: "Club", name: "Cheat Code Club" };
 }
 
 /** Can this tier open content belonging to a program (courses.program)? */

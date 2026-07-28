@@ -131,8 +131,8 @@ const PILLARS = [
 
 // ── Cheat Code Club ($99/mo) value — what a FREE member unlocks by joining ────
 // The full umbrella membership: community + AI + research + live sessions +
-// Family Mode included. Copy stays umbrella-neutral so it reads right at either
-// door (Cheat Code Club / Family Investing Club).
+// Family Mode included. Copy stays umbrella-neutral so it reads right for a solo
+// member and a family alike — one product, one name, one price.
 const FIC_PILLARS = [
   {
     icon: Bot,
@@ -314,12 +314,19 @@ export default function UpgradePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Umbrella brand door (Cheat Code Club). A solo/individual member joins "Cheat
-  // Code Club"; a family joins the "Family Investing Club" door of the SAME $99
-  // membership. The Stripe link is unchanged either way.
+  // ONE MEMBERSHIP, ONE NAME ON THE PRICE TAG. The thing being sold here is
+  // Cheat Code Club, at $99/mo, for everyone — solo or family. It used to be
+  // renamed "Family Investing Club" for family-mode members, which meant
+  // /pricing and /upgrade quoted the same price under two different product
+  // names two taps apart. Family Investing Club is FAMILY MODE *within* the
+  // Club (see src/lib/mode.ts): a context and a shell wordmark, never a second
+  // product and never its own price tag.
+  //
+  // `mode` still drives solo-vs-family PROSE below (register and voice, lines
+  // 540/573/618) — that is who we are talking to, not what we are selling.
   const mode = modeFromSolo(isSolo);
-  const clubName = mode === "individual" ? "Cheat Code Club" : "Family Investing Club";
-  const clubChip = mode === "individual" ? "Club" : "FIC";
+  const clubName = "Cheat Code Club";
+  const clubChip = "Club";
 
   if (tier === null) {
     return (
