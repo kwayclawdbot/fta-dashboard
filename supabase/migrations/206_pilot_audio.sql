@@ -929,8 +929,7 @@ set
   }
 }
 $json$::jsonb,
-  est_minutes = 7,
-  updated_at  = now()
+  est_minutes = 7
 where id = 'c0d3f1a0-0000-4000-8000-000000000003'
   and module_id = 'c0d3f1a0-0000-4000-8000-000000000002'
   and retired = false;
