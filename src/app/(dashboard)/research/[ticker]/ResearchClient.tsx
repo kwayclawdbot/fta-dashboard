@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -48,6 +48,7 @@ import { timeAgo as newsTimeAgo, type NewsCardData } from "@/lib/news/types";
 import { type ContributionType } from "@/lib/research/social";
 import TickerDebate from "@/components/social/TickerDebate";
 import ChangedMyMind from "@/components/social/ChangedMyMind";
+import FirstWinSpotlight from "@/components/first-run/FirstWinSpotlight";
 import ResearchObjectCard from "@/components/social/ResearchObjectCard";
 import ResearchObjectCompose from "@/components/social/ResearchObjectCompose";
 import Gated from "@/components/entitlements/Gated";
@@ -569,12 +570,21 @@ export default function ResearchClient({
            and you take your side in the same object. */
         stance={
           !isKid ? (
-            <ChangedMyMind
-              supabase={supabase}
-              ticker={ticker}
-              userId={userId}
-              canFlip={canVote && !isKid}
-            />
+            /* FIRST WIN LANDING. A brand-new member arrives here from
+               FirstWin's one prompt with `?firstwin=1`; the spotlight scrolls
+               to this control, rings it once, strips the flag from the URL and
+               disarms on the first interaction. Every other visit renders the
+               children untouched. */
+            <Suspense fallback={null}>
+              <FirstWinSpotlight>
+                <ChangedMyMind
+                  supabase={supabase}
+                  ticker={ticker}
+                  userId={userId}
+                  canFlip={canVote && !isKid}
+                />
+              </FirstWinSpotlight>
+            </Suspense>
           ) : null
         }
       />

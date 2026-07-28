@@ -21,6 +21,7 @@ import AppTour from "@/components/tour/AppTour";
 import ModeManager from "@/components/ModeManager";
 import NotificationOnboard from "@/components/notifications/NotificationOnboard";
 import FirstRun from "@/components/first-run/FirstRun";
+import FirstWin from "@/components/first-run/FirstWin";
 import { Toaster } from "@/components/ui/Toast";
 import { Suspense } from "react";
 
@@ -283,6 +284,16 @@ export default function DashboardShell({
         <>
           <Suspense fallback={null}>
             <AppTour user={user} />
+          </Suspense>
+
+          {/* THE FIRST WIN — one prompt that ends in a real position taken,
+              for adults without a Challenge pass. AppTour's auto-run stands
+              down for exactly those members (it still replays from
+              /dashboard?tour=1), and both stamp the same `tour_completed_at`
+              and fire the same `fic:tour-finished`, so FirstRun's sequence is
+              unchanged whichever one ran. */}
+          <Suspense fallback={null}>
+            <FirstWin user={user} />
           </Suspense>
 
           {/* Unified per-profile first-run layer: sequences walkthrough → add-to

@@ -8,8 +8,10 @@
  * localStorage — that was the invite bug: a second account on a family member's
  * device got nothing):
  *
- *   1. Walkthrough — the existing AppTour (correct variant per register/tier;
- *      challenge variant for pass holders). FirstRun waits for it to finish.
+ *   1. First moment — FirstWin's single prompt for adults (one company, one
+ *      position, XP paid), or the existing AppTour for kids and Challenge-pass
+ *      holders. Both stamp `tour_completed_at` and both fire the same
+ *      `fic:tour-finished` event, so FirstRun waits on one signal either way.
  *   2. Add-to-Home-Screen — platform-aware, AFTER the tour: a real install
  *      button (captured beforeinstallprompt) on Chrome/Android/desktop, a
  *      designed instruction sheet on iOS Safari, silent skip when already
@@ -33,6 +35,44 @@ import { isIOS, isStandalone, pushSupported, subscribeToPush } from "@/lib/push"
 import { getInstallPrompt, fireInstallPrompt } from "@/lib/installPrompt";
 
 const LEGACY_AGE_DAYS = 7;
+
+/**
+ * THE PWA + PUSH PROMPTS ARE DEFERRED TO SESSION 3.
+ *
+ * They used to fire in the FIRST session, immediately after the walkthrough:
+ * a stranger who had not yet done one thing in the product was asked to put an
+ * icon on their home screen and then to accept notifications. Both asks are
+ * reasonable — from a member who has got something out of the app. Neither is
+ * reasonable ninety seconds in, and a declined push permission is permanent,
+ * so asking early does not just annoy, it burns the channel.
+ *
+ * The first session now belongs to FirstWin (one prompt, one real position
+ * taken). These two return on the member's THIRD session, by which point they
+ * have come back twice on their own.
+ *
+ * The counter is per-device on purpose — "has this browser been used three
+ * times" is exactly a device question, and unlike the first-run flags it is not
+ * something a second profile on the same phone is harmed by sharing.
+ */
+const K_SESSIONS = "fic-session-count";
+const K_SESSION_MARK = "fic-session-counted";
+const PROMPT_FROM_SESSION = 3;
+
+/** Sessions this browser has opened, counted once per tab session. */
+function sessionCount(): number {
+  try {
+    const stored = parseInt(localStorage.getItem(K_SESSIONS) || "0", 10) || 0;
+    if (sessionStorage.getItem(K_SESSION_MARK)) return Math.max(1, stored);
+    sessionStorage.setItem(K_SESSION_MARK, "1");
+    const next = stored + 1;
+    localStorage.setItem(K_SESSIONS, String(next));
+    return next;
+  } catch {
+    // No storage access: treat as an established session rather than blocking
+    // the prompt forever.
+    return PROMPT_FROM_SESSION;
+  }
+}
 // Keep the older device-keyed push engine (NotificationOnboard) quiet while
 // FirstRun owns the initial prompt, so a user never sees two push cards.
 const K_PUSH_LAST_PROMPT = "fic-push-last-prompt";
@@ -155,6 +195,10 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
         .single();
       const alreadyDone = !!prof?.install_prompted_at || legacyRef.current;
       const installable = !isStandalone() && (isIOS() || !!getInstallPrompt());
+      // Too early: fall through WITHOUT stamping, so it returns on session 3.
+      if (!alreadyDone && installable && sessionCount() < PROMPT_FROM_SESSION) {
+        return advanceToPush();
+      }
       if (alreadyDone || !installable) {
         if (!legacyRef.current && !prof?.install_prompted_at) stamp("install_prompted_at");
         return advanceToPush();
@@ -185,6 +229,9 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
         typeof Notification !== "undefined" &&
         Notification.permission === "default";
       if (!canPrompt) { stamp("push_prompted_at"); setPhase("done"); return; }
+      // Same deferral, and for the stronger reason: a declined permission can
+      // never be asked for again. Not stamped, so it comes back on session 3.
+      if (sessionCount() < PROMPT_FROM_SESSION) { setPhase("done"); return; }
       setTimeout(() => setPhase("push"), 500);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

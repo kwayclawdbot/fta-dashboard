@@ -35,6 +35,7 @@ import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
 import { StanceControl } from "@/components/canvas2";
 import { checkClean } from "@/lib/profanity";
+import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 import { timeAgo } from "@/lib/feed";
 import { SOCIAL_FLOORS } from "@/lib/social/reactions";
 import {
@@ -68,6 +69,8 @@ export default function ChangedMyMind({
   const [note, setNote] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** XP just awarded for a first position on this ticker — shown, not banked. */
+  const [earned, setEarned] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -89,6 +92,14 @@ export default function ChangedMyMind({
         <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink">
           Your stance
         </h3>
+        {earned != null && (
+          <span
+            className="club-b-chip ml-auto px-2 py-1 font-mono text-[10.5px] font-bold tabular-nums text-accent"
+            role="status"
+          >
+            +{earned} XP
+          </span>
+        )}
         <StanceControl value={null} onChange={() => {}} loading />
       </div>
     );
@@ -135,6 +146,23 @@ export default function ChangedMyMind({
     setReason(null);
     setNote("");
     fetchStanceSummary(supabase, ticker).then((s) => setAnswer({ ticker, summary: s }));
+
+    /* TAKING A POSITION PAYS, AND SAYS SO. Declaring a stance was the one
+       real contribution in the product that earned nothing: `set_ticker_stance`
+       (migration 151) writes the stance and no xp_events row, so a new member's
+       first act of judgement was silently worth zero — which is exactly the act
+       the first-run flow now sends them to. It pays COMMUNITY XP once per
+       ticker, ever (`hasXpForRef` on `stance:<TICKER>`), so a member cannot
+       farm it by flipping back and forth, and the award is shown rather than
+       banked invisibly. */
+    if (userId) {
+      const ref = `stance:${ticker.toUpperCase()}`;
+      const already = await hasXpForRef(supabase, userId, "community", ref);
+      if (!already) {
+        await awardXp(supabase, userId, "community", XP.COMMUNITY, ref);
+        setEarned(XP.COMMUNITY);
+      }
+    }
   }
 
   const showFloorMet = summary.mind_changes >= SOCIAL_FLOORS.mindChanges;

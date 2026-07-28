@@ -552,8 +552,22 @@ export default function AppTour({ user }: { user: TourUser }) {
       // only for CLUB (individual) members. FAMILY members' nav is essentially
       // unchanged, so we advance their version silently (no re-tour) — a stored
       // version bump instead of another walkthrough.
+      //
+      // FIRST WIN OWNS THE FIRST SESSION (adults, no Challenge pass). The
+      // ten-step walkthrough is a description of a product a brand-new member
+      // has no stake in yet, and several of its steps navigate the router out
+      // from under them. FirstWin replaces it with one prompt that ends in a
+      // real position taken and real XP paid; it stamps the SAME
+      // `tour_completed_at` marker, so this branch simply steps aside rather
+      // than racing it. The tour itself is untouched and still reachable at
+      // /dashboard?tour=1 from Settings and Start Here — it is just no longer
+      // imposed. Kids and Challenge-pass holders keep their variants.
+      const firstWinOwns =
+        !data.tour_completed_at && user.role !== "child" && !user.isChallenge;
+
       let framing: Framing | null = null;
-      if (!data.tour_completed_at) framing = "welcome";
+      if (firstWinOwns) framing = null;
+      else if (!data.tour_completed_at) framing = "welcome";
       else if (seen < CURRENT_TOUR_VERSION) {
         if (user.isSolo && predatesRedesign) {
           framing = "whatsnew";
