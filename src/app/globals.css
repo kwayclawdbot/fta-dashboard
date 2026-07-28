@@ -437,25 +437,59 @@
 /* ------------------------------------------------------------------ */
 :root[data-theme="dark"][data-mode="club"],
 :root[data-theme="dark"] [data-mode="club"] {
-  /* BOARD-EXACT dark twin ("Cheat Code App.dc.html"): near-black plum page
-     #0D0B0E, lifted card #17141A, #2A2530 hairline, warm off-white ink. */
-  --m50: #F4F0EC;   /* off-white heading */
-  --m100: #EAE6EE;
-  --m200: #DCD7E0;
-  --m300: #C8C2CE;
-  --m400: #A69FAC;
-  --m500: #8F8894;
-  --m600: #6E6774;
-  --m700: #2A2530;  /* border-strong */
-  --m800: #211D26;
-  --m900: #17141A;  /* card — lifted charcoal */
-  --m950: #0D0B0E;  /* page bg — near-black */
+  /* Dark twin, WARMED off the board ("Cheat Code App.dc.html").
+     ---------------------------------------------------------------
+     ROOT CAUSE — the board's dark canvas was transcribed literally, and
+     the board's dark canvas is PLUM. Every value in this ramp carried
+     more blue than red: page #0D0B0E, card #17141A, hairline #2A2530,
+     and a text cluster running #EAE6EE → #6E6774 in which R−B measured
+     −4 to −6 all the way down. A negative R−B is the numeric signature
+     of a cool grey. So the club's night mode was a violet-grey app
+     wearing an orange accent, while family-dark next door (#17120B page,
+     #221C14 card) was a genuine warm charcoal. Two dark modes, two
+     temperatures, one product — and the volt orange, which is the whole
+     point of club mode, has to fight a complementary-ish ground every
+     time it lands on one of these surfaces.
 
-  --paper: #0D0B0E;
+     REMEDY — hold the LUMINANCE of every step and rotate the hue warm.
+     This is a temperature change, not a value change, so no hierarchy
+     moves and nothing has to be re-laid-out: the ramp reads identically
+     in a greyscale screenshot. R−B goes from −6…−1 to +5…+23 across the
+     ramp. The board's plum stays available as a deliberate object where
+     it is wanted; it is no longer the default ground.
+
+     Measured, OLD → NEW (WCAG contrast):
+       ink   #F4F0EC on card   16.09 → 16.02   (unchanged value, new card)
+       ink                on page   17.29 → 17.23
+       m100  on card             14.81 → 14.79
+       m200  on card             12.89 → 12.71
+       m300  on card             10.48 → 10.26
+       m400  on card              7.10 →  6.92
+       soft/m500 on card          5.31 →  5.18   · on page 5.71 → 5.57
+       m600  on card              3.35 →  3.55
+       sand/m700 hairline on page 1.31 →  1.37   · on card 1.22 → 1.27
+       m800  on page              1.18 →  1.20
+       card  on page              1.07 →  1.08
+     Body copy (ink, m300, m400, soft) stays far above AA; the faintest
+     label step m600 IMPROVES past 3:1; and every hairline gains a little
+     definition rather than losing it. Nothing regressed. */
+  --m50: #F4F0EC;   /* off-white heading */
+  --m100: #EDE7DF;
+  --m200: #DED7CB;
+  --m300: #C9C2B4;
+  --m400: #A79F90;
+  --m500: #908879;
+  --m600: #746D60;
+  --m700: #2E2A21;  /* border-strong */
+  --m800: #232019;
+  --m900: #191510;  /* card — lifted warm charcoal */
+  --m950: #0E0C09;  /* page bg — warm near-black */
+
+  --paper: #0E0C09;
   --ink: #F4F0EC;
-  --soft: #8F8894;
-  --sand: #2A2530;
-  --card: #17141A;
+  --soft: #908879;
+  --sand: #2E2A21;
+  --card: #191510;
   --chip-amber: rgba(255, 138, 0, 0.16);
   --chip-sky: rgba(56, 189, 248, 0.15);
   --chip-green: rgba(52, 211, 153, 0.15);
@@ -463,16 +497,17 @@
   --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.55);
   --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.66);
 
-  --sb-track: #0D0B0E;
-  --sb-thumb: #2A2530;
+  --sb-track: #0E0C09;
+  --sb-thumb: #2E2A21;
   --sb-thumb-hover: #FF7A1A;
 
   --urgency-bg: rgba(255, 138, 0, 0.12);
   --urgency-border: rgba(255, 138, 0, 0.24);
 
-  /* Off, on the plum-black club card. */
-  --off-bg: #232028;
-  --off-edge: #322D3A;
+  /* Off, on the warm-black club card. Same luminance as the plum pair it
+     replaces (edge-on-bg 1.20 → 1.21), rotated warm with the ramp. */
+  --off-bg: #262118;
+  --off-edge: #352F25;
 
   /* Lift the text-end of the orange ramp so active-nav text reads on dark. */
   --g600: #FF8A47;
@@ -1193,15 +1228,98 @@ body {
      Use text-price-up / text-price-down and never write a dark: variant. */
   --color-price-up: var(--price-up);
   --color-price-down: var(--price-down);
+
+  /* THE ISLAND PAIR — the same market ramp, for the surfaces that are dark in
+     BOTH themes.
+     ROOT CAUSE this closes: --price-up flips with the theme because the PAGE
+     flips with the theme. The obsidian islands (.f0-hero-field, .club2-card,
+     --island chart panes) do not flip — they are dark at noon — so on those
+     three surfaces the light-theme value #15803D measures ~2:1 and is simply
+     unreadable. Every lane that hit this reached for a raw Tailwind step
+     (`text-green-400`, `text-red-500`) and froze it into the component, which
+     is how #4ADE80 — the acid lime this round removed everywhere else —
+     survived on the three loudest numbers in the app.
+     These are CONSTANT by design, one step brighter than the dark-page pair
+     because their grounds are darker still. Same forest hue (h153.5) and the
+     same restrained chroma (C 0.163) as the rest of the family.
+       up   #43C97A  9.53:1 on --island #04060C · 7.94:1 on the club2 light
+                     card #1A1D23 · 7.19:1 on the club2 dark card #2C2418
+       down #F0655F  6.49:1 · 5.41:1 · 4.90:1 on the same three
+     Both clear AA everywhere an island puts them, and the up value sits 0.105
+     of lightness clear of --sentiment with 24.7° of hue between them. */
+  --color-price-up-island: #43C97A;
+  --color-price-down-island: #F0655F;
 }
+
+/* ------------------------------------------------------------------ */
+/* ONE GAIN-GREEN — the acid-lime flip, and why it was never the hue   */
+/* ------------------------------------------------------------------ */
+/* The critique read the dark gain green as "a different colour family
+   from the light theme's warm forest green." That is true, but the
+   diagnosis of HUE was wrong and worth recording, because the wrong
+   diagnosis is what kept the bug alive through two prior passes.
+   Measured in OKLCH, every green in this file already sat in one hue
+   band: light #15803D is h150.1, club light #0BA05A is h154.3, dark
+   #4ADE80 is h151.7. Four degrees of spread. The hue was fine.
+
+   ROOT CAUSE — the dark step was not a ramp position, it was a jump to
+   a different KIND of colour. Light gain green sits at L 0.527 / C 0.137:
+   a mid-value, moderately chromatic forest. The dark step #4ADE80 sits
+   at L 0.800 / C 0.182 — nearly two-thirds brighter AND a third more
+   saturated. Raise lightness and chroma together and green stops being
+   green; it becomes neon, and neon at that lightness is what the eye
+   files as "lime." Club dark was worse again at L 0.813.
+
+   That is also the exact mechanism of the COLLISION the law forbids.
+   Community sentiment on dark is --sentiment #A3E635, L 0.849 / C 0.207.
+   The old gain green sat 22.9° of hue and only 0.049 of lightness away
+   from it — two very light, very saturated colours a fifth of a hue
+   step apart, which on a 12px numeral is one colour with two names.
+   Green stopped meaning price the moment it got that bright.
+
+   REMEDY — hold the light ramp's CHROMA and move only the lightness,
+   which is what "a different ramp step" was always supposed to mean.
+   Dark gain green becomes #2FB35F: L 0.678 / C 0.165 / h150.8 — same
+   forest, four steps up the same ramp, chroma essentially unmoved from
+   the light value. It clears AA comfortably and it now sits 0.172 of
+   lightness below the sentiment lime instead of 0.049. The separation
+   from the thing it was colliding with is three and a half times what
+   it was, and it got there by becoming MORE like its own light twin,
+   not less.
+
+   THE DOWN SIDE HAS THE SAME DEFECT, in the milder form. Dark red
+   #F87171 was lifted to L 0.711 while its light twin sits at L 0.505,
+   which left the loss painted LOUDER than the gain on every dark row —
+   the opposite of the light theme, where down (L 0.505) sits a hair
+   under up (L 0.527). It is corrected to #EE6167, L 0.673, so the pair
+   keeps its light-theme weight order in both themes. The hue moves
+   DOWN (22.2° → 20.5°), never up: red lifted toward 30°+ starts
+   reading as brand orange, and orange is spoken for.
+
+   Measured (WCAG contrast):
+     light   up #15803D  5.02:1 card #FFFFFF · 4.69:1 page #FAF7F2
+     light   dn #B91C1C  6.47:1 card         · 6.05:1 page
+     dark    up #2FB35F  6.86:1 page #17120B · 6.22:1 card #221C14
+     dark    dn #EE6167  5.80:1 page         · 5.26:1 card
+     club-lt up #097F46  5.08:1 card #FFFFFF · 4.63:1 page #F7F4EF
+     club-lt dn #C41F48  5.77:1 card         · 5.26:1 page
+     club-dk up #2FBC66  7.91:1 page #0E0C09 · 7.36:1 card #191510
+     club-dk dn #FF4D6D  6.08:1 page         · 5.65:1 card
+   Every value clears AA (4.5:1) for body-size numerals on both its
+   surfaces. The two club LIGHT values were the quiet failures nobody
+   had measured: #0BA05A landed 3.09:1 on the club page and #D92652
+   landed 4.40:1 — a percentage a member reads every day, below AA.
+   Both are darkened one ramp step with their hue untouched (154.3° and
+   14.2° respectively), so the board's identity survives the fix. */
 :root { --price-up: #15803D; --price-down: #B91C1C; }
-:root[data-theme="dark"] { --price-up: #4ADE80; --price-down: #F87171; }
-/* CLUB mode carries the reference board's own market pair — a slightly
-   brighter emerald and the board's magenta-leaning pink for the downside.
-   Hue holds across themes; only the ramp step moves. */
-[data-mode="club"] { --price-up: #0BA05A; --price-down: #D92652; }
+:root[data-theme="dark"] { --price-up: #2FB35F; --price-down: #EE6167; }
+/* CLUB mode carries the reference board's own market pair — the same
+   forest hue pushed a few degrees greener, and the board's magenta-
+   leaning pink for the downside. Hue holds across BOTH themes; only the
+   ramp step moves. */
+[data-mode="club"] { --price-up: #097F46; --price-down: #C41F48; }
 :root[data-theme="dark"][data-mode="club"],
-:root[data-theme="dark"] [data-mode="club"] { --price-up: #4AE383; --price-down: #FF4D6D; }
+:root[data-theme="dark"] [data-mode="club"] { --price-up: #2FBC66; --price-down: #FF4D6D; }
 
 /* --- Hero field, dark ---------------------------------------------- */
 /* f0-hero-field was cool obsidian (#0B0D11) in BOTH themes — on the warm
