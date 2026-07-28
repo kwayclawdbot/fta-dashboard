@@ -99,6 +99,94 @@ export const ADULT_D03: LessonJSON = {
         spreadLabel: "the spread",
         caption: PROVENANCE,
       },
+      /* AUDIO-FIRST. `body` above is the SCRIPT, split here into spoken beats.
+         Not one word is changed — the split points fall on sentence boundaries
+         inside the approved paragraphs, and each beat gets the drawing it is
+         actually describing. The screen holds a headline and the figure; the
+         paragraphs are the voice's job and are never printed as a wall. */
+      beats: [
+        {
+          id: "b1",
+          say: "You open your app, it says Nike is $74.20, and it's natural to assume somebody decided that. Someone at the company. Someone at the exchange. Someone in a suit.",
+          headline: "Somebody decided this. Right?",
+          key: { value: "$74.20", caption: "Nike, on your screen" },
+        },
+        {
+          id: "b2",
+          say: "Nope. Nike has zero say in what its stock costs. Neither does the app. Neither does the exchange.",
+          headline: "Nobody.",
+          key: { value: "$74.20", caption: "Nike, on your screen" },
+        },
+        {
+          id: "b3",
+          say: "What actually exists is two lines of people. On one side, everybody who wants to buy has said the most they'll pay. On the other, everybody willing to sell has said the least they'll take.",
+          headline: "Two lines of people",
+          // The measure is deliberately NOT drawn yet — the voice has not named
+          // it. It arrives on b4, on the sentence that names it.
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            showSpread: false,
+            caption: PROVENANCE,
+          },
+        },
+        {
+          id: "b4",
+          say: "The best offer from the buyers is called the bid. The best one from the sellers is the ask. They're never the same number, because nobody volunteers to pay more than they have to.",
+          headline: "bid · ask",
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            spreadLabel: "the spread",
+            caption: PROVENANCE,
+          },
+        },
+        {
+          id: "b5",
+          say: "Think of a garage sale where thirty people are haggling at once. That's it. That's the stock market.",
+          headline: "A garage sale, thirty people deep.",
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            spreadLabel: "the spread",
+            caption: PROVENANCE,
+          },
+        },
+        {
+          id: "b6",
+          say: "A trade happens the moment somebody gives in. A buyer who wants it now agrees to pay the ask. A seller who wants out now takes the bid.",
+          headline: "A trade is somebody giving in.",
+          key: { value: "$74.18 / $74.22", caption: "bid / ask — 4¢ apart" },
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            spreadLabel: "the spread",
+            caption: PROVENANCE,
+          },
+        },
+        {
+          id: "b7",
+          say: "That's a trade, and the price it happened at is the number on your screen. The quote isn't a price. It's a receipt from the last person who stopped waiting.",
+          headline: "The quote is a receipt.",
+          key: { value: "$74.18 / $74.22", caption: "bid / ask — 4¢ apart" },
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            spreadLabel: "the spread",
+            caption: PROVENANCE,
+          },
+        },
+      ],
     },
 
     /* ── 3 · Prediction — commit, then reveal. Never punished. ────────────── */
@@ -186,6 +274,113 @@ export const ADULT_D03: LessonJSON = {
         },
         caption: "The same drawing, one variable changed — sellers pulled.",
       },
+      /* The same paragraphs, spoken. The drawing rebuilds itself on b3 — the
+         beat whose sentence is "sellers pull their offers" — so the member
+         watches the second ladder arrive on the words that cause it. */
+      beats: [
+        {
+          id: "b1",
+          say: "If prices move because of who's buying and selling at each price, what does news do? It doesn't move the price directly. It changes what people put in the two lines.",
+          headline: "News doesn't move the price.",
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            spreadLabel: "the spread",
+            caption: PROVENANCE,
+          },
+        },
+        {
+          id: "b2",
+          say: "Good news comes out. Buyers who were happy waiting at $74.18 now think it's worth more, so they cancel and come back at $75.40.",
+          headline: "Buyers come back higher.",
+          illustration: {
+            kind: "order_book",
+            mode: "ladder",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            spreadLabel: "the spread",
+            caption: PROVENANCE,
+          },
+        },
+        {
+          id: "b3",
+          say: "Sellers who were fine letting go at $74.22 pull their offers — why sell at yesterday's price? The buying line goes up, the selling line thins out, and the next trade happens way higher.",
+          headline: "Sellers pull.",
+          illustration: {
+            kind: "order_book",
+            mode: "before_after",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            beforeLabel: "before",
+            spreadLabel: "the spread",
+            after: {
+              bids: ["75.40", "75.34", "75.28", "75.19"],
+              asks: ["76.05", "76.60"],
+              label: "after",
+            },
+            caption: "The same drawing, one variable changed — sellers pulled.",
+          },
+        },
+        {
+          id: "b4",
+          say: "Nobody announced a new price. The two lines just rebuilt themselves around a new opinion.",
+          headline: "The lines rebuilt themselves.",
+          illustration: {
+            kind: "order_book",
+            mode: "before_after",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            beforeLabel: "before",
+            spreadLabel: "the spread",
+            after: {
+              bids: ["75.40", "75.34", "75.28", "75.19"],
+              asks: ["76.05", "76.60"],
+              label: "after",
+            },
+            caption: "The same drawing, one variable changed — sellers pulled.",
+          },
+        },
+        {
+          id: "b5",
+          say: "This is why people say news is “already priced in.” It's not a saying. It's just what happened while you were reading the headline.",
+          headline: "“Already priced in.”",
+          illustration: {
+            kind: "order_book",
+            mode: "before_after",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            beforeLabel: "before",
+            spreadLabel: "the spread",
+            after: {
+              bids: ["75.40", "75.34", "75.28", "75.19"],
+              asks: ["76.05", "76.60"],
+              label: "after",
+            },
+            caption: "The same drawing, one variable changed — sellers pulled.",
+          },
+        },
+        {
+          id: "b6",
+          say: "By the time you see it, the people who moved first have already rearranged both lines. You're not looking at the price before the news. You're looking at the price after a few thousand people finished arguing about it.",
+          headline: "You're seeing the price after the argument.",
+          illustration: {
+            kind: "order_book",
+            mode: "before_after",
+            bids: BOOK_BIDS,
+            asks: BOOK_ASKS,
+            beforeLabel: "before",
+            spreadLabel: "the spread",
+            after: {
+              bids: ["75.40", "75.34", "75.28", "75.19"],
+              asks: ["76.05", "76.60"],
+              label: "after",
+            },
+            caption: "The same drawing, one variable changed — sellers pulled.",
+          },
+        },
+      ],
     },
 
     /* ── 5 · Multiple choice · the spread (the annotated word) ────────────── */

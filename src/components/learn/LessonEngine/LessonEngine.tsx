@@ -30,6 +30,14 @@ import { STEP_REGISTRY } from "./registry";
 import { EngineProvider } from "./EngineContext";
 import { EASE_OUT, GuideLine, PrimaryButton } from "./ui";
 import { MonoEyebrow, warmFieldStyle } from "@/components/learn/kit";
+import {
+  AudioControls,
+  Caption,
+  LessonAudioProvider,
+  SpeakingDots,
+  useLessonAudio,
+  useNarration,
+} from "./audio";
 
 /**
  * <LessonEngine/> — the universal renderer (FIC-LEARNING-WORLD §1). Reads a
@@ -40,24 +48,36 @@ import { MonoEyebrow, warmFieldStyle } from "@/components/learn/kit";
  *   • byte-compatible completion writes (lesson_progress + quiz_attempts + XP)
  *     so belts / leaderboards / home-state / report cards keep working
  *   • register-scaled feedback + prefers-reduced-motion + mobile-first + a11y
+ *
+ * AUDIO-FIRST (owner note, 07-28: "it should be audio speaking the words with
+ * images or animations or interactions on screen, not read like a book"). Kai
+ * SPEAKS every lesson; the screen carries the drawing, one line of large type
+ * and the interaction. This component owns the two pieces of that which are not
+ * a step's business:
+ *
+ *   • THE ARMING GESTURE. Browsers refuse audio that no one asked for, and
+ *     mobile Safari unlocks per element on a real tap. So a lesson opens on a
+ *     Start card; that press arms the shared element and plays the guide intro.
+ *     Every segment after it is a src swap on an already-unlocked element.
+ *   • THE CONTROLS. Replay, mute, captions — one rail, present on every screen,
+ *     honoured by every step. Muted is a complete path, not a degradation: it
+ *     turns captions on and hands every screen a manual advance.
  */
 
 // Scored graded types (prediction is a reveal, not a score — excluded).
 const SCORED = new Set(["multiple_choice", "true_false", "match_pairs"]);
 
-export default function LessonEngine({
-  lesson,
-  lessonId,
-  quizId,
-  register,
-  supabase,
-  userId,
-  familyId,
-  courseTitle,
-  moduleTitle,
-  backHref,
-  nextHref,
-}: {
+export default function LessonEngine(props: LessonEngineProps) {
+  // One audio element for the whole lesson, above the step tree so a step
+  // change never tears down the thing that is speaking.
+  return (
+    <LessonAudioProvider>
+      <LessonEngineInner {...props} />
+    </LessonAudioProvider>
+  );
+}
+
+interface LessonEngineProps {
   lesson: LessonJSON;
   lessonId: string;
   quizId: string | null;
@@ -70,13 +90,106 @@ export default function LessonEngine({
   moduleTitle: string;
   backHref: string;
   nextHref: string | null;
+}
+
+/**
+ * The Start card. It exists for one technical reason and one design reason: the
+ * press is the user gesture that unlocks audio, and a lesson that opens by
+ * talking at you unannounced is rude. Kai's intro plays here, over the title,
+ * and the lesson begins when he stops (or immediately, on a skip or with the
+ * sound off).
+ */
+function StartGate({
+  lesson,
+  moduleTitle,
+  register,
+  resuming,
+  onBegin,
+}: {
+  lesson: LessonJSON;
+  moduleTitle: string;
+  register: Register;
+  resuming: boolean;
+  onBegin: () => void;
 }) {
   const reduce = useReducedMotion();
+  const audio = useLessonAudio();
+  const [begun, setBegun] = useState(false);
+  const armed = audio?.armed === true;
+
+  const { done } = useNarration(lesson.audio?.intro, "lesson:intro", {
+    enabled: begun && armed,
+    onEnd: onBegin,
+  });
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <m.div
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: EASE_OUT }}
+        className="relative overflow-hidden rounded-[22px] border px-6 py-10 sm:px-10"
+        style={warmFieldStyle("160deg")}
+      >
+        <MonoEyebrow>{moduleTitle}</MonoEyebrow>
+        <h1 className="mt-2 max-w-[18ch] font-display text-display-2 font-extrabold leading-[1.08] tracking-[-0.02em] text-ink">
+          {lesson.title}
+        </h1>
+        <p className="mt-3 flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-gold-700">
+          {lesson.duration_minutes} min · {lesson.steps.length} steps · sound on
+        </p>
+
+        {!begun ? (
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <PrimaryButton onClick={() => { audio?.arm(); setBegun(true); }} icon="arrow">
+              {resuming ? "Pick up where you left off" : "Start"}
+            </PrimaryButton>
+            <AudioControls />
+          </div>
+        ) : (
+          <div className="mt-8">
+            <GuideLine register={register}>
+              {lesson.guide?.intro ?? "Here we go."}
+            </GuideLine>
+            <Caption asset={lesson.audio?.intro} />
+            <div className="mt-4 flex items-center gap-3">
+              <SpeakingDots active={!done && audio?.audible === true} />
+              <div className="ml-auto flex items-center gap-3">
+                <AudioControls />
+                <PrimaryButton onClick={onBegin} icon="arrow">
+                  {done ? "Begin" : "Skip intro"}
+                </PrimaryButton>
+              </div>
+            </div>
+          </div>
+        )}
+      </m.div>
+    </div>
+  );
+}
+
+function LessonEngineInner({
+  lesson,
+  lessonId,
+  quizId,
+  register,
+  supabase,
+  userId,
+  familyId,
+  courseTitle,
+  moduleTitle,
+  backHref,
+  nextHref,
+}: LessonEngineProps) {
+  const reduce = useReducedMotion();
+  const audio = useLessonAudio();
   const [soundOn] = useSoundOptIn();
   const steps = lesson.steps;
   const total = steps.length;
 
   const [hydrated, setHydrated] = useState(false);
+  /** The Start press has happened — audio is armed and the steps may run. */
+  const [started, setStarted] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const [summary, setSummary] = useState<{ xp: number; score: number | null }>({
@@ -212,6 +325,9 @@ export default function LessonEngine({
     return () => window.clearTimeout(t);
   }, [finished, ledger, fireAward, reduce]);
 
+  // The outro is spoken over the completion card — the last thing Kai says.
+  useNarration(lesson.audio?.outro, "lesson:outro", { enabled: finished });
+
   const handleResolve = useCallback(
     (result: StepResult) => {
       if (resolving.current) return;
@@ -274,6 +390,21 @@ export default function LessonEngine({
 
   const scale = feedbackScale(register);
 
+  /* ── Start card ─────────────────────────────────────────────────────────
+     Rendered before any step, every time — a resumed lesson still needs the
+     gesture, because the audio element is new on every page load. */
+  if (!started && !finished) {
+    return (
+      <StartGate
+        lesson={lesson}
+        moduleTitle={moduleTitle}
+        register={register}
+        resuming={stepIndex > 0}
+        onBegin={() => setStarted(true)}
+      />
+    );
+  }
+
   /* ── Completion screen ─────────────────────────────────────────────── */
   if (finished) {
     return (
@@ -318,6 +449,10 @@ export default function LessonEngine({
               {lesson.guide?.outro ??
                 "That concept is yours now. Take it into the market."}
             </p>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <SpeakingDots active={audio?.playing === true} />
+              <AudioControls />
+            </div>
 
             {/* THE AWARD MOMENT (motion spec #1). The figure counts up over
                 800ms in tabular figures, the level bar springs 180/26 with the
@@ -466,6 +601,9 @@ export default function LessonEngine({
           <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-gold-700">
             {stepIndex + 1}/{total}
           </span>
+          {/* The voice controls live in the chrome, not in a step — they must
+              be in the same place on every screen of the lesson. */}
+          <AudioControls className="shrink-0" />
         </div>
 
         {/* Lesson title (small) + guide intro on the first step */}
@@ -475,11 +613,8 @@ export default function LessonEngine({
             <h1 className="mt-1.5 max-w-[28ch] font-display text-[17px] font-bold text-soft">
               {lesson.title}
             </h1>
-            {lesson.guide?.intro && (
-              <div className="mt-3">
-                <GuideLine register={register}>{lesson.guide.intro}</GuideLine>
-              </div>
-            )}
+            {/* The guide intro is SPOKEN on the Start card now; printing it
+                here again was the "read like a book" opening the owner cut. */}
           </div>
         )}
 

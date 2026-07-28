@@ -11,6 +11,7 @@ import { playCue } from "@/lib/learn/feedback";
 import { checkWatchlistHas, checkResearchedTicker } from "@/lib/learn/engine-io";
 import { useEngineRuntime } from "../EngineContext";
 import { FeedbackNote, GuideLine, PrimaryButton, StepPrompt, EASE_OUT } from "../ui";
+import { useNarration } from "../audio";
 
 /**
  * The differentiator vs Duolingo — the lesson ESCAPES the lesson screen into the
@@ -32,6 +33,16 @@ export default function RealWorldStep({
   const [checking, setChecking] = useState(false);
   const [notYet, setNotYet] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+
+  // The rep is SPOKEN: Kai gives the instruction, then congratulates the member
+  // on the real artifact once the check actually passes.
+  useNarration(spec.audio?.prompt, `${spec.id}:prompt`, { enabled: !confirmed });
+  // Resolving on the voice rather than a fixed 900ms — otherwise the lesson's
+  // outro starts talking over the congratulation.
+  useNarration(spec.audio?.success, `${spec.id}:success`, {
+    enabled: confirmed,
+    onEnd: () => window.setTimeout(() => onResolve({}), 500),
+  });
 
   const href =
     spec.action === "save_watchlist"
@@ -60,7 +71,7 @@ export default function RealWorldStep({
         setConfirmed(true);
         setNotYet(false);
         playCue("win", register, soundOn);
-        window.setTimeout(() => onResolve({}), 900);
+        // Advance is owned by the success narration's end (see useNarration).
         return true;
       }
       if (!soft) setNotYet(true);

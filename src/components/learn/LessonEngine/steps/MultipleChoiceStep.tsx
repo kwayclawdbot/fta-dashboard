@@ -7,6 +7,7 @@ import type {
 import { StepPrompt } from "../ui";
 import ChoiceCore from "../ChoiceCore";
 import LessonScene from "../LessonScene";
+import { useNarration } from "../audio";
 
 /**
  * Multiple choice — and, with a `scene`, the MICRO-LESSON format (canvas App
@@ -23,10 +24,15 @@ export default function MultipleChoiceStep({
   xpNote,
   onResolve,
 }: StepComponentProps<Spec>) {
+  // The question is SPOKEN and shown — a question is the one thing that has to
+  // be on screen while it is answered, so this is the only text that stays.
+  useNarration(spec.audio?.prompt, `${spec.id}:prompt`);
   return (
     <div>
       <StepPrompt mark={spec.framing}>{spec.question}</StepPrompt>
       {spec.scene && <LessonScene scene={spec.scene} />}
+      {/* No caption on the prompt: the question is already on screen in full,
+          so a transcript of it would just be the same words twice. */}
       <ChoiceCore
         options={spec.options.map((label) => ({ label }))}
         correctIndex={spec.correctIndex}
@@ -36,6 +42,13 @@ export default function MultipleChoiceStep({
         soundOn={soundOn}
         onResolve={onResolve}
         feedbackFor={(i) => spec.wrongFeedback?.[i] ?? null}
+        narration={{
+          reinforce: spec.audio?.reinforce,
+          explanation: spec.audio?.explanation,
+          reask: spec.audio?.reask,
+          wrongFor: (i) => spec.audio?.[`wrong:${i}`],
+        }}
+        cue={spec.id}
         layout="list"
         ariaLabel="Answer choices"
         footerNote={xpNote}

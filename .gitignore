@@ -47,3 +47,10 @@ __pycache__/
 .venv/
 backend/.env
 supabase/.temp/
+
+# PLACEHOLDER lesson narration (OpenAI account hit insufficient_quota, 07-28).
+# The real assets are gpt-4o-mini-tts / ash and SHOULD be committed. Delete
+# these two lines the moment `node scripts/build-lesson-audio.mjs
+# --provider openai --force` has replaced them.
+public/lessons/audio/**/*.mp3
+public/lessons/audio/**/manifest.json

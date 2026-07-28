@@ -12,7 +12,7 @@
  * Re-running it is safe and idempotent: the migration it writes is itself
  * idempotent (stable uuids + on conflict do update).
  */
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -22,6 +22,51 @@ const ROOT = join(HERE, "..");
 const { ADULT_D03 } = await import(
   join(ROOT, "src/lib/learn/curriculum/adult-d03.ts")
 );
+
+/* ── AUDIO-FIRST mode ────────────────────────────────────────────────────
+   `--audio-migration` emits 206 instead of 202: the same generated JSON, now
+   carrying the narration assets, applied to the ALREADY-LIVE pilot row with a
+   guarded UPDATE. 202 stays exactly as it shipped — it is applied to prod and
+   is not rewritten under a deployed database. */
+const AUDIO_MODE = process.argv.includes("--audio-migration");
+const narrated = { applied: 0, ms: 0 };
+const ALLOW_PLACEHOLDER = process.argv.includes("--allow-placeholder");
+
+let manifest = null;
+if (AUDIO_MODE) {
+  const mp = join(ROOT, "public/lessons/audio/adult-d03/manifest.json");
+  if (!existsSync(mp)) {
+    console.error(
+      "No audio manifest. Run: node scripts/build-lesson-audio.mjs"
+    );
+    process.exit(1);
+  }
+  manifest = JSON.parse(readFileSync(mp, "utf8"));
+  if (manifest.provider !== "openai" && !ALLOW_PLACEHOLDER) {
+    console.error(
+      `REFUSING: manifest provider is "${manifest.provider}", not "openai".\n` +
+        "The shipped voice is gpt-4o-mini-tts / ash. Regenerate with\n" +
+        "  node scripts/build-lesson-audio.mjs --provider openai --force\n" +
+        "or pass --allow-placeholder to emit a migration whose durations are\n" +
+        "provisional (urls + script are final either way)."
+    );
+    process.exit(1);
+  }
+
+  const { applyNarration, narratedMs } = await import(
+    join(ROOT, "src/lib/learn/narration.ts")
+  );
+  const assets = {};
+  for (const [file, seg] of Object.entries(manifest.segments ?? {})) {
+    assets[file] = {
+      url: seg.url,
+      durationMs: seg.durationMs,
+      say: seg.say,
+    };
+  }
+  narrated.applied = applyNarration(ADULT_D03, assets);
+  narrated.ms = narratedMs(ADULT_D03);
+}
 
 /* ── validate before we write ─────────────────────────────────────────── */
 
@@ -80,6 +125,33 @@ for (const [i, s] of ADULT_D03.steps.entries()) {
       push(`${at}: unknown real-world action`);
     if (!s.ticker || !s.company) push(`${at}: needs ticker + company`);
   }
+  if (s.type === "explainer" && Array.isArray(s.beats)) {
+    const seenBeat = new Set();
+    for (const b of s.beats) {
+      if (!b.id) push(`${at}: a beat has no id`);
+      if (seenBeat.has(b.id)) push(`${at}: duplicate beat id "${b.id}"`);
+      seenBeat.add(b.id);
+      if (!b.say?.trim()) push(`${at}: beat ${b.id} has nothing to say`);
+      // AUDIO-FIRST: the beat's narration must be the authored prose, not new
+      // copy invented for the voice. Every beat has to be findable inside a
+      // paragraph of `body`, which is what makes the split reviewable.
+      const inBody = (s.body ?? []).some((p) =>
+        p.replace(/\s+/g, " ").includes(b.say.replace(/\s+/g, " "))
+      );
+      if (!inBody)
+        push(
+          `${at}: beat ${b.id} narration is not a verbatim slice of body — ` +
+            "the script may only be SPLIT, never rewritten"
+        );
+      if (b.headline && b.headline.length > 60)
+        push(`${at}: beat ${b.id} headline is a paragraph (${b.headline.length} chars)`);
+    }
+    if (AUDIO_MODE && s.beats.some((b) => !b.audio?.url))
+      push(`${at}: beats without audio in --audio-migration mode`);
+  }
+  if (s.type === "explainer" && !s.beats?.length)
+    push(`${at}: an explainer with no beats is a wall of text — author beats`);
+
   const ill = s.illustration;
   if (ill) {
     if (ill.kind !== "order_book") push(`${at}: unknown illustration kind`);
@@ -267,10 +339,90 @@ function sqlStr(s) {
   return "'" + String(s).replace(/'/g, "''") + "'";
 }
 
-const out = join(ROOT, "supabase/migrations/202_curriculum_reset.sql");
-writeFileSync(out, sql, "utf8");
+/* ── 206 — the audio-first presentation of the SAME lesson ─────────────── */
+
+const audioSql = `-- 206 — PILOT LESSON, AUDIO-FIRST.
+--
+-- ═══════════════════════════════════════════════════════════════════════════
+-- The owner rejected the text-heavy pilot outright: "it should be audio
+-- speaking the words with images or animations or interactions on screen, not
+-- read like a book — again we are going for duolingo experience."
+--
+-- This migration replaces the PRESENTATION of the Day 3 pilot and nothing else.
+-- Same eight steps, same ids, same questions, same correct answers, same skills,
+-- same 50 XP, same lesson row. Not one member's lesson_progress, quiz_attempts
+-- or xp_events row changes meaning, because none of the things those reference
+-- moved. What changed is inside \`steps\`:
+--
+--   • Each explainer now carries a \`beats\` array — the SAME approved prose,
+--     split on sentence boundaries into 1–3 sentence spoken beats, each with
+--     the visual state that holds while it is spoken. The generator refuses to
+--     write this file unless every beat is a verbatim slice of the paragraph it
+--     came from, so the curriculum voice can be split but never rewritten.
+--   • Every line that can reach a member's ears — question prompts, per-option
+--     wrong feedback, reinforcements, the re-ask, the reveal walk-up, the guide
+--     lines, the real-world instruction, the intro and the outro — carries an
+--     \`audio\` entry: { url, durationMs, say }.
+--
+-- THE AUDIO IS STATIC. Pre-generated with OpenAI gpt-4o-mini-tts (voice: ash)
+-- by scripts/build-lesson-audio.mjs and served from
+-- /lessons/audio/adult-d03/*.mp3. There is NO runtime TTS and no LLM anywhere
+-- in this path: what a member hears is a published artifact, identical for
+-- everyone, forever — the same promise the hand-written prices make.
+--
+-- Compliance rails unchanged: education, never advice; equities only; no
+-- performance claims; every price hand-written and dated illustrative
+-- (NKE, 2025-Q3), never a live quote.
+--
+-- GUARDED + IDEMPOTENT. It updates exactly one row, by id, and only if that row
+-- is still the pilot; re-running is a no-op. A rollback is re-applying 202.
+--
+-- Generated by: node scripts/build-pilot-lesson.mjs --audio-migration
+-- Do NOT hand-edit the JSON below — edit the typed module and regenerate.
+--${
+  manifest && manifest.provider !== "openai"
+    ? `
+-- ⚠ PROVISIONAL DURATIONS. The OpenAI account was out of quota
+-- (insufficient_quota) when this was generated, so \`durationMs\` was measured
+-- from a placeholder local render. The urls and the spoken script are final;
+-- the engine advances on the audio element's own \`ended\` event and never reads
+-- durationMs, so this is metadata only. Refresh it with:
+--   node scripts/build-lesson-audio.mjs --provider openai --force
+--   node scripts/build-pilot-lesson.mjs --audio-migration
+--`
+    : ""
+}
+-- ═══════════════════════════════════════════════════════════════════════════
+
+update lessons
+set
+  steps       = $json$
+${json}
+$json$::jsonb,
+  est_minutes = ${ADULT_D03.duration_minutes},
+  updated_at  = now()
+where id = '${LESSON_ID}'
+  and module_id = '${MODULE_ID}'
+  and retired = false;
+`;
+
+const target = AUDIO_MODE
+  ? join(ROOT, "supabase/migrations/206_pilot_audio.sql")
+  : join(ROOT, "supabase/migrations/202_curriculum_reset.sql");
+
+writeFileSync(target, AUDIO_MODE ? audioSql : sql, "utf8");
+
+const beatCount = ADULT_D03.steps.reduce(
+  (n, s) => n + (s.beats?.length ?? 0),
+  0
+);
 console.log(
-  `wrote ${out}\n  steps: ${ADULT_D03.steps.length}` +
+  `wrote ${target}\n  steps: ${ADULT_D03.steps.length}` +
     `\n  types: ${[...new Set(ADULT_D03.steps.map((s) => s.type))].join(", ")}` +
+    `\n  beats: ${beatCount}` +
+    (AUDIO_MODE
+      ? `\n  audio: ${narrated.applied} segments · ${(narrated.ms / 60000).toFixed(2)} min` +
+        `\n  voice: ${manifest.model} · ${manifest.voice} (provider: ${manifest.provider})`
+      : "") +
     `\n  json:  ${json.length} bytes`
 );

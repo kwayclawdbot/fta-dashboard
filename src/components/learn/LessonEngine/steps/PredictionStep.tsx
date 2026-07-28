@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
 import { TrendingUp } from "lucide-react";
 import type {
@@ -18,6 +18,13 @@ import {
 } from "../ui";
 import OrderBookFigure from "../OrderBookFigure";
 import LessonScene from "../LessonScene";
+import {
+  Caption,
+  SpeakingDots,
+  useLessonAudio,
+  useNarration,
+  useNarrationSequence,
+} from "../audio";
 
 /**
  * Prediction → reveal. The member commits to a call, THEN sees what actually
@@ -32,10 +39,51 @@ export default function PredictionStep({
   onResolve,
 }: StepComponentProps<Spec>) {
   const reduce = useReducedMotion();
+  const audio = useLessonAudio();
   const [picked, setPicked] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
 
   const correct = picked === spec.outcomeValue;
+
+  // The question is spoken while the book it is asked about sits on screen.
+  useNarration(spec.audio?.prompt, `${spec.id}:prompt`, { enabled: !revealed });
+
+  /* THE REVEAL IS A WALK-UP, NOT A SLAB. Kai says the headline, then each
+     authored paragraph in turn, and the screen only ever holds the sentences he
+     has already reached. The book is eaten on segment 1 — the sentence that
+     describes it being eaten — so the price counting up and the words causing
+     it are the same moment. That is the sync bar for this lesson. */
+  const paras = useMemo(
+    () => spec.reveal.body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean),
+    [spec.reveal.body]
+  );
+  const guideLine =
+    spec.guideOn && picked === spec.guideOn.value
+      ? spec.guideOn.line
+      : correct
+        ? "You called it. That's the read of an investor."
+        : "Not the call you made — and that's exactly how you learn to read one.";
+  const guideAsset =
+    spec.guideOn && picked === spec.guideOn.value
+      ? spec.audio?.[`guide:${spec.guideOn.value}`]
+      : correct
+        ? spec.audio?.["guide:correct"]
+        : spec.audio?.["guide:wrong"];
+
+  const revealQueue = useMemo(
+    () => [
+      spec.audio?.["reveal:0"],
+      ...paras.map((_, i) => spec.audio?.[`reveal:${i + 1}`]),
+      guideAsset,
+    ],
+    [spec.audio, paras, guideAsset]
+  );
+  const guideIdx = paras.length + 1;
+  const { index: beat, done: revealDone } = useNarrationSequence(
+    revealQueue,
+    `${spec.id}:reveal:${picked ?? ""}`,
+    { enabled: revealed }
+  );
 
   function reveal() {
     if (picked === null) return;
@@ -52,7 +100,10 @@ export default function PredictionStep({
       {/* The object the call is being made AGAINST — shown with the question,
           then eaten on reveal so the member watches the price move. */}
       {spec.illustration && (
-        <OrderBookFigure spec={spec.illustration} playWalk={revealed} />
+        <OrderBookFigure
+          spec={spec.illustration}
+          playWalk={revealed && beat >= 1}
+        />
       )}
 
       <ChoiceGroup
@@ -125,14 +176,20 @@ export default function PredictionStep({
               {/* Authored as paragraphs (blank-line separated) — a three-beat
                   reveal read as one slab was a wall, and the third beat is the
                   one that generalises the lesson. */}
-              {spec.reveal.body.split(/\n\s*\n/).map((para, i) => (
-                <p
-                  key={i}
-                  className="relative mt-2.5 max-w-[58ch] text-[15px] leading-relaxed text-[#F7F3EA]/70"
-                >
-                  {para}
-                </p>
-              ))}
+              {/* One paragraph per spoken segment, arriving as it is said. */}
+              {paras.map((para, i) =>
+                beat >= i + 1 ? (
+                  <m.p
+                    key={i}
+                    initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.28, ease: EASE_OUT }}
+                    className="relative mt-2.5 max-w-[58ch] text-[15px] leading-relaxed text-[#F7F3EA]/70"
+                  >
+                    {para}
+                  </m.p>
+                ) : null
+              )}
             </div>
 
             {/* The authored price figure — the tape the outcome left behind.
@@ -143,25 +200,26 @@ export default function PredictionStep({
               </div>
             )}
 
-            <div className="mt-4">
-              {/* Kai speaks to the specific wrong pick when the author wrote a
-                  line for it — "that was the smartest wrong answer, and here
-                  is why". Otherwise the engine default. */}
-              <GuideLine register={register}>
-                {spec.guideOn && picked === spec.guideOn.value
-                  ? spec.guideOn.line
-                  : correct
-                    ? "You called it. That's the read of an investor."
-                    : "Not the call you made — and that's exactly how you learn to read one."}
-              </GuideLine>
-            </div>
-            <div className="flex justify-end">
-              <PrimaryButton
-                onClick={() => onResolve({ correct, firstTry: correct })}
-                icon="arrow"
-              >
-                Continue
-              </PrimaryButton>
+            {/* Kai speaks to the specific wrong pick when the author wrote a
+                line for it — "that was the smartest wrong answer, and here is
+                why". Otherwise the engine default. It lands last, after the
+                reveal has finished being told. */}
+            {beat >= guideIdx && (
+              <div className="mt-4">
+                <GuideLine register={register}>{guideLine}</GuideLine>
+              </div>
+            )}
+            <Caption asset={revealQueue[beat]} />
+            <div className="mt-2 flex items-center justify-end gap-3">
+              <SpeakingDots active={!revealDone && audio?.audible === true} />
+              {revealDone && (
+                <PrimaryButton
+                  onClick={() => onResolve({ correct, firstTry: correct })}
+                  icon="arrow"
+                >
+                  Continue
+                </PrimaryButton>
+              )}
             </div>
           </m.div>
         )}

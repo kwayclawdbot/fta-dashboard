@@ -6,6 +6,7 @@ import type {
 } from "@/lib/learn/schema";
 import { StepPrompt } from "../ui";
 import ChoiceCore from "../ChoiceCore";
+import { useNarration } from "../audio";
 
 /** True / false as a two-choice swipe-style decision (big tap targets). */
 export default function TrueFalseStep({
@@ -15,6 +16,8 @@ export default function TrueFalseStep({
   xpNote,
   onResolve,
 }: StepComponentProps<Spec>) {
+  // The statement is spoken as it is shown — it IS the question.
+  useNarration(spec.audio?.prompt, `${spec.id}:prompt`);
   const trueLabel = spec.trueLabel ?? "True";
   const falseLabel = spec.falseLabel ?? "False";
   // Index 0 = true, 1 = false.
@@ -30,6 +33,12 @@ export default function TrueFalseStep({
         register={register}
         soundOn={soundOn}
         onResolve={onResolve}
+        narration={{
+          reinforce: spec.audio?.reinforce,
+          explanation: spec.audio?.explanation,
+          reask: spec.audio?.reask,
+        }}
+        cue={spec.id}
         layout="split"
         showLetters={false}
         reaskLabel="Read it once more, then decide."

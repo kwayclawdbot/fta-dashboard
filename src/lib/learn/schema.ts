@@ -18,6 +18,63 @@ export const LESSON_SCHEMA_VERSION = 1 as const;
 /** Every interaction step targets zero or one skill for per-step mastery. */
 export type SkillId = string;
 
+/* ── Narration — the AUDIO-FIRST layer ──────────────────────────────────
+   A lesson is SPOKEN. Kai says the teaching copy; the screen holds only the
+   drawing for that beat, one short line of large type, and the interaction.
+   Nobody reads a wall.
+
+   The audio is PRE-GENERATED (scripts/build-lesson-audio.mjs, OpenAI
+   gpt-4o-mini-tts, voice `ash`) and served as a static file. There is NO
+   runtime TTS: a lesson costs nothing to replay, works offline-ish behind the
+   service worker, and sounds identical for every member forever.
+
+   `say` is the SCRIPT — the approved curriculum prose, segmented, never
+   rewritten. It doubles as the caption text when captions are on, so the
+   caption can never drift from the audio. */
+export interface AudioAsset {
+  /** Public path of the pre-generated mp3 (under /lessons/audio/…). */
+  url: string;
+  /** Measured length of that exact file, ms — written by the build script,
+   *  never estimated at runtime. Drives "advance when the voice stops". */
+  durationMs: number;
+  /** The exact words in the file. Shown when captions are on. */
+  say: string;
+}
+
+/** Narration segments for one step / lesson, keyed by ROLE.
+ *
+ *  Roles are stable strings the components look up directly:
+ *    "prompt" · "reinforce" · "explanation" · "reask" · "wrong:<optIdx>"
+ *    "reveal:<n>" · "guide:<value>" · "guide:correct" · "guide:wrong"
+ *    "success" — and, on the lesson envelope, "intro" / "outro".
+ *
+ *  Absent roles simply have no voice; every component degrades to silent text,
+ *  so a half-generated lesson still runs. */
+export type StepAudio = Record<string, AudioAsset>;
+
+/** One SPOKEN BEAT of an explainer: 1–3 sentences of narration paired with the
+ *  visual state that holds while they are spoken. The drawing changes on the
+ *  segment boundary — beat N starts, figure N animates in. That is the whole
+ *  sync model; there is no word-level karaoke. */
+export interface ExplainerBeat {
+  /** Stable id within the step — also the mp3 basename suffix. */
+  id: string;
+  /** What Kai SAYS. Approved prose, segmented — never rewritten for audio. */
+  say: string;
+  /** The ONE line of large type on screen for this beat. A headline or a
+   *  keyword, never the paragraph — the paragraph is the voice's job. */
+  headline?: string;
+  /** Optional large figure/number held beside the drawing for this beat. */
+  key?: { value: string; caption?: string };
+  /** Teaching-object state for this beat. */
+  illustration?: LessonIllustration;
+  /** `walk_up` illustrations: start the consume motion on this beat, so the
+   *  book is eaten while the sentence describing it is being spoken. */
+  playWalk?: boolean;
+  /** Filled in by scripts/build-lesson-audio.mjs. */
+  audio?: AudioAsset;
+}
+
 /* ── Step specs ─────────────────────────────────────────────────────────── */
 
 export interface BaseStep {
@@ -26,18 +83,27 @@ export interface BaseStep {
   type: string;
   /** Skill this interaction updates (skill_mastery). Optional. */
   skill?: SkillId;
+  /** Pre-generated narration for this step, keyed by role. See StepAudio. */
+  audio?: StepAudio;
 }
 
-/** Non-interactive concept/explanation block. Continue to advance. */
+/** Non-interactive concept/explanation block. Continue to advance.
+ *
+ *  AUDIO-FIRST: authored `beats` are the real presentation — Kai talks through
+ *  them one at a time while the drawing changes underneath. `body` is kept as
+ *  the source prose (and the silent/no-audio fallback), but when `beats` is
+ *  present the paragraphs are never rendered as a wall of text. */
 export interface ExplainerStep extends BaseStep {
   type: "explainer";
   heading?: string;
-  /** Paragraphs. */
+  /** Paragraphs. Source of truth for the narration script; not the screen. */
   body: string[];
   /** Optional pull-quote / big-number figure shown alongside. */
   figure?: { kind: "stat" | "quote"; value: string; caption?: string };
   /** Optional authored teaching object drawn under the prose. */
   illustration?: LessonIllustration;
+  /** The spoken beat sequence. Each beat = one audio segment + one visual. */
+  beats?: ExplainerBeat[];
 }
 
 /* ── Scene ──────────────────────────────────────────────────────────────
@@ -90,6 +156,11 @@ export interface OrderBookIllustration {
   asks: string[];
   /** Gold hairline label across the gap. */
   spreadLabel?: string;
+  /** Draw the gold measure across the gap at all. Default true. Set false for
+   *  the BEAT that shows the two ladders BEFORE the voice has named the spread —
+   *  the measurement arriving on the next beat is the whole point of splitting
+   *  them, and a measure drawn before it is spoken gives the answer away. */
+  showSpread?: boolean;
   /** `before_after` only — the second state of the same drawing. */
   after?: { bids: string[]; asks: string[]; label?: string };
   /** `before_after` only — label on the first state. */
@@ -216,6 +287,9 @@ export interface LessonJSON {
   xp: number;
   /** Authored guide (Kai) lines — no live LLM. */
   guide?: { intro?: string; outro?: string };
+  /** Lesson-level narration: "intro" (spoken off the Start press, which is also
+   *  the gesture that arms audio) and "outro" (spoken on the completion card). */
+  audio?: StepAudio;
   steps: StepSpec[];
 }
 
@@ -286,6 +360,7 @@ export function parseLessonSteps(
       duration_minutes: env.duration_minutes ?? 4,
       xp: env.xp ?? fallback.xp,
       guide: env.guide,
+      audio: env.audio,
       steps: env.steps,
     };
   }

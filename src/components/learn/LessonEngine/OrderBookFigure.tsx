@@ -150,6 +150,7 @@ function Book({
   consumed,
   label,
   compact = false,
+  showSpread = true,
 }: {
   bids: string[];
   asks: string[];
@@ -159,6 +160,9 @@ function Book({
   consumed?: number;
   label?: string;
   compact?: boolean;
+  /** Draw the gold measure across the gap. False on the beat that shows the two
+   *  ladders BEFORE the narration names the spread — see schema.showSpread. */
+  showSpread?: boolean;
 }) {
   const rows = Math.max(bids.length, asks.length);
   return (
@@ -190,6 +194,7 @@ function Book({
 
         {/* the spread — a gold hairline measuring the empty middle at the top
             row, drawn LAST because it is the measurement of everything above */}
+        {showSpread && (
         <m.div
           aria-hidden
           className="pointer-events-none absolute left-1/2 -translate-x-1/2"
@@ -216,8 +221,9 @@ function Book({
             />
           </div>
         </m.div>
+        )}
 
-        {spreadLabel && (
+        {showSpread && spreadLabel && (
           <m.span
             className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1.5 py-px font-mono text-[8.5px] font-semibold uppercase tracking-[0.12em]"
             style={{
@@ -337,6 +343,7 @@ export default function OrderBookFigure({
           seed={0}
           built={built}
           consumed={walk ? consumed : -1}
+          showSpread={spec.showSpread !== false}
         />
       )}
 
