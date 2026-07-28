@@ -6,11 +6,7 @@ import { usePathname } from "next/navigation";
 import { Flame, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp } from "@/lib/xp";
-import {
-  showsKaiFab,
-  MAIN_PADDING_WITH_FAB,
-  MAIN_PADDING_NO_FAB,
-} from "@/lib/kai-fab";
+import { showsKaiFab, fabReserve } from "@/lib/kai-fab";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
@@ -153,6 +149,9 @@ export default function DashboardShell({
     };
   }, []);
 
+  // The FAB's true footprint, as a length. See the note on <main> below.
+  const reserve = fabReserve(showsKaiFab(pathname, user.tier));
+
   const isFree = (user.tier ?? "fic") === "free";
   const freeLocked =
     isFree &&
@@ -216,13 +215,25 @@ export default function DashboardShell({
         {/* Bottom room. The tab bar (4rem + the iOS safe-area inset) was the
             only thing this ever cleared, so on every route that also floats the
             Kai FAB the last row of a list ended up parked underneath it. The
-            two measurements now come from ONE place — see src/lib/kai-fab. */}
+            two measurements now come from ONE place — see src/lib/kai-fab.
+            THE SECOND PASS: the reserve was measured against the BUTTON and not
+            against the FAB (which is a ring and a tuck control wider than its
+            own circle), so it cleared by about 4px — enough for a list, not
+            enough for the three narrow-column boards (Home, Discover, Family)
+            whose rows put their numbers flush right under it. The measurement is
+            now a length, not a utility class, stamped here as a custom property
+            AND applied as the padding. Any surface that needs to align to the
+            FAB can read --kai-fab-reserve without knowing the arithmetic and
+            without this file reaching into it — which is how Family gets the fix
+            without a single file in that lane being touched. */}
         <main
-          className={`px-4 lg:px-8 pt-6 ${
-            showsKaiFab(pathname, user.tier)
-              ? MAIN_PADDING_WITH_FAB
-              : MAIN_PADDING_NO_FAB
-          }`}
+          style={
+            {
+              "--kai-fab-reserve": reserve.phone,
+              "--kai-fab-reserve-desktop": reserve.desktop,
+            } as React.CSSProperties
+          }
+          className="px-4 pt-6 pb-[var(--kai-fab-reserve)] md:pb-[var(--kai-fab-reserve-desktop)] lg:px-8"
         >
           {challengeDaysLeft !== null && !freeLocked && (
             <Link

@@ -86,3 +86,57 @@ export const MAIN_PADDING_WITH_FAB =
 /** No FAB — only the mobile tab bar has to be cleared. */
 export const MAIN_PADDING_NO_FAB =
   "pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE RESERVE, MEASURED HONESTLY.
+
+   The class pair above is correct arithmetic against the BUTTON and wrong
+   arithmetic against the FAB. The FAB is not a 3.5rem circle: it carries a 4px
+   paper ring outside its border box, and the tuck control overhangs its top-left
+   corner by another 8px. So the real footprint is 3.5rem + 12px, and a reserve
+   built from 3.5rem leaves the last row of a board sitting under the ring with
+   about 4px to spare — which is why Home, Discover and Family still read as
+   covered after a reserve was added. They are the three surfaces whose page root
+   is a narrow centred column of rows with values set flush right (ClubHomeV2 and
+   DiscoverClient at max-w-2xl, FamilySurface at max-w-3xl), so 4px of clearance
+   is the difference between a clean board and a number with a disc on it.
+
+   WHY A CUSTOM PROPERTY AND AN INLINE STYLE, AND NOT ANOTHER CLASS. The three
+   surfaces above each set their own bottom padding on their own root, and one
+   of them (Family) is owned by another lane entirely. A variable stamped on
+   <main> by the shell reaches all three without any of them being edited, and an
+   inline padding cannot be undercut by class order or by a page that decides to
+   own its own spacing. This is the ONLY place the number lives; the classes
+   above stay exported for callers that still want the utility form.
+
+   Kept in step with the button's own offsets in FloatingKaiButton — the two are
+   one measurement, and they drifted apart once already.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** Tab bar (4rem) + the gap the FAB floats above it. Phones only. */
+const TAB_BAR = "4rem";
+/** Button 3.5rem + 4px ring + 8px tuck-control overhang + 1rem to breathe. */
+const FAB_FOOTPRINT = "5.25rem";
+/** The FAB's own gap above the tab bar (phones) / the page edge (desktop). */
+const FAB_GAP_PHONE = "0.75rem";
+const FAB_GAP_DESKTOP = "1.5rem";
+
+/**
+ * The bottom room `<main>` must hold open, as a CSS length.
+ *
+ * Returned as a pair because the phone value has to clear the tab bar and the
+ * desktop value must not (there is no tab bar there, and 9rem of dead space at
+ * the foot of a desktop board is its own kind of broken).
+ */
+export function fabReserve(showsFab: boolean): { phone: string; desktop: string } {
+  if (!showsFab) {
+    return {
+      phone: `calc(${TAB_BAR} + 0.5rem + env(safe-area-inset-bottom))`,
+      desktop: "1.5rem",
+    };
+  }
+  return {
+    phone: `calc(${TAB_BAR} + ${FAB_GAP_PHONE} + ${FAB_FOOTPRINT} + env(safe-area-inset-bottom))`,
+    desktop: `calc(${FAB_GAP_DESKTOP} + ${FAB_FOOTPRINT})`,
+  };
+}
