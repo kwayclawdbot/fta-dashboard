@@ -13,6 +13,7 @@ import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
 import ProfileLink from "@/components/ProfileLink";
 import { SegmentedRail } from "@/components/canvas2";
+import { isOffBoardIdentity } from "@/lib/leaderboardExclusions";
 import { BoardMast, EmptyCard, ListHead, TextAction } from "@/components/you/parts";
 
 /**
@@ -208,6 +209,9 @@ function LeaderboardInner() {
   const [scope, setScope] = useState<Scope>(initialScope);
 
   const [ind, setInd] = useState<{ rows: IndRow[]; me: IndRow | null }>({ rows: [], me: null });
+  /** The viewer is staff or a fixture — say so instead of hiding their rank
+      with no explanation. */
+  const [meOffBoard, setMeOffBoard] = useState(false);
   const [fams, setFams] = useState<FamRow[]>([]);
   const [myFamilyId, setMyFamilyId] = useState<string>("");
 
@@ -244,7 +248,38 @@ function LeaderboardInner() {
         });
         if (!alive()) return;
         const payload = (data as { rows: IndRow[]; me: IndRow | null }) || { rows: [], me: null };
-        setInd({ rows: payload.rows || [], me: payload.me || null });
+
+        // STAFF + FIXTURES OFF THE PUBLIC BOARD (src/lib/leaderboardExclusions).
+        // Filtered here rather than in the RPC so the rule is one readable,
+        // reviewable list instead of a predicate buried in SQL — and so the
+        // within-family view (?scope=family), which is a household's own board,
+        // gets the same treatment for free. Ranks are RE-NUMBERED after the
+        // filter: a board that opens at #4 has visibly had rows removed, and a
+        // rank is a position on the board you are looking at.
+        const raw = payload.rows || [];
+        const rows = raw
+          .filter((r) => !isOffBoardIdentity(r))
+          .map((r, i) => ({ ...r, rank: i + 1 }));
+
+        const rawMe = payload.me || null;
+        const meOnBoard = rawMe && !isOffBoardIdentity(rawMe) ? rawMe : null;
+        // The pinned me-row keeps its server rank, less the excluded rows above
+        // it — the only correction available, since rows beyond the returned
+        // window are not visible from here.
+        const me =
+          meOnBoard && !rows.some((r) => r.id === meOnBoard.id)
+            ? {
+                ...meOnBoard,
+                rank: Math.max(
+                  1,
+                  meOnBoard.rank -
+                    raw.filter((r) => isOffBoardIdentity(r) && r.rank < meOnBoard.rank).length
+                ),
+              }
+            : meOnBoard;
+
+        setMeOffBoard(!!rawMe && !meOnBoard);
+        setInd({ rows, me });
       } else {
         const { data } = await supabase.rpc("xp_leaderboard_families", { p_window: period });
         if (!alive()) return;
@@ -350,7 +385,13 @@ function LeaderboardInner() {
       {loading ? (
         <CardSkeleton />
       ) : dimension === "individuals" ? (
-        <IndividualsBoard ind={ind} meInRows={meInRows} periodLabel={periodLabel} scope={scope} />
+        <IndividualsBoard
+          ind={ind}
+          meInRows={meInRows}
+          periodLabel={periodLabel}
+          scope={scope}
+          meOffBoard={meOffBoard}
+        />
       ) : (
         <FamiliesBoard fams={fams} myFamilyId={myFamilyId} periodLabel={periodLabel} />
       )}
@@ -418,11 +459,13 @@ function IndividualsBoard({
   meInRows,
   periodLabel,
   scope,
+  meOffBoard = false,
 }: {
   ind: { rows: IndRow[]; me: IndRow | null };
   meInRows: boolean;
   periodLabel: string;
   scope: Scope;
+  meOffBoard?: boolean;
 }) {
   if (ind.rows.length === 0) {
     return (
@@ -467,6 +510,15 @@ function IndividualsBoard({
           <ListHead charged={false}>Your rank</ListHead>
           <IndividualRow row={ind.me} pinned />
         </div>
+      )}
+
+      {/* A staff or fixture account has no rank here BY DESIGN. Saying so beats
+          a missing row the viewer has to guess at. */}
+      {meOffBoard && (
+        <FoundingNote>
+          Staff and test accounts are kept off the public board, so this account has no
+          rank on it.
+        </FoundingNote>
       )}
     </div>
   );

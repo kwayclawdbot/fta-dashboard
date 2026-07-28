@@ -23,6 +23,21 @@ const SWATCH: Record<keyof typeof SIZES, string> = {
   md: "w-3 h-3",
 };
 
+/**
+ * THE TWO ENDS OF THE LADDER CANNOT COLOUR THEIR OWN LABEL. Every other belt
+ * hex is a mid-tone that reads on both papers, so the pill can tint itself and
+ * write the word in its own colour. White (#E8EAF0) and Black (#1F2430) cannot:
+ * on the light board the White Belt chip was near-white text on a near-white
+ * card at a 15%-alpha hairline — the audit found it completely invisible — and
+ * Black has the mirror-image problem on the night board.
+ *
+ * So the two neutral belts drop the self-colouring and take the surface's own
+ * ink plus a FULL-opacity edge in the belt's border hex. The swatch dot still
+ * carries the actual belt colour, which is what the belt colour is FOR, and the
+ * chip stays legible in both themes without a `dark:` variant.
+ */
+const NEUTRAL_BELTS = new Set(["white", "black"]);
+
 export function BeltBadge({
   rank,
   xp,
@@ -37,14 +52,17 @@ export function BeltBadge({
 }) {
   const r = rank ?? beltForXp(xp ?? 0);
   const { belt } = r;
+  const neutral = NEUTRAL_BELTS.has(belt.key);
   return (
     <span
       title={`${r.label} · Level ${r.level.level} (${r.level.name})`}
-      className={`inline-flex items-center font-display font-bold uppercase tracking-wide shrink-0 ${SIZES[size]} ${className}`}
+      className={`inline-flex items-center font-display font-bold uppercase tracking-wide shrink-0 ${SIZES[size]} ${
+        neutral ? "text-ink" : ""
+      } ${className}`}
       style={{
-        backgroundColor: `${belt.hex}22`,
-        color: belt.hex,
-        border: `1px solid ${belt.borderHex}55`,
+        backgroundColor: neutral ? "transparent" : `${belt.hex}22`,
+        ...(neutral ? null : { color: belt.hex }),
+        border: `1px solid ${belt.borderHex}${neutral ? "" : "55"}`,
       }}
     >
       <span
