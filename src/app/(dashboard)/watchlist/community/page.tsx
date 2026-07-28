@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCommunityBoardSeed } from "@/lib/community-watchlist-board";
 import CommunityWatchlistClient from "./CommunityWatchlistClient";
+
+// Overrides the /watchlist layout title: this is a different board with a
+// different name, and it is the name the rail uses to send a member here.
+export const metadata: Metadata = {
+  title: "Club Picks",
+  description:
+    "Every company on the club board was brought by a member and is researched in the open.",
+};
 
 /**
  * /watchlist/community — server-first first paint (speed pass).

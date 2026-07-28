@@ -749,7 +749,19 @@ export default function WatchlistPage() {
           }
         />
 
-        <WatchRail active="board" showKai={!isKid} className="mt-4" />
+        {/* NAV-STACK COLLAPSE. This board used to carry the pill rail here AND
+            the filter chips a section below — two rows of rounded shapes, one
+            of which navigates and one of which filters, with nothing on screen
+            saying which was which. The chips stay (they act on the board in
+            front of you); the cross-surface rail drops to its quiet inline
+            line, so the only control row on /watchlist is the one that changes
+            what you are looking at. Every destination is still one tap away. */}
+        <WatchRail
+          active="board"
+          showKai={!isKid}
+          variant="inline"
+          className="mt-3"
+        />
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button

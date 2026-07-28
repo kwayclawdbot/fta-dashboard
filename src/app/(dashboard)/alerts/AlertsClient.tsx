@@ -47,7 +47,6 @@ import {
   CondRow,
   Eyebrow as BoardEyebrow,
   BoardLead,
-  SectionPills,
 } from "@/components/alerts/board";
 import {
   MAX_ACTIVE_RULES,
@@ -69,6 +68,9 @@ import {
   type AlertSetup,
 } from "@/lib/alerts/types";
 import ScrollRow from "@/components/canvas2/ScrollRow";
+import SegmentedRail, {
+  type SegmentedOption,
+} from "@/components/canvas2/Segmented";
 import type { TrackRecord, AlertOutcome } from "@/lib/alerts/history";
 import type { WatchState } from "@/lib/alerts/watch-state";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
@@ -259,13 +261,26 @@ export default function AlertsClient({
     return n;
   }, [activeRules, stateByRule, followedSetups]);
 
-  const TAB_ITEMS = useMemo(
+  // ONE CONTROL, NOT TWO. These five sections used to ride <SectionPills> — a
+  // second row of filled pills directly under the cross-surface pill rail. The
+  // rail has gone inline (see WatchHead), and the sections moved onto the
+  // canvas's shared <SegmentedRail>, which is the app's one answer to "pick one
+  // of N": an underline carried by type weight first and colour second, so it
+  // still reads with colour stripped and it never becomes pill soup. Nothing
+  // was dropped — all five sections are here, and the live watch count that the
+  // pills carried in a superscript now rides the label itself.
+  const TAB_ITEMS = useMemo<SegmentedOption<Tab>[]>(
     () => [
-      { key: "overview" as const, label: "Overview" },
-      { key: "daily" as const, label: "Kai Daily" },
-      { key: "watch" as const, label: "My watches", count: activeRules.length },
-      { key: "history" as const, label: "Alerts" },
-      { key: "track" as const, label: "Record" },
+      { id: "overview", label: "Overview" },
+      { id: "daily", label: "Kai Daily" },
+      {
+        id: "watch",
+        label: activeRules.length
+          ? `My watches · ${activeRules.length}`
+          : "My watches",
+      },
+      { id: "history", label: "Alerts" },
+      { id: "track", label: "Record" },
     ],
     [activeRules.length]
   );
@@ -279,11 +294,14 @@ export default function AlertsClient({
         lastChecked={lastChecked}
       />
 
-      <SectionPills
-        tabs={TAB_ITEMS}
-        active={tab}
-        onSelect={setTab}
+      <SegmentedRail
+        options={TAB_ITEMS}
+        value={tab}
+        onChange={setTab}
         ariaLabel="Kai Watch sections"
+        /* Kai-blue: this board IS the Kai layer, and the colour law keeps the
+           AI surface distinct from the orange brand actions beside it. */
+        barClassName="bg-kai-500"
         className="mb-6 mt-6"
       />
 
@@ -388,9 +406,18 @@ function WatchHead({
 
   return (
     <header>
-      <BoardLead word="watch" />
+      {/* THIS BOARD IS "KAI WATCH", AND NOW IT SAYS SO. It shipped under the
+          wordmark "watch" — the same word /watchlist prints — so two entirely
+          different rooms wore one name and the browser tab could not tell them
+          apart either. Kai Watch is the name the rail already uses to send a
+          member here (WatchRail's third cell) and the name the rules layer
+          carries throughout, so the door and the room finally agree. */}
+      <BoardLead word="kai watch" />
 
-      <WatchRail active="kai" className="mt-3.5" />
+      {/* The section rail below is this board's one control. The cross-surface
+          rail therefore drops to its quiet inline line rather than stacking a
+          second row of pills on top of it — see WatchRail's note. */}
+      <WatchRail active="kai" variant="inline" className="mt-3" />
 
       <Card className="mt-4 flex items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-kai-500/12 text-kai-600 ring-1 ring-kai-500/25">

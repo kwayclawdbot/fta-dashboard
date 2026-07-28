@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Bell } from "lucide-react";
 import {
@@ -30,6 +31,16 @@ import {
 } from "@/lib/alerts/history";
 import type { WatchCurrentState, AlertSetup } from "@/lib/alerts/types";
 import { observationalOutcome, type ObservationalRow } from "@/lib/alerts/watch-ui";
+
+// The tab and the wordmark now say the same thing. This board shipped under the
+// word "watch", which /watchlist also prints, so two different rooms were
+// indistinguishable in a tab strip. Kai Watch is the name the rail already uses
+// to send a member here.
+export const metadata: Metadata = {
+  title: "Kai Watch",
+  description:
+    "Kai's personalized watch layer — your rules, what is developing, and what it has already told you.",
+};
 
 /**
  * /alerts — the Trade Alerts Hub (LANE C6).

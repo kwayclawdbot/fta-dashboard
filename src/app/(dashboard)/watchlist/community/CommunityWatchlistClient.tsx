@@ -339,8 +339,14 @@ export default function CommunityWatchlistClient({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
+        {/* THE WORDMARK NAMES THE ROOM, NOT THE SECTION OF THE APP. Three
+            boards ran under the word "watch" — this one, /watchlist and
+            /alerts — so the wordmark told a member nothing about where they
+            had landed, and the browser tab told them even less. Each board now
+            says its own name, and it is the SAME name the rail uses to get
+            here ("Club picks"), so the door and the room agree. */}
         <BoardLead
-          word="watch"
+          word="club picks"
           sub="Every company here was brought by someone and is researched in the open — one shared entry per ticker, credited to whoever put it on the board, and tracked from the day it landed."
         />
 
@@ -349,7 +355,8 @@ export default function CommunityWatchlistClient({
         <WatchRail
           active="community"
           showKai={ageGroup !== "kids" && ageGroup !== "teens" && role !== "child"}
-          className="mt-4"
+          variant="inline"
+          className="mt-3"
         />
 
         {howToHint.show ? (

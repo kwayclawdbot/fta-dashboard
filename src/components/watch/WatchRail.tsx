@@ -26,6 +26,22 @@ import Link from "next/link";
 
    COLOUR: the pill rides `bg-accent` (--accent-solid) — club orange, family
    gold or FTA metallic per mode. Brand + action, by law.
+
+   ── THE INLINE VARIANT, AND WHY IT EXISTS ─────────────────────────────────
+   Every board that carries this rail ALSO carries a control row of its own —
+   /watchlist has its filter chips, /alerts has its five sections, the club
+   board has its sort. Stacked, that is two rows of rounded shapes under one
+   wordmark, and a member cannot tell at a glance which row moves them to
+   another screen and which row changes what is in front of them. The audit
+   read the pair as one confused control, and it was right: they are two
+   different axes wearing the same clothes.
+
+   So the page keeps ONE control row — the one that acts on what is on screen —
+   and the cross-surface rail drops to `variant="inline"`: a quiet line of text
+   under the lede, set in the lede's own size and colour, with the current
+   surface named in ink and its siblings as plain links. Nothing is lost (all
+   three destinations are still one tap away) and nothing competes: the only
+   pills left on the board belong to the board's own control.
    ══════════════════════════════════════════════════════════════════════════ */
 
 export type WatchSurface = "board" | "community" | "kai";
@@ -35,10 +51,16 @@ export default function WatchRail({
   /** Kids and teens never reach /alerts (the route hard-redirects them), so the
    *  cell is omitted rather than rendered into a redirect. */
   showKai = true,
+  /**
+   * `pills` is the drawn rail. `inline` is the quiet text line a board uses
+   * when it already owns a control row of its own — see the note above.
+   */
+  variant = "pills",
   className = "",
 }: {
   active: WatchSurface;
   showKai?: boolean;
+  variant?: "pills" | "inline";
   className?: string;
 }) {
   const items: { id: WatchSurface; label: string; href: string }[] = [
@@ -48,6 +70,44 @@ export default function WatchRail({
       ? [{ id: "kai" as WatchSurface, label: "Kai Watch", href: "/alerts" }]
       : []),
   ];
+
+  // The quiet line. Set at the lede's size so it reads as part of the masthead
+  // sentence rather than as a second control; the current surface is stated in
+  // ink and NOT linked, because a link to the page you are standing on is the
+  // same wasted tap the unbuilt OVERVIEW hub would have been.
+  if (variant === "inline") {
+    return (
+      <nav
+        aria-label="Watch"
+        className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] leading-relaxed ${className}`}
+      >
+        {items.map((it, i) => {
+          const on = it.id === active;
+          return (
+            <span key={it.id} className="inline-flex items-center gap-x-2">
+              {i > 0 && (
+                <span aria-hidden className="text-soft/45">
+                  ·
+                </span>
+              )}
+              {on ? (
+                <span aria-current="page" className="font-semibold text-ink">
+                  {it.label}
+                </span>
+              ) : (
+                <Link
+                  href={it.href}
+                  className="f0-focus text-soft underline decoration-sand underline-offset-4 transition hover:text-ink hover:decoration-current"
+                >
+                  {it.label}
+                </Link>
+              )}
+            </span>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <nav
