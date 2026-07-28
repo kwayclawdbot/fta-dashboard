@@ -2,10 +2,10 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type NextClassResponse } from "@/lib/free-class";
 import ConfirmationView from "@/components/free-class/ConfirmationView";
+import { FunnelSkeleton } from "@/components/free-class/ui";
 
 /**
  * Confirmation / signed-in hub. Reached on full registration (?welcome=1) or by
@@ -47,13 +47,7 @@ function ConfirmedInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
-      </div>
-    );
-  }
+  if (!ready) return <FunnelSkeleton />;
 
   return (
     <ConfirmationView
@@ -68,13 +62,7 @@ function ConfirmedInner() {
 
 export default function ConfirmedPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-paper">
-          <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={<FunnelSkeleton />}>
       <ConfirmedInner />
     </Suspense>
   );

@@ -11,11 +11,11 @@ import { createClient } from "@/lib/supabase/client";
 const STEP_ORDER = [0, 1, 3, 5, 7] as const;
 const STEP_LABEL: Record<number, string> = { 0: "D0", 1: "D1", 3: "D3", 5: "D5", 7: "D7" };
 const STATUS_STYLE: Record<string, string> = {
-  sent: "text-emerald-300 bg-emerald-500/10",
-  pending: "text-amber-300 bg-amber-500/10",
-  failed: "text-red-300 bg-red-500/10",
-  skipped: "text-zinc-400 bg-zinc-500/10",
-  suppressed: "text-zinc-400 bg-zinc-500/10",
+  sent: "f0-chip-on",
+  pending: "f0-chip-accent text-accent",
+  failed: "f0-chip-accent text-accent",
+  skipped: "text-soft",
+  suppressed: "text-soft",
 };
 
 interface DripRow {
@@ -107,44 +107,44 @@ export default function DripsPage() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-            <Mail className="w-5 h-5 text-amber-400" /> Welcome Drip
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink flex items-center gap-2">
+            <Mail className="w-5 h-5 text-accent" /> Welcome Drip
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <p className="text-soft text-sm mt-1">
             5-email series (D0/D1/D3/D5/D7) auto-enrolled at wizard completion. Sent daily by cron.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={load}
-            className="text-sm text-zinc-400 hover:text-amber-400 transition-colors flex items-center gap-1"
+            className="text-sm text-soft hover:text-accent-strong transition-colors flex items-center gap-1"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
-          <Link href="/admin/crm" className="text-sm text-zinc-400 hover:text-amber-400 transition-colors">
+          <Link href="/admin/crm" className="text-sm text-soft hover:text-accent-strong transition-colors">
             ← Back to CRM
           </Link>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div className="mb-4 rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent">
           {error}
         </div>
       )}
 
       {/* Hard gate */}
-      <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 flex items-center justify-between flex-wrap gap-4">
+      <div className="mb-6 club-b-card p-5 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <div className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+          <div className="text-sm font-semibold text-ink flex items-center gap-2">
             Sending {enabled === null ? "…" : enabled ? "ENABLED" : "PAUSED"}
             <span
               className={`inline-block w-2 h-2 rounded-full ${
-                enabled ? "bg-emerald-400" : "bg-amber-400"
+                enabled ? "bg-accent" : "border border-sand"
               }`}
             />
           </div>
-          <div className="text-xs text-zinc-500 mt-1 max-w-lg">
+          <div className="text-xs text-soft mt-1 max-w-lg">
             While paused the cron enrolls members but sends zero mail. Flip this on only after the
             template look is approved. {totalPending} step{totalPending === 1 ? "" : "s"} queued.
           </div>
@@ -154,8 +154,8 @@ export default function DripsPage() {
           disabled={busy || enabled === null}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
             enabled
-              ? "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25"
-              : "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+              ? "bg-accent/15 text-accent hover:bg-accent/25"
+              : "bg-card text-soft hover:bg-paper"
           }`}
         >
           {enabled ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
@@ -168,10 +168,10 @@ export default function DripsPage() {
         {STEP_ORDER.map((s) => {
           const c = counts[s] || {};
           return (
-            <div key={s} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-              <div className="text-xs font-semibold text-amber-400">{STEP_LABEL[s]}</div>
-              <div className="text-2xl font-bold text-zinc-100 mt-1">{c.sent || 0}</div>
-              <div className="text-[11px] text-zinc-500 mt-1">
+            <div key={s} className="club-b-card p-4">
+              <div className="text-xs font-semibold text-accent">{STEP_LABEL[s]}</div>
+              <div className="font-mono text-2xl font-semibold tabular-nums text-ink mt-1">{c.sent || 0}</div>
+              <div className="text-[11px] text-soft mt-1">
                 sent · {c.pending || 0} queued
                 {c.failed ? ` · ${c.failed} failed` : ""}
               </div>
@@ -180,14 +180,14 @@ export default function DripsPage() {
         })}
       </div>
 
-      <div className="text-sm text-zinc-500 mb-2">
+      <div className="text-sm text-soft mb-2">
         {totalSent} sent · {totalPending} queued · showing latest {rows.length}
       </div>
 
       {/* Recent rows */}
-      <div className="rounded-xl border border-zinc-800 overflow-hidden">
+      <div className="club-b-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-900/80 text-zinc-400 text-xs uppercase tracking-wide">
+          <thead className="bg-paper font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
             <tr>
               <th className="text-left font-medium px-4 py-3">Member</th>
               <th className="text-left font-medium px-4 py-3">Step</th>
@@ -197,42 +197,42 @@ export default function DripsPage() {
               <th className="text-left font-medium px-4 py-3">Resend ID</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800">
+          <tbody className="divide-y divide-sand">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={6} className="px-4 py-10 text-center text-soft">
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-zinc-500">
+                <td colSpan={6} className="px-4 py-10 text-center text-soft">
                   No drip enrollments yet.
                 </td>
               </tr>
             ) : (
               rows.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-900/40">
+                <tr key={r.id} className="hover:bg-paper">
                   <td className="px-4 py-3">
-                    <div className="text-zinc-200">{r.profiles?.display_name || "—"}</div>
-                    <div className="text-xs text-zinc-500">{r.profiles?.email || r.user_id.slice(0, 8)}</div>
+                    <div className="text-ink">{r.profiles?.display_name || "—"}</div>
+                    <div className="text-xs text-soft">{r.profiles?.email || r.user_id.slice(0, 8)}</div>
                   </td>
-                  <td className="px-4 py-3 text-zinc-300">{STEP_LABEL[r.step] ?? r.step}</td>
-                  <td className="px-4 py-3 text-zinc-400">{r.variant}</td>
+                  <td className="px-4 py-3 text-ink">{STEP_LABEL[r.step] ?? r.step}</td>
+                  <td className="px-4 py-3 text-soft">{r.variant}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        STATUS_STYLE[r.status] || "text-zinc-400 bg-zinc-500/10"
+                      className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                        STATUS_STYLE[r.status] || "text-soft"
                       }`}
                     >
                       {r.status}
                     </span>
-                    {r.error && <div className="text-[11px] text-red-400/80 mt-1">{r.error}</div>}
+                    {r.error && <div className="text-[11px] text-accent mt-1">{r.error}</div>}
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">
+                  <td className="px-4 py-3 text-soft">
                     {r.sent_at ? relTime(r.sent_at) : `sched ${relTime(r.scheduled_at)}`}
                   </td>
-                  <td className="px-4 py-3 text-xs text-zinc-500 font-mono">
+                  <td className="px-4 py-3 text-xs text-soft font-mono">
                     {r.resend_id ? r.resend_id.slice(0, 12) : "—"}
                   </td>
                 </tr>

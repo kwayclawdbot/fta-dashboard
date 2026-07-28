@@ -202,7 +202,7 @@ export default function ProfileOnboardingPage() {
           {isWelcome ? (
             <button
               onClick={finish}
-              className="cta-button f0-focus f0-press flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+              className="f0-focus f0-press flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
             >
               Go to my dashboard
               <ArrowRight className="w-4 h-4" />
@@ -210,7 +210,7 @@ export default function ProfileOnboardingPage() {
           ) : (
             <button
               onClick={() => advance(step === S_HEAR)}
-              className="cta-button f0-focus f0-press flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+              className="f0-focus f0-press flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
             >
               Continue
               <ArrowRight className="w-4 h-4" />

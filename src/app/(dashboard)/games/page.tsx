@@ -7,18 +7,19 @@ import { m } from "@/lib/motion";
 import { ArrowRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
+import { DisplayHead } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
- * THE TRAINING ROOM — the games index as a hairline LEDGER, not a card grid.
+ * THE TRAINING ROOM — the games index, drawn in the BOARD's card language.
  *
- * Each game is a row: a large muted index numeral gives it identity, the title
- * carries the ask, and the right-hand mono column holds YOUR record. Nothing is
- * wrapped in a box, and the two games never sit in equal columns — a two-up grid
- * of picture cards was the exact pattern the register bans.
- *
- * ONE DARK OBJECT: the masthead field. It is the only dark surface on the index
- * (the games themselves carry their own night-island stage), which is what lets
- * it actually dominate rather than compete.
+ * FORM (board 01): display masthead, ONE tinted accent object (`.club-b-warm`)
+ * carrying your record and the rule that makes a session pay, then the games
+ * themselves as white `.club-b-card` tiles — art tile for identity, the ask, and
+ * your best in the right-hand mono column. The previous version built the index
+ * from the hairline ledger vocabulary under a full-bleed dark hero; the dark
+ * island now belongs only to the games themselves, which are the immersive
+ * moment. An index is not.
  *
  * DATA HONESTY: "Best n/10" and the last-played date come from real `game_scores`
  * rows. A game you have never played says so — it never shows a zero, and it
@@ -29,16 +30,13 @@ import { getClubTier, type FamilyTier } from "@/lib/tier";
  * the lock upsell, which are actions. Orange TEXT uses the gold ramp, which
  * flips at night; text-volt-* is frozen and never used.
  *
- * ADULT-FIRST (canvas v2): these are kid-facing games, and the standing rule is
- * that the kid version is DERIVED from the adult one. So the index is the same
- * display/hairline/ledger vocabulary as Live Classes and the FTA desk — no toy
- * bevels, no bubble emoji, no pulsing pings. What makes it playable is the
- * numeral, the tug-of-war art and the copy, not a second visual system.
+ * ADULT-FIRST: these are kid-facing games, and the standing rule is that the kid
+ * version is DERIVED from the adult one. So the index speaks the same card
+ * vocabulary as Club Home — no toy bevels, no bubble emoji, no pulsing pings.
+ * What makes it playable is the art tile and the copy, not a second system.
  *
- * CANVAS V2 PASS: one annotated word in the headline, the shared focus ring and
- * press feedback on every row, and a real founding state for a member who has
- * never played (the previous version simply omitted the record line, which read
- * as a rendering gap rather than a stated absence).
+ * ACCESS: the free-tier lock is unchanged — `freeOpen` still decides whether a
+ * card plays or routes to /upgrade, and the deeper route re-checks server-side.
  */
 
 interface GameEntry {
@@ -51,6 +49,8 @@ interface GameEntry {
   gameKey: string;
   /** Playable on the free tier. Others route to the upgrade surface. */
   freeOpen: boolean;
+  /** The game's identity tile — its own art, not a generic glyph. */
+  art: string;
 }
 
 const GAMES: GameEntry[] = [
@@ -61,6 +61,7 @@ const GAMES: GameEntry[] = [
     trains: "Reading a single bar",
     gameKey: "candle-battle",
     freeOpen: true,
+    art: "/art/tug-of-war.jpg",
   },
   {
     href: "/games/trend-or-trap",
@@ -69,6 +70,7 @@ const GAMES: GameEntry[] = [
     trains: "Reading a sequence",
     gameKey: "trend-or-trap",
     freeOpen: false,
+    art: "/art/levelup-story.jpg",
   },
 ];
 
@@ -145,69 +147,106 @@ export default function GamesHubPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      {/* The one dark object on the surface. */}
-      <m.header
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="f0-hero-field f0-grain relative px-6 py-8 sm:px-9 sm:py-11"
-      >
-        <Image
-          src="/art/tug-of-war.jpg"
-          alt=""
-          fill
-          priority
-          className="object-cover opacity-30"
+      <m.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+        <DisplayHead
+          eyebrow="Training room"
+          title="Practice"
+          mark="Games"
+          lede="Every price move is a tug-of-war between buyers and sellers. Ten rounds a session; clear 70% and the session pays XP."
         />
-        <div className="f0-hero-scrim" />
-        <div className="relative">
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-600">
-            Training room
-          </p>
-          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05]">
-            Practice <span className="f0-underline-mark">Games</span>
-          </h1>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/70">
-            Every price move is a tug-of-war between buyers and sellers. Ten rounds a
-            session; clear 70% and the session pays XP.
-          </p>
+      </m.div>
+
+      {/* THE ONE TINTED OBJECT — your record, stated and never inferred. A
+          member with no sessions gets a FOUNDING STATE (§0.5), not a missing
+          line: "you have not played yet" is a fact worth saying, and it carries
+          the rule that makes a session pay. */}
+      <section className="club-b-warm f0-grain px-5 py-5" aria-label="Your record">
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+              Your record
+              <span className="text-accent"> in the room</span>
+            </p>
+            <p className="mt-2 font-display text-display-2 font-extrabold leading-none tabular-nums text-ink">
+              {totalPlays}
+            </p>
+            <p className="mt-1.5 text-[12px] leading-snug text-soft">
+              {totalPlays === 1 ? "Session logged" : "Sessions logged"}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap justify-end gap-2">
+            <span className="club-b-chip inline-flex items-baseline gap-1.5 px-2.5 py-1">
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
+                10
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+                Rounds
+              </span>
+            </span>
+            <span className="club-b-chip inline-flex items-baseline gap-1.5 px-2.5 py-1">
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
+                70%
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+                Pays XP
+              </span>
+            </span>
+          </div>
         </div>
-      </m.header>
+      </section>
 
-      <section>
-        <h2 className="f0-section-rule mb-1">
-          <span className="text-eyebrow font-display font-bold uppercase text-soft">
-            The reps
-          </span>
-        </h2>
-
-        <div className="f0-ledger f0-stagger">
+      <BoardSection
+        id="games-reps"
+        label="The reps"
+        mark="pick one"
+        sub="Short sessions. Each one trains a different read."
+      >
+        <div className="f0-stagger mt-4 space-y-3">
           {GAMES.map((g, i) => {
             const locked = isFree && !g.freeOpen;
             const bestScore = best[g.gameKey];
             const played = bestScore !== undefined;
             return (
-              <div key={g.href} style={{ "--i": i } as React.CSSProperties}>
+              <div
+                key={g.href}
+                style={{ "--i": i } as React.CSSProperties}
+                className="relative"
+              >
+                <span className="club-b-pip absolute -left-[7px] -top-[7px] z-10" aria-hidden>
+                  {i + 1}
+                </span>
                 <Link
                   href={locked ? "/upgrade" : g.href}
-                  className="f0-ledger-row f0-focus f0-press group"
+                  className="club-b-card f0-focus f0-press group flex items-start gap-4 px-4 py-4"
                 >
+                  {/* Identity tile — the game's own art, at the board's tile
+                      geometry. `locked` dims it honestly rather than hiding it. */}
                   <span
+                    className={`relative block h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[12px] border border-sand ${
+                      locked ? "opacity-55 grayscale" : ""
+                    }`}
                     aria-hidden
-                    className="w-9 shrink-0 self-center text-right font-display text-display-3 font-extrabold tabular-nums text-soft sm:w-12"
                   >
-                    {String(i + 1).padStart(2, "0")}
+                    <Image
+                      src={g.art}
+                      alt=""
+                      fill
+                      sizes="52px"
+                      priority={i === 0}
+                      className="object-cover"
+                    />
                   </span>
 
-                  <span className="min-w-0 flex-1 self-center">
+                  <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                      <span className="font-display text-display-3 font-extrabold tracking-tight text-ink">
+                      <span className="font-display text-[17px] font-extrabold tracking-tight text-ink">
                         {g.title}
                       </span>
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                      <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                         {locked ? "Members only" : g.trains}
                       </span>
                     </span>
-                    <span className="mt-1.5 block text-[14px] leading-relaxed text-soft">
+                    <span className="mt-1 block text-[14px] leading-relaxed text-soft">
                       {g.desc}
                     </span>
                     <span className="mt-2.5 flex items-center gap-1 font-display text-[13px] font-bold text-gold-700">
@@ -222,13 +261,13 @@ export default function GamesHubPage() {
                     </span>
                   </span>
 
-                  <span className="shrink-0 self-center text-right">
+                  <span className="shrink-0 text-right">
                     {played ? (
                       <>
                         <span className="block font-mono text-[15px] font-semibold tabular-nums text-ink">
                           {bestScore}/10
                         </span>
-                        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
+                        <span className="mt-0.5 block font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft">
                           Best · {timeAgo(last[g.gameKey], nowHour)}
                         </span>
                       </>
@@ -237,7 +276,7 @@ export default function GamesHubPage() {
                         <span className="block font-mono text-[15px] font-semibold text-soft">
                           —
                         </span>
-                        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
+                        <span className="mt-0.5 block font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft">
                           {locked ? "Locked" : "Not played"}
                         </span>
                       </>
@@ -248,16 +287,7 @@ export default function GamesHubPage() {
             );
           })}
         </div>
-      </section>
-
-      {/* Your record — stated, never inferred. A member with no sessions gets a
-          FOUNDING STATE (§0.5), not a missing line: "you have not played yet" is
-          a fact worth saying, and it carries the rule that makes a session pay. */}
-      <p className="f0-rule-top pt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-        {totalPlays > 0
-          ? `${totalPlays} session${totalPlays === 1 ? "" : "s"} logged · a session is 10 rounds · 70% pays XP`
-          : "No sessions logged yet · a session is 10 rounds · 70% pays XP"}
-      </p>
+      </BoardSection>
     </div>
   );
 }

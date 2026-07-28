@@ -18,16 +18,16 @@ function FunnelHeader() {
   return (
     <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-          <Filter className="w-5 h-5 text-amber-400" /> Free-Class Funnel
+        <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink flex items-center gap-2">
+          <Filter className="w-5 h-5 text-accent" /> Free-Class Funnel
         </h1>
-        <p className="text-zinc-400 text-sm mt-1">
+        <p className="text-soft text-sm mt-1">
           Per-step conversion, source attribution and partial leads.
         </p>
       </div>
       <Link
         href="/admin/crm"
-        className="text-sm text-zinc-400 hover:text-amber-400 transition-colors"
+        className="text-sm text-soft hover:text-accent-strong transition-colors"
       >
         ← Back to CRM
       </Link>
@@ -39,7 +39,7 @@ function StatTile({
   label,
   value,
   sub,
-  accent = "text-zinc-100",
+  accent = "text-ink",
 }: {
   label: string;
   value: React.ReactNode;
@@ -47,10 +47,10 @@ function StatTile({
   accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="club-b-card p-4">
       <p className={`text-2xl font-bold ${accent}`}>{value}</p>
-      <p className="text-xs text-zinc-500 mt-1">{label}</p>
-      {sub && <p className="text-[11px] text-zinc-600 mt-0.5">{sub}</p>}
+      <p className="text-xs text-soft mt-1">{label}</p>
+      {sub && <p className="text-[11px] text-soft/70 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -126,18 +126,18 @@ export default function FunnelAnalyticsPage() {
           type="date"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          className="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-sm text-zinc-200"
+          className="bg-paper border border-sand rounded-md px-3 py-1.5 text-sm text-ink"
         />
-        <span className="text-zinc-600 text-sm">to</span>
+        <span className="text-soft/70 text-sm">to</span>
         <input
           type="date"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-sm text-zinc-200"
+          className="bg-paper border border-sand rounded-md px-3 py-1.5 text-sm text-ink"
         />
         <button
           onClick={load}
-          className="inline-flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 px-2 py-1.5"
+          className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-strong px-2 py-1.5"
         >
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
@@ -145,42 +145,42 @@ export default function FunnelAnalyticsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">
+        <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
           {error}
         </div>
       ) : data ? (
         <div className="space-y-6">
           {/* Topline */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatTile label="Sessions started" value={data.totals.sessions} accent="text-zinc-100" />
+            <StatTile label="Sessions started" value={data.totals.sessions} accent="text-ink" />
             <StatTile
               label="Engaged"
               value={data.totals.engaged}
               sub={`${pct(data.totals.engaged, data.totals.sessions)}% of sessions`}
-              accent="text-lime-400"
+              accent="text-soft"
             />
             <StatTile
               label="Emails captured"
               value={data.totals.email_captured}
               sub={`${pct(data.totals.email_captured, data.totals.sessions)}% of sessions`}
-              accent="text-sky-400"
+              accent="text-soft"
             />
             <StatTile
               label="Registered"
               value={data.totals.registered}
               sub={`${pct(data.totals.registered, data.totals.sessions)}% conversion`}
-              accent="text-amber-400"
+              accent="text-accent"
             />
           </div>
 
           {/* Per-step funnel */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Users className="w-4 h-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-300">Step-by-step conversion</span>
+              <Users className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Step-by-step conversion</span>
             </div>
             <div className="space-y-2.5">
               {data.steps.map((s, i) => {
@@ -191,19 +191,19 @@ export default function FunnelAnalyticsPage() {
                 return (
                   <div key={s.step}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-zinc-300 font-medium">{STEP_LABEL[s.step] || s.step}</span>
-                      <span className="text-zinc-500 tabular-nums">
+                      <span className="text-ink font-medium">{STEP_LABEL[s.step] || s.step}</span>
+                      <span className="text-soft font-mono tabular-nums">
                         {s.sessions} · {fromLanding}% of landing
                         {i > 0 && (
-                          <span className={stepDrop < 60 ? "text-red-400/80 ml-1.5" : "text-zinc-600 ml-1.5"}>
+                          <span className={stepDrop < 60 ? "text-accent ml-1.5" : "text-soft/70 ml-1.5"}>
                             ({stepDrop}% step)
                           </span>
                         )}
                       </span>
                     </div>
-                    <div className="h-6 rounded-md bg-zinc-800 overflow-hidden">
+                    <div className="h-6 rounded-md bg-paper overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-md transition-all"
+                        className="h-full bg-gradient-to-r from-accent to-accent rounded-md transition-all"
                         style={{ width: `${Math.max(width, s.sessions > 0 ? 3 : 0)}%` }}
                       />
                     </div>
@@ -214,18 +214,18 @@ export default function FunnelAnalyticsPage() {
           </div>
 
           {/* Source / UTM breakdown */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <ArrowRight className="w-4 h-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-300">Source attribution</span>
+              <ArrowRight className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Source attribution</span>
             </div>
             {data.sources.length === 0 ? (
-              <p className="text-xs text-zinc-600">No sessions in range.</p>
+              <p className="text-xs text-soft/70">No sessions in range.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[420px]">
                   <thead>
-                    <tr className="text-left text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                    <tr className="text-left font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft border-b border-sand">
                       <th className="py-2 pr-4 font-semibold">utm_source</th>
                       <th className="py-2 px-3 font-semibold text-right">Sessions</th>
                       <th className="py-2 px-3 font-semibold text-right">Emails</th>
@@ -235,12 +235,12 @@ export default function FunnelAnalyticsPage() {
                   </thead>
                   <tbody>
                     {data.sources.map((s) => (
-                      <tr key={s.source} className="border-b border-zinc-800/50">
-                        <td className="py-2 pr-4 text-zinc-200">{s.source}</td>
-                        <td className="py-2 px-3 text-right text-zinc-300 tabular-nums">{s.sessions}</td>
-                        <td className="py-2 px-3 text-right text-sky-400 tabular-nums">{s.email_captured}</td>
-                        <td className="py-2 px-3 text-right text-amber-400 tabular-nums">{s.registered}</td>
-                        <td className="py-2 pl-3 text-right text-zinc-400 tabular-nums">
+                      <tr key={s.source} className="border-b border-sand">
+                        <td className="py-2 pr-4 text-ink">{s.source}</td>
+                        <td className="py-2 px-3 text-right text-ink font-mono tabular-nums">{s.sessions}</td>
+                        <td className="py-2 px-3 text-right text-soft font-mono tabular-nums">{s.email_captured}</td>
+                        <td className="py-2 px-3 text-right text-accent font-mono tabular-nums">{s.registered}</td>
+                        <td className="py-2 pl-3 text-right text-soft font-mono tabular-nums">
                           {pct(s.registered, s.sessions)}%
                         </td>
                       </tr>
@@ -252,13 +252,13 @@ export default function FunnelAnalyticsPage() {
           </div>
 
           {/* Partial leads */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-sky-400" />
-                <span className="text-sm font-medium text-zinc-300">
+                <Mail className="w-4 h-4 text-soft" />
+                <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                   Partial leads
-                  <span className="text-zinc-600 ml-1.5">
+                  <span className="text-soft/70 ml-1.5">
                     · email given, not registered ({leads.length})
                   </span>
                 </span>
@@ -266,14 +266,14 @@ export default function FunnelAnalyticsPage() {
               {leads.length > 0 && (
                 <button
                   onClick={exportLeads}
-                  className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-800 rounded-md px-2.5 py-1.5"
+                  className="inline-flex items-center gap-1.5 text-xs text-soft hover:text-ink border border-sand rounded-md px-2.5 py-1.5"
                 >
                   <Download className="w-3.5 h-3.5" /> Export CSV
                 </button>
               )}
             </div>
             {leads.length === 0 ? (
-              <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+              <p className="text-xs text-soft/70 flex items-center gap-1.5">
                 <UserCheck className="w-3.5 h-3.5" /> No abandoned email leads in range — everyone
                 who left an email finished.
               </p>
@@ -281,7 +281,7 @@ export default function FunnelAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[520px]">
                   <thead>
-                    <tr className="text-left text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                    <tr className="text-left font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft border-b border-sand">
                       <th className="py-2 pr-4 font-semibold">Email</th>
                       <th className="py-2 px-3 font-semibold">Status</th>
                       <th className="py-2 px-3 font-semibold">Source</th>
@@ -291,16 +291,16 @@ export default function FunnelAnalyticsPage() {
                   </thead>
                   <tbody>
                     {leads.map((l) => (
-                      <tr key={l.id} className="border-b border-zinc-800/50">
-                        <td className="py-2 pr-4 text-zinc-200">{l.email}</td>
+                      <tr key={l.id} className="border-b border-sand">
+                        <td className="py-2 pr-4 text-ink">{l.email}</td>
                         <td className="py-2 px-3">
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-300">
+                          <span className="f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-soft">
                             {l.status.replace("_", " ")}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-zinc-400">{l.utm_source}</td>
-                        <td className="py-2 px-3 text-zinc-400">{l.sms_optin ? "✓" : "—"}</td>
-                        <td className="py-2 pl-3 text-right text-zinc-500 text-xs">
+                        <td className="py-2 px-3 text-soft">{l.utm_source}</td>
+                        <td className="py-2 px-3 text-soft">{l.sms_optin ? "✓" : "—"}</td>
+                        <td className="py-2 pl-3 text-right text-soft text-xs">
                           {new Date(l.created_at).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",

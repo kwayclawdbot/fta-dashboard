@@ -54,22 +54,22 @@ const STATUS_META: Record<
 > = {
   none: {
     label: "No draft",
-    className: "text-zinc-500 border-zinc-700 bg-zinc-800/40",
+    className: "text-soft border-sand bg-paper",
     Icon: CircleDashed,
   },
   draft: {
     label: "Draft ready",
-    className: "text-amber-300 border-amber-400/40 bg-amber-400/10",
+    className: "text-accent border-accent/40 bg-accent/10",
     Icon: CircleDot,
   },
   differs: {
     label: "Published · draft differs",
-    className: "text-sky-300 border-sky-400/40 bg-sky-400/10",
+    className: "text-soft border-sand bg-paper",
     Icon: CircleDot,
   },
   live: {
     label: "Published (live)",
-    className: "text-green-400 border-green-500/40 bg-green-500/10",
+    className: "text-soft border-sand bg-paper",
     Icon: CircleCheck,
   },
 };
@@ -141,14 +141,14 @@ export default function AdminLearnDraftsPage() {
   return (
     <div className="max-w-5xl mx-auto pb-16">
       <div className="flex items-center gap-3 mb-2">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-400/10 text-amber-400">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent/10 text-accent">
           <GraduationCap className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="text-xl font-bold text-zinc-100">
+          <h1 className="font-display text-[20px] font-extrabold text-ink">
             Learning World — Draft Review
           </h1>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-soft">
             Preview each converted lesson in the real engine, then publish it to
             members. Nothing here is live until you press Publish.
           </p>
@@ -156,25 +156,25 @@ export default function AdminLearnDraftsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 my-4 text-xs">
-        <span className="rounded-full border border-zinc-700 bg-zinc-800/40 px-3 py-1 text-zinc-300">
+        <span className="rounded-full border border-sand bg-paper px-3 py-1 text-ink">
           {draftCount} drafts authored
         </span>
-        <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-amber-300">
+        <span className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-accent">
           {pendingCount} awaiting publish
         </span>
-        <span className="rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-green-400">
+        <span className="rounded-full border border-sand bg-paper px-3 py-1 text-soft">
           {liveCount} live
         </span>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <div className="mb-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-accent">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-zinc-400 py-12">
+        <div className="flex items-center gap-2 text-sm text-soft py-12">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading lessons…
         </div>
@@ -182,10 +182,10 @@ export default function AdminLearnDraftsPage() {
         <div className="space-y-8">
           {courses.map((course) => (
             <section key={course.slug}>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-amber-400/80 mb-3">
+              <h2 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent mb-3">
                 {course.title}
               </h2>
-              <div className="rounded-xl border border-zinc-800 overflow-hidden divide-y divide-zinc-800">
+              <div className="club-b-card overflow-hidden divide-y divide-sand">
                 {course.rows.map((r) => {
                   const status = statusOf(r);
                   const meta = STATUS_META[status];
@@ -194,18 +194,18 @@ export default function AdminLearnDraftsPage() {
                   return (
                     <div
                       key={r.lesson_id}
-                      className="flex flex-wrap items-center gap-3 px-4 py-3 bg-zinc-900/40"
+                      className="flex flex-wrap items-center gap-3 px-4 py-3"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                          <span className="f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-soft">
                             {trackLabel(r.module_track)}
                           </span>
-                          <span className="text-sm font-medium text-zinc-100 truncate">
+                          <span className="text-sm font-medium text-ink truncate">
                             {r.lesson_title}
                           </span>
                         </div>
-                        <div className="text-[11px] text-zinc-500 mt-0.5 truncate">
+                        <div className="text-[11px] text-soft mt-0.5 truncate">
                           {r.module_title}
                         </div>
                       </div>
@@ -223,7 +223,7 @@ export default function AdminLearnDraftsPage() {
                             href={previewHref}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-xs text-ink hover:bg-paper transition-colors"
                           >
                             <Eye className="h-3.5 w-3.5" />
                             Preview
@@ -233,7 +233,7 @@ export default function AdminLearnDraftsPage() {
                           <button
                             onClick={() => publish(r.lesson_id)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-amber-300 transition-colors disabled:opacity-50"
+                            className="f0-press f0-focus inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-[color:var(--accent-on)] hover:bg-accent-strong transition-colors disabled:opacity-50"
                           >
                             {busy ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -248,7 +248,7 @@ export default function AdminLearnDraftsPage() {
                             onClick={() => unpublish(r.lesson_id)}
                             disabled={busy}
                             title="Revert to the legacy lesson view"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-xs text-soft hover:text-ink hover:bg-paper transition-colors disabled:opacity-50"
                           >
                             <RotateCcw className="h-3.5 w-3.5" />
                             Unpublish

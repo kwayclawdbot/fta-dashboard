@@ -169,7 +169,7 @@ function InviteSignupForm() {
         <div className="mt-8 flex flex-col gap-4">
           <Link
             href="/signup"
-            className="cta-button f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[15px]"
+            className="f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
           >
             Create Account
             <ArrowRight className="h-4 w-4" />

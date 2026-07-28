@@ -118,15 +118,15 @@ export default function AdminCommunityPage() {
     <div className="max-w-4xl mx-auto">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Community</h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">Community</h1>
+          <p className="text-soft text-sm mt-1">
             Moderate both rooms — deleting a post also removes its photo or video.
           </p>
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 text-xs hover:border-zinc-500 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sand text-ink text-xs hover:border-accent/50 transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -141,8 +141,8 @@ export default function AdminCommunityPage() {
             onClick={() => setRoomFilter(t.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
               roomFilter === t.id
-                ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                ? "bg-accent/15 border-accent/40 text-accent"
+                : "border-sand text-soft hover:border-accent/50"
             }`}
           >
             <Hash className="w-3 h-3" />
@@ -152,21 +152,21 @@ export default function AdminCommunityPage() {
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-lg border border-red-800 bg-red-950/40 text-red-300 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-lg border border-accent/40 bg-accent/10 text-accent text-sm">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-20 text-zinc-500">
+        <div className="text-center py-20 text-soft">
           <Loader2 className="w-6 h-6 animate-spin mx-auto mb-3" />
           Loading messages...
         </div>
       ) : messages.length === 0 ? (
-        <div className="text-center py-20 border border-zinc-800 rounded-xl bg-zinc-900/50">
-          <MessageCircle className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-zinc-300 mb-2">No posts yet</h3>
-          <p className="text-sm text-zinc-500 max-w-md mx-auto">
+        <div className="text-center py-20 club-b-card">
+          <MessageCircle className="w-12 h-12 text-soft/70 mx-auto mb-4" />
+          <h3 className="font-display text-[17px] font-extrabold text-ink mb-2">No posts yet</h3>
+          <p className="text-sm text-soft max-w-md mx-auto">
             Community messages will appear here for moderation.
           </p>
         </div>
@@ -175,41 +175,41 @@ export default function AdminCommunityPage() {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className="flex items-start gap-3 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-900/50"
+              className="flex items-start gap-3 px-4 py-3 club-b-card"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="font-semibold text-zinc-200">
+                  <span className="font-semibold text-ink">
                     {msg.author?.display_name || "Member"}
                   </span>
-                  <span className="text-zinc-500 uppercase tracking-wider text-[10px]">
+                  <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                     {msg.author?.role || "member"}
                   </span>
-                  <span className="flex items-center gap-1 text-sky-400/80 border border-sky-500/20 rounded px-1.5 py-0.5 text-[10px]">
+                  <span className="flex items-center gap-1 text-soft border border-sand rounded px-1.5 py-0.5 text-[10px]">
                     <Hash className="w-2.5 h-2.5" />
                     {ROOM_NAMES[msg.room_id] || "room"}
                   </span>
-                  <span className="text-zinc-600">
+                  <span className="text-soft/70">
                     {new Date(msg.created_at).toLocaleString()}
                   </span>
                   {msg.category && (
-                    <span className="text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5 text-[10px]">
+                    <span className="text-soft border border-sand rounded px-1.5 py-0.5 text-[10px]">
                       {msg.category}
                     </span>
                   )}
                   {msg.attachment_type === "image" && (
-                    <span className="flex items-center gap-1 text-amber-400/80 text-[10px]">
+                    <span className="flex items-center gap-1 text-accent/80 text-[10px]">
                       <ImageIcon className="w-3 h-3" /> photo
                     </span>
                   )}
                   {msg.attachment_type === "video" && (
-                    <span className="flex items-center gap-1 text-amber-400/80 text-[10px]">
+                    <span className="flex items-center gap-1 text-accent/80 text-[10px]">
                       <Film className="w-3 h-3" /> video
                     </span>
                   )}
                 </div>
                 {msg.content ? (
-                  <p className="text-sm text-zinc-300 mt-1 whitespace-pre-wrap break-words">
+                  <p className="text-sm text-ink mt-1 whitespace-pre-wrap break-words">
                     {msg.content}
                   </p>
                 ) : null}
@@ -219,7 +219,7 @@ export default function AdminCommunityPage() {
                     src={msg.attachment_url}
                     alt="Attachment"
                     loading="lazy"
-                    className="mt-2 max-h-32 rounded-lg border border-zinc-800"
+                    className="mt-2 max-h-32 rounded-lg border border-sand"
                   />
                 )}
                 {msg.attachment_url && msg.attachment_type === "video" && (
@@ -227,7 +227,7 @@ export default function AdminCommunityPage() {
                     src={msg.attachment_url}
                     controls
                     preload="metadata"
-                    className="mt-2 max-h-32 rounded-lg border border-zinc-800"
+                    className="mt-2 max-h-32 rounded-lg border border-sand"
                   />
                 )}
               </div>
@@ -235,7 +235,7 @@ export default function AdminCommunityPage() {
                 onClick={() => handleDelete(msg)}
                 disabled={deletingId === msg.id}
                 title="Delete post"
-                className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:text-red-400 hover:border-red-800 transition-colors disabled:opacity-40"
+                className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg border border-sand text-soft hover:text-accent hover:border-accent/40 transition-colors disabled:opacity-40"
               >
                 {deletingId === msg.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

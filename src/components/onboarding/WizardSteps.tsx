@@ -120,7 +120,7 @@ function SelectCard({
           multi ? "rounded-md" : "rounded-full"
         } ${active ? "border-gold-500 bg-gold-500" : "border-sand"}`}
       >
-        {active && <Check className="w-3.5 h-3.5 text-white" />}
+        {active && <Check className="w-3.5 h-3.5 text-[color:var(--accent-on)]" />}
       </span>
     </button>
   );
@@ -505,7 +505,7 @@ export function KnowledgeCheckStep({
           // pick amber — never a harsh red "fail" (every answer is celebrated).
           let tone = "border-sand bg-card hover:border-gold-300 text-ink";
           if (answered) {
-            if (isRightChoice) tone = "border-green-500 bg-green-500/10 text-green-700";
+            if (isRightChoice) tone = "border-teal-500 bg-teal-500/10 text-teal-700";
             else if (chosen) tone = "border-gold-400 bg-gold-400/10 text-gold-800";
             else tone = "border-sand bg-card text-soft opacity-60";
           } else if (chosen) {
@@ -529,7 +529,7 @@ export function KnowledgeCheckStep({
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className={`mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ${
-            correct ? "bg-green-500/10 text-green-700" : "bg-gold-400/10 text-gold-800"
+            correct ? "bg-teal-500/10 text-teal-700" : "bg-gold-400/10 text-gold-800"
           }`}
         >
           <span className="mt-0.5 shrink-0">
@@ -680,7 +680,7 @@ export function PasswordStep({
           </p>
         )}
         {error && (
-          <p className="text-xs text-red-600 text-center">{error}</p>
+          <p role="alert" className="text-center text-xs font-semibold text-ink">{error}</p>
         )}
       </div>
     </div>
@@ -715,7 +715,7 @@ export function WelcomeSplash({
         initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 16 }}
-        className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gold-400/15 border-2 border-gold-400/30 flex items-center justify-center"
+        className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-accent/12 border border-accent/30 flex items-center justify-center"
       >
         <Sparkles className="w-10 h-10 text-gold-600" />
       </m.div>
@@ -725,7 +725,7 @@ export function WelcomeSplash({
       <p className="text-soft text-base mt-3 max-w-md mx-auto leading-relaxed">{sub}</p>
       <button
         onClick={onStart}
-        className="cta-button inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-base mt-8"
+        className="f0-press f0-focus mt-8 inline-flex items-center gap-2 rounded-2xl bg-accent px-7 py-3.5 font-display text-base font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
       >
         Let&apos;s go
         <ArrowRight className="w-5 h-5" />

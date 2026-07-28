@@ -121,8 +121,9 @@ export function FieldToggle({
   );
 }
 
-/** The primary action. Orange fill = brand + action; `text-night-950` on it,
- *  never `text-ink` (which flips near-white at night on a fill). */
+/** The primary action. FLAT solid orange as the board draws it — no gradient,
+ *  no hover lift. `--accent-on` carries the glyph colour, never `text-ink`
+ *  (which flips near-white at night on a fill). */
 export function AuthSubmit({
   children,
   ...button
@@ -130,7 +131,7 @@ export function AuthSubmit({
   return (
     <button
       {...button}
-      className="cta-button f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[15px] disabled:cursor-not-allowed disabled:opacity-50"
+      className="f0-focus f0-press inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {children}
     </button>

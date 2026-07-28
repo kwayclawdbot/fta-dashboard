@@ -8,7 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import { awardXp, hasXpForRef } from "@/lib/xp";
 import { beltCelebrateFields } from "@/lib/belts";
 import MissionEmblem from "@/components/fic/MissionEmblem";
-import { Meter } from "@/components/f0/parts";
+import { DisplayHead, Meter, EmptyLine } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 import Celebrate, {
   useSoundOptIn,
   type CelebrateOptions,
@@ -17,48 +18,47 @@ import Celebrate, {
 import { deriveRegister, celebrateRegister } from "@/lib/register";
 
 /**
- * MISSIONS — the quest set, rebuilt as a hairline LEDGER.
+ * MISSIONS — the quest set, drawn in the BOARD's card language.
+ *
+ * FORM (board 01 + the streak/progress card on board 09's sheet): the surface is
+ * a display masthead, ONE tinted accent object (`.club-b-warm`) carrying how far
+ * through the set you are, then the missions themselves as white `.club-b-card`
+ * rows — 14px radius, sand hairline, no shadow. Each row is a rank pip hung off
+ * its top-left corner, the emblem as the identity tile, the ask, and the reward
+ * in the right-hand mono column. The previous version built this page out of the
+ * hairline ledger vocabulary (`f0-ledger`, `f0-section-rule`, `f0-frame`); that
+ * was the earlier system and none of it survives here.
  *
  * DATA: everything on this surface is real. `get_missions_state` returns the
  * profile register, the `fic_missions` rows, this user's `mission_completions`,
  * the championed-companies count, and lifetime XP in one round trip. There is
  * no `club_missions` table on this branch and nothing here invents one — the
- * ledger renders exactly the missions the RPC hands back, and an empty payload
- * produces a stated empty rather than placeholder rows.
- *
- * FORM: the emblem is the identity object of each row (a collectible patch, not
- * a box), the title carries the ask, and the reward sits in the right-hand mono
- * column so the XP reads as a true column down the page. No card, no border, no
- * shadow — rows are separated by rules.
+ * set renders exactly the missions the RPC hands back, and an empty payload
+ * produces a stated empty rather than placeholder rows. There is no mission
+ * STREAK in the payload, so the header card carries set progress and the two XP
+ * totals it can actually prove, and never a fabricated day count.
  *
  * COLOUR LAW: completion is NOT green. Green and red are price colours and a
- * mission has no price, so a collected mission is marked by its emblem's earned
- * ring, an ink-weight title, and a COLLECTED eyebrow — never by turning green.
- * The only accent is the mode accent (family gold / club volt / FTA metallic) on
- * the reward, the progress meter, and the start action: brand + action, by law.
+ * mission has no price, so a collected mission is marked by an accent check
+ * glyph, its emblem's earned ring and a COLLECTED mark — never by turning green.
+ * The accent (family gold / club orange / FTA metallic) carries the reward, the
+ * progress bar and the start action: brand + action, by law.
  *
- * DARK: every colour is a semantic token or the gold ramp, which flips at
- * :root[data-theme="dark"]. No `dark:` variants, and no frozen text-volt-*.
+ * DARK: every colour is a semantic token, a `.club-b-*` board class or the gold
+ * ramp, all of which flip at :root[data-theme="dark"]. No `dark:` variants.
  *
  * REGISTER: kid / teen / parent copy is derived from age_group first (a teen is
  * never handed the kid voice), and the sound opt-in only ever appears for kids.
  * The adult voice is the default and the kid voice is the derivation — the set
  * reads competitive, not cartoonish.
  *
- * CANVAS V2 PASS: the masthead annotates ONE word the way every canvas headline
- * does; every interactive element carries the shared focus ring and press
- * feedback (.f0-focus / .f0-press) so the missions ledger answers the keyboard
- * and the thumb identically to the rest of the app; the meter and the primary
- * action ride `bg-accent` (--accent-solid) rather than a hardcoded gold stop, so
- * they render family gold / club orange / FTA metallic automatically; and the
- * loading state is a real skeleton shaped like the ledger instead of a spinner —
- * a spinner is indistinguishable from "nothing published", which is a state this
- * page genuinely has (§0.4).
- *
- * NO RINGS: Brand Detective's progress is a BAR and a numeral — the shared
+ * NO RINGS HERE: Brand Detective's progress is a BAR and a numeral — the shared
  * `f0 Meter`, whose fill is `bg-accent`, so it is mode-correct with no override.
- * A single number on a radial reads worse and the plan explicitly calls mission
- * progress out as the place rings are tempting (§1.5).
+ * The board reserves its conic dial for a single bounded score; a five-step
+ * mission counter is a bar.
+ *
+ * LOADING ≠ EMPTY: the skeleton is the card set's own shape, because "nothing
+ * published" is a real state on this page and a spinner cannot be told from it.
  *
  * XP IS UNTOUCHED: both award paths (the deferred Brand Detective auto-complete
  * and the self-reported completion) still insert into `mission_completions`,
@@ -266,11 +266,13 @@ export default function MissionsPage() {
     (sum, m) => sum + (completions[m.id] ? 0 : m.xp_reward),
     0
   );
+  const setPct =
+    missions.length > 0 ? Math.round((doneCount / missions.length) * 100) : 0;
 
   /* LOADING ≠ EMPTY (§0.4). The old spinner was indistinguishable from "no
-     missions published", which is a real state here. This is the ledger's own
-     shape — emblem slot, title, reward column — so the page never lies about
-     whether content is coming. */
+     missions published", which is a real state here. This is the card set's own
+     shape — the warm progress object, then emblem / title / reward cards — so
+     the page never lies about whether content is coming. */
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl space-y-8" aria-busy="true">
@@ -279,17 +281,14 @@ export default function MissionsPage() {
           <div className="mt-3 h-11 w-64 animate-pulse rounded bg-sand" />
           <div className="mt-4 h-4 w-full max-w-sm animate-pulse rounded bg-sand/60" />
         </div>
-        <div className="flex items-stretch gap-6">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="flex-1 space-y-2">
-              <div className="h-8 w-16 animate-pulse rounded bg-sand/60" />
-              <div className="h-3 w-20 animate-pulse rounded bg-sand/40" />
-            </div>
-          ))}
+        <div className="club-b-warm px-5 py-5">
+          <div className="h-2.5 w-28 animate-pulse rounded-full bg-ink/10" />
+          <div className="mt-3 h-8 w-32 animate-pulse rounded bg-ink/10" />
+          <div className="mt-4 h-1.5 w-full animate-pulse rounded-full bg-ink/10" />
         </div>
-        <div className="f0-ledger border-t border-sand/70">
+        <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="f0-ledger-row">
+            <div key={i} className="club-b-card flex items-center gap-4 px-4 py-4">
               <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-sand/60" />
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />
@@ -319,90 +318,99 @@ export default function MissionsPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <Celebrate opts={queue[0] ?? null} onDone={() => setQueue((q) => q.slice(1))} />
 
-      {/* Masthead */}
-      <mm.header
+      {/* Masthead — the shared display head, one annotated word. The marked
+          word is the last one so the register reads the same for "My Missions",
+          "Missions" and "Family Missions" without a special case. */}
+      <mm.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-start justify-between gap-4"
       >
-        <div className="min-w-0">
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-            The set
-          </p>
-          {/* The canvas annotates ONE word per headline. The marked word is the
-              last one so the register reads the same for "My Missions",
-              "Missions" and "Family Missions" without a special case. */}
-          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
-            {titleLead ? `${titleLead} ` : ""}
-            <span className="f0-underline-mark">{titleMark}</span>
-          </h1>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">{lede}</p>
-        </div>
-        {isKid && (
-          <button
-            onClick={toggleSound}
-            aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
-            title={soundOn ? "Sound on" : "Sound off"}
-            className="f0-chip f0-focus f0-press mt-1 h-10 w-10 shrink-0 justify-center text-soft hover:text-ink"
-          >
-            {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-          </button>
-        )}
-      </mm.header>
+        <DisplayHead
+          eyebrow="The set"
+          title={titleLead}
+          mark={titleMark}
+          lede={lede}
+          aside={
+            isKid ? (
+              <button
+                onClick={toggleSound}
+                aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+                title={soundOn ? "Sound on" : "Sound off"}
+                className="f0-chip f0-focus f0-press h-10 w-10 shrink-0 justify-center text-soft hover:text-ink"
+              >
+                {soundOn ? (
+                  <Volume2 className="h-4 w-4" />
+                ) : (
+                  <VolumeX className="h-4 w-4" />
+                )}
+              </button>
+            ) : undefined
+          }
+        />
+      </mm.div>
 
-      {/* The measure strip — three measures on the paper, no boxes. Every value
-          is derived from what the RPC actually returned. */}
+      {/* THE ONE TINTED OBJECT — how far through the set you are. Every numeral
+          is derived from what the RPC actually returned; there is no streak in
+          the payload, so this card never claims one. */}
       {missions.length > 0 && (
-        <div className="flex items-stretch">
-          <div className="min-w-0 flex-1 pr-4 sm:pr-6">
-            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
-              {doneCount}
-              <span className="text-soft">/{missions.length}</span>
-            </p>
-            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
-              Collected
-            </p>
-          </div>
-          <div className="min-w-0 flex-1 border-l border-sand pl-4 pr-4 sm:pl-6 sm:pr-6">
-            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
-              {earned}
-            </p>
-            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
-              XP banked
-            </p>
-          </div>
-          <div className="min-w-0 flex-1 border-l border-sand pl-4 sm:pl-6">
-            <p className="font-display text-display-2 font-extrabold tabular-nums text-ink">
-              {outstanding}
-            </p>
-            <p className="mt-1.5 text-eyebrow font-display font-bold uppercase text-soft">
-              XP left
+        <section className="club-b-warm f0-grain px-5 py-5" aria-label="Set progress">
+          <div className="flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                Your progress
+                <span className="text-accent"> through the set</span>
+              </p>
+              <p className="mt-2 font-display text-display-2 font-extrabold leading-none tabular-nums text-ink">
+                {doneCount}
+                <span className="text-soft">/{missions.length}</span>
+              </p>
+              <p className="mt-1.5 text-[12px] leading-snug text-soft">
+                Emblems collected
+              </p>
+            </div>
+            <p className="shrink-0 font-mono text-[22px] font-semibold leading-none tabular-nums text-accent">
+              {setPct}%
             </p>
           </div>
-        </div>
+
+          <Meter pct={setPct} className="mt-4" />
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="club-b-chip inline-flex items-baseline gap-1.5 px-2.5 py-1">
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
+                {earned}
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+                XP banked
+              </span>
+            </span>
+            <span className="club-b-chip inline-flex items-baseline gap-1.5 px-2.5 py-1">
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">
+                {outstanding}
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+                XP left
+              </span>
+            </span>
+          </div>
+        </section>
       )}
 
-      {/* The ledger */}
+      {/* The set — white cards on the paper, one per mission. */}
       {missions.length === 0 ? (
-        <div className="border-l-2 border-sand py-1 pl-4">
-          <p className="font-display text-display-3 font-extrabold text-ink">
-            No missions are published yet
-          </p>
-          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-soft">
-            The quest set lands here as soon as it is published. Nothing is hidden — there is
-            simply nothing to run today.
-          </p>
-        </div>
+        <EmptyLine
+          title="No missions are published yet"
+          body="The quest set lands here as soon as it is published. Nothing is hidden — there is simply nothing to run today."
+        />
       ) : (
-        <section>
-          <h2 className="f0-section-rule mb-1">
-            <span className="text-eyebrow font-display font-bold uppercase text-soft">
-              Missions
-            </span>
-          </h2>
-
-          <div className="f0-ledger f0-stagger">
+        <BoardSection
+          id="missions-set"
+          label="Missions"
+          mark="in this set"
+          sub="Finish one, collect its emblem, bank the XP."
+        >
+          <div className="f0-stagger mt-4 space-y-3">
             {missions.map((m, i) => {
               const completion = completions[m.id];
               const done = !!completion;
@@ -414,155 +422,179 @@ export default function MissionsPage() {
               const open = openId === m.id;
 
               return (
-                <div key={m.id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
-                  <div className="f0-ledger-row">
-                    <MissionEmblem
-                      slug={m.slug}
-                      title={m.title}
-                      collected={done}
-                      size={52}
-                      className="self-start"
-                    />
+                <div
+                  key={m.id}
+                  style={{ "--i": Math.min(i, 12) } as React.CSSProperties}
+                  className="relative"
+                >
+                  {/* The board hangs its rank pip half off the card's top-left
+                      corner. Collected missions carry the lead (accent) pip. */}
+                  <span
+                    className={`club-b-pip ${done ? "club-b-pip-lead" : ""} absolute -left-[7px] -top-[7px] z-10`}
+                    aria-hidden
+                  >
+                    {i + 1}
+                  </span>
 
-                    <div className="min-w-0 flex-1 self-center">
-                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                        <h3 className="font-display text-[17px] font-extrabold tracking-tight text-ink">
-                          {m.title}
-                        </h3>
-                        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-                          Mission {i + 1}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-[14px] leading-relaxed text-soft">
-                        {m.kid_prompt || m.description}
-                      </p>
-                      {/* Grown-up helper — parents only, never shown to teens. */}
-                      {register === "parent" && m.description && m.kid_prompt && (
-                        <p className="mt-1.5 text-[13px] leading-relaxed text-soft">
-                          {m.description}
+                  <div className="club-b-card px-4 py-4">
+                    <div className="flex items-start gap-4">
+                      <MissionEmblem
+                        slug={m.slug}
+                        title={m.title}
+                        collected={done}
+                        size={52}
+                        className="self-start"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                          <h3 className="font-display text-[17px] font-extrabold tracking-tight text-ink">
+                            {m.title}
+                          </h3>
+                          <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
+                            Mission {i + 1}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[14px] leading-relaxed text-soft">
+                          {m.kid_prompt || m.description}
                         </p>
-                      )}
-                    </div>
-
-                    <div className="shrink-0 self-center text-right">
-                      <p className="font-mono text-[15px] font-semibold tabular-nums text-ink">
-                        {m.xp_reward}
-                      </p>
-                      <p className="mt-0.5 text-eyebrow font-display font-bold uppercase text-soft">
-                        {done ? shortDate(completion.completed_at) : "XP"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Collected — the emblem's earned ring plus this line carry the
-                      state. No green: green is price. */}
-                  {done && (
-                    <div className="pb-4 pl-[4.1rem]">
-                      <p className="flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-soft">
-                        <Check className="h-3.5 w-3.5" />
-                        Collected
-                      </p>
-                      {completion.evidence && (
-                        <p className="mt-2 border-l-2 border-sand pl-3 text-[14px] leading-relaxed text-ink">
-                          {completion.evidence}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Brand Detective — auto-progress from real watchlist adds. */}
-                  {isBrand && !done && (
-                    <div className="pb-4 pl-[4.1rem]">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
-                          {championedCount} / {BRAND_DETECTIVE_GOAL} companies added
-                        </span>
-                        <Link
-                          href="/watchlist"
-                          className="f0-focus f0-press font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
-                        >
-                          Add companies →
-                        </Link>
-                      </div>
-                      {/* Shared meter: same geometry, same accent fill and the
-                          same 700ms ease as every other progress bar in the app
-                          (Meter animates its width in CSS, so the hand-rolled
-                          framer wrapper bought nothing). */}
-                      <Meter pct={brandPct} />
-                      <p className="mt-2 text-[13px] leading-relaxed text-soft">
-                        Auto-completes when {BRAND_DETECTIVE_GOAL} companies are on the family
-                        watchlist.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Action — everything except Brand Detective is self-reported. */}
-                  {!done && !isBrand && (
-                    <div className="pb-4 pl-[4.1rem]">
-                      <AnimatePresence initial={false}>
-                        {open ? (
-                          <mm.div
-                            key="form"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <label
-                              htmlFor={`evidence-${m.id}`}
-                              className="text-eyebrow font-display font-bold uppercase text-soft"
-                            >
-                              What did you find? (optional)
-                            </label>
-                            <textarea
-                              id={`evidence-${m.id}`}
-                              value={evidence}
-                              onChange={(e) => setEvidence(e.target.value)}
-                              rows={2}
-                              placeholder="In your own words…"
-                              className="f0-focus f0-frame mt-2 w-full resize-none rounded-lg bg-transparent p-3 text-[14px] text-ink placeholder:text-soft focus:outline-none"
-                            />
-                            <div className="mt-3 flex items-center gap-4">
-                              <button
-                                onClick={() => completeMission(m)}
-                                disabled={busy}
-                                className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-60"
-                              >
-                                <Check className="h-4 w-4" />
-                                Mark complete · +{m.xp_reward} XP
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setOpenId(null);
-                                  setEvidence("");
-                                }}
-                                className="f0-focus f0-press font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </mm.div>
-                        ) : (
-                          <button
-                            key="start"
-                            onClick={() => {
-                              setOpenId(m.id);
-                              setEvidence("");
-                            }}
-                            className="f0-focus f0-press group inline-flex items-center gap-1 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
-                          >
-                            Start this mission
-                            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
-                          </button>
+                        {/* Grown-up helper — parents only, never shown to teens. */}
+                        {register === "parent" && m.description && m.kid_prompt && (
+                          <p className="mt-1.5 text-[13px] leading-relaxed text-soft">
+                            {m.description}
+                          </p>
                         )}
-                      </AnimatePresence>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <p
+                          className={`font-mono text-[15px] font-semibold tabular-nums ${
+                            done ? "text-accent" : "text-ink"
+                          }`}
+                        >
+                          {m.xp_reward}
+                        </p>
+                        <p className="mt-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft">
+                          {done ? shortDate(completion.completed_at) : "XP"}
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Collected — an accent check and the emblem's earned ring
+                        carry the state. No green: green is price. */}
+                    {done && (
+                      <div className="mt-3 border-t border-sand pt-3">
+                        <p className="flex items-center gap-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent">
+                          <Check className="h-3.5 w-3.5" />
+                          Collected
+                        </p>
+                        {completion.evidence && (
+                          <p className="mt-2 text-[14px] leading-relaxed text-ink">
+                            {completion.evidence}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Brand Detective — auto-progress from real watchlist adds.
+                        A tinted progress row with the percentage on the right,
+                        exactly as the board draws its progress rows. */}
+                    {isBrand && !done && (
+                      <div className="mt-3 border-t border-sand pt-3">
+                        <div className="mb-2 flex items-baseline justify-between gap-3">
+                          <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft tabular-nums">
+                            {championedCount} / {BRAND_DETECTIVE_GOAL} companies added
+                          </span>
+                          <span className="font-mono text-[13px] font-semibold tabular-nums text-accent">
+                            {brandPct}%
+                          </span>
+                        </div>
+                        {/* Shared meter: same geometry, same accent fill and the
+                            same 700ms ease as every other progress bar in the app. */}
+                        <Meter pct={brandPct} />
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-[13px] leading-relaxed text-soft">
+                            Auto-completes when {BRAND_DETECTIVE_GOAL} companies are on the
+                            family watchlist.
+                          </p>
+                          <Link
+                            href="/watchlist"
+                            className="f0-focus f0-press shrink-0 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                          >
+                            Add companies →
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action — everything except Brand Detective is self-reported. */}
+                    {!done && !isBrand && (
+                      <div className="mt-3 border-t border-sand pt-3">
+                        <AnimatePresence initial={false}>
+                          {open ? (
+                            <mm.div
+                              key="form"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="overflow-hidden"
+                            >
+                              <label
+                                htmlFor={`evidence-${m.id}`}
+                                className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft"
+                              >
+                                What did you find? (optional)
+                              </label>
+                              <textarea
+                                id={`evidence-${m.id}`}
+                                value={evidence}
+                                onChange={(e) => setEvidence(e.target.value)}
+                                rows={2}
+                                placeholder="In your own words…"
+                                className="f0-focus mt-2 w-full resize-none rounded-[10px] border border-sand bg-paper p-3 text-[14px] text-ink placeholder:text-soft focus:outline-none"
+                              />
+                              <div className="mt-3 flex items-center gap-4">
+                                <button
+                                  onClick={() => completeMission(m)}
+                                  disabled={busy}
+                                  className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)] disabled:opacity-60"
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Mark complete · +{m.xp_reward} XP
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenId(null);
+                                    setEvidence("");
+                                  }}
+                                  className="f0-focus f0-press font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </mm.div>
+                          ) : (
+                            <button
+                              key="start"
+                              onClick={() => {
+                                setOpenId(m.id);
+                                setEvidence("");
+                              }}
+                              className="f0-focus f0-press group inline-flex items-center gap-1 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                            >
+                              Start this mission
+                              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+                            </button>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
-        </section>
+        </BoardSection>
       )}
     </div>
   );

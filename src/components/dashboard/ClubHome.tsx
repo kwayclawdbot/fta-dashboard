@@ -2,14 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Bell,
-  Flame,
-  PlayCircle,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
+import { ArrowRight, Bell, Flame, PlayCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import {
@@ -24,19 +17,24 @@ import CompanyLogo from "@/components/fic/CompanyLogo";
 import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
 import ClubPulseMasthead from "@/components/dashboard/ClubPulseMasthead";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
+import { BoardSection } from "@/components/clubhome/board";
+import { useLocalHour } from "@/components/clubhome/clock";
 
 /**
- * ClubHome — the community-first Home for CLUB (individual / solo) members
- * (Cheat Code Club redesign, D1). Family-mode households keep the academy-first
- * Home in dashboard/page.tsx; this surface renders for solo owners (mode="club").
+ * ClubHome — the LEGACY community-first Home for solo Club members.
  *
- * D1 rebuild: the first screen answers "what's happening in the Club right now"
- * in one glance via the <ClubPulseMasthead> live-pulse signature (dateline +
- * market ticker + big mono numerals on hairline rules) — NOT the old grid of
- * equal stat/entry cards. Duplicate entry-point cards (Ask Kai, Newsroom) are
- * removed: Kai lives in the nav + floating button, News under Discover. What
- * stays are functional data objects — trending ticker rows, the real activity
- * slice, one Kai briefing line, and a single "keep learning" pickup.
+ * The live Club home is now `components/clubhome/ClubHomeV2`; this file is the
+ * older composition kept beside it. It was still writing the PREVIOUS version's
+ * chrome — `paper-card` boxes, raw `midnight-*` micro-copy, hand-rolled
+ * green/red price text and bold-11px floating headings — so it read as a
+ * different app to anything drawn on board 01. It is now on the same card
+ * vocabulary: `BoardSection` marks, white `club-b-card` objects, price through
+ * the `price-up` / `price-down` tokens only.
+ *
+ * NO CLOCK IN RENDER: the greeting called `new Date().getHours()` straight from
+ * JSX. It now reads the shared hour-bucketed external store; before that store
+ * primes (server render and the first client frame) the greeting is the neutral
+ * "Welcome back", never a guessed time of day.
  */
 
 interface TrendingRow {
@@ -57,11 +55,21 @@ interface LearningToday {
   context: string | null;
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
+/** Pure once the hour is handed in. `null` → the neutral first frame. */
+function greetingFor(hour: number | null): string {
+  if (hour == null) return "Welcome back";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
   return "Good evening";
+}
+
+/** Price tone → the price tokens. The ONLY place green/red is allowed. */
+function priceToneClass(tone: ReturnType<typeof changeTone>): string {
+  return tone === "up"
+    ? "text-price-up"
+    : tone === "down"
+      ? "text-price-down"
+      : "text-soft";
 }
 
 /** Consecutive-day activity streak from distinct XP-earning dates (real). */
@@ -97,6 +105,7 @@ export default function ClubHome({
   learning: LearningToday | null;
 }) {
   const supabase = createClient();
+  const hour = useLocalHour();
   const [trending, setTrending] = useState<TrendingRow[] | null>(null);
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   const [briefing, setBriefing] = useState<Briefing | null>(null);
@@ -163,18 +172,20 @@ export default function ClubHome({
   }, [supabase]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-12">
+    <div className="mx-auto max-w-5xl space-y-7 pb-12">
       {/* ── Greeting + streak ─────────────────────────────────────────────── */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ink">
-            {greeting()}, {firstName || "there"}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="font-display text-[28px] font-extrabold uppercase leading-[1.05] text-ink">
+            {greetingFor(hour)}, {firstName || "there"}
           </h1>
-          <p className="mt-1 text-soft">Here&apos;s what&apos;s moving in the Club.</p>
+          <p className="mt-1.5 text-[14px] text-soft">
+            Here&apos;s what&apos;s moving in the Club.
+          </p>
         </div>
         {streak >= 2 && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-chip-amber px-3 py-1.5 text-xs font-semibold text-gold-800">
-            <Flame className="h-3.5 w-3.5" />
+          <span className="club-b-card inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] font-semibold text-ink tabular-nums">
+            <Flame className="h-3.5 w-3.5 text-accent" aria-hidden />
             {streak} day streak
           </span>
         )}
@@ -186,173 +197,129 @@ export default function ClubHome({
       {/* Belt/XP hero — earned progress toward the next belt (real). */}
       <BeltHeroStrip xp={xp} />
 
-      {/* ── Trending in the Club — ticker rows w/ sparkline + delayed price ── */}
+      {/* ── Trending in the Club — ticker cards w/ sparkline + delayed price ── */}
       {trending && trending.length > 0 && (
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-display text-sm font-bold text-ink">Trending in the Club</h2>
+        <BoardSection
+          id="club-trending"
+          label="Trending in"
+          mark="the Club"
+          action={
             <Link
               href="/discover"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-gold-700 hover:text-gold-800"
+              className="f0-focus shrink-0 text-[11px] font-semibold text-soft transition-colors hover:text-ink"
             >
-              See all <ArrowRight className="h-3.5 w-3.5" />
+              See all
             </Link>
-          </div>
-          {/* 3+ trending → the balanced card grid. 1–2 → a full-width ledger
-              (hairline ticker rows) so a lone item never floats in empty space. */}
-          {trending.length >= 3 ? (
-            <div className="grid gap-3 sm:grid-cols-3">
-              {trending.map((row) => {
-                const q = quotes[row.ticker];
-                const tone = changeTone(q?.changePercent);
-                return (
-                  <Link
-                    key={row.ticker}
-                    href={`/research/${encodeURIComponent(row.ticker)}`}
-                    className="paper-card group flex flex-col gap-2 p-3.5 transition-colors hover:border-gold-400/50"
-                  >
-                    <div className="flex items-center gap-2">
-                      <CompanyLogo symbol={row.ticker} name={row.company_name} size={22} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-display text-sm font-bold text-ink">{row.ticker}</p>
-                        <p className="truncate text-[11px] text-soft">{row.company_name}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-mono text-sm font-semibold text-ink">
-                        {formatPrice(q?.price)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${
-                          tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"
-                        }`}
-                      >
-                        {tone === "up" ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : tone === "down" ? (
-                          <TrendingDown className="h-3 w-3" />
-                        ) : null}
-                        {formatChangePct(q?.changePercent) || "—"}
-                      </span>
-                    </div>
-                    <Sparkline symbol={row.ticker} height={40} />
-                    <span className="text-[10px] text-midnight-500">
-                      {row.comment_count ?? 0} in discussion · price delayed
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-sand bg-card">
-              {trending.map((row) => {
-                const q = quotes[row.ticker];
-                const tone = changeTone(q?.changePercent);
-                return (
-                  <Link
-                    key={row.ticker}
-                    href={`/research/${encodeURIComponent(row.ticker)}`}
-                    className="group flex items-center gap-3 border-t border-sand px-4 py-3 transition-colors first:border-t-0 hover:bg-paper"
-                  >
-                    <CompanyLogo symbol={row.ticker} name={row.company_name} size={30} />
+          }
+        >
+          {/* 3+ trending → the three-up card strip. 1–2 → full-width cards, so a
+              lone item never floats in a two-thirds-empty grid. */}
+          <div
+            className={`mt-2.5 grid gap-2.5 ${
+              trending.length >= 3 ? "sm:grid-cols-3" : ""
+            }`}
+          >
+            {trending.map((row) => {
+              const q = quotes[row.ticker];
+              const tone = changeTone(q?.changePercent);
+              return (
+                <Link
+                  key={row.ticker}
+                  href={`/research/${encodeURIComponent(row.ticker)}`}
+                  className="club-b-card f0-focus f0-press flex flex-col gap-2 px-3.5 py-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CompanyLogo
+                      symbol={row.ticker}
+                      name={row.company_name}
+                      size={26}
+                    />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <p className="font-display text-sm font-bold text-ink group-hover:text-gold-700">
-                          {row.ticker}
-                        </p>
-                        <p className="truncate text-[11px] text-soft">{row.company_name}</p>
-                      </div>
-                      <p className="text-[10px] text-midnight-500">
-                        {row.comment_count ?? 0} in discussion · price delayed
+                      <p className="truncate font-mono text-[13px] font-bold text-ink">
+                        {row.ticker}
+                      </p>
+                      <p className="truncate text-[11px] text-soft">
+                        {row.company_name}
                       </p>
                     </div>
-                    <div className="hidden w-24 shrink-0 sm:block">
-                      <Sparkline symbol={row.ticker} height={32} />
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end">
-                      <span className="font-mono text-sm font-semibold text-ink">
-                        {formatPrice(q?.price)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${
-                          tone === "up" ? "text-green-600" : tone === "down" ? "text-red-600" : "text-soft"
-                        }`}
-                      >
-                        {tone === "up" ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : tone === "down" ? (
-                          <TrendingDown className="h-3 w-3" />
-                        ) : null}
-                        {formatChangePct(q?.changePercent) || "—"}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-mono text-[14px] font-semibold text-ink tabular-nums">
+                      {formatPrice(q?.price)}
+                    </span>
+                    <span
+                      className={`font-mono text-[12px] font-bold tabular-nums ${priceToneClass(tone)}`}
+                    >
+                      {formatChangePct(q?.changePercent) || "—"}
+                    </span>
+                  </div>
+                  <Sparkline symbol={row.ticker} height={36} />
+                  <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-soft tabular-nums">
+                    {row.comment_count ?? 0} in discussion · price delayed
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </BoardSection>
       )}
 
-      {/* ── Kai morning briefing — one editorial line (Kai lives in nav+FAB) ── */}
+      {/* ── Kai morning briefing — one editorial line (Kai lives in nav+FAB).
+             Kai blue is an IDENTITY colour reserved for Kai/AI by law, and it is
+             declared CONSTANT across modes and themes (see the club palette in
+             globals.css), so the hairline tint is a literal — the one sanctioned
+             place in this file where a colour is not a token. ─────────────── */}
       {briefing && (
         <Link
           href="/alerts"
-          className="flex items-center gap-3 rounded-xl border border-kai-500/30 bg-kai-500/[0.06] px-4 py-3 transition hover:border-kai-500/50"
+          className="club-b-card f0-focus f0-press flex items-center gap-3 px-4 py-3"
+          style={{ borderColor: "color-mix(in srgb, #2563FF 32%, var(--sand))" }}
         >
-          <Bell className="h-4 w-4 shrink-0 text-kai-500" />
-          <span className="font-display text-[11px] font-bold uppercase tracking-wide text-kai-600 shrink-0">
+          <Bell className="h-4 w-4 shrink-0 text-kai-500" aria-hidden />
+          <span className="shrink-0 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-kai-600">
             Kai briefing
           </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+          <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">
             {briefing.ticker} {briefing.direction}
             {briefing.setup_label ? ` — ${briefing.setup_label}` : ""}
           </span>
-          <ArrowRight className="h-4 w-4 shrink-0 text-kai-500" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-kai-500" aria-hidden />
         </Link>
       )}
 
       {/* ── Recent Club Activity — real feed slice w/ avatars + belt dots ───── */}
       <ClubActivityStrip limit={4} />
 
-      {/* ── Keep learning — education DEMOTED to one compact pickup line ────── */}
-      {learning ? (
-        <Link
-          href={learning.href}
-          className="paper-card group flex items-center gap-4 p-4 transition-colors hover:border-gold-400/50"
+      {/* ── Keep learning — education DEMOTED to one compact pickup card ────── */}
+      <Link
+        href={learning ? learning.href : "/courses"}
+        className="club-b-card f0-focus f0-press flex items-center gap-3.5 px-4 py-3.5"
+      >
+        <span
+          className="club-b-orb h-10 w-10 shrink-0"
+          aria-hidden
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-400/15 text-gold-700">
-            <PlayCircle className="h-6 w-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-[11px] font-bold uppercase tracking-wider text-gold-700">
-              Keep learning
+          <PlayCircle className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+            Keep <span className="text-accent">learning</span>
+          </p>
+          <p className="mt-1 truncate font-display text-[15px] font-bold text-ink">
+            {learning ? learning.title : "Pick up the Foundations"}
+          </p>
+          {/* No invented sub-line: when the pickup has no context the line is
+              simply absent. */}
+          {(learning ? learning.context : "One concept, one company, every week.") && (
+            <p className="mt-0.5 truncate text-[12px] text-soft">
+              {learning
+                ? learning.context
+                : "One concept, one company, every week."}
             </p>
-            <p className="truncate font-semibold text-ink">{learning.title}</p>
-            {learning.context && (
-              <p className="truncate text-[12px] text-soft">{learning.context}</p>
-            )}
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5" />
-        </Link>
-      ) : (
-        <Link
-          href="/courses"
-          className="paper-card group flex items-center gap-4 p-4 transition-colors hover:border-gold-400/50"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-400/15 text-gold-700">
-            <PlayCircle className="h-6 w-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-[11px] font-bold uppercase tracking-wider text-gold-700">
-              Keep learning
-            </p>
-            <p className="font-semibold text-ink">Pick up the Foundations</p>
-            <p className="text-[12px] text-soft">One concept, one company, every week.</p>
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-gold-700 transition-transform group-hover:translate-x-0.5" />
-        </Link>
-      )}
+          )}
+        </div>
+        <ArrowRight className="h-5 w-5 shrink-0 text-soft" aria-hidden />
+      </Link>
     </div>
   );
 }

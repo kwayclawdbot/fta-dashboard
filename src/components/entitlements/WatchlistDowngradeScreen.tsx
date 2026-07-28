@@ -3,6 +3,7 @@
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import { WATCHLIST_FREE_ACTIVE } from "@/lib/entitlements";
+import { BrandTile } from "@/components/clubhome/board";
 
 /**
  * Watchlist DOWNGRADE screen (MONETIZATION-GATES.md "DOWNGRADE = PRESERVE, NEVER
@@ -12,10 +13,19 @@ import { WATCHLIST_FREE_ACTIVE } from "@/lib/entitlements";
  * (challenge-pass expiry) conversion moment.
  *
  * Copy is the ratified template: "26 stocks saved · Your free plan actively
- * monitors 5 · Upgrade to reactivate Kai Watch for all 26."
+ * monitors 5 · Upgrade to reactivate Kai Watch for all 26." Every word of it is
+ * byte-identical to the version before this restyle — only the container moved.
  *
  * The active subset is the OLDEST `WATCHLIST_FREE_ACTIVE` tickers (the names held
  * longest stay live); the rest are preserved but paused.
+ *
+ * CANVAS v2: the offer was the pre-canvas paper card with a gradient `.cta-button`, and the
+ * saved list was a stack of bordered rows with GREEN "Monitored" text. It is now
+ * the board's commercial object — one warm tinted card (`.club-b-warm`) carrying
+ * the eyebrow, the headline, the lede and a full-width solid orange button —
+ * over the board's white `.club-b-card` rows, each led by its company's own brand
+ * tile. COLOUR LAW: green/red is PRICE, and "monitored" is not a price, so the
+ * live subset reads in the action colour and the paused names read in `soft`.
  */
 export interface DowngradeItem {
   id: string;
@@ -40,55 +50,54 @@ export default function WatchlistDowngradeScreen({
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <div className="paper-card p-6">
-        <span className="text-[11px] font-display font-bold uppercase tracking-[0.14em] text-gold-700">
+      <section className="club-b-warm f0-grain px-5 py-6 sm:px-6">
+        <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent">
           Your watchlist is safe
-        </span>
-        <h1 className="mt-1.5 font-display text-2xl font-bold text-ink">
+        </p>
+        <h1 className="mt-2 font-display text-[24px] font-extrabold uppercase leading-[1.08] text-ink">
           {saved} {saved === 1 ? "stock" : "stocks"} saved · Your free plan
           actively monitors {monitored}
         </h1>
-        <p className="mt-2.5 text-sm leading-relaxed text-soft">
+        <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
           Nothing was deleted. Upgrade to reactivate Kai Watch for all {saved} —
           custom alerts, community deltas, news summaries and sentiment shifts on
           every ticker.
         </p>
         <a
           href={FIC_CHECKOUT_URL}
-          className="cta-button mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-[15px]"
+          className="f0-focus f0-press mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-3.5 font-display text-[14.5px] font-extrabold uppercase tracking-[0.05em] text-[color:var(--accent-on)]"
         >
           Reactivate for all {saved} — join the Club <ArrowRight className="h-4 w-4" />
         </a>
-      </div>
+      </section>
 
-      <ul className="mt-5 space-y-2">
+      <ul className="mt-5 flex flex-col gap-[7px]">
         {byAge.map((it) => {
           const active = activeIds.has(it.id);
           return (
             <li
               key={it.id}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
-                active
-                  ? "border-sand bg-card"
-                  : "border-sand/60 bg-transparent opacity-70"
+              className={`club-b-card flex items-center gap-2.5 px-3 py-[10px] ${
+                active ? "" : "opacity-70"
               }`}
             >
-              {active ? (
-                <Eye className="h-4 w-4 shrink-0 text-green-600" />
-              ) : (
-                <EyeOff className="h-4 w-4 shrink-0 text-soft" />
-              )}
-              <span className="font-display font-semibold text-ink">
+              <BrandTile ticker={it.ticker} size={26} radius={8} fontSize={11} />
+              <span className="shrink-0 font-mono text-[11px] font-semibold text-ink">
                 {it.ticker}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm text-soft">
+              <span className="min-w-0 flex-1 truncate text-[12px] text-soft">
                 {it.company_name}
               </span>
               <span
-                className={`shrink-0 text-xs font-medium ${
-                  active ? "text-green-600" : "text-soft"
+                className={`f0-chip inline-flex shrink-0 items-center gap-1 px-2 py-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] ${
+                  active ? "text-accent" : "text-soft"
                 }`}
               >
+                {active ? (
+                  <Eye className="h-3 w-3" aria-hidden />
+                ) : (
+                  <EyeOff className="h-3 w-3" aria-hidden />
+                )}
                 {active ? "Monitored" : "Monitoring paused"}
               </span>
             </li>

@@ -51,7 +51,7 @@ export default function FamilyDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
       </div>
     );
   }
@@ -60,7 +60,7 @@ export default function FamilyDetailPage() {
     return (
       <div className="max-w-3xl mx-auto">
         <BackLink />
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400 mt-4">
+        <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent mt-4">
           {error || "Family not found"}
         </div>
       </div>
@@ -75,19 +75,19 @@ export default function FamilyDetailPage() {
       <BackLink />
 
       {/* Family header */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 mt-4">
+      <div className="club-b-card p-6 mt-4">
         <div className="flex items-start gap-4 flex-wrap">
-          <div className="w-14 h-14 rounded-xl bg-amber-400/10 flex items-center justify-center shrink-0">
-            <Home className="w-6 h-6 text-amber-400" />
+          <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+            <Home className="w-6 h-6 text-accent" />
           </div>
           <div className="flex-1 min-w-[200px]">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-zinc-100">
+              <h1 className="font-display text-[20px] font-extrabold text-ink">
                 {family.name || "Unnamed family"}
               </h1>
               <TierChip tier={family.tier} />
             </div>
-            <div className="flex items-center gap-4 mt-2 text-sm text-zinc-400 flex-wrap">
+            <div className="flex items-center gap-4 mt-2 text-sm text-soft flex-wrap">
               <span className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> {members.length} member
                 {members.length !== 1 ? "s" : ""}
@@ -106,10 +106,10 @@ export default function FamilyDetailPage() {
                 {enrollments.map((e, i) => (
                   <span
                     key={i}
-                    className={`text-[11px] px-2 py-0.5 rounded uppercase tracking-wider font-bold ${
+                    className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                       e.status === "active"
-                        ? "text-emerald-400 bg-emerald-400/10"
-                        : "text-zinc-500 bg-zinc-800"
+                        ? "f0-chip-accent text-accent"
+                        : "text-soft"
                     }`}
                     title={e.cohort ? `Cohort: ${e.cohort}` : undefined}
                   >
@@ -124,7 +124,7 @@ export default function FamilyDetailPage() {
 
       {/* Combined stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mt-4">
-        <StatTile label="Family XP" value={combined.xp_total.toLocaleString()} accent="text-amber-400" />
+        <StatTile label="Family XP" value={combined.xp_total.toLocaleString()} accent="text-accent" />
         <StatTile label="Lessons" value={combined.lessons} />
         <StatTile label="Quizzes" value={combined.quizzes} />
         <StatTile label="Posts" value={combined.posts} />
@@ -135,17 +135,17 @@ export default function FamilyDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         {/* Members */}
-        <div className="lg:col-span-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="lg:col-span-2 club-b-card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Users className="w-4 h-4 text-zinc-400" />
-            <span className="text-sm font-medium text-zinc-300">Members</span>
+            <Users className="w-4 h-4 text-soft" />
+            <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Members</span>
           </div>
           <div className="space-y-1">
             {members.map((m) => (
               <Link
                 key={m.id}
                 href={`/admin/crm/members/${m.id}`}
-                className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-zinc-800/40 transition-colors"
+                className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-paper transition-colors"
               >
                 <AdminAvatar
                   name={m.display_name}
@@ -155,20 +155,20 @@ export default function FamilyDetailPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm text-zinc-100 font-medium truncate">
+                    <p className="text-sm text-ink font-medium truncate">
                       {m.display_name || "—"}
                     </p>
                     <RoleChip role={m.role} />
                   </div>
-                  <p className="text-[11px] text-zinc-500 truncate">
+                  <p className="text-[11px] text-soft truncate">
                     {m.email || m.age_group || "—"}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs text-amber-400/80">
+                  <p className="text-xs text-accent/80">
                     {m.xp_total.toLocaleString()} XP
                   </p>
-                  <p className="text-[11px] text-zinc-600 flex items-center gap-1 justify-end">
+                  <p className="text-[11px] text-soft/70 flex items-center gap-1 justify-end">
                     <LastSeenDot iso={m.last_seen} />
                     {relativeTime(m.last_seen)}
                   </p>
@@ -180,18 +180,18 @@ export default function FamilyDetailPage() {
 
         {/* Right column: orientation + watchlist */}
         <div className="space-y-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-3">
-              <ListChecks className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-medium text-zinc-300">
+              <ListChecks className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                 Orientation
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-soft">
                 {orientation.length} step{orientation.length !== 1 ? "s" : ""} done
               </span>
             </div>
             {orientation.length === 0 ? (
-              <p className="text-xs text-zinc-600">Not started</p>
+              <p className="text-xs text-soft/70">Not started</p>
             ) : (
               <div className="space-y-1.5">
                 {orientation.map((o) => (
@@ -199,10 +199,10 @@ export default function FamilyDetailPage() {
                     key={o.step_key}
                     className="flex items-center justify-between text-xs"
                   >
-                    <span className="text-zinc-300 capitalize">
+                    <span className="text-ink capitalize">
                       {o.step_key.replace(/[_-]/g, " ")}
                     </span>
-                    <span className="text-zinc-600">
+                    <span className="text-soft/70">
                       {shortDate(o.completed_at)}
                     </span>
                   </div>
@@ -211,18 +211,18 @@ export default function FamilyDetailPage() {
             )}
           </div>
 
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Eye className="w-4 h-4 text-blue-400" />
-              <span className="text-sm font-medium text-zinc-300">
+              <Eye className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                 Watchlist
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-soft">
                 {watchlist.length} ticker{watchlist.length !== 1 ? "s" : ""}
               </span>
             </div>
             {watchlist.length === 0 ? (
-              <p className="text-xs text-zinc-600">Empty</p>
+              <p className="text-xs text-soft/70">Empty</p>
             ) : (
               <div className="space-y-1.5">
                 {watchlist.map((w, i) => (
@@ -231,16 +231,16 @@ export default function FamilyDetailPage() {
                     className="flex items-center justify-between text-xs"
                   >
                     <div className="min-w-0">
-                      <span className="text-zinc-100 font-semibold">
+                      <span className="text-ink font-semibold">
                         {w.ticker}
                       </span>
                       {w.company_name ? (
-                        <span className="text-zinc-500 ml-1.5 truncate">
+                        <span className="text-soft ml-1.5 truncate">
                           {w.company_name}
                         </span>
                       ) : null}
                     </div>
-                    <span className="text-zinc-600 shrink-0 ml-2">
+                    <span className="text-soft/70 shrink-0 ml-2">
                       {w.champion || w.status || ""}
                     </span>
                   </div>
@@ -258,7 +258,7 @@ function BackLink() {
   return (
     <Link
       href="/admin/crm/members"
-      className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+      className="inline-flex items-center gap-2 text-sm text-soft hover:text-ink transition-colors"
     >
       <ArrowLeft className="w-4 h-4" /> Back to members
     </Link>

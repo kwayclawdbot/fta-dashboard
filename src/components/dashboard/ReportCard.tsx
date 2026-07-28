@@ -13,6 +13,34 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { levelForXp } from "@/lib/xp";
+import { BoardSection } from "@/components/clubhome/board";
+import { Meter, dash } from "@/components/f0/parts";
+
+/**
+ * REPORT CARD — a child's week, as a board object.
+ *
+ * WHAT DIED: the hairline-ledger treatment (a bare ruled entry with a nested
+ * MeasureStrip-style stat row), the raw `midnight-*` body text, the `chip-green`
+ * completed-week tile and the `text-red-600` warning numeral. WHAT REPLACED
+ * THEM: one white `club-b-card` per child, `BoardSection` marks inside it, the
+ * shared `Meter` for lesson progress, and mono tabular numerals for every stat.
+ *
+ * FAMILY REGISTER: warm and premium, never childish, and NO PURPLE — the family
+ * accent is the mode's own gold, which arrives through `bg-accent` / `text-gold-*`
+ * so the object re-skins by mode with no branch here.
+ *
+ * COLOUR LAW: green/red are PRICE colours and a quiz score is not a price, so a
+ * flagged stat reads in the action ramp and by its sub-line, never in red. A
+ * completed week reads as the accent fill plus a tick.
+ *
+ * HONEST ABSENCE: every stat routes through `dash()` or an explicit "—" so a
+ * missing figure is stated, never invented. Loading keeps the card's shape.
+ *
+ * NO CLOCK IN RENDER: `buildNeedsWork` calls `Date.now()` (it asks "has this
+ * child practised in the last 7 days"). It used to be called straight from the
+ * render body, which is an impure read React may repeat. It now runs once, in
+ * the load effect, and its result lives in state.
+ */
 
 interface WeekTick {
   week: number;
@@ -49,6 +77,7 @@ function olderThanDays(iso: string | null, days: number): boolean {
   return Date.now() - new Date(iso).getTime() > days * 86400000;
 }
 
+/** Impure (reads the clock) — callers must run this in an effect, never render. */
 function buildNeedsWork(s: Stats): string[] {
   const out: string[] = [];
   if (s.behind_count > 0)
@@ -77,6 +106,7 @@ export default function ReportCard({
 }) {
   const supabase = createClient();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [needsWork, setNeedsWork] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
@@ -84,7 +114,7 @@ export default function ReportCard({
   const fetchNote = useCallback(
     async (s: Stats, refresh: boolean) => {
       setNoteLoading(true);
-      const needsWork = buildNeedsWork(s);
+      const work = buildNeedsWork(s);
       try {
         const res = await fetch("/api/report-card", {
           method: "POST",
@@ -106,7 +136,7 @@ export default function ReportCard({
               gamesBest: s.game_count > 0 ? s.game_best : null,
               xp: s.xp,
               level: levelForXp(s.xp).name,
-              needsWork,
+              needsWork: work,
             },
           }),
         });
@@ -129,6 +159,8 @@ export default function ReportCard({
       });
       const s = data as Stats;
       setStats(s);
+      // The clock read lives HERE, not in render (see the header).
+      if (s && !s.error) setNeedsWork(buildNeedsWork(s));
       setLoading(false);
       if (s && !s.error) fetchNote(s, false);
     }
@@ -136,69 +168,83 @@ export default function ReportCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [childId]);
 
+  /* LOADING ≠ EMPTY — the card keeps its footprint and shimmers its contents,
+     so the fill is a swap rather than a reflow. */
   if (loading) {
     return (
-      <div className="py-6 animate-pulse">
-        <div className="h-5 w-40 bg-sand/70 rounded mb-4" />
-        <div className="h-3 w-full bg-sand/50 rounded mb-2" />
-        <div className="h-3 w-2/3 bg-sand/50 rounded" />
-      </div>
+      <Shell>
+        <div className="motion-safe:animate-pulse" aria-busy="true">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-full bg-sand/70" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-4 w-40 max-w-full rounded bg-sand/70" />
+              <div className="h-3 w-24 rounded bg-sand/50" />
+            </div>
+          </div>
+          <div className="mt-5 h-1.5 w-full rounded-full bg-sand/60" />
+          <div className="mt-5 h-3 w-2/3 rounded bg-sand/50" />
+          <span className="sr-only">Loading this report card</span>
+        </div>
+      </Shell>
     );
   }
 
   if (!stats || stats.error) return null;
 
   const level = levelForXp(stats.xp);
-  const needsWork = buildNeedsWork(stats);
   const foundPct =
     stats.foundations_total > 0
       ? Math.round((stats.foundations_done / stats.foundations_total) * 100)
       : 0;
+  const practiceSessions = stats.practice_count + stats.game_count;
+  const practiceBest =
+    practiceSessions > 0
+      ? String(stats.game_count > 0 ? stats.game_best : stats.practice_best)
+      : "—";
 
   return (
-    /* A LEDGER ENTRY, not a card. The old treatment was a paper-card wrapping
-       three more boxed panels (stat tiles / needs-work / coach note) — cards
-       inside cards, the pattern the brand register bans. Hierarchy now comes
-       from the display scale and hairline rules; every colour is unchanged
-       family gold. */
-    <div className="py-7 first:pt-5">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
-        <div className="w-10 h-10 rounded-full bg-gold-400/20 flex items-center justify-center text-gold-700 font-display font-bold shrink-0">
+    <Shell>
+      {/* ── Who ──────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400/20 font-display font-bold text-gold-700"
+          aria-hidden
+        >
           {(childName || "?")[0]?.toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-display text-display-3 font-bold text-ink truncate">{childName}</p>
-          <p className="text-xs text-soft capitalize">
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[19px] font-extrabold text-ink">
+            {childName}
+          </p>
+          <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft tabular-nums">
             {stats.track} track
             {stats.cohort_week ? ` · Week ${stats.cohort_week}` : ""}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-chip-amber text-gold-800 text-xs font-semibold shrink-0">
-          <Zap className="w-3.5 h-3.5" />
-          {level.name} · {stats.xp} XP
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-chip-amber px-3 py-1.5 font-mono text-[11px] font-semibold text-gold-800 tabular-nums">
+          <Zap className="h-3.5 w-3.5" aria-hidden />
+          {level.name} · {dash(stats.xp)} XP
         </span>
       </div>
 
-      {/* Foundations */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm font-medium text-ink flex items-center gap-1.5">
-            <BookOpen className="w-4 h-4 text-gold-600" />
+      {/* ── Foundations ──────────────────────────────────────────────────── */}
+      <div className="mt-6">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="flex items-center gap-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+            <BookOpen className="h-3.5 w-3.5 text-soft" aria-hidden />
             Foundations
-          </span>
-          <span className="text-xs text-soft">
-            {stats.foundations_done}/{stats.foundations_total} lessons
+          </p>
+          <span className="shrink-0 font-mono text-[12px] font-semibold text-soft tabular-nums">
+            {stats.foundations_total > 0
+              ? `${stats.foundations_done}/${stats.foundations_total}`
+              : "—"}{" "}
+            lessons
           </span>
         </div>
-        <div className="w-full h-2 rounded-full bg-sand overflow-hidden mb-2">
-          <div
-            className="h-full rounded-full bg-gold-500"
-            style={{ width: `${foundPct}%` }}
-          />
-        </div>
+        <Meter pct={foundPct} className="mt-2.5" />
+
         {stats.weeks.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="mt-2.5 flex items-center gap-1.5">
             {stats.weeks.map((w) => {
               const complete = w.total > 0 && w.done >= w.total;
               return (
@@ -207,17 +253,21 @@ export default function ReportCard({
                   title={`Week ${w.week}: ${w.done}/${w.total}${
                     w.unlocked ? "" : " (locked)"
                   }`}
-                  className={`flex-1 h-6 rounded flex items-center justify-center text-[10px] font-bold ${
+                  className={`grid h-6 flex-1 place-items-center rounded-[6px] font-mono text-[10px] font-bold tabular-nums ${
                     !w.unlocked
-                      ? "bg-sand/50 text-soft"
+                      ? "border border-sand bg-paper text-soft/60"
                       : complete
-                        ? "bg-chip-green text-green-700"
+                        ? "bg-accent text-[color:var(--accent-on)]"
                         : w.done > 0
                           ? "bg-chip-amber text-gold-800"
-                          : "bg-midnight-900 border border-sand text-soft"
+                          : "border border-sand bg-card text-soft"
                   }`}
                 >
-                  {complete ? <Check className="w-3 h-3" /> : `W${w.week}`}
+                  {complete ? (
+                    <Check className="h-3 w-3" aria-hidden />
+                  ) : (
+                    `W${w.week}`
+                  )}
                 </div>
               );
             })}
@@ -225,9 +275,8 @@ export default function ReportCard({
         )}
       </div>
 
-      {/* Quiz + Practice + Badges — a ruled stat row (hairline dividers), not
-          three boxed tiles. */}
-      <div className="flex items-stretch py-4 mb-5 border-y border-sand">
+      {/* ── The three measures — mono numerals on hairlines, no nested box ── */}
+      <div className="mt-6 flex items-stretch border-y border-sand py-4">
         <Stat
           label="Quiz avg"
           value={stats.quiz_avg == null ? "—" : `${stats.quiz_avg}%`}
@@ -236,66 +285,81 @@ export default function ReportCard({
               ? `${stats.quiz_low} to retake`
               : `${stats.quiz_count} taken`
           }
-          warn={stats.quiz_low > 0}
+          flag={stats.quiz_low > 0}
         />
         <Stat
           label="Practice"
-          value={
-            stats.practice_count + stats.game_count > 0
-              ? `${stats.game_count > 0 ? stats.game_best : stats.practice_best}`
-              : "—"
-          }
-          sub={`${stats.practice_count + stats.game_count} sessions`}
+          value={practiceBest}
+          sub={`${practiceSessions} sessions`}
         />
-        <Stat
-          label="Badges"
-          value={`${stats.badges_count}`}
-          sub={`${level.name}`}
-        />
+        <Stat label="Badges" value={dash(stats.badges_count)} sub={level.name} />
       </div>
 
-      {/* Needs work — carried by a gold edge rule instead of a full box. */}
+      {/* ── Needs work ───────────────────────────────────────────────────── */}
       {needsWork.length > 0 && (
-        <div className="mb-5 border-l-2 border-gold-400 pl-4">
-          <p className="flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-gold-800 mb-2">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Needs work
-          </p>
-          <ul className="space-y-1.5">
-            {needsWork.map((n) => (
-              <li key={n} className="text-sm text-midnight-200 flex gap-2">
-                <span className="text-gold-600">•</span>
-                {n}
-              </li>
-            ))}
-          </ul>
+        <div className="mt-6">
+          <BoardSection id={`rc-work-${childId}`} label="Needs" mark="work">
+            <ul className="mt-2.5 space-y-1.5">
+              {needsWork.map((n) => (
+                <li key={n} className="flex gap-2 text-[13.5px] leading-snug text-ink">
+                  <AlertTriangle
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600"
+                    aria-hidden
+                  />
+                  {n}
+                </li>
+              ))}
+            </ul>
+          </BoardSection>
         </div>
       )}
 
-      {/* Coach note — a quoted passage under a hairline, not a nested panel. */}
-      <div className="border-t border-sand pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <p className="flex items-center gap-1.5 text-eyebrow font-display font-bold uppercase text-soft">
-            <Sparkles className="w-3.5 h-3.5 text-gold-600" />
-            Coach&apos;s note
-          </p>
-          <button
-            onClick={() => stats && fetchNote(stats, true)}
-            disabled={noteLoading}
-            className="inline-flex items-center gap-1 text-xs text-gold-700 hover:text-gold-800 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${noteLoading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-        {noteLoading && !note ? (
-          <p className="text-sm text-soft">Writing a note…</p>
-        ) : (
-          <p className="text-sm text-midnight-200 leading-relaxed">
-            {note || "No note yet."}
-          </p>
-        )}
+      {/* ── Coach's note ─────────────────────────────────────────────────── */}
+      <div className="mt-6">
+        <BoardSection
+          id={`rc-note-${childId}`}
+          label="Coach's"
+          mark="note"
+          action={
+            <button
+              type="button"
+              onClick={() => stats && fetchNote(stats, true)}
+              disabled={noteLoading}
+              className="f0-focus f0-press inline-flex items-center gap-1 font-display text-[12px] font-bold text-gold-700 transition-colors hover:text-gold-600 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${noteLoading ? "animate-spin" : ""}`}
+                aria-hidden
+              />
+              Refresh
+            </button>
+          }
+        >
+          {noteLoading && !note ? (
+            <p className="mt-2.5 flex items-center gap-1.5 text-[13.5px] text-soft">
+              <Sparkles className="h-3.5 w-3.5 text-gold-600" aria-hidden />
+              Writing a note…
+            </p>
+          ) : (
+            <p className="mt-2.5 max-w-[62ch] text-[14px] leading-relaxed text-ink">
+              {note || "No note yet."}
+            </p>
+          )}
+        </BoardSection>
       </div>
+    </Shell>
+  );
+}
+
+/* The card itself. The host (family/overview) still stacks report cards inside
+   an `.f0-ledger`, whose `> * + *` rule would draw a hairline directly above
+   each card's own border. The inline `borderTop: none` cancels exactly that one
+   declaration without touching the host, and is inert once the host drops the
+   ledger. */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="py-3 first:pt-0" style={{ borderTop: "none" }}>
+      <article className="club-b-card px-5 py-5">{children}</article>
     </div>
   );
 }
@@ -304,28 +368,30 @@ function Stat({
   label,
   value,
   sub,
-  warn,
+  flag,
 }: {
   label: string;
+  /** Pre-formatted; "—" for an honest absence. */
   value: string;
   sub: string;
-  warn?: boolean;
+  /** Wants attention. Reads in the ACTION ramp — never red (colour law). */
+  flag?: boolean;
 }) {
   return (
-    <div className="flex-1 min-w-0 px-4 first:pl-0 last:pr-0 border-l border-sand first:border-l-0">
-      <p className="text-eyebrow text-soft flex items-center gap-1">
-        {label === "Practice" && <Target className="w-3 h-3 shrink-0" />}
-        {label === "Badges" && <Award className="w-3 h-3 shrink-0" />}
-        <span className="truncate uppercase">{label}</span>
+    <div className="min-w-0 flex-1 border-l border-sand px-4 first:border-l-0 first:pl-0 last:pr-0">
+      <p className="flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft">
+        {label === "Practice" && <Target className="h-3 w-3 shrink-0" aria-hidden />}
+        {label === "Badges" && <Award className="h-3 w-3 shrink-0" aria-hidden />}
+        <span className="truncate">{label}</span>
       </p>
       <p
-        className={`font-display text-display-3 font-bold mt-1.5 ${
-          warn ? "text-red-600" : "text-ink"
+        className={`mt-1.5 font-mono text-[22px] font-semibold leading-none tabular-nums ${
+          flag ? "text-gold-700" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="text-[11px] text-soft mt-1 truncate">{sub}</p>
+      <p className="mt-1.5 truncate text-[11px] text-soft">{sub}</p>
     </div>
   );
 }

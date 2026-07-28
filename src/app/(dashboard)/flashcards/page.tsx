@@ -20,41 +20,39 @@ import { weekTheme } from "@/lib/games/art";
 import CandleRenderer from "@/components/games/CandleRenderer";
 import Burst from "@/components/games/Burst";
 import StreakFlame from "@/components/games/StreakFlame";
-import {
-  SectionRule,
-  Ledger,
-  EmptyLine,
-  TextAction,
-} from "@/components/f0/parts";
+import { DisplayHead, Meter, EmptyLine, TextAction } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   FLASHCARDS — recall practice.
+   FLASHCARDS — recall practice, drawn in the BOARD's card language.
 
-   Two states, one surface language:
-     · PICKER  — masthead, ONE obsidian field (Daily 5, the quick action), then
-                 every set as a hairline ledger row. The old version was a
-                 two-column grid of `paper-card` tiles — the exact pattern the
-                 register bans.
-     · SESSION — the card is the object. Its faces are `bg-card`, a semantic
-                 token (they were `bg-white`, a white slab with invisible type
-                 on the dark theme), and the art header keeps the storybook
-                 imagery because it IS the card's identity.
+   Three states, one vocabulary:
+     · PICKER  — display masthead, ONE tinted accent object (`.club-b-warm`)
+                 carrying the Daily 5, how sharp the deck currently is (a Meter
+                 with the percentage right-aligned, exactly as the board draws
+                 its progress rows) and the round orange action orb; then every
+                 set as a white `.club-b-card` row. The previous version was a
+                 dark obsidian field over a hairline ledger — the earlier
+                 system, and before that a grid of legacy card tiles.
+     · SESSION — the card IS the object, so it takes the board's own geometry:
+                 `.club-b-card` faces (14px radius, sand hairline) with the
+                 storybook art header, which is the deck's identity.
+     · DONE    — the tinted result card: what you reviewed, your best streak and
+                 the XP, in translucent `.club-b-chip` wells.
 
    COLOUR LAW: green/red = price, so "Got it" / "Again" are differentiated by
    WEIGHT, not by hue — Got it is the solid accent action, Again is a hairline
-   outline. Correct/incorrect in a recall drill is NOT a price and never touches
-   the price ramp.
+   card button. Correct/incorrect in a recall drill is NOT a price and never
+   touches the price ramp.
 
-   CANVAS V2 PASS:
-     · Fills moved from the hardcoded `bg-volt-500` to `bg-accent`
-       (--accent-solid), so the deck is warm gold in Family Mode and metallic on
-       the FTA desk without a fork — and the type on those fills is
-       `text-night-950`, never white. White on orange is ~2.5:1; the "never
-       text-ink on a white/orange/kai fill" rule cuts both ways and the fix on
-       the light side is the near-black stop, not white.
-     · Every control carries .f0-focus and .f0-press. The deck is swiped and
-       tapped more than anything else in the app; it had no focus ring at all.
-     · The masthead annotates ONE word, as every canvas headline does.
+   REAL DATA ONLY: the "deck sharp" percentage is derived from the sets the RPC
+   actually returned (cards not currently due ÷ cards in the deck). With no sets
+   there is no percentage and the card says what it can instead — it never
+   prints a flattering 100%.
+
+   THEMES: fills ride `bg-accent` (--accent-solid) and their type rides
+   `--accent-on`, so the deck is warm gold in Family Mode, orange in the Club and
+   metallic on the FTA desk with no fork and no `dark:` variant.
 
    ADULT-FIRST: this is used by kids and by adults from the same deck. The
    register does not soften for kids — only the COPY changes (`isKid`). No
@@ -215,7 +213,7 @@ export default function FlashcardsPage() {
   }
 
   /* LOADING ≠ EMPTY (§0.4). Shaped like the picker — masthead, the Daily 5
-     field, then the set ledger — so it never reads as "you have no sets". */
+     card, then the set cards — so it never reads as "you have no sets". */
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16" aria-busy="true">
@@ -224,10 +222,10 @@ export default function FlashcardsPage() {
           <div className="h-11 w-56 rounded bg-sand/60" />
           <div className="h-4 w-full max-w-sm rounded bg-sand/40" />
         </div>
-        <div className="h-44 rounded-[1.5rem] bg-sand/40" />
-        <div className="f0-ledger border-t border-sand/70">
+        <div className="club-b-warm h-44" />
+        <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="f0-ledger-row">
+            <div key={i} className="club-b-card flex items-center gap-4 px-4 py-4">
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="h-4 w-1/2 rounded bg-sand/60" />
                 <div className="h-3 w-3/4 rounded bg-sand/40" />
@@ -242,9 +240,21 @@ export default function FlashcardsPage() {
 
   /* ---------------- SET PICKER ---------------- */
   if (mode === "picker") {
+    /* How sharp the deck currently is: cards NOT due ÷ cards in the deck. Both
+       numbers come from `listSets`, so this is a real read — with no sets there
+       is no percentage at all rather than a flattering 100%. */
+    const deckSize = sets.reduce((n, s) => n + s.count, 0);
+    const sharpPct =
+      deckSize > 0
+        ? Math.max(0, Math.min(100, Math.round(((deckSize - totalDue) / deckSize) * 100)))
+        : null;
+
     return (
       <div className="mx-auto max-w-2xl space-y-8 pb-16">
-        <FlashMast
+        <DisplayHead
+          eyebrow="Recall practice"
+          title=""
+          mark="Flashcards"
           lede={
             isKid
               ? "Flip a card, make your guess, grow your streak. Five a day keeps it all sharp."
@@ -252,50 +262,92 @@ export default function FlashcardsPage() {
           }
         />
 
-        {/* Daily 5 — the one dark object on this surface */}
-        <section className="f0-hero-field f0-grain p-6 sm:p-7">
-          <p className="text-eyebrow font-display font-bold uppercase text-volt-300">
-            Today
-          </p>
-          <h2 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05]">
-            Daily 5
-          </h2>
-          <p className="mt-2.5 max-w-[46ch] text-[15px] leading-relaxed opacity-75">
-            {totalDue > 0
-              ? `${totalDue} card${totalDue === 1 ? "" : "s"} are due across every set — five minutes closes them out.`
-              : "Five cards pulled across all your sets to keep every concept sharp."}
-          </p>
-          <button
-            onClick={startDaily}
-            disabled={starting}
-            className="f0-focus f0-press mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-60"
-          >
-            {starting ? "Dealing…" : "Start the Daily 5"}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+        {/* THE ONE TINTED OBJECT — the Daily 5 and how sharp the deck is. */}
+        <section className="club-b-warm f0-grain px-5 py-5" aria-labelledby="daily-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                Today
+                <span className="text-accent"> · five minutes</span>
+              </p>
+              <h2
+                id="daily-5"
+                className="mt-2 font-display text-display-2 font-extrabold leading-[1.05] text-ink"
+              >
+                Daily 5
+              </h2>
+              <p className="mt-2 max-w-[46ch] text-[13.5px] leading-relaxed text-soft">
+                {totalDue > 0
+                  ? `${totalDue} card${totalDue === 1 ? "" : "s"} are due across every set — five minutes closes them out.`
+                  : "Five cards pulled across all your sets to keep every concept sharp."}
+              </p>
+            </div>
+
+            {/* The count that makes the ask concrete. `totalDue` is a real read
+                from `listSets`; with nothing due it says so rather than
+                printing a zero that looks like a failure. */}
+            <div className="club-b-chip shrink-0 px-3 py-2 text-right">
+              <p className="font-mono text-[16px] font-semibold leading-none tabular-nums text-ink">
+                {totalDue}
+              </p>
+              <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+                Due now
+              </p>
+            </div>
+          </div>
+
+          {/* The board's progress row: a bar with the percentage right-aligned. */}
+          {sharpPct != null && (
+            <div className="mt-5">
+              <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
+                  Deck sharp
+                </span>
+                <span className="font-mono text-[13px] font-semibold tabular-nums text-accent">
+                  {sharpPct}%
+                </span>
+              </div>
+              <Meter pct={sharpPct} />
+            </div>
+          )}
+
+          <div className="mt-4">
+            <button
+              onClick={startDaily}
+              disabled={starting}
+              className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)] disabled:opacity-60"
+            >
+              {starting ? "Dealing…" : "Start the Daily 5"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </section>
 
-        {/* Sets — hairline rows, never a tile grid */}
-        <section className="space-y-4">
-          <SectionRule>Study sets</SectionRule>
-          {sets.length === 0 ? (
-            <EmptyLine
-              title="No sets yet"
-              body="Card sets appear here as your program unlocks them — nothing is listed until it has real cards behind it."
-              action={
-                <TextAction href="/courses">
-                  Go to Learn <ArrowRight className="h-3.5 w-3.5" />
-                </TextAction>
-              }
-            />
-          ) : (
-            <Ledger>
+        {/* Sets — white cards on the paper, never a tile grid. */}
+        {sets.length === 0 ? (
+          <EmptyLine
+            title="No sets yet"
+            body="Card sets appear here as your program unlocks them — nothing is listed until it has real cards behind it."
+            action={
+              <TextAction href="/courses">
+                Go to Learn <ArrowRight className="h-3.5 w-3.5" />
+              </TextAction>
+            }
+          />
+        ) : (
+          <BoardSection
+            id="flash-sets"
+            label="Study sets"
+            mark="drill one"
+            sub="Work a single set until the answers come without thinking."
+          >
+            <div className="mt-4 space-y-3">
               {sets.map((s) => (
                 <button
                   key={s.slug}
                   onClick={() => startSet(s)}
                   disabled={starting}
-                  className="f0-ledger-row f0-focus f0-press w-full justify-between text-left disabled:opacity-60"
+                  className="club-b-card f0-focus f0-press flex w-full items-center gap-4 px-4 py-4 text-left disabled:opacity-60"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block font-display text-[15px] font-bold text-ink">
@@ -305,22 +357,22 @@ export default function FlashcardsPage() {
                       {s.blurb}
                     </span>
                   </span>
-                  <span className="shrink-0 self-center text-right">
+                  <span className="shrink-0 text-right">
                     <span className="block font-mono text-[13px] font-semibold tabular-nums text-soft">
                       {s.count} cards
                     </span>
                     {s.due > 0 && (
-                      <span className="mt-0.5 block font-display text-[12px] font-bold text-gold-700">
+                      <span className="mt-0.5 block font-mono text-[11px] font-semibold tabular-nums text-accent">
                         {s.due} due
                       </span>
                     )}
                   </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 self-center text-soft" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-soft" />
                 </button>
               ))}
-            </Ledger>
-          )}
-        </section>
+            </div>
+          </BoardSection>
+        )}
       </div>
     );
   }
@@ -354,71 +406,74 @@ export default function FlashcardsPage() {
         <motion.section
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="f0-hero-field f0-grain p-6 text-center sm:p-8"
+          className="club-b-warm f0-grain relative px-5 py-6 sm:px-6"
         >
           <Burst count={26} power={150} />
           <div className="relative">
-            <p className="text-eyebrow font-display font-bold uppercase text-volt-300">
-              Session complete
+            <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+              Session
+              <span className="text-accent"> complete</span>
             </p>
-            <h2 className="mt-2 font-display text-display-2 font-extrabold">
+            <h2 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05] text-ink">
               {isKid ? "You did it!" : sessionLabel}
             </h2>
-            <p className="mx-auto mt-2.5 max-w-[46ch] text-[15px] leading-relaxed opacity-75">
+            <p className="mt-2.5 max-w-[46ch] text-[15px] leading-relaxed text-soft">
               You reviewed {cards.length} card{cards.length === 1 ? "" : "s"} and
               got {gotCount} on the first try.
             </p>
 
-            {/* Measures — hairline-separated, no boxes */}
-            <div className="mt-7 flex items-stretch justify-center">
-              <div className="px-5">
-                <p className="font-display text-display-3 font-extrabold tabular-nums">
+            {/* Measures — translucent wells on the tinted card, as drawn. */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              <span className="club-b-chip inline-flex items-baseline gap-1.5 px-3 py-1.5">
+                <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
                   {cards.length}
-                </p>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase opacity-55">
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
                   Reviewed
-                </p>
-              </div>
-              <div className="border-l border-white/15 px-5">
-                <div className="flex justify-center">
-                  <StreakFlame streak={bestStreak} size={26} showZero />
-                </div>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase opacity-55">
+                </span>
+              </span>
+              <span className="club-b-chip inline-flex items-center gap-1.5 px-3 py-1.5">
+                <StreakFlame streak={bestStreak} size={20} showZero />
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
                   Best streak
-                </p>
-              </div>
-              <div className="border-l border-white/15 px-5">
-                <motion.p
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
-                  className="font-display text-display-3 font-extrabold tabular-nums"
+                </span>
+              </span>
+              <motion.span
+                initial={{ scale: 0.6, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.35, type: "spring", stiffness: 260, damping: 16 }}
+                className="club-b-chip inline-flex items-baseline gap-1.5 px-3 py-1.5"
+              >
+                <span
+                  className={`font-mono text-[14px] font-semibold tabular-nums ${
+                    xpAwarded > 0 ? "text-accent" : "text-soft"
+                  }`}
                 >
                   +{xpAwarded}
-                </motion.p>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase opacity-55">
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
                   {xpAwarded > 0 ? "XP earned" : "XP (already today)"}
-                </p>
-              </div>
+                </span>
+              </motion.span>
             </div>
 
-            <p className="mx-auto mt-6 max-w-[46ch] text-[13px] leading-relaxed opacity-60">
+            <p className="mt-5 max-w-[46ch] text-[13px] leading-relaxed text-soft">
               {dueTomorrow > 0
                 ? `${dueTomorrow} card${dueTomorrow === 1 ? "" : "s"} come back tomorrow to lock it in.`
                 : "Every card leveled up — nothing due tomorrow. Nice."}
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link
                 href="/progress"
-                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
+                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
               >
                 See progress
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <button
                 onClick={backToPicker}
-                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] opacity-80 transition-opacity hover:opacity-100"
+                className="f0-focus f0-press inline-flex items-center gap-2 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
               >
                 <ChevronLeft className="h-4 w-4" /> Back to sets
               </button>
@@ -461,7 +516,7 @@ export default function FlashcardsPage() {
           return (
             <div
               key={`peek-${peek.id}`}
-              className="f0-frame absolute inset-x-0 top-0 rounded-2xl bg-card"
+              className="club-b-card absolute inset-x-0 top-0"
               style={{
                 transform: `translateY(${depth * 12}px) scale(${1 - depth * 0.05})`,
                 zIndex: 1,
@@ -514,7 +569,7 @@ export default function FlashcardsPage() {
         {!flipped ? (
           <button
             onClick={() => setFlipped(true)}
-            className="f0-focus f0-press min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
+            className="f0-focus f0-press min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
           >
             {isKid ? "Flip the card" : "Reveal answer"}
           </button>
@@ -523,7 +578,7 @@ export default function FlashcardsPage() {
             <button
               onClick={() => handleResult(false)}
               disabled={busy}
-              className="f0-focus f0-press flex min-h-[52px] flex-1 items-center justify-center gap-2 f0-frame rounded-full font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-ink transition-colors hover:border-accent disabled:opacity-50"
+              className="f0-focus f0-press flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full border border-sand bg-card font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-ink transition-colors hover:border-accent disabled:opacity-50"
             >
               <X className="h-5 w-5" />
               {isKid ? "Try again" : "Again"}
@@ -531,7 +586,7 @@ export default function FlashcardsPage() {
             <button
               onClick={() => handleResult(true)}
               disabled={busy}
-              className="f0-focus f0-press flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-50"
+              className="f0-focus f0-press flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)] disabled:opacity-50"
             >
               <Check className="h-5 w-5" />
               {isKid ? "Nailed it!" : "Got it"}
@@ -540,24 +595,6 @@ export default function FlashcardsPage() {
         )}
       </div>
     </div>
-  );
-}
-
-/* ---------- masthead ----------
-   The canvas annotates ONE word per headline with a drawn underline. f0's
-   DisplayHead cannot carry the mark, so the deck composes it directly — the
-   same three registers (eyebrow / display / lede), one of them marked. */
-function FlashMast({ lede }: { lede: string }) {
-  return (
-    <header>
-      <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-        Recall practice
-      </p>
-      <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
-        <span className="f0-underline-mark">Flashcards</span>
-      </h1>
-      <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">{lede}</p>
-    </header>
   );
 }
 
@@ -579,11 +616,11 @@ function FlipCard({
   const bigText = isKid ? "text-[26px]" : "text-[22px]";
   const hasVisual = !!card.visual;
 
-  // Faces use the semantic card token (they were bg-white → a white slab with
-  // unreadable type on the dark theme) and a sand hairline; the storybook art
-  // header carries the set's identity instead of a coloured border.
+  // The face IS a board card: 14px radius, sand hairline, card ground — so the
+  // object you study is drawn from the same vocabulary as everything around it.
+  // The storybook art header carries the set's identity, not a coloured border.
   const faceBase =
-    "f0-frame absolute inset-0 flex flex-col overflow-hidden rounded-2xl bg-card";
+    "club-b-card absolute inset-0 flex flex-col overflow-hidden";
 
   return (
     <div className="relative h-full w-full" style={{ transformStyle: "preserve-3d" }} onClick={onFlip}>
@@ -649,7 +686,7 @@ function FlipCard({
           </div>
           <div className="flex items-center justify-center px-5 pb-4">
             {card.source ? (
-              <span className="f0-frame inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[11px] text-soft">
+              <span className="f0-chip inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[11px] text-soft">
                 {card.source}
               </span>
             ) : (

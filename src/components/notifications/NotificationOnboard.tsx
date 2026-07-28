@@ -218,11 +218,11 @@ export default function NotificationOnboard() {
             transition={{ duration: 0.25 }}
             className="fixed z-[90] bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 right-4 md:right-6 left-4 md:left-auto md:w-80"
           >
-            <div className="relative rounded-2xl border border-gold-400/30 bg-midnight-900/95 backdrop-blur shadow-xl p-4">
+            <div className="club-b-card relative p-4 shadow-[var(--shadow-lift)] backdrop-blur">
               <button
                 onClick={dismiss}
                 aria-label="Dismiss"
-                className="absolute top-2.5 right-2.5 text-midnight-500 hover:text-midnight-300"
+                className="f0-focus absolute right-2.5 top-2.5 rounded text-soft transition-colors hover:text-ink"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -231,10 +231,10 @@ export default function NotificationOnboard() {
                   <BellRing className="w-4.5 h-4.5" />
                 </span>
                 <div className="pr-4">
-                  <p className="text-sm font-semibold text-midnight-50">
+                  <p className="text-sm font-semibold text-ink">
                     Turn on notifications
                   </p>
-                  <p className="text-xs text-midnight-400 mt-0.5">
+                  <p className="text-xs text-soft mt-0.5">
                     Class reminders + replies, one tap.
                   </p>
                 </div>
@@ -243,13 +243,13 @@ export default function NotificationOnboard() {
                 <button
                   onClick={enable}
                   disabled={busy}
-                  className="flex-1 cta-button px-3 py-2 rounded-lg text-xs font-semibold disabled:opacity-50"
+                  className="f0-press f0-focus flex-1 rounded-lg bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-3 py-2 text-xs disabled:opacity-50"
                 >
                   {busy ? "Turning on…" : "Turn on"}
                 </button>
                 <button
                   onClick={dismiss}
-                  className="px-3 py-2 rounded-lg text-xs font-medium text-midnight-400 hover:text-midnight-200"
+                  className="f0-focus rounded-lg px-3 py-2 text-xs font-medium text-soft transition-colors hover:text-ink"
                 >
                   Not now
                 </button>
@@ -269,26 +269,26 @@ export default function NotificationOnboard() {
             transition={{ duration: 0.25 }}
             className="fixed z-[90] bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4"
           >
-            <div className="relative rounded-2xl border border-gold-400/30 bg-midnight-900/95 backdrop-blur shadow-xl p-3.5 flex items-center gap-3">
+            <div className="club-b-card relative flex items-center gap-3 p-3.5 shadow-[var(--shadow-lift)] backdrop-blur">
               <span className="grid place-items-center w-9 h-9 rounded-xl bg-gold-400/15 text-gold-500 shrink-0">
                 <Smartphone className="w-4.5 h-4.5" />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-midnight-50">
+                <p className="text-sm font-semibold text-ink">
                   Get notifications on iPhone
                 </p>
-                <p className="text-xs text-midnight-400">2 steps · takes 10 seconds</p>
+                <p className="text-xs text-soft">2 steps · takes 10 seconds</p>
               </div>
               <button
                 onClick={() => setShowIosSheet(true)}
-                className="cta-button px-3 py-2 rounded-lg text-xs font-semibold shrink-0"
+                className="f0-press f0-focus shrink-0 rounded-lg bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-3 py-2 text-xs"
               >
                 Show me
               </button>
               <button
                 onClick={dismiss}
                 aria-label="Dismiss"
-                className="text-midnight-500 hover:text-midnight-300 shrink-0"
+                className="f0-focus shrink-0 rounded text-soft transition-colors hover:text-ink"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -304,7 +304,7 @@ export default function NotificationOnboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+            className="bg-scrim fixed inset-0 z-[95] flex items-end justify-center p-4 backdrop-blur-sm sm:items-center"
             onClick={() => setShowIosSheet(false)}
           >
             <m.div
@@ -313,21 +313,21 @@ export default function NotificationOnboard() {
               exit={{ y: 40, opacity: 0 }}
               transition={{ type: "spring", damping: 26, stiffness: 260 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-3xl bg-midnight-900 border border-sand p-6 shadow-2xl"
+              className="w-full max-w-sm rounded-3xl border border-sand bg-card p-6 shadow-[var(--shadow-lift)]"
             >
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-display text-lg font-bold text-midnight-50">
+                <h3 className="font-display text-lg font-bold text-ink">
                   Add to Home Screen
                 </h3>
                 <button
                   onClick={() => setShowIosSheet(false)}
                   aria-label="Close"
-                  className="text-midnight-500 hover:text-midnight-300"
+                  className="f0-focus rounded text-soft transition-colors hover:text-ink"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-midnight-400 mb-5">
+              <p className="text-sm text-soft mb-5">
                 Notifications on iPhone need the app on your Home Screen. Two taps:
               </p>
 
@@ -336,9 +336,9 @@ export default function NotificationOnboard() {
                   <span className="grid place-items-center w-8 h-8 rounded-full bg-gold-400/15 text-gold-500 text-sm font-bold shrink-0">
                     1
                   </span>
-                  <span className="text-sm text-midnight-100 flex items-center gap-1.5">
+                  <span className="text-sm text-ink flex items-center gap-1.5">
                     Tap the{" "}
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-midnight-800 text-gold-400 font-medium">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-sand px-1.5 py-0.5 font-medium text-accent">
                       <Share className="w-3.5 h-3.5" /> Share
                     </span>{" "}
                     icon in Safari
@@ -348,16 +348,16 @@ export default function NotificationOnboard() {
                   <span className="grid place-items-center w-8 h-8 rounded-full bg-gold-400/15 text-gold-500 text-sm font-bold shrink-0">
                     2
                   </span>
-                  <span className="text-sm text-midnight-100 flex items-center gap-1.5">
+                  <span className="text-sm text-ink flex items-center gap-1.5">
                     Choose{" "}
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-midnight-800 text-midnight-100 font-medium">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-sand px-1.5 py-0.5 font-medium text-ink">
                       <Plus className="w-3.5 h-3.5" /> Add to Home Screen
                     </span>
                   </span>
                 </li>
               </ol>
 
-              <p className="text-xs text-midnight-500 mt-5 leading-relaxed">
+              <p className="text-xs text-ink0 mt-5 leading-relaxed">
                 Then open the app from your Home Screen and tap anywhere once — it
                 turns notifications on by itself.
               </p>
@@ -367,7 +367,7 @@ export default function NotificationOnboard() {
                   setShowIosSheet(false);
                   dismiss();
                 }}
-                className="mt-5 w-full cta-button px-4 py-2.5 rounded-xl text-sm font-semibold"
+                className="f0-press f0-focus mt-5 w-full rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-4 py-2.5 text-sm"
               >
                 Got it
               </button>

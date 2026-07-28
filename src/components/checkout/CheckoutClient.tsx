@@ -24,6 +24,13 @@ import {
  * toggling an order bump just updates that amount in place (no remount) and the
  * Payment Element reprices itself. On submit the payment form creates the
  * subscription server-side and confirms its invoice PaymentIntent inline.
+ *
+ * BOARD NOTE: the payment surface is a white `club-b-card` object on the warm
+ * paper (no lift shadow — the board draws none in light) and the fallback
+ * action is the board's FLAT solid-orange button. No `--accent-gradient`
+ * plumbing is needed any more: `bg-accent` reads `--accent-solid`, which the
+ * `data-mode="club"` on this element already re-points. EVERY price, plan name
+ * and terms string on this flow is untouched.
  */
 
 let stripeCache: Promise<Stripe | null> | null = null;
@@ -150,20 +157,6 @@ export default function CheckoutClient({
     <div
       data-mode="club"
       className="min-h-screen bg-paper text-ink"
-      // TOKEN PLUMBING, not decoration. `--accent-gradient` is declared on
-      // :root, so its var(--accent-a/b) references resolve against :ROOT's
-      // values — re-pointing --accent-a via [data-mode="club"] on this
-      // DESCENDANT does not reach it, and the .cta-button below renders FAMILY
-      // GOLD on the checkout page. Re-declaring the expression here makes it
-      // resolve against this element's club accents. Same defect L6 fixed on
-      // the pre-auth wrappers; the dashboard never hit it because ModeManager
-      // stamps data-mode on <html>, which IS :root.
-      style={
-        {
-          "--accent-gradient":
-            "linear-gradient(135deg, var(--accent-a), var(--accent-b))",
-        } as React.CSSProperties
-      }
     >
       {/* Header */}
       <header className="border-b border-sand">
@@ -209,7 +202,7 @@ export default function CheckoutClient({
           <div className="min-w-0 lg:order-1">
             <div
               ref={cardRef}
-              className="rounded-2xl border border-sand bg-card p-5 shadow-lift sm:p-7"
+              className="club-b-card p-5 sm:p-7"
             >
               {stripePromise && containerReady ? (
                 <Elements stripe={stripePromise} options={elementsOptions}>
@@ -234,7 +227,7 @@ export default function CheckoutClient({
                     <div className="h-11 rounded-xl bg-sand" />
                     <div className="h-11 rounded-xl bg-sand" />
                   </div>
-                  <div className="mt-2 h-12 rounded-xl bg-gold-400/30" />
+                  <div className="mt-2 h-12 rounded-xl bg-accent/30" />
                 </div>
               ) : (
                 // No publishable key → straight to the hosted escape hatch.
@@ -247,7 +240,7 @@ export default function CheckoutClient({
                   </h3>
                   <a
                     href={fallbackHref}
-                    className="cta-button mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-[15px]"
+                    className="f0-press f0-focus mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
                   >
                     <Lock className="h-4 w-4" /> Secure checkout
                   </a>

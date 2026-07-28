@@ -3,8 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, m } from "@/lib/motion";
-import { Mail, Phone, ArrowRight, Loader2, ShieldCheck, Sparkles, X } from "lucide-react";
-import { TopBar, ProgressBar, FunnelStage, Field } from "@/components/free-class/ui";
+import { Mail, Phone, ArrowRight, ShieldCheck, Sparkles, X } from "lucide-react";
+import {
+  FunnelPage,
+  FunnelSkeleton,
+  TopBar,
+  ProgressBar,
+  FunnelStage,
+  Field,
+  Mast,
+  Action,
+  Terms,
+  FormError,
+  Spinner,
+} from "@/components/free-class/ui";
 import {
   QUIZ,
   FUNNEL_STEPS,
@@ -115,42 +127,39 @@ export default function SavePage() {
     router.push(`/free-class/q/${QUIZ.length}`);
   }
 
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
-      </div>
-    );
-  }
+  if (!ready) return <FunnelSkeleton bar />;
 
   const current = FUNNEL_STEPS.indexOf("save") + 1;
 
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col">
+    <FunnelPage>
       <TopBar />
       <ProgressBar current={current} total={FUNNEL_STEPS.length} onBack={back} />
 
       <AnimatePresence mode="wait">
         <FunnelStage stageKey="save">
-          <div className="text-center mb-6">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-[11px] font-display font-bold uppercase tracking-[0.14em] mb-4">
-              <Sparkles className="w-3 h-3" /> Almost there
-            </span>
-            <h2 className="font-display text-2xl font-bold text-ink leading-snug">
-              {challenge
+          <Mast
+            size="md"
+            eyebrow={
+              <>
+                <Sparkles className="h-3 w-3" /> Almost there
+              </>
+            }
+            title={
+              challenge
                 ? "See your challenge plan"
                 : solo
                   ? "See your result"
-                  : "See your family's result"}
-            </h2>
-            <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
-              {challenge
+                  : "See your family's result"
+            }
+            lede={
+              challenge
                 ? "Enter your email to unlock your personalized challenge plan and lock in your spot for Sept 1."
-                : "Enter your email to unlock your personalized result and hold your seat for this week's class."}
-            </p>
-          </div>
+                : "Enter your email to unlock your personalized result and hold your seat for this week's class."
+            }
+          />
 
-          <div className="space-y-3">
+          <div className="mt-6 space-y-3">
             <Field icon={Mail} type="email" placeholder="Email address" value={email} onChange={setEmail} autoFocus />
             <Field
               icon={Phone}
@@ -159,14 +168,14 @@ export default function SavePage() {
               value={phone}
               onChange={setPhone}
             />
-            <label className="flex items-start gap-2.5 px-1 py-1 cursor-pointer select-none">
+            <label className="club-b-card flex cursor-pointer select-none items-start gap-3 px-4 py-3.5">
               <input
                 type="checkbox"
                 checked={smsOptin}
                 onChange={(e) => setSmsOptin(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-sand text-gold-500 focus:ring-gold-400/30"
+                className="f0-focus mt-0.5 h-4 w-4 rounded border-sand accent-[color:var(--accent-solid)]"
               />
-              <span className="text-sm text-soft leading-snug">
+              <span className="text-[14px] leading-snug text-soft">
                 {challenge
                   ? "Text me challenge reminders so I don't miss a day."
                   : "Text me a reminder before class starts."}
@@ -174,27 +183,26 @@ export default function SavePage() {
             </label>
           </div>
 
-          {error && <p className="mt-3 text-sm text-red-600 font-body">{error}</p>}
+          {error && <FormError>{error}</FormError>}
 
-          <button
-            onClick={submit}
-            disabled={submitting}
-            className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] disabled:opacity-50"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Saving…
-              </>
-            ) : (
-              <>
-                See my result <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-          <p className="mt-3 text-center text-xs text-soft flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Education only. No spam, no card. Unsubscribe anytime.
-          </p>
+          <div className="mt-5">
+            <Action onClick={submit} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Spinner /> Saving…
+                </>
+              ) : (
+                <>
+                  See my result <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Action>
+          </div>
+          <div className="mt-3">
+            <Terms icon={ShieldCheck}>
+              Education only. No spam, no card. Unsubscribe anytime.
+            </Terms>
+          </div>
         </FunnelStage>
       </AnimatePresence>
 
@@ -213,19 +221,22 @@ export default function SavePage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="paper-card relative w-full max-w-sm p-6 text-center"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Your result is one step away"
+              className="club-b-card relative w-full max-w-sm p-6 text-center shadow-lift"
             >
               <button
                 onClick={() => setShowExit(false)}
-                className="absolute right-3 top-3 text-soft hover:text-ink transition-colors"
+                className="f0-focus absolute right-3 top-3 rounded text-soft transition-colors hover:text-ink"
                 aria-label="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
-              <h3 className="font-display text-xl font-bold text-ink">
+              <h3 className="font-display text-[1.25rem] font-extrabold tracking-[-0.02em] text-ink">
                 Your result is one step away
               </h3>
-              <p className="text-soft text-sm mt-2 max-w-xs mx-auto leading-relaxed">
+              <p className="mx-auto mt-2 max-w-xs text-[14px] leading-relaxed text-soft">
                 You&apos;ve already answered the questions — add your email and we&apos;ll show you
                 {challenge
                   ? " the plan built for how you're starting (and lock in your spot)."
@@ -233,16 +244,13 @@ export default function SavePage() {
                     ? " the plan built for how you're starting (and save your seat)."
                     : " the class built for your family (and save your seat)."}
               </p>
-              <button
-                onClick={() => setShowExit(false)}
-                className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[15px]"
-              >
-                Show me my result
-              </button>
+              <div className="mt-5">
+                <Action onClick={() => setShowExit(false)}>Show me my result</Action>
+              </div>
             </m.div>
           </m.div>
         )}
       </AnimatePresence>
-    </div>
+    </FunnelPage>
   );
 }

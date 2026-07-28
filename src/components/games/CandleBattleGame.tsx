@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
-import { Check, X } from "lucide-react";
+import { Check, X, ArrowRight } from "lucide-react";
+import { EmptyLine, TextAction } from "@/components/f0/parts";
 import { useGameRounds } from "@/lib/games/useGameRounds";
 import type { CandleChart } from "@/lib/games/types";
 import FormingCandle from "./FormingCandle";
@@ -16,6 +17,19 @@ import { useGameSound } from "./useGameSound";
 type Phase = "forming" | "decision" | "resolving" | "result";
 const FORM_MS = 2200;
 const RESOLVE_MS = 1100;
+
+/* The two calls wear the PRICE tokens, not Tailwind's raw green-500/red-500 —
+   the raw ramp does not re-map at :root[data-theme="dark"] and the price tokens
+   do (and are club-mode aware). Card geometry comes from .club-b-card; only the
+   tint and the hairline are overridden here. */
+const CALL_UP: React.CSSProperties = {
+  borderColor: "color-mix(in srgb, var(--price-up) 45%, transparent)",
+  background: "color-mix(in srgb, var(--price-up) 11%, var(--card))",
+};
+const CALL_DOWN: React.CSSProperties = {
+  borderColor: "color-mix(in srgb, var(--price-down) 45%, transparent)",
+  background: "color-mix(in srgb, var(--price-down) 11%, var(--card))",
+};
 
 export default function CandleBattleGame() {
   const g = useGameRounds("candle-battle");
@@ -121,17 +135,17 @@ export default function CandleBattleGame() {
 
   /* LOADING ≠ EMPTY (§0.4). A spinner here was indistinguishable from the
      "no rounds are loaded" state below, which is a real state whenever the
-     `game_items` set is unpublished. This skeleton is the game's own shape. */
+     `game_items` set is unpublished. This skeleton is the game's own shape:
+     the dark HUD bar, the ask card, the island stage, the control pair. */
   if (g.loading) {
     return (
       <div className="mx-auto max-w-2xl" aria-busy="true">
-        <div className="h-3 w-28 animate-pulse rounded bg-sand" />
-        <div className="mt-3 h-9 w-56 animate-pulse rounded bg-sand" />
-        <div className="mt-5 h-1 w-full animate-pulse rounded-full bg-sand/60" />
-        <div className="mt-6 h-64 animate-pulse rounded-2xl bg-sand/40" />
+        <div className="night-island mb-4 h-[132px] animate-pulse" />
+        <div className="club-b-card h-12 animate-pulse" />
+        <div className="night-island mt-4 h-64 animate-pulse" />
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
-          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
+          <div className="club-b-card h-16 animate-pulse" />
+          <div className="club-b-card h-16 animate-pulse" />
         </div>
       </div>
     );
@@ -155,14 +169,16 @@ export default function CandleBattleGame() {
 
   if (!round || !data) {
     return (
-      <div className="mx-auto max-w-2xl border-l-2 border-sand py-1 pl-4">
-        <p className="font-display text-display-3 font-extrabold text-ink">
-          No rounds are loaded
-        </p>
-        <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
-          Candle Battle draws its rounds from the published set. There is nothing to play
-          right now — nothing is being generated in its place.
-        </p>
+      <div className="mx-auto max-w-2xl">
+        <EmptyLine
+          title="No rounds are loaded"
+          body="Candle Battle draws its rounds from the published set. There is nothing to play right now — nothing is being generated in its place."
+          action={
+            <TextAction href="/games">
+              Back to games <ArrowRight className="h-3.5 w-3.5" />
+            </TextAction>
+          }
+        />
       </div>
     );
   }
@@ -181,9 +197,11 @@ export default function CandleBattleGame() {
         onToggleSound={sound.toggle}
       />
 
-      {/* Scenario. The round number lives in the top bar, so this is the ask
-          and nothing else — a lede over the stage, not a chip in a row. */}
-      <p className="mb-4 text-[15px] leading-relaxed text-ink">{round.prompt}</p>
+      {/* The ask, as its own card. The round number lives in the HUD above, so
+          this object carries the scenario and nothing else. */}
+      <div className="club-b-card mb-4 px-4 py-3">
+        <p className="text-[15px] leading-relaxed text-ink">{round.prompt}</p>
+      </div>
 
       {/* dark night-island stage */}
       <m.div
@@ -222,13 +240,15 @@ export default function CandleBattleGame() {
           >
             <button
               onClick={() => choose("GREEN TEAM")}
-              className="f0-focus f0-press min-h-[64px] rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20"
+              style={CALL_UP}
+              className="club-b-card f0-focus f0-press min-h-[64px] font-display text-lg font-extrabold text-price-up transition hover:brightness-[0.97]"
             >
               GREEN TEAM
             </button>
             <button
               onClick={() => choose("RED TEAM")}
-              className="f0-focus f0-press min-h-[64px] rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20"
+              style={CALL_DOWN}
+              className="club-b-card f0-focus f0-press min-h-[64px] font-display text-lg font-extrabold text-price-down transition hover:brightness-[0.97]"
             >
               RED TEAM
             </button>
@@ -250,15 +270,17 @@ export default function CandleBattleGame() {
             animate={{ opacity: 1, y: 0 }}
             className="mt-5"
           >
-            {/* The verdict. A hairline-ruled block, not a tinted bubble: the
-                only colour is on the outcome word, and it is a PRICE colour
-                because the outcome literally is who won the price battle. */}
+            {/* The verdict card. The only colour is on the outcome word and
+                its edge, and it is a PRICE colour because the outcome literally
+                is who won the price battle. */}
             <div
-              className={`border-l-2 pl-4 ${
-                correct ? "border-green-500/60" : "border-red-500/60"
-              }`}
+              className="club-b-card px-4 py-3.5"
+              style={{
+                borderLeftWidth: 3,
+                borderLeftColor: correct ? "var(--price-up)" : "var(--price-down)",
+              }}
             >
-              <p className="mb-1.5 font-display text-eyebrow font-bold uppercase">
+              <p className="mb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em]">
                 {correct ? (
                   <span className="flex items-center gap-1.5 text-price-up">
                     <Check className="h-3.5 w-3.5" /> Correct — {round.answer} won
@@ -273,7 +295,7 @@ export default function CandleBattleGame() {
             </div>
             <button
               onClick={g.advance}
-              className="f0-focus f0-press mt-4 min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
+              className="f0-focus f0-press mt-4 min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
             >
               {g.index + 1 >= g.total ? "See results" : "Next battle"}
             </button>
@@ -281,15 +303,16 @@ export default function CandleBattleGame() {
         )}
       </AnimatePresence>
 
-      {/* First-round primer — a hairline note, not a boxed tip card. */}
+      {/* First-round primer — one card row, the same object the games index is
+          made of, so the primer speaks the surface's own language. */}
       {g.index === 0 && phase === "forming" && (
-        <div className="f0-rule-top mt-6 flex items-center gap-3 pt-4">
+        <div className="club-b-card mt-6 flex items-center gap-3 px-4 py-3">
           <Image
             src="/art/tug-of-war.jpg"
             alt=""
             width={64}
             height={64}
-            className="h-12 w-12 shrink-0 rounded-lg object-cover"
+            className="h-12 w-12 shrink-0 rounded-[10px] object-cover"
           />
           <p className="text-[13px] leading-relaxed text-soft">
             Every candle is a tug-of-war. The{" "}

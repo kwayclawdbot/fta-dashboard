@@ -17,14 +17,13 @@ import {
 import { initialsOf } from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
 import { TIER_CONFIG } from "@/lib/tier";
-import {
-  tierChipClass,
-  roleChipClass,
-  recencyBucket,
-  type TimelineType,
-} from "@/lib/crm";
+import { recencyBucket, type TimelineType } from "@/lib/crm";
 
-/* ── Avatar (admin dark theme, initials fallback) ─────────────────────────── */
+/* ── Avatar (paper canvas, initials fallback) ─────────────────────────────── */
+
+/** One chip geometry for the whole console: hairline card, or ink fill when
+ *  the chip is the marked one. Colour never carries the meaning alone. */
+const CHIP = "f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]";
 
 const AV_SIZES: Record<string, string> = {
   sm: "w-7 h-7 text-[10px]",
@@ -45,7 +44,7 @@ export function AdminAvatar({
   size?: keyof typeof AV_SIZES;
 }) {
   const ring =
-    tier === "fta" ? "ring-2 ring-amber-400/60 ring-offset-1 ring-offset-[#0a0a0f]" : "";
+    tier === "fta" ? "ring-2 ring-accent/60 ring-offset-1 ring-offset-card" : "";
   const base = `${AV_SIZES[size]} rounded-full shrink-0 ${ring}`;
   if (avatarUrl) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -54,13 +53,13 @@ export function AdminAvatar({
         src={avatarUrl}
         alt={name || "Member"}
         loading="lazy"
-        className={`${base} object-cover bg-zinc-800`}
+        className={`${base} object-cover bg-paper`}
       />
     );
   }
   return (
     <div
-      className={`${base} bg-zinc-800 text-zinc-300 flex items-center justify-center font-bold`}
+      className={`${base} border border-sand bg-paper text-ink flex items-center justify-center font-bold`}
     >
       {initialsOf(name)}
     </div>
@@ -70,24 +69,18 @@ export function AdminAvatar({
 /* ── chips ────────────────────────────────────────────────────────────────── */
 
 export function TierChip({ tier }: { tier: FamilyTier }) {
+  // FTA is the one tier the console marks; everything else is a hairline chip.
   return (
-    <span
-      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${tierChipClass(
-        tier
-      )}`}
-    >
+    <span className={`${CHIP} ${tier === "fta" ? "f0-chip-accent text-accent" : "text-soft"}`}>
       {TIER_CONFIG[tier].label}
     </span>
   );
 }
 
 export function RoleChip({ role }: { role: string }) {
+  // Admin is the only role worth marking in a console full of members.
   return (
-    <span
-      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${roleChipClass(
-        role
-      )}`}
-    >
+    <span className={`${CHIP} ${role === "admin" ? "f0-chip-on" : "text-soft"}`}>
       {role}
     </span>
   );
@@ -99,27 +92,23 @@ export function ContactKindChip({
   kind: "lead" | "free" | "fic" | "fta";
 }) {
   const META: Record<string, { label: string; cls: string }> = {
-    lead: { label: "Lead", cls: "text-sky-300 bg-sky-500/10" },
-    free: { label: "Free", cls: "text-zinc-300 bg-zinc-700/50" },
-    fic: { label: "FIC", cls: "text-blue-300 bg-blue-500/10" },
-    fta: { label: "FTA", cls: "text-amber-300 bg-amber-400/10" },
+    lead: { label: "Lead", cls: "text-soft" },
+    free: { label: "Free", cls: "text-soft" },
+    fic: { label: "FIC", cls: "text-ink" },
+    fta: { label: "FTA", cls: "f0-chip-accent text-accent" },
   };
   const m = META[kind] ?? META.free;
-  return (
-    <span
-      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${m.cls}`}
-    >
-      {m.label}
-    </span>
-  );
+  return <span className={`${CHIP} ${m.cls}`}>{m.label}</span>;
 }
 
+/* Recency reads as WEIGHT, not hue — green/red belong to price. A live
+   contact gets the solid accent dot, a cold one an empty hairline ring. */
 const DOT: Record<string, string> = {
-  today: "bg-emerald-400",
-  week: "bg-lime-400",
-  month: "bg-amber-400",
-  dormant: "bg-red-400",
-  never: "bg-zinc-600",
+  today: "bg-accent",
+  week: "bg-ink",
+  month: "bg-soft",
+  dormant: "bg-soft/40",
+  never: "border border-sand",
 };
 
 export function LastSeenDot({ iso }: { iso: string | null | undefined }) {
@@ -138,24 +127,24 @@ const ICONS: Record<
   TimelineType,
   { icon: typeof Zap; color: string; bg: string }
 > = {
-  xp: { icon: Zap, color: "text-amber-400", bg: "bg-amber-400/10" },
-  lesson: { icon: BookOpen, color: "text-emerald-400", bg: "bg-emerald-400/10" },
-  quiz: { icon: HelpCircle, color: "text-blue-400", bg: "bg-blue-400/10" },
-  post: { icon: MessageSquare, color: "text-purple-400", bg: "bg-purple-400/10" },
-  comment: { icon: MessageCircle, color: "text-purple-300", bg: "bg-purple-400/10" },
-  mission: { icon: Target, color: "text-pink-400", bg: "bg-pink-400/10" },
-  rsvp: { icon: CalendarCheck, color: "text-sky-400", bg: "bg-sky-400/10" },
-  badge: { icon: Award, color: "text-yellow-400", bg: "bg-yellow-400/10" },
-  chat: { icon: MessageCircle, color: "text-zinc-300", bg: "bg-zinc-700/40" },
-  lead: { icon: UserPlus, color: "text-sky-400", bg: "bg-sky-400/10" },
-  comm: { icon: Send, color: "text-teal-400", bg: "bg-teal-400/10" },
+  xp: { icon: Zap, color: "text-accent", bg: "bg-accent/10" },
+  lesson: { icon: BookOpen, color: "text-soft", bg: "bg-paper" },
+  quiz: { icon: HelpCircle, color: "text-soft", bg: "bg-paper" },
+  post: { icon: MessageSquare, color: "text-soft", bg: "bg-paper" },
+  comment: { icon: MessageCircle, color: "text-soft", bg: "bg-paper" },
+  mission: { icon: Target, color: "text-soft", bg: "bg-paper" },
+  rsvp: { icon: CalendarCheck, color: "text-soft", bg: "bg-paper" },
+  badge: { icon: Award, color: "text-soft", bg: "bg-paper" },
+  chat: { icon: MessageCircle, color: "text-ink", bg: "bg-paper" },
+  lead: { icon: UserPlus, color: "text-soft", bg: "bg-paper" },
+  comm: { icon: Send, color: "text-soft", bg: "bg-paper" },
 };
 
 export function ActivityIcon({ type }: { type: TimelineType }) {
   const conf = ICONS[type] ?? {
     icon: Activity,
-    color: "text-zinc-400",
-    bg: "bg-zinc-800",
+    color: "text-soft",
+    bg: "bg-paper",
   };
   const Icon = conf.icon;
   return (
@@ -173,7 +162,7 @@ export function StatTile({
   label,
   value,
   sub,
-  accent = "text-zinc-100",
+  accent = "text-ink",
 }: {
   label: string;
   value: React.ReactNode;
@@ -181,10 +170,14 @@ export function StatTile({
   accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-      <p className={`text-2xl font-bold ${accent}`}>{value}</p>
-      <p className="text-xs text-zinc-500 mt-1">{label}</p>
-      {sub ? <p className="text-[11px] text-zinc-600 mt-0.5">{sub}</p> : null}
+    <div className="club-b-card p-4">
+      <p className={`font-mono text-2xl font-semibold tabular-nums ${accent}`}>
+        {value}
+      </p>
+      <p className="mt-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
+        {label}
+      </p>
+      {sub ? <p className="mt-1 text-[11px] text-soft">{sub}</p> : null}
     </div>
   );
 }
@@ -193,7 +186,7 @@ export function StatTile({
 
 export function BarChart({
   data,
-  color = "#fbbf24",
+  color = "var(--accent-solid)",
   height = 140,
   format,
 }: {
@@ -249,15 +242,14 @@ export function CrmNav({ active }: { active: "overview" | "members" }) {
     { id: "members", label: "Members", href: "/admin/crm/members" },
   ] as const;
   return (
-    <div className="flex items-center gap-1 border-b border-zinc-800 mb-6">
+    <div className="mb-6 flex items-center gap-2">
       {tabs.map((t) => (
         <Link
           key={t.id}
           href={t.href}
-          className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
-            active === t.id
-              ? "border-amber-400 text-amber-400"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+          aria-current={active === t.id ? "page" : undefined}
+          className={`f0-chip f0-press f0-focus px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] ${
+            active === t.id ? "f0-chip-on" : "text-soft hover:text-ink"
           }`}
         >
           {t.label}

@@ -288,24 +288,24 @@ export default function AdminShopPage() {
 
   if (loading)
     return (
-      <div className="flex h-64 items-center justify-center text-zinc-400">
+      <div className="flex h-64 items-center justify-center text-soft">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 text-zinc-100">
+    <div className="mx-auto max-w-6xl px-4 py-6 text-ink">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-amber-400">Shop</h1>
-          <p className="text-sm text-zinc-400">
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">Shop</h1>
+          <p className="text-sm text-soft">
             Physical books &amp; bundles · Lulu print-on-demand fulfillment
           </p>
         </div>
         {tab === "products" && (
           <button
             onClick={() => setEditing(emptyDraft())}
-            className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-amber-400"
+            className="f0-press f0-focus flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-[color:var(--accent-on)] hover:bg-accent-strong"
           >
             <Plus className="h-4 w-4" /> New product
           </button>
@@ -313,9 +313,9 @@ export default function AdminShopPage() {
       </div>
 
       {banner && (
-        <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent">
           <span>{banner}</span>
-          <button onClick={() => setBanner(null)} className="text-amber-300 hover:text-amber-100">
+          <button onClick={() => setBanner(null)} className="text-accent hover:text-accent-strong">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -327,7 +327,7 @@ export default function AdminShopPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize ${
-              tab === t ? "bg-zinc-800 text-amber-400" : "text-zinc-400 hover:text-zinc-200"
+              tab === t ? "bg-paper text-accent" : "text-soft hover:text-ink"
             }`}
           >
             {t}
@@ -336,9 +336,9 @@ export default function AdminShopPage() {
       </div>
 
       {tab === "products" ? (
-        <div className="overflow-hidden rounded-xl border border-zinc-800">
+        <div className="club-b-card overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-500">
+            <thead className="bg-paper font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
               <tr>
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Kind</th>
@@ -349,40 +349,40 @@ export default function AdminShopPage() {
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-sand">
               {products.map((p) => {
                 const ready =
                   p.kind === "bundle"
                     ? true
                     : Boolean(p.lulu_pod_package_id && p.interior_pdf_path && p.cover_pdf_path);
                 return (
-                  <tr key={p.id} className="hover:bg-zinc-900/40">
+                  <tr key={p.id} className="hover:bg-paper">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-zinc-100">{p.title}</div>
-                      <div className="text-xs text-zinc-500">{p.slug}</div>
+                      <div className="font-medium text-ink">{p.title}</div>
+                      <div className="text-xs text-soft">{p.slug}</div>
                     </td>
-                    <td className="px-4 py-3 text-zinc-300">{p.kind ? KIND_LABELS[p.kind] : "—"}</td>
-                    <td className="px-4 py-3 text-zinc-300">
+                    <td className="px-4 py-3 text-ink">{p.kind ? KIND_LABELS[p.kind] : "—"}</td>
+                    <td className="px-4 py-3 text-ink">
                       {p.audience ? AUDIENCE_LABELS[p.audience] : "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-300">{formatUsd(p.price_cents)}</td>
+                    <td className="px-4 py-3 text-ink">{formatUsd(p.price_cents)}</td>
                     <td className="px-4 py-3">
                       {p.kind === "bundle" ? (
-                        <span className="text-xs text-zinc-500">n/a (bundle)</span>
+                        <span className="text-xs text-soft">n/a (bundle)</span>
                       ) : ready ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-400">
+                        <span className="inline-flex items-center gap-1 text-xs text-soft">
                           <Check className="h-3.5 w-3.5" /> Ready
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-amber-400">
+                        <span className="inline-flex items-center gap-1 text-xs text-accent">
                           <AlertTriangle className="h-3.5 w-3.5" /> Needs setup
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          p.active ? "bg-green-500/15 text-green-400" : "bg-zinc-700/40 text-zinc-400"
+                        className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                          p.active ? "f0-chip-accent text-accent" : "text-soft"
                         }`}
                       >
                         {p.active ? "Live" : "Draft"}
@@ -392,13 +392,13 @@ export default function AdminShopPage() {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => setEditing(draftFrom(p, bundleItems))}
-                          className="rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-amber-400"
+                          className="rounded p-1.5 text-soft hover:bg-paper hover:text-accent-strong"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => remove(p.id)}
-                          className="rounded p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-red-400"
+                          className="rounded p-1.5 text-soft hover:bg-paper hover:text-accent-strong"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -461,8 +461,9 @@ function OrdersPanel({
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              filter === s ? "bg-amber-500 text-zinc-900" : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+            aria-pressed={filter === s}
+            className={`f0-chip f0-press f0-focus px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${
+              filter === s ? "f0-chip-on" : "text-soft hover:text-ink"
             }`}
           >
             {s === "all" ? "All" : ORDER_STATUS_LABELS[s]}
@@ -471,7 +472,7 @@ function OrdersPanel({
       </div>
 
       {orders.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500">
+        <p className="rounded-xl border border-dashed border-sand p-8 text-center text-soft">
           No orders yet.
         </p>
       ) : (
@@ -481,26 +482,24 @@ function OrdersPanel({
             const shipping = (o.shipping as any) || {};
             const addr = shipping.address || {};
             return (
-              <div key={o.id} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+              <div key={o.id} className="club-b-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-zinc-100">{o.customer_name || o.email}</span>
+                      <span className="font-medium text-ink">{o.customer_name || o.email}</span>
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                           o.status === "shipped"
-                            ? "bg-green-500/15 text-green-400"
+                            ? "f0-chip-on"
                             : o.status === "fulfillment_error"
-                              ? "bg-red-500/15 text-red-400"
-                              : o.status === "in_production" || o.status === "submitted"
-                                ? "bg-sky-500/15 text-sky-400"
-                                : "bg-zinc-700/40 text-zinc-300"
+                              ? "f0-chip-accent text-accent"
+                              : "text-soft"
                         }`}
                       >
                         {ORDER_STATUS_LABELS[o.status]}
                       </span>
                     </div>
-                    <div className="mt-0.5 text-xs text-zinc-500">
+                    <div className="mt-0.5 text-xs text-soft">
                       {o.email} · {formatUsd(o.amount_total)} ·{" "}
                       {new Date(o.created_at).toLocaleString()}
                     </div>
@@ -509,7 +508,7 @@ function OrdersPanel({
                     <button
                       disabled={busy}
                       onClick={() => onAction(o.id, "submit")}
-                      className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-amber-400 disabled:opacity-50"
+                      className="f0-press f0-focus flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-[color:var(--accent-on)] hover:bg-accent-strong disabled:opacity-50"
                     >
                       <Send className="h-3.5 w-3.5" /> Submit to Lulu
                     </button>
@@ -517,7 +516,7 @@ function OrdersPanel({
                       <button
                         disabled={busy}
                         onClick={() => onAction(o.id, "sync")}
-                        className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-xs font-semibold text-ink hover:bg-paper disabled:opacity-50"
                       >
                         <RefreshCw className="h-3.5 w-3.5" /> Sync
                       </button>
@@ -526,21 +525,21 @@ function OrdersPanel({
                 </div>
 
                 {awaiting && (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
                     Awaiting fulfillment setup — add Lulu credentials, then set each book&apos;s
                     pod_package_id + print PDFs, then Submit to Lulu.
                   </div>
                 )}
                 {o.error && !awaiting && (
-                  <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                  <div className="mt-3 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-accent">
                     {o.error}
                   </div>
                 )}
 
-                <div className="mt-3 grid gap-3 text-xs text-zinc-400 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 text-xs text-soft sm:grid-cols-2">
                   <div>
-                    <div className="mb-1 font-semibold text-zinc-500">Items</div>
+                    <div className="mb-1 font-semibold text-soft">Items</div>
                     <ul className="space-y-0.5">
                       {(o.items || []).map((it) => (
                         <li key={it.id}>
@@ -551,7 +550,7 @@ function OrdersPanel({
                     </ul>
                   </div>
                   <div>
-                    <div className="mb-1 font-semibold text-zinc-500">Ship to</div>
+                    <div className="mb-1 font-semibold text-soft">Ship to</div>
                     <div className="flex items-start gap-1.5">
                       <Package className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
@@ -563,7 +562,7 @@ function OrdersPanel({
                       </span>
                     </div>
                     {o.lulu_job_id && (
-                      <div className="mt-1 text-zinc-500">Lulu job: {o.lulu_job_id}</div>
+                      <div className="mt-1 text-soft">Lulu job: {o.lulu_job_id}</div>
                     )}
                     {(o.tracking as any)?.items?.map((t: any, i: number) => (
                       <div key={i} className="mt-1">
@@ -573,7 +572,7 @@ function OrdersPanel({
                             href={t.tracking_urls[0]}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-0.5 text-amber-400"
+                            className="inline-flex items-center gap-0.5 text-accent"
                           >
                             track <ExternalLink className="h-3 w-3" />
                           </a>
@@ -613,17 +612,17 @@ function ProductEditor({
 }) {
   const isBundle = draft.kind === "bundle";
   const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
-  const field = "w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-amber-500 focus:outline-none";
-  const label = "mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-500";
+  const field = "w-full rounded-lg border border-sand bg-card px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none";
+  const label = "mb-1 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4">
-      <div className="my-8 w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-scrim p-4">
+      <div className="my-8 w-full max-w-2xl club-b-card p-6">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-amber-400">
+          <h2 className="font-display text-[17px] font-extrabold text-ink">
             {draft.id ? "Edit product" : "New product"}
           </h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-100">
+          <button onClick={onClose} className="text-soft hover:text-ink">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -713,12 +712,12 @@ function ProductEditor({
             />
           </div>
           <div className="flex items-end">
-            <label className="flex items-center gap-2 text-sm text-zinc-300">
+            <label className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 checked={draft.active}
                 onChange={(e) => set({ active: e.target.checked })}
-                className="h-4 w-4 accent-amber-500"
+                className="h-4 w-4 accent-[color:var(--accent-solid)]"
               />
               Active (visible on storefront)
             </label>
@@ -733,10 +732,10 @@ function ProductEditor({
                 <img
                   src={draft.cover_image_path}
                   alt=""
-                  className="h-16 w-12 rounded border border-zinc-700 object-cover"
+                  className="h-16 w-12 rounded border border-sand object-cover"
                 />
               )}
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900">
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-sand px-3 py-2 text-sm text-ink hover:bg-paper">
                 <Upload className="h-4 w-4" /> Upload cover
                 <input
                   type="file"
@@ -764,14 +763,14 @@ function ProductEditor({
                   value={draft.pod_package_id}
                   onChange={(e) => set({ pod_package_id: e.target.value })}
                 />
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-soft">
                   Lulu&apos;s SKU for trim + paper + binding. Format: trim + color + binding + paper +
                   finish. Get it from developers.lulu.com pricing.
                 </p>
               </div>
               <div>
                 <label className={label}>Interior PDF (print-files)</label>
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-sand px-3 py-2 text-sm text-ink hover:bg-paper">
                   <Upload className="h-4 w-4" /> {draft.interior_pdf_path ? "Replace" : "Upload"} interior
                   <input
                     type="file"
@@ -781,12 +780,12 @@ function ProductEditor({
                   />
                 </label>
                 {draft.interior_pdf_path && (
-                  <p className="mt-1 truncate text-xs text-green-400">{draft.interior_pdf_path}</p>
+                  <p className="mt-1 truncate text-xs text-soft">{draft.interior_pdf_path}</p>
                 )}
               </div>
               <div>
                 <label className={label}>Cover PDF (print-files)</label>
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900">
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-sand px-3 py-2 text-sm text-ink hover:bg-paper">
                   <Upload className="h-4 w-4" /> {draft.cover_pdf_path ? "Replace" : "Upload"} cover PDF
                   <input
                     type="file"
@@ -796,7 +795,7 @@ function ProductEditor({
                   />
                 </label>
                 {draft.cover_pdf_path && (
-                  <p className="mt-1 truncate text-xs text-green-400">{draft.cover_pdf_path}</p>
+                  <p className="mt-1 truncate text-xs text-soft">{draft.cover_pdf_path}</p>
                 )}
               </div>
             </>
@@ -805,7 +804,7 @@ function ProductEditor({
           {isBundle && (
             <div className="sm:col-span-2">
               <label className={label}>Bundle contents</label>
-              <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-zinc-800 p-2">
+              <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-sand p-2">
                 {products
                   .filter((p) => p.kind !== "bundle")
                   .map((p) => {
@@ -813,12 +812,12 @@ function ProductEditor({
                     return (
                       <label
                         key={p.id}
-                        className="flex items-center gap-2 rounded px-2 py-1 text-sm text-zinc-300 hover:bg-zinc-900"
+                        className="flex items-center gap-2 rounded px-2 py-1 text-sm text-ink hover:bg-paper"
                       >
                         <input
                           type="checkbox"
                           checked={checked}
-                          className="h-4 w-4 accent-amber-500"
+                          className="h-4 w-4 accent-[color:var(--accent-solid)]"
                           onChange={(e) =>
                             set({
                               bundle_product_ids: e.target.checked
@@ -828,7 +827,7 @@ function ProductEditor({
                           }
                         />
                         {p.title}
-                        <span className="ml-auto text-xs text-zinc-500">
+                        <span className="ml-auto text-xs text-soft">
                           {formatUsd(p.price_cents)}
                         </span>
                       </label>
@@ -842,14 +841,14 @@ function ProductEditor({
         <div className="mt-6 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+            className="rounded-lg border border-sand px-4 py-2 text-sm text-ink hover:bg-paper"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={busy}
-            className="flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-zinc-900 hover:bg-amber-400 disabled:opacity-50"
+            className="f0-press f0-focus flex items-center gap-2 rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-[color:var(--accent-on)] hover:bg-accent-strong disabled:opacity-50"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save
           </button>

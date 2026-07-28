@@ -37,14 +37,14 @@ import {
 } from "@/components/admin/crm/marketing-ui";
 
 const EVENT_ICON: Record<EventType, { icon: typeof Mail; color: string }> = {
-  imported: { icon: Sparkles, color: "text-zinc-400" },
-  emailed: { icon: Mail, color: "text-blue-400" },
-  smsed: { icon: MessageSquare, color: "text-emerald-400" },
-  opened: { icon: Mail, color: "text-sky-400" },
-  clicked: { icon: Mail, color: "text-violet-400" },
-  replied: { icon: MessageSquare, color: "text-amber-400" },
-  stage_changed: { icon: ArrowRightLeft, color: "text-amber-400" },
-  converted: { icon: CheckCircle2, color: "text-emerald-400" },
+  imported: { icon: Sparkles, color: "text-soft" },
+  emailed: { icon: Mail, color: "text-soft" },
+  smsed: { icon: MessageSquare, color: "text-soft" },
+  opened: { icon: Mail, color: "text-soft" },
+  clicked: { icon: Mail, color: "text-soft" },
+  replied: { icon: MessageSquare, color: "text-accent" },
+  stage_changed: { icon: ArrowRightLeft, color: "text-accent" },
+  converted: { icon: CheckCircle2, color: "text-soft" },
 };
 
 export default function PipelinePage() {
@@ -153,20 +153,21 @@ export default function PipelinePage() {
     <div className="max-w-full mx-auto">
       <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Marketing · Pipeline</h1>
-          <p className="text-zinc-400 text-sm mt-1">Drag leads across stages · click a card for the full timeline</p>
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">Marketing · Pipeline</h1>
+          <p className="text-soft text-sm mt-1">Drag leads across stages · click a card for the full timeline</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setColdOnly((v) => !v)}
-            className={`inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg font-medium transition-colors ${coldOnly ? "bg-cyan-500/15 text-cyan-300" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}
+            aria-pressed={coldOnly}
+            className={`f0-chip f0-press f0-focus inline-flex items-center gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] ${coldOnly ? "f0-chip-on" : "text-soft hover:text-ink"}`}
           >
             <Snowflake className="w-4 h-4" /> Cold only
           </button>
           <button
             onClick={runSync}
             disabled={syncing}
-            className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-emerald-500/15 text-emerald-300 font-medium hover:bg-emerald-500/25 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-sand bg-card text-soft font-medium hover:bg-paper disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} /> Sync conversions
           </button>
@@ -174,12 +175,12 @@ export default function PipelinePage() {
       </div>
 
 
-      {syncMsg && <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-2 text-sm text-emerald-300">{syncMsg}</div>}
-      {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-2 text-sm text-red-400">{error}</div>}
+      {syncMsg && <div className="mb-4 rounded-lg border border-sand bg-paper px-4 py-2 text-sm text-soft">{syncMsg}</div>}
+      {error && <div className="mb-4 rounded-lg border border-accent/40 bg-accent/10 px-4 py-2 text-sm text-accent">{error}</div>}
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-4">
@@ -198,14 +199,14 @@ export default function PipelinePage() {
                   if (id) moveLead(id, stage);
                   setDragId(null);
                 }}
-                className={`w-72 shrink-0 rounded-xl border bg-zinc-900/40 flex flex-col ${dragOver === stage ? "border-amber-400/60 bg-amber-400/5" : "border-zinc-800"}`}
+                className={`w-72 shrink-0 rounded-xl border bg-card flex flex-col ${dragOver === stage ? "border-accent/60 bg-accent/5" : "border-sand"}`}
               >
-                <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-sand">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
-                    <span className="text-sm font-semibold text-zinc-200">{meta.label}</span>
+                    <span className="w-2 h-2 rounded-full bg-accent" aria-hidden />
+                    <span className="text-sm font-semibold text-ink">{meta.label}</span>
                   </div>
-                  <span className="text-xs text-zinc-500">{items.length}</span>
+                  <span className="font-mono text-xs tabular-nums text-soft">{items.length}</span>
                 </div>
                 <div className="p-2 space-y-2 min-h-[120px] flex-1">
                   {items.map((l) => {
@@ -217,18 +218,18 @@ export default function PipelinePage() {
                         onDragStart={(e) => { setDragId(l.id); e.dataTransfer.setData("text/lead", l.id); e.dataTransfer.effectAllowed = "move"; }}
                         onDragEnd={() => setDragId(null)}
                         onClick={() => openDrawer(l.id)}
-                        className={`rounded-lg border border-zinc-800 bg-zinc-950/60 p-2.5 cursor-pointer hover:border-zinc-700 transition-colors ${dragId === l.id ? "opacity-40" : ""}`}
+                        className={`rounded-lg border border-sand bg-card p-2.5 cursor-pointer hover:border-accent/50 transition-colors ${dragId === l.id ? "opacity-40" : ""}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="text-sm font-medium text-zinc-200 truncate">{leadName(l)}</div>
-                            <div className="text-[11px] text-zinc-500 truncate">{l.email}</div>
+                            <div className="text-sm font-medium text-ink truncate">{leadName(l)}</div>
+                            <div className="text-[11px] text-soft truncate">{l.email}</div>
                           </div>
                           {l.is_cold && <ColdBadge />}
                         </div>
                         <div className="flex items-center justify-between mt-2">
                           <SourceBadge source={l.source} />
-                          <span className="inline-flex items-center gap-1 text-[10px] text-zinc-600">
+                          <span className="inline-flex items-center gap-1 text-[10px] text-soft/70">
                             <Clock className="w-3 h-3" />
                             {ds === null ? "—" : ds === 0 ? "today" : `${ds}d`}
                           </span>
@@ -241,7 +242,7 @@ export default function PipelinePage() {
                       </div>
                     );
                   })}
-                  {items.length === 0 && <div className="text-center text-[11px] text-zinc-700 py-6">Drop here</div>}
+                  {items.length === 0 && <div className="text-center text-[11px] text-soft/70 py-6">Drop here</div>}
                 </div>
               </div>
             );
@@ -252,21 +253,21 @@ export default function PipelinePage() {
       {/* drawer */}
       {openId && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={closeDrawer}>
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="relative w-full max-w-md h-full bg-[#0d0d12] border-l border-zinc-800 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-scrim" />
+          <div className="relative w-full max-w-md h-full bg-card border-l border-sand overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {detailLoading || !detail?.lead ? (
               <div className="flex items-center justify-center py-20">
-                <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
               </div>
             ) : (
               <div className="p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-lg font-bold text-zinc-100">{leadName(detail.lead)}</h2>
-                    <p className="text-sm text-zinc-500">{detail.lead.email}</p>
-                    {detail.lead.phone && <p className="text-xs text-zinc-600">{detail.lead.phone}</p>}
+                    <h2 className="font-display text-[17px] font-extrabold text-ink">{leadName(detail.lead)}</h2>
+                    <p className="text-sm text-soft">{detail.lead.email}</p>
+                    {detail.lead.phone && <p className="text-xs text-soft/70">{detail.lead.phone}</p>}
                   </div>
-                  <button onClick={closeDrawer} className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800">
+                  <button onClick={closeDrawer} className="p-1.5 rounded-lg text-soft hover:text-ink hover:bg-paper">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -275,25 +276,25 @@ export default function PipelinePage() {
                   <StageBadge stage={detail.lead.stage} />
                   <SourceBadge source={detail.lead.source} />
                   {detail.lead.converted_profile_id && (
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded text-emerald-300 bg-emerald-500/10">Account linked</span>
+                    <span className="f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-soft">Account linked</span>
                   )}
                 </div>
 
                 {/* stage select + convert */}
-                <div className="rounded-lg border border-zinc-800 p-3 mb-4">
-                  <label className="text-xs text-zinc-500 block mb-1.5">Move to stage</label>
+                <div className="club-b-card p-3 mb-4">
+                  <label className="text-xs text-soft block mb-1.5">Move to stage</label>
                   <div className="flex items-center gap-2">
                     <select
                       value={detail.lead.stage}
                       onChange={(e) => moveLead(detail.lead!.id, e.target.value as Stage)}
-                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-sm text-zinc-100"
+                      className="flex-1 bg-paper border border-sand rounded-lg px-2 py-1.5 text-sm text-ink"
                     >
                       {PIPELINE_STAGES.concat(["unsubscribed"]).map((s) => (
                         <option key={s} value={s}>{STAGE_META[s].label}</option>
                       ))}
                     </select>
                     {detail.lead.stage !== "converted" && (
-                      <button onClick={() => moveLead(detail.lead!.id, "converted")} className="inline-flex items-center gap-1 text-sm px-2.5 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 font-medium hover:bg-emerald-500/25 whitespace-nowrap">
+                      <button onClick={() => moveLead(detail.lead!.id, "converted")} className="inline-flex items-center gap-1 text-sm px-2.5 py-1.5 rounded-lg border border-sand bg-card text-soft font-medium hover:bg-paper whitespace-nowrap">
                         <CheckCircle2 className="w-4 h-4" /> Convert
                       </button>
                     )}
@@ -302,32 +303,32 @@ export default function PipelinePage() {
 
                 {/* notes */}
                 <div className="mb-4">
-                  <label className="text-xs text-zinc-500 block mb-1.5">Notes</label>
+                  <label className="text-xs text-soft block mb-1.5">Notes</label>
                   <textarea
                     value={noteDraft}
                     onChange={(e) => setNoteDraft(e.target.value)}
                     rows={3}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
+                    className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70"
                     placeholder="Private notes about this lead…"
                   />
-                  <button onClick={saveNote} disabled={savingNote} className="mt-2 text-xs px-2.5 py-1.5 rounded-lg bg-zinc-800 text-zinc-200 hover:bg-zinc-700 disabled:opacity-50">
+                  <button onClick={saveNote} disabled={savingNote} className="mt-2 text-xs px-2.5 py-1.5 rounded-lg border border-sand bg-card text-ink hover:bg-paper disabled:opacity-50">
                     {savingNote ? "Saving…" : "Save notes"}
                   </button>
                 </div>
 
                 {detail.lead.tags.length > 0 && (
                   <div className="mb-4">
-                    <label className="text-xs text-zinc-500 block mb-1.5">Tags</label>
+                    <label className="text-xs text-soft block mb-1.5">Tags</label>
                     <div className="flex flex-wrap gap-1">{detail.lead.tags.map((t) => <TagPill key={t} tag={t} />)}</div>
                   </div>
                 )}
 
                 {/* timeline */}
                 <div>
-                  <label className="text-xs text-zinc-500 block mb-2">Timeline</label>
+                  <label className="text-xs text-soft block mb-2">Timeline</label>
                   <div className="space-y-2">
                     {detail.events.length === 0 ? (
-                      <p className="text-xs text-zinc-600">No events yet.</p>
+                      <p className="text-xs text-soft/70">No events yet.</p>
                     ) : (
                       detail.events.map((ev) => {
                         const conf = EVENT_ICON[ev.type] || EVENT_ICON.imported;
@@ -342,14 +343,14 @@ export default function PipelinePage() {
                                 : "";
                         return (
                           <div key={ev.id} className="flex items-start gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-zinc-800/60 flex items-center justify-center shrink-0">
+                            <div className="w-7 h-7 rounded-lg border border-sand bg-paper flex items-center justify-center shrink-0">
                               <Icon className={`w-3.5 h-3.5 ${conf.color}`} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm text-zinc-300 capitalize">{ev.type.replace("_", " ")}</p>
-                              {metaStr && <p className="text-[11px] text-zinc-500">{metaStr}</p>}
+                              <p className="text-sm text-ink capitalize">{ev.type.replace("_", " ")}</p>
+                              {metaStr && <p className="text-[11px] text-soft">{metaStr}</p>}
                             </div>
-                            <span className="text-[10px] text-zinc-600 shrink-0">{relativeTime(ev.created_at)}</span>
+                            <span className="text-[10px] text-soft/70 shrink-0">{relativeTime(ev.created_at)}</span>
                           </div>
                         );
                       })

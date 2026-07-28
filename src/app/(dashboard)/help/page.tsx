@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Mail,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -27,34 +28,33 @@ import {
   type TicketCategory,
   type TicketStatus,
 } from "@/lib/help/tickets";
-import { SectionRule, TabRail, TextAction } from "@/components/f0/parts";
+import { DisplayHead, TextAction } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
  * /help — the support surface: a Kai help bot and a real ticket queue.
  *
- * REBUILD NOTE (canvas): the page previously wrote against the RAW midnight-*
- * ramp (bg-midnight-900, text-midnight-100 …), which is INVERTED in light mode —
- * it happened to work but described a dark app that no longer exists. Everything
- * is now on semantic tokens (ink / soft / sand / card / paper) so both themes
- * follow the surface vars, and every prose column is capped at a real reading
- * measure (~65ch). Kai's identity colour is Kai blue by law; the send affordances
- * are the brand action ramp with night-950 type (never white on gold).
+ * BOARD LANGUAGE (legacy purge): the page was built on the PREVIOUS version's
+ * structure — a `TabRail`, `SectionRule` marks, `f0-ledger` ticket rows,
+ * `f0-frame` fields and `f0-rule-top` separators. It is now the board's set: a
+ * `DisplayHead` masthead, board-07 filter pills (orange fill when active, white
+ * hairline card when not), `BoardSection` marks, white `club-b-card` objects
+ * with the ticket threads as disclosure rows INSIDE a card, and one brand-tinted
+ * contact object at the foot.
  *
- * CANVAS V2 PASS: one annotated word in the masthead; the shared focus ring and
- * press feedback on every control (a support form with no visible focus state is
- * a real accessibility failure, not a polish item); fills moved to `bg-accent`
- * so the page is mode-correct; and both empty branches are designed FOUNDING
- * STATES rather than one grey sentence — "no tickets yet" is the state almost
- * every member is in, so it is the state worth designing.
- *
- * KAI'S MARK: the bot avatar uses the shared `.f0-kai-mark` (M1) rather than a
- * local bg-kai-blue-soft/text-kai-blue pair. Kai blue is an IDENTITY colour
- * reserved for Kai/AI by law, and one class is how it stays that way.
+ * KAI'S MARK: the bot avatar uses the shared `.f0-kai-mark`. Kai blue is an
+ * IDENTITY colour reserved for Kai/AI by law, and one class is how it stays that
+ * way.
  *
  * THE SUPPORT ADDRESS: `support@cheatcode.com` is the ONLY support email in the
- * product. It is stated once, at the foot, as the last resort behind the bot and
- * the ticket queue — both of which are real, so the address is a fallback and
- * never the primary path. No other address may be introduced anywhere.
+ * product and the ONLY address on this page. It is stated once, at the foot, as
+ * the last resort behind the bot and the ticket queue — both of which are real,
+ * so the address is a fallback and never the primary path. No other address and
+ * no other channel may be introduced here.
+ *
+ * COLOUR LAW: green/red are price-only, so ticket state is carried by the
+ * neutral sand ramp plus the brand action tint for the one state that wants the
+ * member's attention. The word itself is the signal.
  */
 
 /** The one support address in the product. */
@@ -73,9 +73,6 @@ const GREETING: ChatMsg = {
     "Hi! I'm Kai, your Cheat Code Club help assistant. Ask me how anything in the app works — courses, live classes, your family, billing, and more. (I can't give trading advice — for that, stick with the lessons!)",
 };
 
-/* COLOUR LAW: green/red are price-only, so ticket state is carried by the
-   neutral sand ramp plus the brand action tint for the one state that wants
-   the member's attention. The word itself is the signal. */
 const STATUS_STYLES: Record<TicketStatus, string> = {
   open: "bg-gold-400/15 text-gold-700",
   pending: "bg-sand text-ink",
@@ -86,7 +83,7 @@ const STATUS_STYLES: Record<TicketStatus, string> = {
 function StatusChip({ status }: { status: TicketStatus }) {
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-[0.1em] ${STATUS_STYLES[status]}`}
+      className={`rounded-full px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] ${STATUS_STYLES[status]}`}
     >
       {status}
     </span>
@@ -119,11 +116,16 @@ function timeAgo(iso: string, nowHour: number | null): string {
 }
 
 const fieldCls =
-  "f0-focus f0-frame w-full rounded-lg bg-transparent px-3 py-2 text-sm text-ink placeholder:text-soft transition-colors focus:outline-none";
+  "f0-focus w-full rounded-[10px] border border-sand bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-soft focus:outline-none";
 const labelCls =
-  "mb-1.5 block text-eyebrow font-display font-bold uppercase text-soft";
+  "mb-1.5 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft";
 const sendBtnCls =
-  "f0-focus f0-press shrink-0 flex items-center justify-center rounded-lg bg-accent text-night-950 disabled:opacity-40";
+  "f0-focus f0-press grid shrink-0 place-items-center rounded-[10px] bg-accent text-[color:var(--accent-on)] disabled:opacity-40";
+
+const TABS: { id: "bot" | "team"; label: string }[] = [
+  { id: "bot", label: "Ask Kai" },
+  { id: "team", label: "The team" },
+];
 
 export default function HelpPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -286,32 +288,42 @@ export default function HelpPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 pb-16">
-      {/* Masthead */}
-      <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Support
-        </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
-          Help &amp; <span className="f0-underline-mark">Support</span>
-        </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
-          Ask the help bot a quick question, or reach a real person on the team.
-        </p>
-      </header>
+      <DisplayHead
+        eyebrow="Support"
+        title="Help &"
+        mark="Support"
+        lede="Ask the help bot a quick question, or reach a real person on the team."
+      />
 
-      <div className="mt-8">
-        <TabRail
-          ariaLabel="Help channels"
-          value={tab}
-          onChange={setTab}
-          tabs={[
-            { id: "bot", label: "Ask Kai" },
-            { id: "team", label: "The team" },
-          ]}
-        />
+      {/* Board-07 filter pills: orange fill when active, white hairline card
+          when not. Same roles and keyboard behaviour as the rail it replaces. */}
+      <div role="tablist" aria-label="Help channels" className="mt-8 flex gap-2">
+        {TABS.map((t) => {
+          const on = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              type="button"
+              aria-selected={on}
+              onClick={() => setTab(t.id)}
+              /* The inactive pill is the card composed from utilities rather
+                 than `.club-b-card`: that class sets the 14px radius shorthand
+                 unlayered, which would beat `rounded-full`. Same ground, same
+                 hairline, correct geometry. */
+              className={`f0-focus f0-press rounded-full px-4 py-2 font-display text-[12px] font-extrabold uppercase tracking-[0.08em] transition-colors ${
+                on
+                  ? "bg-accent text-[color:var(--accent-on)]"
+                  : "border border-sand bg-card text-soft hover:text-ink"
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── AI chat tab ─────────────────────────────────────────────────── */}
+      {/* ── Ask Kai ──────────────────────────────────────────────────────── */}
       {tab === "bot" && (
         <div className="mt-6">
           <div className="h-[440px] space-y-5 overflow-y-auto pr-1">
@@ -324,9 +336,7 @@ export default function HelpPage() {
               >
                 <span
                   className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                    m.role === "user"
-                      ? "bg-sand text-soft"
-                      : "f0-kai-mark"
+                    m.role === "user" ? "bg-sand text-soft" : "f0-kai-mark"
                   }`}
                 >
                   {m.role === "user" ? (
@@ -336,10 +346,10 @@ export default function HelpPage() {
                   )}
                 </span>
                 <div
-                  className={`max-w-[52ch] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed text-ink ${
+                  className={`max-w-[52ch] whitespace-pre-wrap px-4 py-2.5 text-[14px] leading-relaxed text-ink ${
                     m.role === "user"
-                      ? "rounded-tr-sm bg-sand"
-                      : "rounded-tl-sm f0-frame bg-card"
+                      ? "rounded-[14px] rounded-tr-[4px] bg-sand"
+                      : "club-b-card"
                   }`}
                 >
                   {m.content}
@@ -347,12 +357,13 @@ export default function HelpPage() {
               </div>
             ))}
             {sending && (
-              <div className="flex gap-3">
+              <div className="flex gap-3" aria-busy="true">
                 <span className="f0-kai-mark mt-0.5 h-7 w-7 shrink-0">
                   <Bot className="h-4 w-4" />
                 </span>
-                <div className="rounded-2xl rounded-tl-sm f0-frame bg-card px-4 py-2.5 text-soft">
+                <div className="club-b-card px-4 py-2.5 text-soft">
                   <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="sr-only">Kai is replying</span>
                 </div>
               </div>
             )}
@@ -362,7 +373,7 @@ export default function HelpPage() {
           {/* Composer */}
           <form
             onSubmit={sendChat}
-            className="f0-rule-top mt-2 flex items-end gap-2 pt-3"
+            className="mt-2 flex items-end gap-2 border-t border-sand pt-3"
           >
             <textarea
               value={input}
@@ -375,6 +386,7 @@ export default function HelpPage() {
               }}
               rows={1}
               disabled={chatCapped}
+              aria-label="Ask Kai a question"
               placeholder={
                 chatCapped
                   ? "Chat limit reached — use Speak to the team for more help."
@@ -402,198 +414,230 @@ export default function HelpPage() {
         </div>
       )}
 
-      {/* ── Speak to the team tab ───────────────────────────────────────── */}
+      {/* ── The team ─────────────────────────────────────────────────────── */}
       {tab === "team" && (
         <div className="mt-8">
-          {/* Form */}
+          {/* New request — one white board card holding the whole form. */}
           <form onSubmit={submitTicket}>
-            <SectionRule>New support request</SectionRule>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <div className="sm:w-56">
-                <label className={labelCls}>Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as TicketCategory)}
-                  className={fieldCls}
+            <BoardSection id="help-new" label="New support" mark="request">
+              <div className="club-b-card mt-2.5 px-4 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="sm:w-56">
+                    <label className={labelCls} htmlFor="help-category">
+                      Category
+                    </label>
+                    <select
+                      id="help-category"
+                      value={category}
+                      onChange={(e) =>
+                        setCategory(e.target.value as TicketCategory)
+                      }
+                      className={fieldCls}
+                    >
+                      {TICKET_CATEGORIES.map((c) => (
+                        <option key={c} value={c}>
+                          {CATEGORY_LABELS[c]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className={labelCls} htmlFor="help-subject">
+                      Subject
+                    </label>
+                    <input
+                      id="help-subject"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="Short summary"
+                      maxLength={200}
+                      className={fieldCls}
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className={labelCls} htmlFor="help-message">
+                    How can we help?
+                  </label>
+                  <textarea
+                    id="help-message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={5}
+                    placeholder="Tell us what's going on…"
+                    className={`${fieldCls} resize-y`}
+                  />
+                </div>
+                {/* COLOUR LAW: no danger red — the error signals by weight in
+                    the action ramp. */}
+                {formError && (
+                  <p className="mt-2 text-[12.5px] font-semibold text-gold-700">
+                    {formError}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="f0-focus f0-press mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)] disabled:opacity-50"
                 >
-                  {TICKET_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {CATEGORY_LABELS[c]}
-                    </option>
-                  ))}
-                </select>
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {submitting ? "Sending…" : "Send to the team"}
+                </button>
               </div>
-              <div className="flex-1">
-                <label className={labelCls}>Subject</label>
-                <input
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Short summary"
-                  maxLength={200}
-                  className={fieldCls}
-                />
-              </div>
-            </div>
-            <div className="mt-3">
-              <label className={labelCls}>How can we help?</label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={5}
-                placeholder="Tell us what's going on…"
-                className={`${fieldCls} resize-y`}
-              />
-            </div>
-            {/* COLOUR LAW: no danger red — the error signals by weight in the
-                action ramp. */}
-            {formError && (
-              <p className="mt-2 text-xs font-semibold text-gold-700">
-                {formError}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="f0-focus f0-press mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-50"
-            >
-              {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {submitting ? "Sending…" : "Send to the team"}
-            </button>
+            </BoardSection>
           </form>
 
-          {/* Existing tickets */}
-          <div className="mt-11">
-            <SectionRule>Your requests</SectionRule>
-            {loadingTickets ? (
-              /* LOADING ≠ EMPTY (§0.4) — a centred spinner reads the same as
-                 "you have no requests", which is the far more common state. */
-              <div className="f0-ledger mt-1 border-t border-sand/70" aria-busy="true">
-                {[0, 1].map((i) => (
-                  <div key={i} className="f0-ledger-row">
-                    <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-sand/60" />
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />
-                      <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+          {/* Your requests — disclosure rows inside one card. */}
+          <div className="mt-10">
+            <BoardSection id="help-requests" label="Your" mark="requests">
+              {loadingTickets ? (
+                /* LOADING ≠ EMPTY — a centred spinner reads the same as
+                   "you have no requests", which is the far more common state. */
+                <div className="club-b-card mt-2.5 divide-y divide-sand" aria-busy="true">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                      <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-sand/60" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />
+                        <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : tickets.length === 0 ? (
-              /* FOUNDING STATE (§0.5) — the state almost every member is in. */
-              <div className="mt-4 border-l-2 border-sand py-1 pl-4">
-                <p className="font-display text-display-3 font-extrabold text-ink">
-                  No requests yet
-                </p>
-                <p className="mt-1.5 max-w-[62ch] text-[15px] leading-relaxed text-soft">
-                  Send one above and we&apos;ll get back to you. Every reply lands
-                  right here in this thread, so nothing gets lost in an inbox.
-                </p>
-              </div>
-            ) : (
-              <div className="f0-ledger mt-1">
-                {tickets.map((t) => {
-                  const open = expanded === t.id;
-                  return (
-                    <div key={t.id}>
-                      <button
-                        onClick={() => setExpanded(open ? null : t.id)}
-                        aria-expanded={open}
-                        className="f0-ledger-row f0-focus f0-press w-full text-left"
-                      >
-                        {open ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-soft" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-soft" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-display text-[15px] font-bold text-ink">
-                              {t.subject}
-                            </span>
-                            <StatusChip status={t.status} />
-                          </div>
-                          <p className="mt-0.5 text-[12px] text-soft">
-                            {CATEGORY_LABELS[t.category]} ·{" "}
-                            {timeAgo(t.last_message_at, nowHour)}
-                          </p>
-                        </div>
-                      </button>
-
-                      {open && (
-                        <div className="space-y-4 pb-5 pl-8">
-                          {t.help_messages?.map((m) => (
-                            <div
-                              key={m.id}
-                              className={`flex gap-2.5 ${
-                                m.sender === "user" ? "flex-row-reverse" : ""
-                              }`}
-                            >
-                              <span
-                                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-display font-bold ${
-                                  m.sender === "user"
-                                    ? "bg-sand text-soft"
-                                    : "bg-gold-400/20 text-gold-700"
-                                }`}
-                              >
-                                {m.sender === "user" ? "You" : "FTA"}
-                              </span>
-                              <div
-                                className={`max-w-[52ch] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed text-ink ${
-                                  m.sender === "user"
-                                    ? "rounded-tr-sm bg-sand"
-                                    : "rounded-tl-sm f0-frame bg-card"
-                                }`}
-                              >
-                                {m.body}
-                              </div>
-                            </div>
-                          ))}
-
-                          {t.status !== "closed" && (
-                            <div className="flex items-end gap-2 pt-1">
-                              <textarea
-                                value={open ? replyBody : ""}
-                                onChange={(e) => setReplyBody(e.target.value)}
-                                rows={1}
-                                placeholder="Write a reply…"
-                                className={`${fieldCls} max-h-28 flex-1 resize-none`}
-                              />
-                              <button
-                                onClick={() => submitReply(t.id)}
-                                disabled={replyBusy || !replyBody.trim()}
-                                className={`${sendBtnCls} h-9 w-9`}
-                                aria-label="Send reply"
-                              >
-                                <Send className="h-4 w-4" />
-                              </button>
-                            </div>
+                  ))}
+                  <span className="sr-only">Loading your requests</span>
+                </div>
+              ) : tickets.length === 0 ? (
+                /* FOUNDING STATE — the state almost every member is in. */
+                <div className="club-b-card mt-2.5 px-4 py-4">
+                  <p className="font-display text-[17px] font-extrabold text-ink">
+                    No requests yet
+                  </p>
+                  <p className="mt-1.5 max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
+                    Send one above and we&apos;ll get back to you. Every reply
+                    lands right here in this thread, so nothing gets lost in an
+                    inbox.
+                  </p>
+                </div>
+              ) : (
+                <div className="club-b-card mt-2.5 divide-y divide-sand">
+                  {tickets.map((t) => {
+                    const open = expanded === t.id;
+                    return (
+                      <div key={t.id}>
+                        <button
+                          type="button"
+                          onClick={() => setExpanded(open ? null : t.id)}
+                          aria-expanded={open}
+                          className="f0-focus f0-press flex w-full items-center gap-3 px-4 py-3.5 text-left"
+                        >
+                          {open ? (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-soft" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 text-soft" />
                           )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate font-display text-[15px] font-bold text-ink">
+                                {t.subject}
+                              </span>
+                              <StatusChip status={t.status} />
+                            </div>
+                            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-soft tabular-nums">
+                              {CATEGORY_LABELS[t.category]} ·{" "}
+                              {timeAgo(t.last_message_at, nowHour)}
+                            </p>
+                          </div>
+                        </button>
+
+                        {open && (
+                          <div className="space-y-4 px-4 pb-5 pl-11">
+                            {t.help_messages?.map((msg) => (
+                              <div
+                                key={msg.id}
+                                className={`flex gap-2.5 ${
+                                  msg.sender === "user" ? "flex-row-reverse" : ""
+                                }`}
+                              >
+                                <span
+                                  className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full font-display text-[9px] font-bold ${
+                                    msg.sender === "user"
+                                      ? "bg-sand text-soft"
+                                      : "bg-gold-400/20 text-gold-700"
+                                  }`}
+                                >
+                                  {msg.sender === "user" ? "You" : "FTA"}
+                                </span>
+                                <div
+                                  className={`max-w-[52ch] whitespace-pre-wrap px-3.5 py-2 text-[14px] leading-relaxed text-ink ${
+                                    msg.sender === "user"
+                                      ? "rounded-[14px] rounded-tr-[4px] bg-sand"
+                                      : "rounded-[14px] rounded-tl-[4px] border border-sand bg-paper"
+                                  }`}
+                                >
+                                  {msg.body}
+                                </div>
+                              </div>
+                            ))}
+
+                            {t.status !== "closed" && (
+                              <div className="flex items-end gap-2 pt-1">
+                                <textarea
+                                  value={open ? replyBody : ""}
+                                  onChange={(e) => setReplyBody(e.target.value)}
+                                  rows={1}
+                                  aria-label="Write a reply"
+                                  placeholder="Write a reply…"
+                                  className={`${fieldCls} max-h-28 flex-1 resize-none`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => submitReply(t.id)}
+                                  disabled={replyBusy || !replyBody.trim()}
+                                  className={`${sendBtnCls} h-9 w-9`}
+                                  aria-label="Send reply"
+                                >
+                                  <Send className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </BoardSection>
           </div>
 
-          {/* The last resort. Stated once, after the two real channels — the bot
-              and the ticket queue both work, so the address is a fallback. */}
-          <p className="f0-rule-top mt-11 max-w-[62ch] pt-5 text-[13px] leading-relaxed text-soft">
-            Prefer email? Write to{" "}
-            <a
-              href={`mailto:${SUPPORT_EMAIL}`}
-              className="f0-focus font-semibold text-gold-700 transition-colors hover:text-gold-600"
-            >
-              {SUPPORT_EMAIL}
-            </a>{" "}
-            — it reaches the same team, but a request opened here keeps the whole
-            thread in one place.
-          </p>
+          {/* The last resort, as the one brand-tinted object on the surface.
+              Stated once, after the two real channels — the bot and the ticket
+              queue both work, so the address is a fallback. It is the ONLY
+              support address on this page. */}
+          <div className="club-b-warm mt-10 flex items-center gap-3.5 px-[15px] py-[14px]">
+            <span className="club-b-orb h-10 w-10 shrink-0" aria-hidden>
+              <Mail className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                Prefer <span className="text-accent">email?</span>
+              </p>
+              <p className="mt-1 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+                Write to{" "}
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}`}
+                  className="f0-focus font-semibold text-gold-700 transition-colors hover:text-gold-600"
+                >
+                  {SUPPORT_EMAIL}
+                </a>{" "}
+                — it reaches the same team, but a request opened here keeps the
+                whole thread in one place.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

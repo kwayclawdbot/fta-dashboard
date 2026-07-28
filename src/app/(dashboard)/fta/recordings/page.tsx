@@ -11,16 +11,22 @@ import RecordingPlayerModal, {
   type RecordingPlayable,
 } from "@/components/live/RecordingPlayerModal";
 import { resolveRecordingKind, type RecordingKind } from "@/lib/recordings";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
- * /fta/recordings — the FTA shelf, canvas v2.
+ * /fta/recordings — the FTA shelf, built from the reference board.
  *
- * WHAT CHANGED: every recording used to be a gradient-bordered rounded card with
- * a gold gradient play tile — a stack of boxes where a ledger belongs, and the
- * `paper-card` empty state again. Now: the metallic desk masthead, a section rule
- * per class series, and one hairline row per recording. The date column is the
- * mono anchor (same geometry as the Live Classes ledger, deliberately — they are
- * the same object at two tiers), and the play affordance is type, not chrome.
+ * WHAT CHANGED (board rebuild): the previous pass rendered the shelf as a
+ * hairline LEDGER — `f0-ledger` rows under `f0-section-rule` headings, with a
+ * mono date column. That was the previous version's structure. The board is
+ * card-based, so each recording is now a white `.club-b-card` led by the board's
+ * 34px tile (the thumbnail's stand-in — there are no real thumbnails on
+ * live_sessions, and inventing one would be decoration pretending to be data),
+ * with a chip meta row carrying the date and the runtime, under `BoardSection`
+ * marks per class series.
+ *
+ * FTA IS THE PREMIUM TIER: data-mode="fta" re-points --accent-*, so the watch
+ * affordance is metallic here and orange in the Club with no fork.
  *
  * WIRING UNTOUCHED: the same live_sessions query filtered to min_tier='academy',
  * the same resolveRecordingKind, and the same shared RecordingPlayerModal —
@@ -155,11 +161,11 @@ export default function FtaRecordingsPage() {
       ) : recordings.length === 0 ? (
         /* FOUNDING STATE (§0.5) — an empty shelf is the REAL state before the
            first cohort session is processed. Say so. */
-        <div className="mt-12 border-l-2 border-sand py-1 pl-4">
-          <p className="font-display text-display-3 font-extrabold text-ink">
+        <div className="club-b-card mt-11 px-4 py-5">
+          <p className="font-display text-[18px] font-extrabold uppercase leading-[1.15] text-ink">
             The shelf is empty
           </p>
-          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-soft">
+          <p className="mt-1.5 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
             FTA class recordings land here right after each live session, grouped
             by series. Nothing is missing — the first one simply has not been
             recorded yet.
@@ -174,29 +180,35 @@ export default function FtaRecordingsPage() {
           </p>
 
           <div className="mt-8 space-y-9">
-            {groups.map((group) => (
-              <section key={group.key}>
-                {group.label && (
-                  <h2 className="f0-section-rule mb-1">
-                    <span className="text-eyebrow font-display font-bold uppercase text-soft">
-                      {group.label}
-                    </span>
-                  </h2>
-                )}
-                <div className="f0-ledger f0-stagger border-t border-sand/70">
+            {groups.map((group) => {
+              const rows = (
+                <div className="f0-stagger flex flex-col gap-2.5">
                   {group.items.map((rec, i) => (
                     <m.div
                       key={rec.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(i * 0.04, 0.2) }}
+                      style={{ ["--i" as string]: Math.min(i, 12) }}
                     >
                       <RecordingRow rec={rec} onWatch={() => setWatching(rec)} />
                     </m.div>
                   ))}
                 </div>
-              </section>
-            ))}
+              );
+              if (!group.label) return <section key={group.key}>{rows}</section>;
+              const { head, mark } = splitMark(group.label);
+              return (
+                <BoardSection
+                  key={group.key}
+                  id={`fta-rec-${group.key}`}
+                  label={head}
+                  mark={mark}
+                >
+                  <div className="mt-3">{rows}</div>
+                </BoardSection>
+              );
+            })}
           </div>
         </>
       )}
@@ -212,63 +224,73 @@ export default function FtaRecordingsPage() {
   );
 }
 
-/** One recording on the shelf. Date column, title, then the watch affordance. */
+/** Split a series label so its LAST word can carry the board's accent mark.
+ *  The visible string is unchanged — `BoardSection` renders `label` then `mark`
+ *  separated by a single space, which is exactly how the label reads today. */
+function splitMark(label: string): { head: string; mark?: string } {
+  const parts = label.trim().split(" ");
+  if (parts.length < 2) return { head: label };
+  return { head: parts.slice(0, -1).join(" "), mark: parts[parts.length - 1] };
+}
+
+/** One recording on the shelf: the board's card — tile, title, chip meta row,
+ *  then the watch affordance in the action colour. */
 function RecordingRow({ rec, onWatch }: { rec: Rec; onWatch: () => void }) {
   const external = rec.recordingKind === "external" && rec.recordingUrl;
-  const d = rec.scheduledIso ? new Date(rec.scheduledIso) : null;
 
   const body = (
     <>
-      <span className="w-[4.5rem] shrink-0 self-start">
-        {d ? (
-          <>
-            <span className="block font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink">
-              {d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-            </span>
-            <span className="block font-mono text-[10.5px] tabular-nums text-soft">
-              {d.getFullYear()}
-            </span>
-          </>
-        ) : (
-          <span className="block font-mono text-[11px] uppercase tracking-[0.1em] text-soft">
-            —
-          </span>
-        )}
+      {/* The tile stands in for a thumbnail. live_sessions carries no poster
+          image, so this is the house tile with the medium's own glyph rather
+          than a generated picture pretending to be a still. */}
+      <span
+        aria-hidden
+        className="club-b-tile h-[34px] w-[34px] shrink-0 rounded-[10px]"
+      >
+        <Play className="h-3.5 w-3.5" />
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block font-display text-[15px] font-bold leading-snug text-ink">
+        <span className="block font-display text-[15px] font-extrabold leading-snug text-ink">
           {rec.title}
         </span>
         {rec.description && (
-          <span className="mt-0.5 line-clamp-2 block max-w-prose text-[12.5px] leading-relaxed text-soft">
+          <span className="mt-1 line-clamp-2 block max-w-prose text-[12.5px] leading-relaxed text-soft">
             {rec.description}
           </span>
         )}
-        <span className="mt-1.5 block font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-          {rec.durationMin} min
-        </span>
-      </span>
 
-      <span className="inline-flex shrink-0 items-center gap-1.5 self-center font-display text-[12.5px] font-bold uppercase tracking-[0.08em] text-ftagold-700">
-        <Play className="h-3.5 w-3.5" />
-        Watch
-        {external && <ExternalLink className="h-3 w-3" />}
+        <span className="mt-2.5 flex flex-wrap items-center gap-2">
+          <span className="f0-chip inline-flex px-2 py-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+            {rec.scheduledAt || "—"}
+          </span>
+          <span className="f0-chip inline-flex px-2 py-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+            {rec.durationMin} min
+          </span>
+        </span>
+
+        <span className="mt-2.5 flex items-center gap-1.5 font-display text-[12.5px] font-bold uppercase tracking-[0.08em] text-accent">
+          <Play className="h-3.5 w-3.5" />
+          Watch
+          {external && <ExternalLink className="h-3 w-3" />}
+        </span>
       </span>
     </>
   );
+
+  const cls = "club-b-card f0-focus f0-press flex items-start gap-3 px-4 py-4";
 
   return external ? (
     <a
       href={rec.recordingUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="f0-ledger-row f0-focus f0-press"
+      className={cls}
     >
       {body}
     </a>
   ) : (
-    <button onClick={onWatch} className="f0-ledger-row f0-focus f0-press w-full text-left">
+    <button onClick={onWatch} className={`${cls} w-full text-left`}>
       {body}
     </button>
   );
@@ -289,13 +311,14 @@ function FtaRecordingsSkeleton() {
 
 function FtaListSkeleton() {
   return (
-    <div className="f0-ledger mt-10 border-t border-sand/70" aria-busy="true">
+    <div className="mt-10 flex flex-col gap-2.5" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="f0-ledger-row">
-          <div className="h-8 w-[4.5rem] shrink-0 animate-pulse rounded bg-sand/60" />
+        <div key={i} className="club-b-card flex items-start gap-3 px-4 py-4">
+          <div className="h-[34px] w-[34px] shrink-0 animate-pulse rounded-[10px] bg-sand/60" />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="h-4 w-2/3 animate-pulse rounded bg-sand/60" />
             <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+            <div className="h-3 w-24 animate-pulse rounded-full bg-sand/50" />
           </div>
         </div>
       ))}

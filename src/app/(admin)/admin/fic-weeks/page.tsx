@@ -61,21 +61,21 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-400 mb-1">{label}</label>
+      <label className="block text-xs text-soft mb-1">{label}</label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 resize-none"
+        className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50 resize-none"
       />
-      {hint && <p className="text-[11px] text-zinc-500 mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-soft mt-1">{hint}</p>}
     </div>
   );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400/80 pt-2">
+    <h3 className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent pt-2">
       {children}
     </h3>
   );
@@ -203,13 +203,13 @@ export default function AdminFicWeeksPage() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">This Week in FIC</h1>
-          <p className="text-zinc-400 text-sm mt-1 max-w-2xl">
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">This Week in FIC</h1>
+          <p className="text-soft text-sm mt-1 max-w-2xl">
             Author each Family Investing Club week: the class, the Company of the
             Week breakdown, the family assignment, the parent prompt, and the kid
             challenge. Publish a week and set it as the current week to make it
             live on every family&apos;s home page.{" "}
-            <span className="text-zinc-500">
+            <span className="text-soft">
               The class video here is the single weekly Company-of-the-Week
               class — distinct from on-demand lesson videos (see Courses) and
               live-class replays (see Live Sessions).
@@ -218,7 +218,7 @@ export default function AdminFicWeeksPage() {
         </div>
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold transition-colors shrink-0"
+          className="f0-press f0-focus flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent-strong text-[color:var(--accent-on)] text-sm font-semibold transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
           New Week
@@ -226,13 +226,13 @@ export default function AdminFicWeeksPage() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-2xl p-6 my-8">
+        <div className="fixed inset-0 bg-scrim z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="club-b-card w-full max-w-2xl p-6 my-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-zinc-100">
+              <h2 className="font-display text-[17px] font-extrabold text-ink">
                 {editingId ? "Edit Week" : "New Week"}
               </h2>
-              <button onClick={close} className="text-zinc-400 hover:text-zinc-200">
+              <button onClick={close} className="text-soft hover:text-ink">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -241,18 +241,18 @@ export default function AdminFicWeeksPage() {
               <SectionTitle>Class</SectionTitle>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
+                  <label className="block text-xs text-soft mb-1">
                     Week start (Monday)
                   </label>
                   <input
                     type="date"
                     value={form.week_start || ""}
                     onChange={(e) => set({ week_start: e.target.value })}
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                    className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
+                  <label className="block text-xs text-soft mb-1">
                     Class title
                   </label>
                   <input
@@ -260,18 +260,18 @@ export default function AdminFicWeeksPage() {
                     value={form.class_title || ""}
                     onChange={(e) => set({ class_title: e.target.value })}
                     placeholder="How Apple Makes Money"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                    className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-zinc-400 mb-1">
+                <label className="block text-xs text-soft mb-1">
                   Link a live class (optional)
                 </label>
                 <select
                   value={form.class_session_id || ""}
                   onChange={(e) => set({ class_session_id: e.target.value || null })}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                  className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50"
                 >
                   <option value="">— none —</option>
                   {sessions.map((s) => (
@@ -288,7 +288,7 @@ export default function AdminFicWeeksPage() {
               <SectionTitle>Company of the Week</SectionTitle>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">
+                  <label className="block text-xs text-soft mb-1">
                     Company name
                   </label>
                   <input
@@ -296,17 +296,17 @@ export default function AdminFicWeeksPage() {
                     value={form.company_name || ""}
                     onChange={(e) => set({ company_name: e.target.value })}
                     placeholder="Apple"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50"
+                    className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Ticker</label>
+                  <label className="block text-xs text-soft mb-1">Ticker</label>
                   <input
                     type="text"
                     value={form.company_ticker || ""}
                     onChange={(e) => set({ company_ticker: e.target.value })}
                     placeholder="AAPL"
-                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 uppercase focus:outline-none focus:border-amber-400/50"
+                    className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink uppercase focus:outline-none focus:border-accent/50"
                   />
                 </div>
               </div>
@@ -403,9 +403,9 @@ export default function AdminFicWeeksPage() {
                   type="checkbox"
                   checked={!!form.published}
                   onChange={(e) => set({ published: e.target.checked })}
-                  className="w-4 h-4 accent-amber-500"
+                  className="w-4 h-4 accent-[color:var(--accent-solid)]"
                 />
-                <span className="text-sm text-zinc-300">
+                <span className="text-sm text-ink">
                   Published (visible to families)
                 </span>
               </label>
@@ -414,14 +414,14 @@ export default function AdminFicWeeksPage() {
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
                 onClick={close}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+                className="px-4 py-2 text-sm text-soft hover:text-ink transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold transition-colors disabled:opacity-50"
+                className="f0-press f0-focus px-4 py-2 rounded-lg bg-accent hover:bg-accent-strong text-[color:var(--accent-on)] text-sm font-semibold transition-colors disabled:opacity-50"
               >
                 {saving ? "Saving..." : editingId ? "Update" : "Create"}
               </button>
@@ -432,38 +432,38 @@ export default function AdminFicWeeksPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : weeks.length === 0 ? (
         <div className="text-center py-20">
-          <CalendarRange className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-zinc-300 mb-1">No weeks yet</h3>
-          <p className="text-sm text-zinc-500 mb-4">
+          <CalendarRange className="w-10 h-10 text-soft/70 mx-auto mb-3" />
+          <h3 className="font-display text-[17px] font-extrabold text-ink mb-1">No weeks yet</h3>
+          <p className="text-sm text-soft mb-4">
             Author the first Family Investing Club week.
           </p>
           <button
             onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold transition-colors"
+            className="f0-press f0-focus inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent-strong text-[color:var(--accent-on)] text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Week
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-zinc-800 overflow-hidden">
+        <div className="club-b-card overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              <tr className="border-b border-sand bg-paper">
+                <th className="text-left px-4 py-3 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                   Week
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <th className="text-left px-4 py-3 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                   Class / Company
                 </th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <th className="text-center px-4 py-3 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                   State
                 </th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                <th className="text-right px-4 py-3 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                   Actions
                 </th>
               </tr>
@@ -472,16 +472,16 @@ export default function AdminFicWeeksPage() {
               {weeks.map((w) => (
                 <tr
                   key={w.id}
-                  className="border-b border-zinc-800/50 hover:bg-zinc-900/30 transition-colors"
+                  className="border-b border-sand hover:bg-paper transition-colors"
                 >
-                  <td className="px-4 py-3 text-sm text-zinc-300 whitespace-nowrap">
+                  <td className="px-4 py-3 text-sm text-ink whitespace-nowrap">
                     {w.week_start}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-sm text-zinc-100 font-medium">
+                    <p className="text-sm text-ink font-medium">
                       {w.class_title}
                     </p>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-soft mt-0.5">
                       {w.company_name
                         ? `${w.company_name}${w.company_ticker ? ` (${w.company_ticker})` : ""}`
                         : "—"}
@@ -490,16 +490,16 @@ export default function AdminFicWeeksPage() {
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-1.5">
                       <span
-                        className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                        className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                           w.published
-                            ? "text-green-400 bg-green-400/10"
-                            : "text-zinc-500 bg-zinc-800"
+                            ? "text-soft"
+                            : "text-soft"
                         }`}
                       >
                         {w.published ? "Live" : "Draft"}
                       </span>
                       {w.is_current && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded text-amber-400 bg-amber-400/10">
+                        <span className="inline-flex items-center gap-1 f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-accent bg-accent/10">
                           <Star className="w-3 h-3" />
                           Current
                         </span>
@@ -511,7 +511,7 @@ export default function AdminFicWeeksPage() {
                       {!w.is_current && (
                         <button
                           onClick={() => setCurrent(w)}
-                          className="p-1.5 rounded text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"
+                          className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"
                           title="Set as current week"
                         >
                           <Star className="w-4 h-4" />
@@ -519,7 +519,7 @@ export default function AdminFicWeeksPage() {
                       )}
                       <button
                         onClick={() => togglePublished(w)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-green-400 hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 rounded text-soft hover:text-ink hover:bg-paper transition-colors"
                         title={w.published ? "Unpublish" : "Publish"}
                       >
                         {w.published ? (
@@ -530,14 +530,14 @@ export default function AdminFicWeeksPage() {
                       </button>
                       <button
                         onClick={() => openEdit(w)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => remove(w.id)}
-                        className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                        className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />

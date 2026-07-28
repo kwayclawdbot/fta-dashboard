@@ -107,20 +107,24 @@ export default function AdminSidebar() {
   }
 
   return (
-    <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-screen w-60 bg-[#0a0a0f] border-r border-zinc-800 z-30">
+    <aside className="hidden lg:flex flex-col fixed top-0 left-0 h-screen w-60 bg-card border-r border-sand z-30">
       <div className="flex flex-col h-full">
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-5 py-5 border-b border-zinc-800">
-          <Shield className="w-5 h-5 text-amber-400" />
-          <span className="font-bold text-lg text-amber-400">FTA Admin</span>
+        {/* Masthead */}
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sand">
+          <span className="club-b-orb h-7 w-7 shrink-0" aria-hidden>
+            <Shield className="h-[15px] w-[15px]" />
+          </span>
+          <span className="font-display text-[15px] font-extrabold uppercase tracking-[0.04em] text-ink">
+            FTA <span className="text-accent">Admin</span>
+          </span>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {sections.map((section, i) => (
-            <div key={section.label ?? "top"} className={i > 0 ? "pt-3 mt-2 border-t border-zinc-800/70" : ""}>
+            <div key={section.label ?? "top"} className={i > 0 ? "pt-3 mt-2 border-t border-sand" : ""}>
               {section.label && (
-                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
+                <p className="px-3 pb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                   {section.label}
                 </p>
               )}
@@ -131,10 +135,11 @@ export default function AdminSidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                    aria-current={active ? "page" : undefined}
+                    className={`f0-press f0-focus flex items-center gap-3 px-3 py-2 rounded-[10px] text-sm transition-colors ${
                       active
-                        ? "text-amber-400 bg-amber-400/5"
-                        : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                        ? "bg-accent/10 text-accent"
+                        : "text-soft hover:bg-paper hover:text-ink"
                     }`}
                   >
                     <Icon className="w-[18px] h-[18px] shrink-0" />
@@ -147,17 +152,17 @@ export default function AdminSidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-3 py-4 border-t border-zinc-800 space-y-1">
+        <div className="px-3 py-4 border-t border-sand space-y-1">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors"
+            className="f0-press f0-focus flex items-center gap-2 w-full px-3 py-2 rounded-[10px] text-sm text-soft hover:bg-paper hover:text-ink transition-colors"
           >
             <ArrowLeft className="w-4 h-4 shrink-0" />
             <span>Back to Dashboard</span>
           </Link>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-red-500 hover:bg-red-500/5 transition-colors"
+            className="f0-press f0-focus flex items-center gap-2 w-full px-3 py-2 rounded-[10px] text-sm text-soft hover:bg-paper hover:text-ink transition-colors"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             <span>Logout</span>

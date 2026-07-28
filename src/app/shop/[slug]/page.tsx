@@ -190,10 +190,10 @@ export default async function ProductPage({
                   change-of-mind returns. If your order arrives damaged,
                   misprinted, or wrong, email{" "}
                   <a
-                    href="mailto:hello@familyinvestingclub.com"
+                    href="mailto:support@cheatcode.com"
                     className="font-semibold text-gold-700 hover:text-gold-800"
                   >
-                    hello@familyinvestingclub.com
+                    support@cheatcode.com
                   </a>{" "}
                   within 30 days and we&apos;ll reprint or refund it — no need to
                   ship anything back.

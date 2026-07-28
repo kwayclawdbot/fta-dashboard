@@ -4,9 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "@/lib/motion";
-import { Users, Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Users, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { TopBar, ProgressBar, FunnelStage, Field } from "@/components/free-class/ui";
+import {
+  FunnelPage,
+  TopBar,
+  ProgressBar,
+  FunnelStage,
+  Field,
+  Mast,
+  Action,
+  Terms,
+  FormError,
+  Spinner,
+} from "@/components/free-class/ui";
 import {
   FUNNEL_STEPS,
   getStoredFunnelId,
@@ -165,29 +176,32 @@ export default function RegisterPage() {
     // session hydrates. Same chrome the ready state renders, minus live fields.
     const skeletonStep = FUNNEL_STEPS.indexOf("register") + 1;
     return (
-      <div className="min-h-screen bg-paper text-ink flex flex-col">
+      <FunnelPage>
         <TopBar />
         <ProgressBar current={skeletonStep} total={FUNNEL_STEPS.length} />
-        <div className="flex-1 w-full max-w-md mx-auto px-5 pt-8">
-          <div className="mx-auto mb-6 h-7 w-56 animate-pulse rounded bg-sand" />
-          <div className="mx-auto mb-8 h-4 w-64 animate-pulse rounded bg-sand/70" />
-          <div className="space-y-4">
-            <div className="h-12 w-full animate-pulse rounded-xl bg-sand/70" />
-            <div className="h-12 w-full animate-pulse rounded-xl bg-sand/70" />
-            <div className="h-12 w-full animate-pulse rounded-xl bg-sand" />
+        <div className="mx-auto w-full max-w-md flex-1 px-5 pt-8">
+          <div className="motion-safe:animate-pulse" aria-busy="true">
+            <div className="mx-auto mb-6 h-7 w-56 rounded-[10px] bg-sand" />
+            <div className="mx-auto mb-8 h-4 w-64 rounded-full bg-sand/70" />
+            <div className="space-y-3">
+              <div className="club-b-card h-[52px] w-full" />
+              <div className="club-b-card h-[52px] w-full" />
+              <div className="club-b-card h-[52px] w-full" />
+            </div>
+            <div className="mt-5 h-[52px] w-full rounded-full bg-sand" />
           </div>
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-soft">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading your seat…
-          </div>
+          <p className="mt-6 flex items-center justify-center gap-2 text-[12px] text-soft">
+            <Spinner className="h-3.5 w-3.5" /> Loading your seat…
+          </p>
         </div>
-      </div>
+      </FunnelPage>
     );
   }
 
   const current = FUNNEL_STEPS.indexOf("register") + 1;
 
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col">
+    <FunnelPage>
       <TopBar />
       <ProgressBar current={current} total={FUNNEL_STEPS.length} onBack={back} />
 
@@ -195,51 +209,48 @@ export default function RegisterPage() {
         <FunnelStage stageKey="register">
           {signedIn ? (
             <>
-              <div className="text-center mb-6">
-                <h2 className="font-display text-2xl font-bold text-ink">
-                  You&apos;re already a member{memberName ? `, ${memberName}` : ""}
-                </h2>
-                <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
-                  No new account needed — reserve your seat in one tap.
-                </p>
+              <Mast
+                size="md"
+                title={
+                  <>
+                    You&apos;re already a member{memberName ? `, ${memberName}` : ""}
+                  </>
+                }
+                lede="No new account needed — reserve your seat in one tap."
+              />
+
+              {error && <FormError>{error}</FormError>}
+
+              <div className="mt-6">
+                <Action onClick={reserveAsMember} disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Spinner /> Reserving your seat…
+                    </>
+                  ) : (
+                    <>
+                      Reserve my seat <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Action>
               </div>
-
-              {error && <p className="mb-3 text-sm text-red-600 font-body text-center">{error}</p>}
-
-              <button
-                onClick={reserveAsMember}
-                disabled={submitting}
-                className="cta-button w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] disabled:opacity-50"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Reserving your seat…
-                  </>
-                ) : (
-                  <>
-                    Reserve my seat <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-              <p className="mt-3 text-center text-xs text-soft flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Education only. No card, ever.
-              </p>
+              <div className="mt-3">
+                <Terms icon={ShieldCheck}>Education only. No card, ever.</Terms>
+              </div>
             </>
           ) : (
           <>
-          <div className="text-center mb-6">
-            <h2 className="font-display text-2xl font-bold text-ink">
-              {challenge ? "Start the challenge" : "Save your seat"}
-            </h2>
-            <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
-              {challenge
+          <Mast
+            size="md"
+            title={challenge ? "Start the challenge" : "Save your seat"}
+            lede={
+              challenge
                 ? "Create your account — full Club access unlocks the moment you're in. No card required."
-                : "Create your free account to lock in your spot. No card, ever."}
-            </p>
-          </div>
+                : "Create your free account to lock in your spot. No card, ever."
+            }
+          />
 
-          <div className="space-y-3">
+          <div className="mt-6 space-y-3">
             <Field icon={Users} placeholder="Your first name" value={firstName} onChange={setFirstName} autoFocus />
             <Field icon={Mail} type="email" placeholder="Email address" value={email} readOnly />
             <Field
@@ -252,43 +263,42 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <p className="mt-3 text-sm text-red-600 font-body">
+            <FormError>
               {error}
               {exists && (
                 <>
                   {" "}
-                  <Link href="/login" className="text-gold-700 font-semibold underline">
+                  <Link href="/login" className="f0-focus rounded font-semibold text-accent underline">
                     Log in
                   </Link>
                 </>
               )}
-            </p>
+            </FormError>
           )}
 
-          <button
-            onClick={submit}
-            disabled={submitting}
-            className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] disabled:opacity-50"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />{" "}
-                {challenge ? "Setting up your access…" : "Saving your seat…"}
-              </>
-            ) : (
-              <>
-                {challenge ? "Start the challenge" : "Get my free seat"}{" "}
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-          <p className="mt-3 text-center text-xs text-soft flex items-center justify-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Education only. No spam, no card. Cancel anytime.
-          </p>
-          <p className="mt-2 text-center text-xs text-soft">
+          <div className="mt-5">
+            <Action onClick={submit} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Spinner />{" "}
+                  {challenge ? "Setting up your access…" : "Saving your seat…"}
+                </>
+              ) : (
+                <>
+                  {challenge ? "Start the challenge" : "Get my free seat"}{" "}
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Action>
+          </div>
+          <div className="mt-3">
+            <Terms icon={ShieldCheck}>
+              Education only. No spam, no card. Cancel anytime.
+            </Terms>
+          </div>
+          <p className="mt-2 text-center text-[12px] text-soft">
             Already have an account?{" "}
-            <Link href="/login" className="text-gold-700 font-semibold">
+            <Link href="/login" className="f0-focus rounded font-semibold text-accent">
               Log in
             </Link>
           </p>
@@ -296,6 +306,6 @@ export default function RegisterPage() {
           )}
         </FunnelStage>
       </AnimatePresence>
-    </div>
+    </FunnelPage>
   );
 }

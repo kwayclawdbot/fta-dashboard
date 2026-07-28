@@ -21,7 +21,7 @@ function EmptyState({
   cta?: { label: string; href: string };
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-midnight-900 p-10 text-center">
+    <div className="club-b-card relative overflow-hidden p-10 text-center">
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-60">
         <SunCircle className="h-40 w-40" />
       </div>
@@ -31,7 +31,7 @@ function EmptyState({
       {cta && (
         <Link
           href={cta.href}
-          className="cta-button relative mt-4 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm"
+          className="f0-press f0-focus relative mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
         >
           {cta.label}
         </Link>
@@ -64,7 +64,7 @@ export function EmptyMissions() {
 /** A corkboard with one pin — start your research board. */
 export function EmptyWatchlist({ onAdd }: { onAdd?: () => void }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-dashed border-sand bg-midnight-900 p-10 text-center">
+    <div className="club-b-card relative overflow-hidden p-10 text-center">
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-50">
         <SunCircle className="h-44 w-44" />
       </div>
@@ -89,7 +89,7 @@ export function EmptyWatchlist({ onAdd }: { onAdd?: () => void }) {
       {onAdd && (
         <button
           onClick={onAdd}
-          className="cta-button relative mt-4 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm"
+          className="f0-press f0-focus relative mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
         >
           Add your first company
         </button>

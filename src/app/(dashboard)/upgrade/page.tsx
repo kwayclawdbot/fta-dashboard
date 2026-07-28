@@ -30,19 +30,26 @@ import { getFamilyTierState, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
 import { isSoloProfile } from "@/lib/register";
 import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
-import { DisplayHead, SectionRule, TextAction } from "@/components/f0/parts";
+import { DisplayHead, TextAction } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
  * /upgrade — the commercial surface. Three viewers: an FTA family (status), a
  * free member (the $99/mo Club pitch) and a Club family (the $2,997 FTA pitch).
  *
- * REBUILD NOTE (canvas): this page carries commercial and regulated copy. EVERY
- * price, plan name, entitlement line, FAQ answer, billing note and disclaimer
- * below is byte-identical to the previous revision — nothing was reworded,
- * reordered, added or dropped. What changed is the surface only: the card grids
- * became hairline ledgers, the comparison became a real table, the second
- * night-island became a composed statement (one dark object per surface), and
- * white-on-gold fills became night-950 on gold.
+ * REBUILD NOTE (board 01): this page carries commercial and regulated copy.
+ * EVERY price, plan name, entitlement line, FAQ answer, billing note and
+ * disclaimer below is byte-identical across every revision — nothing was ever
+ * reworded, reordered, added or dropped. Only the container moves.
+ *
+ * The interim revision turned the card grids into hairline `f0-ledger` runs and
+ * gold left-rules. The board rescinds that: objects are white `club-b-card`
+ * cards on the warm paper, the money bands are the one `club-b-warm` tinted
+ * object per branch, section marks are `BoardSection` tracked mono caps, and
+ * the primary action is FLAT solid orange (`bg-accent` + `--accent-on`) with no
+ * gradient and no hover lift. The hero stays a deliberate dark island — the
+ * board draws one per screen — and the comparison stays a real <table>, because
+ * aligned columns are the point, now inside a card.
  */
 
 const FIC_URL = "https://buy.stripe.com/6oUaEX5J1bxP50E9lpbEA0a";
@@ -332,7 +339,7 @@ export default function UpgradePage() {
           <m.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-10 border-l-[3px] border-gold-500 pl-5"
+            className="club-b-warm mb-10 p-5 sm:p-6"
           >
             <p className="flex items-center gap-2 text-eyebrow font-display font-bold uppercase text-gold-700">
               <ShieldCheck className="h-4 w-4" />
@@ -352,7 +359,7 @@ export default function UpgradePage() {
               href={FIC_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="cta-button f0-focus f0-press mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+              className="f0-focus f0-press mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
             >
               Keep your Club membership — $99/mo
               <ArrowRight className="h-4 w-4" />
@@ -369,29 +376,33 @@ export default function UpgradePage() {
           />
         </m.div>
 
-        <section className="mt-9">
-          <SectionRule>What you have</SectionRule>
-          <div className="f0-ledger mt-1">
-            {FTA_UPGRADE_BENEFITS.map((f) => (
-              <div key={f} className="f0-ledger-row">
-                <BadgeCheck className="h-4 w-4 shrink-0 text-gold-700" />
-                <span className="text-[15px] text-ink">{f}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <div className="mt-9">
+          <BoardSection label="What you" mark="have" id="fta-have">
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              {FTA_UPGRADE_BENEFITS.map((f) => (
+                <div
+                  key={f}
+                  className="club-b-card flex items-center gap-3 px-4 py-3.5"
+                >
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-accent" />
+                  <span className="text-[15px] text-ink">{f}</span>
+                </div>
+              ))}
+            </div>
+          </BoardSection>
+        </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             href="/courses"
-            className="cta-button f0-focus f0-press inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+            className="f0-focus f0-press inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
           >
             <CalendarDays className="h-4 w-4" />
             Continue the program
           </Link>
           <Link
             href="/live-sessions"
-            className="f0-focus f0-press inline-flex items-center gap-2 rounded-xl border border-sand px-5 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:bg-card"
+            className="club-b-card f0-focus f0-press inline-flex items-center gap-2 px-5 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:border-accent"
           >
             <Video className="h-4 w-4" />
             Live classes
@@ -399,10 +410,10 @@ export default function UpgradePage() {
         </div>
 
         {/* ── Next value: what to do next, not a dead-end ── */}
-        <section className="mt-11">
-          <SectionRule>Where to go next</SectionRule>
-          <div className="f0-ledger mt-1">
-            <div className="py-5">
+        <div className="mt-11">
+          <BoardSection label="Where to go" mark="next" id="fta-next">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="club-b-card p-5">
               <p className="flex items-center gap-2 text-eyebrow font-display font-bold uppercase text-gold-700">
                 <Video className="h-4 w-4" />
                 Your next live class
@@ -430,7 +441,7 @@ export default function UpgradePage() {
               </div>
             </div>
 
-            <div className="py-5">
+            <div className="club-b-card p-5">
               <p className="flex items-center gap-2 text-eyebrow font-display font-bold uppercase text-gold-700">
                 <GraduationCap className="h-4 w-4" />
                 The six-week program
@@ -447,9 +458,10 @@ export default function UpgradePage() {
               </div>
             </div>
           </div>
-        </section>
+          </BoardSection>
+        </div>
 
-        <p className="f0-rule-top mt-10 pt-5 text-xs text-soft">
+        <p className="mt-10 border-t border-sand pt-5 text-xs text-soft">
           Questions about your membership? Reach out to your coach in the
           community.
         </p>
@@ -473,7 +485,7 @@ export default function UpgradePage() {
           </p>
           <h1 className="mt-4 max-w-[16ch] font-display text-display-1 font-extrabold leading-[0.95] sm:text-[3.25rem]">
             Join {clubName} for{" "}
-            <span className="text-gradient-gold">$99/mo</span>.
+            <span className="text-accent">$99/mo</span>.
           </h1>
           <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed text-white/70 sm:text-base">
             You&apos;re exploring free. Joining opens Kai, your AI analyst,
@@ -487,7 +499,7 @@ export default function UpgradePage() {
               href={FIC_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
+              className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
             >
               Join {clubName} — $99/mo
               <ArrowRight className="h-4 w-4" />
@@ -528,10 +540,10 @@ export default function UpgradePage() {
                 : "You keep the free sampler either way — joining unlocks the full experience for the whole family."
             }
           />
-          <div className="f0-ledger mt-2">
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
             {FIC_PILLARS.map((p, i) => (
-              <m.div key={p.title} {...rise(i)} className="flex gap-4 py-5">
-                <p.icon className="mt-0.5 h-5 w-5 shrink-0 text-gold-700" />
+              <m.div key={p.title} {...rise(i)} className="club-b-card flex gap-4 p-5">
+                <p.icon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
                 <div className="min-w-0">
                   <h3 className="font-display text-[17px] font-extrabold text-ink">
                     {p.title}
@@ -546,7 +558,7 @@ export default function UpgradePage() {
         </section>
 
         {/* ── FINAL FIC CTA BAND ───────────────────────────────────────── */}
-        <m.section {...rise()} className="mt-14 border-l-[3px] border-gold-500 pl-5 sm:pl-7">
+        <m.section {...rise()} className="club-b-warm mt-14 p-6 sm:p-8">
           <p className="flex items-center gap-2 text-eyebrow font-display font-bold uppercase text-gold-700">
             <Users className="h-4 w-4" />
             Join today
@@ -570,7 +582,7 @@ export default function UpgradePage() {
             href={FIC_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="cta-button f0-focus f0-press mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm"
+            className="f0-focus f0-press mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
           >
             Join the club
             <ArrowRight className="h-4 w-4" />
@@ -591,7 +603,7 @@ export default function UpgradePage() {
         </section>
 
         {/* ── SECONDARY: FTA "go deeper" tier ──────────────────────────── */}
-        <section className="f0-rule-top mt-10 flex flex-col gap-5 pt-8 sm:flex-row sm:items-center">
+        <section className="club-b-card mt-10 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-display text-[17px] font-extrabold text-ink">
@@ -609,7 +621,7 @@ export default function UpgradePage() {
             href={FTA_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="f0-focus f0-press inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-sand px-5 py-3 font-display text-sm font-semibold text-ink transition-colors hover:bg-card"
+            className="f0-focus f0-press inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-ink px-5 py-3 font-display text-sm font-semibold text-paper transition-colors"
           >
             Explore FTA — $2,997
             <ArrowRight className="h-4 w-4" />
@@ -617,7 +629,7 @@ export default function UpgradePage() {
         </section>
 
         {/* ── DISCLAIMER ───────────────────────────────────────────────── */}
-        <p className="f0-rule-top mt-12 flex max-w-[64ch] items-start gap-2 pt-5 text-xs leading-relaxed text-soft">
+        <p className="mt-12 flex max-w-[64ch] items-start gap-2 border-t border-sand pt-5 text-xs leading-relaxed text-soft">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             {clubName} is an education platform. Nothing in the app or
@@ -643,7 +655,7 @@ export default function UpgradePage() {
         </p>
         <h1 className="mt-4 max-w-[18ch] font-display text-display-1 font-extrabold leading-[0.95] sm:text-[3.25rem]">
           Go from investing club to{" "}
-          <span className="text-gradient-gold">trade ready</span> in six weeks.
+          <span className="text-accent">trade ready</span> in six weeks.
         </h1>
         <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed text-white/70 sm:text-base">
           {isSolo ? "You already know" : "Your family already knows"} the
@@ -657,7 +669,7 @@ export default function UpgradePage() {
             href={FTA_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm"
+            className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-sm bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
           >
             Upgrade to FTA — $2,997
             <ArrowRight className="h-4 w-4" />
@@ -694,10 +706,10 @@ export default function UpgradePage() {
           title="A real program, not another video dump"
           sub={`Everything below is on top of the ${clubName} you already have.`}
         />
-        <div className="f0-ledger mt-2">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           {PILLARS.map((p, i) => (
-            <m.div key={p.title} {...rise(i)} className="flex gap-4 py-5">
-              <p.icon className="mt-0.5 h-5 w-5 shrink-0 text-gold-700" />
+            <m.div key={p.title} {...rise(i)} className="club-b-card flex gap-4 p-5">
+              <p.icon className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
               <div className="min-w-0">
                 <h3 className="font-display text-[17px] font-extrabold text-ink">
                   {p.title}
@@ -718,10 +730,10 @@ export default function UpgradePage() {
           title="A clear path from zero"
           sub="Each week builds on the last — foundations, then charts, then risk, then a plan you actually trade."
         />
-        <div className="f0-ledger mt-2">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           {CURRICULUM.map((w, i) => (
-            <m.div key={w.week} {...rise(i % 3)} className="flex gap-4 py-5">
-              <w.icon className="mt-1 h-5 w-5 shrink-0 text-gold-700" />
+            <m.div key={w.week} {...rise(i % 3)} className="club-b-card flex gap-4 p-5">
+              <w.icon className="mt-1 h-5 w-5 shrink-0 text-accent" />
               <div className="min-w-0">
                 <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
                   {w.week}
@@ -751,7 +763,7 @@ export default function UpgradePage() {
       {/* ── HONEST OUTCOME FRAMING ───────────────────────────────────────── */}
       {/* Was a second night-island; one dark object per surface, so the promise
           now lands as composed type on the paper. */}
-      <section className="mt-16 border-l-[3px] border-gold-500 pl-5 sm:pl-7">
+      <section className="club-b-card mt-16 p-6 sm:p-8">
         <h2 className="max-w-[24ch] font-display text-display-2 font-extrabold leading-tight text-ink">
           You finish with a written plan, a routine, and reps on the simulator
           — not a promise.
@@ -766,7 +778,7 @@ export default function UpgradePage() {
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <section className="mt-16">
         <SectionHead eyebrow="Questions" title="The things families ask first" />
-        <div className="f0-ledger mt-2">
+        <div className="club-b-card mt-2 divide-y divide-sand px-5">
           {FAQ.map((f) => (
             <details key={f.q} className="group py-1">
               <summary className="f0-focus flex cursor-pointer list-none items-start gap-3 py-4">
@@ -784,7 +796,7 @@ export default function UpgradePage() {
       </section>
 
       {/* ── FINAL CTA BAND ───────────────────────────────────────────────── */}
-      <m.section {...rise()} className="mt-16 border-l-[3px] border-gold-500 pl-5 sm:pl-7">
+      <m.section {...rise()} className="club-b-warm mt-16 p-6 sm:p-8">
         <p className="flex items-center gap-2 text-eyebrow font-display font-bold uppercase text-gold-700">
           <GraduationCap className="h-4 w-4" />
           The advanced upgrade
@@ -806,7 +818,7 @@ export default function UpgradePage() {
           href={FTA_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="cta-button f0-focus f0-press mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm"
+          className="f0-focus f0-press mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
         >
           Upgrade to FTA
           <ArrowRight className="h-4 w-4" />
@@ -827,7 +839,7 @@ export default function UpgradePage() {
       </m.section>
 
       {/* ── DISCLAIMER ───────────────────────────────────────────────────── */}
-      <p className="f0-rule-top mt-12 flex max-w-[64ch] items-start gap-2 pt-5 text-xs leading-relaxed text-soft">
+      <p className="mt-12 flex max-w-[64ch] items-start gap-2 border-t border-sand pt-5 text-xs leading-relaxed text-soft">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
           Family Trading Academy is an education program. Nothing in the
@@ -868,18 +880,14 @@ function SectionHead({
   );
 }
 
-/** The outcome strip: four terms separated by hairlines, sitting directly on
- *  the paper. Deliberately NOT four bordered tiles. */
+/** The outcome strip: four terms, each its own white board card on the paper.
+ *  (The previous revision drew them as hairline-divided columns — that was the
+ *  pre-canvas ledger vocabulary; the board makes objects out of them.) */
 function TermStrip({ items }: { items: { k: string; v: string }[] }) {
   return (
-    <div className="flex flex-col divide-y divide-sand sm:flex-row sm:divide-x sm:divide-y-0">
-      {items.map((s, i) => (
-        <div
-          key={s.k}
-          className={`min-w-0 flex-1 py-3 sm:py-0 ${i > 0 ? "sm:pl-5" : ""} ${
-            i < items.length - 1 ? "sm:pr-5" : ""
-          }`}
-        >
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {items.map((s) => (
+        <div key={s.k} className="club-b-card px-4 py-3.5">
           <p className="font-display text-[17px] font-extrabold leading-tight text-ink">
             {s.k}
           </p>
@@ -901,7 +909,7 @@ function CompareTable({
   highlight: "fic" | "fta";
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="club-b-card overflow-x-auto p-4 sm:p-5">
       <table className="w-full min-w-[420px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-sand">

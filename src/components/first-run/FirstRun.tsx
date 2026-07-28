@@ -240,12 +240,12 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
         {phase === "install" && (
           <Sheet onClose={skipInstall}>
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-display text-lg font-bold text-midnight-50">
+              <h3 className="font-display text-lg font-bold text-ink">
                 {iosInstall ? "Add to your Home Screen" : "Install the app"}
               </h3>
               <CloseBtn onClick={skipInstall} />
             </div>
-            <p className="text-sm text-midnight-400 mb-5">
+            <p className="text-sm text-soft mb-5">
               {iosInstall
                 ? "Keep the Club one tap away — and it unlocks notifications on iPhone. Two quick taps:"
                 : "Get a real app on your home screen — faster, full-screen, and ready for notifications."}
@@ -256,9 +256,9 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
                 <ol className="space-y-3">
                   <li className="flex items-center gap-3">
                     <StepDot n={1} />
-                    <span className="text-sm text-midnight-100 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm text-ink flex items-center gap-1.5 flex-wrap">
                       Tap the
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-midnight-800 text-gold-400 font-medium">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-sand px-1.5 py-0.5 font-medium text-accent">
                         <Share className="w-3.5 h-3.5" /> Share
                       </span>
                       icon in Safari
@@ -266,15 +266,15 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
                   </li>
                   <li className="flex items-center gap-3">
                     <StepDot n={2} />
-                    <span className="text-sm text-midnight-100 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm text-ink flex items-center gap-1.5 flex-wrap">
                       Choose
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-midnight-800 text-midnight-100 font-medium">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-sand px-1.5 py-0.5 font-medium text-ink">
                         <Plus className="w-3.5 h-3.5" /> Add to Home Screen
                       </span>
                     </span>
                   </li>
                 </ol>
-                <button onClick={skipInstall} className="mt-6 w-full cta-button px-4 py-2.5 rounded-xl text-sm font-semibold">
+                <button onClick={skipInstall} className="f0-press f0-focus mt-6 w-full rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-4 py-2.5 text-sm">
                   Got it
                 </button>
               </>
@@ -282,13 +282,13 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={doInstall}
-                  className="flex-1 cta-button px-4 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2"
+                  className="f0-press f0-focus inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-4 py-2.5 text-sm"
                 >
                   <Download className="w-4 h-4" /> Install
                 </button>
                 <button
                   onClick={skipInstall}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium text-midnight-400 hover:text-midnight-200"
+                  className="f0-focus rounded-xl px-4 py-2.5 text-sm font-medium text-soft transition-colors hover:text-ink"
                 >
                   Not now
                 </button>
@@ -307,17 +307,17 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
                 {user.isChallenge ? <CalendarClock className="w-5 h-5" /> : <BellRing className="w-5 h-5" />}
               </span>
               <div>
-                <h3 className="font-display text-lg font-bold text-midnight-50">
+                <h3 className="font-display text-lg font-bold text-ink">
                   {firstName ? `Stay in the loop, ${firstName}` : "Stay in the loop"}
                 </h3>
-                <p className="text-sm text-midnight-400 mt-1 leading-relaxed">
+                <p className="text-sm text-soft mt-1 leading-relaxed">
                   {user.isChallenge
                     ? "Get a reminder before each live session so you never miss a day of the challenge — and a ping when Kai spots something on your watchlist."
                     : "Let Kai ping you the moment your alerts fire, plus a heads-up before live classes. No spam — only the stuff you asked for."}
                 </p>
               </div>
             </div>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-midnight-500">
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-ink0">
               <Sparkles className="w-3.5 h-3.5 text-gold-500" />
               You choose exactly what pings you — change it anytime in Settings.
             </div>
@@ -325,13 +325,13 @@ export default function FirstRun({ user }: { user: FirstRunUser }) {
               <button
                 onClick={enablePush}
                 disabled={pushBusy}
-                className="flex-1 cta-button px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                className="f0-press f0-focus inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-4 py-2.5 text-sm disabled:opacity-50"
               >
                 <BellRing className="w-4 h-4" /> {pushBusy ? "Turning on…" : "Turn on notifications"}
               </button>
               <button
                 onClick={declinePush}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-midnight-400 hover:text-midnight-200"
+                className="f0-focus rounded-xl px-4 py-2.5 text-sm font-medium text-soft transition-colors hover:text-ink"
               >
                 Not now
               </button>
@@ -350,7 +350,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+      className="bg-scrim fixed inset-0 z-[95] flex items-end justify-center p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -361,7 +361,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
         exit={{ y: 40, opacity: 0 }}
         transition={{ type: "spring", damping: 26, stiffness: 260 }}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-3xl bg-midnight-900 border border-gold-400/25 p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-3xl border border-sand bg-card p-6 shadow-[var(--shadow-lift)]"
       >
         {children}
       </m.div>
@@ -371,7 +371,7 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
 
 function CloseBtn({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} aria-label="Close" className="text-midnight-500 hover:text-midnight-300">
+    <button onClick={onClick} aria-label="Close" className="f0-focus rounded text-soft transition-colors hover:text-ink">
       <X className="w-5 h-5" />
     </button>
   );

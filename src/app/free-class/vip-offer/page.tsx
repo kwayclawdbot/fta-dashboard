@@ -12,10 +12,19 @@ import {
   Check,
   ShieldCheck,
   ArrowRight,
-  Loader2,
-  PartyPopper,
 } from "lucide-react";
-import { TopBar } from "@/components/free-class/ui";
+import {
+  FunnelPage,
+  FunnelSkeleton,
+  TopBar,
+  Mast,
+  WarmCard,
+  IconLine,
+  Action,
+  QuietAction,
+  Terms,
+  Spinner,
+} from "@/components/free-class/ui";
 import { setChallengeFlag } from "@/lib/funnel";
 
 /**
@@ -26,6 +35,12 @@ import { setChallengeFlag } from "@/lib/funnel";
  * Two honest exits, no fake urgency: "Go VIP" → the guest VIP checkout with the
  * email prefilled via the continuation token; "No thanks" → the shortened setup.
  * The token never exposes the email in the URL.
+ *
+ * DRAWN AS: the pricing card on board `light-r1-c1` — a brand-tinted card with
+ * the badge pill hung on its top edge, the price as the largest numeral on the
+ * screen, a checked perk list, one full-width accent pill, and the terms as
+ * fine print directly beneath it. Every commercial string is the one that
+ * shipped; only the container changed.
  */
 export default function VipOfferPage() {
   const router = useRouter();
@@ -75,18 +90,12 @@ export default function VipOfferPage() {
     else router.push("/free-class?challenge=1");
   }
 
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
-      </div>
-    );
-  }
+  if (!ready) return <FunnelSkeleton />;
 
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col">
+    <FunnelPage>
       <TopBar />
-      <div className="flex-1 flex items-start sm:items-center justify-center px-5 py-8">
+      <div className="flex flex-1 items-start justify-center px-5 py-8 sm:items-center">
         <m.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -94,92 +103,96 @@ export default function VipOfferPage() {
           className="w-full max-w-md"
         >
           {/* Registered confirmation */}
-          <div className="text-center">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-chip-green flex items-center justify-center mb-3">
-              <PartyPopper className="w-6 h-6 text-green-600" />
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-green text-green-700 text-[11px] font-display font-bold uppercase tracking-[0.14em] mb-3">
-              <Check className="w-3 h-3" /> You&apos;re registered
-            </span>
-            <h1 className="font-display text-[1.6rem] leading-tight sm:text-3xl font-bold text-ink">
-              Your spot in the challenge is saved.
-            </h1>
-            <p className="text-soft text-sm mt-2 max-w-sm mx-auto leading-relaxed">
-              Before you set up your account — one optional upgrade, offered once.
-            </p>
-          </div>
+          <Mast
+            eyebrow={
+              <>
+                <Check className="h-3 w-3" /> You&apos;re registered
+              </>
+            }
+            size="md"
+            title="Your spot in the challenge is saved."
+            lede="Before you set up your account — one optional upgrade, offered once."
+          />
 
-          {/* The VIP ticket object */}
-          <div className="paper-card ring-2 ring-gold-400 mt-6 overflow-hidden">
-            <div className="h-1.5 bg-gradient-to-r from-gold-400 via-gold-500 to-teal-500" />
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-gold-700">
-                  <Ticket className="w-5 h-5" />
-                  <span className="text-[11px] font-display font-bold uppercase tracking-wider">
-                    VIP Ticket
-                  </span>
-                </div>
-                <span className="font-display text-2xl font-bold text-ink">$197</span>
-              </div>
-
-              {isVip ? (
-                <div className="mt-4">
-                  <h2 className="font-display text-xl font-bold text-ink">You&apos;re already VIP 🎟️</h2>
-                  <p className="text-soft text-sm mt-2 leading-relaxed">
-                    Your textbook is on the way and your VIP room is open. Let&apos;s finish setting
-                    up your account.
-                  </p>
-                </div>
-              ) : (
+          {/* The VIP ticket object — the screen's one branded card. */}
+          <div className="mt-7">
+            <WarmCard
+              badge={
                 <>
-                  <h2 className="font-display text-xl font-bold text-ink mt-3">
-                    Go deeper, with something to hold.
-                  </h2>
-                  <div className="mt-4 space-y-2.5">
-                    <Perk icon={BookOpen}>
-                      The printed textbook, mailed to you <span className="text-soft">(its normal retail price)</span>
-                    </Perk>
-                    <Perk icon={Sparkles}>Your first month of Cheat Code Club, included</Perk>
-                    <Perk icon={Lock}>A private VIP room through the challenge</Perk>
-                    <Perk icon={PlayCircle}>Replays of every live session</Perk>
-                  </div>
-
-                  <button
-                    onClick={goVip}
-                    disabled={going || !token}
-                    className="cta-button mt-6 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] disabled:opacity-60"
-                  >
-                    {going ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Ticket className="w-4 h-4" /> Go VIP — $197 <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                  <p className="mt-3 text-[12px] text-soft leading-relaxed flex items-start gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    $197 today · includes your first month of Club · $99/mo after — we&apos;ll remind
-                    you 3 days before, cancel in one click. Education, not financial advice.
-                  </p>
+                  <Ticket className="h-3 w-3" /> VIP Ticket
                 </>
-              )}
-            </div>
+              }
+            >
+              <div className="px-6 pb-6 pt-5">
+                {isVip ? (
+                  <>
+                    <div className="flex items-end justify-between gap-4">
+                      <h2 className="font-display text-[1.25rem] font-extrabold leading-tight tracking-[-0.02em] text-ink">
+                        You&apos;re already VIP 🎟️
+                      </h2>
+                      <span className="font-display text-[1.75rem] font-extrabold leading-none tabular-nums text-ink">
+                        $197
+                      </span>
+                    </div>
+                    <p className="mt-3 text-[14px] leading-relaxed text-soft">
+                      Your textbook is on the way and your VIP room is open. Let&apos;s finish setting
+                      up your account.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-between gap-4">
+                      <h2 className="font-display text-[1.25rem] font-extrabold leading-tight tracking-[-0.02em] text-ink">
+                        Go deeper, with something to hold.
+                      </h2>
+                      <span className="font-display text-[1.75rem] font-extrabold leading-none tabular-nums text-ink">
+                        $197
+                      </span>
+                    </div>
+
+                    <div className="mt-5 space-y-2.5">
+                      <IconLine icon={BookOpen}>
+                        The printed textbook, mailed to you <span className="text-soft">(its normal retail price)</span>
+                      </IconLine>
+                      <IconLine icon={Sparkles}>Your first month of Cheat Code Club, included</IconLine>
+                      <IconLine icon={Lock}>A private VIP room through the challenge</IconLine>
+                      <IconLine icon={PlayCircle}>Replays of every live session</IconLine>
+                    </div>
+
+                    <div className="mt-6">
+                      <Action onClick={goVip} disabled={going || !token}>
+                        {going ? (
+                          <Spinner />
+                        ) : (
+                          <>
+                            <Ticket className="h-4 w-4" /> Go VIP — $197 <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </Action>
+                    </div>
+                    <div className="mt-3">
+                      <Terms icon={ShieldCheck} align="left">
+                        $197 today · includes your first month of Club · $99/mo after — we&apos;ll remind
+                        you 3 days before, cancel in one click. Education, not financial advice.
+                      </Terms>
+                    </div>
+                  </>
+                )}
+              </div>
+            </WarmCard>
           </div>
 
           {/* Honest skip */}
-          <button
-            onClick={skipToSetup}
-            className="mt-5 w-full text-center text-sm font-display font-semibold text-soft hover:text-ink transition-colors"
-          >
-            {isVip ? "Continue to my account" : "No thanks — take me to my account"} →
-          </button>
+          <div className="mt-5">
+            <QuietAction onClick={skipToSetup}>
+              {isVip ? "Continue to my account" : "No thanks — take me to my account"} →
+            </QuietAction>
+          </div>
 
           {!valid && token && (
-            <p className="mt-4 text-center text-xs text-soft">
+            <p className="mt-4 text-center text-[12px] text-soft">
               This link looks expired. You can still{" "}
-              <button onClick={skipToSetup} className="text-gold-700 font-semibold underline">
+              <button onClick={skipToSetup} className="f0-focus rounded font-semibold text-accent underline">
                 finish setting up
               </button>
               .
@@ -187,23 +200,6 @@ export default function VipOfferPage() {
           )}
         </m.div>
       </div>
-    </div>
-  );
-}
-
-function Perk({
-  icon: Icon,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="w-7 h-7 rounded-lg bg-gold-400/15 flex items-center justify-center shrink-0 mt-0.5">
-        <Icon className="w-4 h-4 text-gold-700" />
-      </span>
-      <span className="text-[15px] text-ink leading-snug">{children}</span>
-    </div>
+    </FunnelPage>
   );
 }

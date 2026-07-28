@@ -238,12 +238,12 @@ export default function LeadsPage() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-6 flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Marketing · Leads</h1>
-          <p className="text-zinc-400 text-sm mt-1">Import contacts, add leads, connect ad sources</p>
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">Marketing · Leads</h1>
+          <p className="text-soft text-sm mt-1">Import contacts, add leads, connect ad sources</p>
         </div>
         <button
           onClick={() => setShowAdd((v) => !v)}
-          className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-amber-400 text-zinc-950 font-semibold hover:bg-amber-300 transition-colors"
+          className="f0-press f0-focus inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-accent text-[color:var(--accent-on)] font-semibold hover:bg-accent-strong transition-colors"
         >
           <UserPlus className="w-4 h-4" /> Add lead
         </button>
@@ -254,25 +254,25 @@ export default function LeadsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         <MiniStat label="Total leads" value={stats.total} />
         {PIPELINE_STAGES.map((s) => (
-          <MiniStat key={s} label={s} value={stats.byStage[s] || 0} accent={s === "converted" ? "text-emerald-400" : "text-zinc-100"} />
+          <MiniStat key={s} label={s} value={stats.byStage[s] || 0} accent={s === "converted" ? "text-accent" : "text-ink"} />
         ))}
       </div>
 
       {/* add-lead form */}
       {showAdd && (
-        <form onSubmit={submitAdd} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 mb-6">
+        <form onSubmit={submitAdd} className="club-b-card p-5 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <input value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} placeholder="email@example.com" className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600" />
-            <input value={addForm.first_name} onChange={(e) => setAddForm({ ...addForm, first_name: e.target.value })} placeholder="First name" className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600" />
-            <input value={addForm.last_name} onChange={(e) => setAddForm({ ...addForm, last_name: e.target.value })} placeholder="Last name" className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600" />
-            <input value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} placeholder="Phone (+1…)" className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600" />
-            <input value={addForm.tags} onChange={(e) => setAddForm({ ...addForm, tags: e.target.value })} placeholder="tags, comma, sep" className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600" />
+            <input value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} placeholder="email@example.com" className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70" />
+            <input value={addForm.first_name} onChange={(e) => setAddForm({ ...addForm, first_name: e.target.value })} placeholder="First name" className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70" />
+            <input value={addForm.last_name} onChange={(e) => setAddForm({ ...addForm, last_name: e.target.value })} placeholder="Last name" className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70" />
+            <input value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} placeholder="Phone (+1…)" className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70" />
+            <input value={addForm.tags} onChange={(e) => setAddForm({ ...addForm, tags: e.target.value })} placeholder="tags, comma, sep" className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70" />
           </div>
           <div className="flex items-center gap-3 mt-3">
-            <button disabled={addBusy} className="text-sm px-3 py-2 rounded-lg bg-amber-400 text-zinc-950 font-semibold hover:bg-amber-300 disabled:opacity-50 transition-colors">
+            <button disabled={addBusy} className="f0-press f0-focus text-sm px-3 py-2 rounded-lg bg-accent text-[color:var(--accent-on)] font-semibold hover:bg-accent-strong disabled:opacity-50 transition-colors">
               {addBusy ? "Adding…" : "Save lead"}
             </button>
-            {addMsg && <span className="text-xs text-zinc-400">{addMsg}</span>}
+            {addMsg && <span className="text-xs text-soft">{addMsg}</span>}
           </div>
         </form>
       )}
@@ -280,31 +280,31 @@ export default function LeadsPage() {
       {/* CSV import + FB connect */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         {/* CSV */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="club-b-card p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Upload className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-medium text-zinc-300">Import CSV</span>
+            <Upload className="w-4 h-4 text-accent" />
+            <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Import CSV</span>
           </div>
           {!csvRows ? (
             <div>
-              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} className="block w-full text-sm text-zinc-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-zinc-800 file:text-zinc-200 file:text-sm hover:file:bg-zinc-700 file:cursor-pointer" />
-              <p className="text-xs text-zinc-600 mt-2">Any CSV. You&apos;ll map columns next. Email required; dedupe by email + source.</p>
-              {importSummary && <p className="text-xs text-emerald-400 mt-2">{importSummary}</p>}
+              <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} className="block w-full text-sm text-soft file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-paper file:text-ink file:text-sm hover:file:bg-paper file:cursor-pointer" />
+              <p className="text-xs text-soft/70 mt-2">Any CSV. You&apos;ll map columns next. Email required; dedupe by email + source.</p>
+              {importSummary && <p className="text-xs text-soft mt-2">{importSummary}</p>}
             </div>
           ) : (
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-xs text-zinc-400">
+              <label className="flex items-center gap-2 text-xs text-soft">
                 <input type="checkbox" checked={hasHeader} onChange={(e) => setHasHeader(e.target.checked)} />
                 First row is a header
               </label>
               <div className="space-y-2">
                 {(Object.keys(FIELD_LABELS) as FieldKey[]).map((f) => (
                   <div key={f} className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-400 w-20 shrink-0">{FIELD_LABELS[f]}</span>
+                    <span className="text-xs text-soft w-20 shrink-0">{FIELD_LABELS[f]}</span>
                     <select
                       value={colMap[f]}
                       onChange={(e) => setColMap({ ...colMap, [f]: Number(e.target.value) })}
-                      className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-100"
+                      className="flex-1 bg-paper border border-sand rounded-lg px-2 py-1.5 text-xs text-ink"
                     >
                       <option value={-1}>— none —</option>
                       {csvHeaders.map((h, i) => (
@@ -316,55 +316,55 @@ export default function LeadsPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-zinc-500">{validCount} valid rows (of {previewRows.length})</p>
+              <p className="text-xs text-soft">{validCount} valid rows (of {previewRows.length})</p>
               <div className="flex items-center gap-2">
-                <button onClick={runImport} disabled={importBusy || validCount === 0} className="text-sm px-3 py-1.5 rounded-lg bg-amber-400 text-zinc-950 font-semibold hover:bg-amber-300 disabled:opacity-50 transition-colors">
+                <button onClick={runImport} disabled={importBusy || validCount === 0} className="f0-press f0-focus text-sm px-3 py-1.5 rounded-lg bg-accent text-[color:var(--accent-on)] font-semibold hover:bg-accent-strong disabled:opacity-50 transition-colors">
                   {importBusy ? "Importing…" : `Import ${validCount}`}
                 </button>
-                <button onClick={() => { setCsvRows(null); if (fileRef.current) fileRef.current.value = ""; }} className="text-sm px-3 py-1.5 rounded-lg text-zinc-400 hover:text-zinc-200">
+                <button onClick={() => { setCsvRows(null); if (fileRef.current) fileRef.current.value = ""; }} className="text-sm px-3 py-1.5 rounded-lg text-soft hover:text-ink">
                   Cancel
                 </button>
               </div>
-              {importSummary && <p className="text-xs text-emerald-400">{importSummary}</p>}
+              {importSummary && <p className="text-xs text-soft">{importSummary}</p>}
             </div>
           )}
         </div>
 
         {/* FB connect */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+        <div className="club-b-card p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Facebook className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-zinc-300">Connect Facebook Lead Ads</span>
-            <span className={`ml-auto text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${fbConfig?.configured ? "text-amber-300 bg-amber-500/10" : "text-zinc-500 bg-zinc-800"}`}>
+            <Facebook className="w-4 h-4 text-soft" />
+            <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Connect Facebook Lead Ads</span>
+            <span className={`ml-auto f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${fbConfig?.configured ? "f0-chip-accent text-accent" : "text-soft"}`}>
               {fbConfig?.configured ? "Webhook ready" : "Owner setup needed"}
             </span>
           </div>
-          <p className="text-xs text-zinc-500 mb-3">
+          <p className="text-xs text-soft mb-3">
             The receiving webhook is live. To turn on the feed, the owner completes the Meta side (needs a Meta developer app + Page access token — that part is owner-blocked).
           </p>
           <div className="space-y-2 text-xs">
             <div>
-              <span className="text-zinc-500">Callback URL</span>
+              <span className="text-soft">Callback URL</span>
               <div className="flex items-center gap-2 mt-1">
-                <code className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-zinc-300 truncate">{fbConfig?.webhook_url || "…"}</code>
-                <button onClick={() => copyText(fbConfig?.webhook_url || "", "url")} className="p-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">
-                  {copied === "url" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <code className="flex-1 bg-paper border border-sand rounded px-2 py-1.5 text-ink truncate">{fbConfig?.webhook_url || "…"}</code>
+                <button onClick={() => copyText(fbConfig?.webhook_url || "", "url")} className="p-1.5 rounded border border-sand bg-card hover:bg-paper text-ink">
+                  {copied === "url" ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
             <div>
-              <span className="text-zinc-500">Verify token</span>
+              <span className="text-soft">Verify token</span>
               <div className="flex items-center gap-2 mt-1">
-                <code className="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-zinc-300 truncate">{fbConfig?.verify_token || "…"}</code>
-                <button onClick={() => copyText(fbConfig?.verify_token || "", "tok")} className="p-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">
-                  {copied === "tok" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <code className="flex-1 bg-paper border border-sand rounded px-2 py-1.5 text-ink truncate">{fbConfig?.verify_token || "…"}</code>
+                <button onClick={() => copyText(fbConfig?.verify_token || "", "tok")} className="p-1.5 rounded border border-sand bg-card hover:bg-paper text-ink">
+                  {copied === "tok" ? <Check className="w-3.5 h-3.5 text-accent" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
           </div>
-          <ol className="text-[11px] text-zinc-500 mt-3 space-y-1 list-decimal list-inside">
+          <ol className="text-[11px] text-soft mt-3 space-y-1 list-decimal list-inside">
             <li>Create a Meta developer app (developers.facebook.com) → add the Webhooks + Lead Ads products.</li>
-            <li>Under Webhooks → object &quot;Page&quot;, paste the Callback URL + Verify token above, subscribe to the <code className="text-zinc-400">leadgen</code> field.</li>
+            <li>Under Webhooks → object &quot;Page&quot;, paste the Callback URL + Verify token above, subscribe to the <code className="text-soft">leadgen</code> field.</li>
             <li>Generate a Page access token for the FIC page and subscribe the page to the app.</li>
             <li>New Lead Ad submissions then land here automatically as source &quot;facebook&quot;.</li>
           </ol>
@@ -374,17 +374,17 @@ export default function LeadsPage() {
       {/* filters */}
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, tag…" className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-100 placeholder-zinc-600" />
+          <Search className="w-4 h-4 text-soft absolute left-3 top-1/2 -translate-y-1/2" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, tag…" className="w-full bg-paper border border-sand rounded-lg pl-9 pr-3 py-2 text-sm text-ink placeholder:text-soft/70" />
         </div>
-        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value as Stage | "all" | "cold")} className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100">
+        <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value as Stage | "all" | "cold")} className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink">
           <option value="all">All stages</option>
           {STAGES.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
           <option value="cold">❄ Cold only</option>
         </select>
-        <button onClick={load} className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300" title="Refresh">
+        <button onClick={load} className="p-2 rounded-lg border border-sand bg-card hover:bg-paper text-ink" title="Refresh">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -392,35 +392,35 @@ export default function LeadsPage() {
       {/* table */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">{error}</div>
+        <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent">{error}</div>
       ) : (
-        <div className="rounded-xl border border-zinc-800 overflow-hidden overflow-x-auto">
+        <div className="club-b-card overflow-hidden overflow-x-auto">
           <table className="w-full text-sm min-w-[720px]">
             <thead>
-              <tr className="bg-zinc-900/70 text-zinc-500 text-xs">
-                <th className="text-left font-medium px-4 py-2.5">Lead</th>
-                <th className="text-left font-medium px-4 py-2.5">Source</th>
-                <th className="text-left font-medium px-4 py-2.5">Stage</th>
-                <th className="text-left font-medium px-4 py-2.5">Tags</th>
-                <th className="text-left font-medium px-4 py-2.5">Activity</th>
+              <tr className="border-b border-sand bg-paper font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
+                <th className="text-left font-medium px-4 py-3">Lead</th>
+                <th className="text-left font-medium px-4 py-3">Source</th>
+                <th className="text-left font-medium px-4 py-3">Stage</th>
+                <th className="text-left font-medium px-4 py-3">Tags</th>
+                <th className="text-left font-medium px-4 py-3">Activity</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600 text-sm">No leads match.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-10 text-center text-soft/70 text-sm">No leads match.</td></tr>
               ) : (
                 filtered.map((l) => (
                   <tr
                     key={l.id}
                     onClick={() => router.push(`/admin/crm/members/lead-${l.id}`)}
-                    className="border-t border-zinc-800/70 hover:bg-zinc-800/20 cursor-pointer"
+                    className="border-t border-sand hover:bg-paper cursor-pointer"
                   >
                     <td className="px-4 py-2.5">
-                      <div className="font-medium text-zinc-200">{leadName(l)}</div>
-                      <div className="text-xs text-zinc-500">{l.email}</div>
+                      <div className="font-medium text-ink">{leadName(l)}</div>
+                      <div className="text-xs text-soft">{l.email}</div>
                     </td>
                     <td className="px-4 py-2.5"><SourceBadge source={l.source} /></td>
                     <td className="px-4 py-2.5">
@@ -432,10 +432,10 @@ export default function LeadsPage() {
                     <td className="px-4 py-2.5">
                       <div className="flex flex-wrap gap-1">
                         {l.tags.slice(0, 4).map((t) => <TagPill key={t} tag={t} />)}
-                        {l.tags.length > 4 && <span className="text-[10px] text-zinc-600">+{l.tags.length - 4}</span>}
+                        {l.tags.length > 4 && <span className="text-[10px] text-soft/70">+{l.tags.length - 4}</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-zinc-500">{relativeTime(l.last_activity_at)}</td>
+                    <td className="px-4 py-2.5 text-xs text-soft">{relativeTime(l.last_activity_at)}</td>
                   </tr>
                 ))
               )}

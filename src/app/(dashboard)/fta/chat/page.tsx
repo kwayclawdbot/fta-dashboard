@@ -10,9 +10,10 @@ import LockedState from "@/components/dashboard/LockedState";
  * Chat drawer). FTA members only: FIC members hit a LockedState upsell; free
  * members never reach here (DashboardShell shows FreeLocked first).
  *
- * The gate is unchanged. Only the loading state was rebuilt: it now mirrors the
- * metallic desk masthead and the room panel, so LOADING is visibly distinct from
- * both the locked state and an empty room (§0.4).
+ * The gate is unchanged. Only the loading state was rebuilt: it mirrors the
+ * metallic desk masthead and the room panel — now the board's white
+ * `.club-b-card` rather than a bare tinted rectangle — so LOADING is visibly
+ * distinct from both the locked state and an empty room (§0.4).
  */
 export default function FtaChatPage() {
   const { loading, me, isFta } = useFtaViewer();
@@ -25,7 +26,16 @@ export default function FtaChatPage() {
         <div className="mt-5 h-3 w-44 animate-pulse rounded bg-sand" />
         <div className="mt-3 h-11 w-64 animate-pulse rounded bg-sand" />
         <div className="mt-7 h-8 w-full animate-pulse rounded bg-sand/50" />
-        <div className="mt-8 h-[62vh] min-h-[440px] animate-pulse rounded-2xl bg-sand/30" />
+        <div className="club-b-card mt-8 flex h-[62vh] min-h-[440px] flex-col justify-end gap-3 p-4">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-10 w-2/3 animate-pulse rounded-xl bg-sand/50"
+            />
+          ))}
+          <div className="h-11 w-full animate-pulse rounded-xl bg-sand/40" />
+        </div>
+        <span className="sr-only">Loading the FTA traders room</span>
       </div>
     );
   }

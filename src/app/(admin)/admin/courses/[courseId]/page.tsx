@@ -129,18 +129,18 @@ const RESOURCE_LABELS: Record<string, string> = {
 function InputField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-400 mb-1">{label}</label>
+      <label className="block text-xs text-soft mb-1">{label}</label>
       {children}
     </div>
   );
 }
 
 const inputClass =
-  "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50";
+  "w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50";
 const btnPrimary =
-  "flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold transition-colors disabled:opacity-50";
+  "f0-press f0-focus flex items-center gap-2 px-4 py-2 rounded-lg bg-accent hover:bg-accent-strong text-[color:var(--accent-on)] text-sm font-semibold transition-colors disabled:opacity-50";
 const btnSecondary =
-  "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm transition-colors border border-zinc-700";
+  "f0-press f0-focus flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card hover:bg-paper text-ink text-sm transition-colors border border-sand";
 
 /* ── Page ─────────────────────────────────────────────────────── */
 
@@ -442,7 +442,7 @@ export default function CourseEditorPage() {
     setExpandedLessons(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   }
 
-  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" /></div>;
   if (!course) return null;
 
   const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
@@ -450,13 +450,13 @@ export default function CourseEditorPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <Link href="/admin/courses" className="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors mb-6">
+      <Link href="/admin/courses" className="inline-flex items-center gap-1.5 text-sm text-soft hover:text-ink transition-colors mb-6">
         <ArrowLeft className="w-4 h-4" /> Back to courses
       </Link>
 
       {/* Course Details */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 mb-6">
-        <h2 className="text-lg font-bold text-zinc-100 mb-4">Course Details</h2>
+      <div className="club-b-card p-6 mb-6">
+        <h2 className="font-display text-[17px] font-extrabold text-ink mb-4">Course Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField label="Title"><input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className={inputClass} /></InputField>
           <InputField label="Slug"><input type="text" value={editSlug} onChange={e => setEditSlug(e.target.value)} className={inputClass} /></InputField>
@@ -469,22 +469,22 @@ export default function CourseEditorPage() {
               </select>
             </InputField></div>
             <label className="flex items-center gap-2 cursor-pointer pb-2">
-              <input type="checkbox" checked={editPublished} onChange={e => setEditPublished(e.target.checked)} className="rounded border-zinc-700 bg-zinc-800 text-amber-400 focus:ring-amber-400/50" />
-              <span className="text-sm text-zinc-300">Published</span>
+              <input type="checkbox" checked={editPublished} onChange={e => setEditPublished(e.target.checked)} className="rounded border-sand bg-paper text-accent focus:ring-accent/50" />
+              <span className="text-sm text-ink">Published</span>
             </label>
           </div>
         </div>
         <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-zinc-500">{modules.length} modules · {totalLessons} lessons · {totalResources} resources · {tests.length} tests</p>
+          <p className="text-xs text-soft">{modules.length} modules · {totalLessons} lessons · {totalResources} resources · {tests.length} tests</p>
           <button onClick={handleSaveCourse} disabled={saving} className={btnPrimary}><Save className="w-4 h-4" />{saving ? "Saving..." : "Save Course"}</button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-zinc-800 pb-px">
+      <div className="flex gap-2 mb-4">
         {(["content", "tests"] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === tab ? "bg-zinc-800 text-amber-400 border-b-2 border-amber-400" : "text-zinc-400 hover:text-zinc-200"}`}>
+          <button key={tab} type="button" aria-pressed={activeTab === tab} onClick={() => setActiveTab(tab)}
+            className={`f0-chip f0-press f0-focus px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${activeTab === tab ? "f0-chip-on" : "text-soft hover:text-ink"}`}>
             {tab === "content" ? "Modules & Lessons" : "Tests & Exams"}
           </button>
         ))}
@@ -494,67 +494,67 @@ export default function CourseEditorPage() {
       {activeTab === "content" && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-zinc-100">Modules & Lessons</h2>
+            <h2 className="font-display text-[17px] font-extrabold text-ink">Modules & Lessons</h2>
             <button onClick={openAddModule} className={btnSecondary}><Plus className="w-4 h-4" />Add Module</button>
           </div>
 
           {modules.length === 0 ? (
-            <div className="text-center py-12 border border-zinc-800 rounded-xl">
-              <FileText className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-sm text-zinc-400">No modules yet. Add your first module.</p>
+            <div className="club-b-card text-center py-12">
+              <FileText className="w-8 h-8 text-soft/70 mx-auto mb-3" />
+              <p className="text-sm text-soft">No modules yet. Add your first module.</p>
             </div>
           ) : (
             <div className="space-y-2">
               {modules.map(mod => {
                 const isExpanded = expandedModules.has(mod.id);
                 return (
-                  <div key={mod.id} className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+                  <div key={mod.id} className="club-b-card overflow-hidden">
                     {/* Module header */}
                     <div className="flex items-center gap-3 px-4 py-3">
-                      <GripVertical className="w-4 h-4 text-zinc-600 shrink-0" />
+                      <GripVertical className="w-4 h-4 text-soft/70 shrink-0" />
                       <button onClick={() => toggleModule(mod.id)} className="flex-1 flex items-center gap-2 text-left">
-                        {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-400" /> : <ChevronRight className="w-4 h-4 text-zinc-400" />}
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-soft" /> : <ChevronRight className="w-4 h-4 text-soft" />}
                         <div>
-                          <p className="text-sm font-semibold text-zinc-100">{mod.title}</p>
-                          <p className="text-xs text-zinc-500">{mod.lessons.length} lesson{mod.lessons.length !== 1 ? "s" : ""}{mod.track ? ` · ${mod.track}` : ""}</p>
+                          <p className="text-sm font-semibold text-ink">{mod.title}</p>
+                          <p className="text-xs text-soft">{mod.lessons.length} lesson{mod.lessons.length !== 1 ? "s" : ""}{mod.track ? ` · ${mod.track}` : ""}</p>
                         </div>
                       </button>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button onClick={() => openEditModule(mod)} className="p-1.5 rounded text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDeleteModule(mod.id)} className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => openEditModule(mod)} className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDeleteModule(mod.id)} className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>
 
                     {/* Lessons */}
                     {isExpanded && (
-                      <div className="border-t border-zinc-800/50">
+                      <div className="border-t border-sand">
                         {mod.lessons.map(lesson => {
                           const ResourceIcon = RESOURCE_ICONS[lesson.resources[0]?.type] || Video;
                           const lessonExpanded = expandedLessons.has(lesson.id);
                           return (
-                            <div key={lesson.id} className="border-b border-zinc-800/30 last:border-0">
+                            <div key={lesson.id} className="border-b border-sand last:border-0">
                               {/* Lesson row */}
-                              <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800/20 transition-colors">
-                                <GripVertical className="w-3.5 h-3.5 text-zinc-700 shrink-0 ml-4" />
+                              <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-paper transition-colors">
+                                <GripVertical className="w-3.5 h-3.5 text-soft/70 shrink-0 ml-4" />
                                 <button onClick={() => toggleLesson(lesson.id)} className="shrink-0">
-                                  {lessonExpanded ? <ChevronDown className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />}
+                                  {lessonExpanded ? <ChevronDown className="w-3.5 h-3.5 text-soft" /> : <ChevronRight className="w-3.5 h-3.5 text-soft" />}
                                 </button>
-                                <Video className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                                <Video className="w-3.5 h-3.5 text-soft shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-zinc-200 truncate">{lesson.title}</p>
-                                  <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-0.5">
+                                  <p className="text-sm text-ink truncate">{lesson.title}</p>
+                                  <div className="flex items-center gap-3 text-[11px] text-soft mt-0.5">
                                     {lesson.video_provider && <span>{lesson.video_provider}</span>}
                                     {lesson.video_duration_sec && <span>{Math.round(lesson.video_duration_sec / 60)} min</span>}
                                     {lesson.drip_week && lesson.drip_week > 0 && <span>Week {lesson.drip_week}</span>}
-                                    {lesson.has_quiz && <span className="text-amber-400">Quiz</span>}
-                                    {lesson.resources.length > 0 && <span className="text-blue-400">{lesson.resources.length} resource{lesson.resources.length !== 1 ? "s" : ""}</span>}
+                                    {lesson.has_quiz && <span className="text-accent">Quiz</span>}
+                                    {lesson.resources.length > 0 && <span className="text-soft">{lesson.resources.length} resource{lesson.resources.length !== 1 ? "s" : ""}</span>}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <button onClick={() => openAddResource(lesson.id)} className="p-1.5 rounded text-zinc-400 hover:text-blue-400 hover:bg-zinc-800 transition-colors" title="Add resource"><Plus className="w-3.5 h-3.5" /></button>
-                                  {lesson.has_quiz && <button onClick={() => openQuizEditor(lesson.id)} className="p-1.5 rounded text-zinc-400 hover:text-purple-400 hover:bg-zinc-800 transition-colors" title="Edit quiz"><HelpCircle className="w-3.5 h-3.5" /></button>}
-                                  <button onClick={() => openEditLesson(lesson)} className="p-1.5 rounded text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteLesson(lesson.id)} className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => openAddResource(lesson.id)} className="p-1.5 rounded text-soft hover:text-ink hover:bg-paper transition-colors" title="Add resource"><Plus className="w-3.5 h-3.5" /></button>
+                                  {lesson.has_quiz && <button onClick={() => openQuizEditor(lesson.id)} className="p-1.5 rounded text-soft hover:text-ink hover:bg-paper transition-colors" title="Edit quiz"><HelpCircle className="w-3.5 h-3.5" /></button>}
+                                  <button onClick={() => openEditLesson(lesson)} className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteLesson(lesson.id)} className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
 
@@ -564,13 +564,13 @@ export default function CourseEditorPage() {
                                   {lesson.resources.map(r => {
                                     const Icon = RESOURCE_ICONS[r.type] || FileText;
                                     return (
-                                      <div key={r.id} className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800/30 rounded-lg">
-                                        <Icon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                                        <span className="text-xs text-zinc-300 flex-1 truncate">{r.title}</span>
-                                        <span className="text-[11px] text-zinc-500">{RESOURCE_LABELS[r.type]}</span>
-                                        {r.is_primary && <span className="text-[11px] text-amber-400">Primary</span>}
-                                        <button onClick={() => openEditResource(r)} className="p-1 text-zinc-500 hover:text-amber-400"><Pencil className="w-3 h-3" /></button>
-                                        <button onClick={() => handleDeleteResource(r.id)} className="p-1 text-zinc-500 hover:text-red-400"><Trash2 className="w-3 h-3" /></button>
+                                      <div key={r.id} className="flex items-center gap-2 px-3 py-1.5 bg-paper rounded-lg">
+                                        <Icon className="w-3.5 h-3.5 text-soft shrink-0" />
+                                        <span className="text-xs text-ink flex-1 truncate">{r.title}</span>
+                                        <span className="text-[11px] text-soft">{RESOURCE_LABELS[r.type]}</span>
+                                        {r.is_primary && <span className="text-[11px] text-accent">Primary</span>}
+                                        <button onClick={() => openEditResource(r)} className="p-1 text-soft hover:text-accent-strong"><Pencil className="w-3 h-3" /></button>
+                                        <button onClick={() => handleDeleteResource(r.id)} className="p-1 text-soft hover:text-accent-strong"><Trash2 className="w-3 h-3" /></button>
                                       </div>
                                     );
                                   })}
@@ -580,7 +580,7 @@ export default function CourseEditorPage() {
                           );
                         })}
                         <div className="px-4 py-2">
-                          <button onClick={() => openAddLesson(mod.id)} className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-amber-400 transition-colors"><Plus className="w-3.5 h-3.5" />Add lesson</button>
+                          <button onClick={() => openAddLesson(mod.id)} className="flex items-center gap-1.5 text-xs text-soft hover:text-accent-strong transition-colors"><Plus className="w-3.5 h-3.5" />Add lesson</button>
                         </div>
                       </div>
                     )}
@@ -596,24 +596,24 @@ export default function CourseEditorPage() {
       {activeTab === "tests" && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-zinc-100">Tests & Exams</h2>
+            <h2 className="font-display text-[17px] font-extrabold text-ink">Tests & Exams</h2>
             <button onClick={openAddTest} className={btnSecondary}><Plus className="w-4 h-4" />Add Test</button>
           </div>
           {tests.length === 0 ? (
-            <div className="text-center py-12 border border-zinc-800 rounded-xl">
-              <ClipboardCheck className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-sm text-zinc-400">No tests yet. Add module tests, course exams, or practice assessments.</p>
+            <div className="club-b-card text-center py-12">
+              <ClipboardCheck className="w-8 h-8 text-soft/70 mx-auto mb-3" />
+              <p className="text-sm text-soft">No tests yet. Add module tests, course exams, or practice assessments.</p>
             </div>
           ) : (
             <div className="space-y-2">
               {tests.map(t => {
                 const mod = modules.find(m => m.id === t.module_id);
                 return (
-                  <div key={t.id} className="flex items-center gap-4 px-4 py-3 rounded-xl border border-zinc-800 bg-zinc-900/50">
-                    <ClipboardCheck className="w-5 h-5 text-zinc-500 shrink-0" />
+                  <div key={t.id} className="flex items-center gap-4 px-4 py-3 club-b-card">
+                    <ClipboardCheck className="w-5 h-5 text-soft shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-zinc-100">{t.title}</p>
-                      <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-0.5">
+                      <p className="text-sm font-semibold text-ink">{t.title}</p>
+                      <div className="flex items-center gap-3 text-[11px] text-soft mt-0.5">
                         <span className="capitalize">{t.type}</span>
                         <span>{t.questions.length} question{t.questions.length !== 1 ? "s" : ""}</span>
                         <span>Pass: {t.passing_score}%</span>
@@ -622,9 +622,9 @@ export default function CourseEditorPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {t.published ? <Eye className="w-4 h-4 text-green-400" /> : <EyeOff className="w-4 h-4 text-zinc-600" />}
-                      <button onClick={() => openEditTest(t)} className="p-1.5 rounded text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleDeleteTest(t.id)} className="p-1.5 rounded text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                      {t.published ? <Eye className="w-4 h-4 text-soft" /> : <EyeOff className="w-4 h-4 text-soft/70" />}
+                      <button onClick={() => openEditTest(t)} className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDeleteTest(t.id)} className="p-1.5 rounded text-soft hover:text-accent hover:bg-paper transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </div>
                 );
@@ -668,7 +668,7 @@ export default function CourseEditorPage() {
               <InputField label="Drip Week"><input type="number" value={lessonForm.drip_week} onChange={e => setLessonForm({ ...lessonForm, drip_week: parseInt(e.target.value) || 0 })} className={inputClass} /></InputField>
               <InputField label="Sort Order"><input type="number" value={lessonForm.sort_order} onChange={e => setLessonForm({ ...lessonForm, sort_order: parseInt(e.target.value) || 0 })} className={inputClass} /></InputField>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={lessonForm.has_quiz} onChange={e => setLessonForm({ ...lessonForm, has_quiz: e.target.checked })} className="rounded border-zinc-700 bg-zinc-800 text-amber-400" /><span className="text-sm text-zinc-300">Has Quiz</span></label>
+            <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={lessonForm.has_quiz} onChange={e => setLessonForm({ ...lessonForm, has_quiz: e.target.checked })} className="rounded border-sand bg-paper text-accent" /><span className="text-sm text-ink">Has Quiz</span></label>
           </div>
           <ModalActions onCancel={() => setShowLessonForm(false)} onSave={handleSaveLesson} saving={saving} disabled={!lessonForm.title} label={editingLessonId ? "Update" : "Create"} />
         </Modal>
@@ -710,7 +710,7 @@ export default function CourseEditorPage() {
 
             <div className="flex items-center gap-6">
               <InputField label="Sort Order"><input type="number" value={resourceForm.sort_order} onChange={e => setResourceForm({ ...resourceForm, sort_order: parseInt(e.target.value) || 0 })} className={`${inputClass} w-24`} /></InputField>
-              <label className="flex items-center gap-2 cursor-pointer pt-4"><input type="checkbox" checked={resourceForm.is_primary} onChange={e => setResourceForm({ ...resourceForm, is_primary: e.target.checked })} className="rounded border-zinc-700 bg-zinc-800 text-amber-400" /><span className="text-sm text-zinc-300">Primary (shown in lesson viewer)</span></label>
+              <label className="flex items-center gap-2 cursor-pointer pt-4"><input type="checkbox" checked={resourceForm.is_primary} onChange={e => setResourceForm({ ...resourceForm, is_primary: e.target.checked })} className="rounded border-sand bg-paper text-accent" /><span className="text-sm text-ink">Primary (shown in lesson viewer)</span></label>
             </div>
           </div>
           <ModalActions onCancel={() => setShowResourceForm(false)} onSave={handleSaveResource} saving={saving} disabled={!resourceForm.title} label={editingResourceId ? "Update" : "Create"} />
@@ -755,13 +755,13 @@ export default function CourseEditorPage() {
             <div className="flex items-center gap-6 flex-wrap">
               {([["shuffle_questions", "Shuffle Questions"], ["shuffle_options", "Shuffle Options"], ["show_answers_after", "Show Answers After"], ["published", "Published"]] as const).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={testForm[key] as boolean} onChange={e => setTestForm({ ...testForm, [key]: e.target.checked })} className="rounded border-zinc-700 bg-zinc-800 text-amber-400" />
-                  <span className="text-sm text-zinc-300">{label}</span>
+                  <input type="checkbox" checked={testForm[key] as boolean} onChange={e => setTestForm({ ...testForm, [key]: e.target.checked })} className="rounded border-sand bg-paper text-accent" />
+                  <span className="text-sm text-ink">{label}</span>
                 </label>
               ))}
             </div>
           </div>
-          <h3 className="text-sm font-semibold text-zinc-200 mb-3">Questions</h3>
+          <h3 className="font-display text-[14px] font-extrabold text-ink mb-3">Questions</h3>
           <QuestionEditor questions={testQuestions} setQuestions={setTestQuestions} />
           <ModalActions onCancel={() => setShowTestForm(false)} onSave={handleSaveTest} saving={saving} disabled={!testForm.title} label={editingTestId ? "Update Test" : "Create Test"} />
         </Modal>
@@ -774,11 +774,11 @@ export default function CourseEditorPage() {
 
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className={`bg-zinc-900 border border-zinc-800 rounded-xl ${wide ? "w-full max-w-3xl" : "w-full max-w-lg"} p-6 max-h-[90vh] overflow-y-auto`}>
+    <div className="fixed inset-0 bg-scrim z-50 flex items-center justify-center p-4">
+      <div className={`club-b-card ${wide ? "w-full max-w-3xl" : "w-full max-w-lg"} p-6 max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-zinc-100">{title}</h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200"><X className="w-5 h-5" /></button>
+          <h2 className="font-display text-[17px] font-extrabold text-ink">{title}</h2>
+          <button onClick={onClose} className="text-soft hover:text-ink"><X className="w-5 h-5" /></button>
         </div>
         {children}
       </div>
@@ -789,8 +789,8 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
 function ModalActions({ onCancel, onSave, saving, disabled, label }: { onCancel: () => void; onSave: () => void; saving: boolean; disabled?: boolean; label: string }) {
   return (
     <div className="flex items-center justify-end gap-3 mt-6">
-      <button onClick={onCancel} className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Cancel</button>
-      <button onClick={onSave} disabled={saving || disabled} className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-semibold transition-colors disabled:opacity-50">{saving ? "Saving..." : label}</button>
+      <button onClick={onCancel} className="px-4 py-2 text-sm text-soft hover:text-ink transition-colors">Cancel</button>
+      <button onClick={onSave} disabled={saving || disabled} className="f0-press f0-focus px-4 py-2 rounded-lg bg-accent hover:bg-accent-strong text-[color:var(--accent-on)] text-sm font-semibold transition-colors disabled:opacity-50">{saving ? "Saving..." : label}</button>
     </div>
   );
 }
@@ -800,29 +800,29 @@ function QuestionEditor({ questions, setQuestions }: { questions: QuizQuestion[]
     <>
       <div className="space-y-4">
         {questions.map((q, qIdx) => (
-          <div key={qIdx} className="border border-zinc-800 rounded-lg p-4">
+          <div key={qIdx} className="border border-sand rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-zinc-400">Question {qIdx + 1}</p>
-              {questions.length > 1 && <button onClick={() => setQuestions(questions.filter((_, i) => i !== qIdx))} className="text-xs text-red-400 hover:text-red-300">Remove</button>}
+              <p className="text-xs font-semibold text-soft">Question {qIdx + 1}</p>
+              {questions.length > 1 && <button onClick={() => setQuestions(questions.filter((_, i) => i !== qIdx))} className="text-xs text-accent hover:text-accent-strong">Remove</button>}
             </div>
             <input type="text" value={q.question} onChange={e => setQuestions(questions.map((qq, i) => i === qIdx ? { ...qq, question: e.target.value } : qq))}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 mb-3" placeholder="Enter the question..." />
+              className="w-full bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50 mb-3" placeholder="Enter the question..." />
             <div className="space-y-2">
               {q.options.map((opt, oIdx) => (
                 <div key={oIdx} className="flex items-center gap-2">
                   <button onClick={() => setQuestions(questions.map((qq, i) => i === qIdx ? { ...qq, correctIndex: oIdx } : qq))}
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${q.correctIndex === oIdx ? "border-green-400 bg-green-400/20" : "border-zinc-600 hover:border-zinc-400"}`}>
-                    {q.correctIndex === oIdx && <div className="w-2 h-2 rounded-full bg-green-400" />}
+                    className={`f0-focus w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${q.correctIndex === oIdx ? "border-accent bg-accent/10" : "border-sand hover:border-accent/50"}`}>
+                    {q.correctIndex === oIdx && <div className="w-2 h-2 rounded-full bg-accent" />}
                   </button>
                   <input type="text" value={opt} onChange={e => setQuestions(questions.map((qq, i) => i === qIdx ? { ...qq, options: qq.options.map((o, j) => j === oIdx ? e.target.value : o) } : qq))}
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50" placeholder={`Option ${oIdx + 1}`} />
+                    className="flex-1 bg-paper border border-sand rounded-lg px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-accent/50" placeholder={`Option ${oIdx + 1}`} />
                 </div>
               ))}
             </div>
           </div>
         ))}
       </div>
-      <button onClick={() => setQuestions([...questions, { question: "", options: ["", "", "", ""], correctIndex: 0 }])} className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-amber-400 transition-colors mt-4">
+      <button onClick={() => setQuestions([...questions, { question: "", options: ["", "", "", ""], correctIndex: 0 }])} className="flex items-center gap-1.5 text-sm text-soft hover:text-accent-strong transition-colors mt-4">
         <Plus className="w-4 h-4" />Add Question
       </button>
     </>

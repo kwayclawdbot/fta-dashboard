@@ -10,7 +10,7 @@ import { Home, Compass } from "lucide-react";
 export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-paper px-6 text-center text-ink">
-      <p className="font-display text-[7rem] font-extrabold leading-none tracking-tight text-gradient-gold sm:text-[9rem]">
+      <p className="font-display text-[7rem] font-extrabold leading-none tracking-tight text-accent sm:text-[9rem]">
         404
       </p>
       <h1 className="mt-2 font-display text-2xl font-bold text-ink sm:text-3xl">
@@ -22,14 +22,14 @@ export default function NotFound() {
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
         <Link
           href="/dashboard"
-          className="cta-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm"
+          className="f0-press f0-focus inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
         >
           <Home className="h-4 w-4" />
           Back to Home
         </Link>
         <Link
           href="/discover"
-          className="inline-flex items-center gap-2 rounded-xl border border-sand bg-card px-5 py-3 text-sm font-semibold text-ink shadow-soft transition-colors hover:border-gold-400 hover:text-gold-700"
+          className="club-b-card f0-press f0-focus inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
         >
           <Compass className="h-4 w-4" />
           Explore stocks

@@ -118,8 +118,8 @@ export default function CrmContactsPage() {
     <div className="max-w-7xl mx-auto">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Contacts</h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">Contacts</h1>
+          <p className="text-soft text-sm mt-1">
             Every member and lead in one directory
           </p>
         </div>
@@ -127,7 +127,7 @@ export default function CrmContactsPage() {
           <button
             onClick={exportCsv}
             disabled={filtered.length === 0}
-            className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 hover:border-amber-400/50 hover:text-amber-400 transition-colors disabled:opacity-40"
+            className="inline-flex items-center gap-2 bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink hover:border-accent/50 hover:text-accent-strong transition-colors disabled:opacity-40"
           >
             <Download className="w-4 h-4" />
             Export CSV
@@ -145,53 +145,53 @@ export default function CrmContactsPage() {
             onClick={() => setKind(c.id)}
             className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
               kind === c.id
-                ? "border-amber-400/50 bg-amber-400/10 text-amber-300"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                ? "border-accent/50 bg-accent/10 text-accent"
+                : "border-sand text-soft hover:text-ink hover:border-accent/50"
             }`}
           >
             {c.label}
-            <span className="text-[10px] text-zinc-500">
+            <span className="text-[10px] text-soft">
               {counts[c.id] ?? 0}
             </span>
           </button>
         ))}
         <div className="relative flex-1 min-w-[220px] max-w-sm ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-soft" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, email, phone…"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 placeholder:text-zinc-600"
+            className="w-full bg-paper border border-sand rounded-lg pl-9 pr-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50 placeholder:text-soft/70"
           />
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">
+        <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
           {error}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
-          <Users className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-zinc-300 mb-1">
+          <Users className="w-10 h-10 text-soft/70 mx-auto mb-3" />
+          <h3 className="font-display text-[17px] font-extrabold text-ink mb-1">
             No contacts found
           </h3>
-          <p className="text-sm text-zinc-500">Try adjusting your filters</p>
+          <p className="text-sm text-soft">Try adjusting your filters</p>
         </div>
       ) : (
         <>
-          <p className="text-xs text-zinc-500 mb-2">
+          <p className="text-xs text-soft mb-2">
             {filtered.length} contact{filtered.length !== 1 ? "s" : ""}
           </p>
-          <div className="rounded-xl border border-zinc-800 overflow-x-auto">
+          <div className="club-b-card overflow-x-auto">
             <table className="w-full min-w-[820px]">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/50 text-xs text-zinc-400 uppercase tracking-wider">
+                <tr className="border-b border-sand bg-paper font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                   <th className="px-3 py-3 text-left font-medium">Contact</th>
                   <th className="px-3 py-3 text-left font-medium">Type</th>
                   <th className="px-3 py-3 text-left font-medium">Phone</th>
@@ -206,7 +206,7 @@ export default function CrmContactsPage() {
                   <tr
                     key={`${r.record}-${r.contact_id}`}
                     onClick={() => openContact(r)}
-                    className="border-b border-zinc-800/50 hover:bg-zinc-900/40 transition-colors cursor-pointer"
+                    className="border-b border-sand hover:bg-paper transition-colors cursor-pointer"
                   >
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2.5">
@@ -222,10 +222,10 @@ export default function CrmContactsPage() {
                           size="sm"
                         />
                         <div className="min-w-0">
-                          <p className="text-sm text-zinc-100 font-medium truncate max-w-[200px]">
+                          <p className="text-sm text-ink font-medium truncate max-w-[200px]">
                             {r.name || "—"}
                           </p>
-                          <p className="text-[11px] text-zinc-500 truncate max-w-[200px]">
+                          <p className="text-[11px] text-soft truncate max-w-[200px]">
                             {r.email || "—"}
                           </p>
                         </div>
@@ -234,7 +234,7 @@ export default function CrmContactsPage() {
                     <td className="px-3 py-2.5">
                       <ContactKindChip kind={r.contact_kind} />
                     </td>
-                    <td className="px-3 py-2.5 text-sm text-zinc-400">
+                    <td className="px-3 py-2.5 text-sm text-soft">
                       {r.phone || "—"}
                     </td>
                     <td className="px-3 py-2.5">
@@ -243,18 +243,18 @@ export default function CrmContactsPage() {
                       ) : r.role ? (
                         <RoleChip role={r.role} />
                       ) : (
-                        <span className="text-zinc-600 text-sm">—</span>
+                        <span className="text-soft/70 text-sm">—</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1.5">
                         <LastSeenDot iso={r.last_activity} />
-                        <span className="text-xs text-zinc-400">
+                        <span className="text-xs text-soft">
                           {relativeTime(r.last_activity)}
                         </span>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-zinc-500">
+                    <td className="px-3 py-2.5 text-xs text-soft">
                       {shortDate(r.created)}
                     </td>
                     <td className="px-3 py-2.5">
@@ -263,7 +263,7 @@ export default function CrmContactsPage() {
                           onClick={(e) => quickSend(e, r, "email")}
                           disabled={!r.email}
                           title={r.email ? "Email" : "No email"}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent"
+                          className="p-1.5 rounded-lg text-soft hover:text-accent hover:bg-paper disabled:opacity-30 disabled:hover:bg-transparent"
                         >
                           <Mail className="w-4 h-4" />
                         </button>
@@ -271,7 +271,7 @@ export default function CrmContactsPage() {
                           onClick={(e) => quickSend(e, r, "sms")}
                           disabled={!r.phone}
                           title={r.phone ? "SMS" : "No phone"}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-400 hover:bg-zinc-800 disabled:opacity-30 disabled:hover:bg-transparent"
+                          className="p-1.5 rounded-lg text-soft hover:text-accent hover:bg-paper disabled:opacity-30 disabled:hover:bg-transparent"
                         >
                           <MessageSquare className="w-4 h-4" />
                         </button>
@@ -349,23 +349,23 @@ function InviteMemberButton() {
           setOpen(true);
           setMsg(null);
         }}
-        className="px-3.5 py-2 rounded-lg bg-amber-500 text-zinc-950 text-sm font-semibold hover:bg-amber-400"
+        className="f0-press f0-focus px-3.5 py-2 rounded-lg bg-accent text-[color:var(--accent-on)] text-sm font-semibold hover:bg-accent-strong"
       >
         + Invite member
       </button>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4"
           onClick={() => !busy && setOpen(false)}
         >
           <div
-            className="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-5"
+            className="w-full max-w-sm club-b-card p-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-zinc-100 mb-1">
+            <h2 className="font-display text-[17px] font-extrabold text-ink mb-1">
               Invite a member
             </h2>
-            <p className="text-xs text-zinc-400 mb-4">
+            <p className="text-xs text-soft mb-4">
               Bypasses Stripe — they get an email link to create their account,
               and their program activates automatically.
             </p>
@@ -374,7 +374,7 @@ function InviteMemberButton() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="parent@example.com"
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 mb-3 focus:outline-none focus:border-amber-500"
+              className="w-full rounded-lg bg-paper border border-sand px-3 py-2 text-sm text-ink mb-3 focus:outline-none focus:border-accent"
             />
             <div className="flex gap-2 mb-4">
               {(["fic", "fta"] as const).map((pr) => (
@@ -383,26 +383,26 @@ function InviteMemberButton() {
                   onClick={() => setProgram(pr)}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${
                     program === pr
-                      ? "bg-amber-500/15 border-amber-500 text-amber-400"
-                      : "border-zinc-700 text-zinc-400"
+                      ? "bg-accent/15 border-accent text-accent"
+                      : "border-sand text-soft"
                   }`}
                 >
                   {pr === "fic" ? "FIC — Investing Club" : "FTA — Trading Academy"}
                 </button>
               ))}
             </div>
-            {msg && <p className="text-xs mb-3 text-amber-300">{msg}</p>}
+            {msg && <p className="text-xs mb-3 text-accent">{msg}</p>}
             <div className="flex gap-2">
               <button
                 onClick={() => setOpen(false)}
-                className="flex-1 py-2 rounded-lg border border-zinc-700 text-sm text-zinc-300"
+                className="flex-1 py-2 rounded-lg border border-sand text-sm text-ink"
               >
                 Close
               </button>
               <button
                 onClick={send}
                 disabled={busy || !email}
-                className="flex-1 py-2 rounded-lg bg-amber-500 text-zinc-950 text-sm font-semibold disabled:opacity-50"
+                className="f0-press f0-focus flex-1 py-2 rounded-lg bg-accent text-[color:var(--accent-on)] text-sm font-semibold disabled:opacity-50"
               >
                 {busy ? "Sending…" : "Send invite"}
               </button>

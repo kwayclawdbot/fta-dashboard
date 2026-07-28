@@ -772,7 +772,7 @@ export default function AppTour({ user }: { user: TourUser }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8 }}
               ref={cardRef}
-              className="absolute w-[min(340px,calc(100vw-1.5rem))] max-h-[min(70vh,420px)] overflow-y-auto rounded-2xl bg-midnight-900 border border-gold-300/60 shadow-lift p-5"
+              className="club-b-card absolute max-h-[min(70vh,420px)] w-[min(340px,calc(100vw-1.5rem))] overflow-y-auto p-5 shadow-lift"
               style={cardStyle}
             >
               <div className="flex items-start gap-3">
@@ -794,7 +794,7 @@ export default function AppTour({ user }: { user: TourUser }) {
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => finish(false)} className="text-[11px] font-medium text-midnight-500 hover:text-soft px-1">
+                  <button onClick={() => finish(false)} className="f0-focus rounded px-1 text-[11px] font-medium text-soft transition-colors hover:text-ink">
                     Skip
                   </button>
                   {idx > 0 && (
@@ -802,7 +802,7 @@ export default function AppTour({ user }: { user: TourUser }) {
                       Back
                     </button>
                   )}
-                  <button onClick={next} className="cta-button text-xs rounded-lg px-3.5 py-1.5">
+                  <button onClick={next} className="f0-press f0-focus rounded-lg bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-3.5 py-1.5 text-xs">
                     {idx >= steps.length - 1 ? "Let's go!" : "Next"}
                   </button>
                 </div>

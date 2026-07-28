@@ -6,11 +6,15 @@ import { ClubMark } from "@/components/brand/ClubMark";
  * PRE-AUTH CHROME (lane L6, canvas boards 09–11).
  *
  * Was: a dark midnight page with the form floating inside a rounded, bordered
- * panel — the last surface still on the pre-redesign system, and a textbook
- * generic card container. Now: the light club system (`data-mode="club"`, so
- * the accent resolves to volt orange for the CTA, the focus ring and the
- * underline mark), the canvas's warm radial header wash behind the ∞ mark, and
- * the form sitting directly on the paper with hairlines doing the structure.
+ * panel — the last surface still on the pre-redesign system. Now: the light
+ * club system (`data-mode="club"`, so the accent resolves to volt orange for
+ * the flat-orange CTA, the focus ring and the underline mark), the canvas's
+ * warm radial header wash behind the ∞ mark, and the form sitting directly on
+ * the paper with hairlines doing the structure.
+ *
+ * No `--accent-gradient` plumbing any more: the primary action is a FLAT
+ * `bg-accent` fill (board 09/12), which reads `--accent-solid` directly and so
+ * resolves correctly against the mode set on THIS element.
  *
  * Copy is untouched — the wordmark, the tagline and the copyright line are
  * byte-identical to the previous revision.
@@ -27,20 +31,6 @@ export default function AuthLayout({
     <div
       data-mode="club"
       className="relative min-h-dvh bg-paper text-ink"
-      // TOKEN PLUMBING, not decoration. `--accent-gradient` is declared on
-      // :root, so its var(--accent-a/b) references are substituted against
-      // :ROOT's values — re-pointing --accent-a on a descendant (which is what
-      // `[data-mode="club"]` does here) does NOT reach it, and .cta-button
-      // renders FAMILY GOLD on a club surface. Re-declaring the same
-      // expression on this element makes it resolve against this element's
-      // club accents. The dashboard never hit this because ModeManager stamps
-      // data-mode on <html>, which IS :root.
-      style={
-        {
-          "--accent-gradient":
-            "linear-gradient(135deg, var(--accent-a), var(--accent-b))",
-        } as React.CSSProperties
-      }
     >
       {/* Canvas board 10: a 230px warm brand wash behind the mark. Token-mixed
           so it is correct on cream AND on the warm night page. */}

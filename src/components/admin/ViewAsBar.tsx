@@ -27,20 +27,15 @@ import {
  * kid surface, see it render, and conclude it is fine — when a real kid's RLS
  * would return different rows and refuse writes this session is allowed.
  *
- * CHROME NOTE: the admin console is the legacy zinc/amber surface, not the
- * warm-paper canvas. SegmentedRail is the system's one-of-N mechanism and is
- * used as-is; the wrapper below re-points the four paper tokens it reads
- * (--ink / --soft / --sand / --accent-solid) at this surface's values so the
- * shared primitive renders correctly on dark without being forked.
+ * CHROME NOTE: the admin console now sits on the same warm-paper ground as the
+ * rest of the app, so SegmentedRail is used with the page's OWN tokens — the
+ * old private zinc/amber override is gone. The only local variable left is the
+ * selected-bar offset, because `railClassName` is dropped (this bar already
+ * carries its own hairline) and the 3px bar would otherwise hang off a rule
+ * that is not there.
  */
 
 const RAIL_TOKENS = {
-  "--ink": "#FAFAFA",
-  "--soft": "#A1A1AA",
-  "--sand": "#27272A",
-  "--accent-solid": "#FF6A00",
-  // railClassName is dropped (the bar carries its own zinc rule), so the 3px
-  // selected bar is placed on the label baseline instead of a missing hairline.
   "--f0-seg-bar-offset": "0px",
 } as React.CSSProperties;
 
@@ -85,9 +80,9 @@ export default function ViewAsBar({ current }: { current: ViewAs | null }) {
   const persona = view ? VIEW_AS_PERSONAS[view] : null;
 
   return (
-    <div className="border-b border-zinc-800 bg-[#0a0a0f] px-4 lg:px-8">
+    <div className="border-b border-sand bg-card px-4 lg:px-8">
       <div className="flex flex-wrap items-end gap-x-6 gap-y-2 pt-3">
-        <span className="flex items-center gap-2 pb-3 font-display text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-500">
+        <span className="flex items-center gap-2 pb-3 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
           <Eye className="h-[14px] w-[14px] shrink-0" aria-hidden />
           View as
         </span>
@@ -98,7 +93,7 @@ export default function ViewAsBar({ current }: { current: ViewAs | null }) {
             value={view}
             onChange={(id) => void choose(id)}
             ariaLabel="Preview the app as a member register"
-            barClassName="bg-volt-500"
+            barClassName="bg-accent"
             activeTextClassName="text-ink"
             disabled={busy}
             railClassName=""
@@ -113,8 +108,8 @@ export default function ViewAsBar({ current }: { current: ViewAs | null }) {
           disabled={busy || !view}
           className={`f0-press f0-focus mb-2 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
             view
-              ? "border-volt-500 bg-volt-500 text-night-950 hover:bg-volt-400"
-              : "border-zinc-800 text-zinc-600"
+              ? "border-transparent bg-ink text-paper"
+              : "border-sand text-soft"
           }`}
         >
           <X className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -124,7 +119,7 @@ export default function ViewAsBar({ current }: { current: ViewAs | null }) {
         {view && (
           <Link
             href="/dashboard"
-            className="f0-press f0-focus mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-400 hover:text-amber-300"
+            className="f0-press f0-focus mb-2 inline-flex items-center gap-1.5 text-[11px] font-semibold text-accent hover:text-accent-strong"
           >
             Open the app
             <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -133,22 +128,22 @@ export default function ViewAsBar({ current }: { current: ViewAs | null }) {
       </div>
 
       {/* The honesty line. Layout and gating only — never data permissions. */}
-      <p className="max-w-3xl pb-3 text-[11px] leading-relaxed text-zinc-500">
+      <p className="max-w-3xl pb-3 text-[11px] leading-relaxed text-soft">
         {persona ? (
           <>
-            <span className="font-semibold text-zinc-300">{persona.blurb}.</span>{" "}
+            <span className="font-semibold text-ink">{persona.blurb}.</span>{" "}
           </>
         ) : null}
         Previews the shell only — nav, register, brand and tier gating. It does{" "}
-        <span className="font-semibold text-zinc-300">not</span> preview data
+        <span className="font-semibold text-ink">not</span> preview data
         permissions: row-level security still reads your real account, so you see
         your own rows and the kid chat wall and downtime window never engage. A
         surface can look correct here and behave differently for a real member.
       </p>
 
-      {/* amber, not red — red belongs to the price ramp by colour law. */}
+      {/* accent, not red — red belongs to the price ramp by colour law. */}
       {error && (
-        <p role="status" className="pb-3 text-[11px] font-semibold text-amber-400">
+        <p role="status" className="pb-3 text-[11px] font-semibold text-accent">
 
           {error}
         </p>

@@ -57,10 +57,10 @@ import {
 import type { Stage } from "@/lib/marketing";
 
 const STATUS_STYLES: Record<string, string> = {
-  open: "bg-amber-400/15 text-amber-300",
-  pending: "bg-blue-400/15 text-blue-300",
-  resolved: "bg-emerald-400/15 text-emerald-300",
-  closed: "bg-zinc-700/40 text-zinc-400",
+  open: "f0-chip-accent text-accent",
+  pending: "text-soft",
+  resolved: "text-soft",
+  closed: "text-soft",
 };
 
 export default function ContactDetailPage() {
@@ -195,7 +195,7 @@ export default function ContactDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
       </div>
     );
   }
@@ -204,7 +204,7 @@ export default function ContactDetailPage() {
     return (
       <div className="max-w-3xl mx-auto">
         <BackLink />
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400 mt-4">
+        <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent mt-4">
           {error || "Contact not found"}
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function ContactDetailPage() {
       <BackLink />
 
       {/* Profile header */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 mt-4">
+      <div className="club-b-card p-6 mt-4">
         <div className="flex items-start gap-5 flex-wrap">
           <AdminAvatar
             name={displayName}
@@ -234,7 +234,7 @@ export default function ContactDetailPage() {
           />
           <div className="flex-1 min-w-[220px]">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-zinc-100">{displayName}</h1>
+              <h1 className="font-display text-[20px] font-extrabold text-ink">{displayName}</h1>
               {isLead ? (
                 <>
                   <ContactKindChip kind="lead" />
@@ -245,11 +245,11 @@ export default function ContactDetailPage() {
                   {member && <RoleChip role={member.role} />}
                   {member && <TierChip tier={member.tier} />}
                   {member?.onboarding_complete ? (
-                    <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
+                    <span className="f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-soft">
                       Onboarded
                     </span>
                   ) : (
-                    <span className="text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
+                    <span className="f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-soft">
                       Onboarding
                     </span>
                   )}
@@ -257,7 +257,7 @@ export default function ContactDetailPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-4 mt-2 text-sm text-zinc-400 flex-wrap">
+            <div className="flex items-center gap-4 mt-2 text-sm text-soft flex-wrap">
               {email ? (
                 <span className="flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5" /> {email}
@@ -271,7 +271,7 @@ export default function ContactDetailPage() {
               {!isLead && member?.family_id ? (
                 <Link
                   href={`/admin/crm/families/${member.family_id}`}
-                  className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300"
+                  className="flex items-center gap-1.5 text-accent hover:text-accent-strong"
                 >
                   <Home className="w-3.5 h-3.5" />{" "}
                   {member.family_name || "Family"}
@@ -292,10 +292,10 @@ export default function ContactDetailPage() {
                   window. Lapsed = academy for life, Club gated to free. */}
               {!isLead && member?.club_until ? (
                 <span
-                  className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded font-semibold ${
+                  className={`f0-chip flex items-center gap-1.5 px-1.5 py-0.5 font-semibold ${
                     member.club_lapsed
-                      ? "bg-red-400/10 text-red-400"
-                      : "bg-emerald-400/10 text-emerald-400"
+                      ? "f0-chip-accent text-accent"
+                      : "text-soft"
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -313,7 +313,7 @@ export default function ContactDetailPage() {
               <button
                 onClick={() => openModal("email")}
                 disabled={!canEmail}
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-amber-400 text-zinc-950 font-semibold hover:bg-amber-300 disabled:opacity-40 transition-colors"
+                className="f0-press f0-focus inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg bg-accent text-[color:var(--accent-on)] font-semibold hover:bg-accent-strong disabled:opacity-40 transition-colors"
               >
                 <Mail className="w-4 h-4" /> Email
               </button>
@@ -327,7 +327,7 @@ export default function ContactDetailPage() {
                       ? "No phone on file"
                       : "SMS available for lead contacts with a phone"
                 }
-                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-zinc-700 text-zinc-200 hover:border-amber-400/50 hover:text-amber-400 disabled:opacity-40 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-sand text-ink hover:border-accent/50 hover:text-accent-strong disabled:opacity-40 transition-colors"
               >
                 <MessageSquare className="w-4 h-4" /> SMS
               </button>
@@ -344,18 +344,18 @@ export default function ContactDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         {/* Timeline */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <ActivityIcn className="w-4 h-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-300">
+              <ActivityIcn className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                 Activity timeline
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-soft">
                 · {timeline.length} events
               </span>
             </div>
             {timeline.length === 0 ? (
-              <p className="text-sm text-zinc-600 py-8 text-center">
+              <p className="text-sm text-soft/70 py-8 text-center">
                 No activity recorded yet
               </p>
             ) : (
@@ -363,21 +363,21 @@ export default function ContactDetailPage() {
                 {timeline.map((e, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-3 py-2 border-b border-zinc-800/40 last:border-0"
+                    className="flex items-start gap-3 py-2 border-b border-sand last:border-0"
                   >
                     <ActivityIcon type={e.type} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-zinc-200 break-words">
+                      <p className="text-sm text-ink break-words">
                         {e.title}
                       </p>
                       {e.meta ? (
-                        <p className="text-[11px] text-zinc-600 truncate">
+                        <p className="text-[11px] text-soft/70 truncate">
                           {e.meta}
                         </p>
                       ) : null}
                     </div>
                     <span
-                      className="text-[11px] text-zinc-600 shrink-0 whitespace-nowrap"
+                      className="text-[11px] text-soft/70 shrink-0 whitespace-nowrap"
                       title={new Date(e.ts).toLocaleString()}
                     >
                       {relativeTime(e.ts)}
@@ -389,18 +389,18 @@ export default function ContactDetailPage() {
           </div>
 
           {/* Support history */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <LifeBuoy className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-medium text-zinc-300">
+              <LifeBuoy className="w-4 h-4 text-accent" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                 Support history
               </span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-soft">
                 · {support.length} ticket{support.length !== 1 ? "s" : ""}
               </span>
             </div>
             {support.length === 0 ? (
-              <p className="text-sm text-zinc-600 py-6 text-center">
+              <p className="text-sm text-soft/70 py-6 text-center">
                 No support tickets
                 {isLead ? " (no matching member account)" : ""}
               </p>
@@ -410,26 +410,26 @@ export default function ContactDetailPage() {
                   <Link
                     key={t.id}
                     href="/admin/crm/support"
-                    className="block rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2.5 hover:border-amber-400/40 transition-colors"
+                    className="block rounded-lg border border-sand bg-card px-3 py-2.5 hover:border-accent/40 transition-colors"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-zinc-100">
+                      <span className="text-sm font-medium text-ink">
                         {t.subject}
                       </span>
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                        className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                           STATUS_STYLES[t.status] || STATUS_STYLES.closed
                         }`}
                       >
                         {t.status}
                       </span>
-                      <span className="text-[11px] text-zinc-600 ml-auto">
+                      <span className="text-[11px] text-soft/70 ml-auto">
                         {relativeTime(t.last_message_at)}
                       </span>
                     </div>
                     {t.last_message ? (
-                      <p className="text-xs text-zinc-500 mt-1 truncate">
-                        <span className="text-zinc-600">
+                      <p className="text-xs text-soft mt-1 truncate">
+                        <span className="text-soft/70">
                           {t.last_sender === "team"
                             ? "Team: "
                             : t.last_sender === "ai"
@@ -439,7 +439,7 @@ export default function ContactDetailPage() {
                         {t.last_message}
                       </p>
                     ) : null}
-                    <p className="text-[11px] text-zinc-600 mt-1">
+                    <p className="text-[11px] text-soft/70 mt-1">
                       {t.message_count} message
                       {t.message_count !== 1 ? "s" : ""} · {t.category}
                     </p>
@@ -457,8 +457,8 @@ export default function ContactDetailPage() {
 
           {/* Lead details */}
           {isLead && lead ? (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <span className="text-sm font-medium text-zinc-300">
+            <div className="club-b-card p-5">
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                 Lead details
               </span>
               <dl className="mt-3 space-y-2 text-sm">
@@ -470,7 +470,7 @@ export default function ContactDetailPage() {
               </dl>
               {lead.tags?.length ? (
                 <div className="mt-3">
-                  <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-1.5">
+                  <div className="flex items-center gap-1.5 text-xs text-soft mb-1.5">
                     <Tag className="w-3.5 h-3.5" /> Tags
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -482,7 +482,7 @@ export default function ContactDetailPage() {
               ) : null}
               {lead.custom && Object.keys(lead.custom).length ? (
                 <div className="mt-3">
-                  <p className="text-xs text-zinc-500 mb-1.5">Quiz / details</p>
+                  <p className="text-xs text-soft mb-1.5">Quiz / details</p>
                   <dl className="space-y-1.5 text-sm">
                     {Object.entries(lead.custom).map(([k, v]) => (
                       <Row key={k} label={humanize(k)} value={stringify(v)} />
@@ -492,8 +492,8 @@ export default function ContactDetailPage() {
               ) : null}
               {lead.notes ? (
                 <div className="mt-3">
-                  <p className="text-xs text-zinc-500 mb-1">Notes</p>
-                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">
+                  <p className="text-xs text-soft mb-1">Notes</p>
+                  <p className="text-sm text-ink whitespace-pre-wrap">
                     {lead.notes}
                   </p>
                 </div>
@@ -503,8 +503,8 @@ export default function ContactDetailPage() {
 
           {/* Household & goals (onboarding lane, feature-detected) */}
           {!isLead && familyProfile ? (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <span className="text-sm font-medium text-zinc-300">
+            <div className="club-b-card p-5">
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                 Household &amp; goals
               </span>
               <dl className="mt-3 space-y-1.5 text-sm">
@@ -517,10 +517,10 @@ export default function ContactDetailPage() {
 
           {/* Admin notes (members only) */}
           {!isLead && userId ? (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <div className="club-b-card p-5">
               <div className="flex items-center gap-2 mb-3">
-                <StickyNote className="w-4 h-4 text-amber-400" />
-                <span className="text-sm font-medium text-zinc-300">
+                <StickyNote className="w-4 h-4 text-accent" />
+                <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                   Admin notes
                 </span>
               </div>
@@ -530,12 +530,12 @@ export default function ContactDetailPage() {
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder="Add an internal note…"
                   rows={2}
-                  className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/50 placeholder:text-zinc-600 resize-none"
+                  className="flex-1 bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent/50 placeholder:text-soft/70 resize-none"
                 />
                 <button
                   onClick={submitNote}
                   disabled={!newNote.trim() || savingNote}
-                  className="self-end bg-amber-400 text-zinc-950 rounded-lg px-3 py-2 text-sm font-medium hover:bg-amber-300 transition-colors disabled:opacity-40"
+                  className="f0-press f0-focus self-end bg-accent text-[color:var(--accent-on)] rounded-lg px-3 py-2 text-sm font-medium hover:bg-accent-strong transition-colors disabled:opacity-40"
                   title="Save note"
                 >
                   <Send className="w-4 h-4" />
@@ -543,24 +543,24 @@ export default function ContactDetailPage() {
               </div>
               <div className="space-y-2">
                 {notes.length === 0 ? (
-                  <p className="text-xs text-zinc-600">No notes yet</p>
+                  <p className="text-xs text-soft/70">No notes yet</p>
                 ) : (
                   notes.map((n) => (
                     <div
                       key={n.id}
-                      className="group rounded-lg bg-zinc-800/40 px-3 py-2"
+                      className="group rounded-lg bg-paper px-3 py-2"
                     >
-                      <p className="text-sm text-zinc-200 whitespace-pre-wrap break-words">
+                      <p className="text-sm text-ink whitespace-pre-wrap break-words">
                         {n.note}
                       </p>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-zinc-600">
+                        <span className="text-[10px] text-soft/70">
                           {n.author?.display_name || "Admin"} ·{" "}
                           {shortDate(n.created_at)}
                         </span>
                         <button
                           onClick={() => removeNote(n.id)}
-                          className="text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-soft/70 hover:text-accent-strong opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete note"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -593,22 +593,22 @@ function XpBar({ member }: { member: MemberRow }) {
   return (
     <div className="mt-4 max-w-md">
       <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-zinc-300 font-medium">
+        <span className="text-ink font-medium">
           Level {lvl.level} · {lvl.name}
         </span>
-        <span className="text-amber-400/80">
+        <span className="text-accent/80">
           {member.xp_total.toLocaleString()} XP
         </span>
       </div>
-      <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
-        <div className="h-full bg-amber-400" style={{ width: `${prog.pct}%` }} />
+      <div className="h-2 rounded-full bg-paper overflow-hidden">
+        <div className="h-full bg-accent" style={{ width: `${prog.pct}%` }} />
       </div>
       {prog.next ? (
-        <p className="text-[11px] text-zinc-600 mt-1">
+        <p className="text-[11px] text-soft/70 mt-1">
           {prog.toNext} XP to {prog.next.name}
         </p>
       ) : (
-        <p className="text-[11px] text-zinc-600 mt-1">Max level</p>
+        <p className="text-[11px] text-soft/70 mt-1">Max level</p>
       )}
     </div>
   );
@@ -628,13 +628,13 @@ function MemberStats({ member }: { member: MemberRow }) {
     { label: "Chat msgs", value: member.chat_messages },
   ];
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-      <span className="text-sm font-medium text-zinc-300">Stats</span>
+    <div className="club-b-card p-5">
+      <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Stats</span>
       <div className="grid grid-cols-2 gap-2 mt-3">
         {STATS.map((s) => (
-          <div key={s.label} className="rounded-lg bg-zinc-800/40 px-3 py-2">
-            <p className="text-lg font-bold text-zinc-100">{s.value}</p>
-            <p className="text-[11px] text-zinc-500">{s.label}</p>
+          <div key={s.label} className="rounded-lg border border-sand bg-paper px-3 py-2">
+            <p className="font-mono text-lg font-semibold tabular-nums text-ink">{s.value}</p>
+            <p className="mt-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">{s.label}</p>
           </div>
         ))}
       </div>
@@ -645,8 +645,8 @@ function MemberStats({ member }: { member: MemberRow }) {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <dt className="text-zinc-500 shrink-0">{label}</dt>
-      <dd className="text-zinc-200 text-right break-words capitalize">
+      <dt className="text-soft shrink-0">{label}</dt>
+      <dd className="text-ink text-right break-words capitalize">
         {value || "—"}
       </dd>
     </div>
@@ -657,7 +657,7 @@ function BackLink() {
   return (
     <Link
       href="/admin/crm/members"
-      className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+      className="inline-flex items-center gap-2 text-sm text-soft hover:text-ink transition-colors"
     >
       <ArrowLeft className="w-4 h-4" /> Back to contacts
     </Link>
@@ -750,40 +750,40 @@ function MemberAdminControls({ member }: { member: MemberRow }) {
 
   return (
     <div className="mt-4 flex items-center gap-3 flex-wrap">
-      <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+      <label className="flex items-center gap-1.5 text-xs text-soft">
         Role
         <select
           value={role}
           disabled={savingRole}
           onChange={(e) => changeRole(e.target.value)}
-          className="text-xs font-semibold px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-100 focus:outline-none focus:border-amber-400/50 disabled:opacity-50"
+          className="text-xs font-semibold px-2 py-1.5 rounded-lg bg-paper border border-sand text-ink focus:outline-none focus:border-accent/50 disabled:opacity-50"
         >
           {ADMIN_ROLE_OPTIONS.map((r) => (
-            <option key={r} value={r} className="bg-zinc-900">
+            <option key={r} value={r} className="bg-card">
               {r}
             </option>
           ))}
         </select>
       </label>
       {member.family_id ? (
-        <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+        <label className="flex items-center gap-1.5 text-xs text-soft">
           Tier
           <select
             value={tier}
             disabled={savingTier}
             title="Membership tier — sets the whole family"
             onChange={(e) => changeTier(e.target.value as FamilyTier)}
-            className="text-xs font-semibold px-2 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-amber-300 focus:outline-none focus:border-amber-400/50 disabled:opacity-50"
+            className="text-xs font-semibold px-2 py-1.5 rounded-lg bg-paper border border-sand text-accent focus:outline-none focus:border-accent/50 disabled:opacity-50"
           >
             {ADMIN_TIER_OPTIONS.map((t) => (
-              <option key={t} value={t} className="bg-zinc-900 text-zinc-100">
+              <option key={t} value={t} className="bg-card text-ink">
                 {TIER_CONFIG[t].label}
               </option>
             ))}
           </select>
         </label>
       ) : null}
-      {msg ? <span className="text-xs text-amber-300">{msg}</span> : null}
+      {msg ? <span className="text-xs text-accent">{msg}</span> : null}
     </div>
   );
 }

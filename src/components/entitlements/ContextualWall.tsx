@@ -39,6 +39,16 @@ const PRICING_HREF = "/pricing";
  *
  * `variant="band"` renders a compact inline lock (for a walled section inside an
  * otherwise-visible page); `"full"` replaces the whole surface.
+ *
+ * CANVAS v2: the band was the pre-canvas paper card with a gold ring and a gradient
+ * `.cta-button`. It is now the board's NEUTRAL white card (`.club-b-card`,
+ * hairline `--sand`, 14px radius) with a round orange `.club-b-orb` glyph and a
+ * solid orange button — neutral because the band sits inside a page that keeps
+ * its own content, and only one object per screen may carry the warm tint. The
+ * `full` variant remains the shared tinted `LockedState`.
+ *
+ * THE GATE IS UNCHANGED. `wallFor()` still supplies the verbatim copy and the
+ * caller still decides whether this renders at all.
  */
 
 const ICONS: Record<Feature, LucideIcon> = {
@@ -82,18 +92,20 @@ export default function ContextualWall({
   if (variant === "band") {
     return (
       <div
-        className={`paper-card flex flex-wrap items-center gap-x-4 gap-y-3 p-5 ring-1 ring-gold-300 ${className}`}
+        className={`club-b-card flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 ${className}`}
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold-400/15">
-          <Icon className="h-6 w-6 text-gold-700" />
-        </div>
+        <span className="club-b-orb h-10 w-10 shrink-0">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
         <div className="min-w-[8rem] flex-1">
-          <p className="font-display font-semibold text-ink">{copy.title}</p>
-          <p className="text-sm leading-snug text-soft">{copy.body}</p>
+          <p className="font-display text-[14px] font-extrabold uppercase leading-tight tracking-[-0.01em] text-ink">
+            {copy.title}
+          </p>
+          <p className="mt-1 text-[12.5px] leading-snug text-soft">{copy.body}</p>
         </div>
         <a
           href={PRICING_HREF}
-          className="cta-button inline-flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-xs sm:w-auto"
+          className="f0-focus f0-press inline-flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-4 py-2.5 font-display text-[12px] font-extrabold uppercase tracking-[0.05em] text-[color:var(--accent-on)] sm:w-auto"
         >
           {copy.cta}
         </a>

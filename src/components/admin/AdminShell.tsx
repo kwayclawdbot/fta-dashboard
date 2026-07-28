@@ -15,7 +15,7 @@ interface AdminShellProps {
 
 export default function AdminShell({ viewAs = null, children }: AdminShellProps) {
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-paper text-ink">
       <AdminSidebar />
       <div className="lg:ml-60">
         {/* The admin settings bar — persistent across every admin page so the

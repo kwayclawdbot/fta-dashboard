@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
-import { m } from "@/lib/motion";
+import { useRef, useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { m, useReducedMotion } from "@/lib/motion";
 import {
   Video,
   Play,
-  Clock,
   Lock,
   BookOpen,
   Check,
@@ -22,7 +21,7 @@ import {
   type SessionTier,
 } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
-import { SegmentedRail } from "@/components/canvas2";
+import { BoardSection } from "@/components/clubhome/board";
 import RecordingPlayerModal from "@/components/live/RecordingPlayerModal";
 import {
   resolveRecordingKind,
@@ -30,30 +29,48 @@ import {
 } from "@/lib/recordings";
 
 /**
- * LIVE CLASSES — canvas v2 (board 05 "Live · The Club Room", Club Screens 07
- * "Live rooms" / 08 "In the room", Family F7 "Live class").
+ * LIVE — board 07 "LIVE ROOMS", transcribed.
  *
- * WHAT THE CANVAS DRAWS AND WE DO NOT: a stage with speaker tiles, a raise-hand
- * button, a room chat rail and "2,341 in room". None of that has a write path.
- * `live_sessions` + `session_rsvps` carry a schedule, a Zoom link and an RSVP —
- * so the room here is the SCHEDULE, and the only controls drawn are the two that
- * actually persist: RSVP (which also awards XP) and Join (which opens Zoom).
- * Drawing a mic or a hand that does nothing is worse than not drawing it.
+ * The board reads top to bottom as FOUR objects and nothing else:
  *
- * WHAT WE TOOK FROM THE CANVAS: the display masthead with one annotated word,
- * the ON-AIR field as the single dark object, the "in the room" roster as an
- * overlapping avatar stack (.f0-stack, real RSVP'd members — never a count we
- * do not have), the hairline-ruled schedule grouped by series, and the
- * segmented rail for the one-of-N controls.
+ *   1  (•) LIVE           — the live-dot glyph beside one Sora black display word
+ *   2  NOW LIVE / UPCOMING / REPLAYS — a filter PILL row. Orange fill on the
+ *                           active pill, white card + hairline on the rest.
+ *   3  the live hero      — a dark diagonal-striped field: room title in white
+ *                           display caps, "Live now · N", one line of copy, an
+ *                           orange JOIN ROOM button, a circled script "live!"
+ *                           mark on the right.
+ *   4  UPCOMING SESSIONS  — white cards: photo tile, title, when-line, host-line,
+ *      / RECENT REPLAY      a hairline action on the right; and the replay card
+ *                           with its black play tile and a plain orange WATCH.
  *
- * HOST HONESTY (migration 198): this page used to hardcode `host: "Coach"` for
- * every class in the app. `live_sessions` now carries host_name / host_title /
+ * WHAT WAS REMOVED. The previous pass built this surface out of the hairline
+ * ledger vocabulary — `f0-ledger` rows, `f0-section-rule` markers, a `f0-rule-top`
+ * entitlement notice and a `SegmentedRail` underscore rail. That was the previous
+ * VERSION of the design system, not this one. Every one of those is gone: the
+ * schedule is cards, the section markers are `BoardSection` tracked mono caps, and
+ * the two one-of-N controls are pill rows.
+ *
+ * WHAT THE BOARD DRAWS AND WE STILL DO NOT: a photographed room, a stage, a raise
+ * hand, a room chat and "2,341 in room". None of those has a write path.
+ * `live_sessions` + `session_rsvps` carry a schedule, a Zoom link and an RSVP — so
+ * the only two controls drawn are the two that persist: RSVP (which also awards
+ * XP) and Join (which opens Zoom). The board's "N in room" becomes the RSVP count,
+ * which is a number we actually hold, and the ON STAGE ring row becomes the real
+ * RSVP'd roster. Drawing a mic that does nothing is worse than not drawing it.
+ *
+ * BOARD 08 ("IN THE ROOM") has no in-room state to take here — this surface never
+ * hosts the room, Zoom does. Its vocabulary lands on the one dark object that IS
+ * here: the live hero wears board 08's `• LIVE` pill, its ON STAGE avatar ring row
+ * with the host ringed in orange, and its near-black ground.
+ *
+ * HOST HONESTY (migration 198): `live_sessions` carries host_name / host_title /
  * host_avatar_url, and a class with no host on the record renders NO host line.
  *
- * COLOUR LAW: green/red are PRICE and appear nowhere here. "On air" and every
- * action ride --accent-solid (gold in Family Mode, volt orange in Club, metallic
- * on the FTA desk), so the live signal is mode-correct for free. Orange TEXT is
- * the gold ramp; orange FILLS carry text-night-950, never text-ink or white.
+ * COLOUR LAW: green/red are PRICE and appear nowhere here. Live and every action
+ * ride --accent-solid (gold in Family Mode, volt orange in Club, metallic on the
+ * FTA desk), so the live signal is mode-correct for free. Orange FILLS carry
+ * --accent-on, never text-ink or a hardcoded white.
  *
  * WIRING UNTOUCHED: the Zoom join link, the RSVP insert/delete + XP award + the
  * push-enrolment nudge, the Supabase session/RSVP reads, tier + track gating via
@@ -129,7 +146,7 @@ interface RosterMember {
 }
 
 /** Track labels only — the old per-track colour chips added four accent ramps to
- *  a surface that needs one. Track now reads as a mono label in the row meta. */
+ *  a surface that needs one. Track reads as a mono label in the card meta. */
 const TRACK_LABEL: Record<Track, string> = {
   kids: "Kids Corner",
   teens: "Teens",
@@ -151,54 +168,76 @@ function initialsOf(name: string): string {
 
 // ── Bits ──
 
-/** Section marker — charged tick + eyebrow + hairline to the edge. */
-function SectionRule({
-  label,
-  meta,
-}: {
-  label: string;
-  meta?: React.ReactNode;
-}) {
+/**
+ * The board's `(•)` heading glyph — a ringed dot beside the display word. The
+ * inner dot goes to the accent (and pulses) ONLY when a class is genuinely on
+ * air, so the mark is a live indicator rather than decoration.
+ */
+function LiveGlyph({ on }: { on: boolean }) {
   return (
-    <div className="mb-1 flex items-center gap-3">
-      <h3 className="f0-section-rule flex-1">
-        <span className="font-display text-eyebrow font-bold uppercase text-ink">
-          {label}
-        </span>
-      </h3>
-      {meta}
-    </div>
+    <span
+      className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-[2.5px] border-ink sm:h-8 sm:w-8"
+      aria-hidden
+    >
+      <span className="relative flex h-[7px] w-[7px] items-center justify-center">
+        {on && (
+          <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
+        )}
+        <span
+          className={`relative inline-flex h-[7px] w-[7px] rounded-full ${
+            on ? "bg-accent" : "bg-ink"
+          }`}
+        />
+      </span>
+    </span>
   );
 }
 
 /**
- * The tab rail. Real tabs over real panels, so this is tablist/tab semantics —
- * NOT the SegmentedRail radiogroup (which is for form controls). The selected
- * mark reuses the shared .f0-seg-bar geometry so the two rails are visually one
- * mechanism, and the count rides the mono register beside the label rather than
- * inside a badge pill.
+ * The board's filter pill row. NOT a segmented widget and NOT a tab rail with an
+ * underscore — those were the previous version. Active = solid accent fill with
+ * the declared on-accent foreground; resting = the plain white board card with
+ * its hairline. Real tabs over real panels, so tablist/tab semantics with a
+ * roving tab stop and arrow keys.
  */
-function ClassTabs({
+function ViewPills({
   value,
   onChange,
-  counts,
 }: {
   value: TabType;
   onChange: (t: TabType) => void;
-  counts: Record<TabType, number>;
 }) {
+  const railRef = useRef<HTMLDivElement>(null);
   const TABS: { id: TabType; label: string }[] = [
-    { id: "live", label: "On air" },
+    { id: "live", label: "Now live" },
     { id: "upcoming", label: "Upcoming" },
-    { id: "recordings", label: "Recordings" },
+    { id: "recordings", label: "Replays" },
   ];
+  const index = Math.max(0, TABS.findIndex((t) => t.id === value));
+
+  function move(delta: number) {
+    const next = (index + delta + TABS.length) % TABS.length;
+    onChange(TABS[next].id);
+    railRef.current
+      ?.querySelectorAll<HTMLButtonElement>("[data-pill]")
+      ?.[next]?.focus();
+  }
+
   return (
-    <div role="tablist" aria-label="Live class views" className="flex gap-7 border-b border-sand">
+    <div
+      ref={railRef}
+      role="tablist"
+      aria-label="Live class views"
+      /* py-1/-my-1: the 2px-offset focus ring would otherwise be clipped by the
+         scroll box, and the negative margin keeps the row where it was. */
+      className="club2-track -my-1 flex gap-2 overflow-x-auto py-1"
+    >
       {TABS.map((t) => {
         const on = value === t.id;
         return (
           <button
             key={t.id}
+            data-pill
             role="tab"
             type="button"
             id={`live-tab-${t.id}`}
@@ -206,15 +245,22 @@ function ClassTabs({
             aria-controls={`live-panel-${t.id}`}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id)}
-            className={`f0-focus relative -mb-px pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.1em] transition-colors ${
-              on ? "text-ink" : "text-soft hover:text-ink"
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                e.preventDefault();
+                move(1);
+              } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                e.preventDefault();
+                move(-1);
+              }
+            }}
+            className={`f0-focus f0-press shrink-0 px-4 py-2.5 font-display text-[12.5px] font-extrabold uppercase tracking-[0.08em] transition-colors ${
+              on
+                ? "rounded-[14px] bg-accent text-[color:var(--accent-on)]"
+                : "club-b-card text-soft hover:text-ink"
             }`}
           >
             {t.label}
-            <span className="ml-1.5 font-mono text-[11px] font-semibold tabular-nums text-soft">
-              {counts[t.id]}
-            </span>
-            {on && <span className="f0-seg-bar bg-accent" aria-hidden />}
           </button>
         );
       })}
@@ -223,10 +269,80 @@ function ClassTabs({
 }
 
 /**
- * The room roster — canvas board 08's "on stage" row, honest. These are the
- * members who actually pressed RSVP; there is no attendance table, so this
- * never claims anyone is "listening". Below three people the stack degrades to
- * nothing rather than posing as a crowd.
+ * The secondary track filter. Deliberately a step quieter than the view pills —
+ * same pill geometry at a smaller measure, and the chosen one takes the shared
+ * selection chip's ink flip rather than a second orange fill, so the surface only
+ * ever has ONE orange control row. radiogroup/radio + roving tab stop, because
+ * this filters a panel rather than switching between them.
+ */
+function TrackPills({
+  value,
+  onChange,
+}: {
+  value: Track;
+  onChange: (t: Track) => void;
+}) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const OPTIONS: { id: Track; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "kids", label: "Kids" },
+    { id: "teens", label: "Teens" },
+    { id: "adults", label: "Adults" },
+  ];
+  const index = Math.max(0, OPTIONS.findIndex((o) => o.id === value));
+
+  function move(delta: number) {
+    const next = (index + delta + OPTIONS.length) % OPTIONS.length;
+    onChange(OPTIONS[next].id);
+    railRef.current
+      ?.querySelectorAll<HTMLButtonElement>("[data-track]")
+      ?.[next]?.focus();
+  }
+
+  return (
+    <div
+      ref={railRef}
+      role="radiogroup"
+      aria-label="Filter classes by track"
+      className="club2-track -my-1 flex gap-1.5 overflow-x-auto py-1"
+    >
+      {OPTIONS.map((o, i) => {
+        const on = value === o.id;
+        return (
+          <button
+            key={o.id}
+            data-track
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={i === index ? 0 : -1}
+            onClick={() => onChange(o.id)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                e.preventDefault();
+                move(1);
+              } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                e.preventDefault();
+                move(-1);
+              }
+            }}
+            className={`f0-chip f0-focus f0-press shrink-0 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] ${
+              on ? "f0-chip-on" : "text-soft hover:text-ink"
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Board 08's ON STAGE row, honest. These are the members who actually pressed
+ * RSVP; there is no attendance table, so nothing here claims anyone is
+ * "listening". With no resolved names the stack degrades to nothing rather than
+ * posing as a crowd.
  */
 function RosterStack({ members, total }: { members: RosterMember[]; total: number }) {
   if (members.length === 0) return null;
@@ -235,9 +351,9 @@ function RosterStack({ members, total }: { members: RosterMember[]; total: numbe
   return (
     <span className="flex items-center gap-3">
       {/* The ring must match the surface BEHIND the stack so it reads as a
-          cut-out. This stack sits on the dark hero field in both themes, so the
-          ring is pinned to that ground rather than the page's --paper. */}
-      <span className="f0-stack" style={{ ["--f0-stack-ring" as string]: "#191512" }}>
+          cut-out. This stack sits on the dark island in both themes, so the ring
+          is pinned to that ground rather than the page's --paper. */}
+      <span className="f0-stack" style={{ ["--f0-stack-ring" as string]: "#04060C" }}>
         {shown.map((mem) => (
           <span
             key={mem.id}
@@ -261,13 +377,19 @@ function RosterStack({ members, total }: { members: RosterMember[]; total: numbe
 }
 
 /**
- * ON AIR — the one dark object on this surface. The canvas fills this slot with
- * a photographed stage; production has no stage capture, so the field carries
- * the class identity, the real host, the real roster and the one control that
- * works. Copy stays honest: joining happens in Zoom, and the recording is
- * promised only because it genuinely gets posted here afterwards.
+ * THE LIVE HERO — board 07's dark diagonal-striped field, and the only dark
+ * object on this surface. The board fills the right of it with a photographed
+ * room; production has no room capture, so the field carries the class identity,
+ * the real host (board 08's orange HOST ring), the real roster and the one
+ * control that works.
+ *
+ * NOT A PAPER CARD: it is the sanctioned dark island, with the stripes laid over
+ * it as an inline repeating gradient plus a warm accent wash, so no new CSS class
+ * is needed and both themes get the same field (a dark island is dark in both by
+ * design — it is the strongest value contrast the warm paper ground can carry).
+ * Nothing here moves except the live dot, which is `motion-safe:` gated.
  */
-function OnAirField({
+function LiveHero({
   session,
   roster,
   rosterTotal,
@@ -276,128 +398,187 @@ function OnAirField({
   roster: RosterMember[];
   rosterTotal: number;
 }) {
+  // The island is the loudest object on the surface, so its entry is the one
+  // that most needs to not happen when the viewer has asked for stillness. The
+  // stripes are static and the only other motion (the live dot) is CSS-gated.
+  const reduce = useReducedMotion();
   return (
     <m.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reduce ? false : { opacity: 0, y: 10 }}
+      animate={reduce ? undefined : { opacity: 1, y: 0 }}
       transition={{ duration: 0.45 }}
-      className="f0-hero-field f0-grain px-5 py-7 sm:px-8 sm:py-8"
+      className="night-island f0-grain relative isolate"
     >
-      <div className="flex flex-wrap items-center gap-2.5">
-        <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-          <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-        </span>
-        <span className="font-mono text-eyebrow font-semibold uppercase text-volt-300">
-          On air now
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
-          {TRACK_LABEL[session.track]}
-        </span>
-      </div>
+      {/* The board's diagonal stripe field + a warm wash so the island reads as
+          the brand's dark, not a cold terminal. Presentational only. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, rgba(255,255,255,0.055) 0px, rgba(255,255,255,0.055) 11px, transparent 11px, transparent 28px), radial-gradient(120% 120% at 18% 0%, color-mix(in srgb, var(--accent-solid) 16%, transparent) 0%, transparent 62%)",
+        }}
+      />
 
-      <h2 className="mt-3.5 max-w-2xl font-display text-display-2 font-extrabold uppercase">
-        {session.title}
-      </h2>
-
-      {session.description && (
-        <p className="mt-3 max-w-lg text-[13.5px] leading-relaxed opacity-75">
-          {session.description}
-        </p>
-      )}
-
-      {/* Host identity + the honest instrument line. A class with no host on the
-          record draws no host block — never a placeholder name. */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-        {session.host && (
-          <span className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/12 font-display text-[12px] font-extrabold">
-              {initialsOf(session.host)}
+      <div className="relative flex flex-col gap-6 px-5 py-6 sm:flex-row sm:items-end sm:px-7 sm:py-7">
+        <div className="min-w-0 flex-1">
+          {/* Board 08's pill: a dot, the word, nothing else. No elapsed timer —
+              a ticking clock would mean reading the wall clock every second. */}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent-on)]">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-current opacity-70 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
             </span>
-            <span>
-              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
-                {session.hostTitle || "Hosted by"}
-              </span>
-              <span className="block text-[13.5px] font-semibold">{session.host}</span>
-            </span>
+            Live
           </span>
-        )}
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] opacity-65">
-          {session.durationMin} min
-        </span>
-        <RosterStack members={roster} total={rosterTotal} />
-      </div>
 
-      <div className="mt-6">
-        {session.zoomUrl ? (
-          <a
-            href={session.zoomUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
-          >
-            <Video className="h-4 w-4" />
-            Join the class
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        ) : (
-          <p className="text-[13.5px] leading-relaxed opacity-80">
-            The join link hasn&apos;t been posted yet — refresh in a moment or
-            check your email.
+          <h2 className="mt-3.5 max-w-xl font-display text-display-2 font-extrabold uppercase leading-[0.98]">
+            {session.title}
+          </h2>
+
+          <p className="mt-2.5 font-mono text-[11px] uppercase tracking-[0.12em] opacity-70">
+            Live now
+            {rosterTotal > 0 && <> · {rosterTotal} RSVP&apos;d</>} ·{" "}
+            {session.durationMin} min · {TRACK_LABEL[session.track]}
           </p>
-        )}
-        <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] opacity-50">
-          Opens in Zoom · the recording is posted here afterwards
-        </p>
+
+          {session.description && (
+            <p className="mt-3 max-w-md text-[13.5px] leading-relaxed opacity-80">
+              {session.description}
+            </p>
+          )}
+
+          {/* ON STAGE — the host ringed in accent exactly as board 08 draws it,
+              then the real RSVP'd roster. A class with no host on the record
+              draws no host block; never a placeholder name. */}
+          {(session.host || roster.length > 0) && (
+            <div className="mt-5">
+              <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent">
+                On stage
+              </p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-3">
+                {session.host && (
+                  <span className="flex items-center gap-2.5">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/10 font-display text-[13px] font-extrabold ring-2 ring-[color:var(--accent-solid)]">
+                      {initialsOf(session.host)}
+                    </span>
+                    <span>
+                      <span className="block text-[13.5px] font-semibold">
+                        {session.host}
+                      </span>
+                      <span className="block font-mono text-[9.5px] uppercase tracking-[0.16em] text-accent">
+                        {session.hostTitle || "Host"}
+                      </span>
+                    </span>
+                  </span>
+                )}
+                <RosterStack members={roster} total={rosterTotal} />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6">
+            {session.zoomUrl ? (
+              <a
+                href={session.zoomUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="f0-focus f0-press inline-flex items-center gap-2 rounded-[12px] bg-accent px-5 py-3 font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
+              >
+                <Video className="h-4 w-4" />
+                Join room
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ) : (
+              <p className="max-w-md text-[13.5px] leading-relaxed opacity-85">
+                The join link hasn&apos;t been posted yet — refresh in a moment or
+                check your email.
+              </p>
+            )}
+            <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
+              Opens in Zoom · the recording is posted here afterwards
+            </p>
+          </div>
+        </div>
+
+        {/* The board's circled script mark. Sora italic is the closest thing the
+            app's three families carry — see CSS NEEDS in the lane report. */}
+        <span
+          aria-hidden
+          className="hidden shrink-0 self-center sm:grid sm:h-[124px] sm:w-[124px] sm:place-items-center sm:rounded-full sm:border-[2.5px] sm:border-[color:var(--accent-solid)]"
+        >
+          <span className="font-display text-[26px] font-extrabold italic tracking-tight text-accent">
+            live!
+          </span>
+        </span>
       </div>
     </m.section>
   );
 }
 
-/** One class on the ledger — no container, hierarchy from type and rule alone. */
-function SessionRow({
+/** The board's photo slot. We hold no session imagery, so the tile is a plain
+ *  sand square with the medium's own glyph — obviously a placeholder, never a
+ *  stand-in for a picture that exists. */
+function SessionTile() {
+  return (
+    <span
+      className="grid h-[54px] w-[54px] shrink-0 place-items-center rounded-[10px] bg-sand"
+      aria-hidden
+    >
+      <Video className="h-4 w-4 text-soft" />
+    </span>
+  );
+}
+
+/**
+ * UPCOMING SESSION — board 07's white card: tile, title, when-line, host-line,
+ * and the hairline action on the right.
+ *
+ * The board's word for that action is "Set Reminder". Ours stays RSVP / Going,
+ * because the write behind it does more than remind: it counts the member's
+ * family as going (the card says so underneath) and it awards XP. Relabelling it
+ * would make the card contradict itself.
+ */
+function UpcomingCard({
   session,
+  when,
   locked,
   lockReason,
   rsvp,
   onRsvp,
-  onWatch,
 }: {
   session: LiveSession;
+  when: string;
   locked: boolean;
   lockReason?: string;
   rsvp?: { count: number; going: boolean };
   onRsvp?: () => void;
-  onWatch?: () => void;
 }) {
-  const isRecording = session.status === "completed";
   const families = rsvp?.count ?? 0;
   const going = rsvp?.going ?? false;
-  const hasRecording = session.recordingKind !== null;
 
   return (
-    <div className={`f0-ledger-row ${locked ? "opacity-55" : ""}`}>
-      <WhenColumn session={session} />
+    <div
+      className={`club-b-card flex items-start gap-3 px-3 py-3 ${
+        locked ? "opacity-60" : ""
+      }`}
+    >
+      <SessionTile />
 
       <div className="min-w-0 flex-1">
-        <h4 className="font-display text-[15px] font-bold leading-snug tracking-tight text-ink">
+        <h4 className="font-display text-[14.5px] font-bold leading-snug tracking-tight text-ink">
           {session.title}
         </h4>
-        {session.description && (
-          <p className="mt-0.5 line-clamp-2 max-w-prose text-[12.5px] leading-relaxed text-soft">
-            {session.description}
-          </p>
+        <p className="mt-1 font-mono text-[11px] tabular-nums text-soft">{when}</p>
+        {session.host && (
+          <p className="mt-0.5 truncate text-[12px] text-soft">w/ {session.host}</p>
         )}
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-          {session.host && <span>{session.host}</span>}
-          <span className="inline-flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {session.durationMin} min
-          </span>
+          <span>{session.durationMin} min</span>
           <span>{TRACK_LABEL[session.track]}</span>
-          {!isRecording && onRsvp && families > 0 && (
-            <span className="text-gold-700">
+          {onRsvp && families > 0 && (
+            <span className="text-accent">
               {families} famil{families === 1 ? "y" : "ies"} going
             </span>
           )}
@@ -405,13 +586,13 @@ function SessionRow({
         </div>
 
         {(session.worksheetUrl || session.assignment) && (
-          <div className="mt-1.5 space-y-1">
+          <div className="mt-2 space-y-1">
             {session.worksheetUrl && (
               <a
                 href={session.worksheetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="f0-focus inline-flex items-center gap-1 text-[11.5px] font-semibold text-gold-700 hover:text-gold-600"
+                className="f0-focus inline-flex items-center gap-1 text-[11.5px] font-semibold text-accent"
               >
                 <BookOpen className="h-3 w-3" />
                 Worksheet
@@ -428,7 +609,7 @@ function SessionRow({
         )}
       </div>
 
-      <div className="shrink-0 self-start pt-0.5 text-right">
+      <div className="shrink-0 self-center">
         {locked ? (
           <span
             className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft"
@@ -437,38 +618,14 @@ function SessionRow({
             <Lock className="h-3 w-3" />
             {lockReason || "Locked"}
           </span>
-        ) : isRecording ? (
-          hasRecording ? (
-            session.recordingKind === "external" && session.recordingUrl ? (
-              <a
-                href={session.recordingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="f0-focus f0-press inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
-              >
-                <Play className="h-3.5 w-3.5" />
-                Watch
-              </a>
-            ) : (
-              <button
-                onClick={onWatch}
-                className="f0-focus f0-press inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
-              >
-                <Play className="h-3.5 w-3.5" />
-                Watch
-              </button>
-            )
-          ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-              Recording soon
-            </span>
-          )
         ) : onRsvp ? (
           <button
             onClick={onRsvp}
             aria-pressed={going}
-            className={`f0-chip f0-focus f0-press text-[12.5px] font-semibold ${
-              going ? "f0-chip-on" : "text-soft hover:text-ink"
+            className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-[14px] px-3 py-2 text-[12.5px] font-semibold transition-colors ${
+              going
+                ? "bg-accent text-[color:var(--accent-on)]"
+                : "club-b-card text-ink hover:text-accent"
             }`}
           >
             {going ? (
@@ -493,29 +650,116 @@ function SessionRow({
   );
 }
 
-/** The date column of a ledger row — mono, tabular, two lines. */
-function WhenColumn({ session }: { session: LiveSession }) {
-  const iso = session.scheduledIso;
-  if (!iso) {
-    return (
-      <div className="w-[4.75rem] shrink-0 self-start">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-soft">
-          TBA
-        </p>
-      </div>
-    );
-  }
-  const d = new Date(iso);
-  const day = d
-    .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
-    .replace(",", "");
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+/**
+ * RECENT REPLAY — board 07's white card with a black square play tile and a
+ * plain orange WATCH. The tile's near-black is pinned rather than taken from
+ * --ink, because --ink inverts between themes and a play tile that turns cream
+ * in dark stops being a play tile.
+ */
+function ReplayCard({
+  session,
+  when,
+  locked,
+  lockReason,
+  onWatch,
+}: {
+  session: LiveSession;
+  when: string;
+  locked: boolean;
+  lockReason?: string;
+  onWatch?: () => void;
+}) {
+  const hasRecording = session.recordingKind !== null;
+  const meta = [
+    `${session.durationMin} min`,
+    TRACK_LABEL[session.track],
+    when,
+  ].join(" · ");
+
+  const watchClass =
+    "f0-focus f0-press inline-flex items-center gap-1.5 font-display text-[12.5px] font-extrabold uppercase tracking-[0.08em] text-accent";
+
   return (
-    <div className="w-[4.75rem] shrink-0 self-start">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink">
-        {day}
-      </p>
-      <p className="font-mono text-[10.5px] tabular-nums text-soft">{time}</p>
+    <div
+      className={`club-b-card flex items-center gap-3 px-3 py-3 ${
+        locked ? "opacity-60" : ""
+      }`}
+    >
+      <span
+        className="club-b-tile h-[54px] w-[54px] shrink-0"
+        style={
+          {
+            borderRadius: 10,
+            "--tile-bg": "#141216",
+            "--tile-fg": "#F4F0EC",
+          } as React.CSSProperties
+        }
+        aria-hidden
+      >
+        <Play className="h-4 w-4" fill="currentColor" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <h4 className="font-display text-[14.5px] font-bold leading-snug tracking-tight text-ink">
+          {session.title}
+        </h4>
+        <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.1em] tabular-nums text-soft">
+          {meta}
+        </p>
+        {session.minTier === "academy" && (
+          <span className="mt-1.5 inline-flex">
+            <TierBadge tier="fta" size="xs" />
+          </span>
+        )}
+      </div>
+
+      <div className="shrink-0 self-center text-right">
+        {locked ? (
+          <span
+            className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.1em] text-soft"
+            title={lockReason}
+          >
+            <Lock className="h-3 w-3" />
+            {lockReason || "Locked"}
+          </span>
+        ) : !hasRecording ? (
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
+            Soon
+          </span>
+        ) : session.recordingKind === "external" && session.recordingUrl ? (
+          <a
+            href={session.recordingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={watchClass}
+          >
+            Watch
+          </a>
+        ) : (
+          <button onClick={onWatch} className={watchClass}>
+            Watch
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A stated absence with a way out — never a skeleton, never a decoration. */
+function EmptyCard({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="club-b-card px-4 py-4">
+      <p className="font-display text-[15px] font-extrabold text-ink">{title}</p>
+      <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-soft">{body}</p>
+      {action && <div className="mt-3">{action}</div>}
     </div>
   );
 }
@@ -537,11 +781,44 @@ type TabType = "live" | "upcoming" | "recordings";
    whether a scheduled class has already finished, and it already adds the
    session's full duration before comparing. The server snapshot is null, and the
    filter simply does not run until the client supplies an hour — the list is
-   complete either way, never wrong, at worst briefly unpruned. */
+   complete either way, never wrong, at worst briefly unpruned.
+
+   The board's "Today · 1:00 PM" day-labels read the SAME bucket, so the relative
+   wording never diverges from the pruning it sits beside, and there is still no
+   Date.now() anywhere in render. */
 const HOUR_MS = 3_600_000;
 const CLOCK_SUBSCRIBE = () => () => {};
 const CLOCK_CLIENT = () => Math.floor(Date.now() / HOUR_MS);
 const CLOCK_SERVER = () => null;
+
+function startOfLocalDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/** Board 07's when-line: "Today · 1:00 PM EDT". Relative only when the hour
+ *  bucket is available; otherwise the absolute date, never a guess. The zone is
+ *  printed because the viewer's clock is not necessarily Eastern. */
+function formatWhen(iso: string | null, nowHour: number | null): string {
+  if (!iso) return "Time to be announced";
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+  if (nowHour != null) {
+    const days = Math.round(
+      (startOfLocalDay(d) - startOfLocalDay(new Date(nowHour * HOUR_MS))) / 86_400_000
+    );
+    if (days === 0) return `Today · ${time}`;
+    if (days === 1) return `Tomorrow · ${time}`;
+    if (days === -1) return `Yesterday · ${time}`;
+  }
+  const day = d
+    .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+    .replace(",", "");
+  return `${day} · ${time}`;
+}
 
 function formatScheduledAt(dateStr: string | null, status: string): string {
   if (!dateStr) return "";
@@ -579,6 +856,7 @@ export default function LiveSessionsPage() {
   const [roster, setRoster] = useState<Record<string, RosterMember[]>>({});
   /** Viewer clock, hour-bucketed. See CLOCK_* above — never Date.now() in render. */
   const nowHour = useSyncExternalStore(CLOCK_SUBSCRIBE, CLOCK_CLIENT, CLOCK_SERVER);
+  const reduceMotion = useReducedMotion();
 
   const loadRsvps = useCallback(
     async (uid: string) => {
@@ -723,7 +1001,7 @@ export default function LiveSessionsPage() {
   }, [loadSessions]);
 
   // Open on the first tab that actually has something (audit #11): landing on an
-  // empty "On air" when Upcoming/Recordings have items is a dead first view.
+  // empty "Now live" when Upcoming/Replays have items is a dead first view.
   // Only auto-selects until the member picks a tab themselves.
   useEffect(() => {
     if (loading || tabTouched) return;
@@ -818,7 +1096,7 @@ export default function LiveSessionsPage() {
   const filterByTrack = (list: LiveSession[]) =>
     trackFilter === "all" ? list : list.filter((s) => s.track === trackFilter);
 
-  // Group a list by FIC class type (with a labeled section rule per group).
+  // Group a list by FIC class type (with a labeled section mark per group).
   // Legacy rows without a class type render flat, so nothing breaks pre-tagging.
   const groupSessions = (list: LiveSession[]) => {
     const hasTypes = list.some((s) => s.classType);
@@ -837,56 +1115,86 @@ export default function LiveSessionsPage() {
     return groups;
   };
 
-  const liveLock = liveSession ? sessionLock(liveSession) : null;
+  const goTo = (t: TabType) => {
+    setTabTouched(true);
+    setTab(t);
+  };
 
-  /* LOADING ≠ EMPTY (§0.4). This is the schedule's skeleton — masthead bar,
-     tab rail, then ruled rows. It is deliberately shaped like the ledger it is
-     about to become, and it is never the founding state's copy. */
+  const liveLock = liveSession ? sessionLock(liveSession) : null;
+  const liveShown = liveSession && !liveLock?.locked ? liveSession : null;
+
+  const countMark = (n: number) => (
+    <span className="shrink-0 font-mono text-[10.5px] font-semibold tabular-nums text-soft">
+      {n}
+    </span>
+  );
+  const seeAll = (t: TabType, label: string) => (
+    <button
+      type="button"
+      onClick={() => goTo(t)}
+      className="f0-focus f0-press shrink-0 rounded-md text-[11px] font-semibold text-accent"
+    >
+      {label}
+    </button>
+  );
+
+  /* LOADING ≠ EMPTY (§0.4). The skeleton is shaped like the board it is about to
+     become — glyph + display word, a pill row, then cards — so the swap is a
+     fill, not a reflow. It is never the founding state's copy. */
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-6" aria-busy="true">
-        <div className="h-3 w-28 animate-pulse rounded bg-sand" />
-        <div className="mt-4 h-11 w-64 animate-pulse rounded bg-sand" />
-        <div className="mt-4 h-4 w-full max-w-md animate-pulse rounded bg-sand/60" />
-        <div className="mt-9 h-8 w-full animate-pulse rounded bg-sand/50" />
-        <div className="f0-ledger mt-6 border-t border-sand/70">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="f0-ledger-row">
-              <div className="h-8 w-[4.75rem] shrink-0 animate-pulse rounded bg-sand/60" />
+      <div className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-6 lg:max-w-3xl" aria-busy="true">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-sand" />
+          <div className="h-9 w-40 animate-pulse rounded-lg bg-sand" />
+        </div>
+        <div className="mt-5 flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-10 w-28 animate-pulse rounded-[14px] bg-sand/70" />
+          ))}
+        </div>
+        <div className="mt-5 h-52 animate-pulse rounded-2xl bg-sand/70" />
+        <div className="mt-6 flex flex-col gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="club-b-card flex items-center gap-3 px-3 py-3 motion-safe:animate-pulse"
+            >
+              <div className="h-[54px] w-[54px] shrink-0 rounded-[10px] bg-ink/10" />
               <div className="min-w-0 flex-1 space-y-2">
-                <div className="h-4 w-2/3 animate-pulse rounded bg-sand/60" />
-                <div className="h-3 w-1/3 animate-pulse rounded bg-sand/40" />
+                <div className="h-3 w-2/3 rounded-full bg-ink/10" />
+                <div className="h-2.5 w-1/3 rounded-full bg-ink/[0.07]" />
               </div>
+              <div className="h-8 w-20 shrink-0 rounded-[10px] bg-ink/10" />
             </div>
           ))}
         </div>
+        <span className="sr-only">Loading the live schedule</span>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-6 sm:px-6">
-      {/* ── Masthead ─────────────────────────────────────────────────────── */}
+    <div className="mx-auto w-full max-w-2xl px-4 pb-16 pt-6 sm:px-6 lg:max-w-3xl">
+      {/* ── (•) LIVE ─────────────────────────────────────────────────────── */}
       <m.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          {liveSession ? "A class is on air" : "The club's classroom"}
-        </p>
-        {/* The canvas annotates ONE word per headline. Never a phrase — the
-            mark stops meaning anything the moment it covers more than a word. */}
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
-          Live <span className="f0-underline-mark">Classes</span>
-        </h1>
-        <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-soft">
+        <div className="flex items-center gap-3">
+          <LiveGlyph on={Boolean(liveSession)} />
+          <h1 className="font-display text-display-1 font-extrabold uppercase leading-none text-ink">
+            Live
+          </h1>
+        </div>
+        <p className="mt-3 max-w-xl text-[13.5px] leading-relaxed text-soft">
           Coaching calls, Q&amp;A and workshops run live — then every one of them
           is posted back here as a recording you can study at your own pace.
         </p>
 
-        {/* Entitlement — a stated line on a hairline, not a notice box. */}
-        <p className="f0-rule-top mt-6 pt-4 text-[13px] leading-relaxed text-soft">
+        {/* Entitlement — a stated line, no notice box and no rule. */}
+        <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-soft">
           {access.isChild ? (
             <>
               <span className="font-semibold text-ink">Your track:</span>{" "}
@@ -902,11 +1210,11 @@ export default function LiveSessionsPage() {
             <>
               <span className="font-semibold text-ink">Foundations member</span>{" "}
               — family classes are open to you. Sessions marked{" "}
-              <span className="font-semibold text-gold-700">FTA</span> are part
+              <span className="font-semibold text-accent">FTA</span> are part
               of the 6-week live program.{" "}
               <Link
                 href="/upgrade"
-                className="f0-focus font-semibold text-gold-700 transition-colors hover:text-gold-600"
+                className="f0-focus font-semibold text-accent"
               >
                 Join the next cohort →
               </Link>
@@ -915,156 +1223,168 @@ export default function LiveSessionsPage() {
         </p>
       </m.header>
 
-      {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-      <div className="mt-8">
-        <ClassTabs
-          value={tab}
-          onChange={(k) => {
-            setTabTouched(true);
-            setTab(k);
-          }}
-          counts={{
-            live: liveSession ? 1 : 0,
-            upcoming: upcoming.length,
-            recordings: recordings.length,
-          }}
-        />
+      {/* ── Filter pills ─────────────────────────────────────────────────── */}
+      <div className="mt-5">
+        <ViewPills value={tab} onChange={goTo} />
       </div>
 
-      {/* Track filter — only worth showing once a tab is crowded (>6 sessions).
-          A one-of-N form control, so it is the shared SegmentedRail (radiogroup),
-          which keeps the keyboard model singular across the whole app. */}
+      {/* Track filter — only worth showing once a tab is crowded (>6 sessions). */}
       {tab !== "live" &&
         (tab === "upcoming" ? upcoming.length : recordings.length) > 6 && (
-          <div className="mt-5">
-            <SegmentedRail<Track>
-              ariaLabel="Filter classes by track"
-              value={trackFilter}
-              onChange={setTrackFilter}
-              barClassName="bg-accent"
-              size="sm"
-              fill
-              options={[
-                { id: "all", label: "All" },
-                { id: "kids", label: "Kids" },
-                { id: "teens", label: "Teens" },
-                { id: "adults", label: "Adults" },
-              ]}
-            />
+          <div className="mt-3">
+            <TrackPills value={trackFilter} onChange={setTrackFilter} />
           </div>
         )}
 
-      {/* ── On air ───────────────────────────────────────────────────────── */}
+      {/* ── NOW LIVE ─────────────────────────────────────────────────────── */}
       {tab === "live" && (
-        <div className="mt-6" role="tabpanel" id="live-panel-live" aria-labelledby="live-tab-live">
-          {liveSession ? (
-            liveLock?.locked ? (
-              <div className="f0-rule-top py-8">
-                <p className="text-eyebrow font-display font-bold uppercase text-soft">
-                  This class isn&apos;t yours yet
-                </p>
-                <h2 className="mt-2.5 font-display text-display-3 font-extrabold text-ink">
-                  {isTierLocked(liveSession)
-                    ? "Part of the FTA 6-week program"
-                    : `Reserved for the ${TRACK_LABEL[liveSession.track]} track`}
-                </h2>
-                {isTierLocked(liveSession) && (
+        <div
+          className="mt-5 space-y-7"
+          role="tabpanel"
+          id="live-panel-live"
+          aria-labelledby="live-tab-live"
+        >
+          {liveShown ? (
+            <LiveHero
+              session={liveShown}
+              roster={roster[liveShown.id] ?? []}
+              rosterTotal={rsvpInfo[liveShown.id]?.count ?? 0}
+            />
+          ) : liveSession && liveLock?.locked ? (
+            /* The wall, restyled — never widened or narrowed. */
+            <EmptyCard
+              title={
+                isTierLocked(liveSession)
+                  ? "Part of the FTA 6-week program"
+                  : `Reserved for the ${TRACK_LABEL[liveSession.track]} track`
+              }
+              body="A class is on air right now, but this one isn't part of your membership."
+              action={
+                isTierLocked(liveSession) ? (
                   <Link
                     href="/upgrade"
-                    className="f0-focus f0-press mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-gold-700 transition hover:text-gold-600"
+                    className="f0-focus f0-press inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent"
                   >
                     Join the next cohort →
                   </Link>
-                )}
-              </div>
-            ) : (
-              <OnAirField
-                session={liveSession}
-                roster={roster[liveSession.id] ?? []}
-                rosterTotal={rsvpInfo[liveSession.id]?.count ?? 0}
-              />
-            )
+                ) : undefined
+              }
+            />
           ) : (
             /* FOUNDING STATE (§0.5) — the real state on most days. Stated
                absence with two ways out, never a skeleton. */
-            <div className="border-l-2 border-sand py-1 pl-4">
-              <p className="text-eyebrow font-display font-bold uppercase text-soft">
-                Nothing on air
-              </p>
-              <h2 className="mt-2.5 max-w-md font-display text-display-3 font-extrabold text-ink">
-                The room is quiet right now
-              </h2>
-              <p className="mt-2 max-w-md text-[13.5px] leading-relaxed text-soft">
-                When a class goes live it takes over this page. Until then, the
-                schedule and the full recording library are a tap away.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-semibold">
-                <button
-                  onClick={() => {
-                    setTabTouched(true);
-                    setTab("upcoming");
-                  }}
-                  className="f0-focus f0-press text-gold-700 transition hover:text-gold-600"
-                >
-                  See what&apos;s scheduled →
-                </button>
-                {recordings.length > 0 && (
+            <EmptyCard
+              title="The room is quiet right now"
+              body="When a class goes live it takes over this page. Until then, the schedule and the full recording library are a tap away."
+              action={
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-semibold">
                   <button
-                    onClick={() => {
-                      setTabTouched(true);
-                      setTab("recordings");
-                    }}
-                    className="f0-focus f0-press text-soft transition hover:text-ink"
+                    onClick={() => goTo("upcoming")}
+                    className="f0-focus f0-press text-accent"
                   >
-                    Watch a recording
+                    See what&apos;s scheduled →
                   </button>
-                )}
+                  {recordings.length > 0 && (
+                    <button
+                      onClick={() => goTo("recordings")}
+                      className="f0-focus f0-press text-soft transition hover:text-ink"
+                    >
+                      Watch a recording
+                    </button>
+                  )}
+                </div>
+              }
+            />
+          )}
+
+          {/* The board keeps the next sessions and the last replay under the
+              hero on the same screen. Previews only — the full lists live on
+              their own pills. */}
+          {upcoming.length > 0 && (
+            <BoardSection
+              id="live-upcoming-peek"
+              label="Upcoming"
+              mark="sessions"
+              action={seeAll("upcoming", "See all")}
+            >
+              <div className="mt-2.5 flex flex-col gap-2">
+                {upcoming.slice(0, 2).map((session) => {
+                  const lock = sessionLock(session);
+                  return (
+                    <UpcomingCard
+                      key={session.id}
+                      session={session}
+                      when={formatWhen(session.scheduledIso, nowHour)}
+                      locked={lock.locked}
+                      lockReason={lock.reason}
+                      rsvp={rsvpInfo[session.id]}
+                      onRsvp={lock.locked ? undefined : () => toggleRsvp(session.id)}
+                    />
+                  );
+                })}
               </div>
-            </div>
+            </BoardSection>
+          )}
+
+          {recordings.length > 0 && (
+            <BoardSection
+              id="live-replay-peek"
+              label="Recent"
+              mark="replay"
+              action={seeAll("recordings", "See all")}
+            >
+              <div className="mt-2.5">
+                {recordings.slice(0, 1).map((session) => {
+                  const lock = sessionLock(session);
+                  return (
+                    <ReplayCard
+                      key={session.id}
+                      session={session}
+                      when={formatWhen(session.scheduledIso, nowHour)}
+                      locked={lock.locked}
+                      lockReason={lock.reason}
+                      onWatch={lock.locked ? undefined : () => setWatching(session)}
+                    />
+                  );
+                })}
+              </div>
+            </BoardSection>
           )}
         </div>
       )}
 
-      {/* ── Upcoming ─────────────────────────────────────────────────────── */}
+      {/* ── UPCOMING ─────────────────────────────────────────────────────── */}
       {tab === "upcoming" && (
         <div
-          className="mt-6 space-y-8"
+          className="mt-5 space-y-7"
           role="tabpanel"
           id="live-panel-upcoming"
           aria-labelledby="live-tab-upcoming"
         >
           {filterByTrack(upcoming).length === 0 ? (
-            <div className="border-l-2 border-sand py-1 pl-4">
-              <p className="font-display text-display-3 font-extrabold text-ink">
-                Nothing on the calendar yet
-              </p>
-              <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-soft">
-                No upcoming sessions
-                {trackFilter !== "all" ? " for this track" : ""} are scheduled —
-                new classes are posted here as they are set, with the host and the
-                time on the record.
-              </p>
-            </div>
+            <EmptyCard
+              title="Nothing on the calendar yet"
+              body={`No upcoming sessions${
+                trackFilter !== "all" ? " for this track" : ""
+              } are scheduled — new classes are posted here as they are set, with the host and the time on the record.`}
+            />
           ) : (
             groupSessions(filterByTrack(upcoming)).map((group) => (
-              <section key={group.key}>
-                {group.label && (
-                  <SectionRule
-                    label={group.label}
-                    meta={
-                      <span className="font-mono text-[11px] tabular-nums text-soft">
-                        {group.items.length}
-                      </span>
-                    }
-                  />
-                )}
-                <div className="f0-ledger f0-stagger border-t border-sand/70">
+              <BoardSection
+                key={group.key}
+                id={`live-upcoming-${group.key}`}
+                label={group.label ?? "Upcoming"}
+                mark={group.label ? undefined : "sessions"}
+                action={countMark(group.items.length)}
+              >
+                <div className="f0-stagger mt-2.5 flex flex-col gap-2">
                   {group.items.map((session, i) => {
                     const lock = sessionLock(session);
                     return (
                       <div key={session.id} style={{ ["--i" as string]: i }}>
-                        <SessionRow
+                        <UpcomingCard
                           session={session}
+                          when={formatWhen(session.scheduledIso, nowHour)}
                           locked={lock.locked}
                           lockReason={lock.reason}
                           rsvp={rsvpInfo[session.id]}
@@ -1076,52 +1396,44 @@ export default function LiveSessionsPage() {
                     );
                   })}
                 </div>
-              </section>
+              </BoardSection>
             ))
           )}
         </div>
       )}
 
-      {/* ── Recordings ───────────────────────────────────────────────────── */}
+      {/* ── REPLAYS ──────────────────────────────────────────────────────── */}
       {tab === "recordings" && (
         <div
-          className="mt-6 space-y-8"
+          className="mt-5 space-y-7"
           role="tabpanel"
           id="live-panel-recordings"
           aria-labelledby="live-tab-recordings"
         >
           {filterByTrack(recordings).length === 0 ? (
-            <div className="border-l-2 border-sand py-1 pl-4">
-              <p className="font-display text-display-3 font-extrabold text-ink">
-                The shelf is empty
-              </p>
-              <p className="mt-1.5 max-w-md text-[14px] leading-relaxed text-soft">
-                No recordings
-                {trackFilter !== "all" ? " for this track" : ""} yet — every live
-                class lands here once it has been processed. Nothing is hidden
-                behind this screen.
-              </p>
-            </div>
+            <EmptyCard
+              title="The shelf is empty"
+              body={`No recordings${
+                trackFilter !== "all" ? " for this track" : ""
+              } yet — every live class lands here once it has been processed. Nothing is hidden behind this screen.`}
+            />
           ) : (
             groupSessions(filterByTrack(recordings)).map((group) => (
-              <section key={group.key}>
-                {group.label && (
-                  <SectionRule
-                    label={group.label}
-                    meta={
-                      <span className="font-mono text-[11px] tabular-nums text-soft">
-                        {group.items.length}
-                      </span>
-                    }
-                  />
-                )}
-                <div className="f0-ledger f0-stagger border-t border-sand/70">
+              <BoardSection
+                key={group.key}
+                id={`live-replays-${group.key}`}
+                label={group.label ?? "Recent"}
+                mark={group.label ? undefined : "replays"}
+                action={countMark(group.items.length)}
+              >
+                <div className="f0-stagger mt-2.5 flex flex-col gap-2">
                   {group.items.map((session, i) => {
                     const lock = sessionLock(session);
                     return (
                       <div key={session.id} style={{ ["--i" as string]: i }}>
-                        <SessionRow
+                        <ReplayCard
                           session={session}
+                          when={formatWhen(session.scheduledIso, nowHour)}
                           locked={lock.locked}
                           lockReason={lock.reason}
                           onWatch={
@@ -1132,7 +1444,7 @@ export default function LiveSessionsPage() {
                     );
                   })}
                 </div>
-              </section>
+              </BoardSection>
             ))
           )}
         </div>

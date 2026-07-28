@@ -576,7 +576,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={complete}
                   disabled={loading}
-                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:opacity-50"
+                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-50"
                 >
                   {loading ? "Setting up…" : "Go to my dashboard"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -585,7 +585,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={submitPassword}
                   disabled={!canProceed || loading}
-                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Saving…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -594,7 +594,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={continueFromUsername}
                   disabled={!canProceed || loading}
-                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {loading ? "Setting up…" : "Continue"}
                   {!loading && <ArrowRight className="w-4 h-4" />}
@@ -603,7 +603,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={goNext}
                   disabled={!canProceed}
-                  className="cta-button f0-focus f0-press flex items-center gap-2 rounded-2xl px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                  className="f0-focus f0-press flex items-center gap-2 rounded-2xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -648,7 +648,7 @@ function CelebrationStep({
         initial={{ scale: 0.6, opacity: 0, rotate: -8 }}
         animate={{ scale: 1, opacity: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 14 }}
-        className="w-20 h-20 mx-auto mb-5 rounded-3xl bg-gold-400/15 border-2 border-gold-400/30 flex items-center justify-center"
+        className="w-20 h-20 mx-auto mb-5 rounded-3xl bg-accent/12 border border-accent/30 flex items-center justify-center"
       >
         <Sparkles className="w-10 h-10 text-gold-600" />
       </m.div>
@@ -657,17 +657,17 @@ function CelebrationStep({
       </h1>
       <p className="text-soft mt-2 max-w-md mx-auto">{sub}</p>
 
-      {/* A ledger, not a stack of bordered cards — the recommendations are a
-          list of places to go, so rules separate them and type ranks them. */}
+      {/* Board 01's signal rows: each destination is its own white card object
+          on the paper, not a run of hairline ledger rows. */}
       {recommendations.length > 0 && (
         <div className="mt-7 text-left">
           <p className="text-center font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-soft">
             Start here — built around your answers
           </p>
-          <div className="f0-ledger mt-2">
+          <div className="mt-3 space-y-2.5">
             {recommendations.map((r) => (
-              <div key={r.key} className="flex items-center gap-3 py-3.5">
-                <Check className="h-4 w-4 shrink-0 text-gold-700" />
+              <div key={r.key} className="club-b-card flex items-center gap-3 px-4 py-3.5">
+                <Check className="h-4 w-4 shrink-0 text-accent" />
                 <div className="min-w-0">
                   <p className="font-display text-sm font-bold text-ink">{r.title}</p>
                   <p className="text-xs text-soft">{r.sub}</p>

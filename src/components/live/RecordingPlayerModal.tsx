@@ -16,23 +16,24 @@ import {
  *   upload   → signed URL from the private class-recordings bucket
  *   youtube  → privacy-enhanced youtube-nocookie embed
  *
- * CANVAS V2 PASS. Two things were wrong beyond styling:
+ * BOARD 08 REGISTER ("IN THE ROOM"). This is the only in-room/detail state the
+ * live surface has, so it wears board 08's near-black ground: the sanctioned
+ * `.night-island` (never a paper card — a video player on cream is a hole in the
+ * page), a tracked mono `REPLAY` chip where the board puts `• LIVE`, the title in
+ * Sora display caps, and the meta line in the board's mono small-caps register.
  *
- * 1. It wrote against the RAW `midnight-*` ramp (bg-midnight-900,
- *    text-midnight-100, text-midnight-500…). That ramp INVERTS between themes,
- *    so the player described a dark app that no longer exists — the same defect
- *    the help surface was rebuilt off. A video player legitimately wants dark
- *    chrome, so it now pins the constant `night-*` stops rather than borrowing a
- *    ramp that flips underneath it.
+ * WHY THE `night-*` STOPS STAY. The raw ramps are banned everywhere a semantic
+ * token exists, with one carve-out: a deliberate dark island. This is that
+ * carve-out. `--ink` / `--soft` / `--sand` INVERT between themes, and a video
+ * player's chrome must not — a footer that turns cream-on-black in one theme and
+ * black-on-black in the other is exactly the defect this file was rebuilt off
+ * once already (it used to write against `midnight-*`). The `night-*` stops are
+ * constant in both themes, which is the property this surface needs.
  *
- * 2. It was a modal with NO keyboard escape and no focus containment: the only
- *    way out was a mouse click on the scrim or the ✕. Escape now closes it and
- *    the dialog takes focus on open, which is the minimum for a full-screen
- *    overlay. It is also correctly announced (role="dialog" + aria-modal +
- *    aria-labelledby) — it previously announced as nothing at all.
- *
- * Body scroll is locked while it is open, so the page behind cannot scroll away
- * under the video.
+ * KEYBOARD: Escape closes it and the dialog takes focus on open — the minimum for
+ * a full-screen overlay. It is correctly announced (role="dialog" + aria-modal +
+ * aria-labelledby). Body scroll is locked while it is open, so the page behind
+ * cannot scroll away under the video.
  *
  * THE XP WRITE IS UNTOUCHED: still `hasXpForRef(..., "bonus", "recording:<id>")`
  * guarding a single `awardXp(..., "bonus", XP.RECORDING, ref)` in the same
@@ -125,15 +126,18 @@ export default function RecordingPlayerModal({
         tabIndex={-1}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-3xl overflow-hidden rounded-2xl bg-night-950 shadow-lift focus:outline-none"
+        className="night-island w-full max-w-3xl shadow-lift focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-night-800 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <Play className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+        <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-[color:var(--accent-on)]">
+              <Play className="h-2.5 w-2.5" fill="currentColor" aria-hidden />
+              Replay
+            </span>
             <h3
               id="recording-player-title"
-              className="truncate font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-50"
+              className="mt-2 truncate font-display text-[19px] font-extrabold uppercase leading-tight tracking-tight text-night-50"
             >
               {session.title}
             </h3>
@@ -147,7 +151,7 @@ export default function RecordingPlayerModal({
           </button>
         </div>
 
-        <div className="aspect-video bg-night-950">
+        <div className="mx-3 aspect-video overflow-hidden rounded-[14px] bg-night-950">
           {session.recordingKind === "upload" ? (
             error ? (
               <div className="flex h-full w-full items-center justify-center px-6">
@@ -181,13 +185,23 @@ export default function RecordingPlayerModal({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 px-4 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-night-300">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pb-4 pt-3 font-mono text-[10px] uppercase tracking-[0.14em] tabular-nums text-night-300">
           <span className="flex items-center gap-1.5">
             <Clock className="h-3 w-3" />
             {session.durationMin} min
           </span>
-          {session.trackLabel && <span className="text-accent">{session.trackLabel}</span>}
-          {session.scheduledAt && <span>Recorded {session.scheduledAt}</span>}
+          {session.trackLabel && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="text-accent">{session.trackLabel}</span>
+            </>
+          )}
+          {session.scheduledAt && (
+            <>
+              <span aria-hidden>·</span>
+              <span>Recorded {session.scheduledAt}</span>
+            </>
+          )}
         </div>
       </m.div>
     </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Award, Eye, CheckCircle2, Target, Calendar, Trophy, Sparkles, ArrowRight, MessageCircle, Heart,
+  Award, Eye, CheckCircle2, Target, Calendar, Trophy, Sparkles, ArrowRight, Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/lib/feed";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
+import { BoardSection } from "@/components/clubhome/board";
 import { fetchXpForUsers } from "@/lib/belts";
 
 /**
@@ -22,6 +23,23 @@ import { fetchXpForUsers } from "@/lib/belts";
  * SELF-CONTAINED: fetches its own data, renders nothing while empty/loading, and
  * is NOT wired into any page by this migration. Drop `<ClubActivityStrip />`
  * into the dashboard home to activate. Optional `limit` (default 4).
+ *
+ * BOARD LANGUAGE PASS. It was one `paper-card` — the previous version's default
+ * container — wrapping a bold-14px heading and a stack of bare rows. Now it is
+ * the board's shape: a `BoardSection` mark ("IN THE CLUB", tracked mono caps with
+ * the trailing phrase in the accent) plus a plain "See all", and each item as its
+ * own white board card, exactly like the board's YOUR SIGNALS rows. No outer box
+ * — the cards ARE the object, and the section mark is the only chrome.
+ *
+ * TOKENS: the body line was `text-midnight-200`, a raw ramp that INVERTS between
+ * themes, so on the dark board it painted near-white type where the card already
+ * supplies contrast. It reads `text-soft` now, and the "See all" rides
+ * --accent-solid rather than a hardcoded gold step, so it is mode-correct.
+ *
+ * STILL RENDERS NOTHING WHEN EMPTY. This is a *contextual sliver* of another
+ * surface, not a section of its host: a stated "the club has been quiet" box
+ * would be a claim the host page never asked to make. Absence here is silence,
+ * and /community is one tap away in the nav either way.
  */
 
 const ICONS: Record<string, React.ElementType> = {
@@ -73,46 +91,77 @@ export default function ClubActivityStrip({ limit = 4 }: { limit?: number }) {
   if (!ready || rows.length === 0) return null;
 
   return (
-    <div className="paper-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display text-sm font-bold text-ink flex items-center gap-1.5">
-          <MessageCircle className="w-4 h-4 text-gold-600" /> In the club
-        </h3>
-        <Link href="/community" className="text-xs font-semibold text-gold-700 hover:text-gold-600 inline-flex items-center gap-1">
-          See all <ArrowRight className="w-3.5 h-3.5" />
+    <BoardSection
+      id="club-activity-strip"
+      label="In the"
+      mark="club"
+      action={
+        <Link
+          href="/community"
+          className="f0-focus f0-press inline-flex shrink-0 items-center gap-1 rounded-md text-[11px] font-semibold text-accent"
+        >
+          See all
+          <ArrowRight className="h-3 w-3" aria-hidden />
         </Link>
-      </div>
-      <div className="space-y-2.5">
+      }
+    >
+      <div className="mt-2.5 flex flex-col gap-[7px]">
         {rows.map((r) => {
           if (r.kind === "activity" && r.activity_payload) {
             const line = activityLine(r.activity_payload);
             const Icon = ICONS[line.iconKey] || Sparkles;
             return (
-              <Link key={r.id} href="/community" className="flex items-center gap-2.5 group">
-                <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${line.accent}`}>
-                  <Icon className="w-3.5 h-3.5" />
+              <Link
+                key={r.id}
+                href="/community"
+                className="club-b-card f0-focus f0-press flex items-center gap-2.5 px-3 py-[10px]"
+              >
+                <span
+                  className={`grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] ${line.accent}`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
                 </span>
-                <p className="text-xs text-midnight-200 min-w-0 truncate">
-                  <span className="font-semibold text-ink">{line.subject}</span> {line.verb}{" "}
-                  <span className="font-medium text-ink">{line.target}</span>
+                <p className="min-w-0 flex-1 truncate text-[12px] text-soft">
+                  <span className="font-semibold text-ink">{line.subject}</span>{" "}
+                  {line.verb} <span className="font-medium text-ink">{line.target}</span>
                 </p>
-                <span className="text-[10px] text-soft ml-auto shrink-0">{timeAgo(r.created_at)}</span>
+                <span className="shrink-0 font-mono text-[10px] tabular-nums text-soft">
+                  {timeAgo(r.created_at)}
+                </span>
               </Link>
             );
           }
           return (
-            <Link key={r.id} href="/community" className="flex items-center gap-2.5 group">
-              <Avatar name={r.author?.display_name} avatarUrl={r.author?.avatar_url} role={r.author?.role} xp={r.author?.id ? xpMap[r.author.id] : undefined} size="sm" />
-              <p className="text-xs text-midnight-200 min-w-0 truncate">
-                <span className="font-semibold text-ink">{r.author?.display_name || "Member"}</span>{" "}
-                <AgeBadge role={r.author?.role} ageGroup={r.author?.age_group} className="align-middle" />{" "}
+            <Link
+              key={r.id}
+              href="/community"
+              className="club-b-card f0-focus f0-press flex items-center gap-2.5 px-3 py-[10px]"
+            >
+              <Avatar
+                name={r.author?.display_name}
+                avatarUrl={r.author?.avatar_url}
+                role={r.author?.role}
+                xp={r.author?.id ? xpMap[r.author.id] : undefined}
+                size="sm"
+              />
+              <p className="min-w-0 flex-1 truncate text-[12px] text-soft">
+                <span className="font-semibold text-ink">
+                  {r.author?.display_name || "Member"}
+                </span>{" "}
+                <AgeBadge
+                  role={r.author?.role}
+                  ageGroup={r.author?.age_group}
+                  className="align-middle"
+                />{" "}
                 {r.body || "shared a photo"}
               </p>
-              <span className="text-[10px] text-soft ml-auto shrink-0">{timeAgo(r.created_at)}</span>
+              <span className="shrink-0 font-mono text-[10px] tabular-nums text-soft">
+                {timeAgo(r.created_at)}
+              </span>
             </Link>
           );
         })}
       </div>
-    </div>
+    </BoardSection>
   );
 }

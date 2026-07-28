@@ -1,4 +1,4 @@
-/** Route skeleton — the missions ledger's own shape (§0.4 loading ≠ empty). */
+/** Route skeleton — the missions card set's own shape (§0.4 loading ≠ empty). */
 export default function Loading() {
   return (
     <div className="mx-auto max-w-3xl space-y-8" aria-busy="true">
@@ -7,17 +7,14 @@ export default function Loading() {
         <div className="mt-3 h-11 w-64 animate-pulse rounded bg-sand" />
         <div className="mt-4 h-4 w-full max-w-sm animate-pulse rounded bg-sand/60" />
       </div>
-      <div className="flex items-stretch gap-6">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="flex-1 space-y-2">
-            <div className="h-8 w-16 animate-pulse rounded bg-sand/60" />
-            <div className="h-3 w-20 animate-pulse rounded bg-sand/40" />
-          </div>
-        ))}
+      <div className="club-b-warm px-5 py-5">
+        <div className="h-2.5 w-28 animate-pulse rounded-full bg-ink/10" />
+        <div className="mt-3 h-8 w-32 animate-pulse rounded bg-ink/10" />
+        <div className="mt-4 h-1.5 w-full animate-pulse rounded-full bg-ink/10" />
       </div>
-      <div className="f0-ledger border-t border-sand/70">
+      <div className="space-y-3">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="f0-ledger-row">
+          <div key={i} className="club-b-card flex items-center gap-4 px-4 py-4">
             <div className="h-[52px] w-[52px] shrink-0 animate-pulse rounded-full bg-sand/60" />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />

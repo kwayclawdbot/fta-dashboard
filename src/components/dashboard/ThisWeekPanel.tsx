@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { m } from "@/lib/motion";
 import {
+  ArrowRight,
   CalendarDays,
   HeartHandshake,
   LineChart,
@@ -14,6 +15,30 @@ import {
 } from "lucide-react";
 import type { FicWeek } from "@/lib/fic";
 import MoneyMachine from "@/components/fic/MoneyMachine";
+import { BoardSection } from "@/components/clubhome/board";
+
+/**
+ * THIS WEEK — the family's week, rebuilt in the board-01 card language.
+ *
+ * WHAT DIED: five `paper-card` boxes, a `.cta-button` RSVP, and two raw-palette
+ * tinted panels (bg-chip-sky / border-sky-200) that introduced a colour the
+ * system does not own. WHAT REPLACED THEM: one brand-tinted `club-b-warm` object
+ * carrying the class and its round orange action orb — the single warm object on
+ * the surface — then `BoardSection` marks over white `club-b-card` objects for
+ * the assignment, the prompt and the challenge.
+ *
+ * WARM, NOT CHILDISH: this renders for parents, teens and kids from the same
+ * component. The register is the adult one; the kid variant differs in COPY and
+ * reading size, never in a softer or more toy-like treatment.
+ *
+ * NO CLOCK IN RENDER: the week label was `new Date(week_start).toLocaleDateString`,
+ * which is both an impure call in render and locale-dependent (server and client
+ * can disagree and blow up hydration). `week_start` is a plain YYYY-MM-DD string,
+ * so it is formatted by parsing the string itself — deterministic everywhere.
+ *
+ * COLOUR LAW: nothing here is a price, so nothing here is green or red. Orange is
+ * the brand action colour and carries the RSVP and the two "go do it" links.
+ */
 
 interface Props {
   week: FicWeek | null;
@@ -22,6 +47,30 @@ interface Props {
   isParent: boolean;
   /** Solo (individual, non-parent) member — a family of one. De-parents copy. */
   isSolo?: boolean;
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/** "2026-07-27" → "July 27". Pure string work: no Date, no locale. */
+function weekLabelFor(weekStart: string): string {
+  const [, mm, dd] = (weekStart || "").split("-");
+  const month = MONTHS[Number(mm) - 1];
+  const day = Number(dd);
+  if (!month || !Number.isFinite(day)) return weekStart || "—";
+  return `${month} ${day}`;
 }
 
 export default function ThisWeekPanel({
@@ -33,14 +82,15 @@ export default function ThisWeekPanel({
 }: Props) {
   const isChild = isKid || isTeen;
 
+  /* HONEST ABSENCE — this is a stated empty, not a loading state: the caller
+     only renders the panel once the week query has settled. */
   if (!week) {
     return (
-      <div className="paper-card p-8 text-center">
-        <CalendarDays className="w-8 h-8 text-gold-500 mx-auto mb-3" />
-        <h2 className="font-display text-xl font-semibold text-ink mb-2">
-          This week is being prepared
-        </h2>
-        <p className="text-soft max-w-md mx-auto">
+      <div className="club-b-card px-5 py-6">
+        <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+          This week <span className="text-accent">is being prepared</span>
+        </p>
+        <p className="mt-2.5 max-w-[62ch] text-[14px] leading-relaxed text-soft">
           {isSolo ? "Your" : "Your family's"} next Company of the Week and club
           assignment land here soon. Check back shortly.
         </p>
@@ -48,44 +98,38 @@ export default function ThisWeekPanel({
     );
   }
 
-  const weekLabel = new Date(week.week_start + "T00:00:00").toLocaleDateString(
-    "en-US",
-    { month: "long", day: "numeric" }
-  );
+  const weekLabel = weekLabelFor(week.week_start);
   const ticker = week.company_ticker?.toUpperCase();
 
   return (
-    <div className="space-y-6">
-      {/* Class — slimmed to a single-row RSVP strip so it reads as the thin
-          thing it is. The rich MoneyMachine below is the marquee (audit #8):
-          the class band no longer sits as a large near-empty gold block above
-          the teaching visual. Title + week on the left, RSVP on the right. */}
-      <m.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="paper-card p-4 flex items-center gap-4 flex-wrap sm:flex-nowrap"
-      >
-        <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-chip-amber text-gold-700 shrink-0">
-          <Sparkles className="w-4 h-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-soft">
-            {isSolo ? "This Week in the Club" : "This Week in FIC"} · Week of {weekLabel}
-          </p>
-          <h2 className="font-display text-base sm:text-lg font-bold text-ink leading-snug truncate">
-            {week.class_title}
-          </h2>
-        </div>
+    <div className="space-y-7">
+      {/* ── The class — the ONE brand-tinted object on this surface. The whole
+             card is the affordance (the board's warm objects are), so the orb
+             is the drawn action mark rather than a second tab stop. ────────── */}
+      <m.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <Link
           href="/live-sessions"
-          className="cta-button inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm shrink-0 w-full sm:w-auto justify-center"
+          className="club-b-warm f0-focus f0-press flex items-center gap-3.5 px-[15px] py-[14px]"
         >
-          <CalendarDays className="w-4 h-4" />
-          {isKid ? "See the class" : "RSVP"}
+          <span className="min-w-0 flex-1">
+            <span className="block font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft tabular-nums">
+              {isSolo ? "This Week in the Club" : "This Week in FIC"} · Week of{" "}
+              {weekLabel}
+            </span>
+            <span className="mt-1 block truncate font-display text-[16px] font-extrabold leading-snug text-ink sm:text-[18px]">
+              {week.class_title}
+            </span>
+            <span className="mt-1.5 block font-display text-[12.5px] font-bold text-gold-700">
+              {isKid ? "See the class" : "RSVP"}
+            </span>
+          </span>
+          <span className="club-b-orb h-10 w-10 shrink-0" aria-hidden>
+            <CalendarDays className="h-4 w-4" />
+          </span>
         </Link>
       </m.div>
 
-      {/* Company of the Week — the MoneyMachine teaching visual (the marquee) */}
+      {/* ── Company of the Week — the MoneyMachine teaching visual ────────── */}
       {(week.company_name || week.cotw_what_they_do) && (
         <m.div
           initial={{ opacity: 0, y: 12 }}
@@ -107,111 +151,145 @@ export default function ThisWeekPanel({
           {ticker && (
             <Link
               href={`/chart?symbol=${ticker}`}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-gold-700 hover:text-gold-800"
+              className="f0-focus inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
             >
-              <LineChart className="w-4 h-4" />
-              Open {ticker} in the Practice Chart
+              <LineChart className="h-4 w-4" />
+              Open <span className="font-mono">{ticker}</span> in the Practice
+              Chart
             </Link>
           )}
 
           {week.cotw_discussion_question && (
-            <div className="mt-5 p-4 rounded-xl bg-chip-sky border border-sky-200/50">
-              <p className="text-xs font-bold uppercase tracking-wider text-sky-800 mb-1 flex items-center gap-1.5">
-                <MessageCircleQuestion className="w-4 h-4" />
-                {isSolo ? "Discussion question" : "Family discussion question"}
-              </p>
-              <p className="text-sm text-ink leading-relaxed">
-                {week.cotw_discussion_question}
-              </p>
-            </div>
+            <BoardSection
+              id="fic-week-question"
+              label={isSolo ? "Discussion" : "Family discussion"}
+              mark="question"
+            >
+              <div className="club-b-card mt-2.5 flex gap-3 px-4 py-3.5">
+                <MessageCircleQuestion
+                  className="mt-0.5 h-4 w-4 shrink-0 text-soft"
+                  aria-hidden
+                />
+                <p className="min-w-0 flex-1 text-[14px] leading-relaxed text-ink">
+                  {week.cotw_discussion_question}
+                </p>
+              </div>
+            </BoardSection>
           )}
 
           {week.cotw_watchlist_assignment && (
-            <div className="mt-4 flex items-start gap-3 p-4 rounded-xl bg-paper border border-sand">
-              <ListChecks className="w-5 h-5 text-gold-700 shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-wider text-soft mb-0.5">
-                  Watchlist assignment
-                </p>
-                <p className="text-sm text-ink leading-relaxed">
-                  {week.cotw_watchlist_assignment}
-                </p>
-                <Link
-                  href={ticker ? `/watchlist?add=${ticker}` : "/watchlist"}
-                  className="inline-flex items-center gap-1.5 mt-2 text-sm font-medium text-gold-700 hover:text-gold-800"
-                >
-                  <Target className="w-4 h-4" />
-                  {isSolo ? "Add to my Watchlist" : "Add to Family Watchlist"}
-                </Link>
+            <BoardSection
+              id="fic-week-watchlist"
+              label="Watchlist"
+              mark="assignment"
+            >
+              <div className="club-b-card mt-2.5 flex gap-3 px-4 py-3.5">
+                <ListChecks
+                  className="mt-0.5 h-4 w-4 shrink-0 text-soft"
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] leading-relaxed text-ink">
+                    {week.cotw_watchlist_assignment}
+                  </p>
+                  <Link
+                    href={ticker ? `/watchlist?add=${ticker}` : "/watchlist"}
+                    className="f0-focus mt-2.5 inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                  >
+                    <Target className="h-4 w-4" />
+                    {isSolo ? "Add to my Watchlist" : "Add to Family Watchlist"}
+                  </Link>
+                </div>
               </div>
-            </div>
+            </BoardSection>
           )}
         </m.div>
       )}
 
-      {/* Family assignment */}
+      {/* ── The week's assignment ─────────────────────────────────────────── */}
       {week.family_assignment && (
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="paper-card p-6"
         >
-          <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-2">
-            <Users className="w-4 h-4 text-gold-600" />
-            {isSolo ? "Your assignment this week" : "Your family assignment"}
-          </h3>
-          <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
-            {week.family_assignment}
-          </p>
+          <BoardSection
+            id="fic-week-assignment"
+            label={isSolo ? "Your assignment" : "Your family"}
+            mark={isSolo ? "this week" : "assignment"}
+          >
+            <div className="club-b-card mt-2.5 flex gap-3 px-4 py-3.5">
+              <Users className="mt-0.5 h-4 w-4 shrink-0 text-soft" aria-hidden />
+              <p className="min-w-0 flex-1 whitespace-pre-line text-[14px] leading-relaxed text-ink">
+                {week.family_assignment}
+              </p>
+            </div>
+          </BoardSection>
         </m.div>
       )}
 
-      {/* Parent prompt — parents only */}
+      {/* ── Parent prompt — parents only (gate unchanged) ─────────────────── */}
       {isParent && week.parent_prompt && (
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
-          className="paper-card p-6 border-l-4 border-l-gold-400"
         >
-          <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-2">
-            <HeartHandshake className="w-4 h-4 text-gold-600" />
-            {isSolo ? "Go deeper this week" : "Parent prompt"}
-          </h3>
-          <p className="text-sm text-ink leading-relaxed whitespace-pre-line">
-            {week.parent_prompt}
-          </p>
-          {!isSolo && (
-            <Link
-              href="/parent-corner"
-              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-gold-700 hover:text-gold-800"
-            >
-              More in Parent Corner
-            </Link>
-          )}
+          <BoardSection
+            id="fic-week-prompt"
+            label={isSolo ? "Go deeper" : "Parent"}
+            mark={isSolo ? "this week" : "prompt"}
+          >
+            <div className="club-b-card mt-2.5 flex gap-3 px-4 py-3.5">
+              <HeartHandshake
+                className="mt-0.5 h-4 w-4 shrink-0 text-soft"
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p className="whitespace-pre-line text-[14px] leading-relaxed text-ink">
+                  {week.parent_prompt}
+                </p>
+                {!isSolo && (
+                  <Link
+                    href="/parent-corner"
+                    className="f0-focus mt-2.5 inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
+                  >
+                    More in Parent Corner
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </BoardSection>
         </m.div>
       )}
 
-      {/* Kid challenge — kids & teens */}
+      {/* ── Kid challenge — kids & teens (gate unchanged) ─────────────────── */}
       {isChild && week.kid_challenge && (
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.14 }}
-          className="paper-card p-6 border-l-4 border-l-sky-400"
         >
-          <h3 className="font-display text-base font-semibold text-ink flex items-center gap-2 mb-2">
-            <Sparkles className="w-4 h-4 text-sky-600" />
-            {isKid ? "Your challenge this week" : "Your challenge"}
-          </h3>
-          <p
-            className={`text-ink leading-relaxed whitespace-pre-line ${
-              isKid ? "text-base" : "text-sm"
-            }`}
+          <BoardSection
+            id="fic-week-challenge"
+            label="Your"
+            mark={isKid ? "challenge this week" : "challenge"}
           >
-            {week.kid_challenge}
-          </p>
+            <div className="club-b-card mt-2.5 flex gap-3 px-4 py-3.5">
+              <Sparkles
+                className="mt-0.5 h-4 w-4 shrink-0 text-accent"
+                aria-hidden
+              />
+              <p
+                className={`min-w-0 flex-1 whitespace-pre-line leading-relaxed text-ink ${
+                  isKid ? "text-[16px]" : "text-[14px]"
+                }`}
+              >
+                {week.kid_challenge}
+              </p>
+            </div>
+          </BoardSection>
         </m.div>
       )}
     </div>

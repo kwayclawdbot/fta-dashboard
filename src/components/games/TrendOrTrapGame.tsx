@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { m, AnimatePresence, useReducedMotion } from "@/lib/motion";
-import { Check, X, TrendingUp, TrendingDown } from "lucide-react";
+import { Check, X, TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
+import { EmptyLine, TextAction } from "@/components/f0/parts";
 import { useGameRounds } from "@/lib/games/useGameRounds";
 import type { SeriesChart } from "@/lib/games/types";
 import CandleRenderer from "./CandleRenderer";
@@ -15,6 +16,19 @@ import { useGameSound } from "./useGameSound";
 type Phase = "popin" | "decision" | "resolving" | "result";
 const POP_MS = 190;
 const TIMER_MS = 8000;
+
+/* The two calls wear the PRICE tokens, not Tailwind's raw green-500/red-500 —
+   the raw ramp does not re-map at :root[data-theme="dark"] and the price tokens
+   do (and are club-mode aware). Card geometry comes from .club-b-card; only the
+   tint and the hairline are overridden here. */
+const CALL_UP: React.CSSProperties = {
+  borderColor: "color-mix(in srgb, var(--price-up) 45%, transparent)",
+  background: "color-mix(in srgb, var(--price-up) 11%, var(--card))",
+};
+const CALL_DOWN: React.CSSProperties = {
+  borderColor: "color-mix(in srgb, var(--price-down) 45%, transparent)",
+  background: "color-mix(in srgb, var(--price-down) 11%, var(--card))",
+};
 
 export default function TrendOrTrapGame() {
   const g = useGameRounds("trend-or-trap");
@@ -115,17 +129,17 @@ export default function TrendOrTrapGame() {
 
   /* LOADING ≠ EMPTY (§0.4). A spinner here was indistinguishable from the
      "no rounds are loaded" state below, which is a real state whenever the
-     `game_items` set is unpublished. This skeleton is the game's own shape. */
+     `game_items` set is unpublished. This skeleton is the game's own shape:
+     the dark HUD bar, the ask card, the island stage, the control pair. */
   if (g.loading) {
     return (
       <div className="mx-auto max-w-2xl" aria-busy="true">
-        <div className="h-3 w-28 animate-pulse rounded bg-sand" />
-        <div className="mt-3 h-9 w-56 animate-pulse rounded bg-sand" />
-        <div className="mt-5 h-1 w-full animate-pulse rounded-full bg-sand/60" />
-        <div className="mt-6 h-64 animate-pulse rounded-2xl bg-sand/40" />
+        <div className="night-island mb-4 h-[132px] animate-pulse" />
+        <div className="club-b-card h-12 animate-pulse" />
+        <div className="night-island mt-4 h-64 animate-pulse" />
         <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
-          <div className="h-16 animate-pulse rounded-xl bg-sand/40" />
+          <div className="club-b-card h-16 animate-pulse" />
+          <div className="club-b-card h-16 animate-pulse" />
         </div>
       </div>
     );
@@ -149,14 +163,16 @@ export default function TrendOrTrapGame() {
 
   if (!round || !data) {
     return (
-      <div className="mx-auto max-w-2xl border-l-2 border-sand py-1 pl-4">
-        <p className="font-display text-display-3 font-extrabold text-ink">
-          No rounds are loaded
-        </p>
-        <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
-          Trend or Trap draws its charts from the published set. There is nothing to play
-          right now — nothing is being generated in its place.
-        </p>
+      <div className="mx-auto max-w-2xl">
+        <EmptyLine
+          title="No rounds are loaded"
+          body="Trend or Trap draws its charts from the published set. There is nothing to play right now — nothing is being generated in its place."
+          action={
+            <TextAction href="/games">
+              Back to games <ArrowRight className="h-3.5 w-3.5" />
+            </TextAction>
+          }
+        />
       </div>
     );
   }
@@ -177,9 +193,11 @@ export default function TrendOrTrapGame() {
         onToggleSound={sound.toggle}
       />
 
-      {/* Scenario. The round number lives in the top bar, so this is the ask
-          and nothing else. The old round chip was green — green is price. */}
-      <p className="mb-4 text-[15px] leading-relaxed text-ink">{round.prompt}</p>
+      {/* The ask, as its own card. The round number lives in the HUD above, so
+          this object carries the scenario and nothing else. */}
+      <div className="club-b-card mb-4 px-4 py-3">
+        <p className="text-[15px] leading-relaxed text-ink">{round.prompt}</p>
+      </div>
 
       <m.div
         animate={shake && !reduce ? { x: [-6, 6, -5, 4, 0] } : { x: 0 }}
@@ -222,24 +240,27 @@ export default function TrendOrTrapGame() {
             className="mt-5"
           >
             <div className="mb-3">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
                 Quick correct calls earn bonus points
               </span>
               <TimerBar />
             </div>
             {/* A control PAIR, not a content grid — the two calls are mutually
                 exclusive and must carry identical weight. Green/red here are
-                the direction of PRICE, the law's own exception. */}
+                the direction of PRICE, the law's own exception, and they come
+                from the --price-* tokens so both themes hold. */}
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => choose("CLIMBING")}
-                className="f0-focus f0-press flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-green-500/40 bg-green-500/10 font-display text-lg font-extrabold text-price-up transition hover:bg-green-500/20"
+                style={CALL_UP}
+                className="club-b-card f0-focus f0-press flex min-h-[64px] items-center justify-center gap-2 font-display text-lg font-extrabold text-price-up transition hover:brightness-[0.97]"
               >
                 <TrendingUp className="h-5 w-5" /> CLIMBING
               </button>
               <button
                 onClick={() => choose("FALLING")}
-                className="f0-focus f0-press flex min-h-[64px] items-center justify-center gap-2 rounded-xl border-2 border-red-500/40 bg-red-500/10 font-display text-lg font-extrabold text-price-down transition hover:bg-red-500/20"
+                style={CALL_DOWN}
+                className="club-b-card f0-focus f0-press flex min-h-[64px] items-center justify-center gap-2 font-display text-lg font-extrabold text-price-down transition hover:brightness-[0.97]"
               >
                 <TrendingDown className="h-5 w-5" /> FALLING
               </button>
@@ -251,15 +272,17 @@ export default function TrendOrTrapGame() {
       <AnimatePresence>
         {phase === "result" && (
           <m.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
-            {/* The verdict. A hairline-ruled block, not a tinted bubble: the
-                only colour is on the outcome word, and it is a PRICE colour
-                because the outcome is the direction price actually took. */}
+            {/* The verdict card. The only colour is on the outcome word and
+                its edge, and it is a PRICE colour because the outcome is the
+                direction price actually took. */}
             <div
-              className={`border-l-2 pl-4 ${
-                correct ? "border-green-500/60" : "border-red-500/60"
-              }`}
+              className="club-b-card px-4 py-3.5"
+              style={{
+                borderLeftWidth: 3,
+                borderLeftColor: correct ? "var(--price-up)" : "var(--price-down)",
+              }}
             >
-              <p className="mb-1.5 font-display text-eyebrow font-bold uppercase">
+              <p className="mb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em]">
                 {correct ? (
                   <span className="flex items-center gap-1.5 text-price-up">
                     <Check className="h-3.5 w-3.5" /> Correct — it was{" "}
@@ -275,7 +298,7 @@ export default function TrendOrTrapGame() {
             </div>
             <button
               onClick={g.advance}
-              className="f0-focus f0-press mt-4 min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950"
+              className="f0-focus f0-press mt-4 min-h-[52px] w-full rounded-full bg-accent font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
             >
               {g.index + 1 >= g.total ? "See results" : "Next chart"}
             </button>
@@ -283,15 +306,16 @@ export default function TrendOrTrapGame() {
         )}
       </AnimatePresence>
 
-      {/* First-round primer — a hairline note, not a boxed tip card. */}
+      {/* First-round primer — one card row, the same object the games index is
+          made of, so the primer speaks the surface's own language. */}
       {g.index === 0 && phase === "popin" && (
-        <div className="f0-rule-top mt-6 flex items-center gap-3 pt-4">
+        <div className="club-b-card mt-6 flex items-center gap-3 px-4 py-3">
           <Image
             src="/art/levelup-story.jpg"
             alt=""
             width={64}
             height={64}
-            className="h-12 w-12 shrink-0 rounded-lg object-cover"
+            className="h-12 w-12 shrink-0 rounded-[10px] object-cover"
           />
           <p className="text-[13px] leading-relaxed text-soft">
             Each candle is one battle. Line them up and they tell a story — climbing higher,
@@ -308,12 +332,10 @@ export default function TrendOrTrapGame() {
 /**
  * Depleting BAR — the speed-bonus window.
  *
- * This was a radial countdown ring. The adoption plan bans radial gauges beyond
- * the club-sentiment arc (§1.5) and calls out games as exactly where rings are
- * tempting: a ring encodes one number less legibly than a bar, and a second dial
- * in the app dilutes the one that means something. A depleting bar also reads
- * its remaining time at a glance from across a table, which is how a kid
- * actually plays this.
+ * The board draws a conic dial for a bounded SCORE, and the end screen uses one.
+ * A countdown is not that: it is a shrinking quantity read at a glance, and a
+ * depleting bar states remaining time from across a table far better than a ring
+ * does — which is how a kid actually plays this.
  *
  * Track + fill read from theme tokens (--sand / --accent-solid), so it is both
  * mode- and theme-correct: metallic on the FTA desk, gold in Family Mode.

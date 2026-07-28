@@ -1,12 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "@/lib/motion";
-import { Users, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Users, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { TopBar, ProgressBar, FunnelStage, QuizCard, Field } from "@/components/free-class/ui";
+import {
+  FunnelPage,
+  FunnelSkeleton,
+  TopBar,
+  ProgressBar,
+  FunnelStage,
+  QuizCard,
+  Field,
+  Mast,
+  Action,
+  Terms,
+  FormError,
+  Spinner,
+} from "@/components/free-class/ui";
 import { QUIZ, setChallengeFlag } from "@/lib/funnel";
 
 /**
@@ -102,34 +114,32 @@ export default function ChallengeSetupPage() {
     }
   }
 
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <Loader2 className="w-6 h-6 text-gold-500 animate-spin" />
-      </div>
-    );
-  }
+  if (!ready) return <FunnelSkeleton bar />;
 
   if (token && !valid) {
     return (
-      <div className="min-h-screen bg-paper text-ink flex flex-col">
+      <FunnelPage>
         <TopBar />
-        <div className="flex-1 flex items-center justify-center px-5 py-8">
-          <div className="w-full max-w-md text-center">
-            <h1 className="font-display text-2xl font-bold text-ink">This setup link has expired</h1>
-            <p className="text-soft text-sm mt-2 max-w-xs mx-auto leading-relaxed">
-              No worries — you can log in with the email you registered, or reach out to support and
-              we&apos;ll get you set up.
-            </p>
-            <Link
-              href="/login"
-              className="cta-button mt-5 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[15px]"
-            >
-              Go to log in <ArrowRight className="w-4 h-4" />
-            </Link>
+        <div className="flex flex-1 items-center justify-center px-5 py-8">
+          <div className="w-full max-w-md">
+            <Mast
+              size="md"
+              title="This setup link has expired"
+              lede={
+                <>
+                  No worries — you can log in with the email you registered, or reach out to support and
+                  we&apos;ll get you set up.
+                </>
+              }
+            />
+            <div className="mt-6">
+              <Action href="/login" size="md">
+                Go to log in <ArrowRight className="h-4 w-4" />
+              </Action>
+            </div>
           </div>
         </div>
-      </div>
+      </FunnelPage>
     );
   }
 
@@ -138,7 +148,7 @@ export default function ChallengeSetupPage() {
   const current = phase === "quiz" ? idx + 1 : total;
 
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col">
+    <FunnelPage>
       <TopBar />
       <ProgressBar current={current} total={total} onBack={phase === "quiz" ? backQuiz : () => setPhase("quiz")} />
       <AnimatePresence mode="wait">
@@ -148,16 +158,23 @@ export default function ChallengeSetupPage() {
           </FunnelStage>
         ) : (
           <FunnelStage stageKey="account">
-            <div className="text-center mb-6">
-              <h2 className="font-display text-2xl font-bold text-ink">Finish your account</h2>
-              <p className="text-soft text-sm mt-1.5 max-w-xs mx-auto">
-                Last step — set your name and a password. Your full Club access unlocks the moment
-                you&apos;re in.
+            <Mast
+              size="md"
+              title="Finish your account"
+              lede={
+                <>
+                  Last step — set your name and a password. Your full Club access unlocks the moment
+                  you&apos;re in.
+                </>
+              }
+            />
+            {email && (
+              <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                Registering {email}
               </p>
-              {email && <p className="text-soft text-xs mt-2">Registering {email}</p>}
-            </div>
+            )}
 
-            <div className="space-y-3">
+            <div className="mt-6 space-y-3">
               <Field icon={Users} placeholder="Your first name" value={firstName} onChange={setFirstName} autoFocus />
               <Field
                 icon={Lock}
@@ -168,30 +185,29 @@ export default function ChallengeSetupPage() {
               />
             </div>
 
-            {error && <p className="mt-3 text-sm text-red-600 font-body">{error}</p>}
+            {error && <FormError>{error}</FormError>}
 
-            <button
-              onClick={submit}
-              disabled={submitting}
-              className="cta-button mt-5 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-[15px] disabled:opacity-50"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Setting up your access…
-                </>
-              ) : (
-                <>
-                  Enter the Club <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-            <p className="mt-3 text-center text-xs text-soft flex items-center justify-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Education only. No card required. Cancel anytime.
-            </p>
+            <div className="mt-5">
+              <Action onClick={submit} disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Spinner /> Setting up your access…
+                  </>
+                ) : (
+                  <>
+                    Enter the Club <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Action>
+            </div>
+            <div className="mt-3">
+              <Terms icon={ShieldCheck}>
+                Education only. No card required. Cancel anytime.
+              </Terms>
+            </div>
           </FunnelStage>
         )}
       </AnimatePresence>
-    </div>
+    </FunnelPage>
   );
 }

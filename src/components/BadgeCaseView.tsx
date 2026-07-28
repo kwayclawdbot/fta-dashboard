@@ -13,9 +13,24 @@ import type { BadgeRow } from "@/lib/badges";
 
 /**
  * BadgeCaseView — the PRESENTATIONAL credential shelf (no data fetching, no
- * hooks). Title-card / earned-rank energy (warm-paper + gold), NOT cartoon
- * badges. Earned titles read as awarded credentials; unearned ones are quiet
- * locked placeholders whose subtitle doubles as the "how to earn it" line.
+ * hooks). Title-card / earned-rank energy, NOT cartoon badges.
+ *
+ * FORM (board 01): each credential is a white `.club-b-card` — 14px radius,
+ * sand hairline — carrying an identity TILE at the board's own tile geometry
+ * and, when earned, the lead rank pip hung half off its top-left corner. The
+ * section label is the board's tracked mono mark with one phrase in the accent.
+ * The previous version used the legacy paper card class, a gold gradient wash
+ * and the midnight ramp (which does not re-map at :root[data-theme="dark"], so
+ * locked titles were near-invisible on the dark page); none of that survives.
+ *
+ * HONESTY: an unearned credential is DIMMED, never hidden and never faked — its
+ * subtitle doubles as the "how to earn it" line, and the locked mark says
+ * Locked rather than inventing progress. `rows === null` is LOADING and keeps
+ * the grid's shape; `[]` renders the all-locked/empty case.
+ *
+ * COLOUR LAW: earning is not green — green and red are price. An earned title is
+ * marked by the accent (brand + achievement) on its tile, its pip and its date
+ * line; a locked one sits in `soft` at reduced opacity.
  *
  * Split out of BadgeCase so it can render server-side on the public profile
  * page (where cross-family viewers can't read badge_awards directly and the
@@ -62,74 +77,101 @@ export default function BadgeCaseView({
   return (
     <div>
       {title && (
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-sm font-semibold text-midnight-300 uppercase tracking-wider">
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <h3 className="min-w-0 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
             {title}
+            <span className="text-accent"> earned so far</span>
           </h3>
           {rows && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-body text-soft">
-              <Award className="w-3.5 h-3.5 text-gold-600" />
-              {earnedCount} of {rows.length} earned
+            <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-soft">
+              {earnedCount}
+              <span className="opacity-70">/{rows.length}</span>
             </span>
           )}
         </div>
       )}
 
       {!rows ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-busy="true">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="paper-card p-4 h-28 animate-pulse bg-sand/40" />
+            <div key={i} className="club-b-card h-28 animate-pulse px-3 py-3">
+              <div className="h-9 w-9 rounded-[10px] bg-sand/60" />
+              <div className="mt-2.5 h-3 w-2/3 rounded bg-sand/60" />
+              <div className="mt-2 h-2.5 w-full rounded bg-sand/40" />
+            </div>
           ))}
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {rows.map((b) => {
               const Icon = BADGE_ICONS[b.slug] || Award;
               return (
-                <div
-                  key={b.slug}
-                  className={`relative rounded-xl border p-4 flex flex-col items-center text-center transition-colors ${
-                    b.awarded
-                      ? "border-gold-300 bg-gradient-to-b from-chip-amber/60 to-white"
-                      : "border-sand bg-paper/60"
-                  }`}
-                  title={b.subtitle || b.title}
-                >
+                <div key={b.slug} className="relative">
+                  {/* The board's lead rank pip, hung half off the corner. It
+                      appears ONLY on an earned title — a locked card carries no
+                      pip at all rather than a pip that implies partial credit. */}
+                  {b.awarded && (
+                    <span
+                      className="club-b-pip club-b-pip-lead absolute -left-[7px] -top-[7px] z-10"
+                      aria-hidden
+                    >
+                      ★
+                    </span>
+                  )}
+
                   <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center mb-2 ${
-                      b.awarded
-                        ? "bg-gradient-to-b from-gold-400 to-gold-600 text-white shadow-soft"
-                        : "bg-sand text-midnight-500"
+                    className={`club-b-card flex h-full flex-col px-3 py-3 ${
+                      b.awarded ? "" : "opacity-70"
                     }`}
+                    title={b.subtitle || b.title}
                   >
-                    {b.awarded ? <Icon className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                    <span
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px]"
+                      style={
+                        b.awarded
+                          ? {
+                              background: "var(--accent-solid)",
+                              color: "var(--accent-on)",
+                            }
+                          : {
+                              background: "var(--sand)",
+                              color: "var(--soft)",
+                            }
+                      }
+                      aria-hidden
+                    >
+                      {b.awarded ? (
+                        <Icon className="h-4 w-4" />
+                      ) : (
+                        <Lock className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+
+                    <p
+                      className={`mt-2.5 font-display text-[13.5px] font-extrabold leading-tight ${
+                        b.awarded ? "text-ink" : "text-soft"
+                      }`}
+                    >
+                      {b.title}
+                    </p>
+                    <p className="mt-1 text-[11px] leading-snug text-soft">
+                      {b.subtitle}
+                    </p>
+                    <p
+                      className={`mt-auto pt-2 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] ${
+                        b.awarded ? "text-accent" : "text-soft"
+                      }`}
+                    >
+                      {b.awarded ? `Earned ${fmtDate(b.awarded_at)}` : "Locked"}
+                    </p>
                   </div>
-                  <p
-                    className={`font-display text-sm font-bold leading-tight ${
-                      b.awarded ? "text-ink" : "text-midnight-400"
-                    }`}
-                  >
-                    {b.title}
-                  </p>
-                  <p className="text-[11px] font-body text-soft mt-1 leading-snug">
-                    {b.subtitle}
-                  </p>
-                  <p
-                    className={`mt-2 text-[10px] font-display font-semibold uppercase tracking-wider ${
-                      b.awarded ? "text-gold-700" : "text-midnight-500"
-                    }`}
-                  >
-                    {b.awarded ? `Earned ${fmtDate(b.awarded_at)}` : "Locked"}
-                  </p>
                 </div>
               );
             })}
           </div>
           {noneEarned && emptyLine && (
-            <p className="mt-4 text-center text-sm font-body italic text-soft">
-              {emptyLine}
-            </p>
+            <p className="mt-4 text-[13px] leading-relaxed text-soft">{emptyLine}</p>
           )}
         </>
       )}

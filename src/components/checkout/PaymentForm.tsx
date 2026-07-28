@@ -257,8 +257,15 @@ export default function PaymentForm({
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-xl bg-red-500/10 px-3.5 py-3 text-[13px] text-red-600">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        // COLOUR LAW: green/red is PRICE. A declined card is not a price, so
+        // the failure is carried by an icon, a brand rule and weight — same
+        // treatment AuthNotice uses, and it needs no `dark:` variant.
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 border-l-2 py-1 pl-3.5 text-[13px] font-semibold text-ink"
+          style={{ borderLeftColor: "var(--accent-solid)" }}
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
           <span>{error}</span>
         </div>
       )}
@@ -266,7 +273,7 @@ export default function PaymentForm({
       <button
         type="submit"
         disabled={!ready || submitting}
-        className="cta-button flex w-full items-center justify-center gap-2 rounded-xl px-5 py-4 text-base disabled:cursor-not-allowed disabled:opacity-70"
+        className="f0-press f0-focus flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-4 font-display text-base font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {submitting ? (
           <>

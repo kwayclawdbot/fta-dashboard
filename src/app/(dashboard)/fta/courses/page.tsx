@@ -8,32 +8,33 @@ import { createClient } from "@/lib/supabase/client";
 import { useFtaViewer } from "@/components/fta/useFtaViewer";
 import FtaHubHeader from "@/components/fta/FtaHubHeader";
 import LockedState from "@/components/dashboard/LockedState";
-import { MeasureStrip, Meter } from "@/components/f0/parts";
+import { Meter } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
- * /fta/courses — the FTA Course Library, canvas v2.
+ * /fta/courses — the FTA Course Library, built from the reference board.
  *
- * WHAT CHANGED: this was a `md:grid-cols-2` grid of gradient-bordered picture
- * cards with a `paper-card` empty state and a GREEN "Complete" tick. Three
- * separate violations — the banned equal-column content grid, a generic card
- * container, and green used for something that is not a price. It is now the
- * canvas ledger: a metallic hard-split masthead, a hairline measure row, and one
- * ruled row per course carrying its own progress meter. Completion reads by TYPE
- * WEIGHT and a stated word, never by hue.
+ * WHAT CHANGED (board rebuild): the previous pass rendered the library as a
+ * hairline LEDGER — `f0-ledger` rows under an `f0-section-rule`, with an
+ * `f0 MeasureStrip` on top. That was the previous version's structure. The
+ * board is card-based, so the library is now: a row of small white stat cards
+ * (the board's measure tiles), a `BoardSection` mark, and one `.club-b-card` per
+ * course led by the board's 34px identity tile carrying the course's index,
+ * with a chip meta row and the shared `Meter` for progress.
  *
  * FTA IS THE PREMIUM TIER. The metal is the differentiator, not extra chrome:
- * the desk rule, the ftagold measures and the metal progress fills. Everything
- * else is the same vocabulary the rest of the app speaks, which is what makes the
- * metal register as premium rather than as a different product.
+ * DashboardShell stamps data-mode="fta" on this route and globals.css re-points
+ * --accent-* to the metallic stop, so `bg-accent`, `text-accent` and the Meter
+ * fill are metal here with no fork and no `metal-gold` override. Everything else
+ * is the same card vocabulary the rest of the app speaks, which is what makes
+ * the metal register as premium rather than as a different product.
  *
- * SHARED PRIMITIVES (M1): the progress bars are `f0 Meter` and the measure row is
- * `f0 MeasureStrip`, both hand-rolled here before M1 landed. Meter's fill is now
- * `bg-accent`, which on an /fta route resolves through data-mode="fta" to the
- * metallic stop — so the desk paints its OWN accent with no `metal-gold`
- * override and no fork. MeasureStrip's `loading` variant replaces the bespoke
- * skeleton: it keeps the columns and labels and shimmers only the numerals, so a
- * mid-fetch strip never renders an em-dash and claims a number is absent when it
- * has merely not arrived.
+ * COLOUR LAW: completion is not a price, so it is never green. It reads as the
+ * stated word plus weight, with the percentage in the mono numeral register.
+ *
+ * LOADING ≠ EMPTY: the measure tiles keep their labels and shimmer only the
+ * numerals, and the list skeleton is shaped like the cards it becomes — so a
+ * mid-fetch surface never renders a founding state and claims the desk is bare.
  *
  * WIRING UNTOUCHED: the FTA gate (`useFtaViewer`), the courses+lesson_progress
  * reads, and the deep link into the EXISTING lesson player
@@ -141,12 +142,12 @@ export default function FtaCoursesPage() {
         </>
       ) : cards.length === 0 ? (
         /* FOUNDING STATE (§0.5) — a desk with nothing published on it yet.
-           A stated absence, not a decorative empty card. */
-        <div className="mt-12 border-l-2 border-sand py-1 pl-4">
-          <p className="font-display text-display-3 font-extrabold text-ink">
+           A stated absence with the reason, not a decorative empty card. */
+        <div className="club-b-card mt-11 px-4 py-5">
+          <p className="font-display text-[18px] font-extrabold uppercase leading-[1.15] text-ink">
             Your program is being prepared
           </p>
-          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-soft">
+          <p className="mt-1.5 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
             FTA course modules appear here the moment your coach publishes them.
             Nothing is hidden behind this screen — there is simply nothing on the
             desk yet.
@@ -156,91 +157,94 @@ export default function FtaCoursesPage() {
         <>
           <FtaMeasures cards={cards} />
 
-          <section className="mt-11">
-            <h2 className="f0-section-rule mb-1">
-              <span className="text-eyebrow font-display font-bold uppercase text-soft">
-                The program
-              </span>
-            </h2>
-
-            <div className="f0-ledger f0-stagger">
-              {cards.map(({ course, total, done, next, firstModuleId }, i) => {
-                const href = next
-                  ? `/courses/${course.slug}/${next.moduleId}/${next.lessonId}`
-                  : firstModuleId
-                    ? `/courses/${course.slug}`
-                    : `/courses/${course.slug}`;
-                const complete = total > 0 && done >= total;
-                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                return (
-                  <m.div
-                    key={course.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(i * 0.05, 0.2) }}
-                  >
-                    <Link href={href} className="f0-ledger-row f0-focus group">
-                      {/* The index numeral is the course's identity object —
-                          a mark with a position, not a picture in a frame. */}
-                      <span
-                        aria-hidden
-                        className="w-9 shrink-0 self-start pt-0.5 text-right font-display text-display-3 font-extrabold tabular-nums text-ftagold-700 sm:w-11"
+          <div className="mt-11">
+            <BoardSection id="fta-program" label="The" mark="program">
+              <div className="f0-stagger mt-3 flex flex-col gap-2.5">
+                {cards.map(({ course, total, done, next, firstModuleId }, i) => {
+                  const href = next
+                    ? `/courses/${course.slug}/${next.moduleId}/${next.lessonId}`
+                    : firstModuleId
+                      ? `/courses/${course.slug}`
+                      : `/courses/${course.slug}`;
+                  const complete = total > 0 && done >= total;
+                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                  return (
+                    <m.div
+                      key={course.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.05, 0.2) }}
+                      style={{ ["--i" as string]: Math.min(i, 12) }}
+                    >
+                      <Link
+                        href={href}
+                        className="club-b-card f0-focus f0-press group flex items-start gap-3 px-4 py-4"
                       >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-display text-[17px] font-extrabold leading-snug tracking-tight text-ink">
-                          {course.title}
+                        {/* The board's identity tile, carrying the course's
+                            index. Same 34px / 10px-radius footprint every tile
+                            in the app uses; the ground is the house neutral. */}
+                        <span
+                          aria-hidden
+                          className="club-b-tile h-[34px] w-[34px] shrink-0 rounded-[10px] font-mono text-[12px] tabular-nums"
+                        >
+                          {String(i + 1).padStart(2, "0")}
                         </span>
-                        {course.description && (
-                          <span className="mt-1 block max-w-prose text-[13.5px] leading-relaxed text-soft">
-                            {course.description}
+
+                        {/* A div, not a span: `Meter` below renders a real
+                            <div role="progressbar">, and an anchor's content
+                            model is transparent, so flow content is correct
+                            here where phrasing-only nesting was not. */}
+                        <div className="min-w-0 flex-1">
+                          <span className="flex items-baseline justify-between gap-3">
+                            <span className="min-w-0 font-display text-[16px] font-extrabold leading-snug tracking-tight text-ink">
+                              {course.title}
+                            </span>
+                            <span className="shrink-0 font-mono text-[14px] font-semibold tabular-nums text-ink">
+                              {pct}%
+                            </span>
                           </span>
-                        )}
+                          {course.description && (
+                            <span className="mt-1 block max-w-prose text-[13px] leading-relaxed text-soft">
+                              {course.description}
+                            </span>
+                          )}
 
-                        {/* Progress — a bar and a numeral. No ring: a single
-                            number reads more legibly on a bar (plan §1.5). */}
-                        <span className="mt-3 flex items-center gap-3">
-                          {/* Default fill: bg-accent → metallic on the FTA desk
-                              for free. barClassName is deliberately NOT used —
-                              it is a belt escape hatch, not a tint hook. */}
-                          <Meter pct={pct} className="w-28" />
-                          <span className="font-mono text-[11px] font-semibold tabular-nums text-soft">
-                            {done}/{total} lessons
+                          {/* Progress — a bar, a chip and a numeral. Meter's
+                              default fill is bg-accent → metallic on the FTA
+                              desk for free. barClassName is deliberately NOT
+                              used: it is a belt escape hatch, not a tint hook. */}
+                          <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                            <Meter pct={pct} className="w-24" />
+                            <span className="f0-chip inline-flex px-2 py-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+                              {done}/{total} lessons
+                            </span>
+                            <span className="f0-chip inline-flex px-2 py-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+                              {complete ? "Done" : "Through"}
+                            </span>
+                          </div>
+
+                          {/* COLOUR LAW: completion is not a price, so it is not
+                              green. It is the stated word plus weight. */}
+                          <span className="mt-2.5 flex items-center gap-1 font-display text-[13px] font-bold text-accent">
+                            {complete ? "Complete · revisit" : done > 0 ? "Continue" : "Start"}
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
                           </span>
-                        </span>
-
-                        {/* COLOUR LAW: completion is not a price, so it is not
-                            green. It is the stated word plus weight. */}
-                        <span className="mt-2.5 flex items-center gap-1 font-display text-[13px] font-bold text-ftagold-700">
-                          {complete ? "Complete · revisit" : done > 0 ? "Continue" : "Start"}
-                          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
-                        </span>
-                      </span>
-
-                      <span className="shrink-0 self-start pt-1 text-right">
-                        <span className="block font-mono text-[15px] font-semibold tabular-nums text-ink">
-                          {pct}%
-                        </span>
-                        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
-                          {complete ? "Done" : "Through"}
-                        </span>
-                      </span>
-                    </Link>
-                  </m.div>
-                );
-              })}
-            </div>
-          </section>
+                        </div>
+                      </Link>
+                    </m.div>
+                  );
+                })}
+              </div>
+            </BoardSection>
+          </div>
         </>
       )}
     </div>
   );
 }
 
-/** The desk's measures — the shared strip, so the columns and the loading
- *  behaviour match every other measure row in the app. */
+/** The desk's measures — the board's small white stat cards. Loading keeps every
+ *  label and shimmers only the numeral, so the swap is a fill, not a reflow. */
 function FtaMeasures({
   cards,
   loading = false,
@@ -253,22 +257,39 @@ function FtaMeasures({
   const doneLessons = cards.reduce((s, c) => s + c.done, 0);
   const completeCourses = cards.filter((c) => c.total > 0 && c.done >= c.total).length;
   const pct = totalLessons > 0 ? Math.round((doneLessons / totalLessons) * 100) : 0;
+  const items = [
+    { label: "Courses", value: String(courses) },
+    { label: "Lessons done", value: `${doneLessons}/${totalLessons}` },
+    { label: "Finished", value: `${completeCourses}/${courses}` },
+    { label: "Overall", value: `${pct}%` },
+  ];
   return (
-    <div className="mt-10">
-      <MeasureStrip
-        loading={loading}
-        items={[
-          { label: "Courses", value: String(courses) },
-          { label: "Lessons done", value: `${doneLessons}/${totalLessons}` },
-          { label: "Finished", value: `${completeCourses}/${courses}` },
-          { label: "Overall", value: `${pct}%` },
-        ]}
-      />
+    <div
+      className="mt-9 grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+      aria-busy={loading || undefined}
+    >
+      {items.map((m) => (
+        <div key={m.label} className="club-b-card px-3 py-3 text-center">
+          {loading ? (
+            <div
+              className="mx-auto h-[22px] w-12 rounded-full bg-ink/10 motion-safe:animate-pulse"
+              aria-hidden
+            />
+          ) : (
+            <p className="font-display text-[22px] font-extrabold leading-none tabular-nums text-ink">
+              {m.value}
+            </p>
+          )}
+          <p className="mt-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft">
+            {m.label}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
 
-/* LOADING ≠ EMPTY (§0.4). Shaped like the ledger it becomes, and it never
+/* LOADING ≠ EMPTY (§0.4). Shaped like the cards it becomes, and it never
    borrows the founding state's words. */
 function FtaCoursesSkeleton() {
   return (
@@ -284,14 +305,14 @@ function FtaCoursesSkeleton() {
 
 function FtaListSkeleton() {
   return (
-    <div className="f0-ledger mt-10 border-t border-sand/70" aria-busy="true">
+    <div className="mt-10 flex flex-col gap-2.5" aria-busy="true">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="f0-ledger-row">
-          <div className="h-7 w-9 shrink-0 animate-pulse rounded bg-sand/60" />
+        <div key={i} className="club-b-card flex items-start gap-3 px-4 py-4">
+          <div className="h-[34px] w-[34px] shrink-0 animate-pulse rounded-[10px] bg-sand/60" />
           <div className="min-w-0 flex-1 space-y-2.5">
             <div className="h-4 w-1/2 animate-pulse rounded bg-sand/60" />
             <div className="h-3 w-3/4 animate-pulse rounded bg-sand/40" />
-            <div className="h-1.5 w-28 animate-pulse rounded-full bg-sand/50" />
+            <div className="h-1.5 w-24 animate-pulse rounded-full bg-sand/50" />
           </div>
         </div>
       ))}

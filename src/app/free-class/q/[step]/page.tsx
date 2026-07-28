@@ -3,7 +3,13 @@
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "@/lib/motion";
-import { TopBar, ProgressBar, FunnelStage, QuizCard } from "@/components/free-class/ui";
+import {
+  FunnelPage,
+  TopBar,
+  ProgressBar,
+  FunnelStage,
+  QuizCard,
+} from "@/components/free-class/ui";
 import {
   QUIZ,
   FUNNEL_STEPS,
@@ -83,7 +89,7 @@ export default function QuestionPage({
   const current = (FUNNEL_STEPS as readonly string[]).indexOf(stepDef.step) + 1;
 
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col">
+    <FunnelPage>
       <TopBar />
       <ProgressBar current={current} total={FUNNEL_STEPS.length} onBack={back} />
       <AnimatePresence mode="wait" custom={dir}>
@@ -91,6 +97,6 @@ export default function QuestionPage({
           <QuizCard stepDef={stepDef} selected={selected} onPick={pick} />
         </FunnelStage>
       </AnimatePresence>
-    </div>
+    </FunnelPage>
   );
 }

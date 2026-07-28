@@ -3,14 +3,26 @@
 import { useState } from "react";
 import Link from "next/link";
 import { m } from "@/lib/motion";
-import { Mail, AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Mail, ArrowLeft, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authCallbackUrl } from "@/lib/site-url";
 
 /**
  * Landing page for expired / invalid / already-used verification links.
- * Warm-paper styled, standalone (this lives outside the (auth) route group, so
- * it renders its own page chrome). Offers a one-tap "resend verification".
+ *
+ * BOARD LANGUAGE (legacy purge): the page was a `paper-card` panel with a red
+ * alert disc, a green success disc and a `.cta-button` — three chrome systems
+ * that no longer exist. It is now ONE white board card on the warm paper ground:
+ * a display heading, one honest sentence, one action. Standalone chrome, because
+ * this route lives outside the (auth) group.
+ *
+ * COLOUR LAW: green/red are PRICE colours. An expired link is not a loss and a
+ * sent email is not a gain, so neither state is coloured — the words carry the
+ * state and the accent carries only the action.
+ *
+ * NO CLOCK IN RENDER: the footer used `new Date().getFullYear()`, which reads
+ * the machine clock during render and can disagree between server and client.
+ * The line states the owner without dating it.
  */
 export default function AuthCodeErrorPage() {
   const supabase = createClient();
@@ -43,105 +55,99 @@ export default function AuthCodeErrorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-8 text-center">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-gold-600">
-          Cheat Code Club
-        </h1>
-        <p className="mt-1.5 text-soft text-sm">
-          Build Generational Wealth Together
-        </p>
-      </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-paper px-4 py-12">
+      <p className="mb-7 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+        Cheat Code <span className="text-accent">Club</span>
+      </p>
 
       <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md paper-card p-8"
+        className="club-b-card w-full max-w-md px-6 py-7 sm:px-7"
       >
         {sent ? (
-          <div className="text-center py-2">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-chip-green flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className="font-display text-xl font-bold text-ink mb-2">
-              Verification sent
-            </h2>
-            <p className="text-soft text-sm mb-6">
+          <>
+            <h1 className="font-display text-[26px] font-extrabold uppercase leading-[1.1] text-ink">
+              Check your <span className="f0-underline-mark">email</span>
+            </h1>
+            <p className="mt-3 text-[14px] leading-relaxed text-soft">
               We sent a fresh confirmation link to{" "}
-              <span className="text-ink font-medium">{email}</span>. Open it on
-              this device to finish setting up your account.
+              <span className="font-mono font-semibold text-ink">{email}</span>.
+              Open it on this device to finish setting up your account.
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 text-gold-700 hover:text-gold-800 text-sm font-medium transition-colors"
+              className="f0-focus f0-press mt-6 inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700 transition-colors hover:text-gold-600"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
               Back to login
             </Link>
-          </div>
+          </>
         ) : (
           <>
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-red-500" />
-              </div>
-              <h2 className="font-display text-xl font-bold text-ink mb-2">
-                This link has expired
-              </h2>
-              <p className="text-soft text-sm">
-                Verification links can only be used once and expire after a short
-                while. Enter your email and we&apos;ll send a fresh one.
-              </p>
-            </div>
+            <h1 className="font-display text-[26px] font-extrabold uppercase leading-[1.1] text-ink">
+              This link has <span className="f0-underline-mark">expired</span>
+            </h1>
+            <p className="mt-3 text-[14px] leading-relaxed text-soft">
+              Verification links can only be used once and expire after a short
+              while. Enter your email and we&apos;ll send a fresh one.
+            </p>
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-red-600 text-sm">
-                {error}
+            <form onSubmit={handleResend} className="mt-6">
+              <label
+                htmlFor="auth-retry-email"
+                className="mb-1.5 block font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft"
+              >
+                Email
+              </label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-soft"
+                  aria-hidden
+                />
+                <input
+                  id="auth-retry-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                  className="f0-focus w-full rounded-[10px] border border-sand bg-paper py-3 pl-10 pr-4 text-[14px] text-ink placeholder:text-soft/60 focus:outline-none"
+                />
               </div>
-            )}
 
-            <form onSubmit={handleResend} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-ink mb-1.5">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-soft" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="you@example.com"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg bg-card border border-sand text-ink placeholder:text-soft/60 focus:outline-none focus:border-gold-400 focus:ring-1 focus:ring-gold-400/30 transition-colors text-sm"
-                  />
-                </div>
-              </div>
+              {/* COLOUR LAW: no danger red — the message signals by weight in
+                  the action ramp, exactly as the rest of the app does. */}
+              {error && (
+                <p className="mt-2.5 text-[12.5px] font-semibold leading-snug text-gold-700">
+                  {error}
+                </p>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
-                className="cta-button w-full py-3 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="f0-focus f0-press mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)] disabled:opacity-50"
               >
-                {loading ? "Sending..." : "Resend verification link"}
+                {loading ? "Sending…" : "Resend verification link"}
+                {!loading && <ArrowRight className="h-4 w-4" />}
               </button>
             </form>
 
-            <p className="mt-6 text-center">
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-1.5 text-gold-700/80 hover:text-gold-800 text-sm transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to login
-              </Link>
-            </p>
+            <Link
+              href="/login"
+              className="f0-focus f0-press mt-5 inline-flex items-center gap-1.5 text-[13px] text-soft transition-colors hover:text-ink"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to login
+            </Link>
           </>
         )}
       </m.div>
 
-      <p className="mt-8 text-soft text-xs">
-        &copy; {new Date().getFullYear()} Cheat Code Club. All rights reserved.
+      <p className="mt-8 font-mono text-[9.5px] uppercase tracking-[0.16em] text-soft">
+        Cheat Code Club
       </p>
     </div>
   );

@@ -27,9 +27,17 @@ import { FIC_CHECKOUT_URL } from "@/lib/free-class";
  * names exactly what's behind the door, then offers the forward path (join the Club).
  *
  * Variants:
- *   "full"  — a centered paper-card that replaces a locked page (the default).
- *   "band"  — a compact horizontal card for inline locks (a locked room, a
- *             member-only action, the journey's final step).
+ *   "full"  — the shared `LockedState` (the board's tinted accent card) that
+ *             replaces a locked page (the default).
+ *   "band"  — a compact NEUTRAL `.club-b-card` row for inline locks (a locked
+ *             room, a member-only action, the journey's final step). Neutral by
+ *             design: only ONE object per screen may carry the warm tint, and on
+ *             a page that still has its own content, that object is not the band.
+ *
+ * CANVAS v2: the band was the pre-canvas paper card with a gold ring and a gradient
+ * `.cta-button`. It is now the board's white card — hairline `--sand` border,
+ * 14px radius — with a round orange `.club-b-orb` glyph and a solid orange
+ * button. Every word of every context below is untouched.
  */
 
 export type UpsellContext =
@@ -192,20 +200,22 @@ export default function UpsellCard({
     // below the card's natural width (UX audit #5).
     return (
       <div
-        className={`paper-card p-5 flex flex-wrap items-center gap-x-4 gap-y-3 ring-1 ring-gold-300 ${className}`}
+        className={`club-b-card flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 ${className}`}
       >
-        <div className="w-11 h-11 rounded-xl bg-gold-400/15 flex items-center justify-center shrink-0">
-          <Icon className="w-6 h-6 text-gold-700" />
-        </div>
-        <div className="flex-1 min-w-[8rem]">
-          <p className="font-display font-semibold text-ink">{c.title}</p>
-          <p className="text-sm text-soft leading-snug">{c.body}</p>
+        <span className="club-b-orb h-10 w-10 shrink-0">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-[8rem] flex-1">
+          <p className="font-display text-[14px] font-extrabold uppercase leading-tight tracking-[-0.01em] text-ink">
+            {c.title}
+          </p>
+          <p className="mt-1 text-[12.5px] leading-snug text-soft">{c.body}</p>
         </div>
         <a
           href={FIC_CHECKOUT_URL}
-          className="cta-button inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs shrink-0 whitespace-nowrap w-full sm:w-auto"
+          className="f0-focus f0-press inline-flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-4 py-2.5 font-display text-[12px] font-extrabold uppercase tracking-[0.05em] text-[color:var(--accent-on)] sm:w-auto"
         >
-          {c.cta} <ArrowRight className="w-3.5 h-3.5" />
+          {c.cta} <ArrowRight className="h-3.5 w-3.5" />
         </a>
       </div>
     );
@@ -222,26 +232,27 @@ export default function UpsellCard({
       cta={{ label: c.cta, href: FIC_CHECKOUT_URL, external: true }}
       className={className}
     >
-      <div className="grid grid-cols-2 gap-2.5 mt-4">
+      {/* Tertiary doors: the board's hairline white card button. */}
+      <div className="mt-3 grid grid-cols-2 gap-2.5">
         <Link
           href="/courses"
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
+          className="club-b-card f0-focus f0-press inline-flex items-center justify-center gap-1.5 px-3 py-2.5 font-display text-[12.5px] font-bold text-ink"
         >
-          <BookOpen className="w-4 h-4 text-gold-600" /> Free courses
+          <BookOpen className="h-4 w-4 text-accent" aria-hidden /> Free courses
         </Link>
         <Link
           href="/community"
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-display font-semibold text-ink border border-sand hover:bg-card transition-colors"
+          className="club-b-card f0-focus f0-press inline-flex items-center justify-center gap-1.5 px-3 py-2.5 font-display text-[12.5px] font-bold text-ink"
         >
-          <MessageCircle className="w-4 h-4 text-gold-600" /> Community
+          <MessageCircle className="h-4 w-4 text-accent" aria-hidden /> Community
         </Link>
       </div>
 
       <Link
         href="/upgrade"
-        className="mt-4 inline-flex items-center justify-center gap-1.5 text-xs text-gold-700 font-semibold"
+        className="f0-focus mt-3.5 inline-flex items-center gap-1.5 rounded-md text-[12px] font-semibold text-accent"
       >
-        <Sparkles className="w-3.5 h-3.5" /> See everything membership includes
+        <Sparkles className="h-3.5 w-3.5" aria-hidden /> See everything membership includes
       </Link>
     </LockedState>
   );

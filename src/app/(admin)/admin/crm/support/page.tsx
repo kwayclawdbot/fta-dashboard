@@ -45,16 +45,16 @@ const CATEGORIES: (TicketCategory | "all")[] = [
 ];
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
-  open: "bg-amber-400/15 text-amber-300",
-  pending: "bg-blue-400/15 text-blue-300",
-  resolved: "bg-emerald-400/15 text-emerald-300",
-  closed: "bg-zinc-700/40 text-zinc-400",
+  open: "f0-chip-accent text-accent",
+  pending: "text-soft",
+  resolved: "text-soft",
+  closed: "text-soft",
 };
 
 function StatusChip({ status }: { status: TicketStatus }) {
   return (
     <span
-      className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${STATUS_STYLES[status]}`}
+      className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${STATUS_STYLES[status]}`}
     >
       {status}
     </span>
@@ -169,10 +169,10 @@ export default function AdminSupportPage() {
       {/* Header */}
       <div className="mb-5 flex items-start justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <LifeBuoy className="w-5 h-5 text-amber-400" />
+          <LifeBuoy className="w-5 h-5 text-accent" />
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Support</h1>
-            <p className="text-zinc-400 text-sm mt-0.5">
+            <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink">Support</h1>
+            <p className="text-soft text-sm mt-0.5">
               {openCount > 0
                 ? `${openCount} ticket${openCount === 1 ? "" : "s"} awaiting a reply`
                 : "Member support requests"}
@@ -181,7 +181,7 @@ export default function AdminSupportPage() {
         </div>
         <button
           onClick={load}
-          className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+          className="p-2 rounded-lg border border-sand bg-card hover:bg-paper text-ink"
           title="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
@@ -196,7 +196,7 @@ export default function AdminSupportPage() {
           onChange={(e) =>
             setStatusFilter(e.target.value as TicketStatus | "all")
           }
-          className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100"
+          className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink"
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -209,7 +209,7 @@ export default function AdminSupportPage() {
           onChange={(e) =>
             setCategoryFilter(e.target.value as TicketCategory | "all")
           }
-          className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100"
+          className="bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink"
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
@@ -220,25 +220,25 @@ export default function AdminSupportPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-400 mb-4">
+        <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent mb-4">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_1fr] gap-4">
         {/* Queue */}
-        <div className="rounded-xl border border-zinc-800 overflow-hidden">
+        <div className="club-b-card overflow-hidden">
           {loading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+              <Loader2 className="w-5 h-5 animate-spin text-accent" />
             </div>
           ) : tickets.length === 0 ? (
-            <div className="py-16 text-center text-zinc-600 text-sm flex flex-col items-center gap-2">
+            <div className="py-16 text-center text-soft/70 text-sm flex flex-col items-center gap-2">
               <Inbox className="w-6 h-6" />
               No tickets match.
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800/70 max-h-[70vh] overflow-y-auto">
+            <div className="divide-y divide-sand max-h-[70vh] overflow-y-auto">
               {tickets.map((row) => {
                 const active = row.id === selectedId;
                 return (
@@ -246,7 +246,7 @@ export default function AdminSupportPage() {
                     key={row.id}
                     onClick={() => setSelectedId(row.id)}
                     className={`w-full text-left px-4 py-3 flex gap-3 transition-colors ${
-                      active ? "bg-amber-400/5" : "hover:bg-zinc-800/30"
+                      active ? "bg-accent/5" : "hover:bg-paper"
                     }`}
                   >
                     <div className="relative">
@@ -256,7 +256,7 @@ export default function AdminSupportPage() {
                         size="md"
                       />
                       {row.awaiting_team && (
-                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-[#0a0a0f]" />
+                        <span aria-hidden className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-paper" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -264,19 +264,19 @@ export default function AdminSupportPage() {
                         <span
                           className={`text-sm truncate ${
                             row.awaiting_team
-                              ? "font-semibold text-zinc-100"
-                              : "font-medium text-zinc-300"
+                              ? "font-semibold text-ink"
+                              : "font-medium text-ink"
                           }`}
                         >
                           {row.subject}
                         </span>
                         <StatusChip status={row.status} />
                       </div>
-                      <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                      <p className="text-[11px] text-soft truncate mt-0.5">
                         {row.display_name || row.email || "Member"} ·{" "}
                         {CATEGORY_LABELS[row.category]}
                       </p>
-                      <p className="text-[11px] text-zinc-600 mt-0.5">
+                      <p className="text-[11px] text-soft/70 mt-0.5">
                         {row.message_count} msg · {timeAgo(row.last_message_at)}
                       </p>
                     </div>
@@ -288,33 +288,33 @@ export default function AdminSupportPage() {
         </div>
 
         {/* Detail */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 min-h-[400px] flex flex-col">
+        <div className="club-b-card min-h-[400px] flex flex-col">
           {!selectedId ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-sm gap-2">
+            <div className="flex-1 flex flex-col items-center justify-center text-soft/70 text-sm gap-2">
               <LifeBuoy className="w-6 h-6" />
               Select a ticket to view the thread.
             </div>
           ) : detailLoading || !t ? (
             <div className="flex-1 flex justify-center items-center">
-              <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+              <Loader2 className="w-5 h-5 animate-spin text-accent" />
             </div>
           ) : (
             <>
               {/* Ticket header */}
-              <div className="px-5 py-4 border-b border-zinc-800">
+              <div className="px-5 py-4 border-b border-sand">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-semibold text-zinc-100">
+                  <h2 className="font-display text-[15px] font-extrabold text-ink">
                     {t.subject}
                   </h2>
                   <StatusChip status={t.status} />
                 </div>
-                <div className="flex items-center gap-2 mt-2 text-xs text-zinc-500 flex-wrap">
+                <div className="flex items-center gap-2 mt-2 text-xs text-soft flex-wrap">
                   <AdminAvatar
                     name={t.display_name}
                     avatarUrl={t.avatar_url}
                     size="sm"
                   />
-                  <span className="text-zinc-300">
+                  <span className="text-ink">
                     {t.display_name || "Member"}
                   </span>
                   {t.email && <span>· {t.email}</span>}
@@ -322,7 +322,7 @@ export default function AdminSupportPage() {
                   <span>· {CATEGORY_LABELS[t.category]}</span>
                   <Link
                     href={`/admin/crm/members/${t.user_id}`}
-                    className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300"
+                    className="inline-flex items-center gap-1 text-accent hover:text-accent-strong"
                   >
                     <ExternalLink className="w-3 h-3" /> CRM profile
                   </Link>
@@ -337,8 +337,8 @@ export default function AdminSupportPage() {
                         disabled={busy || t.status === s}
                         className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-colors capitalize ${
                           t.status === s
-                            ? "border-amber-400/40 bg-amber-400/10 text-amber-300"
-                            : "border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
+                            ? "border-accent/40 bg-accent/10 text-accent"
+                            : "border-sand text-soft hover:text-ink hover:border-accent/50"
                         } disabled:opacity-60`}
                       >
                         {s}
@@ -360,10 +360,10 @@ export default function AdminSupportPage() {
                     <span
                       className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
                         m.sender === "team"
-                          ? "bg-amber-400/20 text-amber-300"
+                          ? "bg-accent/20 text-accent"
                           : m.sender === "ai"
-                            ? "bg-zinc-700 text-zinc-300"
-                            : "bg-zinc-800 text-zinc-400"
+                            ? "bg-paper text-ink"
+                            : "text-soft"
                       }`}
                     >
                       {m.sender === "user" ? (
@@ -378,14 +378,14 @@ export default function AdminSupportPage() {
                       <div
                         className={`rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
                           m.sender === "team"
-                            ? "bg-amber-400 text-zinc-950 rounded-tr-sm"
-                            : "bg-zinc-800 text-zinc-100 rounded-tl-sm"
+                            ? "bg-accent text-[color:var(--accent-on)] rounded-tr-sm"
+                            : "bg-paper text-ink rounded-tl-sm"
                         }`}
                       >
                         {m.body}
                       </div>
                       <p
-                        className={`text-[10px] text-zinc-600 mt-1 ${
+                        className={`text-[10px] text-soft/70 mt-1 ${
                           m.sender === "team" ? "text-right" : ""
                         }`}
                       >
@@ -402,7 +402,7 @@ export default function AdminSupportPage() {
               </div>
 
               {/* Reply box */}
-              <div className="border-t border-zinc-800 p-3 flex items-end gap-2">
+              <div className="border-t border-sand p-3 flex items-end gap-2">
                 <textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
@@ -414,12 +414,12 @@ export default function AdminSupportPage() {
                   }}
                   rows={2}
                   placeholder="Reply as the team… (⌘/Ctrl + Enter to send)"
-                  className="flex-1 resize-none bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-amber-400/50 max-h-32"
+                  className="flex-1 resize-none bg-paper border border-sand rounded-lg px-3 py-2 text-sm text-ink placeholder:text-soft/70 focus:outline-none focus:border-accent/50 max-h-32"
                 />
                 <button
                   onClick={sendReply}
                   disabled={busy || !reply.trim()}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 h-10 rounded-lg bg-amber-400 text-zinc-950 font-semibold text-sm disabled:opacity-40 hover:bg-amber-300 transition-colors"
+                  className="f0-press f0-focus shrink-0 inline-flex items-center gap-1.5 px-3 py-2 h-10 rounded-lg bg-accent text-[color:var(--accent-on)] font-semibold text-sm disabled:opacity-40 hover:bg-accent-strong transition-colors"
                 >
                   {busy ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

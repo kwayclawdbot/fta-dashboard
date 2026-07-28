@@ -25,15 +25,14 @@ export function MarketingNav({
     { id: "support", label: "Support", href: "/admin/crm/support" },
   ] as const;
   return (
-    <div className="flex items-center gap-1 border-b border-zinc-800 mb-6 overflow-x-auto">
+    <div className="mb-6 flex items-center gap-2 overflow-x-auto club2-track">
       {tabs.map((t) => (
         <Link
           key={t.id}
           href={t.href}
-          className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 whitespace-nowrap transition-colors ${
-            active === t.id
-              ? "border-amber-400 text-amber-400"
-              : "border-transparent text-zinc-400 hover:text-zinc-200"
+          aria-current={active === t.id ? "page" : undefined}
+          className={`f0-chip f0-press f0-focus shrink-0 whitespace-nowrap px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] ${
+            active === t.id ? "f0-chip-on" : "text-soft hover:text-ink"
           }`}
         >
           {t.label}
@@ -43,46 +42,44 @@ export function MarketingNav({
   );
 }
 
-/* ── badges ───────────────────────────────────────────────────────────────── */
+/* ── badges ───────────────────────────────────────────────────────────────────
+   The stage meta in `@/lib/marketing` still carries the old per-stage hue
+   classes; only its LABEL is read here. A pipeline stage is not price, so the
+   console marks it by weight — the two ends of the funnel (converted, gone)
+   are the only stages that get a fill. */
+
+const CHIP =
+  "f0-chip px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]";
+
+const STAGE_TONE: Record<Stage, string> = {
+  new: "text-ink",
+  contacted: "text-soft",
+  engaged: "text-ink",
+  nurture: "text-soft",
+  converted: "f0-chip-accent text-accent",
+  cold: "text-soft",
+  unsubscribed: "text-soft opacity-70",
+};
 
 export function StageBadge({ stage }: { stage: Stage }) {
   const m = STAGE_META[stage];
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${m.text} ${m.bg}`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-      {m.label}
-    </span>
-  );
+  return <span className={`${CHIP} ${STAGE_TONE[stage] ?? "text-soft"}`}>{m.label}</span>;
 }
 
 export function SourceBadge({ source }: { source: string }) {
-  const m = SOURCE_META[source] || { label: source, text: "text-zinc-400" };
-  return (
-    <span
-      className={`inline-block text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-zinc-800 ${m.text}`}
-    >
-      {m.label}
-    </span>
-  );
+  const m = SOURCE_META[source] || { label: source };
+  return <span className={`${CHIP} text-soft`}>{m.label}</span>;
 }
 
 export function ColdBadge() {
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-cyan-300 bg-cyan-500/10">
-      ❄ Cold
-    </span>
-  );
+  return <span className={`${CHIP} text-soft`}>❄ Cold</span>;
 }
 
 /* ── tag pill ─────────────────────────────────────────────────────────────── */
 
 export function TagPill({ tag }: { tag: string }) {
   return (
-    <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
-      {tag}
-    </span>
+    <span className="f0-chip px-1.5 py-0.5 text-[10px] text-soft">{tag}</span>
   );
 }
 
@@ -91,16 +88,20 @@ export function TagPill({ tag }: { tag: string }) {
 export function MiniStat({
   label,
   value,
-  accent = "text-zinc-100",
+  accent = "text-ink",
 }: {
   label: string;
   value: React.ReactNode;
   accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-      <p className={`text-2xl font-bold ${accent}`}>{value}</p>
-      <p className="text-xs text-zinc-500 mt-1">{label}</p>
+    <div className="club-b-card p-4">
+      <p className={`font-mono text-2xl font-semibold tabular-nums ${accent}`}>
+        {value}
+      </p>
+      <p className="mt-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
+        {label}
+      </p>
     </div>
   );
 }

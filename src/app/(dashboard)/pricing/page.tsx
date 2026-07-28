@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 import { ArrowRight } from "lucide-react";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import PricingMatrix from "@/components/entitlements/PricingMatrix";
-import { SectionRule, TextAction } from "@/components/f0/parts";
+import { TextAction } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
  * /pricing — the canonical three-tier pricing surface (MONETIZATION-GATES.md).
@@ -12,11 +13,13 @@ import { SectionRule, TextAction } from "@/components/f0/parts";
  * the network; Club = unlock the intelligence. It MUST match the in-app walls —
  * it does, because both read PRICING_MATRIX / FEATURE_ACCESS.
  *
- * REBUILD NOTE (canvas): every price, plan name, entitlement description and
- * disclaimer below is preserved VERBATIM from the previous revision. The card
- * grid was the only thing that changed — the three tiers are now a hairline
- * ledger where the recommended tier is carried by TYPE and COLOUR (a brand rule,
- * a gold plan name, a display-2 price) rather than by a taller, ringed box.
+ * REBUILD NOTE (board 01 + the board-r1c1 pricing card): every price, plan name,
+ * entitlement description and disclaimer below is preserved VERBATIM across both
+ * rebuilds. Only the container changed. The interim hairline-ledger revision is
+ * gone; the tiers are now the board's white `club-b-card` objects on paper, the
+ * recommended tier carrying the board's orange edge (`club-b-card-lead`) and a
+ * hung orange pill, exactly as the board draws its BEST VALUE plan. Section
+ * marks are `BoardSection` tracked mono caps, not rules.
  */
 
 const FTA_URL = "/upgrade"; // FTA is a separate advanced upgrade (its own page).
@@ -38,21 +41,22 @@ function Tier({
 }) {
   return (
     <div
-      className={`py-6 ${
-        featured ? "border-l-[3px] border-gold-500 pl-4 sm:pl-5" : ""
+      className={`relative p-5 sm:p-6 ${
+        featured ? "club-b-card club-b-card-lead" : "club-b-card"
       }`}
     >
+      {/* The board hangs its BEST VALUE pill half off the card's top edge. */}
+      {featured && (
+        <p className="absolute -top-2.5 right-5 rounded-full bg-accent px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[color:var(--accent-on)]">
+          Recommended
+        </p>
+      )}
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <div className="min-w-0">
-          {featured && (
-            <p className="mb-1.5 text-eyebrow font-display font-bold uppercase text-gold-700">
-              Recommended
-            </p>
-          )}
           <p
             className={`font-display font-extrabold ${
               featured
-                ? "text-display-3 text-gold-700"
+                ? "text-display-3 text-accent"
                 : "text-[19px] leading-tight text-ink"
             }`}
           >
@@ -100,10 +104,10 @@ export default function PricingPage() {
         </p>
       </header>
 
-      {/* The three tiers — a ledger, not a card tower. */}
-      <section className="mt-10">
-        <SectionRule>The three doors</SectionRule>
-        <div className="f0-ledger mt-1">
+      {/* The three tiers — white board cards on paper, lead card carrying the edge. */}
+      <div className="mt-10">
+        <BoardSection label="The three" mark="doors" id="pricing-doors">
+          <div className="mt-4 space-y-4">
           <Tier
             name="Cheat Code Free"
             price="$0"
@@ -118,7 +122,7 @@ export default function PricingPage() {
             action={
               <a
                 href={FIC_CHECKOUT_URL}
-                className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm"
+                className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
               >
                 Join the Club <ArrowRight className="h-4 w-4" />
               </a>
@@ -134,16 +138,18 @@ export default function PricingPage() {
               </TextAction>
             }
           />
-        </div>
-      </section>
+          </div>
+        </BoardSection>
+      </div>
 
       {/* The binding matrix */}
-      <section className="mt-12">
-        <SectionRule>Compare every feature</SectionRule>
-        <div className="mt-4">
-          <PricingMatrix />
-        </div>
-      </section>
+      <div className="mt-12">
+        <BoardSection label="Compare every" mark="feature" id="pricing-matrix">
+          <div className="mt-4">
+            <PricingMatrix />
+          </div>
+        </BoardSection>
+      </div>
 
       <p className="f0-rule-top mt-10 max-w-[62ch] pt-5 text-xs leading-relaxed text-soft">
         Cheat Code measures and interprets community attention — it is education,

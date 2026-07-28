@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
   Check,
   ExternalLink,
   Landmark,
@@ -18,28 +19,34 @@ import {
   markOrientationStep,
   type OrientationStep,
 } from "@/lib/fic";
-import SetupTrail from "@/components/fic/SetupTrail";
 import Celebrate, {
   type CelebrateOptions,
   type Register,
 } from "@/components/fic/Celebrate";
 import { KID_FIRST_ADVENTURE } from "@/lib/register";
-import { LedgerLink, SectionRule, TextAction } from "@/components/f0/parts";
+import { DisplayHead, Meter, TextAction } from "@/components/f0/parts";
+import { BoardSection } from "@/components/clubhome/board";
 
 /**
- * START HERE — the family's orientation, canvas v2.
+ * START HERE — the family's orientation, rebuilt in the board-01 card language.
  *
  * Two surfaces from one route, chosen by REGISTER: a kid gets their first
  * adventure (they cannot open a custodial account, so the six grown-up steps are
  * not theirs to see, and no upsell is ever shown to a young member); everyone
- * else gets the six-step setup ledger.
+ * else gets the six-step setup path. THAT GATE IS UNCHANGED.
  *
- * CANVAS V2 PASS: one annotated word in each masthead; the step actions are now
- * the shared chip (.f0-chip) rather than a bespoke tinted button, so they answer
- * the keyboard and the thumb like every other control in the app; the primary
- * affordances ride `bg-accent` + text-night-950 (never white on gold, never
- * text-ink on a fill); and the kid entry point is a hairline-ruled object rather
- * than a bordered panel.
+ * WHAT DIED (legacy purge): the hairline `f0-ledger` that carried the six steps,
+ * the `SectionRule` marks, the `f0-frame` step ordinal and the `f0-rule-top`
+ * disclosure panels — all the PREVIOUS version's structure. WHAT REPLACED THEM:
+ * a `DisplayHead` masthead, ONE brand-tinted `club-b-warm` "next step" object
+ * with the board's round orange orb, and white `club-b-card` step rows each
+ * carrying a numeric `club-b-pip` hung off its top-left corner, exactly as the
+ * board hangs a rank.
+ *
+ * COMPLETION IS NOT GREEN. Green and red are PRICE colours and orientation has
+ * no price: a finished step reads as a tick in the neutral pip plus the stated
+ * word, and the NEXT step is the one wearing the accent (`club-b-pip-lead`),
+ * because the accent is the action colour.
  *
  * WRITES UNTOUCHED: `markOrientationStep` still persists every attestation to
  * the family's orientation record, and the 6/6 celebration still fires from the
@@ -61,16 +68,16 @@ function TourVideo() {
 
   if (failed) {
     return (
-      <div className="flex aspect-[16/10] w-full flex-col items-center justify-center gap-3 bg-night-950 px-6 text-center">
-        <PlayCircle className="h-10 w-10 text-volt-400" />
-        <p className="max-w-sm text-sm text-night-100">
+      <div className="night-island flex aspect-[16/10] w-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <PlayCircle className="h-10 w-10 text-accent" aria-hidden />
+        <p className="max-w-sm text-[13px] leading-relaxed">
           The tour video didn&apos;t load. You can open it directly in a new tab.
         </p>
         <a
           href={WALKTHROUGH_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
+          className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
         >
           <ExternalLink className="h-4 w-4" />
           Open the tour
@@ -86,36 +93,37 @@ function TourVideo() {
       playsInline
       poster={WALKTHROUGH_POSTER}
       onError={() => setFailed(true)}
-      className="aspect-[16/10] w-full bg-night-950"
+      className="night-island aspect-[16/10] w-full"
       src={WALKTHROUGH_URL}
     />
   );
 }
 
-/** The step marker: an ordinal in the mono register, or a completion tick.
- *  Completion is NOT green — green belongs to price. Done reads in the brand
- *  action colour and the row itself steps back. */
-function StepMark({ done, n }: { done: boolean; n: number }) {
-  if (done) {
-    return (
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent">
-        <Check className="h-3.5 w-3.5 text-night-950" strokeWidth={3} />
-      </span>
-    );
-  }
+/** The board's rank pip, hung half off the card's top-left corner. A done step
+ *  carries a tick in the neutral pip; the NEXT step carries the accent. */
+function StepPip({
+  n,
+  state,
+}: {
+  n: number;
+  state: "done" | "next" | "later";
+}) {
   return (
-    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center f0-frame rounded-full font-mono text-[11px] font-bold tabular-nums text-soft">
-      {n}
+    <span
+      className={`club-b-pip absolute -left-[7px] -top-[7px] ${
+        state === "next" ? "club-b-pip-lead" : ""
+      }`}
+      aria-hidden
+    >
+      {state === "done" ? <Check className="h-2.5 w-2.5" strokeWidth={3.5} /> : n}
     </span>
   );
 }
 
-/* The step affordance. Was a bespoke tinted button with its own border, fill and
-   hover — a fourth answer to "a small action" in an app that already has one.
-   It is now the shared chip: structure from .f0-chip, colour from the caller,
-   focus + press from the shared classes. */
-const quietAction =
-  "f0-chip f0-focus f0-press px-4 py-2 text-sm font-display font-semibold text-gold-700 hover:text-gold-600";
+/* The step affordance: the shared chip. Structure from .f0-chip, colour from
+   here, focus + press from the shared classes. */
+const stepAction =
+  "f0-chip f0-focus f0-press inline-flex items-center gap-1.5 px-3.5 py-1.5 font-display text-[13px] font-bold text-gold-700 hover:text-gold-600";
 
 export default function StartHerePage() {
   const supabase = createClient();
@@ -165,7 +173,7 @@ export default function StartHerePage() {
       }
 
       // Orientation state is progress chrome — cap it so a slow query can't
-      // pin the page on a skeleton. On timeout we render with 0 done (the trail
+      // pin the page on a skeleton. On timeout we render with 0 done (the path
       // still shows, the family just sees an un-ticked start).
       const state = await withTimeout(
         getOrientationState(supabase, fam, memberIds),
@@ -201,8 +209,23 @@ export default function StartHerePage() {
   const doneCount = ORIENTATION_STEPS.filter((s) => completed.has(s.key)).length;
   const total = ORIENTATION_STEPS.length;
   const allDone = doneCount >= total;
+  const nextIdx = ORIENTATION_STEPS.findIndex((s) => !completed.has(s.key));
+  const nextStep = nextIdx >= 0 ? ORIENTATION_STEPS[nextIdx] : null;
 
-  // Kids get a kid Start-Here, not the parent account-setup trail (audit #23).
+  /** Open the step wherever it actually lives. Same behaviours as before. */
+  function openStep(step: OrientationStep) {
+    if (step.key === "watch_orientation") {
+      setOpenPanel(openPanel === "watch" ? null : "watch");
+      return;
+    }
+    if (step.key === "open_accounts") {
+      setOpenPanel(openPanel === "accounts" ? null : "accounts");
+      return;
+    }
+    window.open(ORIENTATION_DECK_URL, "_blank");
+  }
+
+  // Kids get a kid Start-Here, not the parent account-setup path (audit #23).
   // The six orientation steps (custodial vs brokerage, opening accounts, the
   // family orientation deck) are things only a parent can do — a child landing
   // here should be pointed at their first adventure, not a grown-up chore list.
@@ -211,45 +234,71 @@ export default function StartHerePage() {
       <div className="mx-auto max-w-2xl pb-14">
         <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
-        <header>
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-            Start Here
-          </p>
-          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
-            Ready for your first{" "}
-            <span className="f0-underline-mark">adventure</span>?
-          </h1>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
-            Your grown-ups take care of the boring account stuff. Your job is the
-            fun part — learning how money grows, one adventure at a time.
-          </p>
-        </header>
+        <DisplayHead
+          eyebrow="Start Here"
+          title="Ready for your first"
+          mark="adventure?"
+          lede="Your grown-ups take care of the boring account stuff. Your job is the fun part — learning how money grows, one adventure at a time."
+        />
 
+        {/* The ONE brand-tinted object: where to go next. */}
         <Link
           href={KID_FIRST_ADVENTURE.href}
-          className="f0-focus f0-press group mt-9 flex gap-4 border-l-[3px] border-accent pl-4 sm:pl-5"
+          className="club-b-warm f0-focus f0-press mt-9 flex items-center gap-3.5 px-[15px] py-[15px]"
         >
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-display-3 font-extrabold text-ink">
+          <span className="min-w-0 flex-1">
+            <span className="block font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft">
+              Start with
+            </span>
+            <span className="mt-1 block font-display text-[19px] font-extrabold leading-tight text-ink">
               {KID_FIRST_ADVENTURE.title}
-            </p>
-            <p className="mt-1.5 text-[15px] leading-relaxed text-soft">
+            </span>
+            <span className="mt-1.5 block text-[13px] leading-relaxed text-soft">
               {KID_FIRST_ADVENTURE.body}
-            </p>
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-5 py-2.5 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950">
-              <Sparkles className="h-4 w-4" />
+            </span>
+            <span className="mt-2 block font-display text-[12.5px] font-bold text-gold-700">
               {KID_FIRST_ADVENTURE.cta}
             </span>
-          </div>
+          </span>
+          <span className="club-b-orb h-10 w-10 shrink-0" aria-hidden>
+            <Sparkles className="h-4 w-4" />
+          </span>
         </Link>
 
-        <section className="mt-10">
-          <SectionRule>Or jump straight in</SectionRule>
-          <div className="f0-ledger mt-1">
-            <LedgerLink href="/missions" label="My missions" sub="Small quests that earn XP." />
-            <LedgerLink href="/games" label="Play a game" sub="Learn by playing — no reading required." />
-          </div>
-        </section>
+        <div className="mt-10">
+          <BoardSection id="kid-jump-in" label="Or jump" mark="straight in">
+            <div className="mt-2.5 space-y-2.5">
+              <Link
+                href="/missions"
+                className="club-b-card f0-focus f0-press flex items-center gap-3 px-4 py-3.5"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-[15px] font-bold text-ink">
+                    My missions
+                  </span>
+                  <span className="mt-0.5 block text-[13px] text-soft">
+                    Small quests that earn XP.
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+              </Link>
+              <Link
+                href="/games"
+                className="club-b-card f0-focus f0-press flex items-center gap-3 px-4 py-3.5"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-[15px] font-bold text-ink">
+                    Play a game
+                  </span>
+                  <span className="mt-0.5 block text-[13px] text-soft">
+                    Learn by playing — no reading required.
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+              </Link>
+            </div>
+          </BoardSection>
+        </div>
       </div>
     );
   }
@@ -259,96 +308,140 @@ export default function StartHerePage() {
       <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
       {/* Masthead — paints immediately (no data dependency) */}
-      <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Start Here
-        </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-[1.05] text-ink">
-          Welcome to the <span className="f0-underline-mark">Club</span>
-        </h1>
-        <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-soft">
-          We learn first and practice with pretend money. There is no pressure to
-          ever trade for real — this is a family classroom for building smart
-          money habits together. Finish these six steps to get your family set up.
-        </p>
-      </header>
+      <DisplayHead
+        eyebrow="Start Here"
+        title="Welcome to the"
+        mark="Club"
+        lede="We learn first and practice with pretend money. There is no pressure to ever trade for real — this is a family classroom for building smart money habits together. Finish these six steps to get your family set up."
+      />
 
-      {/* The setup journey. This is the make-or-break motivator, so it leads and
-          paints immediately from local state (0/6), then fills in as orientation
-          progress hydrates — no blank hero box, no loading gate. */}
-      <div className="mt-8">
-        <SetupTrail
-          steps={ORIENTATION_STEPS.map((s) => ({ key: s.key, title: s.title }))}
-          completed={completed}
-          allDone={allDone}
-        />
-      </div>
-      {allDone && (
-        <p className="mt-3 flex items-center gap-1.5 text-sm font-display font-semibold text-gold-700">
-          <Sparkles className="h-4 w-4" />
-          Head to your home page for This Week in the Club.
-        </p>
-      )}
+      {/* ── The next step — the ONE brand-tinted object on this surface. It
+             paints immediately from local state (step 1 of 6) and re-points as
+             orientation progress hydrates: no blank hero, no loading gate. ── */}
+      <section
+        className="club-b-warm mt-8 px-[15px] py-[15px]"
+        aria-labelledby="orientation-next"
+      >
+        <div className="flex items-start gap-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft tabular-nums">
+              {allDone ? "All six steps done" : `Next step · ${doneCount + 1} of ${total}`}
+            </p>
+            <h2
+              id="orientation-next"
+              className="mt-1 font-display text-[19px] font-extrabold leading-tight text-ink"
+            >
+              {allDone ? "Your family is all set" : (nextStep?.title ?? "")}
+            </h2>
+            <p className="mt-1.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+              {allDone
+                ? "Head to your home page for This Week in the Club."
+                : (nextStep?.blurb ?? "")}
+            </p>
+          </div>
 
-      {/* The six steps — a ruled ledger, not a stack of boxes. The two-minute
-          tour is folded into the "Watch the orientation" step (no standalone
-          hero embed). */}
-      <section className="mt-10">
-        <SectionRule
+          {allDone ? (
+            <Link
+              href="/dashboard"
+              aria-label="Go to your home page"
+              className="club-b-orb f0-focus f0-press h-10 w-10 shrink-0"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          ) : nextStep?.ctaHref ? (
+            <Link
+              href={nextStep.ctaHref}
+              aria-label={nextStep.ctaLabel}
+              className="club-b-orb f0-focus f0-press h-10 w-10 shrink-0"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => nextStep && openStep(nextStep)}
+              aria-label={nextStep?.ctaLabel ?? "Open the next step"}
+              className="club-b-orb f0-focus f0-press h-10 w-10 shrink-0"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          )}
+        </div>
+
+        <div className="mt-3.5 flex items-center gap-3">
+          <Meter pct={total > 0 ? (doneCount / total) * 100 : 0} className="flex-1" />
+          <span className="shrink-0 font-mono text-[11px] font-semibold text-ink tabular-nums">
+            {doneCount}/{total}
+          </span>
+        </div>
+      </section>
+
+      {/* ── The six steps — white board cards, each with its rank pip ─────── */}
+      <div className="mt-10">
+        <BoardSection
+          id="orientation-steps"
+          label="Your six"
+          mark="steps"
           action={
-            <span className="font-mono text-[13px] font-bold tabular-nums text-soft">
-              {doneCount}/{total}
+            <span className="shrink-0 font-mono text-[11px] font-semibold text-soft tabular-nums">
+              {doneCount}/{total} done
             </span>
           }
         >
-          Your six steps
-        </SectionRule>
+          <div className="f0-stagger mt-3.5 space-y-3">
+            {ORIENTATION_STEPS.map((step, i) => {
+              const done = completed.has(step.key);
+              const isNext = !done && i === nextIdx;
+              const isAccounts = step.key === "open_accounts";
+              const isWatch = step.key === "watch_orientation";
+              return (
+                <div
+                  key={step.key}
+                  style={{ "--i": i } as React.CSSProperties}
+                  className="relative"
+                >
+                  <div
+                    className={`club-b-card px-4 py-4 ${
+                      isNext ? "club-b-card-lead" : ""
+                    }`}
+                  >
+                    <StepPip
+                      n={i + 1}
+                      state={done ? "done" : isNext ? "next" : "later"}
+                    />
 
-        <div className="f0-ledger f0-stagger mt-1">
-          {ORIENTATION_STEPS.map((step, i) => {
-            const done = completed.has(step.key);
-            const isAccounts = step.key === "open_accounts";
-            const isWatch = step.key === "watch_orientation";
-            return (
-              <div
-                key={step.key}
-                style={{ "--i": i } as React.CSSProperties}
-                className="py-5"
-              >
-                <div className="flex gap-4">
-                  <StepMark done={done} n={i + 1} />
-                  <div className="min-w-0 flex-1">
-                    <h3
-                      className={`font-display text-[17px] font-extrabold ${
-                        done ? "text-soft" : "text-ink"
-                      }`}
-                    >
-                      {step.title}
-                    </h3>
-                    <p className="mt-1.5 max-w-[62ch] text-[14px] leading-relaxed text-soft">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <h3
+                        className={`min-w-0 font-display text-[16px] font-extrabold ${
+                          done ? "text-soft" : "text-ink"
+                        }`}
+                      >
+                        {step.title}
+                      </h3>
+                      <span
+                        className={`shrink-0 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] ${
+                          done ? "text-soft" : isNext ? "text-accent" : "text-soft/60"
+                        }`}
+                      >
+                        {done ? "Done" : isNext ? "Next" : ""}
+                      </span>
+                    </div>
+
+                    <p className="mt-1.5 max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
                       {step.blurb}
                     </p>
 
                     {!done && (
-                      <div className="mt-4 flex flex-wrap items-center gap-4">
+                      <div className="mt-3.5 flex flex-wrap items-center gap-3">
                         {step.ctaHref ? (
-                          <Link href={step.ctaHref} className={quietAction}>
+                          <Link href={step.ctaHref} className={stepAction}>
                             {step.ctaLabel}
                           </Link>
                         ) : (
                           <button
-                            onClick={() =>
-                              isWatch
-                                ? setOpenPanel(
-                                    openPanel === "watch" ? null : "watch"
-                                  )
-                                : isAccounts
-                                  ? setOpenPanel(
-                                      openPanel === "accounts" ? null : "accounts"
-                                    )
-                                  : window.open(ORIENTATION_DECK_URL, "_blank")
-                            }
-                            className={quietAction}
+                            type="button"
+                            onClick={() => openStep(step)}
+                            className={stepAction}
                           >
                             {isWatch ? <PlayCircle className="h-4 w-4" /> : null}
                             {step.ctaLabel}
@@ -356,8 +449,9 @@ export default function StartHerePage() {
                         )}
                         {step.kind === "attest" && (
                           <button
+                            type="button"
                             onClick={() => attest(step)}
-                            className="f0-focus f0-press text-sm font-display font-bold text-soft transition-colors hover:text-ink"
+                            className="f0-focus f0-press font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
                           >
                             {step.attestLabel || "Mark done"}
                           </button>
@@ -370,9 +464,9 @@ export default function StartHerePage() {
                         now the live interactive tour (?tour=1). The old video is
                         kept for reference, folded away and labelled "older layout". */}
                     {isWatch && openPanel === "watch" && (
-                      <div className="f0-rule-top mt-5 space-y-4 pt-5">
-                        <div className="border-l-[3px] border-accent pl-4">
-                          <p className="max-w-[60ch] text-sm leading-relaxed text-ink">
+                      <div className="mt-4 space-y-4 border-t border-sand pt-4">
+                        <div>
+                          <p className="max-w-[60ch] text-[13.5px] leading-relaxed text-ink">
                             <span className="font-semibold">
                               The app has been updated.
                             </span>{" "}
@@ -382,25 +476,25 @@ export default function StartHerePage() {
                           </p>
                           <Link
                             href="/dashboard?tour=1"
-                            className="f0-focus f0-press mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-night-950"
+                            className="f0-focus f0-press mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 font-display text-[13px] font-extrabold uppercase tracking-[0.06em] text-[color:var(--accent-on)]"
                           >
                             <Sparkles className="h-4 w-4" />
                             Take the new tour
                           </Link>
                         </div>
 
-                        <details className="f0-rule-top pt-4">
-                          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-soft">
+                        <details className="border-t border-sand pt-4">
+                          <summary className="f0-focus flex cursor-pointer list-none items-center gap-2 text-[13px] text-soft">
                             <PlayCircle className="h-4 w-4 shrink-0" />
                             Prefer a video? Watch the original walkthrough
-                            <span className="ml-1 text-eyebrow font-display font-bold uppercase text-soft">
+                            <span className="ml-1 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
                               older layout
                             </span>
                           </summary>
-                          <div className="mt-3 overflow-hidden rounded-xl">
+                          <div className="mt-3 overflow-hidden rounded-[10px]">
                             <TourVideo />
                           </div>
-                          <p className="mt-3 max-w-[60ch] text-[13px] leading-relaxed text-soft">
+                          <p className="mt-3 max-w-[60ch] text-[12.5px] leading-relaxed text-soft">
                             Recorded before the redesign — some screens look
                             different now — but the club&apos;s rhythm (home,
                             watchlist, missions, games and classes) is narrated
@@ -415,8 +509,9 @@ export default function StartHerePage() {
                         </details>
 
                         <button
+                          type="button"
                           onClick={() => attest(step)}
-                          className={quietAction}
+                          className={stepAction}
                         >
                           <Check className="h-4 w-4" />
                           {step.attestLabel || "Mark as watched"}
@@ -426,12 +521,12 @@ export default function StartHerePage() {
 
                     {/* Accounts guide (education-first, no amount collection) */}
                     {isAccounts && openPanel === "accounts" && (
-                      <div className="f0-rule-top mt-5 space-y-3 pt-5">
-                        <p className="flex items-center gap-2 font-display text-sm font-extrabold uppercase tracking-[0.08em] text-ink">
-                          <Landmark className="h-4 w-4 text-gold-700" />
+                      <div className="mt-4 space-y-3 border-t border-sand pt-4">
+                        <p className="flex items-center gap-2 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
+                          <Landmark className="h-4 w-4 text-accent" />
                           Opening accounts — the plain-English guide
                         </p>
-                        <p className="max-w-[62ch] text-sm leading-relaxed text-ink">
+                        <p className="max-w-[62ch] text-[13.5px] leading-relaxed text-ink">
                           A <strong>custodial account</strong> is an investing
                           account a parent or guardian opens and manages on behalf
                           of a child. A <strong>brokerage account</strong> is a
@@ -439,7 +534,7 @@ export default function StartHerePage() {
                           where investments can live one day — opening one is a
                           personal family decision, and you never have to.
                         </p>
-                        <p className="max-w-[62ch] text-sm leading-relaxed text-ink">
+                        <p className="max-w-[62ch] text-[13.5px] leading-relaxed text-ink">
                           We don&apos;t push any specific broker and we don&apos;t
                           collect any dollar amounts. Whether your family sets aside
                           a small weekly contribution, and how much, is entirely
@@ -447,13 +542,14 @@ export default function StartHerePage() {
                           matters far more than the number — even a few dollars a
                           week teaches consistency.
                         </p>
-                        <p className="max-w-[62ch] text-sm leading-relaxed text-soft">
+                        <p className="max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
                           Everything in the club is education and practice. No real
                           money is required to take part.
                         </p>
                         <button
+                          type="button"
                           onClick={() => attest(step)}
-                          className={quietAction}
+                          className={stepAction}
                         >
                           <Check className="h-4 w-4" />
                           Mark as reviewed
@@ -462,22 +558,22 @@ export default function StartHerePage() {
                     )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </BoardSection>
+      </div>
 
       {/* Education-first footer */}
-      <p className="f0-rule-top mt-10 flex max-w-[64ch] items-start gap-3 pt-5 text-sm leading-relaxed text-soft">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-gold-600" />
-        <span>
-          <span className="font-medium text-ink">Our promise:</span> the Family
+      <div className="club-b-card mt-10 flex max-w-[64ch] items-start gap-3 px-4 py-3.5">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-soft" aria-hidden />
+        <p className="text-[13px] leading-relaxed text-soft">
+          <span className="font-semibold text-ink">Our promise:</span> the Family
           Investing Club is a learning space. We practice with pretend money,
           celebrate good thinking over quick wins, and never pressure any family
           to trade real money. Go at your family&apos;s own pace.
-        </span>
-      </p>
+        </p>
+      </div>
     </div>
   );
 }

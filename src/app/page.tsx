@@ -38,15 +38,6 @@ export default async function Home() {
     <div
       data-mode="club"
       className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-paper px-6 pb-24 pt-16 text-ink"
-      // See the note in (auth)/layout.tsx: --accent-gradient is declared on
-      // :root, so a descendant re-pointing --accent-a never reaches it and the
-      // CTA renders family gold. Re-declared here so it resolves club orange.
-      style={
-        {
-          "--accent-gradient":
-            "linear-gradient(135deg, var(--accent-a), var(--accent-b))",
-        } as React.CSSProperties
-      }
     >
       {/* Board 09's radial: warm at the top, paper by the middle. */}
       <div
@@ -94,7 +85,7 @@ export default async function Home() {
         <div className="mt-11 flex w-full flex-col items-stretch gap-4">
           <Link
             href="/login"
-            className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-2xl py-3.5 text-[15px]"
+            className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 font-display text-[15px] font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
           >
             Sign In
             <ArrowRight className="h-4 w-4" />

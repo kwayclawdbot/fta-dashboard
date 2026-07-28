@@ -74,10 +74,10 @@ export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
         }
       />
 
-      <div className="rounded-2xl border-2 border-sand bg-card p-5">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-soft mb-2">Your referral link</p>
+      <div className="club-b-card p-5">
+        <p className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft mb-2">Your referral link</p>
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <div className="flex-1 min-w-0 rounded-xl border-2 border-sand bg-paper px-4 py-3">
+          <div className="flex-1 min-w-0 rounded-xl border border-sand bg-paper px-4 py-3">
             <p className="truncate font-mono text-sm text-ink" title={link}>
               {link || "Minting your link…"}
             </p>
@@ -85,7 +85,7 @@ export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
           <button
             onClick={copyLink}
             disabled={!link}
-            className="cta-button inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm shrink-0 disabled:opacity-40"
+            className="f0-press f0-focus inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)] disabled:opacity-40"
           >
             {copied ? (
               <>
@@ -104,18 +104,18 @@ export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
             {canNativeShare && (
               <button
                 onClick={nativeShare}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gold-500 text-night-950 text-sm font-semibold hover:bg-gold-600 transition-colors"
+                className="f0-press f0-focus inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-paper transition-colors"
               >
                 <Share2 className="w-4 h-4" /> Share
               </button>
             )}
-            <Share href={targets.whatsapp} label="WhatsApp" tone="green">
+            <Share href={targets.whatsapp} label="WhatsApp">
               <MessageCircle className="w-4 h-4" />
             </Share>
-            <Share href={targets.mailto} label="Email" tone="sand">
+            <Share href={targets.mailto} label="Email">
               <Mail className="w-4 h-4" />
             </Share>
-            <Share href={targets.sms} label="Text" tone="sand">
+            <Share href={targets.sms} label="Text">
               <MessageCircle className="w-4 h-4" />
             </Share>
           </div>
@@ -135,20 +135,16 @@ export default function InviteStep({ isSolo = false }: { isSolo?: boolean }) {
   );
 }
 
-const TONES: Record<string, string> = {
-  green: "bg-chip-green text-green-700 hover:bg-green-100",
-  sand: "bg-sand text-ink hover:bg-[#E0D6BE]",
-};
-
+/** Share channel. COLOUR LAW: green is price, so the WhatsApp chip no longer
+ *  borrows it — every channel is the board's hairline white card button and the
+ *  brand is carried by the glyph and the label. */
 function Share({
   href,
   label,
-  tone,
   children,
 }: {
   href: string;
   label: string;
-  tone: keyof typeof TONES;
   children: React.ReactNode;
 }) {
   return (
@@ -156,7 +152,7 @@ function Share({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${TONES[tone]}`}
+      className="club-b-card f0-press f0-focus inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-accent"
     >
       {children}
       {label}

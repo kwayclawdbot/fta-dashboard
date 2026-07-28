@@ -70,7 +70,7 @@ function StatTile({
   label,
   value,
   sub,
-  accent = "text-zinc-100",
+  accent = "text-ink",
 }: {
   label: string;
   value: React.ReactNode;
@@ -78,10 +78,10 @@ function StatTile({
   accent?: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+    <div className="club-b-card p-4">
       <p className={`text-2xl font-bold ${accent}`}>{value}</p>
-      <p className="text-xs text-zinc-500 mt-1">{label}</p>
-      {sub && <p className="text-[11px] text-zinc-600 mt-0.5">{sub}</p>}
+      <p className="text-xs text-soft mt-1">{label}</p>
+      {sub && <p className="text-[11px] text-soft/70 mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -215,23 +215,23 @@ export default function ChallengeCohortPage() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-            <Flame className="w-5 h-5 text-amber-400" /> 5-Day Investing Challenge
+          <h1 className="font-display text-[24px] font-extrabold tracking-[-0.01em] text-ink flex items-center gap-2">
+            <Flame className="w-5 h-5 text-accent" /> 5-Day Investing Challenge
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <p className="text-soft text-sm mt-1">
             Cohort signups, activation, engagement and post-challenge conversion.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={load}
-            className="inline-flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300 px-2 py-1.5"
+            className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-strong px-2 py-1.5"
           >
             <RefreshCw className="w-4 h-4" /> Refresh
           </button>
           <Link
             href="/admin/crm"
-            className="text-sm text-zinc-400 hover:text-amber-400 transition-colors"
+            className="text-sm text-soft hover:text-accent-strong transition-colors"
           >
             ← Back to CRM
           </Link>
@@ -240,58 +240,58 @@ export default function ChallengeCohortPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">
+        <div className="rounded-xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
           {error}
         </div>
       ) : data ? (
         <div className="space-y-6">
           {/* Topline funnel */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <StatTile label="Signups" value={data.total} accent="text-zinc-100" />
+            <StatTile label="Signups" value={data.total} accent="text-ink" />
             <StatTile
               label="Activated"
               value={data.activated}
               sub={`${pct(data.activated, data.total)}% finished wizard`}
-              accent="text-lime-400"
+              accent="text-soft"
             />
             <StatTile
               label="Engaged"
               value={data.engaged}
               sub={`${pct(data.engaged, data.total)}% XP / alerts / posts`}
-              accent="text-sky-400"
+              accent="text-soft"
             />
             <StatTile
               label="Pass active"
               value={data.pass_active}
               sub="full Club now"
-              accent="text-amber-400"
+              accent="text-accent"
             />
             <StatTile
               label="Converted"
               value={data.converted_paid}
               sub={`${pct(data.converted_paid, data.total)}% paid on`}
-              accent="text-emerald-400"
+              accent="text-soft"
             />
             <StatTile
               label="Downgraded"
               value={data.downgraded_free}
               sub="dropped to free"
-              accent="text-zinc-400"
+              accent="text-soft"
             />
           </div>
 
           {/* Ticket split — free vs VIP vs partial (with src attribution) */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Ticket className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-medium text-zinc-300">Ticket cohort</span>
-              <span className="text-[11px] text-zinc-600">(free · VIP · partial)</span>
+              <Ticket className="w-4 h-4 text-accent" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Ticket cohort</span>
+              <span className="text-[11px] text-soft/70">(free · VIP · partial)</span>
             </div>
             {!tickets || tickets.total === 0 ? (
-              <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+              <p className="text-xs text-soft/70 flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" /> No challenge leads yet — free
                 registrations, VIP purchases, and email-captured partial leads land
                 here as they come in.
@@ -303,19 +303,19 @@ export default function ChallengeCohortPage() {
                     label="Free tickets"
                     value={tickets.free}
                     sub={`${pct(tickets.free, tickets.total)}% of cohort`}
-                    accent="text-sky-400"
+                    accent="text-soft"
                   />
                   <StatTile
                     label="VIP tickets"
                     value={tickets.vip}
                     sub={`${pct(tickets.vip, tickets.total)}% · $197`}
-                    accent="text-amber-400"
+                    accent="text-accent"
                   />
                   <StatTile
                     label="Partial leads"
                     value={tickets.partial}
                     sub={`${pct(tickets.partial, tickets.total)}% · email only`}
-                    accent="text-zinc-400"
+                    accent="text-soft"
                   />
                 </div>
                 {tickets.by_src.length > 0 && (
@@ -327,27 +327,27 @@ export default function ChallengeCohortPage() {
                       >
                         <span className="w-16 shrink-0">
                           <span
-                            className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                               r.ticket === "vip"
-                                ? "bg-amber-500/15 text-amber-300"
+                                ? "f0-chip-accent text-accent"
                                 : r.ticket === "partial"
-                                  ? "bg-zinc-700/30 text-zinc-400"
-                                  : "bg-sky-500/10 text-sky-300"
+                                  ? "text-soft"
+                                  : "text-soft"
                             }`}
                           >
                             {r.ticket}
                           </span>
                         </span>
-                        <span className="w-28 text-zinc-500 shrink-0 truncate">
+                        <span className="w-28 text-soft shrink-0 truncate">
                           {r.src === "organic" ? "organic / direct" : r.src}
                         </span>
-                        <div className="flex-1 h-4 rounded bg-zinc-800 overflow-hidden">
+                        <div className="flex-1 h-4 rounded bg-paper overflow-hidden">
                           <div
-                            className="h-full rounded bg-gradient-to-r from-amber-600 to-amber-400"
+                            className="h-full rounded bg-gradient-to-r from-accent to-accent"
                             style={{ width: `${Math.max((r.signups / tickets.total) * 100, 4)}%` }}
                           />
                         </div>
-                        <span className="w-8 text-right text-zinc-300 tabular-nums">
+                        <span className="w-8 text-right text-ink font-mono tabular-nums">
                           {r.signups}
                         </span>
                       </div>
@@ -359,25 +359,25 @@ export default function ChallengeCohortPage() {
           </div>
 
           {/* Signups over time */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-zinc-400" />
-              <span className="text-sm font-medium text-zinc-300">Signups over time</span>
+              <TrendingUp className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Signups over time</span>
             </div>
             {data.signups_by_day.length === 0 ? (
-              <p className="text-xs text-zinc-600">No challenge signups yet.</p>
+              <p className="text-xs text-soft/70">No challenge signups yet.</p>
             ) : (
               <div className="space-y-2">
                 {data.signups_by_day.map((d) => (
                   <div key={d.day} className="flex items-center gap-3">
-                    <span className="w-24 text-xs text-zinc-500 tabular-nums shrink-0">{d.day}</span>
-                    <div className="flex-1 h-5 rounded bg-zinc-800 overflow-hidden">
+                    <span className="w-24 text-xs text-soft font-mono tabular-nums shrink-0">{d.day}</span>
+                    <div className="flex-1 h-5 rounded bg-paper overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded"
+                        className="h-full bg-gradient-to-r from-accent to-accent rounded"
                         style={{ width: `${maxDay ? Math.max((d.signups / maxDay) * 100, 4) : 0}%` }}
                       />
                     </div>
-                    <span className="w-8 text-right text-xs text-zinc-300 tabular-nums">{d.signups}</span>
+                    <span className="w-8 text-right text-xs text-ink font-mono tabular-nums">{d.signups}</span>
                   </div>
                 ))}
               </div>
@@ -385,16 +385,16 @@ export default function ChallengeCohortPage() {
           </div>
 
           {/* Acquisition source — funnel vs organic split */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-medium text-zinc-300">Acquisition source</span>
-              <span className="text-[11px] text-zinc-600">(funnel vs organic)</span>
+              <TrendingUp className="w-4 h-4 text-soft" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Acquisition source</span>
+              <span className="text-[11px] text-soft/70">(funnel vs organic)</span>
             </div>
             {sourceTotal === 0 ? (
-              <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+              <p className="text-xs text-soft/70 flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" /> No attributed signups yet — the
-                club-site funnel stamps <code className="text-zinc-500">?src=funnel</code>;
+                club-site funnel stamps <code className="text-soft">?src=funnel</code>;
                 everything else counts as organic.
               </p>
             ) : (
@@ -404,32 +404,32 @@ export default function ChallengeCohortPage() {
                     label="From the funnel"
                     value={funnelCount}
                     sub={`${pct(funnelCount, sourceTotal)}% of cohort`}
-                    accent="text-emerald-400"
+                    accent="text-soft"
                   />
                   <StatTile
                     label="Organic / direct"
                     value={organicCount}
                     sub={`${pct(organicCount, sourceTotal)}% of cohort`}
-                    accent="text-zinc-300"
+                    accent="text-ink"
                   />
                 </div>
                 <div className="space-y-2">
                   {sources.map((s) => (
                     <div key={s.source} className="flex items-center gap-3">
-                      <span className="w-32 text-xs text-zinc-400 shrink-0 truncate">
+                      <span className="w-32 text-xs text-soft shrink-0 truncate">
                         {SOURCE_LABELS[s.source] || s.source}
                       </span>
-                      <div className="flex-1 h-5 rounded bg-zinc-800 overflow-hidden">
+                      <div className="flex-1 h-5 rounded bg-paper overflow-hidden">
                         <div
                           className={`h-full rounded ${
                             s.source === "organic"
-                              ? "bg-gradient-to-r from-zinc-600 to-zinc-500"
-                              : "bg-gradient-to-r from-emerald-600 to-emerald-400"
+                              ? "bg-gradient-to-r from-soft to-soft"
+                              : "bg-gradient-to-r from-soft to-soft"
                           }`}
                           style={{ width: `${sourceTotal ? Math.max((s.signups / sourceTotal) * 100, 4) : 0}%` }}
                         />
                       </div>
-                      <span className="w-8 text-right text-xs text-zinc-300 tabular-nums">
+                      <span className="w-8 text-right text-xs text-ink font-mono tabular-nums">
                         {s.signups}
                       </span>
                     </div>
@@ -440,11 +440,11 @@ export default function ChallengeCohortPage() {
           </div>
 
           {/* Email sequence status */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Mail className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-medium text-zinc-300">Email sequence</span>
-              <span className="text-[11px] text-zinc-600">
+              <Mail className="w-4 h-4 text-accent" />
+              <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">Email sequence</span>
+              <span className="text-[11px] text-soft/70">
                 (owner-directed; gated by challenge_emails_enabled)
               </span>
             </div>
@@ -455,7 +455,7 @@ export default function ChallengeCohortPage() {
               const totalPending = seq.reduce((n, s) => n + s.pending, 0);
               if (data.total === 0) {
                 return (
-                  <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+                  <p className="text-xs text-soft/70 flex items-center gap-1.5">
                     <Activity className="w-3.5 h-3.5" /> No cohort yet — steps schedule per signup.
                     16 templates ready: instant welcome, 4 August value emails, 3 show-up emails,
                     5 daily missions, 3 close emails.
@@ -464,12 +464,12 @@ export default function ChallengeCohortPage() {
               }
               return (
                 <>
-                  <div className="flex gap-4 mb-3 text-xs text-zinc-400">
+                  <div className="flex gap-4 mb-3 text-xs text-soft">
                     <span>
-                      <span className="text-emerald-400 font-semibold tabular-nums">{totalSent}</span> sent
+                      <span className="text-soft font-semibold font-mono tabular-nums">{totalSent}</span> sent
                     </span>
                     <span>
-                      <span className="text-amber-400 font-semibold tabular-nums">{totalPending}</span> scheduled
+                      <span className="text-accent font-semibold font-mono tabular-nums">{totalPending}</span> scheduled
                     </span>
                   </div>
                   <div className="space-y-1.5">
@@ -477,17 +477,17 @@ export default function ChallengeCohortPage() {
                       const s = byStep.get(step);
                       return (
                         <div key={step} className="flex items-center gap-3 text-xs">
-                          <span className="w-52 text-zinc-400 shrink-0 truncate">
+                          <span className="w-52 text-soft shrink-0 truncate">
                             {STEP_LABELS[step]}
                           </span>
-                          <span className="w-16 text-right tabular-nums text-emerald-400">
+                          <span className="w-16 text-right font-mono tabular-nums text-soft">
                             {s ? s.sent : 0} sent
                           </span>
-                          <span className="w-20 text-right tabular-nums text-amber-400">
+                          <span className="w-20 text-right font-mono tabular-nums text-accent">
                             {s ? s.pending : 0} pending
                           </span>
                           {s && s.other > 0 && (
-                            <span className="text-right tabular-nums text-zinc-600">
+                            <span className="text-right font-mono tabular-nums text-soft/70">
                               {s.other} skip/supp
                             </span>
                           )}
@@ -501,26 +501,26 @@ export default function ChallengeCohortPage() {
           </div>
 
           {/* Members */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+          <div className="club-b-card p-5">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-sky-400" />
-                <span className="text-sm font-medium text-zinc-300">
+                <Users className="w-4 h-4 text-soft" />
+                <span className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
                   Cohort members
-                  <span className="text-zinc-600 ml-1.5">({data.members.length})</span>
+                  <span className="text-soft/70 ml-1.5">({data.members.length})</span>
                 </span>
               </div>
               {data.members.length > 0 && (
                 <button
                   onClick={exportCsv}
-                  className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-800 rounded-md px-2.5 py-1.5"
+                  className="inline-flex items-center gap-1.5 text-xs text-soft hover:text-ink border border-sand rounded-md px-2.5 py-1.5"
                 >
                   <Download className="w-3.5 h-3.5" /> Export CSV
                 </button>
               )}
             </div>
             {data.members.length === 0 ? (
-              <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+              <p className="text-xs text-soft/70 flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5" /> No challenge signups yet — they&apos;ll appear here
                 as the funnel drives them in.
               </p>
@@ -528,7 +528,7 @@ export default function ChallengeCohortPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[640px]">
                   <thead>
-                    <tr className="text-left text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                    <tr className="text-left font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-soft border-b border-sand">
                       <th className="py-2 pr-4 font-semibold">Member</th>
                       <th className="py-2 px-3 font-semibold">Source</th>
                       <th className="py-2 px-3 font-semibold">Wizard</th>
@@ -541,20 +541,20 @@ export default function ChallengeCohortPage() {
                   </thead>
                   <tbody>
                     {data.members.map((m) => (
-                      <tr key={(m.user_id || m.email) ?? Math.random()} className="border-b border-zinc-800/50">
-                        <td className="py-2 pr-4 text-zinc-200">
+                      <tr key={(m.user_id || m.email) ?? Math.random()} className="border-b border-sand">
+                        <td className="py-2 pr-4 text-ink">
                           {m.first_name || "—"}
-                          <span className="text-zinc-600 ml-1.5 text-xs">{m.email}</span>
+                          <span className="text-soft/70 ml-1.5 text-xs">{m.email}</span>
                           {m.phone && (
-                            <span className="block text-zinc-500 text-xs mt-0.5">{m.phone}</span>
+                            <span className="block text-soft text-xs mt-0.5">{m.phone}</span>
                           )}
                         </td>
                         <td className="py-2 px-3">
                           <span
-                            className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                               m.src && m.src !== "organic"
-                                ? "bg-emerald-500/10 text-emerald-300"
-                                : "bg-zinc-700/30 text-zinc-500"
+                                ? "text-soft"
+                                : "text-soft"
                             }`}
                           >
                             {m.src && m.src !== "organic" ? m.src : "organic"}
@@ -562,10 +562,10 @@ export default function ChallengeCohortPage() {
                         </td>
                         <td className="py-2 px-3">
                           <span
-                            className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                               m.onboarding_complete
-                                ? "bg-lime-500/10 text-lime-300"
-                                : "bg-zinc-700/30 text-zinc-500"
+                                ? "text-soft"
+                                : "text-soft"
                             }`}
                           >
                             {m.onboarding_complete ? "done" : "pending"}
@@ -573,21 +573,21 @@ export default function ChallengeCohortPage() {
                         </td>
                         <td className="py-2 px-3">
                           <span
-                            className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            className={`f0-chip px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] ${
                               m.tier === "free"
-                                ? "bg-zinc-700/30 text-zinc-400"
+                                ? "text-soft"
                                 : m.tier === "fta"
-                                  ? "bg-amber-500/15 text-amber-300"
-                                  : "bg-sky-500/10 text-sky-300"
+                                  ? "f0-chip-accent text-accent"
+                                  : "text-soft"
                             }`}
                           >
                             {m.tier || "—"}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-right text-zinc-300 tabular-nums">{m.xp}</td>
-                        <td className="py-2 px-3 text-right text-zinc-400 tabular-nums">{m.alert_rules}</td>
-                        <td className="py-2 px-3 text-right text-zinc-400 tabular-nums">{m.posts}</td>
-                        <td className="py-2 pl-3 text-right text-zinc-500 text-xs">
+                        <td className="py-2 px-3 text-right text-ink font-mono tabular-nums">{m.xp}</td>
+                        <td className="py-2 px-3 text-right text-soft font-mono tabular-nums">{m.alert_rules}</td>
+                        <td className="py-2 px-3 text-right text-soft font-mono tabular-nums">{m.posts}</td>
+                        <td className="py-2 pl-3 text-right text-soft text-xs">
                           {new Date(m.created_at).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
