@@ -145,7 +145,7 @@ export default function ScenarioResultPanel({
           <button
             type="button"
             onClick={onNext}
-            className="cta-button f0-focus f0-press inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px]"
+            className="f0-focus f0-press inline-flex items-center justify-center gap-1.5 rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-4 py-2.5 text-[13px]"
           >
             Next pattern
             <ArrowRight className="h-4 w-4" />

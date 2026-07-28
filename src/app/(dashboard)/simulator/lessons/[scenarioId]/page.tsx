@@ -401,7 +401,7 @@ export default function ScenarioPracticePage() {
               <m.div key="intro" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button
                   onClick={startPlayback}
-                  className="cta-button f0-focus f0-press flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[14px]"
+                  className="f0-focus f0-press flex w-full items-center justify-center gap-2 rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] py-3 text-[14px]"
                 >
                   <Play className="h-4 w-4" />
                   Start practice

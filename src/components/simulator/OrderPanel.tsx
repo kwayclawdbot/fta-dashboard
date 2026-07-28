@@ -147,7 +147,7 @@ export default function OrderPanel({
       <button
         onClick={handleSubmit}
         disabled={qty <= 0 || qty > maxShares}
-        className="cta-button mt-4 w-full rounded-xl py-3 text-[14px] disabled:cursor-not-allowed disabled:opacity-35"
+        className="f0-press f0-focus mt-4 w-full rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] py-3 text-[14px] disabled:cursor-not-allowed disabled:opacity-35"
       >
         {side === "long" ? "Buy" : "Sell short"}
         {qty > 0 ? ` ${qty.toLocaleString()} ${qty === 1 ? "share" : "shares"}` : ""}

@@ -230,7 +230,7 @@ export default function SimbotPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setFrameNonce((n) => n + 1)}
-                className="cta-button f0-focus f0-press inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px]"
+                className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-xl bg-accent font-display font-bold tracking-[0.02em] text-[color:var(--accent-on)] px-4 py-2 text-[13px]"
               >
                 <RotateCw className="h-4 w-4" />
                 Try again
