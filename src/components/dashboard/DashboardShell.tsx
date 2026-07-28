@@ -27,12 +27,21 @@ import { Suspense } from "react";
 import type { FamilyTier } from "@/lib/tier";
 
 // FREE-tier families may reach these dashboard surfaces; every other route
-// renders a locked upsell (centralized here rather than gating each page). The
-// principle is "give the tools, gate the guidance": free members get the courses
-// sampler, the practice chart + games hub, the picks teaser, and read-only
-// community — the pages themselves handle their own free-state internally. Deep
-// child routes (a locked lesson, Trend or Trap) enforce their own server/page
-// checks. Everything else is locked here.
+// renders a locked upsell (centralized here rather than gating each page).
+//
+// THE PRINCIPLE: A PRIMARY SURFACE METERS, IT NEVER WALLS. The pricing matrix
+// (src/lib/entitlements/features.ts) promises a free member 5 watchlist tickers,
+// a few Kai questions a day, basic screener filters and the general discover
+// feed — so those screens must OPEN, with the real board, the real data, and the
+// last step withheld inline (UnlockLine / a designed limit moment). A full-page
+// wall on a surface the pricing page sells as free is a broken promise, not a
+// gate. Only genuinely member-only ROOMS (live sessions, missions, the family
+// desk) are locked here; everything free-metered self-meters below.
+//
+// The rest is unchanged: "give the tools, gate the guidance" — free members get
+// the courses sampler, the practice chart + games hub, the picks teaser, and
+// read-only community. Deep child routes (a locked lesson, Trend or Trap)
+// enforce their own server/page checks.
 const FREE_ALLOWED_PREFIXES = [
   "/dashboard",
   "/community",
@@ -48,6 +57,13 @@ const FREE_ALLOWED_PREFIXES = [
   "/research", // WSZ funnel bait (Lane 9): free tier sees the hero + price chart
   //             + news; the page itself locks the scorecard/checks/fundamentals
   //             behind UpsellCard and hides all locks from kids.
+  "/watchlist", // metered internally: 5 active tickers, the rest preserved and
+  //              paused, and the limit moment lives in the add flow.
+  "/discover", // metered internally: the free feed is real; the Club-only
+  //             intelligence layers unlock inline on the surface.
+  "/screener", // metered internally: basic filters are free per PRICING_MATRIX;
+  //             AI search + saved screens meter on the page.
+  "/kai", // metered internally: a few questions a day, counted on the surface.
 ];
 
 // The remaining locked prefixes map to a shared UpsellCard context, matched by
@@ -55,17 +71,17 @@ const FREE_ALLOWED_PREFIXES = [
 const LOCKED_CONTEXTS: { prefix: string; context: UpsellContext }[] = [
   { prefix: "/fta", context: "live" },
   { prefix: "/live-sessions", context: "live" },
-  { prefix: "/watchlist", context: "watchlist" },
-  { prefix: "/screener", context: "screener" },
   { prefix: "/missions", context: "missions" },
   { prefix: "/flashcards", context: "flashcards" },
   { prefix: "/simulator", context: "simulator" },
   { prefix: "/progress", context: "progress" },
   { prefix: "/family", context: "generic" },
-  { prefix: "/parent-corner", context: "generic" },
-  { prefix: "/referrals", context: "generic" },
-  { prefix: "/leaderboard", context: "generic" },
-  { prefix: "/start-here", context: "generic" },
+  // Each of these used to render the same anonymous "A member feature" panel —
+  // a door with no label on it. They now name what is actually behind them.
+  { prefix: "/parent-corner", context: "parent-corner" },
+  { prefix: "/referrals", context: "referrals" },
+  { prefix: "/leaderboard", context: "leaderboard" },
+  { prefix: "/start-here", context: "start-here" },
 ];
 
 interface DashboardShellProps {

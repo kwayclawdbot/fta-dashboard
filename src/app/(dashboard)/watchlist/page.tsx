@@ -20,11 +20,13 @@ import {
   Share2,
   Users2,
   ChevronDown,
+  EyeOff,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
-import UpsellCard from "@/components/dashboard/UpsellCard";
+import { WATCHLIST_FREE_ACTIVE, wallFor } from "@/lib/entitlements";
+import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import WatchlistDowngradeScreen from "@/components/entitlements/WatchlistDowngradeScreen";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
@@ -93,7 +95,33 @@ import {
  * Every behaviour of the previous board is preserved: the research gate on
  * verdicts, XP + belt celebration, community promotion, feed share, notes,
  * per-row Kai Watch + alert buttons, tier gating and the downgrade screen.
+ *
+ * FREE TIER — THIS BOARD METERS, IT NEVER WALLS. The pricing matrix sells a free
+ * member 5 watchlist tickers, so a free member gets the REAL board: their names,
+ * their prices, their research, their notes. What the free plan does not buy is
+ * MONITORING beyond the first five — those rows say so on themselves
+ * ("Monitoring paused", migration 144's wl_active) — and a sixth ticker. The
+ * add button then opens the limit moment instead of the add sheet, and the
+ * ratified downgrade offer rides inline above the board rather than replacing it.
  */
+
+/**
+ * Oldest-first fallback for the monitoring flags, mirroring
+ * reconcile_watchlist_active(): the names held longest stay live. Only used when
+ * the server read fails — a row must never be blank about whether it's watched.
+ */
+function oldestFirstActive(
+  list: { id: string; created_at: string }[]
+): Record<string, boolean> {
+  const byAge = [...list].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+  const map: Record<string, boolean> = {};
+  byAge.forEach((it, i) => {
+    map[it.id] = i < WATCHLIST_FREE_ACTIVE;
+  });
+  return map;
+}
 
 interface Member {
   id: string;
@@ -198,6 +226,11 @@ export default function WatchlistPage() {
   // filters
   const [fTrend, setFTrend] = useState<string | null>(null);
   const [fMember, setFMember] = useState<string | null>(null);
+
+  // Free tier: id -> is this ticker actively monitored (migration 144).
+  const [activeFlags, setActiveFlags] = useState<Record<string, boolean>>({});
+  // The limit moment — the add sheet's silhouette carrying the cap, not a form.
+  const [limitOpen, setLimitOpen] = useState(false);
 
   // add modal
   const [addOpen, setAddOpen] = useState(false);
@@ -343,6 +376,45 @@ export default function WatchlistPage() {
     load();
   }, [load]);
 
+  const isFree = tierResolved && tier === "free";
+
+  // ── Free-tier monitoring flags ────────────────────────────────────────────
+  // The SERVER decides which tickers a free family actively monitors: ask
+  // reconcile_watchlist_active() to settle the flags once (best-effort — a
+  // failure here is not the member's problem), then read wl_active back. If the
+  // read fails we fall back to the same oldest-first rule the RPC applies, so
+  // the board is never wrong-by-blank about what is being watched.
+  const itemsKey = items.map((i) => i.id).join(",");
+  useEffect(() => {
+    if (!isFree || !familyId || items.length === 0) return;
+    let alive = true;
+    (async () => {
+      await supabase.rpc("reconcile_watchlist_active", {
+        p_family_id: familyId,
+      });
+      const { data, error } = await supabase
+        .from("family_watchlist")
+        .select("id, wl_active")
+        .eq("family_id", familyId);
+      if (!alive) return;
+      if (error || !data) {
+        setActiveFlags(oldestFirstActive(items));
+        return;
+      }
+      const map: Record<string, boolean> = {};
+      for (const r of data as { id: string; wl_active: boolean | null }[]) {
+        map[r.id] = r.wl_active !== false;
+      }
+      setActiveFlags(map);
+    })();
+    return () => {
+      alive = false;
+    };
+    // `itemsKey` stands in for `items` — the effect only cares that the SET of
+    // rows changed, not that a note or a verdict was edited on one of them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFree, familyId, itemsKey, supabase]);
+
   // Debounced Polygon ticker lookup for the add-flow (validate > free-text).
   useEffect(() => {
     const q = tickerQuery.trim();
@@ -400,6 +472,12 @@ export default function WatchlistPage() {
   }
 
   function openAdd() {
+    // THE LIMIT MOMENT. A free board that is full does not open an add form it
+    // would then refuse to submit — it says so, once, in its own voice.
+    if (isFree && items.length >= WATCHLIST_FREE_ACTIVE) {
+      setLimitOpen(true);
+      return;
+    }
     setAddName("");
     setAddTicker("");
     setAddSell("");
@@ -640,28 +718,6 @@ export default function WatchlistPage() {
   const rComplete = researchComplete({ ...researchItem, ...rForm });
   const rFilled = researchFilledCount({ ...researchItem, ...rForm });
 
-  if (tierResolved && tier === "free") {
-    // PRESERVE-DON'T-DELETE (MONETIZATION-GATES.md): a free/lapsed member who
-    // already has saved tickers (e.g. a challenge-pass holder past expiry) keeps
-    // every one — monitoring is paused above the free active cap, never deleted.
-    if (items.length > 0) {
-      return (
-        <WatchlistDowngradeScreen
-          items={items.map((i) => ({
-            id: i.id,
-            ticker: i.ticker,
-            company_name: i.company_name,
-            created_at: i.created_at,
-          }))}
-        />
-      );
-    }
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <UpsellCard context="watchlist" />
-      </div>
-    );
-  }
   if (loading || !tierResolved) {
     return <BoardSkeleton label="your watchlist" />;
   }
@@ -717,6 +773,23 @@ export default function WatchlistPage() {
           )}
         </div>
       </m.header>
+
+      {/* PRESERVE-DON'T-DELETE (MONETIZATION-GATES.md): a free/lapsed member who
+          holds more names than the free plan monitors keeps every one. The
+          ratified offer now rides INLINE above their working board instead of
+          replacing it — the board below is the list of what was preserved, each
+          paused row wearing its own chip. */}
+      {isFree && items.length > WATCHLIST_FREE_ACTIVE && (
+        <WatchlistDowngradeScreen
+          variant="inline"
+          items={items.map((i) => ({
+            id: i.id,
+            ticker: i.ticker,
+            company_name: i.company_name,
+            created_at: i.created_at,
+          }))}
+        />
+      )}
 
       {/* ── The board at a glance (canvas 01/17 ticker tile) ────────────────
           Padded out to nine slots on purpose: production IS a board of a
@@ -855,6 +928,9 @@ export default function WatchlistPage() {
                       const q = quotes[item.ticker];
                       const open = openRow === item.id;
                       const pct = q?.changePercent ?? null;
+                      // Free tier only, and only when the server has spoken:
+                      // this name is saved but not being watched.
+                      const paused = isFree && activeFlags[item.id] === false;
 
                       // The move SINCE IT LANDED — the number this board has
                       // always claimed to measure. `snapshot_price` is written
@@ -997,6 +1073,16 @@ export default function WatchlistPage() {
                                 <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/70">
                                   {researchFilledCount(item)}/
                                   {RESEARCH_FIELDS.length} researched
+                                </span>
+                              )}
+                              {/* Quiet, and never a price colour: "paused" is
+                                  not a move. Only the paused rows say anything
+                                  — an active row wearing a "Monitored" badge
+                                  would be a board that nags on every line. */}
+                              {paused && (
+                                <span className="f0-chip inline-flex shrink-0 items-center gap-1 px-2 py-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+                                  <EyeOff className="h-3 w-3" aria-hidden />
+                                  Monitoring paused
                                 </span>
                               )}
                               <p className="min-w-0 flex-1 truncate text-[11px] italic leading-relaxed text-soft">
@@ -1534,6 +1620,71 @@ export default function WatchlistPage() {
                   {addBusy ? "Adding…" : "Add to Watching"}
                 </button>
               </form>
+            </m.div>
+          </m.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── The limit moment ───────────────────────────────────────────────────
+          Deliberately the ADD SHEET'S OWN SILHOUETTE — same scrim, same paper,
+          same close, same full-width button in the same slot. The member
+          reached for the add form; they get the same object back, holding the
+          one fact that stopped them. Copy is the ratified `watchlist_unlimited`
+          wall (src/lib/entitlements/paywall.ts), rendered verbatim. */}
+      <AnimatePresence>
+        {limitOpen && (
+          <m.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-scrim p-0 backdrop-blur-sm sm:items-center sm:p-4"
+            onClick={() => setLimitOpen(false)}
+          >
+            <m.div
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 24, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-t-2xl bg-paper p-6 shadow-lift sm:rounded-2xl"
+            >
+              <div className="mb-4 flex items-start justify-between">
+                <div>
+                  <p className="font-mono text-eyebrow font-semibold uppercase text-soft">
+                    Your free watchlist is full
+                  </p>
+                  <h2 className="mt-1.5 font-display text-display-3 font-extrabold text-ink">
+                    Your {WATCHLIST_FREE_ACTIVE} free slots are full — the Club
+                    removes the cap
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setLimitOpen(false)}
+                  className="text-soft hover:text-ink"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <p className="border-t border-sand pt-4 text-[13.5px] leading-relaxed text-soft">
+                Nothing on your board is deleted or touched.{" "}
+                {wallFor("watchlist_unlimited").body}
+              </p>
+
+              <a
+                href={FIC_CHECKOUT_URL}
+                className="cta-button f0-focus f0-press mt-5 flex w-full items-center justify-center gap-1.5 rounded-full py-3 text-sm"
+              >
+                {wallFor("watchlist_unlimited").cta}
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setLimitOpen(false)}
+                className="f0-focus mt-3.5 w-full rounded-md text-[12.5px] font-semibold text-soft hover:text-ink"
+              >
+                Not now — I&apos;ll swap one out
+              </button>
             </m.div>
           </m.div>
         )}

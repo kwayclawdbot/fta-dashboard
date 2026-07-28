@@ -16,6 +16,9 @@ import {
   Gamepad2,
   MessageCircle,
   Telescope,
+  Gift,
+  Compass,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
@@ -56,6 +59,10 @@ export type UpsellContext =
   | "pick-engage"
   | "fic-club"
   | "community"
+  | "leaderboard"
+  | "referrals"
+  | "start-here"
+  | "parent-corner"
   | "journey-final";
 
 interface ContextCopy {
@@ -69,9 +76,9 @@ interface ContextCopy {
 const CONTEXT: Record<UpsellContext, ContextCopy> = {
   generic: {
     icon: Sparkles,
-    eyebrow: "A member feature",
-    title: "This is part of the club",
-    body: "Join the Cheat Code Club to unlock the full experience — the whole family, one membership.",
+    eyebrow: "Cheat Code Club",
+    title: "This room is for Club members",
+    body: "Cheat Code Club membership opens every room in here — the library, the tools, the weekly live classes and the members' side of the community. One membership covers everyone under your roof.",
     cta: "Join the Club — $99/mo",
   },
   simulator: {
@@ -171,6 +178,34 @@ const CONTEXT: Record<UpsellContext, ContextCopy> = {
     title: "Post, like, and comment",
     body: "Join the Club to share wins, ask questions, and talk with the community — not just read along.",
     cta: "Join the Club",
+  },
+  leaderboard: {
+    icon: Trophy,
+    eyebrow: "Where the club stands",
+    title: "The member leaderboard",
+    body: "Every member's XP, belts and streaks, ranked this week, this month and all time — the standings that tell you who's actually doing the work, and where your family sits among them.",
+    cta: "See the standings — join the Club",
+  },
+  referrals: {
+    icon: Gift,
+    eyebrow: "Members bring members",
+    title: "The referral program",
+    body: "Members get a personal invite link, credit for every family who joins through it, and a running view of who accepted — the club grows by word of mouth, and members are paid for the mouth.",
+    cta: "Unlock referrals — join the Club",
+  },
+  "start-here": {
+    icon: Compass,
+    eyebrow: "Your first week",
+    title: "The guided orientation",
+    body: "A short, ordered path through the club — what to read first, which lesson to start, how to set up your watchlist, and what to do each week so nobody has to guess where to begin.",
+    cta: "Start the orientation — join the Club",
+  },
+  "parent-corner": {
+    icon: Users,
+    eyebrow: "For the parent running the household",
+    title: "The parent's corner",
+    body: "See what each of your kids has actually learned — lessons finished, research done, verdicts reached — plus the conversation prompts and guardrails you set for them.",
+    cta: "Unlock the parent's corner — join the Club",
   },
   "journey-final": {
     icon: Sparkles,

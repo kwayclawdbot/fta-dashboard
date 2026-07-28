@@ -26,6 +26,18 @@ import { BrandTile } from "@/components/clubhome/board";
  * over the board's white `.club-b-card` rows, each led by its company's own brand
  * tile. COLOUR LAW: green/red is PRICE, and "monitored" is not a price, so the
  * live subset reads in the action colour and the paused names read in `soft`.
+ *
+ * TWO VARIANTS (same words, different job):
+ *   "page"   — the original takeover: the offer block over the full list of
+ *              saved tickers. Still used where there is no board to stand on.
+ *   "inline" — the offer block ONLY, dropped into the working watchlist under
+ *              the board head. A primary surface meters, it never walls, so the
+ *              free member now gets the real board — and the board IS the
+ *              ticker list. Reprinting `<ul>` here would print every name twice
+ *              on one screen, so the inline variant carries the message and lets
+ *              the board below it carry the evidence (each paused row wears its
+ *              own "Monitoring paused" chip).
+ * Every string is byte-identical across both.
  */
 export interface DowngradeItem {
   id: string;
@@ -36,8 +48,11 @@ export interface DowngradeItem {
 
 export default function WatchlistDowngradeScreen({
   items,
+  variant = "page",
 }: {
   items: DowngradeItem[];
+  /** "page" = the takeover (default). "inline" = the offer block alone. */
+  variant?: "page" | "inline";
 }) {
   const saved = items.length;
   const cap = WATCHLIST_FREE_ACTIVE;
@@ -47,29 +62,39 @@ export default function WatchlistDowngradeScreen({
   );
   const activeIds = new Set(byAge.slice(0, cap).map((i) => i.id));
   const monitored = Math.min(saved, cap);
+  // Inline the block sits inside a page that already owns its <h1> (the board
+  // lead), so the headline steps down a level. Same words, same type.
+  const Head = variant === "inline" ? "h2" : "h1";
+
+  const offer = (
+    <section className="club-b-warm f0-grain px-5 py-6 sm:px-6">
+      <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent">
+        Your watchlist is safe
+      </p>
+      <Head className="mt-2 font-display text-[24px] font-extrabold uppercase leading-[1.08] text-ink">
+        {saved} {saved === 1 ? "stock" : "stocks"} saved · Your free plan
+        actively monitors {monitored}
+      </Head>
+      <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
+        Nothing was deleted. Upgrade to reactivate Kai Watch for all {saved} —
+        custom alerts, community deltas, news summaries and sentiment shifts on
+        every ticker.
+      </p>
+      <a
+        href={FIC_CHECKOUT_URL}
+        className="f0-focus f0-press mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-3.5 font-display text-[14.5px] font-extrabold uppercase tracking-[0.05em] text-[color:var(--accent-on)]"
+      >
+        Reactivate for all {saved} — join the Club <ArrowRight className="h-4 w-4" />
+      </a>
+    </section>
+  );
+
+  // The working board below is the ticker list — see the doc comment.
+  if (variant === "inline") return <div className="mt-5">{offer}</div>;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-8">
-      <section className="club-b-warm f0-grain px-5 py-6 sm:px-6">
-        <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-accent">
-          Your watchlist is safe
-        </p>
-        <h1 className="mt-2 font-display text-[24px] font-extrabold uppercase leading-[1.08] text-ink">
-          {saved} {saved === 1 ? "stock" : "stocks"} saved · Your free plan
-          actively monitors {monitored}
-        </h1>
-        <p className="mt-2.5 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
-          Nothing was deleted. Upgrade to reactivate Kai Watch for all {saved} —
-          custom alerts, community deltas, news summaries and sentiment shifts on
-          every ticker.
-        </p>
-        <a
-          href={FIC_CHECKOUT_URL}
-          className="f0-focus f0-press mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-5 py-3.5 font-display text-[14.5px] font-extrabold uppercase tracking-[0.05em] text-[color:var(--accent-on)]"
-        >
-          Reactivate for all {saved} — join the Club <ArrowRight className="h-4 w-4" />
-        </a>
-      </section>
+      {offer}
 
       <ul className="mt-5 flex flex-col gap-[7px]">
         {byAge.map((it) => {
