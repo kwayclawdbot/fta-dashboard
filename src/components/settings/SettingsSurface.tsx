@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, AtSign, Check } from "lucide-react";
+import { ArrowLeft, AtSign, Check, ChevronRight } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { useResolvedTheme, useThemePref } from "@/lib/useTheme";
@@ -15,27 +15,26 @@ import EnablePushButton from "@/components/notifications/EnablePushButton";
 import PushDevices from "@/components/notifications/PushDevices";
 import AddFamily from "@/components/dashboard/AddFamily";
 import { SegmentedRail } from "@/components/canvas2";
+import { Switch } from "@/components/f0/parts";
 import {
-  DisplayHead,
-  SectionRule,
-  Ledger,
-  LedgerRow,
-  LedgerLink,
-  LedgerAction,
-  Switch,
+  BoardMast,
+  Card,
+  Eyebrow,
+  ListHead,
+  RingAvatar,
   TextAction,
-} from "@/components/f0/parts";
+} from "@/components/you/parts";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SETTINGS — every control as a hairline ledger row under a section rule.
+   SETTINGS — no board in the archive draws this surface, so it is composed
+   from the vocabulary the boards DO draw: the lowercase wordmark masthead of
+   board 07, white rounded cards with hairline borders, mono eyebrows, and
+   hairline-separated rows INSIDE a card (board 22's "How belts show up"
+   object) rather than a stack of loose rules on the paper.
 
-   No canvas board exists for this surface, so it is derived from the canvas
-   design language rather than invented: the same masthead scale, eyebrow +
-   section-rule marking, ledgers instead of settings-cards, and the SHARED
-   one-of-N primitive for the theme picker (SegmentedRail, canvas v2 L0) so it
-   has the same keyboard model, focus ring and underline geometry as every
-   other selector in the app. It used to be a hand-rolled radiogroup with its
-   own bar and its own tab behaviour.
+   The theme picker is the SHARED one-of-N primitive (SegmentedRail, canvas v2
+   L0), so it has the same keyboard model, focus ring and underline geometry as
+   every other selector in the app.
 
    Nothing here is decorative: the theme control writes through to the real
    theme store, every switch persists to profiles.notification_prefs, the
@@ -43,15 +42,15 @@ import {
    out really signs out. A field with no real value renders "—".
 
    COMMERCIAL COPY IS BYTE-IDENTICAL to the version that shipped — every plan
-   label, renewal line, Challenge Pass string and billing row is unchanged.
+   label, renewal line, Challenge Pass string and billing row is unchanged. The
+   `push_challenge` row added by the Challenge lane is carried through verbatim.
 
-   TOKEN NOTE: this file previously wrote `text-volt-700 dark:text-volt-400` in
-   three places. `text-volt-*` is FROZEN across themes, so the dark: half was
-   both illegal and doing nothing useful; orange TEXT is `text-gold-700`, which
-   IS volt orange in club mode and flips correctly at night. The Save button was
-   `bg-volt-500 text-white` — white on orange is ~2.6:1; it now rides `bg-accent`
-   (mode-correct: family gold / club orange / FTA metallic) with `text-night-950`,
-   the same pairing every other filled action in the app uses.
+   COLOUR: orange TEXT is `text-gold-700` (the ramp that flips at night), never
+   `text-volt-*` (frozen across themes). Filled actions ride --accent-solid with
+   the declared --accent-on foreground, which is the only pairing legible on
+   orange, family gold and FTA metallic alike. There is no red destructive tone
+   by law — red is price, so Sign out is differentiated by position and by its
+   sub-line, never by hue.
    ══════════════════════════════════════════════════════════════════════════ */
 
 interface NotificationPrefs {
@@ -137,6 +136,101 @@ function monthYear(iso: string | null): string | null {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/* ── Card-internal row ────────────────────────────────────────────────────
+   Board 22's explainer object at setting scale: rows separated by hairlines
+   INSIDE one card, never a card per row. `.f0-ledger` supplies the hairline
+   between siblings (and its dark lift), so the rule never has to be re-tuned
+   per theme here. */
+function SettingRow({
+  label,
+  sub,
+  value,
+  children,
+}: {
+  label: React.ReactNode;
+  sub?: React.ReactNode;
+  value?: React.ReactNode;
+  /** Replaces the value slot entirely (a switch, a control). */
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-[13px] font-bold text-ink">{label}</p>
+        {sub && <p className="mt-0.5 text-[10.5px] leading-snug text-soft">{sub}</p>}
+      </div>
+      {children ?? (
+        <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
+          {value}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SettingLink({
+  href,
+  label,
+  sub,
+  meta,
+}: {
+  href: string;
+  label: React.ReactNode;
+  sub?: React.ReactNode;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <Link href={href} className="f0-focus group flex items-center justify-between gap-3 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-[13px] font-bold text-ink">{label}</p>
+        {sub && <p className="mt-0.5 text-[10.5px] leading-snug text-soft">{sub}</p>}
+      </div>
+      {meta && (
+        <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
+          {meta}
+        </span>
+      )}
+      <ChevronRight className="h-4 w-4 shrink-0 text-soft transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+    </Link>
+  );
+}
+
+function SettingAction({
+  onClick,
+  label,
+  sub,
+  tone = "ink",
+  disabled,
+}: {
+  onClick: () => void;
+  label: React.ReactNode;
+  sub?: React.ReactNode;
+  /** No "danger" tone by law — red is price. A terminal action reads quiet. */
+  tone?: "ink" | "quiet";
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="f0-focus flex w-full items-center justify-between gap-3 py-3 text-left disabled:opacity-50"
+    >
+      <div className="min-w-0 flex-1">
+        <p
+          className={`font-display text-[13px] font-bold ${
+            tone === "quiet" ? "text-soft" : "text-ink"
+          }`}
+        >
+          {label}
+        </p>
+        {sub && <p className="mt-0.5 text-[10.5px] leading-snug text-soft">{sub}</p>}
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-soft" />
+    </button>
+  );
 }
 
 export default function SettingsSurface() {
@@ -279,15 +373,14 @@ export default function SettingsSurface() {
   const renewLabel = monthYear(renewsAt);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-16">
-      <DisplayHead
-        eyebrow="Your account"
-        title="Settings"
+    <div className="mx-auto max-w-2xl space-y-4 pb-16">
+      <BoardMast
+        word="settings"
         lede="How the app looks, what reaches you, and what you're a member of."
-        aside={
+        action={
           <Link
             href="/progress"
-            className="inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-soft transition-colors hover:text-ink"
+            className="f0-focus inline-flex items-center gap-1.5 rounded font-display text-[12px] font-bold text-soft transition-colors hover:text-ink"
           >
             <ArrowLeft className="h-4 w-4" /> You
           </Link>
@@ -295,90 +388,83 @@ export default function SettingsSurface() {
       />
 
       {/* ── PROFILE ──────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>Profile</SectionRule>
+      <section className="space-y-2.5 pt-1">
+        <ListHead>Profile</ListHead>
+        <form onSubmit={saveProfile}>
+          <Card className="space-y-4 rounded-[16px] px-3.5 py-3.5">
+            <div className="flex items-center gap-3.5">
+              <RingAvatar name={displayName || email || "?"} avatarUrl={avatarUrl} size={64} />
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[13px] font-bold text-ink">Avatar</p>
+                <p className="mt-0.5 text-[10.5px] text-soft">
+                  {avatarUrl ? "Pick a new look" : "Choose one, or keep your initials"}
+                </p>
+              </div>
+              <TextAction onClick={() => setPickerOpen((v) => !v)}>
+                {pickerOpen ? "Close" : "Change"}
+              </TextAction>
+            </div>
 
-        <form onSubmit={saveProfile} className="space-y-4">
-          <div className="f0-ledger-row justify-between">
-            <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-sand">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <span className="font-display text-[20px] font-extrabold text-soft">
-                  {(displayName || email || "?").slice(0, 1).toUpperCase()}
+            {pickerOpen && (
+              <div
+                className="pl-3.5"
+                style={{ borderLeft: "2px solid color-mix(in srgb, var(--accent-solid) 40%, transparent)" }}
+              >
+                <AvatarPicker
+                  value={avatarUrl}
+                  onChange={setAvatarUrl}
+                  role={role}
+                  ageGroup={ageGroup}
+                />
+                <p className="mt-3 text-[10.5px] text-soft">
+                  Your pick saves when you press Save below.
+                </p>
+              </div>
+            )}
+
+            <label className="block">
+              <Eyebrow>Display name</Eyebrow>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => {
+                  setDisplayName(e.target.value);
+                  void checkUsername(e.target.value);
+                }}
+                className="mt-2 w-full border-b border-sand bg-transparent pb-2 font-display text-[22px] font-extrabold tracking-[-0.02em] text-ink outline-none transition-colors focus:border-[color:var(--accent-solid)]"
+              />
+            </label>
+            {nameWarning && (
+              <p className="flex items-start gap-1.5 text-[11.5px] text-gold-700">
+                <AtSign className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {nameWarning}
+              </p>
+            )}
+
+            <div className="f0-ledger">
+              <SettingRow label="Email" value={email || "—"} />
+              <SettingRow label="Handle" value={username ? `@${username}` : "—"} />
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* --accent-solid is the mode-correct action fill and --accent-on
+                  is its declared foreground — the only pairing legible on club
+                  orange, family gold and FTA metallic alike. */}
+              <button
+                type="submit"
+                disabled={saving}
+                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-bold disabled:opacity-50"
+                style={{ background: "var(--accent-solid)", color: "var(--accent-on)" }}
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+              {saved && (
+                <span className="inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700">
+                  <Check className="h-4 w-4" /> Saved
                 </span>
               )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-[15px] font-bold text-ink">Avatar</p>
-              <p className="mt-0.5 text-[13px] text-soft">
-                {avatarUrl ? "Pick a new look" : "Choose one, or keep your initials"}
-              </p>
             </div>
-            <TextAction onClick={() => setPickerOpen((v) => !v)}>
-              {pickerOpen ? "Close" : "Change"}
-            </TextAction>
-          </div>
-
-          {pickerOpen && (
-            <div className="border-l-2 border-volt-500/40 pl-4">
-              <AvatarPicker
-                value={avatarUrl}
-                onChange={setAvatarUrl}
-                role={role}
-                ageGroup={ageGroup}
-              />
-              <p className="mt-3 text-[12px] text-soft">
-                Your pick saves when you press Save below.
-              </p>
-            </div>
-          )}
-
-          <label className="block">
-            <span className="text-eyebrow font-display font-bold uppercase text-soft">
-              Display name
-            </span>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => {
-                setDisplayName(e.target.value);
-                void checkUsername(e.target.value);
-              }}
-              className="mt-2 w-full border-b border-sand bg-transparent pb-2 font-display text-display-3 font-extrabold text-ink outline-none transition-colors focus:border-volt-500"
-            />
-          </label>
-          {nameWarning && (
-            <p className="flex items-start gap-1.5 text-[13px] text-gold-700">
-              <AtSign className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              {nameWarning}
-            </p>
-          )}
-
-          <Ledger>
-            <LedgerRow label="Email" value={email || "—"} />
-            <LedgerRow label="Handle" value={username ? `@${username}` : "—"} />
-          </Ledger>
-
-          <div className="flex items-center gap-4">
-            {/* bg-accent is the mode-correct action fill; text-night-950 is the
-                only legible foreground on it in both themes (never text-ink,
-                which flips near-white at night, and never text-white, which is
-                ~2.6:1 on orange). */}
-            <button
-              type="submit"
-              disabled={saving}
-              className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[14px] font-bold text-night-950 disabled:opacity-50"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
-            {saved && (
-              <span className="inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700">
-                <Check className="h-4 w-4" /> Saved
-              </span>
-            )}
-          </div>
+          </Card>
         </form>
       </section>
 
@@ -387,163 +473,163 @@ export default function SettingsSurface() {
           setThemePref() writes localStorage, stamps <html data-theme> and
           broadcasts, so every open surface re-skins on the same tick. Nothing
           here is decorative and nothing needs a reload. */}
-      <section className="space-y-4">
-        <SectionRule>Appearance</SectionRule>
-        <SegmentedRail
-          options={THEMES}
-          value={themePref}
-          onChange={setThemePrefValue}
-          ariaLabel="Theme"
-          barClassName="bg-accent"
-          fill
-        />
-        <p className="text-[13px] text-soft">
-          {themePref === "system"
-            ? `Following your device — currently ${resolved}. Pick Light or Dark to override it.`
-            : `The app is in ${themePref} mode. The change applies everywhere, instantly.`}
-        </p>
+      <section className="space-y-2.5 pt-1">
+        <ListHead>Appearance</ListHead>
+        <Card className="space-y-3 rounded-[16px] px-3.5 py-3.5">
+          <SegmentedRail
+            options={THEMES}
+            value={themePref}
+            onChange={setThemePrefValue}
+            ariaLabel="Theme"
+            barClassName="bg-accent"
+            fill
+          />
+          <p className="text-[11px] leading-relaxed text-soft">
+            {themePref === "system"
+              ? `Following your device — currently ${resolved}. Pick Light or Dark to override it.`
+              : `The app is in ${themePref} mode. The change applies everywhere, instantly.`}
+          </p>
+        </Card>
       </section>
 
       {/* ── NOTIFICATIONS ────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>Notifications</SectionRule>
-        <Ledger>
-          {DELIVERY.map((t) => (
-            <LedgerRow key={t.key} label={t.label} sub={t.sub}>
-              <Switch
-                on={prefs[t.key]}
-                onToggle={() => void togglePref(t.key)}
-                label={t.label}
-              />
-            </LedgerRow>
-          ))}
-        </Ledger>
-
-        <div className="pt-2">
-          <SectionRule>On this device</SectionRule>
-          <p className="mt-3 text-[13px] leading-relaxed text-soft">
-            Turning a category off silences its push only — it still lands in your
-            bell.
-          </p>
-          <div className="mt-3">
-            <EnablePushButton />
-            <PushDevices />
-          </div>
-          <Ledger className="mt-4">
-            {PUSH.map((t) => (
-              <LedgerRow key={t.key} label={t.label} sub={t.sub}>
+      <section className="space-y-2.5 pt-1">
+        <ListHead>Notifications</ListHead>
+        <Card className="rounded-[16px] px-3.5">
+          <div className="f0-ledger">
+            {DELIVERY.map((t) => (
+              <SettingRow key={t.key} label={t.label} sub={t.sub}>
                 <Switch
                   on={prefs[t.key]}
                   onToggle={() => void togglePref(t.key)}
                   label={t.label}
                 />
-              </LedgerRow>
+              </SettingRow>
             ))}
-          </Ledger>
+          </div>
+        </Card>
+
+        <div className="space-y-2.5 pt-2">
+          <ListHead charged={false}>On this device</ListHead>
+          <Card className="space-y-3 rounded-[16px] px-3.5 py-3.5">
+            <p className="text-[11px] leading-relaxed text-soft">
+              Turning a category off silences its push only — it still lands in your
+              bell.
+            </p>
+            <div>
+              <EnablePushButton />
+              <PushDevices />
+            </div>
+            <div className="f0-ledger">
+              {PUSH.map((t) => (
+                <SettingRow key={t.key} label={t.label} sub={t.sub}>
+                  <Switch
+                    on={prefs[t.key]}
+                    onToggle={() => void togglePref(t.key)}
+                    label={t.label}
+                  />
+                </SettingRow>
+              ))}
+            </div>
+          </Card>
         </div>
 
         {/* Trade-alert delivery (briefing, digest, daily cap, quiet hours) lives
             in the /alerts hub — one authority, this is only the pointer. */}
         {isAdult && ent.tier !== "free" && (
-          <Ledger>
-            <LedgerLink
+          <Card className="rounded-[16px] px-3.5">
+            <SettingLink
               href="/alerts"
               label="Trade alerts"
               sub="Kai's briefing, your rules, digest and daily limit"
             />
-          </Ledger>
+          </Card>
         )}
       </section>
 
       {/* ── MEMBERSHIP ───────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>Membership</SectionRule>
-        <Ledger>
-          <LedgerRow label="Plan" value={plan} />
-          <LedgerRow
-            label={ent.challenge?.active ? "Pass expires" : "Renews"}
-            sub={
-              ent.clubLapsed
-                ? "Your Club window has ended — the Academy stays yours for life"
-                : undefined
-            }
-            value={renewLabel ?? "—"}
-          />
-          {ent.challenge?.active && (
-            <LedgerRow
-              label="Challenge Pass"
-              sub="Full Club access for the length of the challenge"
-              value={`${ent.challenge.daysRemaining}d left`}
+      <section className="space-y-2.5 pt-1">
+        <ListHead>Membership</ListHead>
+        <Card className="rounded-[16px] px-3.5">
+          <div className="f0-ledger">
+            <SettingRow label="Plan" value={plan} />
+            <SettingRow
+              label={ent.challenge?.active ? "Pass expires" : "Renews"}
+              sub={
+                ent.clubLapsed
+                  ? "Your Club window has ended — the Academy stays yours for life"
+                  : undefined
+              }
+              value={renewLabel ?? "—"}
             />
-          )}
-          {!isChild && (
-            <LedgerLink
-              href="/upgrade"
-              label="Plans & billing"
-              sub="See what each tier unlocks, or change your plan"
-            />
-          )}
-          <LedgerLink href="/referrals" label="Refer a friend" sub="Share the Club" />
-        </Ledger>
+            {ent.challenge?.active && (
+              <SettingRow
+                label="Challenge Pass"
+                sub="Full Club access for the length of the challenge"
+                value={`${ent.challenge.daysRemaining}d left`}
+              />
+            )}
+            {!isChild && (
+              <SettingLink
+                href="/upgrade"
+                label="Plans & billing"
+                sub="See what each tier unlocks, or change your plan"
+              />
+            )}
+            <SettingLink href="/referrals" label="Refer a friend" sub="Share the Club" />
+          </div>
+        </Card>
       </section>
 
       {/* Family Mode — self-gates to null for anyone who isn't a solo owner. */}
       <AddFamily variant="settings" familyId={familyId ?? undefined} />
 
       {/* ── ACCOUNT ──────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>Account</SectionRule>
-        <Ledger>
-          <LedgerAction
-            label="Replay the walkthrough"
-            sub="Take the guided tour of the app again"
-            onClick={() => {
-              try {
-                localStorage.removeItem("fic-tour-done");
-              } catch {
-                /* private mode — the tour just replays for this session */
-              }
-              router.push("/dashboard?tour=1");
-            }}
-          />
-          <LedgerAction
-            label="Add to Home Screen"
-            sub="Install the app on this device"
-            onClick={() => {
-              try {
-                window.dispatchEvent(new CustomEvent("fic:firstrun-install"));
-              } catch {
-                /* non-fatal */
-              }
-            }}
-          />
-          <LedgerLink href="/help" label="Help & support" sub="Get a hand from the team" />
-          {/* Terminal action, and last by position — but NOT red: red is price. */}
-          <LedgerAction
-            label={signingOut ? "Signing out…" : "Sign out"}
-            sub="End your session on this device"
-            tone="quiet"
-            disabled={signingOut}
-            onClick={() => void signOut()}
-          />
-        </Ledger>
+      <section className="space-y-2.5 pt-1">
+        <ListHead>Account</ListHead>
+        <Card className="rounded-[16px] px-3.5">
+          <div className="f0-ledger">
+            <SettingAction
+              label="Replay the walkthrough"
+              sub="Take the guided tour of the app again"
+              onClick={() => {
+                try {
+                  localStorage.removeItem("fic-tour-done");
+                } catch {
+                  /* private mode — the tour just replays for this session */
+                }
+                router.push("/dashboard?tour=1");
+              }}
+            />
+            <SettingAction
+              label="Add to Home Screen"
+              sub="Install the app on this device"
+              onClick={() => {
+                try {
+                  window.dispatchEvent(new CustomEvent("fic:firstrun-install"));
+                } catch {
+                  /* non-fatal */
+                }
+              }}
+            />
+            <SettingLink href="/help" label="Help & support" sub="Get a hand from the team" />
+            {/* Terminal action, and last by position — but NOT red: red is price. */}
+            <SettingAction
+              label={signingOut ? "Signing out…" : "Sign out"}
+              sub="End your session on this device"
+              tone="quiet"
+              disabled={signingOut}
+              onClick={() => void signOut()}
+            />
+          </div>
+        </Card>
       </section>
 
-      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-soft">
-        Looking for your belt, badges and reps?
-        <Link
-          href="/progress"
-          className="f0-focus inline-flex items-center gap-1 rounded font-display font-bold text-gold-700"
-        >
-          Your profile <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-        <Link
-          href="/belts"
-          className="f0-focus inline-flex items-center gap-1 rounded font-display font-bold text-gold-700"
-        >
-          The belt ladder <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </p>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-[11px] text-soft">
+        <span>Looking for your belt, badges and reps?</span>
+        <TextAction href="/progress">Your profile</TextAction>
+        <TextAction href="/belts">The belt ladder</TextAction>
+      </div>
     </div>
   );
 }

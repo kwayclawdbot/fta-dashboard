@@ -7,11 +7,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * /belts — the rank ladder (canvas v2, App board 22).
+ * /belts — the rank ladder, built to App Light board 22 "Belts · Rank System":
+ * the "belts" wordmark with its back chevron, the stack of rung cards with belt
+ * discs and share-of-club figures, the current rung as a warm glowing card with
+ * a star pip and "— YOU ARE HERE", the "How belts show up" explainer card, and
+ * the footer "Next:" bar with its mini meter.
  *
- * Belt data already shipped (src/lib/belts.ts, BeltBadge, the avatar belt dot);
- * this is the destination it never had. Everything on it is a real read of
- * `xp_events` and the XP leaderboard RPC — see BeltLadder for the data contract.
+ * The ladder itself is the code's, not the canvas's: five belts (White →
+ * Yellow → Blue → Purple → Black) derived from src/lib/belts.ts, and no belt is
+ * gated on graded-call accuracy the way the board draws it — the gate line is
+ * the belt's real XP range. Everything on the screen is a real read of
+ * `xp_events` and the XP leaderboard RPC. See BeltLadder for the data contract.
  */
 export default function BeltsPage() {
   return <BeltLadder />;

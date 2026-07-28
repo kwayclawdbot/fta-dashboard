@@ -9,7 +9,6 @@ import {
   XP,
   COMMUNITY_DAILY_CAP,
   GAME_PASS_RATIO,
-  levelProgress,
   type Level,
   type XpKind,
 } from "@/lib/xp";
@@ -23,51 +22,61 @@ import {
   type BeltKey,
 } from "@/lib/belts";
 import {
-  DisplayHead,
-  SectionRule,
-  Ledger,
-  MeasureStrip,
-  Meter,
-  EmptyLine,
+  BoardMast,
+  Card,
+  WarmCard,
+  ListHead,
+  RowCard,
+  BeltDisc,
+  BeltChip,
+  MiniMeter,
+  EmptyCard,
   TextAction,
-  dash,
-} from "@/components/f0/parts";
+} from "@/components/you/parts";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   BELTS — the rank ladder (canvas v2, App board 22). Route: /belts.
+   BELTS — the rank ladder. Route: /belts. Built to App Light board 22
+   "Belts · Rank System": the "belts" wordmark with a back chevron, the stack of
+   rung cards each with a belt disc / name / gate line / share-of-club figure,
+   the current rung as a warm glowing card with a star pip and "— YOU ARE HERE",
+   the "HOW BELTS SHOW UP" explainer card, and the footer "Next:" bar with its
+   40px meter.
 
-   THE LADDER IS THE CODE'S, NOT THE CANVAS'S. The canvas draws six belts
-   (White · Yellow · Green · Blue · Purple · Black) gated on graded-call
-   ACCURACY ("10 graded calls · 50%+ accuracy"). Neither ships:
+   ── WHAT EACH DRAWN FIGURE ACTUALLY SHOWS ─────────────────────────────────
+   drawn                              ships
+   ─────────────────────────────────  ──────────────────────────────────────
+   six rungs incl. a Green Belt       FIVE rungs — White → Yellow → Blue →
+                                      Purple → Black — derived from LEVELS +
+                                      beltForLevel, so the ladder can never
+                                      drift from src/lib/belts.ts. There is no
+                                      Green and no test gate.
+   "10 graded calls · 50%+ accuracy"  the belt's real XP range and how many
+   "40 calls · 58%+ · 1 sector top"   level degrees sit inside it. Gating a
+   "500+ calls · 70%+"                belt on a member's hit rate is a
+                                      performance claim; belts are earned from
+                                      reps and this screen says exactly that.
+   "62% OF CLUB" / "21%" / "0.4%"     the REAL share of ranked members sitting
+                                      on that rung, from the XP leaderboard
+                                      RPC. A rung nobody stands on reads "—",
+                                      never a manufactured percentage.
+   "Next: Red-stripe Black Belt /     the real next belt or degree, the real XP
+    Keep 70%+ accuracy for 2 months"  remaining, and the real progress bar.
+   named example members              the same three-row explainer card, but
+   (Tiffany R., OptionsOG, DeShawn)   with belt objects and the mechanic rather
+                                      than invented members with invented
+                                      streaks — nothing on this surface is a
+                                      person who does not exist.
 
-     1. src/lib/belts.ts is the shipped ladder and it is FIVE belts —
-        White → Yellow → Blue → Purple → Black — mapped onto the seven XP
-        levels in src/lib/xp.ts, with degrees inside a belt (Blue I / Blue II).
-        There is no Green. This screen DERIVES every threshold from those two
-        modules; it does not restate them, so the ladder can never drift.
-     2. Accuracy gates are a member-performance claim (plan §0.1). Belts are
-        earned from XP — reps — and this screen says exactly that. What it
-        shows instead is PARTICIPATION (XP, weeks active) and CONVICTION (the
-        member's own bull share), which are contributions, not returns.
-
-   PURPLE. Purple is dropped from UI chrome. The purple BELT is a belt colour —
-   intrinsic, theme-independent, drawn from BELTS.purple.hex via inline style
-   exactly like every other belt swatch. It appears on the band and nowhere
-   else; no purple enters the surrounding chrome.
-
-   NO GAUGE. The canvas draws belt progress as an arc. Plan §1.5: the club
-   sentiment dial is the only gauge in the app. Progress here is a bar and a
-   numeral — and the belt's own DEGREE is drawn as stripes on the belt tip,
-   which is what a real belt does.
+   PURPLE is a BELT colour: intrinsic, theme-independent, drawn from
+   BELTS.purple.hex via inline style exactly like every other belt. It appears
+   on the rungs and nowhere else in the chrome.
 
    REAL DATA ONLY.
-     · lifetime XP                      → xp_for_users (one grouped SUM, exact)
-     · per-source breakdown             → own rows of `xp_events`
-     · weeks active                     → trailing weeks carrying an xp_event
-     · conviction                       → own rows of `ticker_sentiment`
-     · club belt distribution           → xp_leaderboard_individuals (mig. 099)
+     · lifetime XP           → xp_for_users (one grouped SUM, exact)
+     · per-source breakdown  → own rows of `xp_events`
+     · belt distribution     → xp_leaderboard_individuals (mig. 099)
    FOUNDING STATE: production is a handful of members, all of them White. The
-   distribution renders that truth — empty belts read "—", and the surface says
+   distribution renders that truth — empty rungs read "—", and the surface says
    out loud that the ladder is empty on purpose.
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -93,86 +102,19 @@ const RUNGS: Rung[] = (() => {
   });
 })();
 
-/** "0 – 149 XP" · "3,200 XP +". Ranges come from the level table, never typed. */
-function rangeLabel(i: number): string {
-  const from = RUNGS[i].minXp;
+/** The rung's gate line. Ranges come from the level table, never typed. */
+function gateLine(i: number): string {
+  const rung = RUNGS[i];
+  const from = rung.minXp;
   const next = RUNGS[i + 1];
-  if (!next) return `${from.toLocaleString()} XP +`;
-  return `${from.toLocaleString()} – ${(next.minXp - 1).toLocaleString()} XP`;
-}
-
-/* ── the belt object ─────────────────────────────────────────────────────── */
-
-/**
- * A belt, drawn as a belt: a band in the belt's own colour with the knot block
- * at the left and DEGREE STRIPES at the tip. Colours are inline because a belt
- * colour is intrinsic — a blue belt is blue in both themes and must not be
- * re-mapped by a token.
- */
-function BeltBand({
-  belt,
-  degree,
-  degreesInBelt,
-  muted = false,
-  height = 56,
-}: {
-  belt: Belt;
-  degree?: number;
-  degreesInBelt?: number;
-  muted?: boolean;
-  height?: number;
-}) {
-  const stripes = degreesInBelt && degreesInBelt > 1 ? degreesInBelt : 0;
-  // Geometry scales off the band height so the same object reads correctly at
-  // the hero size (56px) and at the ladder-row size (20px) without a variant.
-  const knotLeft = Math.round(height * 0.35);
-  const knotWidth = Math.max(3, Math.round(height * 0.2));
-  const stripeInset = Math.max(3, Math.round(height * 0.14));
-  const stripeWidth = Math.max(2, Math.round(height * 0.1));
-  const stripeGap = Math.max(2, Math.round(height * 0.07));
-
-  return (
-    <div
-      className="relative w-full overflow-hidden rounded-md"
-      style={{
-        height,
-        backgroundColor: belt.hex,
-        border: `1px solid ${belt.borderHex}`,
-        opacity: muted ? 0.42 : 1,
-      }}
-      aria-hidden
-    >
-      {/* the knot — the block that makes a band read as a belt, not a swatch */}
-      <span
-        className="absolute inset-y-0"
-        style={{
-          left: knotLeft,
-          width: knotWidth,
-          backgroundColor: belt.borderHex,
-          opacity: 0.85,
-        }}
-      />
-      {stripes > 0 && (
-        <span
-          className="absolute inset-y-0 flex items-center"
-          style={{ right: stripeInset, gap: stripeGap }}
-        >
-          {Array.from({ length: stripes }).map((_, i) => (
-            <span
-              key={i}
-              className="block rounded-sm"
-              style={{
-                width: stripeWidth,
-                height: Math.round(height * 0.5),
-                backgroundColor: belt.onHex,
-                opacity: degree != null && i < degree ? 0.95 : 0.22,
-              }}
-            />
-          ))}
-        </span>
-      )}
-    </div>
-  );
+  const range = next
+    ? `${from.toLocaleString()} – ${(next.minXp - 1).toLocaleString()} XP`
+    : `${from.toLocaleString()} XP +`;
+  const degrees =
+    rung.levels.length > 1
+      ? `${rung.levels.length} degrees`
+      : `Level ${rung.levels[0].level}`;
+  return `${range} · ${degrees}`;
 }
 
 /* ── what earns XP ───────────────────────────────────────────────────────── */
@@ -237,9 +179,6 @@ const EARNS: EarnRow[] = [
 interface BeltState {
   xp: number;
   byKind: Partial<Record<XpKind, number>>;
-  weeks: number;
-  conviction: number | null;
-  rated: number | null;
   /** Real club-wide belt distribution. null when the board read failed. */
   distribution: Record<BeltKey, number> | null;
   clubTotal: number;
@@ -256,44 +195,26 @@ const EVENT_PAGE = 1000;
 const EMPTY: BeltState = {
   xp: 0,
   byKind: {},
-  weeks: 0,
-  conviction: null,
-  rated: null,
   distribution: null,
   clubTotal: 0,
   clubCapped: false,
   breakdownCapped: false,
 };
 
-/** Monday-anchored week key, matching the participation streak on /progress. */
-function weekKey(d: Date): string {
-  const t = new Date(d);
-  t.setHours(0, 0, 0, 0);
-  t.setDate(t.getDate() - ((t.getDay() + 6) % 7));
-  return t.toISOString().slice(0, 10);
-}
-
 function Skeleton() {
   return (
-    <div className="mx-auto max-w-2xl space-y-10" aria-busy="true">
-      <div className="space-y-3">
-        <span className="block h-2.5 w-28 animate-pulse rounded bg-sand" />
-        <span className="block h-9 w-40 animate-pulse rounded bg-sand" />
-        <span className="block h-4 w-72 animate-pulse rounded bg-sand" />
-      </div>
-      <span className="block h-14 w-full animate-pulse rounded-md bg-sand" />
-      <div className="f0-ledger">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="f0-ledger-row">
-            <span className="h-5 w-12 shrink-0 animate-pulse rounded-sm bg-sand" />
-            <span className="min-w-0 flex-1 space-y-2">
-              <span className="block h-3.5 w-28 animate-pulse rounded bg-sand" />
-              <span className="block h-2.5 w-36 animate-pulse rounded bg-sand" />
-            </span>
-            <span className="h-4 w-10 shrink-0 animate-pulse rounded bg-sand" />
-          </div>
+    <div className="mx-auto max-w-2xl space-y-4" aria-busy="true">
+      <div className="h-9 w-28 rounded bg-sand/60 motion-safe:animate-pulse" />
+      <div className="h-8 w-full max-w-md rounded bg-sand/40 motion-safe:animate-pulse" />
+      <div className="space-y-2 pt-2">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="club-b-card h-[62px] rounded-[13px] motion-safe:animate-pulse"
+          />
         ))}
       </div>
+      <span className="sr-only">Loading the belt ladder</span>
     </div>
   );
 }
@@ -303,8 +224,12 @@ export default function BeltLadder() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
+  // NOTE: no setState runs synchronously in this callback's body. The first
+  // statement used to be `setFailed(false)`, which — because the mount effect
+  // calls `load()` directly — is a synchronous setState inside an effect and a
+  // cascading render (react-hooks/set-state-in-effect). Clearing the failure
+  // belongs to the retry handler, which is where a failure can actually exist.
   const load = useCallback(async () => {
-    setFailed(false);
     const supabase = createClient();
     try {
       const {
@@ -315,7 +240,7 @@ export default function BeltLadder() {
         return;
       }
 
-      const [totalRes, eventsRes, sentimentRes, boardRes] = await Promise.all([
+      const [totalRes, eventsRes, boardRes] = await Promise.all([
         // Lifetime XP as ONE grouped SUM in the database. A client-side sum over
         // xp_events is capped by PostgREST's max-rows and would quietly
         // under-report a long-standing member's belt — the one number on this
@@ -323,20 +248,15 @@ export default function BeltLadder() {
         supabase.rpc("xp_for_users", { p_user_ids: [user.id] }),
         supabase
           .from("xp_events")
-          .select("amount, kind, created_at")
+          .select("amount, kind")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(EVENT_PAGE),
-        supabase.from("ticker_sentiment").select("vote").eq("user_id", user.id).limit(1000),
         supabase.rpc("xp_leaderboard_individuals", { p_window: "all", p_scope: "all" }),
       ]);
 
       // ── own XP, by kind, from the real event rows ─────────────────────────
-      const events = (eventsRes.data ?? []) as {
-        amount: number;
-        kind: XpKind;
-        created_at: string;
-      }[];
+      const events = (eventsRes.data ?? []) as { amount: number; kind: XpKind }[];
       let summed = 0;
       const byKind: Partial<Record<XpKind, number>> = {};
       for (const e of events) {
@@ -349,32 +269,6 @@ export default function BeltLadder() {
       // The per-source breakdown covers the page we read. Say so when it does
       // not cover everything, rather than presenting a partial as a total.
       const breakdownCapped = events.length >= EVENT_PAGE;
-
-      // ── participation: trailing run of weeks carrying an xp_event ─────────
-      let weeks = 0;
-      if (events.length > 0) {
-        const seen = new Set(events.map((e) => weekKey(new Date(e.created_at))));
-        let w = weekKey(new Date());
-        while (seen.has(w)) {
-          weeks += 1;
-          const prev = new Date(w);
-          prev.setDate(prev.getDate() - 7);
-          w = weekKey(prev);
-        }
-      }
-
-      // ── conviction: the member's own bull share. Not accuracy. ────────────
-      let conviction: number | null = null;
-      let rated: number | null = null;
-      if (!sentimentRes.error && sentimentRes.data) {
-        const rows = sentimentRes.data as { vote: number }[];
-        rated = rows.length;
-        if (rows.length > 0) {
-          conviction = Math.round(
-            (rows.filter((r) => Number(r.vote) === 1).length / rows.length) * 100
-          );
-        }
-      }
 
       // ── the club's real belt distribution ─────────────────────────────────
       let distribution: Record<BeltKey, number> | null = null;
@@ -392,17 +286,7 @@ export default function BeltLadder() {
         clubCapped = board.length >= 100;
       }
 
-      setState({
-        xp,
-        byKind,
-        weeks,
-        conviction,
-        rated,
-        distribution,
-        clubTotal,
-        clubCapped,
-        breakdownCapped,
-      });
+      setState({ xp, byKind, distribution, clubTotal, clubCapped, breakdownCapped });
       setLoading(false);
     } catch {
       setFailed(true);
@@ -411,7 +295,10 @@ export default function BeltLadder() {
   }, []);
 
   useEffect(() => {
-    void load();
+    // Deferred to a microtask on purpose: the effect body must not reach a
+    // setState synchronously, or the mount is a cascading render
+    // (react-hooks/set-state-in-effect). Same pattern the leaderboard uses.
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   if (loading) return <Skeleton />;
@@ -419,17 +306,18 @@ export default function BeltLadder() {
   if (failed) {
     return (
       <div className="mx-auto max-w-2xl py-16">
-        <EmptyLine
+        <EmptyCard
           title="The ladder didn't load"
           body="Something hiccuped on our end — nothing you've earned is affected. Give it another go."
           action={
             <TextAction
               onClick={() => {
+                setFailed(false);
                 setLoading(true);
                 void load();
               }}
             >
-              <RotateCcw className="h-4 w-4" /> Try again
+              <RotateCcw className="h-3.5 w-3.5" /> Try again
             </TextAction>
           }
         />
@@ -438,7 +326,6 @@ export default function BeltLadder() {
   }
 
   const prog = beltProgress(state.xp);
-  const lvl = levelProgress(state.xp);
   const currentIndex = RUNGS.findIndex((r) => r.belt.key === prog.current.belt.key);
   const dist = state.distribution;
 
@@ -447,186 +334,209 @@ export default function BeltLadder() {
   const everyoneOnFirstRung =
     !!dist && state.clubTotal > 0 && dist[RUNGS[0].belt.key] === state.clubTotal;
 
+  /** Real share of ranked members on a rung. "—" when nobody stands there. */
+  function shareLabel(key: BeltKey): string {
+    if (!dist || state.clubTotal === 0) return "—";
+    const n = dist[key];
+    if (n === 0) return "—";
+    const pct = (n / state.clubTotal) * 100;
+    return `${pct >= 10 ? Math.round(pct) : pct.toFixed(1)}%`;
+  }
+
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-16">
-      <DisplayHead
-        eyebrow="Cheat Code Club"
-        title="Belts"
+    <div className="mx-auto max-w-2xl space-y-4 pb-16">
+      <BoardMast
+        word="belts"
+        back={{ href: "/progress", label: "Back to your profile" }}
         lede="Rank is earned from reps, not follower counts. Your belt travels with you everywhere in the Club."
       />
 
-      {/* ── YOUR BELT — the belt itself is the object ─────────────────────── */}
-      <section>
-        <BeltBand
-          belt={prog.current.belt}
-          degree={prog.current.degree}
-          degreesInBelt={prog.current.degreesInBelt}
-        />
-        <div className="mt-4 flex items-end justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-              Your belt
-            </p>
-            <h2 className="mt-1.5 font-display text-display-2 font-extrabold uppercase text-ink">
-              {prog.current.label}
-            </h2>
-            <p className="mt-1 font-mono text-[12px] uppercase tracking-[0.14em] text-soft">
-              Level {prog.current.level.level} · {prog.current.level.name}
-            </p>
-          </div>
-          <p className="shrink-0 text-right">
-            <span className="font-mono text-[22px] font-semibold tabular-nums text-ink">
-              {state.xp.toLocaleString()}
+      {/* ── THE LADDER ──────────────────────────────────────────────────────
+          One card per rung, as drawn. The rung the member stands on is the warm
+          card with the orange edge, the star pip and "— YOU ARE HERE". */}
+      <section className="space-y-2 pt-1">
+        {RUNGS.map((rung, i) => {
+          const isCurrent = i === currentIndex;
+          const earned = i <= currentIndex;
+          const share = shareLabel(rung.belt.key);
+          const disc = (
+            <BeltDisc
+              hex={rung.belt.hex}
+              borderHex={rung.belt.borderHex}
+              starred={isCurrent}
+              muted={!earned}
+            />
+          );
+
+          const title = (
+            <span className="flex flex-wrap items-baseline gap-x-2">
+              <span
+                className={`font-display text-[13px] ${
+                  isCurrent ? "font-extrabold text-ink" : earned ? "font-bold text-ink" : "font-bold text-soft"
+                }`}
+              >
+                {rung.belt.name} Belt
+              </span>
+              {isCurrent && (
+                <span className="font-display text-[9px] font-semibold uppercase tracking-[0.1em] text-gold-700">
+                  — You are here
+                </span>
+              )}
             </span>
-            <span className="ml-1 font-display text-[12px] font-bold text-gold-700">XP</span>
-          </p>
-        </div>
+          );
+          const value = (
+            <span
+              className={`font-mono text-[9px] tabular-nums ${
+                isCurrent ? "text-gold-700" : "text-soft"
+              }`}
+            >
+              {share}
+              {i === 0 && share !== "—" ? " OF CLUB" : ""}
+            </span>
+          );
 
-        <Meter pct={prog.pct} className="mt-5" />
-        <p className="mt-2 font-mono text-[12px] text-soft">
-          {prog.next
-            ? `${prog.toNext.toLocaleString()} XP to ${prog.next.label}${
-                prog.nextIsNewBelt ? " — a new belt" : ""
-              }`
-            : "Top of the ladder — every belt earned"}
-        </p>
-        {lvl.next && (
-          <p className="mt-1 text-[13px] leading-relaxed text-soft">
-            That&apos;s {lvl.into.toLocaleString()} of the {lvl.span.toLocaleString()} XP in this
-            band. Every award below moves it.
-          </p>
-        )}
-      </section>
-
-      {/* ── YOUR NUMBERS — participation and conviction. Never accuracy. ──── */}
-      <section className="space-y-5">
-        <SectionRule>Your numbers</SectionRule>
-        <MeasureStrip
-          items={[
-            { label: "Weeks active", value: state.weeks === 0 ? "—" : String(state.weeks) },
-            { label: "Tickers rated", value: dash(state.rated) },
-            {
-              label: "Conviction",
-              value: state.conviction == null ? "—" : `${state.conviction}%`,
-              tone: "sentiment",
-            },
-          ]}
-        />
-        <p className="text-[13px] leading-relaxed text-soft">
-          Weeks active is the unbroken run of weeks you&apos;ve earned XP in. Conviction is the
-          share of your rated tickers you called bullish — the Club&apos;s own sentiment measure,
-          not a market number. We don&apos;t publish member accuracy or win rates, so no belt is
-          gated on one.
-        </p>
-      </section>
-
-      {/* ── THE LADDER ───────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionRule action={<TextAction href="/leaderboard">Leaderboard</TextAction>}>
-          The ladder
-        </SectionRule>
-
-        <Ledger>
-          {RUNGS.map((rung, i) => {
-            const isCurrent = i === currentIndex;
-            const earned = i <= currentIndex;
-            const count = dist ? dist[rung.belt.key] : null;
+          if (isCurrent) {
             return (
-              <div key={rung.belt.key} className="f0-ledger-row">
-                <span className="w-14 shrink-0 self-center sm:w-16">
-                  <BeltBand
-                    belt={rung.belt}
-                    degree={isCurrent ? prog.current.degree : rung.levels.length}
-                    degreesInBelt={rung.levels.length}
-                    muted={!earned}
-                    height={20}
-                  />
-                </span>
-                <span className="min-w-0 flex-1 self-center">
-                  <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                    <span
-                      className={`font-display text-[15px] font-bold ${
-                        earned ? "text-ink" : "text-soft"
-                      }`}
-                    >
-                      {rung.belt.name} Belt
-                    </span>
-                    {isCurrent && (
-                      <span className="text-eyebrow font-display font-bold uppercase text-gold-700">
-                        You are here
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-1 block font-mono text-[10.5px] uppercase tracking-[0.12em] text-soft">
-                    {rangeLabel(i)}
-                    {rung.levels.length > 1
-                      ? ` · ${rung.levels.length} degrees`
-                      : ` · Level ${rung.levels[0].level}`}
+              <WarmCard key={rung.belt.key} glow className="flex items-center gap-3 px-3.5 py-2.5">
+                <span className="shrink-0">{disc}</span>
+                <span className="min-w-0 flex-1">
+                  {title}
+                  <span className="mt-0.5 block truncate text-[9.5px] text-soft">
+                    {gateLine(i)}
                   </span>
                 </span>
-                <span className="shrink-0 self-center text-right">
-                  <span className="block font-mono text-[14px] font-semibold tabular-nums text-ink">
-                    {count == null ? "—" : count === 0 ? "—" : count.toLocaleString()}
-                  </span>
-                  <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
-                    Members
-                  </span>
-                </span>
-              </div>
+                <span className="shrink-0">{value}</span>
+              </WarmCard>
             );
-          })}
-        </Ledger>
+          }
 
-        {/* The distribution, told honestly at the scale it actually has. */}
-        <p className="text-[13px] leading-relaxed text-soft">
-          {dist == null ? (
-            "The club-wide count couldn't be read just now, so every belt shows — rather than a number we can't stand behind."
-          ) : state.clubTotal === 0 ? (
-            "Nobody is ranked yet. The counts fill in as members earn their first XP."
-          ) : everyoneOnFirstRung ? (
-            <>
-              All {state.clubTotal.toLocaleString()} ranked{" "}
-              {state.clubTotal === 1 ? "member is a" : "members are"}{" "}
-              {RUNGS[0].belt.name} Belt{state.clubTotal === 1 ? "" : "s"} today. The rungs above
-              are empty on purpose — nobody has put in the reps yet, and we&apos;d rather show you
-              an empty ladder than a full one that isn&apos;t true.
-            </>
-          ) : (
-            <>
-              Counted across {state.clubTotal.toLocaleString()} ranked member
-              {state.clubTotal === 1 ? "" : "s"}
-              {state.clubCapped ? " (the top 100 by lifetime XP)" : ""}. A belt with nobody on it
-              reads &ldquo;—&rdquo;.
-            </>
-          )}
-        </p>
+          return (
+            <RowCard
+              key={rung.belt.key}
+              className={`rounded-[13px] ${earned ? "" : "opacity-85"}`}
+              lead={disc}
+              title={title}
+              sub={gateLine(i)}
+              value={value}
+            />
+          );
+        })}
       </section>
 
-      {/* ── WHAT EARNS XP ────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionRule>What earns XP</SectionRule>
-        <Ledger>
+      {/* The distribution, told honestly at the scale it actually has. */}
+      <p className="text-[11px] leading-relaxed text-soft">
+        {dist == null ? (
+          "The club-wide share couldn't be read just now, so every rung shows — rather than a number we can't stand behind."
+        ) : state.clubTotal === 0 ? (
+          "Nobody is ranked yet. The shares fill in as members earn their first XP."
+        ) : everyoneOnFirstRung ? (
+          <>
+            All {state.clubTotal.toLocaleString()} ranked{" "}
+            {state.clubTotal === 1 ? "member is a" : "members are"} {RUNGS[0].belt.name} Belt
+            {state.clubTotal === 1 ? "" : "s"} today. The rungs above are empty on purpose —
+            nobody has put in the reps yet, and we&apos;d rather show you an empty ladder than
+            a full one that isn&apos;t true.
+          </>
+        ) : (
+          <>
+            Shares are counted across {state.clubTotal.toLocaleString()} ranked member
+            {state.clubTotal === 1 ? "" : "s"}
+            {state.clubCapped ? " (the top 100 by lifetime XP)" : ""}. A rung with nobody on it
+            reads &ldquo;—&rdquo;. No belt is gated on accuracy or a win rate — we don&apos;t
+            publish either.
+          </>
+        )}
+      </p>
+
+      {/* ── HOW BELTS SHOW UP ───────────────────────────────────────────────
+          The board's explainer card: three hairline-separated rows inside one
+          card. The board casts invented members in them; the mechanic is what
+          the rows are actually for, so the belt objects play themselves. */}
+      <section className="space-y-2.5 pt-2">
+        <ListHead>How belts show up</ListHead>
+        <Card className="rounded-[14px] px-3.5 py-3">
+          <div className="f0-ledger">
+            <div className="flex items-center gap-2.5 py-2.5">
+              <BeltDisc
+                hex={BELTS.blue.hex}
+                borderHex={BELTS.blue.borderHex}
+                size={34}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[12px] font-bold text-ink">
+                  Your avatar ring
+                </p>
+                <p className="mt-0.5 text-[10px] text-soft">
+                  Belt colour rides the corner of your avatar, everywhere
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 py-2.5">
+              <BeltDisc
+                hex={BELTS.black.hex}
+                borderHex={BELTS.black.borderHex}
+                size={34}
+                starred
+              />
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-center gap-1.5 font-display text-[12px] font-bold text-ink">
+                  Beside your name
+                  <BeltChip
+                    hex={BELTS.black.hex}
+                    onHex={BELTS.black.onHex}
+                    label="Black Belt"
+                  />
+                </p>
+                <p className="mt-0.5 text-[10px] text-soft">
+                  The belt chip sits next to your name on every post
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 py-2.5">
+              <BeltDisc
+                hex={BELTS.yellow.hex}
+                borderHex={BELTS.yellow.borderHex}
+                size={34}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[12px] font-bold text-ink">
+                  On the leaderboard
+                </p>
+                <p className="mt-0.5 text-[10px] text-soft">
+                  Your belt is spelled out beside your rank
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* ── WHAT EARNS XP ───────────────────────────────────────────────── */}
+      <section className="space-y-2.5 pt-2">
+        <ListHead>What earns XP</ListHead>
+        <div className="space-y-2">
           {EARNS.filter((e) => !e.onlyIfEarned || (state.byKind[e.kind] ?? 0) > 0).map((e) => {
             const mine = state.byKind[e.kind] ?? 0;
             return (
-              <div key={e.kind} className="f0-ledger-row justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-[15px] font-bold text-ink">{e.label}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-soft">{e.rule}</p>
-                </div>
-                <div className="shrink-0 self-center text-right">
-                  <p className="font-mono text-[14px] font-semibold tabular-nums text-ink">
-                    {e.rate}
-                  </p>
-                  <p className="mt-0.5 text-eyebrow font-display font-bold uppercase text-soft">
-                    {mine > 0 ? `${mine.toLocaleString()} earned` : "None yet"}
-                  </p>
-                </div>
-              </div>
+              <RowCard
+                key={e.kind}
+                title={e.label}
+                sub={e.rule}
+                value={
+                  <span className="block">
+                    <span className="block font-mono text-[11px] font-semibold tabular-nums text-ink">
+                      {e.rate}
+                    </span>
+                    <span className="mt-0.5 block text-[8.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+                      {mine > 0 ? `${mine.toLocaleString()} earned` : "None yet"}
+                    </span>
+                  </span>
+                }
+              />
             );
           })}
-        </Ledger>
-        <p className="text-[13px] leading-relaxed text-soft">
+        </div>
+        <p className="text-[11px] leading-relaxed text-soft">
           Rates are the ones the app actually awards — this list is generated from the same
           constants the award calls use, so it can&apos;t drift from what you get paid. Your own
           totals come straight from your XP ledger
@@ -637,19 +547,31 @@ export default function BeltLadder() {
         </p>
       </section>
 
-      {/* ── HOW BELTS SHOW UP ────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>How your belt shows up</SectionRule>
-        <p className="max-w-xl text-[14px] leading-relaxed text-soft">
-          Your belt colour rides the corner of your avatar everywhere in the Club, and the
-          spelled-out belt sits beside your name on the leaderboard and on your profile. It is the
-          one credential here that can only be earned.
-        </p>
-        <div className="flex flex-wrap gap-x-6 gap-y-3">
-          <TextAction href="/progress">Your profile</TextAction>
-          <TextAction href="/missions">Ways to earn today</TextAction>
+      {/* ── THE FOOTER BAR — board 22's "Next:" object ───────────────────── */}
+      <Card className="mt-2 flex items-center gap-3 rounded-[14px] px-3.5 py-3">
+        <span className="text-[14px] leading-none" aria-hidden>
+          🎯
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[11.5px] font-bold text-ink">
+            {prog.next ? `Next: ${prog.next.label}` : "Top of the ladder — every belt earned"}
+          </p>
+          <p className="mt-0.5 truncate text-[9.5px] text-soft">
+            {prog.next
+              ? `${prog.toNext.toLocaleString()} XP to go${
+                  prog.nextIsNewBelt ? " — a new belt" : ""
+                }`
+              : `${state.xp.toLocaleString()} XP earned`}
+          </p>
         </div>
-      </section>
+        <MiniMeter pct={prog.pct} />
+      </Card>
+
+      <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
+        <TextAction href="/progress">Your profile</TextAction>
+        <TextAction href="/leaderboard">Leaderboard</TextAction>
+        <TextAction href="/missions">Ways to earn today</TextAction>
+      </div>
     </div>
   );
 }

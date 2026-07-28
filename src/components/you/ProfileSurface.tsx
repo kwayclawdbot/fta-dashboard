@@ -1,65 +1,85 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Pencil, RotateCcw } from "lucide-react";
+import { ArrowRight, ChevronRight, RotateCcw, Settings as SettingsIcon } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
-import { getUserXp, levelProgress } from "@/lib/xp";
-import { beltForXp } from "@/lib/belts";
+import { getUserXp, levelProgress, type XpKind } from "@/lib/xp";
+import { beltForXp, beltProgress } from "@/lib/belts";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
-import { TickerTile, TickerTileStrip } from "@/components/canvas2";
 import {
-  DisplayHead,
-  SectionRule,
-  Ledger,
-  LedgerLink,
-  LedgerRow,
-  MeasureStrip,
-  Meter,
-  EmptyLine,
+  BoardMast,
+  Card,
+  WarmCard,
+  Eyebrow,
+  ListHead,
+  Dial,
+  RingAvatar,
+  StatTile,
+  StatTileRow,
+  BarRow,
+  StreakPips,
+  RowCard,
+  EmptyCard,
   TextAction,
+  MiniMeter,
   dash,
-} from "@/components/f0/parts";
+} from "./parts";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   YOU — the member's own profile surface (route: /progress).
-   Canvas v2, App Light board 07 "You · Profile".
+   YOU — the member's own profile. Route: /progress.
+   Built to App Light board 07 "You · Profile", object for object.
 
-   Composition, top → bottom:
-     · YOU masthead (display-1) + eyebrow
-     · IDENTITY HERO — the one obsidian field on the surface: avatar, name,
-       belt/level, XP, next-level meter, participation-streak marks
-     · YOUR NUMBERS — positions / conviction / changed minds as a measure strip,
-       then the rest of the participation record as a hairline ledger
-     · WHERE YOU STAND — current positions as canvas ticker tiles
-     · CHANGED YOUR MIND — the flip ledger; the update, not the ego
-     · CREDENTIALS — the badge shelf as chips, not tiles
-     · LEARNING — course progress as ledger rows with meters
-     · RECENT — completed lessons as a dated ledger
-     · rows: My posts · Saved · Settings
+   THE BOARD, TOP → BOTTOM, AND WHAT EACH OBJECT ACTUALLY SHOWS
+   ────────────────────────────────────────────────────────────────────────
+   drawn                              ships
+   ─────────────────────────────────  ──────────────────────────────────────
+   "you" wordmark + ⚙                 same; ⚙ links to /settings
+   92px conic-ring avatar             same, real avatar/initials
+   name (script, orange)              real display name
+   "■ Black Belt ★"                   real belt from lifetime XP (beltForXp)
+   "Top 2% of 25,842 members"         "Level N · <name> · @handle" — the app
+                                      computes no member percentile, and a
+                                      percentile of members is a ranking claim
+   87 OPINION SCORE dial              XP PROGRESS TO THE NEXT BELT. Numeral =
+                                      percent into the current band, label =
+                                      the belt it is progress toward. At the
+                                      top of the ladder: 100 / BLACK BELT.
+   "INFLUENCE 1.8x / your opinions    CONVICTION — the share of the member's
+    carry 1.8x more weight"           own positions called bullish. A sentiment
+                                      measure (lime by law), not a weighting of
+                                      whose opinion counts more.
+   "STRONGEST AREAS / Top 4%" bars    WHERE YOUR REPS COME FROM — the member's
+                                      top XP sources as a share of their own
+                                      XP. Percentiles against other members are
+                                      not computed anywhere in this app.
+   142 Opinions                       Positions taken
+   71% Accuracy (green)               Research notes. Neither the accuracy nor
+                                      the green ships — green is price.
+   382 People Influenced              Respect received
+   47 Changed Minds                   Changed minds (unchanged — a behaviour)
+   6 Circles Hosted                   Club posts
+   🔥 "16 days in a row" + 7 pips     REAL daily participation streak from
+                                      xp_events; each pip is one of the last
+                                      seven days, filled only where that day
+                                      carries an award.
+   RECENT CALLS · ✓ +6.4% / ✗ −2.1%   RECENT POSITIONS — the dated positions
+                                      ledger: company, which way, when. No
+                                      outcome, no ✓/✗, no percentage.
 
-   ── WHAT THE CANVAS DRAWS HERE THAT DOES NOT SHIP ─────────────────────────
-   Board 07 puts an `87 OPINION SCORE` conic dial beside the member's name, an
-   `Accuracy 71%` measure in the stat row, `Influence 1.8x` ("your opinions
-   carry 1.8x more weight"), `People Influenced 382`, a "Strongest areas /
-   Top 4%" percentile block, and a "Recent calls" ledger scored `✓ +6.4%` /
-   `✗ −2.1%`. None of it ships, and the reason is one reason: publishing a
-   member's hit rate — or any score derived from it — is a performance claim on
-   the most shareable surface in the app. The percentile block fails a second
-   test (no percentile of anything is computed anywhere) and the dial fails a
-   third (plan §1.5: the club-sentiment arc stays the only radial gauge).
+   Below the board the app needs three things a phone mock does not: the
+   credential shelf (Club Screens board 09's BADGES object), learning progress,
+   and the rows into posts / saved / settings. They are composed from the same
+   card vocabulary so the surface stays one system.
 
-   What replaces them is CONVICTION and PARTICIPATION, from
-   `member_participation` (migration 196): positions taken, share of them
-   bullish, minds changed in public, respect received for those updates, notes
-   and posts written, weeks active — every one a behaviour the member performed
-   rather than a verdict on whether they were right.
+   REAL DATA ONLY. profiles · xp_events (XP, streak, per-source split) ·
+   member_participation + member_flips (migration 196) · ticker_stances ·
+   family_watchlist · lesson_progress + courses · badges. Any measure the feed
+   cannot supply renders "—". Nothing is fabricated.
 
-   REAL DATA ONLY. Every number is a real read: profiles · xp_events (XP, level,
-   participation streak) · member_participation + member_flips RPCs ·
-   ticker_stances · family_watchlist · lesson_progress + courses.
-   Any measure the feed cannot supply renders "—". Nothing is fabricated.
+   NO CLOCK IN RENDER. The streak window and every date label are resolved
+   inside the load, not read from `Date.now()` during a render pass.
    ══════════════════════════════════════════════════════════════════════════ */
 
 interface CourseLine {
@@ -69,18 +89,11 @@ interface CourseLine {
   total: number;
 }
 
-interface RecentLine {
-  lessonId: string;
-  title: string;
-  completedAt: string;
-}
-
-interface FlipLine {
-  id: string;
+interface PositionLine {
   ticker: string;
-  from_stance: string | null;
-  to_stance: string;
-  created_at: string;
+  stance: string;
+  /** Pre-formatted in the load — never derived from a clock during render. */
+  when: string;
 }
 
 interface Participation {
@@ -93,38 +106,45 @@ interface Participation {
   weeksActive: number;
 }
 
+interface SourceLine {
+  label: string;
+  xp: number;
+  /** Share of the member's own counted XP, 0–100. */
+  pct: number;
+}
+
 interface ProfileState {
-  userId: string | null;
   name: string;
   username: string | null;
   avatarUrl: string | null;
   since: string | null;
   xp: number;
-  /** distinct trailing ISO-weeks carrying an xp_event */
-  streakWeeks: number;
-  /** null until the participation RPC answers — "—" until then, never 0 */
+  /** Trailing run of days carrying an xp_event, ending today or yesterday. */
+  streakDays: number;
+  /** Oldest → newest, one entry per day for the last seven days. */
+  streakWindow: boolean[];
+  /** Top XP sources for the "strongest areas" object. Empty until read. */
+  sources: SourceLine[];
+  /** null until the participation RPC answers — "—" until then, never 0. */
   part: Participation | null;
-  positions: string[];
-  flips: FlipLine[];
+  positions: PositionLine[];
   saved: number | null;
   courses: CourseLine[];
-  recent: RecentLine[];
 }
 
 const EMPTY: ProfileState = {
-  userId: null,
   name: "",
   username: null,
   avatarUrl: null,
   since: null,
   xp: 0,
-  streakWeeks: 0,
+  streakDays: 0,
+  streakWindow: [false, false, false, false, false, false, false],
+  sources: [],
   part: null,
   positions: [],
-  flips: [],
   saved: null,
   courses: [],
-  recent: [],
 };
 
 const STANCE_WORD: Record<string, string> = {
@@ -133,37 +153,37 @@ const STANCE_WORD: Record<string, string> = {
   neutral: "Neutral",
 };
 
-/** Monday-anchored ISO-week key for a date. */
-function weekKey(d: Date): string {
-  const t = new Date(d);
-  t.setHours(0, 0, 0, 0);
-  t.setDate(t.getDate() - ((t.getDay() + 6) % 7));
-  return t.toISOString().slice(0, 10);
+/** Board labels for the XP sources. Keyed off the shipped XpKind union so a new
+    award kind cannot appear here as an unlabelled bar. */
+const SOURCE_LABEL: Record<XpKind, string> = {
+  lesson: "Lessons",
+  quiz: "Quizzes",
+  flashcards: "Flashcards",
+  game: "Games",
+  community: "Club posts",
+  rsvp: "Live sessions",
+  bonus: "Bonuses",
+};
+
+/** Local-calendar day key. Local, not UTC: a streak is a human-day streak, and
+    a member in UTC-8 posting at 6pm must not have it counted as tomorrow. */
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
 }
 
-/* THE VIEWER'S CLOCK, hour-bucketed. `relative()` read `Date.now()` and was
-   called straight from JSX, which is the impure-call rule and is non-idempotent
-   (the same row re-renders as "1h" then "2h" with no data change). Snapshot is
-   stable between calls; `null` on the server so the first client render agrees,
-   and an unresolved clock renders an honest em-dash rather than a wrong age. */
-const SUBSCRIBE = () => () => {};
-const CLIENT_HOUR = () => Math.floor(Date.now() / 3_600_000);
-const SERVER_HOUR = () => null;
+function shiftDays(d: Date, n: number): Date {
+  const t = new Date(d);
+  t.setDate(t.getDate() + n);
+  return t;
+}
 
-function relative(dateStr: string, nowHour: number | null): string {
-  if (nowHour == null) return "—";
-  const diff = nowHour * 3_600_000 - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${Math.max(mins, 0)}m`;
-  const hours = Math.floor(diff / 3600000);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(diff / 86400000);
-  return days === 1 ? "1d" : `${days}d`;
+function monthDay(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function ProfileSurface() {
-  /** Viewer clock, hour-bucketed. See `relative` above. */
-  const nowHour = useSyncExternalStore(SUBSCRIBE, CLIENT_HOUR, SERVER_HOUR);
   const [state, setState] = useState<ProfileState>(EMPTY);
   const [badges, setBadges] = useState<BadgeRow[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -200,16 +220,15 @@ export default function ProfileSurface() {
         getUserXp(supabase, user.id).catch(() => 0),
         supabase
           .from("xp_events")
-          .select("created_at")
+          .select("amount, kind, created_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(500),
         supabase
           .from("lesson_progress")
-          .select("lesson_id, completed_at")
+          .select("lesson_id")
           .eq("user_id", user.id)
-          .eq("status", "completed")
-          .order("completed_at", { ascending: false }),
+          .eq("status", "completed"),
         supabase
           .from("courses")
           .select("slug, title, modules(lessons(id))")
@@ -219,27 +238,49 @@ export default function ProfileSurface() {
       ]);
 
       const profile = profileRes.data;
+      const events = (eventsRes.data ?? []) as {
+        amount: number;
+        kind: XpKind;
+        created_at: string;
+      }[];
 
-      // ── participation streak — trailing run of weeks with an xp_event ─────
-      let streakWeeks = 0;
-      const events = (eventsRes.data ?? []) as { created_at: string }[];
-      if (events.length > 0) {
-        const weeks = new Set(events.map((e) => weekKey(new Date(e.created_at))));
-        let w = weekKey(new Date());
-        while (weeks.has(w)) {
-          streakWeeks += 1;
-          const prev = new Date(w);
-          prev.setDate(prev.getDate() - 7);
-          w = prev.toISOString().slice(0, 10);
-        }
+      // ── streak — trailing run of DAYS carrying an award, plus the seven-day
+      //    window the board's pips render. Today with nothing yet does not
+      //    break a streak, so the run may end today or yesterday.
+      const days = new Set(events.map((e) => dayKey(new Date(e.created_at))));
+      const today = new Date();
+      const streakWindow: boolean[] = [];
+      for (let i = 6; i >= 0; i -= 1) streakWindow.push(days.has(dayKey(shiftDays(today, -i))));
+      let streakDays = 0;
+      let cursor = days.has(dayKey(today)) ? today : shiftDays(today, -1);
+      while (days.has(dayKey(cursor))) {
+        streakDays += 1;
+        cursor = shiftDays(cursor, -1);
       }
 
+      // ── where the reps come from — the member's own XP split by source.
+      //    A share of their own record, never a percentile against anyone.
+      const byKind = new Map<XpKind, number>();
+      let countedXp = 0;
+      for (const e of events) {
+        const amt = Number(e.amount) || 0;
+        if (amt <= 0) continue;
+        countedXp += amt;
+        byKind.set(e.kind, (byKind.get(e.kind) ?? 0) + amt);
+      }
+      const sources: SourceLine[] = [...byKind.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([kind, amount]) => ({
+          label: SOURCE_LABEL[kind] ?? kind,
+          xp: amount,
+          pct: countedXp > 0 ? Math.round((amount / countedXp) * 100) : 0,
+        }));
+
       // ── learning ledger from the single nested course query ───────────────
-      const completed = (progressRes.data ?? []) as {
-        lesson_id: string;
-        completed_at: string | null;
-      }[];
-      const completedIds = new Set(completed.map((p) => p.lesson_id));
+      const completedIds = new Set(
+        ((progressRes.data ?? []) as { lesson_id: string }[]).map((p) => p.lesson_id)
+      );
       type NestedCourse = {
         slug: string;
         title: string;
@@ -258,11 +299,8 @@ export default function ProfileSurface() {
       }
 
       setState({
-        userId: user.id,
         name:
-          (profile?.display_name as string | null) ||
-          user.email?.split("@")[0] ||
-          "Member",
+          (profile?.display_name as string | null) || user.email?.split("@")[0] || "Member",
         username: (profile?.username as string | null) ?? null,
         avatarUrl: (profile?.avatar_url as string | null) ?? null,
         since: profile?.created_at
@@ -272,13 +310,13 @@ export default function ProfileSurface() {
             })
           : null,
         xp,
-        streakWeeks,
+        streakDays,
+        streakWindow,
+        sources,
         part: null,
         positions: [],
-        flips: [],
         saved: null,
         courses,
-        recent: [],
       });
 
       // Core content is in — paint. Everything below fills in behind it.
@@ -286,44 +324,20 @@ export default function ProfileSurface() {
       clearTimeout(timeout);
       setLoading(false);
 
-      // ── recent lesson titles (needs a second hop on the ids) ──────────────
-      if (completed.length > 0) {
-        const ids = completed.slice(0, 5).map((p) => p.lesson_id);
-        const { data: lessons } = await supabase
-          .from("lessons")
-          .select("id, title")
-          .in("id", ids);
-        const titles = new Map(
-          (lessons ?? []).map((l: { id: string; title: string }) => [l.id, l.title])
-        );
-        setState((s) => ({
-          ...s,
-          recent: completed
-            .slice(0, 5)
-            .filter((p) => p.completed_at)
-            .map((p) => ({
-              lessonId: p.lesson_id,
-              title: titles.get(p.lesson_id) ?? "Lesson",
-              completedAt: p.completed_at as string,
-            })),
-        }));
-      }
-
-      // ── participation, positions, flips, saved ────────────────────────────
+      // ── participation, positions, saved ───────────────────────────────────
       // member_participation is the authority on the counts: feed_posts SELECT
       // is family-scoped, so counting posts from the client undercounts and
       // then prints the undercount as a total. Each read is guarded on its own,
       // so one missing table never blanks the others — a failed read leaves the
-      // measure null and the strip renders "—".
-      const [partRes, stanceRes, flipRes, savedRes] = await Promise.all([
+      // measure null and the tile renders "—".
+      const [partRes, stanceRes, savedRes] = await Promise.all([
         supabase.rpc("member_participation", { p_user_id: user.id }),
         supabase
           .from("ticker_stances")
-          .select("ticker, updated_at")
+          .select("ticker, stance, updated_at")
           .eq("user_id", user.id)
           .order("updated_at", { ascending: false })
-          .limit(12),
-        supabase.rpc("member_flips", { p_user_id: user.id, p_limit: 4 }),
+          .limit(6),
         supabase
           .from("family_watchlist")
           .select("id", { count: "exact", head: true })
@@ -357,10 +371,15 @@ export default function ProfileSurface() {
           : null,
         positions: stanceRes.error
           ? []
-          : ((stanceRes.data ?? []) as { ticker: string }[]).map((r) =>
-              r.ticker.toUpperCase()
-            ),
-        flips: flipRes.error ? [] : ((flipRes.data ?? []) as FlipLine[]),
+          : ((stanceRes.data ?? []) as {
+              ticker: string;
+              stance: string;
+              updated_at: string;
+            }[]).map((r) => ({
+              ticker: r.ticker.toUpperCase(),
+              stance: STANCE_WORD[r.stance] ?? r.stance,
+              when: monthDay(r.updated_at),
+            })),
         saved: savedRes.error ? null : (savedRes.count ?? null),
       }));
 
@@ -387,7 +406,7 @@ export default function ProfileSurface() {
   if (failed) {
     return (
       <div className="mx-auto max-w-2xl py-16">
-        <EmptyLine
+        <EmptyCard
           title="Your profile didn't load"
           body="Something hiccuped on our end — nothing you've earned is affected. Give it another go."
           action={
@@ -398,7 +417,7 @@ export default function ProfileSurface() {
                 void load();
               }}
             >
-              <RotateCcw className="h-4 w-4" /> Try again
+              <RotateCcw className="h-3.5 w-3.5" /> Try again
             </TextAction>
           }
         />
@@ -406,396 +425,381 @@ export default function ProfileSurface() {
     );
   }
 
-  const prog = levelProgress(state.xp);
+  const lvl = levelProgress(state.xp);
   const belt = beltForXp(state.xp);
-  const awarded = (badges ?? []).filter((b) => b.awarded);
-  const postsHref = state.username ? `/u/${state.username}` : "/community";
+  const bp = beltProgress(state.xp);
   const part = state.part;
   const conviction =
-    part && part.stances > 0
-      ? Math.round((part.bullStances / part.stances) * 100)
-      : null;
+    part && part.stances > 0 ? Math.round((part.bullStances / part.stances) * 100) : null;
+  const awarded = (badges ?? []).filter((b) => b.awarded);
+  const postsHref = state.username ? `/u/${state.username}` : "/community";
+
+  // THE DIAL. Never an opinion score: the sweep and the numeral are XP progress
+  // into the current belt band, and the label names the belt it is progress
+  // toward. At the top of the ladder there is nothing to be progress toward, so
+  // it reads the earned belt at a full sweep rather than an invented target.
+  const dialLabel: [string, string] = bp.next
+    ? ["TO", bp.next.belt.name.toUpperCase()]
+    : [belt.belt.name.toUpperCase(), "BELT"];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-16">
-      <DisplayHead
-        eyebrow="Cheat Code Club"
-        title="You"
-        lede="Everything you've built here — your belt, your reps, and the record of the work behind them."
-      />
-
-      {/* ── IDENTITY HERO — the one obsidian field on this surface ─────────
-          f0-hero-field is obsidian in BOTH themes by design, so the type and
-          hairlines INSIDE it are theme-invariant cream/white-alpha — the same
-          rule that governs type on the orange action band. This is the only
-          place on the surface where a non-token colour is correct; everything
-          outside the field is ink / soft / sand / paper.
-
-          The canvas puts an 87 OPINION SCORE dial in the top-right of this
-          block. The belt swatch takes that position instead: earned from reps,
-          verifiable, and not a rating of anyone's opinions. */}
-      <section className="f0-hero-field f0-grain p-6 sm:p-7">
-        <div className="relative flex items-center gap-4">
-          <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 ring-2 ring-volt-500">
-            {state.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={state.avatarUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="font-display text-[24px] font-extrabold text-[#F7F3EA]">
-                {state.name.slice(0, 1).toUpperCase()}
-              </span>
-            )}
-          </span>
-
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate font-display text-display-3 font-extrabold text-[#F7F3EA]">
-              {state.name}
-            </h2>
-            <p className="mt-1 font-mono text-[12px] text-[#F7F3EA]/60">
-              {state.username ? `@${state.username}` : "Club member"}
-              {state.since ? ` · since ${state.since}` : ""}
-            </p>
-          </div>
-
+    <div className="mx-auto max-w-2xl space-y-4 pb-16">
+      <BoardMast
+        word="you"
+        action={
           <Link
             href="/settings"
-            className="f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/25 px-3.5 py-1.5 font-display text-[13px] font-bold text-[#F7F3EA] transition-colors hover:border-volt-400 hover:text-volt-300"
+            aria-label="Settings"
+            className="f0-focus f0-press inline-grid h-9 w-9 place-items-center rounded-full text-soft transition-colors hover:text-ink"
           >
-            <Pencil className="h-3.5 w-3.5" /> Edit
+            <SettingsIcon className="h-[18px] w-[18px]" />
           </Link>
+        }
+      />
+
+      {/* ── IDENTITY ────────────────────────────────────────────────────────
+          Avatar · name · belt · dial, laid out as drawn. */}
+      <section className="flex items-center gap-4 pt-2 sm:gap-5">
+        <RingAvatar name={state.name} avatarUrl={state.avatarUrl} />
+
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate font-display text-[24px] font-extrabold leading-tight tracking-[-0.02em] text-gold-700">
+            {state.name}
+          </h2>
+          {/* The belt line. Belt colour is intrinsic — a blue belt is blue in
+              both themes — so the swatch is an inline style, not a token, and
+              purple is legal here and nowhere else in the chrome. */}
+          <p className="mt-1.5 flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-3.5 w-3.5 shrink-0 rounded-[3px]"
+              style={{
+                backgroundColor: belt.belt.hex,
+                boxShadow: `inset 0 0 0 1px ${belt.belt.borderHex}`,
+              }}
+            />
+            <span className="font-display text-[12.5px] font-bold text-ink">{belt.label}</span>
+            <span className="text-[12px] text-gold-700" aria-hidden>
+              ★
+            </span>
+          </p>
+          <p className="mt-1 truncate text-[11px] text-soft">
+            Level {lvl.current.level} · {lvl.current.name}
+            {state.username ? ` · @${state.username}` : ""}
+          </p>
         </div>
 
-        <div className="relative mt-6 border-t border-white/12 pt-5">
-          <div className="flex items-end justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
-                Your belt
-              </p>
-              {/* The belt swatch is intrinsic colour — a blue belt is blue in
-                  every theme — so it is an inline style, not a token. Purple is
-                  a legal BELT colour and appears nowhere else in the chrome. */}
-              <p className="mt-1.5 flex items-center gap-2.5">
-                <span
-                  aria-hidden
-                  className="h-5 w-5 shrink-0 rounded-[5px] ring-1 ring-white/30"
-                  style={{ backgroundColor: belt.belt.hex }}
+        <Dial pct={bp.pct} value={String(bp.pct)} label={dialLabel} />
+      </section>
+
+      {/* ── CONVICTION + WHERE YOUR REPS COME FROM ──────────────────────────
+          The board's two-card row: a single big measure on the left, a stack of
+          labelled bars on the right. */}
+      <section className="flex flex-col gap-3 sm:flex-row">
+        <Card className="rounded-[16px] p-3.5 sm:flex-1">
+          <Eyebrow>Conviction</Eyebrow>
+          {/* Lime is the community-sentiment colour by law, and conviction is
+              the Club's own sentiment measure — the share of this member's
+              positions they called bullish. It is not a market number and not a
+              score of whether they were right. */}
+          <p className="mt-2 font-display text-[26px] font-extrabold leading-none tracking-[-0.02em] text-sentiment">
+            {conviction == null ? "—" : `${conviction}%`}
+          </p>
+          <p className="mt-1.5 text-[10px] leading-[1.45] text-soft">
+            The share of your positions you&apos;ve called bullish
+          </p>
+        </Card>
+
+        <Card className="rounded-[16px] p-3.5 sm:flex-[1.5]">
+          <Eyebrow>Where your reps come from</Eyebrow>
+          {state.sources.length === 0 ? (
+            <p className="mt-2.5 text-[10.5px] leading-relaxed text-soft">
+              Nothing has earned XP yet. Finish a lesson or post in the Club and this
+              fills in with your own split.
+            </p>
+          ) : (
+            <div className="mt-2.5 space-y-2.5">
+              {state.sources.map((s) => (
+                <BarRow
+                  key={s.label}
+                  label={s.label}
+                  meta={`${s.pct}%`}
+                  pct={s.pct}
                 />
-                <span className="font-display text-display-2 font-extrabold text-[#F7F3EA]">
-                  {belt.label}
-                </span>
-              </p>
-              <p className="mt-1.5 font-mono text-[12px] text-[#F7F3EA]/60">
-                Level {prog.current.level} · {prog.current.name}
-              </p>
+              ))}
             </div>
-            <p className="shrink-0 text-right">
-              <span className="font-mono text-[22px] font-semibold tabular-nums text-[#F7F3EA]">
-                {state.xp.toLocaleString()}
-              </span>
-              <span className="ml-1 font-display text-[12px] font-bold text-volt-400">
-                XP
-              </span>
-            </p>
-          </div>
+          )}
+        </Card>
+      </section>
 
-          <Meter pct={prog.pct} onDark className="mt-4" />
-          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <p className="font-mono text-[12px] text-[#F7F3EA]/60">
-              {prog.next
-                ? `${prog.toNext.toLocaleString()} XP to Level ${prog.next.level} · ${prog.next.name}`
-                : "Top of the ladder — every level earned"}
-            </p>
-            <Link
-              href="/belts"
-              className="f0-focus inline-flex items-center gap-1 rounded font-display text-[12px] font-bold text-volt-400 transition-colors hover:text-volt-300"
-            >
-              See the ladder <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
+      {/* ── THE FIVE MEASURES ───────────────────────────────────────────────
+          Board tiles, board order. Accuracy is gone; the rest are counts of
+          things the member did. */}
+      <section>
+        <StatTileRow>
+          <StatTile value={dash(part?.stances)} label="Positions" loading={part == null} />
+          <StatTile value={dash(part?.research)} label="Research notes" loading={part == null} />
+          <StatTile value={dash(part?.respect)} label="Respect" loading={part == null} />
+          <StatTile value={dash(part?.flips)} label="Changed Minds" loading={part == null} />
+          <StatTile value={dash(part?.posts)} label="Club posts" loading={part == null} />
+        </StatTileRow>
+      </section>
+
+      {/* ── STREAK ──────────────────────────────────────────────────────────
+          The board's warm card. The pips are the last seven days and are filled
+          only where that day carries a real award, so a quiet week looks quiet. */}
+      <WarmCard className="flex items-center gap-3.5 px-4 py-3.5">
+        <span className="text-[26px] leading-none" aria-hidden>
+          🔥
+        </span>
+        <div className="min-w-0 flex-1">
+          <Eyebrow charged>Your streak</Eyebrow>
+          <p className="mt-1 font-display text-[19px] font-extrabold leading-none text-ink">
+            {state.streakDays}{" "}
+            <span className="font-display text-[12px] font-semibold text-soft">
+              {state.streakDays === 1 ? "day in a row" : "days in a row"}
+            </span>
+          </p>
         </div>
+        <StreakPips days={state.streakWindow} />
+      </WarmCard>
 
-        {/* participation streak — one mark per trailing week, capped at the
-            8-week window the marks can honestly hold. */}
-        <div className="relative mt-5 flex items-center justify-between gap-4 border-t border-white/12 pt-4">
-          <div>
-            <p className="text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
-              Participation streak
-            </p>
-            <p className="mt-1 font-display text-[17px] font-extrabold text-[#F7F3EA]">
-              {state.streakWeeks === 0
-                ? "No active streak"
-                : `${state.streakWeeks} ${state.streakWeeks === 1 ? "week" : "weeks"}`}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5" aria-hidden>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <span
+      {/* ── RECENT POSITIONS ────────────────────────────────────────────────
+          The board's "Recent calls" object, minus the verdict. Direction is
+          carried by the WORD, never by hue: bull/bear in green/red would put
+          the price ramp on a community object, and there is no price on this
+          row to justify it. The right-hand column is the DATE the position was
+          last set — not a return, not a ✓, not an ✗. */}
+      <section className="space-y-2.5 pt-2">
+        <ListHead action={<TextAction href="/discover">See all</TextAction>}>
+          Recent positions
+        </ListHead>
+        {state.part == null ? (
+          <div className="space-y-2" aria-busy="true">
+            {[0, 1].map((i) => (
+              <div
                 key={i}
-                className={`h-5 w-1.5 rounded-full ${
-                  i < Math.min(8, state.streakWeeks)
-                    ? "bg-volt-500"
-                    : "bg-white/15"
-                }`}
+                className="club-b-card h-[46px] rounded-[12px] motion-safe:animate-pulse"
               />
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── YOUR NUMBERS ─────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionRule>Your numbers</SectionRule>
-        <MeasureStrip
-          items={[
-            { label: "Positions", value: dash(part?.stances) },
-            {
-              label: "Conviction",
-              value: conviction == null ? "—" : `${conviction}%`,
-              tone: "sentiment",
-            },
-            { label: "Changed minds", value: dash(part?.flips) },
-          ]}
-        />
-        <Ledger>
-          <LedgerRow label="Research notes" value={dash(part?.research)} />
-          <LedgerRow label="Club posts" value={dash(part?.posts)} />
-          <LedgerRow
-            label="Respect received"
-            sub="Members acknowledging an update you made in public"
-            value={dash(part?.respect)}
-          />
-          <LedgerRow label="Weeks active" value={dash(part?.weeksActive)} />
-        </Ledger>
-        <p className="text-[13px] leading-relaxed text-soft">
-          Conviction is the share of your positions you called bullish — the
-          Club&apos;s own sentiment measure, not a market number, and never a
-          score of whether you were right. A measure reads &ldquo;—&rdquo; until
-          you&apos;ve given it something real.
-        </p>
-      </section>
-
-      {/* ── WHERE YOU STAND ──────────────────────────────────────────────────
-          The canvas's ticker tile at its intended density. No delta on these:
-          this strip is a record of POSITIONS TAKEN, and a price beside each one
-          would turn a participation record into a scoreboard. Below the floor
-          the strip pads with dashed slots rather than collapsing — a member with
-          two positions should look like someone getting started, not broken. */}
-      <section className="space-y-4">
-        <SectionRule
-          action={<TextAction href="/discover">Find one</TextAction>}
-        >
-          Where you stand
-        </SectionRule>
-        {state.positions.length === 0 ? (
-          <EmptyLine
+        ) : state.positions.length === 0 ? (
+          <EmptyCard
             title="No positions yet"
             body="Take a position on a company you've actually looked at — bullish, bearish or neutral. It lands here, and you can change it any time."
             action={
               <TextAction href="/discover">
-                Browse companies <ArrowRight className="h-3.5 w-3.5" />
+                Browse companies <ArrowRight className="h-3 w-3" />
               </TextAction>
             }
           />
         ) : (
-          <>
-            <TickerTileStrip minSlots={5} size="md">
-              {state.positions.map((t) => (
-                <TickerTile
-                  key={t}
-                  ticker={t}
-                  showDelta={false}
-                  href={`/research/${encodeURIComponent(t)}`}
-                />
-              ))}
-            </TickerTileStrip>
-            <p className="text-[13px] text-soft">
-              Companies you&apos;ve taken a position on. Tap one to revisit the
-              call.
-            </p>
-          </>
-        )}
-      </section>
-
-      {/* ── CHANGED YOUR MIND ────────────────────────────────────────────────
-          A flip is rendered as a BEHAVIOUR: which company, which way, when.
-          Direction is carried by the words and by reading order — never by hue,
-          because bull/bear in green/red would put the price ramp on a community
-          object. Nothing here says whether the change turned out well. */}
-      <section className="space-y-4">
-        <SectionRule
-          action={
-            <TextAction href="/community/changed-my-mind">All flips</TextAction>
-          }
-        >
-          Changed your mind
-        </SectionRule>
-        {state.flips.length === 0 ? (
-          <EmptyLine
-            title="No changes of mind yet"
-            body="The Club rewards the update, not the ego. When new evidence moves you off a position, say so — it gets recorded here."
-          />
-        ) : (
-          <Ledger>
-            {state.flips.map((f) => (
-              <LedgerRow
-                key={f.id}
-                label={
-                  <span className="font-mono text-[13px] font-semibold">
-                    {f.ticker.toUpperCase()}
+          <div className="space-y-2">
+            {state.positions.map((p) => (
+              <RowCard
+                key={p.ticker}
+                href={`/research/${encodeURIComponent(p.ticker)}`}
+                lead={
+                  <span className="font-mono text-[11px] font-semibold text-ink">
+                    {p.ticker}
                   </span>
                 }
-                sub={`${
-                  f.from_stance ? STANCE_WORD[f.from_stance] ?? f.from_stance : "No position"
-                } → ${STANCE_WORD[f.to_stance] ?? f.to_stance}`}
-                value={relative(f.created_at, nowHour)}
+                title={<span className="text-[11.5px] font-normal text-soft">{p.stance}</span>}
+                value={
+                  <span className="font-mono text-[11px] tabular-nums text-soft">{p.when}</span>
+                }
               />
             ))}
-          </Ledger>
+          </div>
         )}
       </section>
 
-      {/* ── CREDENTIALS ──────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <SectionRule action={<TextAction href="/leaderboard">Leaderboard</TextAction>}>
-          Credentials
-        </SectionRule>
+      {/* ── CREDENTIALS — Club Screens board 09's BADGES shelf ─────────────── */}
+      <section className="space-y-2.5 pt-2">
+        <ListHead action={<TextAction href="/leaderboard">Leaderboard</TextAction>}>
+          Badges
+        </ListHead>
         {badges == null ? (
           <div className="flex gap-2" aria-busy="true">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <span
+            {[0, 1, 2, 3].map((i) => (
+              <div
                 key={i}
-                className="h-8 w-24 rounded-full bg-sand/60 motion-safe:animate-pulse"
+                className="club-b-card h-[86px] w-[92px] shrink-0 rounded-[14px] motion-safe:animate-pulse"
               />
             ))}
           </div>
         ) : awarded.length === 0 ? (
-          <EmptyLine
-            title="No titles yet"
-            body="Credentials are earned, not granted — research a company, show up to a class, finish a lesson. The first one you earn appears here."
-            action={<TextAction href="/discover">Find something to research <ArrowRight className="h-3.5 w-3.5" /></TextAction>}
+          <EmptyCard
+            title="No badges yet"
+            body="Badges are earned, not granted — research a company, show up to a class, finish a lesson. The first one you earn appears here."
+            action={
+              <TextAction href="/discover">
+                Find something to research <ArrowRight className="h-3 w-3" />
+              </TextAction>
+            }
           />
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="club2-track flex gap-2 overflow-x-auto pb-1">
             {(badges ?? []).map((b) => (
-              <span
+              <div
                 key={b.slug}
                 title={b.subtitle ?? undefined}
-                /* .f0-chip carries structure only and ships with NO padding —
-                   see the report note. Padding is the caller's until it lands
-                   on the primitive. */
-                className={`f0-chip px-3.5 py-1.5 font-display text-[13px] font-bold ${
-                  b.awarded ? "f0-chip-on" : "text-soft"
+                className={`club-b-card flex w-[92px] shrink-0 flex-col items-center gap-2 rounded-[14px] px-2 py-3 text-center ${
+                  b.awarded ? "" : "opacity-45"
                 }`}
               >
-                {b.title}
-              </span>
+                <span
+                  className="grid h-8 w-8 place-items-center rounded-full font-display text-[13px] font-extrabold"
+                  style={
+                    b.awarded
+                      ? { background: "var(--accent-solid)", color: "var(--accent-on)" }
+                      : { background: "var(--sand)", color: "var(--soft)" }
+                  }
+                  aria-hidden
+                >
+                  {b.title.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="font-display text-[10px] font-bold leading-tight text-ink">
+                  {b.title}
+                </span>
+              </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* ── LEARNING ─────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule action={<TextAction href="/courses">Learn</TextAction>}>
-          Learning
-        </SectionRule>
+      {/* ── LEARNING ────────────────────────────────────────────────────────
+          The board's card row with the mini meter on the right (board 22's
+          footer object at list scale). */}
+      <section className="space-y-2.5 pt-2">
+        <ListHead action={<TextAction href="/courses">Learn</TextAction>}>Learning</ListHead>
         {state.courses.length === 0 ? (
-          <EmptyLine
+          <EmptyCard
             title="No path started"
             body="Your course progress shows up here the moment you open a lesson."
-            action={<TextAction href="/courses">Browse the library <ArrowRight className="h-3.5 w-3.5" /></TextAction>}
+            action={
+              <TextAction href="/courses">
+                Browse the library <ArrowRight className="h-3 w-3" />
+              </TextAction>
+            }
           />
         ) : (
-          <Ledger>
+          <div className="space-y-2">
             {state.courses.map((c) => {
               const pct = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0;
               return (
-                <Link
+                <RowCard
                   key={c.slug}
                   href={`/courses/${c.slug}`}
-                  className="f0-ledger-row f0-focus group block"
-                >
-                  <div className="flex w-full items-center justify-between gap-4">
-                    <p className="min-w-0 flex-1 truncate font-display text-[15px] font-bold text-ink">
-                      {c.title}
-                    </p>
-                    <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-soft">
-                      {c.done}/{c.total}
+                  title={c.title}
+                  sub={`${c.done} of ${c.total} lessons`}
+                  value={
+                    <span className="flex items-center gap-2.5">
+                      <span className="font-mono text-[11px] tabular-nums text-soft">
+                        {pct}%
+                      </span>
+                      <MiniMeter pct={pct} />
                     </span>
-                  </div>
-                  <Meter pct={pct} className="mt-2 w-full" />
-                </Link>
+                  }
+                />
               );
             })}
-          </Ledger>
+          </div>
         )}
       </section>
 
-      {/* ── RECENT ───────────────────────────────────────────────────────── */}
-      {state.recent.length > 0 && (
-        <section className="space-y-4">
-          <SectionRule>Recently finished</SectionRule>
-          <Ledger>
-            {state.recent.map((r) => (
-              <LedgerRow
-                key={r.lessonId}
-                label={r.title}
-                value={relative(r.completedAt, nowHour)}
-              />
-            ))}
-          </Ledger>
-        </section>
-      )}
-
-      {/* ── ROWS ─────────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>Yours</SectionRule>
-        <Ledger>
-          <LedgerLink
+      {/* ── YOURS ───────────────────────────────────────────────────────── */}
+      <section className="space-y-2.5 pt-2">
+        <ListHead charged={false}>Yours</ListHead>
+        <div className="space-y-2">
+          <RowCard
             href={postsHref}
-            label="My posts"
+            title="My posts"
             sub={
               state.username
                 ? "Your public profile and everything you've said in the Club"
                 : "Pick a handle in Settings to get a public profile"
             }
-            meta={dash(part?.posts)}
+            value={
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-[11px] tabular-nums text-soft">
+                  {dash(part?.posts)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-soft" />
+              </span>
+            }
           />
-          <LedgerLink
+          <RowCard
             href="/watchlist"
-            label="Saved"
+            title="Saved"
             sub="Companies you champion on the watchlist"
-            meta={dash(state.saved)}
+            value={
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-[11px] tabular-nums text-soft">
+                  {dash(state.saved)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-soft" />
+              </span>
+            }
           />
-          <LedgerLink
+          <RowCard
+            href="/belts"
+            title="The belt ladder"
+            sub={
+              bp.next
+                ? `${bp.toNext.toLocaleString()} XP to ${bp.next.label}`
+                : "Top of the ladder — every belt earned"
+            }
+            value={<ChevronRight className="h-3.5 w-3.5 text-soft" />}
+          />
+          <RowCard
             href="/settings"
-            label="Settings"
+            title="Settings"
             sub="Profile, theme, notifications, membership"
+            value={<ChevronRight className="h-3.5 w-3.5 text-soft" />}
           />
-        </Ledger>
+        </div>
       </section>
+
+      <p className="pt-1 text-[11px] leading-relaxed text-soft">
+        {state.since ? `Member since ${state.since}. ` : ""}
+        Every number here is a count of something you did. We don&apos;t publish member
+        accuracy or win rates, so nothing on this page is a claim about returns — a measure
+        reads &ldquo;—&rdquo; until you&apos;ve given it something real.
+      </p>
     </div>
   );
 }
 
-/* LOADING ≠ EMPTY (§0.4): this is the shape of the surface arriving, not the
-   surface's founding state. The founding state is the designed EmptyLine copy
-   in each section above, which only renders once a read has actually answered. */
+/* LOADING ≠ EMPTY: this is the shape of the surface arriving, not the surface's
+   founding state. The founding states are the designed EmptyCard copy in each
+   section above, which only renders once a read has actually answered. */
 function ProfileSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-16" aria-busy="true">
-      <div className="space-y-3">
-        <div className="h-3 w-32 rounded bg-sand/60 motion-safe:animate-pulse" />
-        <div className="h-11 w-40 rounded bg-sand/60 motion-safe:animate-pulse" />
+    <div className="mx-auto max-w-2xl space-y-4 pb-16" aria-busy="true">
+      <div className="h-9 w-24 rounded bg-sand/60 motion-safe:animate-pulse" />
+      <div className="flex items-center gap-4 pt-2">
+        <div className="h-[92px] w-[92px] shrink-0 rounded-full bg-sand/60 motion-safe:animate-pulse" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="h-6 w-40 rounded bg-sand/60 motion-safe:animate-pulse" />
+          <div className="h-3.5 w-28 rounded bg-sand/50 motion-safe:animate-pulse" />
+          <div className="h-3 w-36 rounded bg-sand/40 motion-safe:animate-pulse" />
+        </div>
+        <div className="h-16 w-16 shrink-0 rounded-full bg-sand/60 motion-safe:animate-pulse" />
       </div>
-      <div className="h-64 rounded-[1.5rem] bg-sand/40 motion-safe:animate-pulse" />
-      <div className="h-20 rounded bg-sand/30 motion-safe:animate-pulse" />
-      <TickerTileStrip loading loadingCount={5} />
-      <div className="h-32 rounded bg-sand/30 motion-safe:animate-pulse" />
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="club-b-card h-[104px] rounded-[16px] motion-safe:animate-pulse sm:flex-1" />
+        <div className="club-b-card h-[104px] rounded-[16px] motion-safe:animate-pulse sm:flex-[1.5]" />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="club-b-card h-[52px] min-w-[64px] flex-1 rounded-[13px] motion-safe:animate-pulse"
+          />
+        ))}
+      </div>
+      <div className="club-b-card h-[68px] rounded-[16px] motion-safe:animate-pulse" />
       <span className="sr-only">Loading your profile</span>
     </div>
   );

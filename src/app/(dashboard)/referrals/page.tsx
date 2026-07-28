@@ -15,28 +15,35 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { referralLink, shareTargets, REFERRAL_SIGNUP_XP } from "@/lib/referral";
 import { Sparkle } from "@/components/fic/glyphs/motifs";
-import { DisplayHead, MeasureStrip, SectionRule } from "@/components/f0/parts";
+import {
+  BoardMast,
+  Card,
+  WarmCard,
+  Eyebrow,
+  ListHead,
+  StatTile,
+  StatTileRow,
+} from "@/components/you/parts";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   REFERRALS — no canvas board exists for this surface, so it is derived from
-   the canvas design language rather than invented: the same masthead scale,
-   the same eyebrow + section-rule marking, hairline ledgers instead of boxes,
-   and a stated founding state.
-
-   THE OBJECT ON THIS PAGE IS THE LINK. It used to sit in a bordered `bg-card`
-   rectangle beside a button — a generic card container, and the one thing the
-   brand register bans outright. It is now set as a mono line on a hairline
-   baseline, the same treatment the display-name field gets in Settings: the
-   link reads as a value you can take, not as a widget.
+   REFERRALS — no board in the archive draws this surface, so it is composed
+   from the vocabulary the boards DO draw: the wordmark masthead of board 07,
+   the white rounded card with a hairline border, the warm brand-tinted card
+   for the object that matters most (the link), the mono eyebrow, and the small
+   stat tiles of board 07's five-across strip.
 
    COMMERCIAL COPY IS BYTE-IDENTICAL to the version that shipped. Every string
-   touching the offer — the lede with REFERRAL_SIGNUP_XP, "You earn N XP", the
-   three How-it-works bodies, and the grown-ups-only block — is unchanged text
-   moved between elements, never re-worded.
+   touching the offer — the headline, the lede with REFERRAL_SIGNUP_XP, "You
+   earn N XP", the three How-it-works bodies, and the grown-ups-only block — is
+   unchanged text moved between elements, never re-worded. The masthead renders
+   with NO case transform for exactly that reason: lowercasing a commercial
+   headline is a change to commercial copy.
 
    COLOUR LAW: the share row is neutral. It used to paint each destination in
    its own brand hue (green WhatsApp, sky Facebook) — green is price, and the
-   chip tints collapsed in dark. The glyph does the identifying now.
+   chip tints collapsed in dark. The glyph does the identifying now. The only
+   accent on the surface is the copy button and the link card, both of which are
+   the action.
    ══════════════════════════════════════════════════════════════════════════ */
 
 interface Stats {
@@ -79,9 +86,7 @@ export default function ReferralsPage() {
 
       if (parent) {
         // Lazily mint the permanent code (server-side, parent-gated).
-        const { data: myCode } = await supabase.rpc(
-          "get_or_create_referral_code"
-        );
+        const { data: myCode } = await supabase.rpc("get_or_create_referral_code");
         setCode(myCode ?? null);
 
         if (myCode) {
@@ -90,9 +95,7 @@ export default function ReferralsPage() {
             .select("kind")
             .eq("code", myCode);
           const clicks = (events || []).filter((e) => e.kind === "click").length;
-          const signups = (events || []).filter(
-            (e) => e.kind === "signup"
-          ).length;
+          const signups = (events || []).filter((e) => e.kind === "signup").length;
 
           // XP earned is deterministic: attach_referral awards exactly
           // REFERRAL_SIGNUP_XP once per verified referred family, so the signup
@@ -144,14 +147,18 @@ export default function ReferralsPage() {
   // — a link nobody has followed yet — is designed separately, below.
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-8" aria-busy="true">
-        <div className="space-y-3">
-          <div className="h-3 w-28 rounded bg-sand/60 motion-safe:animate-pulse" />
-          <div className="h-11 w-80 max-w-full rounded bg-sand/60 motion-safe:animate-pulse" />
-          <div className="h-4 w-full max-w-md rounded bg-sand/40 motion-safe:animate-pulse" />
+      <div className="mx-auto max-w-2xl space-y-4" aria-busy="true">
+        <div className="h-9 w-64 max-w-full rounded bg-sand/60 motion-safe:animate-pulse" />
+        <div className="h-10 w-full max-w-md rounded bg-sand/40 motion-safe:animate-pulse" />
+        <div className="club-b-card h-[104px] rounded-[16px] motion-safe:animate-pulse" />
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="club-b-card h-[52px] flex-1 rounded-[13px] motion-safe:animate-pulse"
+            />
+          ))}
         </div>
-        <div className="h-10 w-full rounded bg-sand/40 motion-safe:animate-pulse" />
-        <div className="h-20 rounded bg-sand/30 motion-safe:animate-pulse" />
         <span className="sr-only">Loading your referral link</span>
       </div>
     );
@@ -159,16 +166,21 @@ export default function ReferralsPage() {
 
   if (!isParent) {
     return (
-      <div className="mx-auto mt-12 max-w-lg">
-        <DisplayHead
-          eyebrow="Grown-ups only"
-          title="Invite Families"
-          lede="Sharing and rewards are handled by the grown-ups. Ask a parent or guardian in your family to invite other families."
-          aside={<Lock className="h-6 w-6 text-gold-600" />}
-        />
+      <div className="mx-auto mt-12 max-w-lg space-y-4">
+        <Eyebrow charged>Grown-ups only</Eyebrow>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 font-display text-[34px] font-extrabold leading-none tracking-[-0.035em] text-ink">
+            Invite Families
+          </h1>
+          <Lock className="mt-1 h-6 w-6 shrink-0 text-gold-600" />
+        </div>
+        <p className="max-w-[52ch] text-[13px] leading-relaxed text-soft">
+          Sharing and rewards are handled by the grown-ups. Ask a parent or guardian in your
+          family to invite other families.
+        </p>
         <Link
           href="/dashboard"
-          className="cta-button f0-focus f0-press mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm"
+          className="f0-focus f0-press mt-2 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
         >
           Back to home
         </Link>
@@ -179,39 +191,37 @@ export default function ReferralsPage() {
   const untouched = stats.clicks === 0 && stats.signups === 0;
 
   return (
-    <div className="mx-auto max-w-3xl pb-14">
-      {/* Masthead */}
-      <DisplayHead
-        eyebrow="Grow the Circle"
-        title="Invite a family, grow the club"
+    <div className="mx-auto max-w-2xl space-y-4 pb-14">
+      <BoardMast
+        caps="none"
+        word="Invite a family, grow the club"
         lede={`Word of mouth between families is how the club grows. Share your personal link — when a new family joins, you earn ${REFERRAL_SIGNUP_XP} XP and help another family start learning together.`}
       />
 
       {/* ── THE LINK — the one object on this page ─────────────────────────
-          Set on a baseline hairline, not inside a card. */}
-      <section className="mt-9">
-        <SectionRule
-          action={
-            <span className="inline-flex items-center gap-1.5 font-mono text-[13px] font-bold tracking-wide text-soft">
-              <Sparkle className="h-3.5 w-3.5" />
-              <span className="sr-only">Your code: </span>
-              {code}
-            </span>
-          }
-        >
-          Your referral link
-        </SectionRule>
+          It gets the warm brand-tinted card, the same treatment board 07 gives
+          the streak and board 22 gives the rung you are standing on. */}
+      <WarmCard className="space-y-3.5 px-4 py-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <Eyebrow charged>Your referral link</Eyebrow>
+          <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] font-bold tracking-wide text-soft">
+            <Sparkle className="h-3.5 w-3.5" />
+            <span className="sr-only">Your code: </span>
+            {code}
+          </span>
+        </div>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <p
-            className="min-w-0 flex-1 truncate border-b border-sand pb-2 font-mono text-[15px] text-ink sm:text-[17px]"
+            className="club-b-chip min-w-0 flex-1 truncate px-3 py-2.5 font-mono text-[13px] text-ink sm:text-[15px]"
             title={link}
           >
             {link || "…"}
           </p>
           <button
             onClick={copyLink}
-            className="f0-focus f0-press inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 font-display text-[14px] font-bold text-night-950"
+            className="f0-focus f0-press inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-bold"
+            style={{ background: "var(--accent-solid)", color: "var(--accent-on)" }}
           >
             {copied ? (
               <>
@@ -224,68 +234,61 @@ export default function ReferralsPage() {
             )}
           </button>
         </div>
+      </WarmCard>
 
-        {targets && (
-          <div className="mt-7">
-            <p className="text-eyebrow font-display font-bold uppercase text-soft">
-              Share it
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {canNativeShare && (
-                <button
-                  onClick={nativeShare}
-                  className="f0-chip f0-chip-on f0-focus f0-press px-4 py-2.5 font-display text-[14px] font-bold"
-                >
-                  <Share2 className="h-4 w-4" /> Share
-                </button>
-              )}
-              <ShareLink href={targets.whatsapp} label="WhatsApp">
-                <MessageCircle className="h-4 w-4" />
-              </ShareLink>
-              <ShareLink href={targets.x} label="X">
-                <XGlyph />
-              </ShareLink>
-              <ShareLink href={targets.facebook} label="Facebook">
-                <FacebookGlyph />
-              </ShareLink>
-              <ShareLink href={targets.mailto} label="Email">
-                <Mail className="h-4 w-4" />
-              </ShareLink>
-              <ShareLink href={targets.sms} label="Text">
-                <MessageCircle className="h-4 w-4" />
-              </ShareLink>
-            </div>
+      {targets && (
+        <section className="space-y-2.5">
+          <ListHead charged={false}>Share it</ListHead>
+          <div className="flex flex-wrap gap-2">
+            {canNativeShare && (
+              <button
+                onClick={nativeShare}
+                className="club-b-card f0-focus f0-press inline-flex items-center gap-2 rounded-full px-4 py-2.5 font-display text-[13px] font-bold text-ink"
+              >
+                <Share2 className="h-4 w-4" /> Share
+              </button>
+            )}
+            <ShareLink href={targets.whatsapp} label="WhatsApp">
+              <MessageCircle className="h-4 w-4" />
+            </ShareLink>
+            <ShareLink href={targets.x} label="X">
+              <XGlyph />
+            </ShareLink>
+            <ShareLink href={targets.facebook} label="Facebook">
+              <FacebookGlyph />
+            </ShareLink>
+            <ShareLink href={targets.mailto} label="Email">
+              <Mail className="h-4 w-4" />
+            </ShareLink>
+            <ShareLink href={targets.sms} label="Text">
+              <MessageCircle className="h-4 w-4" />
+            </ShareLink>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* What it has done so far — measures on the paper, not stat cards. */}
-      <section className="mt-11">
-        <SectionRule>What it has done so far</SectionRule>
-        <div className="mt-5">
-          <MeasureStrip
-            items={[
-              { label: "Link clicks", value: stats.clicks.toLocaleString() },
-              { label: "Families joined", value: stats.signups.toLocaleString() },
-              { label: "XP earned", value: stats.xp.toLocaleString() },
-            ]}
-          />
-        </div>
+      {/* What it has done so far — the board's stat tiles. */}
+      <section className="space-y-2.5 pt-1">
+        <ListHead>What it has done so far</ListHead>
+        <StatTileRow>
+          <StatTile value={stats.clicks.toLocaleString()} label="Link clicks" />
+          <StatTile value={stats.signups.toLocaleString()} label="Families joined" />
+          <StatTile value={stats.xp.toLocaleString()} label="XP earned" />
+        </StatTileRow>
         {/* FOUNDING STATE — three real zeros, said out loud instead of left to
             read as a broken counter. */}
         {untouched && (
-          <p className="f0-rule-top mt-6 max-w-[62ch] pt-4 text-[13px] leading-relaxed text-soft">
-            Nobody has followed your link yet — it was minted for you and these
-            counts are real, not a placeholder. The first one moves the moment
-            somebody taps it.
+          <p className="max-w-[62ch] text-[11px] leading-relaxed text-soft">
+            Nobody has followed your link yet — it was minted for you and these counts are
+            real, not a placeholder. The first one moves the moment somebody taps it.
           </p>
         )}
       </section>
 
       {/* How it works */}
-      <section className="mt-11">
-        <SectionRule>How it works</SectionRule>
-        <div className="f0-ledger mt-1">
+      <section className="space-y-2.5 pt-1">
+        <ListHead charged={false}>How it works</ListHead>
+        <div className="space-y-2">
           {[
             {
               icon: Share2,
@@ -305,17 +308,15 @@ export default function ReferralsPage() {
           ].map((s) => {
             const Icon = s.icon;
             return (
-              <div key={s.title} className="flex gap-4 py-5">
+              <Card key={s.title} className="flex gap-3 rounded-[14px] px-3.5 py-3">
                 <Icon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-gold-700" />
                 <div className="min-w-0">
-                  <p className="font-display text-[15px] font-extrabold text-ink">
-                    {s.title}
-                  </p>
-                  <p className="mt-1 max-w-[62ch] text-sm leading-relaxed text-soft">
+                  <p className="font-display text-[13px] font-extrabold text-ink">{s.title}</p>
+                  <p className="mt-1 max-w-[62ch] text-[11.5px] leading-relaxed text-soft">
                     {s.body}
                   </p>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -325,9 +326,9 @@ export default function ReferralsPage() {
 }
 
 // ── Share destination ────────────────────────────────────────────────────────
-// One neutral chip per destination, on the shared .f0-chip geometry so the row
-// matches every other chip set in the app. The glyph identifies the destination;
-// no destination gets a colour of its own.
+// One neutral card-chip per destination, on the shared card geometry so the row
+// matches the rest of the surface. The glyph identifies the destination; no
+// destination gets a colour of its own.
 function ShareLink({
   href,
   label,
@@ -342,7 +343,7 @@ function ShareLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="f0-chip f0-focus f0-press px-4 py-2.5 font-display text-[14px] font-bold text-ink"
+      className="club-b-card f0-focus f0-press inline-flex items-center gap-2 rounded-full px-4 py-2.5 font-display text-[13px] font-bold text-ink"
     >
       {children}
       {label}
