@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { checkClean } from "@/lib/profanity";
+import { toast } from "@/components/ui/Toast";
 import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
 import { POST_TYPES, POST_TYPE_BY_KEY, type PostType } from "@/components/canvas2";
@@ -351,6 +352,7 @@ export default function ShareYourCallClient({
     if (error || !data) {
       setPosting(false);
       setErr("Your call didn't go through. Please try again.");
+      toast("Your call didn't go through. Please try again.", "error");
       return;
     }
 
@@ -364,6 +366,9 @@ export default function ShareYourCallClient({
     const today = await countXpToday(supabase, userId, "community");
     if (today < 3) await awardXp(supabase, userId, "community", XP.COMMUNITY, data.id);
 
+    // The composer navigates away on success, so the card that confirmed the
+    // write is gone before it can be read. The toast survives the route change.
+    toast("Your call is live in the Club.");
     router.push(type === "changed_mind" ? "/community/changed-my-mind" : "/community");
     router.refresh();
   }
