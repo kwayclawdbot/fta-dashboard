@@ -7,7 +7,10 @@ import { ArrowRight, ChevronRight, RotateCcw, Settings as SettingsIcon } from "l
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelProgress, type XpKind } from "@/lib/xp";
 import { beltForXp, beltProgress } from "@/lib/belts";
+import { computeStreak } from "@/lib/streak";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
+import { XpLevelObject } from "@/components/canvas2";
+import { StreakFlame } from "@/components/art";
 import {
   BoardMast,
   Card,
@@ -42,10 +45,13 @@ import {
    "Top 2% of 25,842 members"         "Level N · <name> · @handle" — the app
                                       computes no member percentile, and a
                                       percentile of members is a ranking claim
-   87 OPINION SCORE dial              XP PROGRESS TO THE NEXT BELT. Numeral =
-                                      percent into the current band, label =
-                                      the belt it is progress toward. At the
-                                      top of the ladder: 100 / BLACK BELT.
+   87 OPINION SCORE dial              KEPT, BUT ONLY AS AN AVATAR TREATMENT.
+                                      Numeral = percent into the current belt
+                                      band, label = the belt it is progress
+                                      toward. The dial is a shape, not a
+                                      readout: the READOUT is the canonical
+                                      LevelObject directly beneath it, which
+                                      spells the same progress out in figures.
    "INFLUENCE 1.8x / your opinions    CONVICTION — the share of the member's
     carry 1.8x more weight"           own positions called bullish. A sentiment
                                       measure (lime by law), not a weighting of
@@ -60,7 +66,7 @@ import {
    382 People Influenced              Respect received
    47 Changed Minds                   Changed minds (unchanged — a behaviour)
    6 Circles Hosted                   Club posts
-   🔥 "16 days in a row" + 7 pips     REAL daily participation streak from
+   flame + "16 days in a row" + pips  REAL daily participation streak from
                                       xp_events; each pip is one of the last
                                       seven days, filled only where that day
                                       carries an award.
@@ -165,20 +171,6 @@ const SOURCE_LABEL: Record<XpKind, string> = {
   bonus: "Bonuses",
 };
 
-/** Local-calendar day key. Local, not UTC: a streak is a human-day streak, and
-    a member in UTC-8 posting at 6pm must not have it counted as tomorrow. */
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function shiftDays(d: Date, n: number): Date {
-  const t = new Date(d);
-  t.setDate(t.getDate() + n);
-  return t;
-}
-
 function monthDay(iso: string): string {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric" });
 }
@@ -244,19 +236,15 @@ export default function ProfileSurface() {
         created_at: string;
       }[];
 
-      // ── streak — trailing run of DAYS carrying an award, plus the seven-day
-      //    window the board's pips render. Today with nothing yet does not
-      //    break a streak, so the run may end today or yesterday.
-      const days = new Set(events.map((e) => dayKey(new Date(e.created_at))));
-      const today = new Date();
-      const streakWindow: boolean[] = [];
-      for (let i = 6; i >= 0; i -= 1) streakWindow.push(days.has(dayKey(shiftDays(today, -i))));
-      let streakDays = 0;
-      let cursor = days.has(dayKey(today)) ? today : shiftDays(today, -1);
-      while (days.has(dayKey(cursor))) {
-        streakDays += 1;
-        cursor = shiftDays(cursor, -1);
-      }
+      // ── streak — THE canonical definition, computed by the one shared
+      //    implementation (src/lib/streak.ts) rather than inline here. This
+      //    surface and /courses used to each own their own version and printed
+      //    different numbers for the same member on the same day. The clock is
+      //    read HERE, in the fetch, and passed in — never during a render.
+      const { days: streakDays, window7: streakWindow } = computeStreak(
+        events.map((e) => e.created_at),
+        Date.now()
+      );
 
       // ── where the reps come from — the member's own XP split by source.
       //    A share of their own record, never a percentile against anyone.
@@ -492,6 +480,25 @@ export default function ProfileSurface() {
         <Dial pct={bp.pct} value={String(bp.pct)} label={dialLabel} />
       </section>
 
+      {/* ── XP PROGRESS ─────────────────────────────────────────────────────
+          The canonical object, not a second local invention. /progress used to
+          lead with the dial alone, and a dial can only ever say "78%" — it
+          cannot say what 78% is 78% OF, or what the next rung costs. The dial
+          stays as the avatar's treatment; this is the readout, and it is the
+          identical component /belts, Home and the You drawer render, so the
+          "N XP to …" figure can never disagree between two screens. */}
+      <XpLevelObject
+        xp={state.xp}
+        ladder="belt"
+        className="pt-1"
+        aside={
+          <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-soft">
+            {state.xp.toLocaleString()} XP lifetime
+          </span>
+        }
+        maxedLabel="Every belt earned"
+      />
+
       {/* ── CONVICTION + WHERE YOUR REPS COME FROM ──────────────────────────
           The board's two-card row: a single big measure on the left, a stack of
           labelled bars on the right. */}
@@ -549,9 +556,13 @@ export default function ProfileSurface() {
           The board's warm card. The pips are the last seven days and are filled
           only where that day carries a real award, so a quiet week looks quiet. */}
       <WarmCard className="flex items-center gap-3.5 px-4 py-3.5">
-        <span className="text-[26px] leading-none" aria-hidden>
-          🔥
-        </span>
+        {/* The drawn ember, not the emoji. An emoji renders in the member's
+            operating-system art register — glossy 3D on iOS, flat on Android —
+            so the one mark this card is built around was the one mark we did
+            not control. `ignite` plays the strike once when the card first
+            paints; the numeral lives in the line beside it, so the mark itself
+            carries no count. */}
+        <StreakFlame streak={state.streakDays} size={30} showCount={false} ignite />
         <div className="min-w-0 flex-1">
           <Eyebrow charged>Your streak</Eyebrow>
           <p className="mt-1 font-display text-[19px] font-extrabold leading-none text-ink">
@@ -745,9 +756,14 @@ export default function ProfileSurface() {
           <RowCard
             href="/belts"
             title="The belt ladder"
+            /* The "N XP to <belt>" figure moved up to the LevelObject at the
+               top of this surface, where it belongs. Printing it again here
+               made the same sentence appear twice on one screen, and two copies
+               of a number are two chances to disagree. This row is now a door,
+               and it says what is behind the door. */
             sub={
               bp.next
-                ? `${bp.toNext.toLocaleString()} XP to ${bp.next.label}`
+                ? "Every belt, and what each one takes"
                 : "Top of the ladder — every belt earned"
             }
             value={<ChevronRight className="h-3.5 w-3.5 text-soft" />}

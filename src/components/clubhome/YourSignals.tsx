@@ -44,9 +44,24 @@ export default function YourSignals({
   isKid?: boolean;
   loading?: boolean;
 }) {
-  // Sentiment display is kid-walled everywhere on this surface.
+  /* Sentiment display is kid-walled everywhere on this surface.
+   *
+   * FEWER ROWS BEATS REPEATED ROWS. `forYouCore` now hands each ticker the
+   * strongest reason no earlier row already used, so identical lines only
+   * survive when the data genuinely has one thing to say about several tickers
+   * at once. When that happens this drops the repeats rather than printing the
+   * same sentence four times under four different tickers — which is what this
+   * section used to do, and it read as broken rather than as quiet. */
+  const seen = new Set<string>();
   const items = (foryou?.items ?? [])
     .filter((it) => !(isKid && it.kind === "sentiment"))
+    .filter((it) => {
+      const line = (it.delta || "").trim();
+      if (!line) return true;
+      if (seen.has(line)) return false;
+      seen.add(line);
+      return true;
+    })
     .slice(0, 4);
 
   return (

@@ -7,10 +7,14 @@ import { ArrowRight, PlayCircle } from "lucide-react";
 import { useClubData, fixturesAllowed, type ClubHomeSeed } from "@/lib/clubhome/client";
 import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
 import type { BriefResponse, ClubScale } from "@/lib/clubhome/contract";
+import type { TodayLoop } from "@/lib/club/today";
 import type { Register } from "@/lib/register";
 
 import ChallengeSlot from "./ChallengeSlot";
 import HomeMasthead from "./HomeMasthead";
+import TodayOneThing from "./TodayOneThing";
+import ClubSplit from "./ClubSplit";
+import ClubRoom from "./ClubRoom";
 import TopInTheClub from "./TopInTheClub";
 import TodayIn30 from "./TodayIn30";
 import YourSignals from "./YourSignals";
@@ -142,6 +146,7 @@ export default function ClubHomeV2({
   preview,
   seedPromise,
   briefPromise,
+  todayPromise,
 }: {
   firstName?: string;
   register: Register;
@@ -161,12 +166,21 @@ export default function ClubHomeV2({
   seedPromise?: Promise<ClubHomeSeed | null>;
   /** The brief, on its OWN boundary — it alone costs ~2.9s. */
   briefPromise?: Promise<unknown>;
+  /**
+   * TODAY'S LOOP (src/lib/club/today.ts): the member's own next lesson, streak,
+   * due cards and triggered watches. Server-built and handed across like the
+   * section seed. Absent → TodayOneThing fetches /api/club/today itself, so the
+   * client-navigation and family-fallback paths still get the loop.
+   */
+  todayPromise?: Promise<TodayLoop | null>;
 }) {
   const isKid = register === "kid";
 
   // `use()` is legal in a conditional — and `seedPromise` is either always or
   // never present for a given mount, so the branch is stable.
   const seed = seedPromise ? use(seedPromise) : null;
+  // Same rule: either always present or never, for a given mount.
+  const today = todayPromise ? use(todayPromise) : null;
 
   // `loading` lets each section tell "still arriving" apart from "the club has
   // nothing". With a seed it is false from the very first render.
@@ -218,10 +232,17 @@ export default function ClubHomeV2({
       {/* 1 — the greeting */}
       <HomeMasthead firstName={firstName} isKid={isKid} />
 
-      {/* 2 — the ranked card strip */}
+      {/* 2 — TODAY'S ONE THING + the due strip. THE LOOP, and the reason this
+          surface is a home rather than a dashboard: the member's own next
+          action comes before what the room is looking at. It sits ABOVE TOP IN
+          THE CLUB deliberately — the board opened on other people's attention,
+          which is why a member's own due cards were four taps deep. */}
+      <TodayOneThing seed={today} isKid={isKid} />
+
+      {/* 3 — the ranked card strip */}
       <TopInTheClub trending={data.trending} loading={loading} isKid={isKid} />
 
-      {/* 3 — the day's read. Its own Suspense boundary when seeded, so the
+      {/* 4 — the day's read. Its own Suspense boundary when seeded, so the
           ~2.9s brief never gates the sections around it. */}
       {briefPromise ? (
         <Suspense fallback={<TodayIn30 loading />}>
@@ -231,10 +252,25 @@ export default function ClubHomeV2({
         <TodayIn30 brief={fallbackBrief} loading={loading} />
       )}
 
-      {/* 4 — what moved on YOUR tickers */}
+      {/* 5 — what moved on YOUR tickers */}
       <YourSignals foryou={data.foryou} isKid={isKid} loading={loading} />
 
-      {/* 5 — the board's closing object */}
+      {/* 6 — WHERE THE CLUB SPLITS: the debate + best-thinking sections the
+          server was already computing and this surface was discarding. Voting
+          happens inline. Absent when the Club has neither, by design. */}
+      <ClubSplit
+        trending={data.trending}
+        debate={data.debate}
+        thinking={data.thinking}
+        isKid={isKid}
+        loading={loading}
+      />
+
+      {/* 7 — the room, as one line (collective + people, also previously
+          computed and discarded). */}
+      <ClubRoom collective={data.collective} people={data.people} isKid={isKid} />
+
+      {/* 8 — the board's closing object */}
       <YouStrip xp={xp} isKid={isKid} />
 
       {/* Preserved law, in the board's card vocabulary */}

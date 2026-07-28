@@ -206,6 +206,48 @@ export async function getGuardrails(
   };
 }
 
+/**
+ * Guardrails for the WHOLE supervised roster in ONE read.
+ *
+ * `getGuardrails` above is the single-child drill-down (F3). /family renders a
+ * guardrail line under every supervised member, and doing that with the
+ * single-child helper would be one round trip per child on the household's
+ * busiest screen. This is the batched form: one `.in(child_id, …)` merged with
+ * DEFAULT_GUARDRAILS, so every kid id in `kidIds` is guaranteed a value and a
+ * child with no row yet renders the documented defaults rather than a blank.
+ *
+ * The defaults are not a guess: set_family_guardrail() creates the row with
+ * exactly these starting values on the first change, so what is drawn is what
+ * is enforced today.
+ */
+export async function getGuardrailsForKids(
+  db: DB,
+  familyId: string,
+  kidIds: string[]
+): Promise<Map<string, FamilyGuardrails>> {
+  const out = new Map<string, FamilyGuardrails>();
+  if (!kidIds.length) return out;
+
+  const { data } = await db.from("family_guardrails").select("*").in("child_id", kidIds);
+
+  const byChild = new Map<string, FamilyGuardrails>();
+  for (const r of (data ?? []) as FamilyGuardrails[]) byChild.set(r.child_id, r);
+
+  for (const id of kidIds) {
+    out.set(
+      id,
+      byChild.get(id) ?? {
+        child_id: id,
+        family_id: familyId,
+        updated_at: new Date().toISOString(),
+        updated_by: null,
+        ...DEFAULT_GUARDRAILS,
+      }
+    );
+  }
+  return out;
+}
+
 export interface GuardrailEvent {
   id: string;
   setting: string;
@@ -426,6 +468,41 @@ export async function getFamilyWatchlist(db: DB, familyId: string): Promise<Watc
     .order("updated_at", { ascending: false })
     .limit(12);
   return (data ?? []) as WatchlistEntry[];
+}
+
+/**
+ * The household's OWN research card for one ticker — the family night one-pager
+ * reads this before it reaches for the market aggregate, because a writeup the
+ * house wrote itself outranks anything a vendor can describe.
+ *
+ * Returns null when the name is not on the family watchlist at all; the caller
+ * then says so instead of inventing a company.
+ */
+export interface WatchlistResearch {
+  id: string;
+  ticker: string;
+  company_name: string;
+  what_they_sell: string | null;
+  how_they_make_money: string | null;
+  strength: string | null;
+  risk: string | null;
+  why_we_picked: string | null;
+}
+
+export async function getWatchlistResearch(
+  db: DB,
+  familyId: string,
+  ticker: string
+): Promise<WatchlistResearch | null> {
+  const { data } = await db
+    .from("family_watchlist")
+    .select(
+      "id, ticker, company_name, what_they_sell, how_they_make_money, strength, risk, why_we_picked"
+    )
+    .eq("family_id", familyId)
+    .eq("ticker", ticker)
+    .maybeSingle();
+  return (data as WatchlistResearch | null) ?? null;
 }
 
 // ── F8 · family missions ────────────────────────────────────────────────────

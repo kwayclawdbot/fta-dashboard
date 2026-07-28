@@ -269,20 +269,36 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
   return { data, loading, usingFixtures };
 }
 
-/** POST a debate vote. Returns the updated counts, or null on failure. */
+/**
+ * POST a debate vote. Returns the updated counts, or null on failure.
+ *
+ * THIS HAD NEVER BEEN CALLED. It shipped with zero importers alongside a Home
+ * that computed the debate section and then discarded it — and because nothing
+ * exercised it, it did not match its own endpoint: it sent `{ id, vote }` where
+ * POST /api/club/debate/vote reads `{ debateId, choice }`, and it read a
+ * `counts` object off a response that returns `{ ok, yes, no, total, userVote }`
+ * flat. Both are corrected here; the wire contract is the route's.
+ */
 export async function postDebateVote(
   debateId: string,
-  vote: "yes" | "no"
+  choice: "yes" | "no"
 ): Promise<{ yes: number; no: number } | null> {
   try {
     const res = await fetch(`/api/club/debate/vote`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: debateId, vote }),
+      body: JSON.stringify({ debateId, choice }),
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as { counts?: { yes: number; no: number } };
-    return json.counts ?? null;
+    const json = (await res.json()) as {
+      ok?: boolean;
+      yes?: number;
+      no?: number;
+    };
+    if (!json?.ok || typeof json.yes !== "number" || typeof json.no !== "number") {
+      return null;
+    }
+    return { yes: json.yes, no: json.no };
   } catch {
     return null;
   }

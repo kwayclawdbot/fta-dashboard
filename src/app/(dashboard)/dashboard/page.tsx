@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getRequestClient } from "@/lib/supabase/rsc";
 import { resolveHomeRoute } from "@/lib/club/home-route";
 import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
+import { buildTodaySeed } from "@/lib/club/today";
 import ClubHomeV2 from "@/components/clubhome/ClubHomeV2";
 import ClubHomeSkeleton from "@/components/clubhome/ClubHomeSkeleton";
 import FreeHome from "@/components/dashboard/FreeHome";
@@ -66,6 +67,15 @@ export default async function DashboardHome() {
     // ClubHomeV2 fall back to its original client fetch.
     const { rest, brief } = buildClubHomeSeedSplit(supabase);
 
+    // THE LOOP. A third promise on the SAME boundary as the board: it is four
+    // small indexed reads (get_home_state, xp_events, flashcard_reviews,
+    // watch_current_state), all far faster than the eight section cores, so it
+    // adds nothing to the skeleton's life. It never rejects (buildTodaySeed
+    // catches) and null degrades to the client fetching /api/club/today.
+    const todayPromise = route.userId
+      ? buildTodaySeed(supabase, route.userId)
+      : undefined;
+
     return (
       <Suspense fallback={<ClubHomeSkeleton />}>
         <ClubHomeV2
@@ -76,6 +86,7 @@ export default async function DashboardHome() {
           xp={route.xp}
           seedPromise={rest}
           briefPromise={brief}
+          todayPromise={todayPromise}
         />
       </Suspense>
     );

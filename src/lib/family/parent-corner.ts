@@ -121,6 +121,48 @@ export const WEEKLY_PARENT_FIELDS: {
   { key: "parent_patience", title: "On patience" },
 ];
 
+/**
+ * FAMILY NIGHT — the four questions the guided flow walks a household through,
+ * one at a time.
+ *
+ * NOT NEW COPY. Every string returned here is already written above and already
+ * rendered on /family/corner; family night simply sequences four of them so a
+ * parent is not reading a wall of prompts at the table. Writing a second set
+ * would have split the editorial voice across two files and left the corner and
+ * the night saying different things about the same evening.
+ *
+ * The first three are the OPENING prompt of each conversation topic — the
+ * prompts are written in escalating order, so the openers are the ones that
+ * work cold. The closer is the age-band question, the only prompt tuned to who
+ * is actually in the room, and the one worth landing on last.
+ */
+
+/**
+ * The question the kid-level one-pager ends on.
+ *
+ * Lifted verbatim from the "How to talk about risk" principle above, where it
+ * is already given to parents as the question that builds the both-sides habit.
+ * It is the right closer for a one-pager because it is about THIS company and it
+ * cannot be answered with a price. Deliberately not one of the four discussion
+ * questions — nothing in this flow asks the same thing twice.
+ */
+export const ONE_PAGER_QUESTION = "What could make people buy less of this?";
+export function bandForAgeGroup(ageGroup: string | null | undefined): BandGuidance {
+  // Profiles carry the coarse app-wide vocabulary ("kids" / "teens" / "adults"),
+  // not the editorial bands. Teens map cleanly; "kids" spans 6–12, and the 9–12
+  // posture is the safe middle — it reads fine to an eight-year-old's parent,
+  // whereas the 6–8 posture would talk down to a twelve-year-old's.
+  if (ageGroup === "teens") return AGE_BANDS[2];
+  return AGE_BANDS[1];
+}
+
+export function familyNightQuestions(ageGroup: string | null | undefined): string[] {
+  return [
+    ...CONVERSATION_TOPICS.map((t) => t.prompts[0]),
+    bandForAgeGroup(ageGroup).question,
+  ];
+}
+
 export interface ConversationTopic {
   id: string;
   title: string;

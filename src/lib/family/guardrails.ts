@@ -149,6 +149,30 @@ export function downtimeLabel(g: Pick<FamilyGuardrails, "downtime_start_hour" | 
   return `${hourLabel(g.downtime_start_hour)} – ${hourLabel(g.downtime_end_hour)}`;
 }
 
+/**
+ * The one-line guardrail summary /family prints under each supervised member.
+ *
+ * EVERY ENTRY IS A TRUE STATEMENT ABOUT THIS CHILD RIGHT NOW. The temptation on
+ * a screen like this is to print the reassuring set — "Paper only · Family chat
+ * only · Downtime 9 PM – 7 AM" — regardless of what is actually stored, which
+ * would tell a parent their household is fenced when it is not. So:
+ *
+ *   • "Paper only" is unconditional because it is structural (GUARDRAIL_SPECS):
+ *     there is no real-money order path in this product to turn on.
+ *   • chat_family_only prints its own state either way — never silence, because
+ *     silence on a safety line reads as "on".
+ *   • Downtime prints the window ONLY when downtime_enabled. Disabled says so.
+ *   • The daily limit appears only when one is set; "no limit" is the default
+ *     and adding a chip for it would pad the line without adding a fact.
+ */
+export function guardrailSummary(g: FamilyGuardrails): string[] {
+  const out: string[] = ["Paper only"];
+  out.push(g.chat_family_only ? "Family chat only" : "Chat not limited to family");
+  out.push(g.downtime_enabled ? `Downtime ${downtimeLabel(g)}` : "No downtime set");
+  if (g.daily_limit_min != null) out.push(`${minutesLabel(g.daily_limit_min)} a day`);
+  return out;
+}
+
 /** Minutes → "3h 12m" / "45m". */
 export function minutesLabel(min: number | null | undefined): string {
   if (min == null) return "—";

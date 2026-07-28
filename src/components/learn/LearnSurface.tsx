@@ -22,7 +22,6 @@ import {
   LearnWordmark,
   MonoEyebrow,
   StatRail,
-  dayStreak,
   pathFieldStyle,
   pathGlyph,
   pathHue,
@@ -31,6 +30,7 @@ import {
   type NodeGlyphKind,
 } from "@/components/learn/kit";
 import type { PathNodeKind } from "@/components/learn/LearnPath";
+import { fetchStreak } from "@/lib/streak";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LEARN — route /courses (the Learn nav slot). Built to board 08
@@ -46,8 +46,10 @@ import type { PathNodeKind } from "@/components/learn/LearnPath";
    shape and their real reads.
 
    REAL DATA ONLY. The percentage is `lesson_progress` over `lessons`; the
-   streak is consecutive local days with a real completion; the XP is the sum
-   of `xp_events`. A path with no lessons is dropped rather than padded.
+   streak is THE canonical streak (src/lib/streak.ts) — consecutive local days
+   carrying at least one XP award, the same number /progress and Home render;
+   the XP is the sum of `xp_events`. A path with no lessons is dropped rather
+   than padded.
    ══════════════════════════════════════════════════════════════════════════ */
 
 type Tab = "journey" | "classes" | "missions";
@@ -134,7 +136,7 @@ interface LearnState {
   /** Free tier only: the fully-playable sampler. */
   sampler: LessonRef[];
   lockedLessonCount: number;
-  /** Consecutive local days with a real lesson completion. 0 = no streak yet. */
+  /** THE canonical streak (src/lib/streak.ts). 0 = no streak yet. */
   streak: number;
   /** Lifetime XP (sum of xp_events); null when it could not be read. */
   xp: number | null;
@@ -361,14 +363,15 @@ export default function LearnSurface() {
       }
 
       /* ── The streak + the XP (board 08 / board 20 header) ────────────
-         Both are measured, never decorative: consecutive local days that
-         carry a real `lesson_progress` completion, and the lifetime sum of
-         `xp_events`. The clock is read HERE, in the fetch — never during a
-         render. */
-      const streak = dayStreak(
-        completedRows.map((r) => r.completed_at),
-        Date.now()
-      );
+         Both are measured, never decorative. THE STREAK IS THE CANONICAL ONE
+         (src/lib/streak.ts): consecutive local days carrying at least one
+         `xp_events` award. It used to be computed here from `lesson_progress`
+         completions alone, which is why this surface said 0 for a member whose
+         /progress screen said 1 — flashcards, games and Club reps are days the
+         member showed up, and the Learn header was silently refusing to count
+         them. The clock is read HERE, in the fetch — never during a render. */
+      const streakRes = await fetchStreak(supabase, user.id, Date.now());
+      const streak = streakRes?.days ?? 0;
       let xp: number | null = null;
       try {
         xp = await getUserXp(supabase, user.id);
@@ -516,8 +519,11 @@ function JourneyTab({ state }: { state: LearnState }) {
           style={warmFieldStyle("160deg")}
         >
           <MonoEyebrow>Your streak</MonoEyebrow>
-          <div aria-hidden className="mt-2.5 text-[26px] leading-none">
-            🔥
+          {/* THE streak surface, so this is where the ignite plays: the ember
+              strikes once as the card paints instead of appearing fully lit.
+              The count lives in the numeral below, so the mark carries none. */}
+          <div className="mt-2.5 flex justify-center leading-none">
+            <StreakFlame streak={streak} size={30} showCount={false} ignite />
           </div>
           <div className="mt-1.5 font-display text-[30px] font-extrabold leading-none tabular-nums tracking-tight text-ink">
             {streak}

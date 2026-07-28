@@ -1,4 +1,5 @@
 import { Kaushan_Script } from "next/font/google";
+import { computeStreak as computeStreakImpl } from "@/lib/streak";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LEARN KIT — the shared vocabulary of the Learn boards (canvas 08 / 20 / 21).
@@ -108,8 +109,11 @@ export function StatRail({
   return (
     <div className={`flex items-center gap-3.5 ${className}`}>
       {streak != null && streak > 0 && (
-        <span className="font-mono text-[11px] font-semibold tabular-nums text-gold-700">
-          <span aria-hidden>🔥 </span>
+        // The drawn ember, not the emoji. The rail sets its own mono numeral,
+        // so the mark ships countless (`showCount={false}`) and the figure
+        // stays in the rail's type — one flame, two type systems, no clash.
+        <span className="flex items-center gap-1 font-mono text-[11px] font-semibold tabular-nums text-gold-700">
+          <StreakFlame streak={streak} size={14} showCount={false} />
           {streak}
           <span className="sr-only"> day streak</span>
         </span>
@@ -160,40 +164,20 @@ export function MonoEyebrow({
 }
 
 /* ── Streak ───────────────────────────────────────────────────────────────
-   A real number or nothing. Counts consecutive local days that carry at least
-   one completion, walking back from today (a day that is still young does not
-   break a streak, so an empty today falls through to yesterday).
+   THERE IS ONE STREAK. This used to be a second implementation with its own
+   day-key helper and its own qualifying-event rule (lesson completions only),
+   which is why /courses said 0 while /progress said 1 for the same member on
+   the same day. The definition — and the code — now live in `src/lib/streak.ts`
+   and every surface reads it from there.
 
-   `nowMs` is passed IN — never read from the clock during render. */
+   Kept as a named re-export because callers already import `dayStreak` from the
+   learn kit; it is now literally the canonical function, not a copy of it. */
+
+export { computeStreak, dayKeyLocal } from "@/lib/streak";
 
 export function dayStreak(
   isoTimestamps: (string | null | undefined)[],
   nowMs: number
 ): number {
-  const days = new Set<string>();
-  for (const iso of isoTimestamps) {
-    if (!iso) continue;
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) continue;
-    days.add(dayKey(d));
-  }
-  if (days.size === 0) return 0;
-
-  const cursor = new Date(nowMs);
-  cursor.setHours(12, 0, 0, 0);
-  if (!days.has(dayKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-    if (!days.has(dayKey(cursor))) return 0;
-  }
-
-  let streak = 0;
-  while (days.has(dayKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
-
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  return computeStreakImpl(isoTimestamps, nowMs).days;
 }

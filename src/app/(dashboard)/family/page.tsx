@@ -12,13 +12,16 @@ import {
   getBenchmarkReturn,
   getFamilyWatchlist,
   getWeeklyXp,
+  getGuardrailsForKids,
   type FamilyMember,
 } from "@/lib/family/queries";
+import { guardrailSummary } from "@/lib/family/guardrails";
 import {
   FamilySurface,
   FamilyMast,
   FamilyCard,
   RowCard,
+  Row,
   FamilyLink,
   SectionLabel,
   Eyebrow,
@@ -55,11 +58,14 @@ export default async function FamilyHomePage() {
   const ctx = await getFamilyContext(db);
   if (!ctx) redirect("/dashboard");
 
-  const [standings, benchmark, watchlist, weeklyXp] = await Promise.all([
+  const [standings, benchmark, watchlist, weeklyXp, guardrails] = await Promise.all([
     getPaperStandings(db, ctx.familyId),
     getBenchmarkReturn(db),
     getFamilyWatchlist(db, ctx.familyId),
     getWeeklyXp(db, ctx.members.map((m) => m.id)),
+    // Batched with everything else the page already waits on, so making the
+    // guardrails visible costs no extra round trip in the critical path.
+    getGuardrailsForKids(db, ctx.familyId, ctx.kids.map((k) => k.id)),
   ]);
 
   const familyLevel = levelForXp(ctx.familyXp);
@@ -82,6 +88,45 @@ export default async function FamilyHomePage() {
         lede="Everyone's learning. Nobody's margin-called."
         aside={<Chip tone="accent">🛡 Family</Chip>}
       />
+
+      {/* ── Run family night ─────────────────────────────────────────────
+          THE ONE ACTION ON THIS PAGE. Everything else here is a reading —
+          levels, standings, a watchlist — and a household that only reads
+          never actually sits down together. Family night was already possible
+          in four separate errands (vote, research, find questions, and then
+          nothing at all for attendance because no write path existed for it);
+          /family/tonight is that evening as one flow, and it pays the XP the
+          watchlist card has been promising. It sits above the ladder because
+          doing the thing outranks looking at the score for it. */}
+      <Link
+        href="/family/tonight"
+        className="f0-focus f0-press mt-6 block rounded-xl"
+        aria-label="Run family night"
+      >
+        <FamilyCard tone="lead">
+          <div className="flex items-center gap-4">
+            <span className="shrink-0 text-[26px] leading-none" aria-hidden>
+              🕖
+            </span>
+            <div className="min-w-0 flex-1">
+              <Eyebrow tone="accent">Tonight</Eyebrow>
+              <p className="mt-1 font-display text-[19px] font-extrabold leading-snug text-ink">
+                Run family night
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-soft">
+                One pick, one page in plain English, four questions — then
+                everybody who showed up gets the credit for it.
+              </p>
+            </div>
+            <span
+              aria-hidden
+              className="shrink-0 font-mono text-[13px] font-bold text-gold-700"
+            >
+              &rarr;
+            </span>
+          </div>
+        </FamilyCard>
+      </Link>
 
       {/* ── Family level ─────────────────────────────────────────────────
           One ladder, shared. The XP is the same xp_events every member already
@@ -115,6 +160,50 @@ export default async function FamilyHomePage() {
           <MemberOrb key={m.id} member={m} />
         ))}
       </div>
+
+      {/* ── What each supervised member is fenced by ─────────────────────
+          The guardrails were REAL but INVISIBLE: they were only legible after
+          two taps into /family/teen/<id>/guardrails, so the parent who set
+          them up in onboarding had no way to confirm from the household screen
+          that anything was actually on. This states the live settings — read
+          for the whole roster in ONE query and merged with the documented
+          defaults, so a child with no row yet shows what is genuinely enforced
+          rather than a blank.
+
+          Every chip is a true statement (see guardrailSummary): downtime prints
+          its window ONLY when it is enabled, and says so plainly when it is
+          not. A reassuring line that is not backed by a setting is worse than
+          no line at all. */}
+      {ctx.kids.length > 0 && (
+        <>
+          <SectionLabel className="mt-6">Guardrails</SectionLabel>
+          <RowCard className="mt-3">
+            {ctx.kids.map((k) => {
+              const g = guardrails.get(k.id);
+              return (
+                <Row
+                  key={k.id}
+                  icon="🛡"
+                  label={k.display_name || "Member"}
+                  right={
+                    ctx.isParent ? (
+                      <TextAction href={`/family/teen/${k.id}/guardrails`}>
+                        Change
+                      </TextAction>
+                    ) : undefined
+                  }
+                >
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {(g ? guardrailSummary(g) : []).map((s) => (
+                      <Chip key={s}>{s}</Chip>
+                    ))}
+                  </div>
+                </Row>
+              );
+            })}
+          </RowCard>
+        </>
+      )}
 
       {/* ── The family challenge ─────────────────────────────────────────
           Stakes that are not money. The prize is Friday dinner. */}

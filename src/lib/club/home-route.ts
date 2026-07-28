@@ -40,6 +40,9 @@ export type HomeRoute =
   | { kind: "free"; firstName: string }
   | {
       kind: "club";
+      /** The member's auth id — the loop payload (src/lib/club/today.ts) needs
+       *  it and it is already resolved here, so nothing re-reads the session. */
+      userId: string;
       firstName: string;
       register: Register;
       learning: LearningPickup | null;
@@ -157,6 +160,7 @@ export async function resolveHomeRoute(
 
     return {
       kind: "club",
+      userId: user.id,
       firstName,
       register: deriveRegister(prof),
       learning,
