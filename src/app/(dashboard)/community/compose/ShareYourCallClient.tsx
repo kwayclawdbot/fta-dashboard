@@ -7,8 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { checkClean } from "@/lib/profanity";
 import { toast } from "@/components/ui/Toast";
 import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
-import { XP, awardXp, countXpToday } from "@/lib/xp";
-import { POST_TYPES, POST_TYPE_BY_KEY, type PostType } from "@/components/canvas2";
+import { XP, awardXp, countXpToday, getUserXp } from "@/lib/xp";
+import {
+  POST_TYPES,
+  POST_TYPE_BY_KEY,
+  useXpAward,
+  type PostType,
+} from "@/components/canvas2";
 import { SOCIAL_FLOORS } from "@/lib/social/reactions";
 import {
   BoardCard,
@@ -139,6 +144,25 @@ export default function ShareYourCallClient({
 
   const [err, setErr] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+
+  /* ── The award moment, and why the route waits for it ─────────────────────
+     Filing a call banks XP, and this composer navigates away the instant the
+     write lands — so the member never saw the number move. Firing the award
+     and pushing in the same breath would be worse than silence: the overlay
+     would be unmounted mid-count-up.
+
+     So the destination is PARKED here, the beat plays, and the push happens
+     when the beat is over. `playing` covers both lengths the primitive can
+     run (chip only, or chip plus the belt ceremony) and the reduced-motion
+     collapse, without this file knowing any of those durations. */
+  const xpAward = useXpAward();
+  const [pendingNav, setPendingNav] = useState<string | null>(null);
+  const awardPlaying = xpAward.playing;
+  useEffect(() => {
+    if (!pendingNav || awardPlaying) return;
+    router.push(pendingNav);
+    router.refresh();
+  }, [pendingNav, awardPlaying, router]);
   const [draftNote, setDraftNote] = useState<string | null>(null);
   const tickerInput = useRef<HTMLInputElement>(null);
 
@@ -363,14 +387,31 @@ export default function ShareYourCallClient({
       /* ignore */
     }
 
+    // Read the lifetime total BEFORE the write and again after, so the belt
+    // beat only plays on a belt that was really crossed — and so a write that
+    // quietly failed (awardXp swallows its own errors) is never celebrated.
+    const dest = type === "changed_mind" ? "/community/changed-my-mind" : "/community";
     const today = await countXpToday(supabase, userId, "community");
-    if (today < 3) await awardXp(supabase, userId, "community", XP.COMMUNITY, data.id);
+    if (today < 3) {
+      const xpBefore = await getUserXp(supabase, userId);
+      await awardXp(supabase, userId, "community", XP.COMMUNITY, data.id);
+      const xpAfter = await getUserXp(supabase, userId);
+      if (xpAfter > xpBefore) {
+        xpAward.fire({
+          amount: xpAfter - xpBefore,
+          xpBefore,
+          xpAfter,
+          reason: "Call filed",
+        });
+      }
+    }
 
     // The composer navigates away on success, so the card that confirmed the
     // write is gone before it can be read. The toast survives the route change.
     toast("Your call is live in the Club.");
-    router.push(type === "changed_mind" ? "/community/changed-my-mind" : "/community");
-    router.refresh();
+    // Parked, not pushed — the effect above navigates once the beat is done
+    // (immediately, when no XP was banked and there is no beat to wait for).
+    setPendingNav(dest);
   }
 
   /* ── Read-only postures ───────────────────────────────────────────────── */
@@ -392,7 +433,12 @@ export default function ShareYourCallClient({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-7 pb-10">
+    <div className="relative mx-auto max-w-2xl space-y-7 pb-10">
+      {/* The award beat plays over the composer the member just filed, which
+          is the last thing they were looking at. It draws nothing until the
+          XP actually lands. */}
+      {xpAward.overlay}
+
       {/* ── Modal chrome: leave / progress / commit ────────────────────────
           The progress rail counts the three REAL declarations. It is a status
           line, not the canvas's decorative 2-of-3. */}

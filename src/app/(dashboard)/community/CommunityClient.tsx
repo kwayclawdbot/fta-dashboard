@@ -14,7 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { XP, awardXp, countXpToday } from "@/lib/xp";
+import { XP, awardXp, countXpToday, getUserXp } from "@/lib/xp";
+import { useXpAward } from "@/components/canvas2";
 import {
   getClubTier,
   getFamilyTierMap,
@@ -115,6 +116,8 @@ export default function CommunityClient({
   onOpenDiscussions?: () => void;
 }) {
   const supabase = createClient();
+  // The XP award moment for publishing — see the fire() call in the composer.
+  const xpAward = useXpAward();
   // Server-first: when the feed is seeded, the states below start populated so
   // the feed paints on first paint; the initial client load is skipped (polling
   // + badge eval still run). A null seed falls back to the original full load.
@@ -585,8 +588,27 @@ export default function CommunityClient({
       setContentType(null);
       setShowTagger(false);
       clearAttachment();
+      // Publishing used to bank XP in total silence — the number moved on a
+      // screen the member had already scrolled past. The award is now spent:
+      // read the lifetime total BEFORE the write, award, then fire the moment
+      // with both figures so the belt beat only plays when a belt was really
+      // crossed. `awardXp` swallows its own errors, so the celebration is
+      // gated on the row we can actually see land, never on the call
+      // returning.
       const todayPosts = await countXpToday(supabase, me.id, "community");
-      if (todayPosts < 3) await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
+      if (todayPosts < 3) {
+        const xpBefore = await getUserXp(supabase, me.id);
+        await awardXp(supabase, me.id, "community", XP.COMMUNITY, data.id);
+        const xpAfter = await getUserXp(supabase, me.id);
+        if (xpAfter > xpBefore) {
+          xpAward.fire({
+            amount: xpAfter - xpBefore,
+            xpBefore,
+            xpAfter,
+            reason: "Post published",
+          });
+        }
+      }
     } else {
       setComposerError("Your post didn't go through. Please try again.");
     }
@@ -917,7 +939,11 @@ export default function CommunityClient({
 
   return (
     <MentionProvider map={mentions}>
-    <div className="max-w-2xl mx-auto">
+    <div className="relative max-w-2xl mx-auto">
+      {/* The award overlay anchors to the whole feed column, so the count-up
+          and the belt beat land over the post that earned them rather than
+          over one corner of the composer. It renders nothing until fired. */}
+      {xpAward.overlay}
       <div className="space-y-6">
         {/* Main feed — full width now that Club Chat lives in a drawer */}
         <div className="min-w-0 space-y-6">
