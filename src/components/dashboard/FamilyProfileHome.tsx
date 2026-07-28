@@ -157,7 +157,9 @@ export default function FamilyProfileHome({ familyId }: { familyId: string }) {
     <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="paper-card p-6"
+      // Last live `paper-card` call site in the app (R10 census) — moved onto
+      // the board card so the class definition can be deleted from globals.
+      className="club-b-card p-6"
     >
       <div className="flex items-center gap-2 mb-1">
         <Sparkles className="w-4 h-4 text-gold-600" />
