@@ -414,6 +414,7 @@ function RisingFast({ rows, loading }: { rows: TrendingRow[]; loading: boolean }
         <div className="mt-2.5 grid grid-cols-3 gap-2.5" aria-busy="true">
           {[0, 1, 2].map((i) => (
             <BoardCard key={i} radius={14} className="space-y-2 px-3 py-3">
+              <Bone w={22} h={22} className="rounded-md" />
               <Bone w={36} h={9} />
               <Bone w={48} h={9} />
               <Bone w="100%" h={20} className="rounded-md" />
@@ -443,6 +444,16 @@ function RisingFast({ rows, loading }: { rows: TrendingRow[]; loading: boolean }
                   href={`/research/${encodeURIComponent(r.ticker)}`}
                   className="f0-focus block rounded-[14px] px-3 py-[11px]"
                 >
+                  {/* The card led with a mono ticker and nothing else — three
+                      white cards in a row identified only by four letters. The
+                      real company mark does the identifying now; the ticker
+                      stays, because a logo alone is not a name you can search. */}
+                  <CompanyLogo
+                    symbol={r.ticker}
+                    size={22}
+                    rounded="rounded-md"
+                    className="mb-1.5"
+                  />
                   <span className="block font-mono text-[12px] font-semibold text-ink">
                     {r.ticker.toUpperCase()}
                   </span>
@@ -691,6 +702,7 @@ function QuietToLoud({ rows, loading }: { rows: TrendingRow[]; loading: boolean 
         <div className="mt-2.5 grid grid-cols-5 gap-2.5" aria-busy="true">
           {[0, 1, 2, 3, 4].map((i) => (
             <div key={i} className="space-y-2">
+              <Bone w={20} h={20} className="mx-auto rounded-md" />
               <Bone w="100%" h={28} className="rounded-md" />
               <Bone w={30} h={7} className="mx-auto" />
             </div>
@@ -709,7 +721,15 @@ function QuietToLoud({ rows, loading }: { rows: TrendingRow[]; loading: boolean 
               href={`/research/${encodeURIComponent(r.ticker)}`}
               className="f0-focus rounded text-center"
             >
-              <TickerSpark symbol={r.ticker} height={30} width={60} className="block" />
+              {/* Five bare sparklines were five anonymous squiggles. The mark
+                  above each one is what makes the row scannable. */}
+              <CompanyLogo
+                symbol={r.ticker}
+                size={20}
+                rounded="rounded-md"
+                className="mx-auto"
+              />
+              <TickerSpark symbol={r.ticker} height={30} width={60} className="mt-1 block" />
               <span className="mt-1 block font-mono text-[10px] text-ink">
                 {r.ticker.toUpperCase()}
               </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -44,45 +44,47 @@ function formatDelta(pct: number): string {
   return `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct).toFixed(2)}%`;
 }
 
-/* The mark inside the field. The letter is the DEFAULT, not the fallback: it is
-   the canvas's own device, it is always legible on the dark ground, and it never
-   loads. `logoUrl` is offered for the surfaces that already hold real branding —
-   and a failed fetch reverts to the letter rather than leaving a broken-image
-   box, which is the same contract CompanyLogo honours. `object-contain` because
-   a logo is not a photograph: cover would crop a wordmark. */
-function TileMark({
-  logoUrl,
-  glyph,
-  markClass,
-}: {
-  logoUrl?: string | null;
-  glyph: string;
-  markClass: string;
-}) {
-  const [broken, setBroken] = useState(false);
+/* The REAL COMPANY LOGO is the default mark. The tile shipped with `logoUrl` as
+   an opt-in and not one of its eighteen call sites ever passed it, so every
+   identity on the canvas was a single letter — three names sharing an initial
+   were three identical squares. The proxy is keyless and CDN-cached, so the
+   correct default is "ask for the logo"; the letter stays as the fallback face,
+   which is the same contract CompanyLogo honours (a failed fetch reverts to a
+   mark, never a broken-image box).
 
-  if (logoUrl && !broken) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={logoUrl}
-        alt=""
-        loading="lazy"
-        onError={() => setBroken(true)}
-        className="h-full w-full object-contain p-1.5"
-      />
-    );
+   Pass `logoUrl={null}` explicitly to opt a surface back out; `undefined` means
+   "not specified" and takes the default. */
+function logoSrc(sym: string): string {
+  return `/api/market/logo?symbol=${encodeURIComponent(sym)}`;
+}
+
+/* onError IS NOT ENOUGH ON A SERVER-RENDERED IMAGE. The tag ships inside the
+   HTML, so the browser starts the request while it is still parsing — well
+   before React hydrates and attaches the handler. A 404 that lands in that
+   window fires an error nobody is listening for, and the tile is left holding
+   the browser's broken-image glyph forever. (Observed live: forcing the
+   branding proxy to 404 left torn-page icons on the Club strip while the
+   client-rendered surfaces fell back correctly.)
+   The REF CALLBACK closes the gap: it runs the moment the node is attached, so
+   it can ask the element what already happened — a finished image with zero
+   natural width is, by definition, one that failed. (A ref callback rather than
+   an effect because state set from an effect body is a re-render after paint;
+   this one resolves in the same commit, so the fallback never flashes.) */
+function useBrokenImage(
+  src: string | null
+): [(el: HTMLImageElement | null) => void, boolean, () => void] {
+  const [broken, setBroken] = useState(false);
+  // Render-phase reset: a tile reused for a different company starts clean
+  // rather than inheriting the previous company's failure.
+  const [seen, setSeen] = useState(src);
+  if (seen !== src) {
+    setSeen(src);
+    setBroken(false);
   }
-  // No colour of its own: currentColor is the field's constant cream, so the
-  // mark can never invert to black-on-black in dark.
-  return (
-    <span
-      className={`font-display font-black leading-none tracking-tight ${markClass}`}
-      aria-hidden
-    >
-      {glyph}
-    </span>
-  );
+  const attach = useCallback((el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth === 0) setBroken(true);
+  }, []);
+  return [attach, seen === src && broken, () => setBroken(true)];
 }
 
 export interface TickerTileProps {
@@ -93,7 +95,9 @@ export interface TickerTileProps {
   /** Overrides the derived letter mark (e.g. a two-letter mark for a strip
    *  where three tickers share an initial). Kept to 2 characters. */
   mark?: string;
-  /** Company logo. Falls back to the letter mark if it fails to load. */
+  /** Company logo. Defaults to the real branding proxy for the given ticker;
+   *  falls back to the letter mark if it fails to load. Pass `null` to force
+   *  the letter mark. */
   logoUrl?: string | null;
   size?: TickerTileSize;
   /** Makes the whole tile a link. Without it the tile is inert (not focusable),
@@ -121,6 +125,11 @@ export default function TickerTile({
   const s = SIZES[size];
   const sym = (ticker ?? "").trim().toUpperCase();
   const glyph = (mark ?? sym.slice(0, 1)).slice(0, 2);
+
+  // `undefined` = unspecified → take the real logo. `null` = an explicit opt-out.
+  const src = logoUrl === undefined ? (sym ? logoSrc(sym) : null) : logoUrl;
+  const [attachLogo, logoBroken, markLogoBroken] = useBrokenImage(src);
+  const showLogo = Boolean(src) && !logoBroken;
 
   // ── LOADING — a filled, pulsing tile. It claims content is coming. ────────
   if (loading) {
@@ -180,15 +189,52 @@ export default function TickerTile({
     ? `${sym}, ${changePct > 0 ? "up" : changePct < 0 ? "down" : "unchanged"} ${Math.abs(changePct).toFixed(2)} percent`
     : `${sym}, change unavailable`;
 
+  /* THE LOGO NEEDS A LIGHT GROUND. Polygon's icons are opaque white-ground
+     bitmaps (and TSLA's is an RGBA file carrying a DARK mark), so dropping one
+     straight onto the achromatic field gives you either a white postage stamp
+     on obsidian or an invisible mark. The face therefore flips to the chip
+     CompanyLogo already uses app-wide — white ground, sand hairline — the
+     moment an image is actually showing, and reverts to the drawn dark
+     letter-mark face the moment it is not. Identity is still carried by the
+     mark, not by a brand-coloured ground, so the colour law holds.
+
+     The ground is set INLINE, not with `bg-white`: globals.css is unlayered, so
+     `.f0-tile-field`'s gradient outranks every Tailwind background utility. The
+     edge is a `border` rather than a `ring` for the same reason in reverse —
+     `.f0-tile-lead .f0-tile-field` owns box-shadow, and a ring would silently
+     eat the lead tile's accent halo. */
   const field = (
     <>
       <div
         className={`f0-tile-field grid place-items-center overflow-hidden transition-transform duration-200 ${
-          href ? "group-hover:-translate-y-0.5 motion-reduce:transform-none" : ""
-        }`}
-        style={{ height: s.box, borderRadius: s.radius }}
+          showLogo ? "border border-sand" : ""
+        } ${href ? "group-hover:-translate-y-0.5 motion-reduce:transform-none" : ""}`}
+        style={{
+          height: s.box,
+          borderRadius: s.radius,
+          ...(showLogo ? { background: "#FFFFFF" } : null),
+        }}
       >
-        <TileMark logoUrl={logoUrl} glyph={glyph} markClass={s.mark} />
+        {showLogo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            ref={attachLogo}
+            src={src as string}
+            alt=""
+            loading="lazy"
+            onError={markLogoBroken}
+            className="h-full w-full object-contain p-1.5"
+          />
+        ) : (
+          // No colour of its own: currentColor is the field's constant cream, so
+          // the mark can never invert to black-on-black in dark.
+          <span
+            className={`font-display font-black leading-none tracking-tight ${s.mark}`}
+            aria-hidden
+          >
+            {glyph}
+          </span>
+        )}
       </div>
       {showDelta && (
         <p

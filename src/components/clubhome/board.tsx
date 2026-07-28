@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useState } from "react";
+
 /**
  * BOARD 01 — the shared objects the Home screens are drawn from.
  *
@@ -55,6 +57,18 @@ export function brandInk(ticker?: string | null): BrandInk {
   return BRAND[sym] ?? NEUTRAL;
 }
 
+/* THE REAL LOGO IS THE TILE. The hand-kept colour map above covers twenty
+   tickers and guesses at the rest, and the letter it carries makes AAPL, AMD
+   and AMZN the same object. So the tile now asks the branding proxy for the
+   company's actual mark first (keyless, CDN-cached — see /api/market/logo) and
+   only falls back to the drawn brand-ink letter when there is no image: an
+   ETF gets our typographic mark, an unknown ticker gets the neutral ground,
+   and nothing ever renders a broken-image box.
+
+   Polygon icons are opaque WHITE-ground bitmaps, so the image face has to be a
+   light chip — the same white/sand chip CompanyLogo uses app-wide. Dropping a
+   white-ground JPEG onto the near-black brand ground is what makes a logo look
+   pasted on. */
 export function BrandTile({
   ticker,
   size = 34,
@@ -70,6 +84,43 @@ export function BrandTile({
 }) {
   const sym = (ticker ?? "").trim().toUpperCase();
   const ink = brandInk(sym);
+
+  /* onError alone is not enough: this tile is server-rendered, so the browser
+     starts the request while parsing the HTML — before React hydrates and binds
+     the handler. An error that lands in that window is heard by nobody and the
+     tile keeps the browser's broken-image glyph. The ref callback asks the
+     element what already happened: a finished image with zero natural width is,
+     by definition, one that failed. */
+  const [broken, setBroken] = useState(false);
+  const [seen, setSeen] = useState(sym);
+  if (seen !== sym) {
+    setSeen(sym);
+    setBroken(false);
+  }
+  const imgRef = useCallback((el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth === 0) setBroken(true);
+  }, []);
+
+  if (sym && !(broken && seen === sym)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        ref={imgRef}
+        src={`/api/market/logo?symbol=${encodeURIComponent(sym)}`}
+        alt=""
+        loading="lazy"
+        onError={() => setBroken(true)}
+        className={`shrink-0 border border-sand bg-white object-contain ${className}`}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          padding: Math.max(2, Math.round(size * 0.1)),
+        }}
+      />
+    );
+  }
+
   return (
     <span
       className={`club-b-tile shrink-0 ${className}`}

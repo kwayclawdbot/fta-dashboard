@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 
@@ -380,10 +381,19 @@ export function RingMark({
 /* ── ticker mark ──────────────────────────────────────────────────────────── */
 
 /**
- * The black rounded square carrying a letter mark — the boards' most reused
- * object (thread rows, chat cards, the composer's bound company). `tone` paints
- * the letter; the field itself stays near-black so a strip of them never becomes
- * a colour chart.
+ * The company mark — the boards' most reused object (thread rows, chat cards,
+ * the composer's bound company).
+ *
+ * It carries the company's REAL logo, fetched through the keyless branding
+ * proxy (/api/market/logo). It used to carry a single letter, which made every
+ * A-ticker in a thread list the same object; the letter is now the FALLBACK
+ * face, kept exactly as drawn — `tone` still paints it and `field` is still its
+ * ground — so a company with no branding, or a failed fetch, degrades to the
+ * board's own device rather than to a broken-image box.
+ *
+ * The image face is a light chip (white ground, sand hairline), matching
+ * CompanyLogo: Polygon's icons are opaque white-ground bitmaps and some carry a
+ * dark mark, so the near-black ground cannot be reused for them.
  */
 export function TickerMark({
   ticker,
@@ -397,11 +407,52 @@ export function TickerMark({
   size?: number;
   radius?: number;
   tone?: "cream" | "up" | "down" | "accent" | "ink";
-  /** The tile ground. Near-black by default; the boards flip it to white when
-   *  the mark sits ON a dark field (the pinned thread's header). */
+  /** The tile ground of the FALLBACK letter face. Near-black by default; the
+   *  boards flip it to white when the mark sits ON a dark field (the pinned
+   *  thread's header). */
   field?: string;
   className?: string;
 }) {
+  const sym = (ticker ?? "").trim().toUpperCase();
+
+  /* onError alone is not enough on a SERVER-RENDERED image: the browser begins
+     the request while parsing the HTML, before React hydrates and binds the
+     handler, so a 404 landing in that window is heard by nobody and the mark
+     keeps the browser's broken-image glyph. This is not hypothetical — it is
+     exactly what the Club strip and the thread chips did when the branding
+     proxy was forced to fail. The ref callback asks the element what already
+     happened: a finished image with zero natural width is, by definition, one
+     that failed. */
+  const [broken, setBroken] = useState(false);
+  const [seen, setSeen] = useState(sym);
+  if (seen !== sym) {
+    setSeen(sym);
+    setBroken(false);
+  }
+  const imgRef = useCallback((el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth === 0) setBroken(true);
+  }, []);
+
+  if (sym && !(broken && seen === sym)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        ref={imgRef}
+        src={`/api/market/logo?symbol=${encodeURIComponent(sym)}`}
+        alt=""
+        loading="lazy"
+        onError={() => setBroken(true)}
+        className={`shrink-0 border border-sand bg-white object-contain ${className}`}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: radius,
+          padding: Math.max(2, Math.round(size * 0.1)),
+        }}
+      />
+    );
+  }
+
   const color =
     tone === "up"
       ? "#1BA94C"
