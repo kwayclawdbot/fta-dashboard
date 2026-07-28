@@ -1,5 +1,7 @@
 {
-  "regions": ["pdx1"],
+  "regions": [
+    "pdx1"
+  ],
   "crons": [
     {
       "path": "/api/cron/track-performance",
@@ -64,10 +66,6 @@
     {
       "path": "/api/cron/challenge-day-push?kind=session",
       "schedule": "30 22 * * *"
-    },
-    {
-      "path": "/api/ownership/cron",
-      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/club/refresh",
