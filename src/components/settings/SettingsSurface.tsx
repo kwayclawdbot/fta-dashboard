@@ -553,15 +553,40 @@ export default function SettingsSurface() {
         <Card className="rounded-[16px] px-3.5">
           <div className="f0-ledger">
             <SettingRow label="Plan" value={plan} />
-            <SettingRow
-              label={ent.challenge?.active ? "Pass expires" : "Renews"}
-              sub={
-                ent.clubLapsed
-                  ? "Your Club window has ended — the Academy stays yours for life"
-                  : undefined
-              }
-              value={renewLabel ?? "—"}
-            />
+            {/* THE ABSENT DATE IS DESIGNED, not a fallback character. `Renews —`
+                rendered a bare em dash, which reads as a value that failed to
+                load. There are two real reasons this date is missing and they
+                are different facts, so they get different sentences: a free
+                member has nothing that renews, and a paying member's next
+                charge lives at the payment processor, not in `enrollments` —
+                the app must not imply it knows a date it has never been told.
+                Either way the row hands off to Plans & billing below. */}
+            {renewLabel ? (
+              <SettingRow
+                label={ent.challenge?.active ? "Pass expires" : "Renews"}
+                sub={
+                  ent.clubLapsed
+                    ? "Your Club window has ended — the Academy stays yours for life"
+                    : undefined
+                }
+                value={renewLabel}
+              />
+            ) : (
+              <SettingRow
+                label="Renews"
+                sub={
+                  ent.clubLapsed
+                    ? "Your Club window has ended — the Academy stays yours for life"
+                    : undefined
+                }
+              >
+                <span className="shrink-0 text-right text-[11px] font-medium leading-snug text-soft">
+                  {ent.tier === "free"
+                    ? "Nothing renews on the free plan"
+                    : "No renewal date on file"}
+                </span>
+              </SettingRow>
+            )}
             {ent.challenge?.active && (
               <SettingRow
                 label="Challenge Pass"
