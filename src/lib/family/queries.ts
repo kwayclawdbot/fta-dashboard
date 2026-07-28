@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FamilyGuardrails } from "@/lib/family/guardrails";
 import { DEFAULT_GUARDRAILS } from "@/lib/family/guardrails";
 import { researchComplete, type WatchlistItem } from "@/lib/watchlist";
+import { isParentRole } from "@/lib/family/roles";
 
 /**
  * FAMILY MODE — server reads (canvas F1–F9).
@@ -97,8 +98,9 @@ export async function getFamilyContext(db: DB): Promise<FamilyContext | null> {
     // Admins are parents for gating purposes. The old /parent-corner admitted
     // `parent || admin`; narrowing to parent-only on the merge locked admins
     // (incl. the owner) out of every parent surface — caught by the live sweep
-    // when /family/corner bounced the owner's admin account to /family.
-    isParent: me.role === "parent" || me.role === "admin",
+    // when /family/corner bounced the owner's admin account to /family. The
+    // predicate lives in ./roles so the client screens gate identically.
+    isParent: isParentRole(me.role),
     familyId: me.family_id,
     familyName: (family?.name as string | null) ?? null,
     members,

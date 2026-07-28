@@ -14,8 +14,9 @@ import {
   Brain,
   Loader2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isParentRole } from "@/lib/family/roles";
+import ParentsOnly from "@/components/family/ParentsOnly";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
@@ -34,11 +35,11 @@ interface FamilyMember {
 }
 
 export default function FamilyMembersPage() {
-  const router = useRouter();
   const supabase = createClient();
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [summaries, setSummaries] = useState<Record<string, BadgeSummary>>({});
   const [loading, setLoading] = useState(true);
+  const [blocked, setBlocked] = useState<"child" | "member" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteLink, setInviteLink] = useState("");
@@ -87,13 +88,13 @@ export default function FamilyMembersPage() {
       .eq("id", user.id)
       .single();
 
-    // Kid privacy lock: children go straight back to their own home.
-    if (profile?.role === "child") {
-      router.replace("/dashboard");
-      return;
-    }
-    if (!profile || profile.role !== "parent") {
-      router.replace("/dashboard");
+    // The household roster is a parent screen — admins included (shared
+    // predicate, src/lib/family/roles.ts). Everyone else, children first, is
+    // told so on the screen: /family links here, and a silent
+    // replace('/dashboard') read as a broken link rather than a boundary.
+    if (!profile || !isParentRole(profile.role)) {
+      setBlocked(profile?.role === "child" ? "child" : "member");
+      setLoading(false);
       return;
     }
 
@@ -120,7 +121,7 @@ export default function FamilyMembersPage() {
     if (list.length) {
       setSummaries(await getBadgeSummaries(supabase, list.map((m) => m.id)));
     }
-  }, [supabase, router]);
+  }, [supabase]);
 
   useEffect(() => {
     loadMembers();
@@ -170,6 +171,19 @@ export default function FamilyMembersPage() {
       prev.map((m) => (m.id === userId ? { ...m, role: newRole } : m))
     );
     setUpdatingRole(null);
+  }
+
+  if (blocked) {
+    return (
+      <ParentsOnly
+        screen="The household roster"
+        note={
+          blocked === "child"
+            ? "Adding people, setting roles and reading what Kai remembers about each member sits with the grown-ups in your family. Everything about YOUR account — your track, your badges, your streak — is on your home screen."
+            : "Adding people, setting roles and reading what Kai remembers about each member sits with the parents on this account. Ask one of them to make you a parent if you should be managing the household."
+        }
+      />
+    );
   }
 
   if (loading) {

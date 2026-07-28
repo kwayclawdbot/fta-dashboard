@@ -13,8 +13,9 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isParentRole } from "@/lib/family/roles";
+import ParentsOnly from "@/components/family/ParentsOnly";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { fetchXpForUsers } from "@/lib/belts";
 import TierBadge from "@/components/TierBadge";
@@ -90,13 +91,13 @@ function calculateStreak(dates: string[]): number {
 }
 
 export default function FamilyOverviewPage() {
-  const router = useRouter();
   const supabase = createClient();
   const [overview, setOverview] = useState<FamilyOverview | null>(null);
   const [beltXp, setBeltXp] = useState<Record<string, number>>({});
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
   const [weekly, setWeekly] = useState<WeeklyResearch | null>(null);
   const [loading, setLoading] = useState(true);
+  const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState("");
 
   const loadData = useCallback(async () => {
@@ -111,8 +112,12 @@ export default function FamilyOverviewPage() {
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "parent") {
-      router.replace("/dashboard");
+    // Admins count as parents (shared predicate — see src/lib/family/roles.ts).
+    // A viewer who genuinely isn't one is TOLD so; this screen used to answer a
+    // link on /family with a silent replace('/dashboard').
+    if (!profile || !isParentRole(profile.role)) {
+      setBlocked(true);
+      setLoading(false);
       return;
     }
 
@@ -280,11 +285,20 @@ export default function FamilyOverviewPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, router]);
+  }, [supabase]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  if (blocked) {
+    return (
+      <ParentsOnly
+        screen="The family overview"
+        note="It gathers everyone's lessons, streaks and credentials in one place, so it stays with the grown-ups in the household. Your own progress — every lesson, badge and streak on it — is on your home screen."
+      />
+    );
+  }
 
   if (loading) {
     return (
