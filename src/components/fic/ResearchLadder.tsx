@@ -62,8 +62,11 @@ export default function ResearchLadder({
         const tone =
           isVerdict && rung.key === "verdict"
             ? status === "favorite"
-              ? "bg-green-500 text-white ring-green-500"
-              : "bg-red-500 text-white ring-red-500"
+/* A verdict rung is a STANCE, not a price move — the green/red
+                 pair here was the market ramp standing in for approval. Kept
+                 is the ACTION colour; passed is a neutral filled rung. */
+              ? "bg-accent text-[var(--accent-on)] ring-accent"
+              : "bg-sand text-ink ring-sand"
             : reached
               ? "bg-gold-400 text-night-950 ring-gold-400"
               : rung.key === "verdict" && researchDone

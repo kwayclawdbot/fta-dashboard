@@ -190,7 +190,7 @@ export default function WatchlistPerformance({
   const upTotal = total >= 0;
   // PRICE ramp only. Both steps are chosen to clear on obsidian, which is what
   // the hero field is in light AND dark.
-  const priceTone = upTotal ? "text-green-400" : "text-red-500";
+  const priceTone = upTotal ? "text-price-up-island" : "text-price-down-island";
 
   // Build the SVG path (viewBox 0..W x 0..H, higher return = higher on chart).
   const W = 640;
@@ -225,8 +225,8 @@ export default function WatchlistPerformance({
 
         {/* up / down / flat — a split, not three stat cards */}
         <dl className="flex items-end gap-6">
-          <Split label="Up" value={up} dot="bg-green-400" />
-          <Split label="Down" value={down} dot="bg-red-500" />
+          <Split label="Up" value={up} dot="bg-price-up-island" />
+          <Split label="Down" value={down} dot="bg-price-down-island" />
           <Split label="Flat" value={flat} dot="bg-current opacity-45" />
         </dl>
       </div>

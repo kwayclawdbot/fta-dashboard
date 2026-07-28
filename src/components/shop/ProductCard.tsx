@@ -42,7 +42,7 @@ export default function ProductCard({
           <div className="flex h-full items-center justify-center text-soft">No cover</div>
         )}
         {saving > 0 && (
-          <span className="absolute left-3 top-3 rounded-full bg-green-600 px-2.5 py-1 text-xs font-bold text-white shadow">
+          <span className="absolute left-3 top-3 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-[var(--accent-on)] shadow">
             Save {formatUsd(saving)}
             {pct ? ` · ${pct}%` : ""}
           </span>

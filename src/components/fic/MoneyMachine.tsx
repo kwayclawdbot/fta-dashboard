@@ -277,7 +277,9 @@ export default function MoneyMachine(props: Props) {
               {[10, 16, 13, 20, 24].map((h, i) => (
                 <m.span
                   key={i}
-                  className="w-1.5 rounded-full bg-green-500"
+                  /* Non-directional growth bars — decorative, not a price move. Green is
+                     PRICE by colour law, so the ornament rides the ACTION ramp. */
+                  className="w-1.5 rounded-full bg-accent"
                   style={{ height: h }}
                   initial={anim ? { scaleY: 0 } : false}
                   animate={anim ? { scaleY: 1 } : undefined}

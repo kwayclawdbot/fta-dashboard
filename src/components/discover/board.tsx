@@ -283,12 +283,18 @@ export function Spark({
     // reflow when a line does land, but nothing is drawn.
     return <span aria-hidden className={className} style={{ height }} />;
   }
-  const up = (points as number[])[points!.length - 1] >= (points as number[])[0];
+  /* Tinted by the SIGN of the change over the window, off the price tokens —
+     and flat is its own answer. The comparison was `>=`, which folded an
+     unchanged series into "up" and drew a gain that did not happen. A series
+     that ends where it started draws in the neutral ink. */
+  const series = points as number[];
+  const net = series[series.length - 1] - series[0];
+  const tone = net > 0 ? "text-price-up" : net < 0 ? "text-price-down" : "text-soft";
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
-      className={`${up ? "text-price-up" : "text-price-down"} ${className}`}
+      className={`${tone} ${className}`}
       style={{ height }}
       role={label ? "img" : "presentation"}
       aria-label={label}

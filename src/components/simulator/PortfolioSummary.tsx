@@ -181,7 +181,7 @@ export default function PortfolioSummary({
 
   const flat = state.totalPnl === 0;
   const up = state.totalPnl > 0;
-  const tone = flat ? "opacity-70" : up ? "text-green-400" : "text-red-500";
+  const tone = flat ? "opacity-70" : up ? "text-price-up-island" : "text-price-down-island";
 
   // The measure row is the board's four-up stat cards, sitting on the paper
   // under the field. Off the obsidian field they can use the canonical price

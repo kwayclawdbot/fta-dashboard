@@ -90,7 +90,7 @@ export default function EnablePushButton({ compact = false }: { compact?: boolea
   if (status === "subscribed") {
     return (
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent">
           <Check className="w-3.5 h-3.5" />
           Push notifications on
         </span>

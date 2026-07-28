@@ -34,7 +34,7 @@ export default async function ThanksPage({
 
   return (
     <main className="mx-auto flex max-w-xl flex-col items-center px-5 py-16 text-center">
-      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-green-600/15 text-green-600">
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/15 text-accent">
         <CheckCircle2 className="h-9 w-9" />
       </span>
       <h1 className="mt-5 font-display text-3xl font-black text-ink">

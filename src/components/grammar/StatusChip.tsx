@@ -30,8 +30,10 @@ const TONES: Record<ChipTone, string> = {
   support: "bg-teal-400/15 text-teal-700",
   kai: "bg-kai-blue-soft text-kai-blue",
   live: "bg-volt-500/15 text-volt-700",
-  bull: "bg-chip-green text-emerald-700",
-  bear: "bg-red-500/12 text-red-600",
+  /* Stance is COMMUNITY SENTIMENT, which is lime by law — never the price
+     green/red pair these two were borrowing. */
+  bull: "bg-sentiment-soft text-sentiment",
+  bear: "bg-sand text-soft",
   new: "bg-chip-amber text-gold-700",
 };
 

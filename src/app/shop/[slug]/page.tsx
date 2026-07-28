@@ -103,7 +103,7 @@ export default async function ProductPage({
               </span>
             )}
             {saving > 0 && (
-              <span className="mb-1 rounded-full bg-green-600 px-2.5 py-1 text-xs font-bold text-white">
+              <span className="mb-1 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-[var(--accent-on)]">
                 Save {formatUsd(saving)}
               </span>
             )}

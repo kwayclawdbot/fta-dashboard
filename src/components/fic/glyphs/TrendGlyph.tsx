@@ -17,9 +17,9 @@ const CONFIG: Record<
   Uptrend: {
     label: "Uptrend",
     kidLabel: "Going up",
-    stroke: "#16A34A",
-    bg: "bg-green-500/10",
-    text: "text-green-600",
+    stroke: "var(--price-up)",
+    bg: "bg-price-up/10",
+    text: "text-price-up",
     d: "M4 16 L10 10 L13 12 L18 6 M18 6 L13 6 M18 6 L18 11",
   },
   Sideways: {
@@ -33,9 +33,9 @@ const CONFIG: Record<
   Downtrend: {
     label: "Downtrend",
     kidLabel: "Going down",
-    stroke: "#DC2626",
-    bg: "bg-red-500/10",
-    text: "text-red-600",
+    stroke: "var(--price-down)",
+    bg: "bg-price-down/10",
+    text: "text-price-down",
     d: "M4 6 L10 12 L13 10 L18 16 M18 16 L13 16 M18 16 L18 11",
   },
   "New / Volatile": {

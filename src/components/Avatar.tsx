@@ -42,7 +42,9 @@ const ROLE_BG: Record<string, string> = {
   coach: "bg-chip-amber text-gold-800",
   admin: "bg-chip-amber text-gold-800",
   parent: "bg-chip-sky text-sky-800",
-  child: "bg-chip-green text-green-700",
+  /* A role is not a price move. The child chip was the only one wearing the
+     market ramp; it now reads in the neutral surface pair. */
+  child: "bg-sand text-ink",
 };
 
 export function initialsOf(name?: string | null): string {

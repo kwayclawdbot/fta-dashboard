@@ -120,7 +120,7 @@ export default function ClubCard({
             {pct != null && (
               <span
                 className={`font-mono text-[13px] font-semibold tabular-nums ${
-                  up ? "text-green-400" : "text-red-500"
+                  up ? "text-price-up-island" : "text-price-down-island"
                 }`}
               >
                 {up ? "+" : ""}

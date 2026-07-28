@@ -443,7 +443,7 @@ export default function AddFamily({
                         className="shrink-0 rounded-lg border border-sand px-3 py-2.5 text-ink hover:bg-paper transition-colors"
                       >
                         {copied ? (
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check className="h-4 w-4 text-accent" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}

@@ -33,9 +33,9 @@ export default function LivePrice({
 
   const toneCls =
     tone === "up"
-      ? "bg-green-500/10 text-green-600"
+      ? "bg-price-up/10 text-price-up"
       : tone === "down"
-        ? "bg-red-500/10 text-red-600"
+        ? "bg-price-down/10 text-price-down"
         : "bg-paper text-soft";
   const Icon =
     tone === "up" ? ArrowUpRight : tone === "down" ? ArrowDownRight : Minus;

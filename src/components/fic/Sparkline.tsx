@@ -11,9 +11,20 @@ import { fetchBars, type MarketBar } from "@/lib/market/client";
  * each, key-free (the Polygon key stays on the server).
  *
  * Lazy: only fetches once the card scrolls into view (IntersectionObserver).
- * Colored by net direction over the window (locked green-team / red-team).
  * The line draws in on reveal (stroke-dashoffset) unless reduced-m.
  * Graceful: renders nothing tall/broken if data is missing.
+ *
+ * COLOUR — tinted by the SIGN OF THE SESSION CHANGE, off the canonical price
+ * tokens. It used to hardcode #16A34A / #DC2626: the raw Tailwind ramp frozen
+ * into the component, which meant the one chart on the surface was the one
+ * thing that did not follow the market ramp when the theme or the mode
+ * changed — it kept a light-theme green on the dark page, where that value
+ * measures under 4:1. `var(--price-up)` / `var(--price-down)` carry the right
+ * ramp step per theme and per mode with nothing written at the call site.
+ *
+ * FLAT IS ITS OWN ANSWER. `up` was computed with `>=`, which quietly painted
+ * an unchanged window green — a gain that never happened. A window that ends
+ * where it started now draws in the neutral ink and says so in its label.
  */
 export default function Sparkline({
   symbol,
@@ -62,7 +73,8 @@ export default function Sparkline({
   const pad = 3;
 
   let path = "";
-  let up = true;
+  /** −1 down · 0 flat · 1 up — the sign of the change over the window. */
+  let dir: -1 | 0 | 1 = 0;
   let areaPath = "";
   if (bars && bars.length >= 2) {
     const closes = bars.map((b) => b.c);
@@ -76,14 +88,20 @@ export default function Sparkline({
       return [x, y] as const;
     });
     path = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-    up = closes[closes.length - 1] >= closes[0];
+    const net = closes[closes.length - 1] - closes[0];
+    dir = net > 0 ? 1 : net < 0 ? -1 : 0;
     const last = pts[pts.length - 1];
     const first = pts[0];
     areaPath = `${path} L${last[0].toFixed(1)},${H - pad} L${first[0].toFixed(1)},${H - pad} Z`;
   }
 
-  const stroke = up ? "#16A34A" : "#DC2626";
-  const fill = up ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)";
+  const stroke =
+    dir === 1 ? "var(--price-up)" : dir === -1 ? "var(--price-down)" : "var(--soft)";
+  /* The fill is the same colour the line is, at a tenth — `color-mix` so the
+     tint follows the token rather than a second hardcoded rgba() that drifts
+     the moment the ramp moves. */
+  const fill = `color-mix(in srgb, ${stroke} 10%, transparent)`;
+  const trend = dir === 1 ? "up" : dir === -1 ? "down" : "flat";
 
   return (
     <div
@@ -107,7 +125,7 @@ export default function Sparkline({
           preserveAspectRatio="none"
           className="h-full w-full"
           role="img"
-          aria-label={`${symbol} 3-month price trend, ${up ? "up" : "down"} over the window`}
+          aria-label={`${symbol} 3-month price trend, ${trend} over the window`}
         >
           <path d={areaPath} fill={fill} stroke="none" />
           <m.path
