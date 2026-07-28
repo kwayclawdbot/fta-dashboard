@@ -101,6 +101,38 @@ export function isSoloProfile(
   return isSoloHousehold(profile.household);
 }
 
+/**
+ * THE SOLO VERDICT, RESOLVED FROM MEMBERSHIP — not from the signup form.
+ *
+ * isSoloProfile() above reads `family_profiles.household`, which is what the
+ * parent TYPED during onboarding. That answer can be stale or simply wrong: the
+ * wizard's own empty draft is `{adults:1, kids:0}`, and a parent who later adds
+ * a teen never goes back to edit it. The live defect this fixes: a parent with a
+ * real teen in `profiles` was classified solo, and the navigation dropped the
+ * Family group entirely — no Family row, no Family anywhere — for a household
+ * that plainly had a second member.
+ *
+ * The rule, in one line: **the roster is the fact, the questionnaire only breaks
+ * ties.**
+ *   • two or more profile rows on the family  → NEVER solo, whatever the JSON says.
+ *   • exactly one (or zero) rows              → the completed household decides,
+ *     so a parent who declared kids but hasn't invited them yet keeps the family
+ *     framing, and a deliberate individual member keeps the club framing.
+ *   • member count unknown (no family, or the count failed to read) → the JSON
+ *     verdict stands, exactly as before. A failed count never reclassifies anyone.
+ */
+export function isSoloAccount(
+  profile:
+    | { household?: SoloHousehold | null; completed_at?: string | null }
+    | null
+    | undefined,
+  memberCount: number | null | undefined
+): boolean {
+  if (!isSoloProfile(profile)) return false;
+  if (memberCount == null) return true;
+  return memberCount <= 1;
+}
+
 export function isKidRegister(
   profile: RegisterProfile | null | undefined
 ): boolean {

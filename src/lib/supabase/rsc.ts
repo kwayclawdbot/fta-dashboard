@@ -136,3 +136,36 @@ export const getRequestTierState = cache(
     return getFamilyTierState(supabase, familyId);
   }
 );
+
+/**
+ * HOW MANY PEOPLE ARE ACTUALLY IN THIS FAMILY — one cached count per family per
+ * request (`head: true`, so the rows never cross the wire).
+ *
+ * This exists because the "solo member" verdict used to be read entirely off the
+ * signup questionnaire (`family_profiles.household`), and a questionnaire is a
+ * statement of intent, not a fact. A parent who answered `{adults:1, kids:0}` —
+ * or whose wizard default was never corrected — and THEN added a real teen was
+ * still classified solo, which stripped Family out of their navigation entirely
+ * while their child sat in `profiles` on the same `family_id`.
+ *
+ * Membership is the fact. The household JSON may only break a tie (one row: is
+ * this a deliberate solo, or a parent who hasn't invited anyone yet?) — it may
+ * never overrule a household that demonstrably has more than one member. See
+ * isSoloAccount() in src/lib/register.ts.
+ *
+ * Returns null when there is no family, or when the count could not be read —
+ * null means "unknown", and the caller keeps its previous behaviour rather than
+ * guessing in either direction.
+ */
+export const getRequestFamilyMemberCount = cache(
+  async (familyId: string | null | undefined): Promise<number | null> => {
+    if (!familyId) return null;
+    const supabase = await getRequestClient();
+    const { count, error } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("family_id", familyId);
+    if (error) return null;
+    return count ?? null;
+  }
+);

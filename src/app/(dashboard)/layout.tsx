@@ -3,12 +3,13 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import {
   getRequestClient,
+  getRequestFamilyMemberCount,
   getRequestProfile,
   getRequestTierState,
   getRequestUser,
 } from "@/lib/supabase/rsc";
 import { effectiveClubTier } from "@/lib/tier";
-import { isSoloProfile, deriveRegister } from "@/lib/register";
+import { isSoloAccount, deriveRegister } from "@/lib/register";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import ViewAsIndicator from "@/components/dashboard/ViewAsIndicator";
 import { resolveViewAs } from "@/lib/server/view-as";
@@ -58,6 +59,7 @@ export default async function DashboardLayout({
     passRes,
     vipRes,
     fpRes,
+    memberCount,
   ] = await Promise.all([
     // Family membership tier (FIC/FTA) — kids inherit the family's tier. The
     // Club clock (migration 127): an fta family may be `clubLapsed` (past its
@@ -97,6 +99,13 @@ export default async function DashboardLayout({
           .eq("family_id", familyId)
           .maybeSingle()
       : Promise.resolve(null),
+    // …and the fact that answer is checked against: how many people are ACTUALLY
+    // on this family. One cached `head` count, in the same parallel batch as
+    // everything else keyed on family_id, so it costs no extra latency —
+    // and it is only asked for the owners whose solo verdict can turn on it.
+    familyId && isOwnerRole
+      ? getRequestFamilyMemberCount(familyId)
+      : Promise.resolve(null),
   ]);
 
   // Gates unchanged — only the FETCHING moved. A pass read for a non-fic family
@@ -104,7 +113,13 @@ export default async function DashboardLayout({
   const challengeExpiresAt: string | null =
     tier === "fic" ? ((passRes?.data?.expires_at as string | null) ?? null) : null;
   const isVip = !!vipRes?.data;
-  const isSolo = isSoloProfile(fpRes?.data ?? null);
+  // SOLO IS A FACT ABOUT THE ROSTER, NOT AN ANSWER ON A FORM. This used to be
+  // isSoloProfile(family_profiles.household) alone, and a parent whose signup
+  // JSON said {adults:1, kids:0} was called solo even with a real teen sitting on
+  // the same family_id — which took the Family group out of their navigation
+  // entirely (no nav row, no drawer entry, nothing). The member count now has the
+  // final word; the household JSON only breaks the one-row tie. See isSoloAccount.
+  const isSolo = isSoloAccount(fpRes?.data ?? null, memberCount);
 
   // FTA renewal date for the lapsed banner copy (min Club window across active
   // fta enrollments). Still read only when actually lapsed — it is rare, and
