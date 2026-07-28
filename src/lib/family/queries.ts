@@ -94,7 +94,11 @@ export async function getFamilyContext(db: DB): Promise<FamilyContext | null> {
   return {
     userId: user.id,
     role: me.role ?? "member",
-    isParent: me.role === "parent",
+    // Admins are parents for gating purposes. The old /parent-corner admitted
+    // `parent || admin`; narrowing to parent-only on the merge locked admins
+    // (incl. the owner) out of every parent surface — caught by the live sweep
+    // when /family/corner bounced the owner's admin account to /family.
+    isParent: me.role === "parent" || me.role === "admin",
     familyId: me.family_id,
     familyName: (family?.name as string | null) ?? null,
     members,
