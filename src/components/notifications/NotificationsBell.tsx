@@ -28,7 +28,8 @@ type NotifType =
   | "new_pick"
   | "new_lesson"
   | "recording_posted"
-  | "broadcast";
+  | "broadcast"
+  | "alert";
 
 interface NotificationItem {
   id: string;
@@ -72,6 +73,8 @@ function verbFor(type: NotificationItem["type"]): string {
       return "posted a class recording";
     case "support_reply":
       return "replied to your support ticket";
+    case "alert":
+      return "flagged a price level";
   }
 }
 
@@ -84,13 +87,23 @@ function IconFor({ type }: { type: NotificationItem["type"] }) {
   if (type === "new_pick") return <Gem className={cls} />;
   if (type === "new_lesson") return <BookOpen className={cls} />;
   if (type === "recording_posted") return <Video className={cls} />;
+  if (type === "alert") return <Bell className={cls} />;
   return <Megaphone className={cls} />;
 }
 
 // Who a row is attributed to when there is no human actor (system events).
+//
+// `actor_id IS NULL` means NOBODY DID THIS — it came from the system. Falling
+// back to "Someone" then invented a person: a Kai Watch price alert read
+// "Someone · AAPL is $337…", which reads like a member posted it. Each
+// system-authored type names its real author instead, and the last-resort
+// fallback only applies to a type that genuinely has a human actor.
 function labelFor(n: NotificationItem): string {
   if (n.type === "support_reply") return "FTA Support";
   if (n.type === "new_lesson" || n.type === "recording_posted") return "Family Trading Academy";
+  if (n.type === "alert") return "Kai Watch";
+  // A reply/mention with a null actor is a real human whose profile is gone —
+  // "Someone" is still the honest word there, so the fallback stays.
   return n.actor?.display_name || "Someone";
 }
 

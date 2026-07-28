@@ -191,7 +191,8 @@ export default function FamilyOverviewPage() {
 
       // Get badges count per member
       const { data: badges } = await supabase
-        .from("user_badges")
+        // badge_awards (033) is the live table; user_badges (001) has no writer.
+        .from("badge_awards")
         .select("user_id")
         .in("user_id", memberIds);
 

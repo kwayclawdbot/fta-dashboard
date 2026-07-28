@@ -565,20 +565,24 @@ type WatchlistResearchRow = {
 // ── shared ──────────────────────────────────────────────────────────────────
 
 export async function getRecentBadges(db: DB, userId: string, limit = 4) {
+  // `badge_awards` (033) is the LIVE table — award_badge writes here and the
+  // Badge Case reads it. `user_badges` (001) was never migrated off and has no
+  // writer, so every report card read 0 badges forever. Column shapes differ:
+  // awarded_at, not earned_at.
   const { data } = await db
-    .from("user_badges")
-    .select("id, earned_at, badges(title, icon_url)")
+    .from("badge_awards")
+    .select("id, awarded_at, badges(title, icon_url)")
     .eq("user_id", userId)
-    .order("earned_at", { ascending: false })
+    .order("awarded_at", { ascending: false })
     .limit(limit);
 
   return ((data ?? []) as unknown as {
     id: string;
-    earned_at: string;
+    awarded_at: string;
     badges: { title: string; icon_url: string | null } | null;
   }[]).map((b) => ({
     id: b.id,
-    earned_at: b.earned_at,
+    earned_at: b.awarded_at,
     title: b.badges?.title ?? "Badge",
   }));
 }

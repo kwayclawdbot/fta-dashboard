@@ -32,11 +32,20 @@
 /** The fixture accounts, matched against username OR display name. */
 export const LEADERBOARD_DENYLIST: readonly string[] = [
   "admin",
+  // Build fixture (canvasb-proof@example.com, minted 2026-07-27 by the canvas
+  // proof script). It carries the OWNER'S display name, "Kway", and 2,840 XP,
+  // so the board showed "Kway · PURPLE II · 2,415 XP" while that same person's
+  // /progress read "White Belt · 55 XP" from their real account. Two profiles,
+  // one name — the board was ranking the fixture. Matched on USERNAME, because
+  // denying the display name would delete the real member from the board.
+  "canvasb-proof",
   "cardtest",
   "cardtest2",
   "demo club member",
   "demo family parent",
   "demo kid",
+  // test@gmail.com, display name "kway" — same collision, matched by username.
+  "kway-2",
   "kwayclawdbot",
   "test",
 ];

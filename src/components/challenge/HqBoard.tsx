@@ -15,6 +15,7 @@ import {
 import CohortPresence from "@/components/challenge/CohortPresence";
 import CountdownRail from "@/components/challenge/CountdownRail";
 import {
+  beatHref,
   completeBeat,
   currentWeek,
   todaysOneThing,
@@ -347,9 +348,9 @@ export default function HqBoard({ state }: { state: ChallengeState }) {
               <p className="mt-1 text-[13px] leading-snug text-soft">{one.sub}</p>
             )}
           </div>
-          {one.href ? (
+          {beatHref(one.href) ? (
             <Link
-              href={one.href}
+              href={beatHref(one.href) as string}
               onClick={() => void doBeat(one.key)}
               className="cta-button f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[14px]"
             >
@@ -418,9 +419,9 @@ export default function HqBoard({ state }: { state: ChallengeState }) {
               </div>
               {b.completed_at ? (
                 <Check className="h-4 w-4 shrink-0 self-center text-gold-700" />
-              ) : b.href ? (
+              ) : beatHref(b.href) ? (
                 <Link
-                  href={b.href}
+                  href={beatHref(b.href) as string}
                   onClick={() => void doBeat(b.key)}
                   className="f0-chip f0-chip-accent f0-focus f0-press shrink-0 self-center font-display text-[13px] font-bold text-ink"
                 >

@@ -134,6 +134,26 @@ export async function markCalendarAdded(db: DB): Promise<boolean> {
 
 /* ── pure derivations (no clocks) ─────────────────────────────────────────── */
 
+/**
+ * Beat destinations that no longer exist, mapped to the route that does.
+ *
+ * The seeded `live` beats point at `/live`, which has never been a page — the
+ * live-class surface is `/live-sessions`. Four pre-season beats would have 404d
+ * the moment week 1 opened. Migration 205 corrects the stored rows; this map is
+ * the renderer's belt-and-braces so a stale row can never ship a dead link.
+ *
+ * EXACT match only. A prefix rule would rewrite a legitimate future `/live/xyz`.
+ */
+const BEAT_HREF_REWRITES: Record<string, string> = {
+  "/live": "/live-sessions",
+};
+
+/** The route a beat should link to — never a known-dead one. */
+export function beatHref(href: string | null | undefined): string | null {
+  if (!href) return null;
+  return BEAT_HREF_REWRITES[href] ?? href;
+}
+
 /** The pre-season week a beat belongs to, given the server phase + beats. */
 export function currentWeek(beats: ChallengeBeat[], serverNowIso: string): number {
   const now = new Date(serverNowIso).getTime();

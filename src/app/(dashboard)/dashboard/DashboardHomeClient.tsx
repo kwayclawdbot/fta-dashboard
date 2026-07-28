@@ -176,6 +176,11 @@ export default function DashboardHomeClient() {
   // pointer — so the $2,997 purchase is visible where they land. Kept to one
   // rail so it never takes over the club-first layout.
   const [isFta, setIsFta] = useState(false);
+  // The family's PAID tier, kept separately from `home.program`. get_home_state
+  // derives `program` from the `enrollments` table, but a Club family's
+  // entitlement lives in `family_tiers` — a fic-tier household with no
+  // enrollments row resolved to program:null and was told it wasn't enrolled.
+  const [paidTier, setPaidTier] = useState<"free" | "fic" | "fta" | null>(null);
   const [ftaNextClass, setFtaNextClass] = useState<NextClass>(null);
   // Latest Kai briefing alert (Lane C6) — an adults-only home card. Null unless
   // an alert exists AND the viewer is a non-free adult (parent/admin).
@@ -357,6 +362,7 @@ export default function DashboardHomeClient() {
         LOAD_TIMEOUT_MS,
         "member" as Awaited<ReturnType<typeof getFamilyTier>>
       );
+      setPaidTier(tier as "free" | "fic" | "fta");
       if (tier === "free") {
         setFirstName(profile?.display_name?.split(" ")[0] || "");
         setIsFree(true);
@@ -536,6 +542,13 @@ export default function DashboardHomeClient() {
   const greeting = greetingFor(greetingHour);
   const isTeen = home?.role === "child" && home?.track === "teens";
   const isParent = !isKid && !isTeen;
+  // EVERY child, not just the kids/teens tracks — a child row whose `track` is
+  // 'adults' is still a minor, and the pricing gate below keys off this.
+  const isChild = home?.role === "child";
+  // Paid = the family_tiers entitlement, not an enrollments row. Requires a real
+  // household: getFamilyTier answers 'fic' for a null family_id, and a member
+  // with no family has not bought anything — the offer still belongs to them.
+  const isPaidTier = !!familyId && (paidTier === "fic" || paidTier === "fta");
   const orientationComplete = orientationDone >= ORIENTATION_TOTAL;
 
   // ── Onboarding-prompt orchestration (one prioritized sequence) ──────────────
@@ -774,8 +787,36 @@ export default function DashboardHomeClient() {
           {/* Live "Today in the Club" pulse masthead (D1). */}
           <ClubPulseMasthead isKid={isKid} />
 
-          {/* No program yet */}
-          {!home?.program && (
+          {/* NO PROGRAM YET — three different truths, never one.
+              `home.program` comes from get_home_state, which reads the
+              `enrollments` table. Entitlement does NOT live there: a Club
+              family is paid via `family_tiers.tier = 'fic'` and may carry no
+              enrollments row at all, so `program: null` was being read as "not
+              a customer" and every member of a PAYING household was shown the
+              price list. A CHILD was shown it too — a minor sent to /upgrade.
+              So: children never see a pitch (their next step is a lesson), a
+              paid household never sees a pitch, and the offer survives only for
+              the adult who genuinely has nothing yet. */}
+          {!home?.program && (isChild || isPaidTier) && (
+            <div className="f0-rule-left py-1 pl-4">
+              <p className="font-display text-display-3 font-extrabold text-ink">
+                Pick up where you left off
+              </p>
+              <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-soft">
+                {isChild
+                  ? "One lesson, then you're done for the day. Short ones — about ten minutes."
+                  : "Your next lesson is waiting in the library — one concept at a time, in order."}
+              </p>
+              <Link
+                href="/courses"
+                className="cta-button f0-focus mt-4 inline-flex items-center gap-2 rounded-xl px-6 py-3"
+              >
+                Start a lesson <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
+
+          {!home?.program && !isChild && !isPaidTier && (
             <div className="f0-rule-left py-1 pl-4">
               <p className="font-display text-display-3 font-extrabold text-ink">
                 {isSolo ? "You're not enrolled yet" : "Your family isn't enrolled yet"}

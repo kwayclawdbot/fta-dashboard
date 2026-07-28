@@ -39,7 +39,7 @@ import FamilyActivityPing from "@/components/family/FamilyActivityPing";
  * The board's proudest screen and the one most at risk of overclaiming. Every
  * number below is read from a table something else writes — XP from xp_events,
  * lessons from lesson_progress, mastery from skill_mastery, badges from
- * user_badges, missions from mission_completions. Where a reading does not
+ * badge_awards, missions from mission_completions. Where a reading does not
  * exist yet it says so; nothing is back-filled with a flattering zero.
  *
  * "16 day streak" is drawn in the first stat slot. Family Mode has no streak
