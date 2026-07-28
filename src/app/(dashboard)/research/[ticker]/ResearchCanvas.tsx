@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Sparkles, Star } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -10,59 +10,68 @@ import { fetchBars, type MarketBar, type MarketQuote } from "@/lib/market/client
 import { formatExchange } from "@/lib/market/exchange";
 import { fmtMcap, fmtVol } from "@/lib/screener";
 import type { ResearchPayload } from "@/lib/research/types";
+import { Card, RangePills, StatCard } from "@/components/research/board";
+import type { Portrait } from "./ClubRead";
 
 /**
- * RESEARCH CANVAS — the identity + market head of /research/[ticker].
+ * THE TICKER HEAD — board 03 ("03 Ticker · NVDA") of the owner's mockup,
+ * rebuilt object-for-object.
  *
- * This is the densest surface in the app, and that is correct HERE and only
- * here: a member arrives to decide something, so the numbers get to crowd.
- * Density is achieved with RULES, never with boxes — the composition is
+ *   ←                                                     ★   ↗
+ *   [logo]  NVIDIA                              ( #1 in the Club › )
+ *   $173.42  ▲ 4.72% today
+ *                                          (••• )  826 watching now
+ *   ┌ chart card — green wash, member marks on the line ──────────┐
+ *   9:30 AM        12:00 PM        2:30 PM          4:00 PM
+ *   [1D] [1W] [1M] [3M] [1Y] [ALL]
+ *   ┌ fundamentals: four stat cards ──────────────────────────────┐
  *
- *   identity (logo at scale · display name · $CASHTAG · big mono price)
- *   ────────────────────────────────────────────────────────────────────
- *   fundamentals as hairline-separated COLUMNS (thin vertical rules)
- *   52-week range as a physical rail with the price tick on it
- *   range tabs → price chart
- *   Ask Kai band (Kai blue)
+ * A previous pass rebuilt this as hairline columns and an un-boxed plot; the
+ * owner rejected that reading. The card, the wash, the member marks and the
+ * filled range pills are all drawn on the board, so they all ship.
  *
- * COLOUR LAW, enforced here:
- *   • green / red  — price only (the change readout + the chart stroke/fill)
- *   • orange       — brand + action only (the active range tab, never a number)
- *   • Kai blue     — the Kai band
- *   • lime         — community sentiment, and it lives in ClubRead, not here
+ * REAL DATA ONLY, and every object states its own source:
+ *   price / move       → /api/market/quote (delayed ~15 min)
+ *   the line           → /api/market/bars (intraday for 1D/1W, the 2y daily
+ *                        series sliced for everything longer)
+ *   market cap · P/E   → /api/research/[ticker] aggregate
+ *   volume             → screener_metrics (the nightly grouped-daily cron)
+ *   52-week range      → the daily series, with the aggregate as a fallback
+ *   the marks + count  → feed_posts / ticker_intel_snapshots (via useClubRead)
+ *   the club-rank pill → ticker_intel_snapshots.rank
+ * A source that RESOLVED to nothing renders "—". A source that has not
+ * answered renders its own loading shape. Nothing is invented to fill a card.
  *
- * REAL DATA ONLY. Every metric is rendered from a source that actually resolved:
- *   market cap · P/E  → /api/research/[ticker] aggregate (Polygon financials)
- *   volume            → screener_metrics (the nightly grouped-daily cron)
- *   52-week range     → the daily bar series (accurate) with the aggregate as
- *                       the fallback until bars land
- * A column that RESOLVED to nothing renders "—". A column whose source hasn't
- * resolved yet renders nothing at all, so the strip never claims an absence it
- * hasn't verified — and nothing is ever invented to fill the grid.
+ * COLOUR LAW: green/red is price (the move, the stroke, the wash); orange is
+ * brand + action (the active range pill, the club-rank pill); Kai blue is the
+ * Ask-Kai band and nothing else.
  */
 
 /* ── ranges ────────────────────────────────────────────────────────────────
-   Only the windows the market API can genuinely serve. The daily path
-   (/api/market/bars?range=) tops out at 2y, and there is no 5y series, so no
-   5Y tab exists — an empty tab is a lie with a nicer label. 1D/1W come off the
-   intraday path; the rest slice the 2y daily series the page already loaded,
-   so switching those ranges costs zero requests. */
-type RangeKey = "1D" | "1W" | "1M" | "3M" | "1Y" | "2Y";
+   The board draws 1D · 1W · 1M · 3M · 1Y · ALL. Only the windows the market
+   API can genuinely serve are wired: the daily path tops out at 2y, so "ALL"
+   IS that 2y series and is labelled honestly in the caption under the plot. */
+type RangeKey = "1D" | "1W" | "1M" | "3M" | "1Y" | "ALL";
 
-const RANGES: {
-  key: RangeKey;
-  /** intraday timeframe (tf=) — daily-slice ranges leave this null */
-  tf: string | null;
-  /** window in ms used to slice whichever series backs the range */
-  windowMs: number;
-}[] = [
-  { key: "1D", tf: "15m", windowMs: 0 }, // 0 → "the last session present"
-  { key: "1W", tf: "1h", windowMs: 7 * 864e5 },
-  { key: "1M", tf: null, windowMs: 31 * 864e5 },
-  { key: "3M", tf: null, windowMs: 92 * 864e5 },
-  { key: "1Y", tf: null, windowMs: 366 * 864e5 },
-  { key: "2Y", tf: null, windowMs: 0 },
-];
+const RANGE_KEYS = ["1D", "1W", "1M", "3M", "1Y", "ALL"] as const;
+
+const RANGES: Record<RangeKey, { tf: string | null; windowMs: number }> = {
+  "1D": { tf: "15m", windowMs: 0 }, // 0 → "the last session present"
+  "1W": { tf: "1h", windowMs: 7 * 864e5 },
+  "1M": { tf: null, windowMs: 31 * 864e5 },
+  "3M": { tf: null, windowMs: 92 * 864e5 },
+  "1Y": { tf: null, windowMs: 366 * 864e5 },
+  ALL: { tf: null, windowMs: 0 },
+};
+
+const RANGE_CAPTION: Record<RangeKey, string> = {
+  "1D": "Last session · 15-minute bars",
+  "1W": "Past week · hourly bars",
+  "1M": "Past month · daily closes",
+  "3M": "Past three months · daily closes",
+  "1Y": "Past year · daily closes",
+  ALL: "Past two years · daily closes",
+};
 
 interface ScreenerVolume {
   vol: number | null;
@@ -75,27 +84,41 @@ function money(v: number | null | undefined, dp = 2): string | null {
   return `$${v.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 }
 
-/* ── The chart ─────────────────────────────────────────────────────────────
-   One stroke + one wash, green or red by the direction of the WINDOW (not of
-   the day) — the chart is price, so it is the one place those two colours are
-   allowed to carry meaning. Price labels ride the right edge in mono against a
-   hairline, so the plot needs no frame. */
-function PriceChart({ bars, loading }: { bars: MarketBar[]; loading: boolean }) {
+/* ── The plot ──────────────────────────────────────────────────────────────
+   Board 03 draws the price inside a rounded card with a soft wash under the
+   line and MEMBER MARKS sitting on it — small ringed initials where a club
+   member posted a position on this name. The marks are real: they come from
+   the same feed_posts rows the sentiment ring counts, and they are only placed
+   when a post's timestamp falls inside the window on screen. No post in the
+   window → no marks, never a decorative one. */
+function PriceCard({
+  bars,
+  loading,
+  marks,
+  range,
+}: {
+  bars: MarketBar[];
+  loading: boolean;
+  marks: { p: Portrait; x: number; y: number }[];
+  range: RangeKey;
+}) {
   const gid = `rcg-${useId().replace(/:/g, "")}`;
-  const W = 640;
-  const H = 172;
-  const padY = 12;
+  const H = 128;
 
   if (loading && bars.length === 0) {
-    return <div className="h-[172px] animate-pulse rounded-lg bg-sand/40" aria-hidden />;
+    return (
+      <Card radius="md" className="mt-3 h-[168px] motion-safe:animate-pulse">
+        <span className="sr-only">Loading the price series</span>
+      </Card>
+    );
   }
   if (bars.length < 2) {
     return (
-      <div className="flex h-[172px] items-center border-y border-sand">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
-          Price series unavailable for this window
+      <Card radius="md" className="mt-3 flex h-[168px] items-center justify-center px-5">
+        <p className="text-center font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          No price series for this window
         </p>
-      </div>
+      </Card>
     );
   }
 
@@ -103,81 +126,95 @@ function PriceChart({ bars, loading }: { bars: MarketBar[]; loading: boolean }) 
   const min = Math.min(...closes);
   const max = Math.max(...closes);
   const span = max - min || 1;
+  const W = 354;
+  const padY = 10;
   const stepX = W / (bars.length - 1);
   const y = (v: number) => padY + (H - padY * 2) * (1 - (v - min) / span);
   const line = bars.map((b, i) => `${(i * stepX).toFixed(1)},${y(b.c).toFixed(1)}`).join(" ");
   const area = `0,${H} ${line} ${W},${H}`;
   const up = closes[closes.length - 1] >= closes[0];
-  // The canonical price tokens: same hue in both themes, different ramp step,
-  // so the stroke keeps its meaning AND stays legible on the dark page.
   const stroke = up ? "var(--color-price-up)" : "var(--color-price-down)";
 
-  return (
-    <div className="flex items-stretch gap-3">
-      <div className="relative min-w-0 flex-1 border-y border-sand">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
-          className="h-[172px] w-full"
-          aria-hidden
-        >
-          <defs>
-            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={stroke} stopOpacity="0.20" />
-              <stop offset="100%" stopColor={stroke} stopOpacity="0.015" />
-            </linearGradient>
-          </defs>
-          <polygon points={area} fill={`url(#${gid})`} />
-          <polyline
-            points={line}
-            fill="none"
-            stroke={stroke}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-      </div>
-      <div className="flex w-[62px] shrink-0 flex-col justify-between py-1 font-mono text-[10.5px] tabular-nums text-soft">
-        <span>{max.toFixed(2)}</span>
-        <span>{((max + min) / 2).toFixed(2)}</span>
-        <span>{min.toFixed(2)}</span>
-      </div>
-    </div>
-  );
-}
+  // The session labels the board prints under the plot: first, two interior
+  // thirds, last — read off the bars actually drawn, never off the wall clock.
+  const at = (i: number) => bars[Math.min(bars.length - 1, Math.max(0, i))].t;
+  const stamp = (t: number) =>
+    range === "1D" || range === "1W"
+      ? new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
+  const ticks = [0, Math.round((bars.length - 1) / 3), Math.round(((bars.length - 1) * 2) / 3), bars.length - 1];
 
-/* ── 52-week rail ──────────────────────────────────────────────────────────
-   A physical track with the current price sitting on it. The tick is INK, not
-   green or red: it marks a position in a range, it is not a direction. */
-function RangeRail({
-  low,
-  high,
-  price,
-}: {
-  low: number | null;
-  high: number | null;
-  price: number | null;
-}) {
-  if (low == null || high == null || high <= low) return null;
-  const pos = price == null ? null : Math.max(0, Math.min(1, (price - low) / (high - low)));
   return (
-    <div className="mt-5">
-      <div className="relative h-[3px] w-full rounded-full bg-sand">
-        {pos != null && (
-          <span
-            className="absolute top-1/2 h-3.5 w-[3px] -translate-y-1/2 rounded-full bg-ink"
-            style={{ left: `calc(${(pos * 100).toFixed(2)}% - 1.5px)` }}
+    <>
+      <Card radius="md" className="relative mt-3 overflow-hidden">
+        <div
+          className="relative"
+          style={{
+            background: `linear-gradient(180deg, color-mix(in srgb, ${stroke} 8%, transparent), transparent)`,
+          }}
+        >
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            className="block h-[128px] w-full"
             aria-hidden
-          />
-        )}
+          >
+            <defs>
+              <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity="0.20" />
+                <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            <polygon points={area} fill={`url(#${gid})`} />
+            <polyline
+              points={line}
+              fill="none"
+              stroke={stroke}
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+
+          {marks.map((mk) => (
+            <span
+              key={mk.p.id}
+              title={`${mk.p.name} posted ${mk.p.side === "bull" ? "bullish" : "bearish"}`}
+              className="absolute grid h-[22px] w-[22px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-sand text-[8px] font-bold text-ink"
+              style={{
+                left: `${mk.x}%`,
+                top: `${mk.y}%`,
+                border: `2px solid ${
+                  mk.p.side === "bull" ? "var(--color-price-up)" : "var(--color-price-down)"
+                }`,
+              }}
+            >
+              {mk.p.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mk.p.avatar}
+                  alt=""
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                mk.p.name
+                  .split(" ")
+                  .map((w) => w[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2)
+              )}
+            </span>
+          ))}
+        </div>
+      </Card>
+      <div className="mt-1.5 flex justify-between px-1 font-mono text-[9px] tabular-nums text-soft">
+        {ticks.map((i, n) => (
+          <span key={n}>{stamp(at(i))}</span>
+        ))}
       </div>
-      <div className="mt-2 flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-        <span>52w low {low.toFixed(2)}</span>
-        <span>52w high {high.toFixed(2)}</span>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -190,6 +227,9 @@ export default function ResearchCanvas({
   supabase,
   back,
   onAskKai,
+  clubRank,
+  watchers,
+  faces,
 }: {
   ticker: string;
   companyName: string;
@@ -200,16 +240,23 @@ export default function ResearchCanvas({
   supabase: SupabaseClient;
   back: { href: string; label: string };
   onAskKai: () => void;
+  /** ticker_intel_snapshots.rank — the board's "#1 in the Club ›" pill. */
+  clubRank: number | null;
+  /** distinct members watching (floor-gated upstream); 0 → the row is dropped */
+  watchers: number;
+  /** the positioned members whose posts the marks stand for */
+  faces: Portrait[];
 }) {
-  const [range, setRange] = useState<RangeKey>("3M");
+  const [range, setRange] = useState<RangeKey>("1D");
   const [intraday, setIntraday] = useState<Record<string, MarketBar[]>>({});
   const [screener, setScreener] = useState<ScreenerVolume | null>(null);
   const [screenerResolved, setScreenerResolved] = useState(false);
+  const [shared, setShared] = useState(false);
   const asked = useRef<Set<string>>(new Set());
 
   /* Volume is not part of the research aggregate — it lives in screener_metrics
      (same nightly Polygon grouped-daily pull that powers the screener). One
-     read, fails soft: no row → the volume column reports "—", never a guess. */
+     read, fails soft: no row → the volume card reports "—", never a guess. */
   useEffect(() => {
     let on = true;
     supabase
@@ -233,10 +280,10 @@ export default function ResearchCanvas({
   }, [supabase, ticker]);
 
   /* Intraday windows only. The daily ranges slice `dailyBars`, which the page
-     already has, so tabbing 1M↔2Y never hits the network. */
+     already has, so tabbing 1M↔ALL never hits the network. */
   useEffect(() => {
-    const cfg = RANGES.find((r) => r.key === range);
-    if (!cfg?.tf) return;
+    const cfg = RANGES[range];
+    if (!cfg.tf) return;
     const key = cfg.tf;
     if (asked.current.has(key)) return;
     asked.current.add(key);
@@ -281,13 +328,12 @@ export default function ResearchCanvas({
      empty series and the chart claims the data is missing when it is simply
      older than "now". Anchoring keeps the window honest and the render pure. */
   const visible = useMemo(() => {
-    const cfg = RANGES.find((r) => r.key === range) ?? RANGES[3];
+    const cfg = RANGES[range];
     const series = cfg.tf ? intraday[cfg.tf] ?? [] : daily;
     if (series.length === 0) return [];
     const newest = series[series.length - 1].t;
 
-    if (cfg.key === "1D") {
-      // The last SESSION present in the feed, not "the last 24 hours".
+    if (range === "1D") {
       const lastDay = new Date(newest).toDateString();
       return series.filter((b) => new Date(b.t).toDateString() === lastDay);
     }
@@ -297,7 +343,7 @@ export default function ResearchCanvas({
     return win.length >= 2 ? win : series;
   }, [range, intraday, daily]);
 
-  const rangeTf = RANGES.find((r) => r.key === range)?.tf ?? null;
+  const rangeTf = RANGES[range].tf;
   const loading = rangeTf ? intraday[rangeTf] === undefined : daily.length === 0;
 
   /* Window delta — derived from the first and last close of what is actually
@@ -323,19 +369,60 @@ export default function ResearchCanvas({
     return null;
   }, [daily, research]);
 
+  /* MEMBER MARKS. Up to three of the most recent positioned posts, placed at
+     the bar whose timestamp is nearest the post — and ONLY when the post falls
+     inside the window on screen. Posts have no price of their own, so the mark
+     rides the LINE at that moment, which is the true statement: this is where
+     the tape was when they said it. */
+  const marks = useMemo(() => {
+    if (visible.length < 2) return [];
+    const t0 = visible[0].t;
+    const t1 = visible[visible.length - 1].t;
+    const closes = visible.map((b) => b.c);
+    const min = Math.min(...closes);
+    const max = Math.max(...closes);
+    const span = max - min || 1;
+    const out: { p: Portrait; x: number; y: number }[] = [];
+    for (const p of faces) {
+      const posted = p.at;
+      if (!posted || posted < t0 || posted > t1) continue;
+      const i = Math.round(((posted - t0) / (t1 - t0 || 1)) * (visible.length - 1));
+      out.push({
+        p,
+        x: (i / (visible.length - 1)) * 100,
+        y: 8 + (1 - (visible[i].c - min) / span) * 78,
+      });
+      if (out.length === 3) break;
+    }
+    return out;
+  }, [faces, visible]);
+
   const price = quote?.price ?? null;
   const chgPct = quote?.changePercent ?? null;
-  const chgAbs =
-    quote?.change ?? (price != null && quote?.prevClose != null ? price - quote.prevClose : null);
   const up = (chgPct ?? 0) >= 0;
   const exchange = research?.company.exchange ? formatExchange(research.company.exchange) : null;
 
-  /* ── the fundamentals columns ───────────────────────────────────────────
-     `ready` is what keeps this honest: a column only appears once its SOURCE
-     has answered. Answered-with-nothing renders "—"; hasn't-answered renders
-     nothing at all. */
+  async function onShare() {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${ticker} on Cheat Code`, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 1800);
+    } catch {
+      /* dismissed / unsupported */
+    }
+  }
+
+  /* ── the fundamentals cards ─────────────────────────────────────────────
+     `ready` is what keeps this honest: a card only appears once its SOURCE has
+     answered. Answered-with-nothing renders "—"; hasn't-answered renders its
+     loading shape. */
   const researchReady = research != null;
-  const cols: { label: string; value: string | null; ready: boolean }[] = [
+  const cards: { label: string; value: string | null; ready: boolean }[] = [
     {
       label: "Market cap",
       value:
@@ -356,9 +443,6 @@ export default function ResearchCanvas({
       ready: researchReady,
     },
     {
-      // Volume carries its own context when the 20-day average is available:
-      // "42.1M 1.3×" says more than a raw share count ever does. The multiple
-      // is only appended when BOTH figures exist — never derived from one.
       label: "Volume",
       value:
         screener?.vol != null
@@ -369,160 +453,160 @@ export default function ResearchCanvas({
       ready: screenerResolved,
     },
     {
-      label: "52w range",
-      value: week52 ? `${week52.low.toFixed(2)}–${week52.high.toFixed(2)}` : null,
+      label: "52-week range",
+      value: week52 ? `${week52.low.toFixed(0)}–${week52.high.toFixed(0)}` : null,
       ready: week52 != null || researchReady,
     },
   ];
-  const shownCols = cols.filter((c) => c.ready);
 
   return (
     <div>
-      {/* back — quiet, mono, no chrome */}
-      <Link
-        href={back.href}
-        className="inline-flex items-center gap-1.5 pt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> {back.label}
-      </Link>
+      {/* ── TOP ROW — back · watch · share (board 03's ← ★ ↗) ─────────────── */}
+      <div className="flex items-center justify-between pt-3">
+        <Link
+          href={back.href}
+          className="f0-focus inline-flex items-center gap-1.5 rounded-full font-mono text-[10px] uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
+        >
+          <ArrowLeft className="h-4 w-4" /> {back.label}
+        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/watchlist"
+            aria-label="Your watchlist"
+            className="f0-focus rounded-full p-1 text-gold-700 transition-colors hover:text-gold-600"
+          >
+            <Star className="h-[18px] w-[18px]" fill="currentColor" />
+          </Link>
+          <button
+            type="button"
+            onClick={onShare}
+            aria-label={shared ? "Link copied" : "Share this page"}
+            className="f0-focus rounded-full p-1 text-soft transition-colors hover:text-ink"
+          >
+            <ArrowUpRight className={`h-[18px] w-[18px] ${shared ? "text-gold-700" : ""}`} />
+          </button>
+        </div>
+      </div>
 
       {/* ── IDENTITY ──────────────────────────────────────────────────────── */}
-      <div className="mt-5 flex items-start gap-4">
-        <CompanyLogo symbol={ticker} name={companyName} size={64} rounded="rounded-2xl" />
-        <div className="min-w-0 flex-1 pt-0.5">
-          <h1 className="font-display text-display-2 font-extrabold text-ink line-clamp-2">
+      <div className="mt-3.5 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <CompanyLogo symbol={ticker} name={companyName} size={40} rounded="rounded-[11px]" />
+          <h1 className="min-w-0 truncate font-display text-[21px] font-extrabold leading-tight tracking-tight text-ink">
             {companyName}
           </h1>
-          <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] uppercase tracking-[0.16em]">
-            <span className="font-semibold text-ink">${ticker}</span>
-            {exchange && (
-              <>
-                <span className="h-3 w-px bg-sand" aria-hidden />
-                <span className="text-soft">{exchange}</span>
-              </>
-            )}
-            {research?.company.sector && (
-              <>
-                <span className="h-3 w-px bg-sand" aria-hidden />
-                <span className="text-soft">{research.company.sector}</span>
-              </>
-            )}
-          </p>
         </div>
+        {clubRank != null && (
+          <Link
+            href="/discover"
+            className="f0-focus shrink-0 rounded-full border border-volt-500/50 bg-volt-500/[0.12] px-2.5 py-1 text-[10.5px] font-bold text-gold-700 transition-colors hover:bg-volt-500/20"
+          >
+            #{clubRank} in the Club ›
+          </Link>
+        )}
       </div>
 
       {/* the mark */}
-      <div className="mt-6 flex flex-wrap items-end gap-x-4 gap-y-1">
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         {price != null ? (
-          <span className="font-mono text-[42px] font-semibold leading-none tabular-nums text-ink">
+          <span className="font-mono text-[28px] font-semibold leading-none tabular-nums text-ink">
             {money(price)}
           </span>
         ) : (
-          <span className="font-mono text-[42px] font-semibold leading-none text-soft/50">—</span>
+          <span className="font-mono text-[28px] font-semibold leading-none text-soft/50">—</span>
         )}
         {chgPct != null && (
           <span
-            className={`font-mono text-[15px] font-semibold tabular-nums ${
+            className={`font-mono text-[12px] font-semibold tabular-nums ${
               up ? "text-price-up" : "text-price-down"
             }`}
           >
-            {up ? "+" : "−"}
-            {Math.abs(chgPct).toFixed(2)}%
-            {chgAbs != null && (
-              <span className="ml-2 text-[13px] font-medium opacity-80">
-                {up ? "+" : "−"}
-                {Math.abs(chgAbs).toFixed(2)}
-              </span>
-            )}
+            {up ? "▲" : "▼"} {Math.abs(chgPct).toFixed(2)}% today
           </span>
         )}
       </div>
-      <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-soft/80">
+      <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-soft/80">
         {quote?.delayed === false ? "Real time" : "Delayed ~15 min"}
+        {exchange ? ` · ${exchange}` : ""}
+        {research?.company.sector ? ` · ${research.company.sector}` : ""}
       </p>
 
-      {/* ── FUNDAMENTALS — hairline columns, thin vertical rules ──────────── */}
-      {shownCols.length > 0 && (
-        <div className="mt-6 flex border-y border-sand">
-          {shownCols.map((c, i) => (
-            <div
-              key={c.label}
-              className={`min-w-0 flex-1 py-3.5 ${i > 0 ? "border-l border-sand pl-3.5" : "pr-3.5"}`}
-            >
-              <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-soft">
-                {c.label}
-              </p>
-              <p
-                className={`mt-1.5 truncate font-mono text-[14.5px] font-semibold tabular-nums ${
-                  c.value ? "text-ink" : "text-soft/60"
+      {/* who else is here — board 03's avatar stack + count */}
+      {watchers >= 3 && (
+        <div className="mt-1.5 flex items-center justify-end gap-1.5">
+          <span className="flex">
+            {(faces.length > 0 ? faces.slice(0, 3) : []).map((f, i) => (
+              <span
+                key={f.id}
+                className={`grid h-4 w-4 place-items-center overflow-hidden rounded-full bg-sand ring-[1.5px] ring-paper ${
+                  i > 0 ? "-ml-1.5" : ""
                 }`}
+                title={f.name}
               >
-                {c.value ?? "—"}
-              </p>
-            </div>
-          ))}
+                {f.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={f.avatar} alt="" className="h-full w-full object-cover" />
+                ) : null}
+              </span>
+            ))}
+          </span>
+          <span className="text-[9.5px] text-soft">
+            {watchers.toLocaleString()} watching now
+          </span>
         </div>
       )}
 
-      {/* 52-week rail — the range column, made physical */}
-      <RangeRail low={week52?.low ?? null} high={week52?.high ?? null} price={price} />
+      {/* ── THE PLOT ──────────────────────────────────────────────────────── */}
+      <PriceCard bars={visible} loading={loading} marks={marks} range={range} />
 
-      {/* ── RANGE TABS + CHART ────────────────────────────────────────────── */}
-      <div className="mt-7 flex items-center justify-between gap-3 border-b border-sand pb-2">
-        <div className="flex items-center gap-1" role="tablist" aria-label="Chart range">
-          {RANGES.map((r) => {
-            const active = r.key === range;
-            return (
-              <button
-                key={r.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setRange(r.key)}
-                className={`relative px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
-                  active ? "text-gold-700" : "text-soft hover:text-ink"
-                }`}
-              >
-                {r.key}
-                {active && (
-                  <span className="absolute inset-x-1.5 -bottom-[9px] h-[2px] rounded-full bg-gold-500" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="mt-2.5 flex items-center justify-between gap-3">
+        <RangePills<RangeKey>
+          ranges={RANGE_KEYS}
+          active={range}
+          onSelect={setRange}
+          ariaLabel="Chart range"
+        />
         {windowPct != null && (
           <span
-            className={`shrink-0 font-mono text-[12px] font-semibold tabular-nums ${
+            className={`shrink-0 font-mono text-[11px] font-semibold tabular-nums ${
               windowPct >= 0 ? "text-price-up" : "text-price-down"
             }`}
           >
             {windowPct >= 0 ? "+" : "−"}
             {Math.abs(windowPct).toFixed(2)}%
-            <span className="ml-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-soft">
-              {range}
-            </span>
           </span>
         )}
       </div>
-      <div className="mt-3">
-        <PriceChart bars={visible} loading={loading} />
+      <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-soft/80">
+        {RANGE_CAPTION[range]}
+      </p>
+
+      {/* ── THE NUMBERS — four cards, board 03's measure row ──────────────── */}
+      <div className="mt-4 flex gap-2">
+        {cards.map((c) => (
+          <StatCard
+            key={c.label}
+            value={c.value ?? "—"}
+            label={c.label}
+            loading={!c.ready}
+          />
+        ))}
       </div>
 
       {/* ── ASK KAI ───────────────────────────────────────────────────────── */}
       <button
         type="button"
         onClick={onAskKai}
-        className="f0-grain relative mt-7 flex w-full items-center justify-between gap-4 overflow-hidden rounded-2xl bg-gradient-to-r from-kai-500 to-kai-700 px-5 py-4 text-left transition-transform active:scale-[0.995] dark:from-kai-400 dark:to-kai-600"
+        className="f0-grain relative mt-5 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[18px] bg-gradient-to-r from-kai-500 to-kai-700 px-5 py-4 text-left transition-transform active:scale-[0.995]"
       >
         <span className="min-w-0">
-          <span className="flex items-center gap-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.18em] text-white/75">
+          <span className="flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-white/75">
             <Sparkles className="h-3 w-3" aria-hidden /> Kai
           </span>
-          <span className="mt-1.5 block font-display text-[18px] font-bold leading-tight text-white">
+          <span className="mt-1.5 block font-display text-[17px] font-bold leading-tight text-white">
             Ask Kai about ${ticker}
           </span>
-          <span className="mt-1 block text-[12.5px] leading-snug text-white/70">
+          <span className="mt-1 block text-[12px] leading-snug text-white/70">
             What&apos;s moving it, what the numbers say, what to watch next.
           </span>
         </span>

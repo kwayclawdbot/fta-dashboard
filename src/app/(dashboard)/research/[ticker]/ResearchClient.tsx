@@ -23,8 +23,10 @@ import UpsellCard from "@/components/dashboard/UpsellCard";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import type { KaiReport } from "@/lib/kai/report";
 import SetAlertButton, { type AlertLevel } from "@/components/alerts/SetAlertButton";
-import Scorecard from "@/components/research/Scorecard";
+import Fundamentals from "@/components/research/Fundamentals";
+import { letterColor } from "@/components/research/GradeVisuals";
 import PriceTechnicals from "@/components/research/PriceTechnicals";
+import { Card, CardLabel, SectionMark } from "@/components/research/board";
 import ResearchTabBar, {
   RESEARCH_TABS,
   tabId,
@@ -60,7 +62,7 @@ import {
   type CommunityEntry,
 } from "@/lib/community-watchlist";
 import ResearchCanvas from "./ResearchCanvas";
-import ClubRead from "./ClubRead";
+import ClubRead, { useClubRead } from "./ClubRead";
 import ClubTickerStrip from "./ClubTickerStrip";
 import KaiReportPanel from "./KaiReportPanel";
 import TickerDiscussion from "./TickerDiscussion";
@@ -178,6 +180,11 @@ export default function ResearchClient({
   const { openKai } = useKaiSheet();
   const params = useParams<{ ticker: string }>();
   const ticker = (params?.ticker || "").toString().toUpperCase();
+
+  // ONE read of what the club thinks, shared by the canvas head (the watching
+  // stack + the club-rank pill) and the sentiment ring — the same rows, so the
+  // faces and the numbers can never disagree.
+  const club = useClubRead(supabase, ticker);
 
   const [loading, setLoading] = useState(true);
   const [tier, setTier] = useState<FamilyTier>("fic");
@@ -464,10 +471,10 @@ export default function ResearchClient({
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
-      {/* ── CANVAS HEAD — identity · fundamentals columns · chart · Ask Kai ──
-          One un-boxed composition: logo at scale, the name in display type, the
-          price as the dominant mono mark, then hairline-ruled fundamentals.
-          Rules carry the density; nothing is wrapped. */}
+      {/* ── BOARD 03 — the ticker head, rebuilt to the mockup ────────────────
+          Back / watch / share row, logo + name + club-rank pill, the mark, the
+          watching stack, the chart CARD with its member marks and filled range
+          pills, four measure cards, and the Kai band. */}
       <ResearchCanvas
         ticker={ticker}
         companyName={companyName}
@@ -476,6 +483,9 @@ export default function ResearchClient({
         dailyBars={bars}
         supabase={supabase}
         back={back}
+        clubRank={club.rank}
+        watchers={club.watchers}
+        faces={club.faces}
         onAskKai={() =>
           openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })
         }
@@ -495,8 +505,8 @@ export default function ResearchClient({
           the discussion reachable at 390px without scrolling past a whole panel
           — and it is the honest order for a community product: what the club
           thinks and what the club is saying come before the analyst tabs. */}
-      <div className="mt-9 space-y-9">
-        <ClubRead supabase={supabase} ticker={ticker} showSentiment={!isKid} />
+      <div className="mt-8 space-y-8">
+        <ClubRead data={club} showSentiment={!isKid} />
 
         <TickerDiscussion
           ticker={ticker}
@@ -524,7 +534,16 @@ export default function ResearchClient({
           Everything from strengths-and-weaknesses down used to be one vertical
           scroll. It is now real navigation the member clicks through. */}
       <div className="mt-10">
-        <ResearchTabBar active={tab} onSelect={selectTab} />
+        <ResearchTabBar
+          active={tab}
+          onSelect={selectTab}
+          head={{
+            ticker,
+            companyName,
+            price: quote?.price ?? null,
+            changePct: quote?.changePercent ?? null,
+          }}
+        />
 
         {tab === "overview" && (
           <div
@@ -534,101 +553,126 @@ export default function ResearchClient({
             tabIndex={0}
             className="mt-7 space-y-10 focus:outline-none"
           >
-            {/* The verdict — the grades gauge, un-boxed on the page. */}
-            <Section title="The verdict">
-              {research ? (
-                ungraded ? (
-                  <p className="text-sm text-soft">
-                    We don&apos;t have enough published financials to grade {companyName} yet — many smaller
-                    companies and funds don&apos;t report the numbers our scorecard needs. The price chart,
-                    news, and community research below still work.
+            {/* The scorecard POINTER. The full grade object lives on the
+                Fundamentals subpage (board 13's financial-health ring), so
+                Overview carries a card that states the grade and hands the
+                member across — the same read printed twice on one page is what
+                made this scroll interminable. */}
+            {research ? (
+              ungraded ? (
+                <Card radius="md" className="px-4 py-3.5">
+                  <CardLabel>Scorecard</CardLabel>
+                  <p className="mt-2 text-[13px] leading-relaxed text-soft">
+                    We don&apos;t have enough published financials to grade {companyName}{" "}
+                    yet — many smaller companies and funds don&apos;t report the numbers
+                    our scorecard needs. The price chart, news, and community research
+                    below still work.
                   </p>
-                ) : (
-                  <Scorecard grades={research.grades} locked={locked} mode="summary" />
-                )
-              ) : researchResolved ? (
-                <p className="text-sm text-soft">
-                  The scorecard for {companyName} is updating and will be back shortly. The price,
-                  charts, news, and community research below still work.
-                </p>
+                </Card>
               ) : (
-                <div className="h-40 animate-pulse rounded-xl bg-sand/40" />
-              )}
-            </Section>
+                <button
+                  type="button"
+                  onClick={() => selectTab("fundamentals")}
+                  className="f0-focus block w-full text-left"
+                >
+                  <Card radius="md" className="flex items-center gap-3.5 px-4 py-3.5">
+                    <span
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full font-display text-[17px] font-extrabold text-white"
+                      style={{ backgroundColor: letterColor(research.grades.overall.letter) }}
+                      aria-hidden
+                    >
+                      {research.grades.overall.letter ?? "—"}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <CardLabel>Financial health</CardLabel>
+                      <span className="mt-1 block font-display text-[16px] font-extrabold text-ink">
+                        {research.grades.overall.label ?? "Not enough data"}
+                      </span>
+                      <span className="mt-0.5 block text-[10.5px] text-soft">
+                        {research.grades.overall.graded} of 4 areas graded
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold-700">
+                      Open ›
+                    </span>
+                  </Card>
+                </button>
+              )
+            ) : researchResolved ? (
+              <Card radius="md" className="px-4 py-3.5">
+                <p className="text-[13px] leading-relaxed text-soft">
+                  The scorecard for {companyName} is updating and will be back shortly.
+                  The price, charts, news, and community research below still work.
+                </p>
+              </Card>
+            ) : (
+              <Card radius="md" className="h-[84px] motion-safe:animate-pulse" />
+            )}
 
-            {/* Kai's read now has its own subpage (canvas board 14), so Overview
-                carries a POINTER rather than the whole report — the same read
-                printed twice on one page is what made this scroll interminable.
-                Kai blue, and only when a report actually exists. */}
+            {/* Kai's read has its own subpage (board 14), so Overview carries a
+                POINTER. Kai blue, and only when a report actually exists. */}
             {report && (
               <button
                 type="button"
                 onClick={() => selectTab("kai")}
-                className="f0-focus group flex w-full items-center gap-3 border-y border-sand py-4 text-left"
+                className="f0-focus block w-full text-left"
               >
-                <Sparkles
-                  className="h-4 w-4 shrink-0 text-kai-600 dark:text-kai-300"
-                  aria-hidden
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-[9.5px] font-semibold uppercase tracking-[0.18em] text-kai-600 dark:text-kai-300">
-                    Kai research report
+                <Card tone="kai" radius="md" className="flex items-center gap-3 px-4 py-3.5">
+                  <Sparkles className="h-4 w-4 shrink-0 text-kai-600" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <CardLabel tone="kai">Kai research report</CardLabel>
+                    <span className="mt-1 block truncate text-[13.5px] font-semibold text-ink">
+                      {report.sections.headline || `Kai's read on ${companyName}`}
+                    </span>
                   </span>
-                  <span className="mt-1 block truncate text-[14px] font-semibold text-ink">
-                    {report.sections.headline || `Kai's read on ${companyName}`}
+                  <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-kai-600">
+                    Read ›
                   </span>
-                </span>
-                <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-kai-600 transition-colors group-hover:text-kai-500 dark:text-kai-300">
-                  Read
-                </span>
+                </Card>
               </button>
             )}
 
-            {/* Admin thesis (if this is an "our research" pick) — a ruled block
-                with a charged left edge, not an amber card. */}
+            {/* Admin thesis (if this is an "our research" pick). */}
             {adminEntry && (adminEntry.headline || adminEntry.thesis) && (
-              <section className="border-l-[3px] border-gold-500 py-1 pl-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <ShieldCheck className="h-3.5 w-3.5 text-gold-700" />
-                  <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-gold-700">
-                    Our research
-                  </span>
+              <Card tone="brand" radius="md" className="px-4 py-3.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-gold-700" />
+                  <CardLabel tone="brand">Our research</CardLabel>
                 </div>
                 {adminEntry.headline && (
-                  <h2 className="font-display text-display-3 font-extrabold text-ink">
+                  <h2 className="mt-2 font-display text-[17px] font-extrabold leading-tight text-ink">
                     {adminEntry.headline}
                   </h2>
                 )}
                 <div className="mt-2.5 space-y-3">
                   {toParagraphs(adminEntry.thesis).map((p, i) => (
-                    <p key={i} className="text-[13.5px] leading-relaxed text-midnight-200">
+                    <p key={i} className="text-[13px] leading-relaxed text-midnight-200">
                       {p}
                     </p>
                   ))}
                 </div>
-              </section>
+              </Card>
             )}
 
             {/* Research Objects (structured theses) + the ONE gated publish entry
                 point (TODO(gate:research_publish) lives in the composer + API
                 route). Kids never see the composer. */}
             <section>
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="f0-section-rule flex-1">
-                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
-                    Theses on {ticker}
-                  </span>
-                </h2>
-                {canVote && !isKid && !showCompose && (
-                  <button
-                    onClick={() => setShowCompose(true)}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-gold-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-gold-600"
-                  >
-                    <FileText className="h-3.5 w-3.5" /> Publish a thesis
-                  </button>
-                )}
-              </div>
-              <div className="mt-4">
+              <SectionMark
+                action={
+                  canVote && !isKid && !showCompose ? (
+                    <button
+                      onClick={() => setShowCompose(true)}
+                      className="f0-focus inline-flex shrink-0 items-center gap-1.5 rounded-full bg-volt-500 px-3 py-1.5 text-[11px] font-bold text-[#1A1614] transition-colors hover:bg-volt-600"
+                    >
+                      <FileText className="h-3.5 w-3.5" /> Publish a thesis
+                    </button>
+                  ) : undefined
+                }
+              >
+                Theses on {ticker}
+              </SectionMark>
+              <div className="mt-3.5">
                 {showCompose && (
                   // Gate the structured-thesis composer (paid Cheat Code Club).
                   // Free members get the contextual wall here; Challenge-Pass
@@ -699,20 +743,19 @@ export default function ResearchClient({
               </section>
             )}
 
-            {/* On the board — dense hairline rows, not cards */}
+            {/* On the board — one card, rows inside it */}
             {entries.length > 0 && (
               <section>
-                <h2 className="f0-section-rule">
-                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
-                    On the board
-                  </span>
-                </h2>
-                <div className="f0-ledger mt-2">
+                <SectionMark>On the board</SectionMark>
+                <Card radius="md" className="mt-3 px-4 py-1">
                   {entries.map((e) => {
                     const pct = pctSinceAdded(e.snapshot_price, quote?.price ?? e.latest_close);
                     const tone = pctTone(pct);
                     return (
-                      <div key={e.id} className="f0-ledger-row">
+                      <div
+                        key={e.id}
+                        className="flex items-center gap-3 border-b border-sand py-3 last:border-b-0"
+                      >
                         <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
                           {e.kind === "admin" ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-gold-400/15 px-2 py-0.5 text-[10px] font-bold text-gold-700">
@@ -747,15 +790,18 @@ export default function ResearchClient({
                       </div>
                     );
                   })}
-                </div>
+                </Card>
               </section>
             )}
 
             {/* About — description + the company definition ledger */}
             {research?.company.description && (
-              <Section title={`About ${companyName}`}>
-                <CompanyProfileCard company={research.company} kidsMode={isKid} />
-              </Section>
+              <section>
+                <SectionMark>About {companyName}</SectionMark>
+                <Card radius="md" className="mt-3 px-4 py-3.5">
+                  <CompanyProfileCard company={research.company} kidsMode={isKid} />
+                </Card>
+              </section>
             )}
           </div>
         )}
@@ -768,17 +814,18 @@ export default function ResearchClient({
             tabIndex={0}
             className="mt-7 focus:outline-none"
           >
-            <Section title="Momentum & technicals" subtitle="Trend, returns and the moving averages">
-              {research && barsState === "done" ? (
-                <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
-              ) : (
-                <div className="space-y-4">
-                  <div className="h-8 w-48 animate-pulse rounded-lg bg-sand/40" />
-                  <div className="h-[240px] animate-pulse rounded-xl bg-sand/40" />
-                  <div className="h-20 animate-pulse rounded-xl bg-sand/40" />
+            {research && barsState === "done" ? (
+              <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
+            ) : (
+              <div className="space-y-3" aria-busy="true">
+                <Card className="h-[104px] motion-safe:animate-pulse" />
+                <div className="flex gap-2.5">
+                  <Card radius="sm" className="h-[92px] flex-1 motion-safe:animate-pulse" />
+                  <Card radius="sm" className="h-[92px] flex-1 motion-safe:animate-pulse" />
                 </div>
-              )}
-            </Section>
+                <Card radius="md" className="h-[188px] motion-safe:animate-pulse" />
+              </div>
+            )}
           </div>
         )}
 
@@ -788,44 +835,59 @@ export default function ResearchClient({
             role="tabpanel"
             aria-labelledby={tabId("fundamentals")}
             tabIndex={0}
-            className="mt-7 space-y-10 focus:outline-none"
+            className="mt-7 space-y-8 focus:outline-none"
           >
-            {/* Strengths & weaknesses — the block the owner named. */}
-            {research && !ungraded && (
-              <Section title="Strengths & weaknesses">
-                <Scorecard
-                  grades={research.grades}
-                  locked={locked}
-                  upsell={<UpsellCard context="watchlist" />}
-                  mode="detail"
-                />
-              </Section>
+            {/* Board 13 — the health ring, revenue, the margin rings and the
+                valuation bars, plus strengths / weaknesses as cards. */}
+            {research ? (
+              <Fundamentals
+                research={research}
+                companyName={companyName}
+                locked={locked}
+                upsell={<UpsellCard context="watchlist" />}
+              />
+            ) : (
+              <div className="space-y-3" aria-busy="true">
+                <Card className="h-[104px] motion-safe:animate-pulse" />
+                <Card radius="md" className="h-[150px] motion-safe:animate-pulse" />
+              </div>
             )}
 
             {keyStats && (
-              <Section title="Key stats">
-                <KeyStatsGrid k={keyStats} />
-              </Section>
+              <section>
+                <SectionMark>Key stats</SectionMark>
+                <Card radius="md" className="mt-3 px-4 py-1">
+                  <KeyStatsGrid k={keyStats} />
+                </Card>
+              </section>
             )}
 
-            <Section title="Financials">
-              {!research || !keyStats ? (
-                <div className="h-64 animate-pulse rounded-xl bg-sand/40" />
-              ) : research.insufficient ? (
-                <p className="border-y border-sand py-8 text-center text-sm text-soft">
-                  We don&apos;t have enough published financials for {companyName} to chart yet — many
-                  smaller companies and funds don&apos;t report the quarterly numbers these charts need.
-                </p>
-              ) : locked ? (
-                <UpsellCard context="watchlist" />
-              ) : (
-                <FinancialsSection
-                  charts={research.charts}
-                  keyStats={keyStats}
-                  medians={research.sectorMedians}
-                />
-              )}
-            </Section>
+            <section>
+              <SectionMark>The charts</SectionMark>
+              <div className="mt-3">
+                {!research || !keyStats ? (
+                  <Card radius="md" className="h-64 motion-safe:animate-pulse" />
+                ) : research.insufficient ? (
+                  <Card radius="md" className="px-4 py-8">
+                    <p className="text-center text-[13px] leading-relaxed text-soft">
+                      We don&apos;t have enough published financials for {companyName} to
+                      chart yet — many smaller companies and funds don&apos;t report the
+                      quarterly numbers these charts need.
+                    </p>
+                  </Card>
+                ) : locked ? (
+                  <UpsellCard context="watchlist" />
+                ) : (
+                  <Card radius="md" className="px-4 py-3.5">
+                    <FinancialsSection
+                      charts={research.charts}
+                      keyStats={keyStats}
+                      medians={research.sectorMedians}
+                    />
+                  </Card>
+                )}
+              </div>
+            </section>
           </div>
         )}
 
@@ -871,59 +933,53 @@ export default function ResearchClient({
             tabIndex={0}
             className="mt-7 focus:outline-none"
           >
-            <Section title="News" subtitle="Club recaps + headlines from around the web">
-              {newsState !== "done" ? (
-                <div className="space-y-2">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="h-14 animate-pulse rounded-xl bg-sand/40" />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-8">
-                  {clubNews.length > 0 && (
-                    <div>
-                      <h3 className="flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
-                        <Newspaper className="h-3.5 w-3.5" /> From the Club Newsroom
-                      </h3>
-                      <div className="f0-ledger mt-1">
-                        {clubNews.map((a) => (
-                          <Link
-                            key={a.slug}
-                            href={`/news/${a.slug}`}
-                            className="f0-ledger-row group"
-                          >
-                            <span className="min-w-0 flex-1">
-                              <span className="mb-1 flex items-center gap-2">
-                                <KindChip kind={a.kind} />
-                                <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-                                  {newsTimeAgo(a.generated_at)}
-                                </span>
+            {newsState !== "done" ? (
+              <div className="space-y-2.5" aria-busy="true">
+                {[0, 1, 2].map((i) => (
+                  <Card key={i} radius="md" className="h-16 motion-safe:animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-7">
+                {clubNews.length > 0 && (
+                  <section>
+                    <SectionMark suffix="Club recaps">From the Club Newsroom</SectionMark>
+                    <div className="mt-3 space-y-2.5">
+                      {clubNews.map((a) => (
+                        <Link key={a.slug} href={`/news/${a.slug}`} className="f0-focus block">
+                          <Card radius="md" className="group px-4 py-3">
+                            <span className="mb-1.5 flex items-center gap-2">
+                              <KindChip kind={a.kind} />
+                              <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft">
+                                {newsTimeAgo(a.generated_at)}
                               </span>
-                              <span className="block text-[14px] font-semibold leading-snug text-ink group-hover:text-gold-700">
-                                {a.title}
-                              </span>
-                              {a.dek && (
-                                <span className="mt-0.5 block line-clamp-1 text-[12px] text-soft">
-                                  {a.dek}
-                                </span>
-                              )}
                             </span>
-                          </Link>
-                        ))}
-                      </div>
+                            <span className="block text-[13.5px] font-semibold leading-snug text-ink group-hover:text-gold-700">
+                              {a.title}
+                            </span>
+                            {a.dek && (
+                              <span className="mt-1 block line-clamp-1 text-[11.5px] text-soft">
+                                {a.dek}
+                              </span>
+                            )}
+                          </Card>
+                        </Link>
+                      ))}
                     </div>
-                  )}
-                  <div>
-                    {clubNews.length > 0 && (
-                      <h3 className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
-                        Around the web
-                      </h3>
-                    )}
+                  </section>
+                )}
+                <section>
+                  <SectionMark suffix="Headlines from around the web">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Newspaper className="h-3 w-3" aria-hidden /> News
+                    </span>
+                  </SectionMark>
+                  <Card radius="md" className="mt-3 px-4 py-1">
                     <NewsList news={news} />
-                  </div>
-                </div>
-              )}
-            </Section>
+                  </Card>
+                </section>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -938,7 +994,7 @@ export default function ResearchClient({
           Outside the tabs, because leaving a ticker page is not an analysis. */}
       <ClubTickerStrip ticker={ticker} />
 
-      <footer className="f0-rule-top mt-10 pt-5">
+      <footer className="mt-10 border-t border-sand pt-5">
         <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
       </footer>
     </div>
@@ -984,14 +1040,14 @@ function TickerActions({
     document.getElementById("practice")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // Not pills-in-a-grid: one hairline strip, the actions divided by thin rules.
+  // Three pill actions, matching the board's control language.
   const cell =
-    "flex flex-1 items-center justify-center gap-1.5 py-3 font-display text-[13px] font-bold text-ink transition-colors hover:text-gold-700";
+    "f0-focus flex flex-1 items-center justify-center gap-1.5 rounded-full border border-sand bg-card py-2.5 text-[12.5px] font-bold text-ink shadow-soft transition-colors hover:border-volt-300 hover:text-gold-700";
 
   return (
-    <div className="mt-6 flex border-y border-sand">
-      <div className="flex flex-1 items-center justify-center">
-        {canAlert ? (
+    <div className="mt-5 flex gap-2">
+      {canAlert ? (
+        <div className="flex flex-1 items-center justify-center rounded-full border border-sand bg-card shadow-soft transition-colors hover:border-volt-300">
           <SetAlertButton
             ticker={ticker}
             surface="research"
@@ -1000,22 +1056,18 @@ function TickerActions({
             levels={levels}
             variant="chip"
             stopPropagation={false}
-            className="!border-0 !bg-transparent !py-3 !text-[13px]"
+            className="!w-full !justify-center !border-0 !bg-transparent !py-2.5 !text-[12.5px] !font-bold"
           />
-        ) : (
-          <button type="button" onClick={onPractice} className={cell}>
-            <Eye className="h-4 w-4" /> Watch
-          </button>
-        )}
-      </div>
-
-      <span className="w-px bg-sand" aria-hidden />
+        </div>
+      ) : (
+        <button type="button" onClick={onPractice} className={cell}>
+          <Eye className="h-4 w-4" /> Watch
+        </button>
+      )}
 
       <button type="button" onClick={onPractice} className={cell}>
         <GraduationCap className="h-4 w-4" /> Practice
       </button>
-
-      <span className="w-px bg-sand" aria-hidden />
 
       <button type="button" onClick={onShare} className={cell}>
         {shared ? <Check className="h-4 w-4 text-gold-700" /> : <Share2 className="h-4 w-4" />}
@@ -1025,29 +1077,6 @@ function TickerActions({
   );
 }
 
-/* ─────────────────────────── Editorial section ─────────────────────────── */
-// Un-boxed panel body: the eyebrow section-rule marks the block (a charged tick
-// + label + hairline running to the edge) and the content's own rules carry the
-// structure. No bordered card ever wraps a section.
-
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="f0-section-rule">
-        <span className="font-display text-eyebrow font-bold uppercase text-ink">{title}</span>
-      </h2>
-      {subtitle && (
-        <p className="mt-2.5 text-[13px] leading-relaxed text-soft">{subtitle}</p>
-      )}
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
+/* The old `Section` helper (an f0 hairline section-rule wrapping an un-boxed
+   body) is gone: every block on these subpages is now the board's own object —
+   a brand-orange `SectionMark` over one or more `Card`s. */

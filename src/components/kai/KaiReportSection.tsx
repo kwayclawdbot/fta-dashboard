@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { PriceChart, RevenueChart } from "@/components/kai/ReportCharts";
+import { Card, CardLabel } from "@/components/research/board";
 import {
   toParagraphs,
   KAI_REPORT_DISCLAIMER,
@@ -10,25 +11,29 @@ import {
 } from "@/lib/kai/report";
 
 /**
- * KAI RESEARCH REPORT — the body of the `Kai Report` tab on /research/[ticker]
- * (canvas v2, board 14).
+ * KAI RESEARCH REPORT — the long body under board 14's head.
+ *
+ * KaiReportPanel draws the board's own composition (the tinted Kai field with
+ * the headline and the coverage ring, three signal cards, the warm "what would
+ * change the read" field and the action bar) and then mounts this for the rest
+ * of the written report: the charts, the moat and thesis, the kids explainer,
+ * the family questions, the sources and the compliance line. It renders with
+ * `showHead={false}` there, because the field above already carries the
+ * headline and the timestamp.
  *
  * WHAT THE CANVAS DRAWS AND THIS DELIBERATELY DOES NOT:
- *   • "Kai's verdict — ACCUMULATE" with an 82% confidence donut. Both are out:
- *     the app never renders a directive verdict (plan §0.1), and the club
- *     sentiment arc is the only radial in the system (plan §1.5). Kai's read is
- *     the HEADLINE — a sentence, in the model's own words, with no instruction.
+ *   • "Kai's verdict — ACCUMULATE". The app never renders a directive verdict.
+ *     Kai's read is the HEADLINE — a sentence, in the model's own words.
  *   • "Call flow surged 3.1× — sweeps at the 180–185 strikes." Options content
  *     is not shipped in Club surfaces; this is an equities-only club.
- *   • Rounded white signal cards stacked four deep. The register bans generic
- *     card containers, so the report is composed from RULES: an eyebrow, a
- *     display headline, section rules, a ledger for the risks, and one charged
- *     left edge for the block that is genuinely addressed to a child.
+ *
+ * The blocks below are CARDS, matching the owner's mockup — an earlier pass
+ * reinterpreted them as hairline rules and section marks, and the owner
+ * rejected that reading.
  *
  * COLOUR LAW: Kai blue is the ONLY chrome colour in here — the eyebrow, the
- * rules that open the report, the risk ticks, the question numerals. Green and
- * red appear only inside the price/financial charts, which are price. Nothing
- * orange: this surface is not asking the member to act.
+ * risk numerals, the question numerals. Green and red appear only inside the
+ * price/financial charts, which are price.
  *
  * The model writes `sections` (prose) and NEVER draws — the charts render the
  * stored `data` block, so the numbers can't drift from the analysis around them.
@@ -48,7 +53,7 @@ function Paras({ text }: { text: string }) {
   );
 }
 
-/** Section head — the system's own eyebrow rule, never a card header. */
+/** Section block — one card per part of the report, as the board draws it. */
 function Block({
   title,
   children,
@@ -57,20 +62,18 @@ function Block({
   children: ReactNode;
 }) {
   return (
-    <section>
-      <h3 className="f0-section-rule">
-        <span className="font-display text-eyebrow font-bold uppercase text-ink">{title}</span>
-      </h3>
-      <div className="mt-4">{children}</div>
-    </section>
+    <Card radius="md" className="px-4 py-3.5">
+      <CardLabel>{title}</CardLabel>
+      <div className="mt-3">{children}</div>
+    </Card>
   );
 }
 
-/** Chart caption — mono, hairline-topped. The chart needs no frame. */
+/** Chart caption — mono, sitting inside the block's own card. */
 function ChartFigure({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <figure className="f0-rule-top pt-3">
-      <figcaption className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-soft">
+    <figure className="border-t border-sand pt-3">
+      <figcaption className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
         {label}
       </figcaption>
       <div className="mt-2">{children}</div>
@@ -78,7 +81,14 @@ function ChartFigure({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-export default function KaiReportSection({ report }: { report: KaiReport }) {
+export default function KaiReportSection({
+  report,
+  showHead = true,
+}: {
+  report: KaiReport;
+  /** false when KaiReportPanel's Kai field already carries the headline. */
+  showHead?: boolean;
+}) {
   const s = report.sections;
   const bars = report.data?.bars || [];
   const financials = report.data?.financials || null;
@@ -91,31 +101,32 @@ export default function KaiReportSection({ report }: { report: KaiReport }) {
   const questions = s.discussion_questions || [];
 
   return (
-    <section aria-label={`Kai Research Report on ${report.ticker}`} className="space-y-10">
+    <section aria-label={`Kai Research Report on ${report.ticker}`} className="space-y-3">
       {/* ── THE REPORT HEAD ────────────────────────────────────────────────
           No logo, no price: the canvas head at the top of the page already
-          carries identity and the mark, and repeating them here would make the
-          tab feel like a second page. What the tab owes the member is WHOSE
-          read this is and HOW OLD it is — so that is all the head says. */}
-      <header>
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.18em] text-kai-600 dark:text-kai-300">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          Kai research report
-          <span className="h-3 w-px bg-kai-500/40" aria-hidden />
-          <span className="font-medium text-soft">Updated {generated}</span>
-        </p>
-        <div className="mt-3 border-t-2 border-kai-500/30" aria-hidden />
-        {s.headline && (
-          <h2 className="mt-4 font-display text-display-2 font-extrabold leading-tight text-ink">
-            {s.headline}
-          </h2>
-        )}
-        {s.sector_tagline && (
-          <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-soft">
-            {s.sector_tagline}
+          carries identity and the mark. What this owes the member is WHOSE
+          read it is and HOW OLD it is — so that is all the head says. It is
+          suppressed entirely inside board 14, where the Kai field says it. */}
+      {showHead && (
+        <Card tone="kai" className="p-4">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-kai-600">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            Kai research report
+            <span className="h-3 w-px bg-kai-500/40" aria-hidden />
+            <span className="font-medium text-soft">Updated {generated}</span>
           </p>
-        )}
-      </header>
+          {s.headline && (
+            <h2 className="mt-2.5 font-display text-[19px] font-extrabold leading-tight text-ink">
+              {s.headline}
+            </h2>
+          )}
+          {s.sector_tagline && (
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+              {s.sector_tagline}
+            </p>
+          )}
+        </Card>
+      )}
 
       {s.business_plain && (
         <Block title="The business, in plain English">
@@ -148,12 +159,10 @@ export default function KaiReportSection({ report }: { report: KaiReport }) {
 
       {risks.length > 0 && (
         <Block title="What could go wrong">
-          {/* A ledger, not bullets in a box: each risk is a row on a hairline
-              with its own numeral, so the list reads as a register a member can
-              work down rather than as decoration. `.f0-ledger` supplies the
-              hairlines; `.f0-ledger-row` is deliberately NOT used — its hover
-              wash and padding shift belong to rows you can act on, and these are
-              prose. */}
+          {/* Each risk is a numbered row inside the block's card, so the list
+              reads as a register a member can work down. `.f0-ledger` supplies
+              the hairlines between rows; `.f0-ledger-row` is deliberately NOT
+              used — its hover wash belongs to rows you can act on. */}
           <ul className="f0-ledger">
             {risks.map((r, i) => (
               <li key={i} className="flex gap-3 py-3.5">
@@ -174,15 +183,13 @@ export default function KaiReportSection({ report }: { report: KaiReport }) {
 
       {s.kids_explainer && (
         // The one block genuinely addressed to someone else in the room, so it
-        // gets an object of its own — a charged Kai edge, not a tinted card.
-        <section className="border-l-[3px] border-kai-500 py-1 pl-4">
-          <p className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
-            Explain it to your kids
-          </p>
-          <div className="mt-2.5">
+        // gets the tinted Kai field rather than the plain card.
+        <Card tone="kai" radius="md" className="px-4 py-3.5">
+          <CardLabel tone="kai">Explain it to your kids</CardLabel>
+          <div className="mt-3">
             <Paras text={s.kids_explainer} />
           </div>
-        </section>
+        </Card>
       )}
 
       {questions.length > 0 && (
@@ -206,7 +213,7 @@ export default function KaiReportSection({ report }: { report: KaiReport }) {
       )}
 
       {/* Sources + the compliance line, verbatim. */}
-      <footer className="f0-rule-top pt-5">
+      <footer className="border-t border-sand pt-4">
         <p className="text-[11px] leading-relaxed text-soft">
           Sources: company profile, price history, and quarterly financials via
           our market-data provider (delayed ~15 min); analysis written by Kai
