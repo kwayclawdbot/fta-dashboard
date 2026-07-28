@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { beltForXp } from "@/lib/belts";
 
 /**
  * Server-first extras for /discover (Cheat Code Club redesign, R3). Composes the
@@ -37,6 +38,14 @@ export interface KaiReportRef {
   generated_at: string;
 }
 
+/** One name on board 02's "BLACK BELTS ARE WATCHING" row. */
+export interface BeltWatch {
+  ticker: string;
+  name: string | null;
+  /** How many BLACK-BELT members are watching it. Never rounded, never padded. */
+  belts: number;
+}
+
 export interface DiscoverExtras {
   /** Tickers the viewer has liked (👍) — their followed set. */
   watched: string[];
@@ -46,6 +55,20 @@ export interface DiscoverExtras {
   contributions: ResearchContribution[];
   /** Newest published Kai reports, one per ticker — Top Research. */
   reports: KaiReportRef[];
+  /**
+   * Board 02 §"Black belts are watching" — the names the Club's highest-XP
+   * members actually hold on their watchlists.
+   *
+   * REAL, not illustrative: the belt roster comes from `xp_leaderboard_
+   * individuals` (the same definer the belt ladder reads, so a black belt here
+   * is a black belt there), and the watch is a row of `ticker_sentiment` with
+   * vote = 1 — the app's existing "watching" act. With no black belts on the
+   * roster yet this is an EMPTY ARRAY and the section renders its founding
+   * state; it never falls back to a general trending list wearing the label.
+   */
+  beltWatch: BeltWatch[];
+  /** Black belts on the roster right now — the denominator behind `beltWatch`. */
+  blackBelts: number;
 }
 
 const AUTHOR_SEL =
@@ -65,6 +88,8 @@ export async function getDiscoverExtras(
     forYouMovers: [],
     contributions: [],
     reports: [],
+    beltWatch: [],
+    blackBelts: 0,
   };
 
   const {
@@ -139,5 +164,79 @@ export async function getDiscoverExtras(
     if (reports.length >= 8) break;
   }
 
-  return { watched, forYouMovers, contributions, reports };
+  const { beltWatch, blackBelts } = await getBeltWatch(supabase);
+
+  return { watched, forYouMovers, contributions, reports, beltWatch, blackBelts };
+}
+
+/* ── board 02 §"Black belts are watching" ──────────────────────────────────
+ * Two reads, both already granted to an authenticated member:
+ *
+ *   1. `xp_leaderboard_individuals` (security definer, migration 099) returns
+ *      every member with their summed XP. `beltForXp` maps XP → belt, so the
+ *      black-belt roster is derived from the SAME function the belt ladder and
+ *      the leaderboard use — this surface cannot disagree with them.
+ *   2. `ticker_sentiment` is readable by any authenticated member (`select
+ *      using (true)`, migration 110). A vote of 1 is the app's "watching" act.
+ *
+ * Fails soft to nothing. An empty result is a real answer — a club with no
+ * black belts yet has no black-belt watchlist, and the surface says exactly
+ * that rather than borrowing the trending list and relabelling it.
+ */
+async function getBeltWatch(
+  supabase: SupabaseClient
+): Promise<{ beltWatch: BeltWatch[]; blackBelts: number }> {
+  const board = await supabase
+    .rpc("xp_leaderboard_individuals", { p_window: "all", p_scope: "all" })
+    .then(
+      ({ data }) => (data as { rows?: { id: string; xp: number }[] } | null)?.rows ?? [],
+      () => [] as { id: string; xp: number }[]
+    );
+
+  const blackIds = board
+    .filter((r) => beltForXp(Number(r.xp) || 0).belt.key === "black")
+    .map((r) => r.id)
+    .filter(Boolean);
+
+  if (blackIds.length === 0) return { beltWatch: [], blackBelts: 0 };
+
+  const rows = await supabase
+    .from("ticker_sentiment")
+    .select("ticker")
+    .in("user_id", blackIds)
+    .eq("vote", 1)
+    .limit(500)
+    .then(({ data }) => (data as { ticker: string }[] | null) ?? [], () => []);
+
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const t = (r.ticker || "").toUpperCase();
+    if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+  }
+  const top = Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 6);
+
+  if (top.length === 0) return { beltWatch: [], blackBelts: blackIds.length };
+
+  const names = await supabase
+    .from("screener_metrics")
+    .select("ticker, name")
+    .in(
+      "ticker",
+      top.map(([t]) => t)
+    )
+    .then(
+      ({ data }) => new Map((data ?? []).map((m) => [m.ticker.toUpperCase(), m.name])),
+      () => new Map<string, string | null>()
+    );
+
+  return {
+    beltWatch: top.map(([ticker, belts]) => ({
+      ticker,
+      name: names.get(ticker) ?? null,
+      belts,
+    })),
+    blackBelts: blackIds.length,
+  };
 }

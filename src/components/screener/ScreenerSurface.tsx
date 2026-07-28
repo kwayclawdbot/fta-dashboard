@@ -20,7 +20,17 @@ import {
   CornerDownLeft,
   Bookmark,
 } from "lucide-react";
-import { SegmentedRail, type SegmentedOption } from "@/components/canvas2";
+import {
+  Bone,
+  BoardCard,
+  BoardChip,
+  BoardHead,
+  FoundingLine,
+  PillTabs,
+  SectionMark,
+  Spark,
+} from "@/components/discover/board";
+import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { createClient } from "@/lib/supabase/client";
 import { parseScreenerQuery } from "@/lib/screener-nl";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
@@ -89,27 +99,11 @@ type SortKey =
   | "rsi14"
   | "like_count";
 
-/** The ledger's numeric columns (desktop). `width` is shared by the header and
- *  the row so the hairline rules line up down the whole page. */
-const LEDGER_COLS: {
-  key: SortKey;
-  label: string;
-  width: string;
-  render: (r: ScreenerRow) => string;
-  tone?: (r: ScreenerRow) => string;
-}[] = [
-  { key: "price", label: "Price", width: "w-[76px]", render: (r) => fmtPrice(r.price) },
-  { key: "chg_1d", label: "1d", width: "w-[58px]", render: (r) => fmtPct(r.chg_1d), tone: (r) => pctTone(r.chg_1d) },
-  { key: "chg_1m", label: "1m", width: "w-[58px]", render: (r) => fmtPct(r.chg_1m), tone: (r) => pctTone(r.chg_1m) },
-  { key: "chg_3m", label: "3m", width: "w-[58px]", render: (r) => fmtPct(r.chg_3m), tone: (r) => pctTone(r.chg_3m) },
-  { key: "vol_ratio", label: "Vol", width: "w-[52px]", render: (r) => fmtRatio(r.vol_ratio) },
-  { key: "mcap", label: "Cap", width: "w-[64px]", render: (r) => fmtMcap(r.mcap) },
-  { key: "rsi14", label: "RSI", width: "w-[42px]", render: (r) => fmtRsi(r.rsi14) },
-];
-
-/** The sort menu — club heat first, because that is where the surface opens. */
+/** The sort menu — Club signal first, because that is where the surface opens.
+ *  Board 15 states the current sort in its results header rather than hanging a
+ *  sortable column bar over the rows, so the menu IS the sort control now. */
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "like_count", label: "Club heat" },
+  { key: "like_count", label: "Club signal" },
   { key: "mcap", label: "Market cap" },
   { key: "price", label: "Price" },
   { key: "chg_1d", label: "1-day move" },
@@ -121,35 +115,45 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "ticker", label: "Ticker" },
 ];
 
-/** The quick-start presets as rail options. Labels only: the preset's icon
- *  carried no information the label doesn't, and five distinct glyphs in a row
- *  read as five competing objects rather than one control. */
-const PRESET_OPTIONS: SegmentedOption<string>[] = PRESETS.map((p) => ({
-  id: p.id,
-  label: p.label,
-}));
-
-/* The ledger's vertical hairlines. --sand is lifted globally in dark by the
-   foundation, so a plain border-sand is correct in both themes now. */
-const RULE = "border-sand";
-
 /* ---------- club heat ----------
    COLOUR LAW: heat is COMMUNITY SENTIMENT, so it takes the canonical sentiment
    ramp — never the red heart it used to be (red belongs to price, and a red
    heart next to a red 1d% made the two read as the same signal). The token
-   carries both theme steps itself, which is why there is no dark: variant here
-   and why the hand-written `bg-lime-400` it replaced was a defect waiting to
-   happen. The mark is a physical bar scaled against the hottest name on the
-   page plus the mono count, so "hot" is legible before the number is read. */
-function HeatMark({ n, max }: { n: number | null | undefined; max: number }) {
-  if (!n || n <= 0) return <span className="font-mono text-[12px] text-soft/60">—</span>;
-  const w = 6 + Math.round((Math.min(n, max) / Math.max(max, 1)) * 26);
+   carries both theme steps itself, which is why there is no dark: variant here.
+
+   Board 15 draws this slot as a tinted signal CHIP at the right end of the row
+   ("78%", `rgba(74,227,131,.12)` ground). Same object here, carrying the honest
+   number the app actually has — the count of members who have warmed the name —
+   rather than a percentage the screener's data cannot support. */
+function HeatChip({ n }: { n: number | null | undefined }) {
+  if (!n || n <= 0) {
+    return (
+      <span className="shrink-0 px-[7px] py-[3px] font-mono text-[10px] text-soft/70">—</span>
+    );
+  }
   return (
-    <span className="inline-flex items-center justify-end gap-1.5">
-      <span className="h-[7px] rounded-full bg-sentiment-fill" style={{ width: w }} aria-hidden />
-      <span className="font-mono text-[12px] font-semibold tabular-nums text-ink">{n}</span>
+    <span className="shrink-0 rounded-[8px] bg-sentiment-fill/12 px-[7px] py-[3px] font-mono text-[10px] font-semibold tabular-nums text-sentiment">
+      {n}
     </span>
   );
+}
+
+/* ---------- the row sparkline ----------
+   Board 15 hangs a 52×18 sparkline off every result row. A network call per
+   row is not payable at 100 rows a page — but the row ALREADY carries four real
+   readings of its own past (3m, 1m, 5d, 1d) plus the live mark, so the line is
+   reconstructed from those: p_then = p_now / (1 + chg/100). Every point is a
+   real price the feed supplied; nothing is interpolated or smoothed, and a row
+   missing its history simply draws no line. */
+function seriesFor(r: ScreenerRow): number[] | null {
+  const p = r.price;
+  if (p == null) return null;
+  const at = (chg: number | null | undefined) =>
+    chg == null ? null : p / (1 + chg / 100);
+  const pts = [at(r.chg_3m), at(r.chg_1m), at(r.chg_5d), at(r.chg_1d), p].filter(
+    (v): v is number => v != null && Number.isFinite(v) && v > 0
+  );
+  return pts.length >= 3 ? pts : null;
 }
 
 interface Meta {
@@ -178,13 +182,32 @@ interface SavedScreen {
 }
 
 /**
- * ScreenerSurface — the full-universe stock screener (formerly the whole
- * /screener page). Extracted into a shared client component so it can render
- * both as the standalone /screener route AND embedded as the "Screener" tab on
- * the Discover research hub. `embedded` only trims the outer page chrome
- * (padding / max width) so it sits cleanly inside the hub's tab panel — the
- * data, filters, full-universe load and free-tier gating are identical in both
- * placements.
+ * ScreenerSurface — the full-universe stock screener, rebuilt to the owner's
+ * mockup BOARD 15 (`15 Discover Screener`, tiles `light-r2-*` / `dark-r2-*`;
+ * markup in `.planning/design-project-v2/Cheat Code App Light.dc.html`).
+ *
+ * WHAT THE BOARD DRAWS, TOP TO BOTTOM:
+ *   masthead        "discover" — the board files the screener as a TAB of
+ *                   Discover, not as its own titled page
+ *   tabs            FOR YOU · SCREENER · TRENDING, SCREENER lit as an orange pill
+ *   filter chips    white, 1px ORANGE outline, "Tech ✕" — one per active filter,
+ *                   with a quiet "+ Filter" at the end
+ *   results header  "14 MATCHES · SORTED BY CLUB SIGNAL"  ·  "Save screen"
+ *   results         white ROW CARDS: 26px mark · ticker · 52×18 sparkline ·
+ *                   price · day move · signal chip
+ *   conviction      two cards side by side — "Club's most bullish" on a green
+ *                   hairline, "Club's most bearish" on a pink one
+ *   trending        "TRENDING IN THE CLUB" — a wrap of outlined chips
+ *
+ * The previous pass drew all of this as a hairline ledger with a sortable
+ * desktop column header and no cards anywhere. None of it remains: the results
+ * are cards, the chips are the board's chips, and the copy on the results
+ * header is the board's copy verbatim.
+ *
+ * `embedded` renders it as the SCREENER tab inside Discover, so the masthead,
+ * the tab row and the two board-15 tail blocks are dropped — the host already
+ * carries all three. The data, filters, full-universe load, saved screens and
+ * free-tier gating are identical in both placements.
  */
 export default function ScreenerSurface({ embedded = false }: { embedded?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
@@ -237,6 +260,26 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   const [appliedScreenId, setAppliedScreenId] = useState<string | null>(null);
 
   const isFTA = tier === "fta";
+
+  /* Board 15's tail — "Club's most bullish / bearish" and "Trending in the
+     Club" — is COMMUNITY data, which `screener_metrics` does not carry. It
+     comes off the same ranked attention ledger Discover reads, so the two
+     surfaces can never disagree about who the Club is bullish on. Fails soft to
+     null: the blocks simply do not render. Skipped entirely when embedded,
+     where the Discover host already draws them. */
+  const [clubLedger, setClubLedger] = useState<TrendingResponse | null>(null);
+  useEffect(() => {
+    if (embedded) return;
+    const ctrl = new AbortController();
+    fetch("/api/club/trending", {
+      signal: ctrl.signal,
+      headers: { accept: "application/json" },
+    })
+      .then((res) => (res.ok ? (res.json() as Promise<TrendingResponse>) : null))
+      .then((d) => d && setClubLedger(d))
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [embedded]);
 
   /** Whole-row deep-link into the ticker's research page (fix: clickable rows). */
   const openResearch = useCallback(
@@ -488,13 +531,6 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     setAppliedScreenId(null);
     setCustom((c) => ({ q: c.q }));
   }
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir(key === "ticker" ? "asc" : "desc");
-    }
-  }
 
   async function addToFamily(r: ScreenerRow, alsoPromote: boolean) {
     if (!familyId || !userId || busy) return;
@@ -529,7 +565,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
   if (tier === "free") {
     return (
-      <div className={embedded ? "" : "mx-auto max-w-6xl px-4 py-6 sm:px-6"}>
+      <div className={embedded ? "" : "mx-auto max-w-3xl px-4 py-6 sm:px-6"}>
         <LockedState
           icon={Telescope}
           eyebrow="Members discover here"
@@ -550,438 +586,551 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   return (
     <div
       className={
-        embedded
-          ? "space-y-4"
-          : "mx-auto max-w-6xl space-y-4 px-4 pb-24 sm:px-6"
+        embedded ? "space-y-4" : "mx-auto max-w-3xl space-y-4 px-4 pb-24 sm:px-6"
       }
     >
-      {/* ── Masthead — display type, no icon-chip, no card ──────────────────
-          One dominant voice per surface: the headline is the object here, and
-          every number under it is mono so the page reads as a market document
-          rather than as a dashboard of tiles. */}
-      <header className={embedded ? "" : "pt-2"}>
-        <p className="font-mono text-eyebrow font-bold uppercase text-gold-700">
-          Screener
-        </p>
-        <h1 className="mt-2.5 font-display text-display-2 font-extrabold text-ink">
-          The whole US market,
-          <br className="hidden sm:block" /> filtered down to a short list.
-        </h1>
-        <p className="mt-3 max-w-xl text-[13.5px] leading-relaxed text-soft">
-          Every common stock and ETF on the NYSE, Nasdaq and AMEX. Candidates to{" "}
-          <em>research</em> — never a list of things to buy.
-        </p>
-        <p className="mt-4 border-t border-sand pt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-          Delayed ~15 min
-          {meta?.last_trading_day ? ` · ${meta.last_trading_day}` : ""}
-          {meta?.universe_count ? ` · ${meta.universe_count.toLocaleString()} securities` : ""}
-          {coverage != null ? ` · mkt cap on ${coverage}% of stocks` : ""}
-          {meta?.history_days ? ` · ${meta.history_days}d window` : ""}
-        </p>
-      </header>
-
-      {/* Search — a ruled input line, not a floating pill */}
-      <div className="relative border-b border-sand">
-        <Search className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-soft" />
-        <input
-          value={custom.q ?? ""}
-          onChange={(e) => setCustom((c) => ({ ...c, q: e.target.value || null }))}
-          placeholder="Search 10,000+ stocks by ticker or company name…"
-          className="w-full bg-transparent py-3 pl-7 pr-8 font-display text-[15px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
-        />
-        {custom.q && (
-          <button
-            onClick={() => setCustom((c) => ({ ...c, q: null }))}
-            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full p-1 text-soft hover:text-ink"
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* ── Screen in plain English ─────────────────────────────────────────
-          A KAI object, so it wears Kai blue and is allowed its own field — this
-          is the one AI affordance on the surface, not a generic card. The parse
-          is deterministic (src/lib/screener-nl.ts): it only ever produces
-          filters the panel below can also produce, so a parsed screen and a
-          hand-built one are indistinguishable, and the active-filter chips
-          narrate exactly what it understood. Nothing recognised → honest
-          keyword fallback. */}
-      <div className="relative overflow-hidden rounded-xl border-l-[3px] border-kai-500 bg-kai-500/8 py-3 pl-4 pr-3 dark:border-kai-400 dark:bg-kai-500/14">
-        <div className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
-          <Sparkles className="h-3 w-3" />
-          Screen in plain English
-        </div>
-        <div className="relative">
-          <input
-            value={nlInput}
-            onChange={(e) => {
-              setNlInput(e.target.value);
-              if (nlNote) setNlNote(null);
+      {/* ── Masthead + tabs (board 15) ──────────────────────────────────────
+          The board files the screener as a TAB of Discover, so the standalone
+          route wears Discover's head with SCREENER lit. Embedded inside
+          Discover the host already draws both, so neither renders twice. */}
+      {!embedded && (
+        <>
+          <BoardHead title="discover" sub="Screen the whole market on your own terms" />
+          <PillTabs
+            options={[
+              { key: "foryou", label: "For you" },
+              { key: "screener", label: "Screener" },
+              { key: "trending", label: "Trending" },
+            ]}
+            value="screener"
+            onChange={(k) => {
+              if (k !== "screener") router.push("/discover");
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") runNL(nlInput);
-            }}
-            placeholder="e.g. Semis under $60 with rising volume"
-            className="w-full border-b border-kai-500/25 bg-transparent py-2 pr-10 font-display text-[14px] font-semibold text-ink outline-none transition placeholder:font-normal placeholder:text-soft/70 focus:border-kai-500 dark:border-kai-400/30 dark:focus:border-kai-300"
+            ariaLabel="Discover views"
+            idPrefix="screener-tab"
+            panelId="screener-panel"
           />
-          <button
-            onClick={() => runNL(nlInput)}
-            disabled={!nlInput.trim()}
-            aria-label="Run plain-English screen"
-            className="absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-lg bg-kai-500 px-2 py-1.5 text-[11px] font-bold text-white transition disabled:opacity-40 dark:bg-kai-400"
-          >
-            <CornerDownLeft className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        {nlNote && (
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
-            {nlNote}
+          <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
+            Delayed ~15 min
+            {meta?.last_trading_day ? ` · ${meta.last_trading_day}` : ""}
+            {meta?.universe_count ? ` · ${meta.universe_count.toLocaleString()} securities` : ""}
+            {coverage != null ? ` · mkt cap on ${coverage}% of stocks` : ""}
+            {meta?.history_days ? ` · ${meta.history_days}d window` : ""}
           </p>
-        )}
-      </div>
-
-      {/* ── Quick start ─────────────────────────────────────────────────────
-          Was a row of five bordered pills with an icon in each — pill soup by
-          the register's own definition, and five icons encoding nothing the
-          label doesn't already say. It is now the shared <SegmentedRail />:
-          the system's single answer to "pick one of N", so this control has
-          the same keyboard model, the same focus ring and the same 3px
-          indicator as every other one-of-N in the app. The bar rides
-          `bg-accent` because choosing a screen is an ACTION (orange by law),
-          and re-selecting the current preset clears it — the toggle-off
-          behaviour the pills had, preserved. */}
-      <div>
-        <p className="mb-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft/70">
-          Quick start
-        </p>
-        <SegmentedRail
-          options={PRESET_OPTIONS}
-          value={activePresetId as string | null}
-          onChange={(id) => {
-            const p = PRESETS.find((x) => x.id === id);
-            if (p) applyPreset(p);
-          }}
-          ariaLabel="Quick-start screens"
-          barClassName="bg-accent"
-          size="sm"
-        />
-      </div>
-      {activePresetId && (
-        <div className="border-l-[3px] border-accent py-1 pl-3.5">
-          {(() => {
-            const ap = getPreset(activePresetId)!;
-            return (
-              <>
-                <p className="text-[13px] leading-snug text-ink/80">
-                  {ap.blurb} These filters are applied below — tweak any of them.
-                </p>
-                {!isKid && (
-                  <div className="f0-rule-top mt-2 flex items-center justify-between gap-2 pt-2">
-                    <span className="text-[12px] font-medium text-soft">
-                      Want a heads-up when new names enter this screen?
-                    </span>
-                    <SetAlertButton
-                      ticker={null}
-                      surface="screener"
-                      defaultKind="preset_match"
-                      presetId={ap.id}
-                      presetLabel={ap.label}
-                      variant="chip"
-                      stopPropagation={false}
-                    />
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
+        </>
       )}
 
-      {/* ── Your screens (canvas 15 · "Save screen") ────────────────────────
-          Real persistence, not a UI gesture: every chip here is a row in
-          screener_saved_screens. Rendered only once the read has landed —
-          `saved === null` is "not read yet", which must never take the
-          founding branch (§0.4). */}
-      {saved !== null && saved.length > 0 && (
+      <div
+        id="screener-panel"
+        role={embedded ? undefined : "tabpanel"}
+        aria-labelledby={embedded ? undefined : "screener-tab-screener"}
+        className="space-y-4"
+      >
+        {/* Search — the board's card, not a naked rule */}
+        <BoardCard radius={14} className="flex items-center gap-2.5 px-3.5 py-2.5">
+          <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+          <input
+            value={custom.q ?? ""}
+            onChange={(e) => setCustom((c) => ({ ...c, q: e.target.value || null }))}
+            placeholder="Search by ticker or company name…"
+            aria-label="Search the universe"
+            className="min-w-0 flex-1 bg-transparent font-display text-[14px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
+          />
+          {custom.q && (
+            <button
+              onClick={() => setCustom((c) => ({ ...c, q: null }))}
+              className="f0-focus shrink-0 rounded-full p-1 text-soft hover:text-ink"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </BoardCard>
+
+        {/* ── Screen in plain English ───────────────────────────────────────
+            The surface's one AI affordance, so it keeps Kai blue — carried on
+            the board's card with a Kai hairline rather than a bespoke tinted
+            slab. The parse is deterministic (src/lib/screener-nl.ts): it only
+            ever produces filters the panel below can also produce, so a parsed
+            screen and a hand-built one are indistinguishable, and the chips
+            narrate exactly what it understood. Nothing recognised → honest
+            keyword fallback. */}
+        <BoardCard radius={14} className="!border-kai-500/35 px-3.5 py-3">
+          <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
+            <Sparkles className="h-3 w-3" />
+            Screen in plain English
+          </div>
+          <div className="relative">
+            <input
+              value={nlInput}
+              onChange={(e) => {
+                setNlInput(e.target.value);
+                if (nlNote) setNlNote(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") runNL(nlInput);
+              }}
+              placeholder="e.g. Semis under $60 with rising volume"
+              className="w-full bg-transparent py-1 pr-10 font-display text-[14px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
+            />
+            <button
+              onClick={() => runNL(nlInput)}
+              disabled={!nlInput.trim()}
+              aria-label="Run plain-English screen"
+              className="f0-focus f0-press absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center rounded-full bg-kai-500 px-2 py-1.5 text-white transition disabled:opacity-40 dark:bg-kai-400"
+            >
+              <CornerDownLeft className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {nlNote && (
+            <p className="mt-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+              {nlNote}
+            </p>
+          )}
+        </BoardCard>
+
+        {/* ── Quick start — the board's chip row ────────────────────────────
+            Board 15 draws every one-of-N choice on this surface as a chip, so
+            the presets are chips: the current one takes the ORANGE outline the
+            board gives an active filter, and re-selecting it clears it. */}
         <div>
-          <p className="mb-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft/70">
-            Your screens
+          <p className="mb-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
+            Quick start
           </p>
-          <div className="club2-track -m-1 flex gap-2 overflow-x-auto p-1">
-            {saved.map((s) => {
-              const on = appliedScreenId === s.id;
-              return (
-                <span
-                  key={s.id}
-                  className={`f0-chip shrink-0 px-2.5 py-1 ${on ? "f0-chip-on" : "text-soft"}`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => applyScreen(s)}
-                    className="f0-focus f0-press rounded font-mono text-[11px] font-bold uppercase tracking-[0.08em]"
-                  >
-                    {s.name}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteScreen(s.id)}
-                    aria-label={`Delete the ${s.name} screen`}
-                    className="f0-focus rounded opacity-60 transition-opacity hover:opacity-100"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              );
-            })}
+          <div className="club2-track -m-1 flex gap-[7px] overflow-x-auto p-1">
+            {PRESETS.map((p) => (
+              <BoardChip
+                key={p.id}
+                as="button"
+                type="button"
+                tone={activePresetId === p.id ? "accent" : "quiet"}
+                aria-pressed={activePresetId === p.id}
+                onClick={() => applyPreset(p)}
+                className="f0-focus f0-press"
+              >
+                {p.label}
+              </BoardChip>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* Filter panel — a ruled disclosure, not a bordered card */}
-      <div className="border-y border-sand">
-        <button
-          onClick={() => setFiltersOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-2 py-3 text-left"
-        >
-          <span className="flex items-center gap-2 font-display text-[13px] font-bold uppercase tracking-[0.08em] text-ink">
-            <SlidersHorizontal className="h-4 w-4 text-gold-600" />
-            Filters
-            {chips.length > 0 && (
-              <span className="font-mono text-[11px] font-bold text-gold-700">
-                {chips.length}
-              </span>
+        {activePresetId && (
+          <BoardCard radius={14} className="px-3.5 py-3">
+            {(() => {
+              const ap = getPreset(activePresetId)!;
+              return (
+                <>
+                  <p className="text-[12.5px] leading-snug text-ink/80">
+                    {ap.blurb} These filters are applied below — tweak any of them.
+                  </p>
+                  {!isKid && (
+                    <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-sand pt-2.5">
+                      <span className="text-[11.5px] font-medium text-soft">
+                        Want a heads-up when new names enter this screen?
+                      </span>
+                      <SetAlertButton
+                        ticker={null}
+                        surface="screener"
+                        defaultKind="preset_match"
+                        presetId={ap.id}
+                        presetLabel={ap.label}
+                        variant="chip"
+                        stopPropagation={false}
+                      />
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </BoardCard>
+        )}
+
+        {/* ── Your screens (board 15 · "Save screen") ───────────────────────
+            Real persistence, not a UI gesture: every chip here is a row in
+            screener_saved_screens. Rendered only once the read has landed —
+            `saved === null` is "not read yet", which must never take the
+            founding branch. */}
+        {saved !== null && saved.length > 0 && (
+          <div>
+            <p className="mb-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
+              Your screens
+            </p>
+            <div className="club2-track -m-1 flex gap-[7px] overflow-x-auto p-1">
+              {saved.map((s) => {
+                const on = appliedScreenId === s.id;
+                return (
+                  <BoardChip key={s.id} tone={on ? "accent" : "quiet"}>
+                    <button
+                      type="button"
+                      onClick={() => applyScreen(s)}
+                      className="f0-focus f0-press rounded"
+                    >
+                      {s.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteScreen(s.id)}
+                      aria-label={`Delete the ${s.name} screen`}
+                      className="f0-focus rounded opacity-60 transition-opacity hover:opacity-100"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </BoardChip>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Filter panel — a carded disclosure */}
+        <BoardCard radius={16} className="overflow-hidden">
+          <button
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            className="f0-focus flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
+          >
+            <span className="flex items-center gap-2 font-display text-[12.5px] font-bold uppercase tracking-[0.08em] text-ink">
+              <SlidersHorizontal className="h-4 w-4 text-gold-700" />
+              Filters
+              {chips.length > 0 && (
+                <span className="font-mono text-[11px] font-bold text-gold-700">
+                  {chips.length}
+                </span>
+              )}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-soft transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          <AnimatePresence initial={false}>
+            {filtersOpen && (
+              <m.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="border-t border-sand px-3.5">
+                  <FilterPanel
+                    isFTA={isFTA}
+                    isKid={isKid}
+                    exchanges={exchanges}
+                    value={custom}
+                    patch={patchFilter}
+                  />
+                </div>
+              </m.div>
             )}
-          </span>
-          <ChevronDown className={`h-4 w-4 text-soft transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
-        </button>
-        <AnimatePresence initial={false}>
-          {filtersOpen && (
-            <m.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <div className="pb-1">
-                <FilterPanel
-                  isFTA={isFTA}
-                  isKid={isKid}
-                  exchanges={exchanges}
-                  value={custom}
-                  patch={patchFilter}
-                />
-              </div>
-            </m.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </AnimatePresence>
+        </BoardCard>
 
-      {/* Active filter chips — the canvas's own orange-outlined "Tech ✕" row,
-          built on the shared .f0-chip so it cannot drift from the selection
-          chips inside the filter panel. --f0-chip-line is the one hook the
-          primitive exposes for a charged outline. */}
-      {chips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Active filter chips — board 15's own "Tech ✕" row, verbatim: white
+            fill, 1px ORANGE outline, orange label, with a quiet "+ Filter" at
+            the end that opens the panel above. */}
+        <div className="club2-track -m-1 flex flex-wrap items-center gap-[7px] p-1">
           {chips.map((c) => (
-            <button
+            <BoardChip
               key={c.key}
+              as="button"
+              type="button"
+              tone="accent"
               onClick={() => clearFilter(c.key)}
-              style={{ "--f0-chip-line": "var(--accent-solid)" } as React.CSSProperties}
-              className="f0-chip f0-press f0-focus px-2.5 py-1 text-[11px] font-semibold text-gold-700"
+              className="f0-focus f0-press"
+              aria-label={`Remove the ${c.label} filter`}
             >
               {c.label}
               <X className="h-3 w-3" />
-            </button>
+            </BoardChip>
           ))}
-          <button
-            onClick={clearAll}
-            className="f0-focus ml-1 rounded text-[11px] font-semibold text-soft underline hover:text-ink"
-          >
-            Clear all
-          </button>
-        </div>
-      )}
-
-      {/* Result count · save · sort · how-to */}
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <span className="font-mono text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
-          {results.length.toLocaleString()} {results.length === 1 ? "result" : "results"}
-        </span>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {/* SAVE SCREEN — canvas 15 draws it right here. It writes a real row
-              (migration 194) and only appears once there is a screen worth
-              keeping, so it never invites a member to save the empty view. */}
-          {userId && !filtersEmpty(custom) && (
-            <SaveScreenControl
-              name={screenName}
-              onName={setScreenName}
-              onSave={saveScreen}
-              saving={savingScreen}
-              error={savedError}
-              count={saved?.length ?? 0}
-            />
-          )}
-          {/* The sort is a stated fact, not a hidden default: the surface opens
-              on CLUB HEAT — what the club is actually engaging with — and says
-              so, with the change one tap away on every breakpoint. */}
-          <label className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
-            Sorted by
-            <select
-              value={sortKey}
-              onChange={(e) => {
-                setSortKey(e.target.value as SortKey);
-                setSortDir(e.target.value === "ticker" ? "asc" : "desc");
-                setAppliedScreenId(null);
-              }}
-              className="f0-focus rounded bg-transparent font-display text-[12px] font-bold uppercase tracking-normal text-ink outline-none"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.key} value={o.key}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            onClick={() => setExplainerOpen((v) => !v)}
-            className="f0-focus inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.14em] text-soft hover:text-ink"
-          >
-            <Info className="h-3.5 w-3.5" />
-            How to use this
-          </button>
-        </div>
-      </div>
-
-      {/* FOUNDING STATE (§0.5). The surface opens on CLUB HEAT, and a club of
-          nine tickers with one or two participants each has no heat to sort by
-          — so the default sort would silently degrade to an arbitrary order
-          with a column of dashes beside it. Say so instead, and hand over the
-          one-tap fix. Distinct from loading: the universe has already landed by
-          the time this can render. */}
-      {sortKey === "like_count" && results.length > 0 && maxHeat === 0 && (
-        <p className="border-l-2 border-accent py-1 pl-3.5 text-[12.5px] leading-relaxed text-soft">
-          The Club hasn&apos;t warmed any of these names yet, so this list is in
-          no meaningful order. Like a ticker on its research page to start its
-          heat — or{" "}
-          <button
+          <BoardChip
+            as="button"
             type="button"
-            onClick={() => {
-              setSortKey("mcap");
-              setSortDir("desc");
-            }}
-            className="f0-focus rounded font-semibold text-gold-700 underline decoration-1 underline-offset-2"
+            tone="quiet"
+            onClick={() => setFiltersOpen(true)}
+            className="f0-focus f0-press"
           >
-            sort by size
-          </button>{" "}
-          for now.
-        </p>
-      )}
-      <AnimatePresence initial={false}>
-        {explainerOpen && (
-          <m.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="flex items-start gap-2 border-l-[3px] border-sand py-1 pl-3.5">
-              <p className="text-[13px] leading-relaxed text-soft">
-                A screener filters thousands of stocks down to a short list that shares one trait — trading near a high, surging in volume, or looking oversold. It is a tool for finding candidates to <em>research</em>, never a list of things to buy. Combine a few filters, sort the columns, then dig into any company that catches your eye.
-              </p>
-              <HintDismiss
-                onClick={() => {
-                  setExplainerOpen(false);
-                  howToHint.dismiss();
-                }}
-              />
-            </div>
-          </m.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Results — ONE hairline ledger, at every breakpoint ───────────────
-          Not a table in a bordered card on desktop and a stack of cards on
-          mobile: the same ruled ledger both times, shedding columns as the
-          viewport narrows. Rules do the separating; nothing is boxed. */}
-      {results.length === 0 ? (
-        <div className="f0-rule-top f0-rule-bottom py-14">
-          <Telescope className="mb-3 h-7 w-7 text-gold-600" />
-          <h3 className="font-display text-display-3 font-extrabold text-ink">Nothing matches</h3>
-          <p className="mt-1.5 max-w-sm text-[13.5px] leading-relaxed text-soft">
-            Loosen a filter or clear your search — the market shifts every day, so this list changes
-            with it.
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Column header — mono labels over a hairline, sortable. The gap and
-              the per-cell box model (transparent left border + pl-3) mirror the
-              row exactly, so every rule in the ledger runs straight down the
-              page instead of drifting a pixel per column. */}
-          <div className="hidden items-center gap-3.5 border-b border-sand pb-2 md:flex">
+            + Filter
+          </BoardChip>
+          {chips.length > 0 && (
             <button
-              onClick={() => toggleSort("ticker")}
-              className={`flex-1 text-left font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${
-                sortKey === "ticker" ? "text-gold-700" : "text-soft hover:text-ink"
-              }`}
+              onClick={clearAll}
+              className="f0-focus ml-1 rounded text-[10.5px] font-semibold text-soft underline hover:text-ink"
             >
-              Company {sortKey === "ticker" && (sortDir === "asc" ? "↑" : "↓")}
+              Clear all
             </button>
-            {LEDGER_COLS.map((c) => (
-              <button
-                key={c.key}
-                onClick={() => toggleSort(c.key)}
-                className={`${c.width} shrink-0 border-l border-transparent pl-3 text-right font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${
-                  sortKey === c.key ? "text-gold-700" : "text-soft hover:text-ink"
-                }`}
-              >
-                {c.label} {sortKey === c.key && (sortDir === "asc" ? "↑" : "↓")}
-              </button>
-            ))}
-            <button
-              onClick={() => toggleSort("like_count")}
-              className={`w-[86px] shrink-0 border-l border-transparent pl-3 text-right font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${
-                sortKey === "like_count" ? "text-gold-700" : "text-soft hover:text-ink"
-              }`}
-            >
-              Heat {sortKey === "like_count" && (sortDir === "asc" ? "↑" : "↓")}
-            </button>
-            <span className="ml-1 w-[96px] shrink-0" aria-hidden />
-          </div>
-
-          <div className="f0-ledger">
-            {pageRows.map((r) => (
-              <LedgerRow
-                key={r.ticker}
-                r={r}
-                maxHeat={maxHeat}
-                busy={busy === r.ticker}
-                added={added[r.ticker]}
-                canAct={!!familyId}
-                onOpen={() => openResearch(r.ticker)}
-                onAddFamily={() => addToFamily(r, false)}
-                onSuggest={() => addToFamily(r, true)}
-                allowAlert={!isKid}
-              />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {pageCount > 1 && (
-            <div className="flex items-center justify-center gap-4 border-t border-sand pt-3">
-              <button
-                disabled={page === 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
-              >
-                ← Prev
-              </button>
-              <span className="font-mono text-[11px] tabular-nums text-soft">
-                {page + 1} / {pageCount}
-              </span>
-              <button
-                disabled={page >= pageCount - 1}
-                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
-              >
-                Next →
-              </button>
-            </div>
           )}
-        </>
+        </div>
+
+        {/* Results header — board 15's line, verbatim shape:
+            "14 MATCHES · SORTED BY CLUB SIGNAL"   ·   "Save screen" */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+          <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-soft">
+            {results.length.toLocaleString()}{" "}
+            {results.length === 1 ? "MATCH" : "MATCHES"} · SORTED BY{" "}
+            {(SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "").toUpperCase()}
+          </span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* SAVE SCREEN — board 15 draws it right here. It writes a real row
+                (migration 194) and only appears once there is a screen worth
+                keeping, so it never invites a member to save the empty view. */}
+            {userId && !filtersEmpty(custom) && (
+              <SaveScreenControl
+                name={screenName}
+                onName={setScreenName}
+                onSave={saveScreen}
+                saving={savingScreen}
+                error={savedError}
+                count={saved?.length ?? 0}
+              />
+            )}
+            {/* The sort is a stated fact, not a hidden default: the surface
+                opens on CLUB SIGNAL — what the Club is actually engaging with
+                — and the line above says so. */}
+            <label className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
+              Sort
+              <select
+                value={sortKey}
+                onChange={(e) => {
+                  setSortKey(e.target.value as SortKey);
+                  setSortDir(e.target.value === "ticker" ? "asc" : "desc");
+                  setAppliedScreenId(null);
+                }}
+                className="f0-focus rounded bg-transparent font-display text-[11.5px] font-bold uppercase tracking-normal text-ink outline-none"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={() => setExplainerOpen((v) => !v)}
+              aria-expanded={explainerOpen}
+              className="f0-focus inline-flex items-center gap-1 rounded font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft hover:text-ink"
+            >
+              <Info className="h-3.5 w-3.5" />
+              How to use this
+            </button>
+          </div>
+        </div>
+
+        {/* FOUNDING STATE. The surface opens on CLUB SIGNAL, and a club of nine
+            tickers with one or two participants each has no signal to sort by —
+            so the default sort would silently degrade to an arbitrary order
+            with a column of dashes beside it. Say so, and hand over the one-tap
+            fix. Distinct from loading: the universe has already landed by the
+            time this can render. */}
+        {sortKey === "like_count" && results.length > 0 && maxHeat === 0 && (
+          <FoundingLine>
+            The Club hasn&apos;t warmed any of these names yet, so this list is in
+            no meaningful order. Like a ticker on its research page to start its
+            signal — or{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setSortKey("mcap");
+                setSortDir("desc");
+              }}
+              className="f0-focus rounded font-semibold text-gold-700 underline decoration-1 underline-offset-2"
+            >
+              sort by size
+            </button>{" "}
+            for now.
+          </FoundingLine>
+        )}
+
+        <AnimatePresence initial={false}>
+          {explainerOpen && (
+            <m.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <BoardCard radius={14} className="flex items-start gap-2 px-3.5 py-3">
+                <p className="text-[12.5px] leading-relaxed text-soft">
+                  A screener filters thousands of stocks down to a short list that shares one trait — trading near a high, surging in volume, or looking oversold. It is a tool for finding candidates to <em>research</em>, never a list of things to buy. Combine a few filters, change the sort, then dig into any company that catches your eye.
+                </p>
+                <HintDismiss
+                  onClick={() => {
+                    setExplainerOpen(false);
+                    howToHint.dismiss();
+                  }}
+                />
+              </BoardCard>
+            </m.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Results — board 15's ROW CARDS, at every breakpoint ───────────
+            One white card per match: mark, ticker, sparkline, price, day move,
+            signal chip. The extra columns the old ledger carried (1m/3m/vol/cap
+            /RSI) drop below the identity line on small screens exactly as they
+            did, but as type on the card rather than as ruled cells. */}
+        {results.length === 0 ? (
+          <BoardCard radius={18} className="px-5 py-12">
+            <Telescope className="mb-3 h-7 w-7 text-gold-700" />
+            <h3 className="font-display text-[21px] font-extrabold tracking-[-0.02em] text-ink">
+              Nothing matches
+            </h3>
+            <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-soft">
+              Loosen a filter or clear your search — the market shifts every day,
+              so this list changes with it.
+            </p>
+          </BoardCard>
+        ) : (
+          <>
+            <div className="flex flex-col gap-[7px]">
+              {pageRows.map((r) => (
+                <ResultCard
+                  key={r.ticker}
+                  r={r}
+                  busy={busy === r.ticker}
+                  added={added[r.ticker]}
+                  canAct={!!familyId}
+                  onOpen={() => openResearch(r.ticker)}
+                  onAddFamily={() => addToFamily(r, false)}
+                  onSuggest={() => addToFamily(r, true)}
+                  allowAlert={!isKid}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {pageCount > 1 && (
+              <div className="flex items-center justify-center gap-4 pt-1">
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className="f0-focus rounded font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
+                >
+                  ← Prev
+                </button>
+                <span className="font-mono text-[10.5px] tabular-nums text-soft">
+                  {page + 1} / {pageCount}
+                </span>
+                <button
+                  disabled={page >= pageCount - 1}
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                  className="f0-focus rounded font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft transition-colors hover:text-ink disabled:opacity-30"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Board 15's tail: conviction cards + trending chips ────────────
+            Community data, off the shared attention ledger. Skipped when
+            embedded (Discover's own Trending tab draws both) and skipped
+            entirely when the Club has not formed a read — an empty pair of
+            cards would be worse than no cards. */}
+        {!embedded && <ClubTail ledger={clubLedger} />}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================================
+ * BOARD 15 TAIL — "Club's most bullish / most bearish" + "Trending in the Club"
+ *
+ * The board draws the two conviction cards with a green and a pink hairline and
+ * paints the percentages green/red. Both figures are COMMUNITY SENTIMENT, so
+ * the bull card takes the lime sentiment ramp and the bear card an ink tint;
+ * only the trending chips carry a real price move, and those keep green/red.
+ * ==========================================================================*/
+function ClubTail({ ledger }: { ledger: TrendingResponse | null }) {
+  const rows = ledger?.rows ?? [];
+  const stanced = rows.filter((r) => r.sentiment?.bullPct != null);
+  const bullish = [...stanced]
+    .sort((a, b) => (b.sentiment!.bullPct ?? 0) - (a.sentiment!.bullPct ?? 0))
+    .slice(0, 3);
+  const bearish = [...stanced]
+    .sort((a, b) => (a.sentiment!.bullPct ?? 0) - (b.sentiment!.bullPct ?? 0))
+    .slice(0, 3);
+  const trending = rows.filter((r) => r.changePct != null).slice(0, 6);
+
+  if (stanced.length === 0 && trending.length === 0) return null;
+
+  return (
+    <div className="space-y-4 pt-2">
+      {stanced.length > 0 && (
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <ConvictionCard title="Club's most bullish" rows={bullish} tone="bull" />
+          <ConvictionCard title="Club's most bearish" rows={bearish} tone="bear" />
+        </div>
       )}
+
+      {trending.length > 0 && (
+        <div>
+          <SectionMark label="Trending in the Club" />
+          <div className="mt-2.5 flex flex-wrap gap-[7px]">
+            {trending.map((r) => (
+              <Link
+                key={r.ticker}
+                href={researchHref(r.ticker)}
+                className="f0-focus rounded-full"
+              >
+                <BoardChip className="!font-mono !text-[11px] !text-ink">
+                  {r.ticker.toUpperCase()}{" "}
+                  <span className={pctTone(r.changePct)}>{fmtPct(r.changePct)}</span>
+                </BoardChip>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConvictionCard({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: TrendingRow[];
+  tone: "bull" | "bear";
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div
+      className={`rounded-[16px] border bg-card px-3.5 py-[13px] ${
+        tone === "bull" ? "border-sentiment/40" : "border-sand"
+      }`}
+    >
+      <p
+        className={`font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em] ${
+          tone === "bull" ? "text-sentiment" : "text-soft"
+        }`}
+      >
+        {title}
+      </p>
+      <div className="mt-2.5 flex flex-col gap-2">
+        {rows.map((r) => (
+          <Link
+            key={r.ticker}
+            href={`/research/${encodeURIComponent(r.ticker)}?tab=community`}
+            className="f0-focus flex items-center justify-between rounded"
+          >
+            <span className="font-mono text-[11px] font-semibold text-ink">
+              {r.ticker.toUpperCase()}
+            </span>
+            <span
+              className={`font-mono text-[10.5px] tabular-nums ${
+                tone === "bull" ? "text-sentiment" : "text-ink"
+              }`}
+            >
+              {tone === "bull"
+                ? `${r.sentiment!.bullPct}%`
+                : `${100 - (r.sentiment!.bullPct ?? 0)}%`}
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1004,45 +1153,50 @@ export function ScreenerSkeleton({ embedded = false }: { embedded?: boolean }) {
   return (
     <div
       className={
-        embedded ? "space-y-4" : "mx-auto max-w-6xl space-y-4 px-4 pb-24 sm:px-6"
+        embedded ? "space-y-4" : "mx-auto max-w-3xl space-y-4 px-4 pb-24 sm:px-6"
       }
       aria-busy="true"
     >
-      <header className={embedded ? "" : "pt-2"}>
-        <p className="font-mono text-eyebrow font-bold uppercase text-gold-700">Screener</p>
-        <h1 className="mt-2.5 font-display text-display-2 font-extrabold text-ink">
-          The whole US market,
-          <br className="hidden sm:block" /> filtered down to a short list.
-        </h1>
-        <p className="mt-3 max-w-xl text-[13.5px] leading-relaxed text-soft">
-          Every common stock and ETF on the NYSE, Nasdaq and AMEX. Candidates to{" "}
-          <em>research</em> — never a list of things to buy.
-        </p>
-        <div className="f0-rule-top mt-4 pt-2.5">
-          <div className="h-2.5 w-64 max-w-full animate-pulse rounded bg-sand" />
-        </div>
-      </header>
+      {!embedded && (
+        <>
+          <BoardHead title="discover" sub="Screen the whole market on your own terms" />
+          <div className="flex items-center gap-4">
+            <Bone w={62} h={10} />
+            <Bone w={72} h={22} className="!rounded-full" />
+            <Bone w={62} h={10} />
+          </div>
+          <Bone w={220} h={8} />
+        </>
+      )}
 
-      <div className="f0-rule-bottom py-3">
-        <div className="h-4 w-72 max-w-full animate-pulse rounded bg-sand/70" />
-      </div>
-
-      <div className="f0-rule-bottom flex gap-6 pb-3">
-        {[64, 88, 72, 96, 80].map((w, i) => (
-          <div key={i} className="h-2.5 animate-pulse rounded bg-sand" style={{ width: w }} />
+      {/* Search + Kai field + chips — real geometry, empty of data. */}
+      <BoardCard radius={14} className="px-3.5 py-3">
+        <Bone w="60%" h={12} />
+      </BoardCard>
+      <BoardCard radius={14} className="space-y-2 px-3.5 py-3">
+        <Bone w={150} h={8} />
+        <Bone w="70%" h={12} />
+      </BoardCard>
+      <div className="flex gap-[7px]">
+        {[72, 88, 64, 96].map((w, i) => (
+          <Bone key={i} w={w} h={26} className="!rounded-full" />
         ))}
       </div>
 
-      <div className="f0-ledger">
+      <div className="flex flex-col gap-[7px]">
         {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} className="f0-ledger-row">
-            <div className="h-[34px] w-[34px] shrink-0 animate-pulse rounded-lg bg-sand" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3 w-16 animate-pulse rounded bg-sand" />
-              <div className="h-2.5 w-40 max-w-full animate-pulse rounded bg-sand/60" />
+          <BoardCard key={i} radius={12} className="px-[11px] py-[9px]">
+            <div className="flex items-center gap-2.5">
+              <Bone w={26} h={26} className="!rounded-lg" />
+              <Bone w={44} h={9} />
+              <Bone w={52} h={12} className="hidden sm:block" />
+              <Bone w={64} h={9} className="ml-auto" />
+              <Bone w={38} h={9} />
             </div>
-            <div className="h-3 w-16 shrink-0 animate-pulse rounded bg-sand/70" />
-          </div>
+            <div className="mt-2 pl-[36px]">
+              <Bone w="55%" h={8} />
+            </div>
+          </BoardCard>
         ))}
       </div>
       <span className="sr-only">Loading the market universe</span>
@@ -1135,17 +1289,20 @@ function SaveScreenControl({
 }
 
 /* ============================================================================
- * LEDGER ROW — one result, one ruled line.
+ * RESULT CARD — one match, one white card. Board 15's result row, verbatim:
  *
- * The same component at every breakpoint. Desktop hangs the numeric cells off
- * hairline vertical rules; below `md` those cells collapse into a mono strip
- * under the company name and the price moves to the right edge. There is no
- * card variant, because a card grid is exactly what the register bans — the
- * separation is a rule, and the row's own type carries the hierarchy.
+ *   [26px mark] TICKER  [52×18 sparkline]      $173.42   ▲4.7%   [78%]
+ *
+ * The board's row is a single line; the numbers this app has and the board does
+ * not draw (the company name, the longer windows, cap, and the row's actions)
+ * sit on a SECOND line inside the same card, so nothing the screener could do
+ * before is lost and the card still reads as the board's object.
+ *
+ * The sparkline is reconstructed from the row's own real 3m/1m/5d/1d readings
+ * (see `seriesFor`) — no per-row network call, no invented curve.
  * ==========================================================================*/
-function LedgerRow({
+function ResultCard({
   r,
-  maxHeat,
   busy,
   added,
   canAct,
@@ -1155,7 +1312,6 @@ function LedgerRow({
   allowAlert = true,
 }: {
   r: ScreenerRow;
-  maxHeat: number;
   busy: boolean;
   added?: "family" | "community";
   canAct: boolean;
@@ -1165,121 +1321,93 @@ function LedgerRow({
   allowAlert?: boolean;
 }) {
   return (
-    <div
+    <BoardCard
+      radius={12}
       role="link"
       tabIndex={0}
       aria-label={`Open ${r.ticker} research`}
       onClick={onOpen}
-      onKeyDown={(e) => {
+      onKeyDown={(e: React.KeyboardEvent) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onOpen();
         }
       }}
-      className="f0-ledger-row f0-focus group cursor-pointer"
+      className="f0-focus group cursor-pointer px-[11px] py-[9px] transition-colors hover:border-accent"
     >
-      {/* identity */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <CompanyLogo symbol={r.ticker} name={r.name} size={34} rounded="rounded-lg" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
-              {r.ticker}
-            </span>
-            {r.type === "etf" && (
-              <span className="font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
-                ETF
-              </span>
-            )}
-            {r.exchange && (
-              <span className="hidden font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70 sm:inline">
-                {formatExchange(r.exchange)}
-              </span>
-            )}
-          </div>
-          <p className="truncate text-[11.5px] leading-snug text-soft">{r.name || "—"}</p>
-
-          {/* sub-md: the numeric cells become one mono strip */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 font-mono text-[10.5px] tabular-nums text-soft md:hidden">
-            <span>
-              1m <span className={pctTone(r.chg_1m)}>{fmtPct(r.chg_1m)}</span>
-            </span>
-            <span>
-              3m <span className={pctTone(r.chg_3m)}>{fmtPct(r.chg_3m)}</span>
-            </span>
-            <span>
-              Vol <span className="text-ink">{fmtRatio(r.vol_ratio)}</span>
-            </span>
-            <span>
-              Cap <span className="text-ink">{fmtMcap(r.mcap)}</span>
-            </span>
-            {r.like_count != null && r.like_count > 0 && (
-              <span className="inline-flex items-center gap-1">
-                <span className="h-[6px] w-[6px] rounded-full bg-sentiment-fill" aria-hidden />
-                <span className="text-ink">{r.like_count}</span>
-              </span>
-            )}
-          </div>
-
-          {/* sub-md: the row actions can't hide behind hover, so they sit on
-              their own line rather than being lost on touch. */}
-          <div className="mt-2 flex md:hidden" onClick={(e) => e.stopPropagation()}>
-            <RowActions
-              r={r}
-              busy={busy}
-              added={added}
-              canAct={canAct}
-              onAddFamily={onAddFamily}
-              onSuggest={onSuggest}
-              allowAlert={allowAlert}
-              compact
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* sub-md: the mark, right-aligned */}
-      <div className="shrink-0 text-right md:hidden">
-        <div className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+      {/* the board's line */}
+      <div className="flex items-center gap-2.5">
+        <CompanyLogo symbol={r.ticker} name={r.name} size={26} rounded="rounded-[8px]" />
+        <span className="w-[46px] shrink-0 font-mono text-[11px] font-semibold text-ink">
+          {r.ticker}
+        </span>
+        <span className="hidden w-[52px] shrink-0 sm:block">
+          <Spark
+            points={seriesFor(r)}
+            width={52}
+            height={18}
+            strokeWidth={1.6}
+            className="block w-full"
+          />
+        </span>
+        <span className="flex-1 truncate text-right font-mono text-[10.5px] tabular-nums text-ink">
           {fmtPrice(r.price)}
-        </div>
-        <div className={`font-mono text-[11.5px] font-semibold tabular-nums ${pctTone(r.chg_1d)}`}>
-          {fmtPct(r.chg_1d)}
-        </div>
-      </div>
-
-      {/* md+: hairline-ruled numeric cells */}
-      {LEDGER_COLS.map((c) => (
-        <div
-          key={c.key}
-          className={`hidden shrink-0 border-l pl-3 text-right font-mono text-[12.5px] tabular-nums md:block ${RULE} ${c.width} ${
-            c.tone?.(r) ?? "text-ink"
-          }`}
+        </span>
+        <span
+          className={`w-[46px] shrink-0 text-right font-mono text-[10px] tabular-nums ${pctTone(r.chg_1d)}`}
         >
-          {c.render(r)}
-        </div>
-      ))}
-      <div className={`hidden w-[86px] shrink-0 border-l pl-3 text-right md:block ${RULE}`}>
-        <HeatMark n={r.like_count} max={maxHeat} />
+          {fmtPct(r.chg_1d)}
+        </span>
+        <HeatChip n={r.like_count} />
       </div>
 
-      {/* actions — quiet until the row is reached */}
-      <div
-        className="ml-1 hidden w-[96px] shrink-0 justify-end transition-opacity md:flex md:opacity-0 md:focus-within:opacity-100 md:group-hover:opacity-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <RowActions
-          r={r}
-          busy={busy}
-          added={added}
-          canAct={canAct}
-          onAddFamily={onAddFamily}
-          onSuggest={onSuggest}
-          allowAlert={allowAlert}
-          compact
-        />
+      {/* everything the board's single line has no room for */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-[36px]">
+        <span className="min-w-0 max-w-[22ch] truncate text-[11px] leading-snug text-soft">
+          {r.name || "—"}
+        </span>
+        {r.type === "etf" && (
+          <span className="font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
+            ETF
+          </span>
+        )}
+        {r.exchange && (
+          <span className="hidden font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70 sm:inline">
+            {formatExchange(r.exchange)}
+          </span>
+        )}
+        <span className="font-mono text-[10px] tabular-nums text-soft">
+          1m <span className={pctTone(r.chg_1m)}>{fmtPct(r.chg_1m)}</span>
+        </span>
+        <span className="font-mono text-[10px] tabular-nums text-soft">
+          3m <span className={pctTone(r.chg_3m)}>{fmtPct(r.chg_3m)}</span>
+        </span>
+        <span className="font-mono text-[10px] tabular-nums text-soft">
+          Vol <span className="text-ink">{fmtRatio(r.vol_ratio)}</span>
+        </span>
+        <span className="font-mono text-[10px] tabular-nums text-soft">
+          Cap <span className="text-ink">{fmtMcap(r.mcap)}</span>
+        </span>
+        <span className="font-mono text-[10px] tabular-nums text-soft">
+          RSI <span className="text-ink">{fmtRsi(r.rsi14)}</span>
+        </span>
+
+        {/* Actions can't hide behind hover on touch, so they sit on the line
+            rather than appearing only on the desktop hover state. */}
+        <span className="ml-auto" onClick={(e) => e.stopPropagation()}>
+          <RowActions
+            r={r}
+            busy={busy}
+            added={added}
+            canAct={canAct}
+            onAddFamily={onAddFamily}
+            onSuggest={onSuggest}
+            allowAlert={allowAlert}
+            compact
+          />
+        </span>
       </div>
-    </div>
+    </BoardCard>
   );
 }
 
@@ -1684,15 +1812,15 @@ function FilterPanel({
 }
 
 /* ── Field group ───────────────────────────────────────────────────────────
-   A section rule (charged tick + label + hairline to the edge) over a ledger
-   of filter rows. Replaces the bordered block of inputs. */
+   The board's orange mono section mark over a run of filter rows, INSIDE the
+   filter card. A rule between rows of one card is the board's own idiom
+   (board 17's pick card separates its quote the same way); a card per filter
+   would be cards inside cards. */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section className="pt-5 first:pt-1">
-      <h3 className="f0-section-rule font-display text-eyebrow font-bold uppercase text-soft">
-        <span className="shrink-0 whitespace-nowrap">{label}</span>
-      </h3>
-      <div className="f0-ledger">{children}</div>
+    <section className="pt-4 first:pt-3">
+      <SectionMark label={label} />
+      <div className="f0-ledger mt-1">{children}</div>
     </section>
   );
 }

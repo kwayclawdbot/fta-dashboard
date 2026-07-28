@@ -1,31 +1,45 @@
 "use client";
 
 /**
- * /news — the Club Newsroom front page (canvas rebuild B).
+ * /news — the Club Newsroom front page, rebuilt in the mockup's language.
  *
- * REGISTER: editorial. A masthead, a section bar, then a ruled column of
- * stories. No card grid, no boxed rows — an entry is type on paper separated
- * from the next entry by a hairline, which is what a front page has always
- * been and what the brand register asks for.
+ * The canvas draws no newsroom board, so this surface is composed from the
+ * vocabulary boards 01/02/15 DO draw and which every other surface in this lane
+ * now speaks: a lowercase masthead with round controls, an orange PILL TAB row,
+ * orange mono section marks, a row of 46px company discs (board 02's "black
+ * belts are watching" geometry, here carrying the names the day's stories are
+ * about), and a column of white story CARDS with one warm feature card at the
+ * top.
  *
- * COLOUR LAW: the newsroom carries no price, no sentiment and no Kai, so the
- * only accent on this surface is brand orange on the active section and on
- * headline hover — via `gold-*`, which is volt orange in club mode and flips
- * for dark (the `volt-*` ramp is frozen and goes murky at night).
+ * The previous pass drew a hairline broadsheet with no cards and no pills. None
+ * of it remains.
  *
- * DATA: every story on this page is a real generated article. There is no
- * fixture path — an empty feed says so in words.
+ * COLOUR LAW: the newsroom carries no price, no sentiment and no Kai — the only
+ * accent is brand orange, via `gold-*`/`--accent-solid`, both mode- and
+ * theme-correct.
+ *
+ * DATA: every story is a real generated article. There is no fixture path — an
+ * empty feed says so in words, and LOADING ≠ EMPTY.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { m, AnimatePresence } from "@/lib/motion";
-import { Search } from "lucide-react";
-import { TickerTile, TickerTileStrip } from "@/components/canvas2";
+import { Search, X } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { fetchQuotes, type MarketQuote } from "@/lib/market/client";
 import { fetchNewsFeed } from "@/lib/news/client";
 import { AI_GENERATED_TAG, KIND_META, type NewsCardData, type NewsKind } from "@/lib/news/types";
 import NewsEntry from "@/components/news/NewsCard";
+import CompanyLogo from "@/components/fic/CompanyLogo";
+import {
+  Bone,
+  BoardCard,
+  BoardHead,
+  FoundingLine,
+  PillTabs,
+  RoundButton,
+  SectionMark,
+} from "@/components/discover/board";
 import { useNewMemberHints, HintDismiss } from "@/components/hints/useNewMemberHints";
 
 type KindKey = NewsKind | "all";
@@ -42,16 +56,9 @@ export default function NewsClient({
 }: {
   initialArticles?: NewsCardData[] | null;
   /**
-   * Rendered inside another surface (Discover's newsroom section) rather than
-   * as the /news route.
-   *
-   * DEFECT THIS FIXES: Discover mounted this component whole, so a `display-1`
-   * "NEWSROOM" masthead — the loudest type in the system, and the marker for
-   * "you are on the newsroom" — appeared halfway down Discover, directly under
-   * Discover's own `News moving the Club` section rule. Two mastheads, one
-   * page. Embedded now drops the masthead, the route's own page box, and the
-   * ticker strip (Discover already carries two ticker strips of its own),
-   * leaving exactly what the host asked for: the desk bar and the column.
+   * Rendered inside another surface (Discover's news section) rather than as
+   * the /news route. Drops the masthead, the page box and the desk strip — the
+   * host already carries all three — leaving the tab row and the column.
    */
   embedded?: boolean;
 }) {
@@ -60,6 +67,7 @@ export default function NewsClient({
   const [loading, setLoading] = useState(initialArticles == null);
   const [kind, setKind] = useState<KindKey>("all");
   const [tickerFilter, setTickerFilter] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   // Server-first: the initial "all" feed is seeded from the server page, so the
   // first list paints without the skeleton. Skip the very first client fetch for
   // that seeded tab; every kind change (and re-selecting "all") still refreshes.
@@ -85,8 +93,10 @@ export default function NewsClient({
       skipFirstLoad.current = false;
       return;
     }
-    setLoading(true);
+    // Switching desks refetches; the column must show its skeleton rather than
+    // the previous desk's stories while the new ones are in flight.
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
     load();
   }, [load]);
 
@@ -97,14 +107,11 @@ export default function NewsClient({
   }, [articles, tickerFilter]);
 
   /* ── IN THE NEWS TODAY ───────────────────────────────────────────────────
-     Canvas v2's ticker-tile strip, applied to the desk that had no board of
-     its own: the names the current stories are actually about, ordered by how
-     many stories mention each. Every ticker here comes off a real published
-     article, and the delta comes off the same batched quote endpoint the rest
-     of the app uses — a name whose quote is unavailable renders "—" on its own
-     tile rather than a fabricated 0.00%. Each tile is a link into that
-     company's research page — the newsroom's fastest route from "I read about
-     this" to "show me the company". */
+     Board 02's 46px disc row, given to the desk that had no board of its own:
+     the names the current stories are actually about, ordered by how many
+     stories mention each. Every ticker comes off a real published article, and
+     each disc is the fastest route from "I read about this" to "show me the
+     company". No price sits on this row, so nothing here can be a stale mark. */
   const deskTickers = useMemo(() => {
     const counts = new Map<string, number>();
     for (const a of articles) {
@@ -115,125 +122,98 @@ export default function NewsClient({
     }
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .slice(0, 12)
-      .map(([t]) => t);
+      .slice(0, 10)
+      .map(([t, n]) => ({ ticker: t, stories: n }));
   }, [articles]);
 
-  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
-  useEffect(() => {
-    if (deskTickers.length === 0) return;
-    const ctrl = new AbortController();
-    fetchQuotes(deskTickers, ctrl.signal).then(setQuotes).catch(() => {});
-    return () => ctrl.abort();
-  }, [deskTickers]);
-
   return (
-    <div className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}>
+    <div className={embedded ? "" : "mx-auto max-w-2xl px-4 pb-24 sm:px-6 lg:max-w-3xl"}>
       {/* ── MASTHEAD ──────────────────────────────────────────────────────── */}
       {!embedded && (
         <header>
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-            Cheat Code Club
-          </p>
-          <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase text-ink">
-            Newsroom
-          </h1>
-          <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-soft">
-            The market, explained for the whole family.
-          </p>
-          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-soft opacity-70">
+          <BoardHead
+            title="news"
+            sub="The market, explained for the whole family"
+            right={
+              <>
+                <RoundButton
+                  label={filterOpen ? "Close ticker filter" : "Filter stories by ticker"}
+                  active={filterOpen}
+                  onClick={() => setFilterOpen((v) => !v)}
+                >
+                  {filterOpen ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Search className="h-[15px] w-[15px]" />
+                  )}
+                </RoundButton>
+                <RoundButton
+                  label="What is the Club Newsroom?"
+                  active={explainerOpen}
+                  onClick={() => setExplainerOpen((v) => !v)}
+                >
+                  <span aria-hidden className="text-[13px] font-bold leading-none">
+                    ?
+                  </span>
+                </RoundButton>
+              </>
+            }
+          />
+          <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
             {AI_GENERATED_TAG} · delayed market data
           </p>
         </header>
       )}
 
-      {/* ── IN THE NEWS TODAY ─────────────────────────────────────────────── */}
-      {/* LOADING ≠ EMPTY: in flight the strip pulses filled tiles; with no
-          stories filed it renders dashed slots and says so in the column
-          below, rather than collapsing to nothing. */}
-      {!embedded && (
-        <section className="mt-8" aria-labelledby="news-desk-strip">
-          <h2
-            id="news-desk-strip"
-            className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink"
+      {/* ── THE DESK TABS ─────────────────────────────────────────────────── */}
+      <PillTabs
+        className={embedded ? "" : "mt-5"}
+        options={KIND_TABS}
+        value={kind}
+        onChange={setKind}
+        ariaLabel="News desks"
+        idPrefix="news-desk"
+        panelId="news-column"
+      />
+
+      {/* ── TICKER FILTER (opened from the masthead control) ───────────────── */}
+      <AnimatePresence initial={false}>
+        {filterOpen && !embedded && (
+          <m.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
           >
-            <span className="shrink-0 whitespace-nowrap">In the news today</span>
-          </h2>
-          {loading ? (
-            <TickerTileStrip className="mt-4" loading loadingCount={7} size="sm" />
-          ) : (
-            <TickerTileStrip className="mt-4" minSlots={7} size="sm">
-              {deskTickers.map((t) => (
-                <TickerTile
-                  key={t}
-                  ticker={t}
-                  size="sm"
-                  changePct={quotes[t]?.changePercent ?? null}
-                  href={`/research/${encodeURIComponent(t)}`}
+            <BoardCard radius={14} className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5">
+              <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+              <label className="min-w-0 flex-1">
+                <span className="sr-only">Filter stories by ticker</span>
+                <input
+                  autoFocus
+                  value={tickerFilter}
+                  onChange={(e) => setTickerFilter(e.target.value)}
+                  placeholder="Filter by $TICKER"
+                  className="w-full bg-transparent font-mono text-[13px] uppercase tracking-[0.06em] text-ink outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-soft/70"
                 />
-              ))}
-            </TickerTileStrip>
-          )}
-        </section>
-      )}
-
-      {/* ── SECTION BAR ───────────────────────────────────────────────────── */}
-      {/* The desks on the left, the ticker filter on the right — one strip of
-          controls bounded by rules, the newspaper's section index. */}
-      <div className={`f0-rule-top ${embedded ? "" : "mt-8"}`}>
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-3">
-          <div role="tablist" aria-label="News categories" className="flex flex-wrap gap-x-6">
-            {KIND_TABS.map((t) => {
-              const on = kind === t.key;
-              return (
+              </label>
+              {tickerFilter && (
                 <button
-                  key={t.key}
                   type="button"
-                  role="tab"
-                  aria-selected={on}
-                  onClick={() => setKind(t.key)}
-                  className={`f0-focus f0-press relative py-1 font-display text-eyebrow font-bold uppercase transition-colors ${
-                    on ? "text-ink" : "text-soft hover:text-ink"
-                  }`}
+                  onClick={() => setTickerFilter("")}
+                  aria-label="Clear the ticker filter"
+                  className="f0-focus shrink-0 rounded-full p-1 text-soft hover:text-ink"
                 >
-                  {t.label}
-                  {/* Canvas v2 L0 geometry. These are real tabs over a story
-                      column, so the semantics stay tablist/tab rather than
-                      SegmentedRail's radiogroup — but the indicator is the
-                      shared .f0-seg-bar, on `bg-accent` so the desk marker is
-                      the same object here as on Discover's rail. */}
-                  {on && <span aria-hidden className="f0-seg-bar bg-accent" />}
+                  <X className="h-3.5 w-3.5" />
                 </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <label className="group flex items-center gap-2">
-              <Search className="h-3.5 w-3.5 shrink-0 text-soft" />
-              <span className="sr-only">Filter stories by ticker</span>
-              <input
-                value={tickerFilter}
-                onChange={(e) => setTickerFilter(e.target.value)}
-                placeholder="Filter $TICKER"
-                className="f0-focus w-32 rounded bg-transparent font-mono text-[12px] uppercase tracking-[0.06em] text-ink outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-soft/70 focus:w-40"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => setExplainerOpen((v) => !v)}
-              aria-expanded={explainerOpen}
-              className="f0-focus rounded font-display text-eyebrow font-bold uppercase text-soft transition-colors hover:text-gold-700"
-            >
-              What is this?
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="f0-rule-top" />
+              )}
+            </BoardCard>
+          </m.div>
+        )}
+      </AnimatePresence>
 
       {/* ── HOUSE NOTE ────────────────────────────────────────────────────── */}
-      {/* Editorial policy, stated in the paper's own voice. Copy unchanged. */}
+      {/* Editorial policy in the paper's own voice. Copy unchanged. */}
       <AnimatePresence initial={false}>
         {explainerOpen && (
           <m.div
@@ -242,12 +222,13 @@ export default function NewsClient({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex items-start gap-3 border-l-2 border-accent py-4 pl-4">
-              <p className="max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
-                The Club Newsroom is written by AI from public market data — a twice-daily{" "}
-                <em>Market Wrap</em> plus short <em>Ticker Notes</em> on the day&apos;s biggest movers.
-                It narrates what happened and teaches how to read it; it is <strong>not</strong> advice
-                and never tells you what to buy. Tap any ticker to open its research page.
+            <BoardCard radius={16} className="mt-3 flex items-start gap-3 px-[15px] py-[14px]">
+              <p className="max-w-[62ch] text-[12.5px] leading-relaxed text-soft">
+                The Club Newsroom is written by AI from public market data — a
+                twice-daily <em>Market Wrap</em> plus short <em>Ticker Notes</em> on
+                the day&apos;s biggest movers. It narrates what happened and teaches
+                how to read it; it is <strong>not</strong> advice and never tells you
+                what to buy. Tap any ticker to open its research page.
               </p>
               <HintDismiss
                 onClick={() => {
@@ -255,50 +236,90 @@ export default function NewsClient({
                   howToHint.dismiss();
                 }}
               />
-            </div>
+            </BoardCard>
           </m.div>
         )}
       </AnimatePresence>
 
+      {/* ── IN THE NEWS TODAY ─────────────────────────────────────────────── */}
+      {!embedded && (
+        <section className="mt-6" aria-labelledby="news-desk-strip">
+          <SectionMark
+            id="news-desk-strip"
+            label="In the news today"
+            gloss="The names the desk is filing on"
+          />
+          {loading ? (
+            <div className="mt-2.5 flex gap-[13px]" aria-busy="true">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="space-y-1.5">
+                  <Bone w={46} h={46} className="!rounded-full" />
+                  <Bone w={28} h={7} className="mx-auto" />
+                </div>
+              ))}
+            </div>
+          ) : deskTickers.length === 0 ? (
+            <FoundingLine className="mt-3">
+              No company has been written about yet. The desk tags every story
+              with the names it covers, and they appear here.
+            </FoundingLine>
+          ) : (
+            <div className="club2-track -mx-1 mt-2.5 flex gap-[13px] overflow-x-auto px-1">
+              {deskTickers.map((d) => (
+                <Link
+                  key={d.ticker}
+                  href={`/research/${encodeURIComponent(d.ticker)}`}
+                  className="f0-focus shrink-0 rounded-lg text-center"
+                  title={`${d.stories} ${d.stories === 1 ? "story" : "stories"} mention ${d.ticker}`}
+                >
+                  <CompanyLogo symbol={d.ticker} size={46} rounded="rounded-full" />
+                  <span className="mt-[5px] block font-mono text-[9px] text-ink/80">
+                    {d.ticker}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ── THE COLUMN ────────────────────────────────────────────────────── */}
-      {loading ? (
-        <NewsSkeleton />
-      ) : shown.length === 0 ? (
-        <div className="f0-rule-left mt-10 py-1 pl-4">
-          <p className="font-display text-display-3 font-extrabold text-ink">
-            Nothing filed yet
-          </p>
-          <p className="mt-1.5 max-w-[52ch] text-[15px] leading-relaxed text-soft">
+      <div id="news-column" className={embedded ? "mt-3" : "mt-6"}>
+        {loading ? (
+          <NewsSkeleton />
+        ) : shown.length === 0 ? (
+          <FoundingLine>
             {tickerFilter
               ? "No stories tagged with that ticker yet."
-              : "The newsroom updates before the open and after the close on market days."}
-          </p>
-        </div>
-      ) : (
-        <div className="f0-ledger mt-2">
-          {shown.map((a, i) => (
-            <NewsEntry key={a.slug} article={a} lead={i === 0} />
-          ))}
-        </div>
-      )}
+              : "Nothing filed yet — the newsroom updates before the open and after the close on market days."}
+          </FoundingLine>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {shown.map((a, i) => (
+              <NewsEntry key={a.slug} article={a} lead={i === 0} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export function NewsSkeleton() {
   return (
-    <div className="f0-ledger mt-2">
+    <div className="flex flex-col gap-2.5" aria-busy="true">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="py-6 first:pt-1">
-          <div className="h-2.5 w-28 animate-pulse rounded bg-sand" />
-          <div className="mt-3 h-6 w-4/5 animate-pulse rounded bg-sand" />
-          <div className="mt-2.5 h-4 w-full max-w-[46ch] animate-pulse rounded bg-sand/70" />
-          <div className="mt-3 flex gap-3">
-            <div className="h-3 w-12 animate-pulse rounded bg-sand" />
-            <div className="h-3 w-12 animate-pulse rounded bg-sand" />
+        <BoardCard key={i} radius={16} className="space-y-2.5 px-[15px] py-[14px]">
+          <Bone w={96} h={8} />
+          <Bone w="70%" h={15} />
+          <Bone w="100%" h={9} />
+          <div className="flex gap-1.5 pt-1">
+            <Bone w={54} h={18} className="!rounded-full" />
+            <Bone w={54} h={18} className="!rounded-full" />
           </div>
-        </div>
+        </BoardCard>
       ))}
+      <span className="sr-only">Loading the newsroom</span>
     </div>
   );
 }

@@ -3,25 +3,27 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Bot,
-  MessageSquare,
-  Search,
-  Sparkles,
-  Telescope,
-} from "lucide-react";
+import { ArrowRight, Bot, Search, Sparkles, X } from "lucide-react";
 
 import NewsClient from "../news/NewsClient";
-import { TickerTile, TickerTileStrip } from "@/components/canvas2";
+import ScreenerSurface from "@/components/screener/ScreenerSurface";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
-import TickerCarousel from "@/components/club2/TickerCarousel";
 import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
+import {
+  Bone,
+  BoardCard,
+  BoardHead,
+  Donut,
+  FoundingLine,
+  PillTabs,
+  RoundButton,
+  SectionMark,
+  TickerSpark,
+} from "@/components/discover/board";
+import { timeAgoAt, useNowHour } from "@/components/discover/clock";
 import { FLOORS } from "@/lib/club/score";
-import { timeAgo } from "@/lib/feed";
 import { contributionMeta } from "@/lib/research/social";
 import {
   fetchQuotes,
@@ -33,154 +35,726 @@ import {
 import type { NewsCardData } from "@/lib/news/types";
 import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
 import type { DiscoverExtras } from "@/lib/discover";
-import type {
-  PulseResponse,
-  TrendingResponse,
-  TrendingRow,
-} from "@/lib/clubhome/contract";
+import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 
 /**
- * DISCOVER — rebuilt to the Cheat Code Club canvas system (canvas rebuild B).
+ * DISCOVER — rebuilt screen-for-screen to the owner's mockup.
  *
- * COMPOSITION (light-primary, warm sand canvas, top → bottom):
+ * SOURCE OF TRUTH: boards 02 (`Discover`) and 15 (`Discover · Screener`) of
+ * `.planning/design-project-v2/Cheat Code App Light.dc.html`, tiled as
+ * `boards/light-r0-c0.png` + `light-r0-c1.png` (board 02) and `light-r2-c*`
+ * (board 15), with the dark twin in `Cheat Code App.dc.html` / `dark-r0-*`.
  *
- *   DISCOVER            display-1 masthead, one dominant voice on the surface
- *   SEARCH              a full-width ruled field — not a boxed input — with the
- *                       "or ask Kai" affordance opening the contextual Kai sheet
- *   WHAT THE CLUB IS SEEING   the shared <TickerCarousel /> (read-only foundation)
- *   MOVING UP THE BOARD canvas v2 board 02 "From quiet to loud" — a dense
- *                       <TickerTileStrip /> of the names whose club score rose
- *                       most against the prior window. Below the floor it pads
- *                       with EMPTY SLOTS, so nine tickers read as a club filling
- *                       up rather than as a broken row.
- *   MOST DIVISIVE       canvas v2 board 02 §2 — the biggest split in opinion.
- *                       The canvas draws a bull/bear DONUT; adopted as a split
- *                       BAR instead (plan §1.5 keeps one radial gauge in the
- *                       system, and green/red on an opinion split would spend
- *                       the price ramp on community sentiment).
- *   SEGMENTED CONTROL   For You · Trending · Top Research · Most Discussed —
- *                       underline-driven tabs on the shared .f0-seg-bar
- *                       geometry, never pill-soup
- *   THE LEDGER          hairline rows where a LARGE MUTED RANK NUMERAL carries the
- *                       object identity: rank · logo · $CASHTAG · mono price ·
- *                       green/red % · lime community-sentiment bar
- *   TOP RESEARCH        author identity leads (avatar · name · credibility tag),
- *                       then the thesis — hairline separated, never cards
- *   STOCK FINDER        the one orange field on the surface (the screener lives
- *                       behind it). Actions only — no price ever sits on orange.
- *   NEWSROOM            preserved verbatim (rows → /news/[slug])
+ * WHAT THE BOARD DRAWS, TOP TO BOTTOM (board 02):
+ *   masthead        "discover" + "Find what the Club is paying attention to",
+ *                   two 34px round controls on the right
+ *   tabs            FOR YOU · SCREENER · TRENDING — the current one an orange
+ *                   pill (board 15 draws the same row with SCREENER lit)
+ *   RISING FAST     three white cards: ticker · delta · sparkline · watching
+ *   MOST DIVISIVE   one white card: split % · DONUT with the company in it · %
+ *   BLACK BELTS…    a row of 46px company discs with the ticker beneath
+ *   FROM QUIET…     five bare sparklines with the ticker beneath
  *
- * COLOUR LAW: green/red = PRICE only · lime = COMMUNITY SENTIMENT only ·
- * orange = BRAND + ACTION only.
+ * The previous pass "interpreted" all of this into hairline ledgers, tile
+ * strips and a split bar where the board draws a donut. That interpretation is
+ * gone: cards, donuts and pills are the drawn language and they are built as
+ * drawn. What did NOT change is the honesty contract — every figure below is
+ * wired to a real read, a metric under its floor renders founding-era copy, and
+ * the board's own 1.2K / 324% are illustrations that appear nowhere here.
  *
- * DATA: /api/club/trending is the ranked community-ATTENTION ledger and carries
- * price, changePct, watchers, participants, sentiment{bull,neutral,bear,bullPct},
- * heat (null below FLOORS.trendingScore) and floorMet. Nothing here is invented:
- * a metric below its floor renders founding-era copy, and an absent quote renders
- * as an honest dash. The endpoint's free cap (`locked` / `freeCap` /`totalCount`)
- * is server-authoritative and surfaced as a wall, and its compliance `disclaimer`
- * is rendered verbatim under the ledger.
+ * DATA
+ *   /api/club/trending  ranked community-attention ledger (price, changePct,
+ *                       watchers, sentiment{bull,neutral,bear,bullPct}, change =
+ *                       club_change_14d, heat, floorMet) + the server's free cap
+ *                       and its verbatim compliance line.
+ *   getDiscoverExtras   For-You movers, research contributions, Kai reports and
+ *                       the real black-belt watch roster (src/lib/discover.ts).
+ *   /api/market/bars    the sparklines — real daily closes, IO-deferred and
+ *                       deduplicated by <TickerSpark />.
+ *
+ * COLOUR LAW (unchanged, and it outranks the drawing where they disagree):
+ * green/red = PRICE · lime = COMMUNITY SENTIMENT · orange = BRAND + ACTION.
+ * The board paints the opinion split green/red; here the bull share takes the
+ * lime sentiment ramp and the bear share an ink tint, so no price colour is
+ * ever spent on an opinion. See the note at the top of components/discover/board.tsx.
  */
 
 interface DiscoverClientProps {
   initialNews: NewsCardData[] | null;
   board: CommunityBoardSeed | null;
   extras: DiscoverExtras | null;
-  /** False for a kid register — /screener redirects them, so the band would be
-   *  a door that bounces. Resolved server-side; never guessed here. */
-  showStockFinder?: boolean;
+  /** False for a kid register — /screener redirects them, so the tab would be a
+   *  door that bounces. Resolved server-side; never guessed here. */
+  showScreener?: boolean;
 }
 
-type SegmentKey = "foryou" | "trending" | "research" | "discussed";
+type Tab = "foryou" | "screener" | "trending";
 
-/* ── ORANGE, ONE WAY ─────────────────────────────────────────────────────────
- * This surface used to hand-roll its own dark steps (`text-volt-700
- * dark:text-volt-400`), which is the exact drift the token layer exists to end:
- * `volt-*` is FROZEN across themes, so every consumer that wanted a legible
- * orange at night had to re-derive one and they all landed somewhere different.
- *
- * The system's answer is the GOLD ramp — in club mode it IS volt orange, and
- * unlike volt it flips for the dark page (--g700 #C24400 → #FFC96B). So orange
- * TEXT is `text-gold-700` with NO dark: variant anywhere; orange FILLS and
- * rules ride `bg-accent` / `border-accent` (--accent-solid), which is also
- * mode-correct for free (family gold, club orange, FTA metallic).
- *
- * Underline decoration deliberately inherits currentColor rather than naming a
- * ramp step, so the rule under a link can never disagree with the link.
- */
-const ORANGE_ACTION = "text-gold-700 transition-colors hover:text-gold-600";
-const ORANGE_LINK = `font-display font-bold underline decoration-1 underline-offset-2 ${ORANGE_ACTION}`;
-
-/* ── "MOST DIVISIVE" FLOORS ──────────────────────────────────────────────────
- * FLOORS in src/lib/club/score.ts is scaled for club-wide aggregates (50), which
- * a nine-ticker founding club will not clear on any single name for months — so
- * a divisiveness gate borrowed from it would mean the section NEVER renders and
- * the surface would ship a permanently dead heading.
- *
- * These are per-ticker floors instead, and they are deliberately small but
- * honest: the row must carry at least four positioned members, and the split is
- * only called "divisive" inside a genuinely contested band. Because the rendered
- * copy always states the denominator ("· 4 positioned"), a four-vote split can
- * never masquerade as consensus — which is the same contract StanceBar holds.
- */
-const DIVISIVE_MIN_POSITIONED = 4;
-const DIVISIVE_MAX_GAP = 20; // bullPct within 30–70
-
-/** One row of the ranked ledger, normalized across the three ranked segments. */
-interface LedgerItem {
-  key: string;
-  ticker: string;
-  company: string | null;
-  price: number | null;
-  changePct: number | null;
-  /** community stance (lime) */
-  bullPct: number | null;
-  positioned: number;
-  watchers: number | null;
-  comments: number | null;
-  /** normalized 0–100 club attention; null below FLOORS.trendingScore */
-  heat: number | null;
-  floorMet: boolean;
-  /** canonical ledger rank when the server supplies one (Trending); otherwise the
-   *  row's position in its own segment. */
-  rank?: number;
-}
+const PANEL_ID = "discover-panel";
 
 /* ── the surface ─────────────────────────────────────────────────────────── */
 export default function DiscoverClient({
   initialNews,
   board,
   extras,
-  showStockFinder = true,
+  showScreener = true,
 }: DiscoverClientProps) {
-  // Stable identities for the seeds — `x ?? []` allocates a fresh array on every
-  // render, which would invalidate every memo below.
   const entries = useMemo(() => board?.entries ?? [], [board]);
   const movers = useMemo(() => extras?.forYouMovers ?? [], [extras]);
   const contributions = extras?.contributions ?? [];
   const reports = extras?.reports ?? [];
+  const beltWatch = useMemo(() => extras?.beltWatch ?? [], [extras]);
 
-  // The community-attention ledger + the pulse series the carousel charts.
-  const { trending, pulse, loading: ledgerLoading } = useClubLedger();
-  const trendingRows = useMemo(() => trending?.rows ?? [], [trending]);
+  const { trending, loading } = useClubLedger();
+  const rows = useMemo(() => trending?.rows ?? [], [trending]);
 
-  const byDiscussion = useMemo(
-    () => [...entries].sort((a, b) => (b.comment_count ?? 0) - (a.comment_count ?? 0)),
-    [entries]
+  const [tab, setTab] = useState<Tab>("foryou");
+
+  const tabs = useMemo(
+    () =>
+      (
+        [
+          { key: "foryou" as const, label: "For you" },
+          ...(showScreener ? [{ key: "screener" as const, label: "Screener" }] : []),
+          { key: "trending" as const, label: "Trending" },
+        ] satisfies { key: Tab; label: string }[]
+      ),
+    [showScreener]
   );
 
-  // Sentiment/heat travel with the ticker, so a For-You or Most-Discussed row can
-  // carry the same community read as its Trending twin (joined, never re-derived).
-  const intelByTicker = useMemo(() => {
-    const m = new Map<string, TrendingRow>();
-    for (const r of trendingRows) m.set(r.ticker.toUpperCase(), r);
-    return m;
-  }, [trendingRows]);
+  return (
+    <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">
+      <DiscoverMasthead />
 
-  // ONE batched quote request covering every ticker any segment can show — no N+1.
-  // Trending rows already carry a Polygon mark from the server; these fill in the
-  // board/For-You universe, which does not.
-  const quoteTickers = useMemo(() => {
+      <PillTabs
+        className="mt-4"
+        options={tabs}
+        value={tab}
+        onChange={setTab}
+        ariaLabel="Discover views"
+        idPrefix="discover-tab"
+        panelId={PANEL_ID}
+      />
+
+      <div
+        id={PANEL_ID}
+        role="tabpanel"
+        aria-labelledby={`discover-tab-${tab}`}
+        className="mt-5"
+      >
+        {tab === "foryou" && (
+          <ForYouPanel
+            rows={rows}
+            loading={loading}
+            movers={movers}
+            beltWatch={beltWatch}
+            blackBelts={extras?.blackBelts ?? 0}
+            initialNews={initialNews}
+          />
+        )}
+
+        {tab === "screener" && <ScreenerSurface embedded />}
+
+        {tab === "trending" && (
+          <TrendingPanel
+            trending={trending}
+            rows={rows}
+            loading={loading}
+            movers={movers}
+            entries={entries}
+            contributions={contributions}
+            reports={reports}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── MASTHEAD (board 02) ─────────────────────────────────────────────────── */
+/**
+ * The board's head line: the surface's name, its one-line promise, and two
+ * round controls. The left one opens the search field in place (the board draws
+ * a magnifier, and search is what the head has always done here); the right one
+ * is the Kai handoff — the board's second glyph, given the surface's own AI
+ * affordance rather than a decorative one.
+ */
+function DiscoverMasthead() {
+  const router = useRouter();
+  const { openKai } = useKaiSheet();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const t = q.trim().toUpperCase().replace(/[^A-Z.]/g, "");
+    if (t) router.push(`/research/${encodeURIComponent(t)}`);
+  }
+
+  return (
+    <header>
+      <BoardHead
+        title="discover"
+        sub="Find what the Club is paying attention to"
+        right={
+          <>
+            <RoundButton
+              label={open ? "Close search" : "Search any stock"}
+              active={open}
+              onClick={() => setOpen((v) => !v)}
+            >
+              {open ? <X className="h-4 w-4" /> : <Search className="h-[15px] w-[15px]" />}
+            </RoundButton>
+            <RoundButton label="Ask Kai" onClick={() => openKai({ chip: "Discover", query: null })}>
+              <Sparkles className="h-[15px] w-[15px]" />
+            </RoundButton>
+          </>
+        }
+      />
+
+      {open && (
+        <form onSubmit={submit} role="search" className="mt-4">
+          <BoardCard radius={14} className="flex items-center gap-2.5 px-3.5 py-2.5">
+            <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Ticker, company, or a theme"
+              aria-label="Search stocks"
+              className="min-w-0 flex-1 bg-transparent font-display text-[15px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
+            />
+            {q.trim() && (
+              <button
+                type="submit"
+                aria-label="Open research"
+                className="f0-focus f0-press shrink-0 rounded-full p-1 text-gold-700"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+          </BoardCard>
+        </form>
+      )}
+    </header>
+  );
+}
+
+/* ── FOR YOU (board 02) ──────────────────────────────────────────────────── */
+function ForYouPanel({
+  rows,
+  loading,
+  movers,
+  beltWatch,
+  blackBelts,
+  initialNews,
+}: {
+  rows: TrendingRow[];
+  loading: boolean;
+  movers: DiscoverExtras["forYouMovers"];
+  beltWatch: DiscoverExtras["beltWatch"];
+  blackBelts: number;
+  initialNews: NewsCardData[] | null;
+}) {
+  /* `change` is club_change_14d off the snapshot ledger — the row's attention
+     score against the PRIOR window, which is exactly what "rising" means on
+     this board. Nothing is derived here that the server did not compute. */
+  const risers = useMemo(
+    () =>
+      rows
+        .filter((r) => (r.change ?? 0) > 0)
+        .sort((a, b) => (b.change ?? 0) - (a.change ?? 0)),
+    [rows]
+  );
+
+  const divisive = useMemo(() => pickDivisive(rows), [rows]);
+
+  return (
+    <>
+      {/* The one thing on this tab that is genuinely "for you": the names the
+          member has actually liked, and how they moved. Board 02 draws no such
+          section — it draws the Club's view — so this renders ONLY when the
+          member has a followed set, and a member with none sees exactly the
+          board. */}
+      <YourNames movers={movers} rows={rows} />
+
+      <RisingFast rows={risers.slice(0, 3)} loading={loading} />
+      <MostDivisive row={divisive} loading={loading} />
+      <BlackBeltsWatching names={beltWatch} blackBelts={blackBelts} />
+      <QuietToLoud rows={risers.slice(3, 8)} loading={loading} />
+
+      {/* The newsroom keeps its place at the foot of the surface — it is the
+          one section Discover carries that board 02 does not draw, and it now
+          speaks the same card language (see components/news/NewsCard.tsx). */}
+      <section className="mt-8" aria-labelledby="discover-news">
+        <SectionMark
+          id="discover-news"
+          label="News moving the Club"
+          gloss="Written by AI from public market data"
+          right={
+            <Link href="/news" className="f0-focus rounded text-gold-700">
+              See all
+            </Link>
+          }
+        />
+        <div className="mt-3">
+          <NewsClient initialArticles={initialNews} embedded />
+        </div>
+      </section>
+    </>
+  );
+}
+
+/* ── YOUR NAMES ──────────────────────────────────────────────────────────── */
+/**
+ * The member's own followed set (a 👍 on any research page writes a row of
+ * `ticker_sentiment`), ranked by the size of today's move — the personalised
+ * read the old For-You segment carried, kept alive in board 15's row-card
+ * language so it belongs to the same surface.
+ *
+ * It renders ONLY when the member actually follows something. Board 02 draws
+ * the Club's view, not the member's, so a member with an empty set gets exactly
+ * the board and no empty section pretending to be personalised.
+ *
+ * `chg_1d` comes off screener_metrics (the delayed daily mark); the live quote
+ * overrides it when the batched request lands. Neither is invented, and a name
+ * with no quote at all renders an honest dash.
+ */
+function YourNames({
+  movers,
+  rows,
+}: {
+  movers: DiscoverExtras["forYouMovers"];
+  rows: TrendingRow[];
+}) {
+  const tickers = useMemo(
+    () => movers.map((m) => m.ticker.toUpperCase()).filter(Boolean),
+    [movers]
+  );
+
+  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  useEffect(() => {
+    if (!tickers.length) return;
+    const ctrl = new AbortController();
+    fetchQuotes(tickers, ctrl.signal).then(setQuotes).catch(() => {});
+    return () => ctrl.abort();
+  }, [tickers]);
+
+  const intel = useMemo(() => {
+    const m = new Map<string, TrendingRow>();
+    for (const r of rows) m.set(r.ticker.toUpperCase(), r);
+    return m;
+  }, [rows]);
+
+  if (movers.length === 0) return null;
+
+  return (
+    <section className="mb-6" aria-labelledby="discover-yours">
+      <SectionMark
+        id="discover-yours"
+        label="Your names"
+        gloss="The tickers you follow, biggest move first"
+        right={
+          <Link href="/watchlist" className="f0-focus rounded">
+            See all
+          </Link>
+        }
+      />
+      <div className="mt-2.5 flex flex-col gap-[7px]">
+        {movers.map((mv) => {
+          const t = mv.ticker.toUpperCase();
+          const q = quotes[t];
+          const row = intel.get(t);
+          return (
+            <SignalRow
+              key={`yours-${t}`}
+              ticker={mv.ticker}
+              name={mv.name}
+              price={q?.price ?? row?.price ?? null}
+              changePct={q?.changePercent ?? row?.changePct ?? mv.chg_1d ?? null}
+              signal={row?.sentiment?.bullPct ?? null}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ── RISING FAST ─────────────────────────────────────────────────────────── */
+/**
+ * Board 02 §1 — three white cards, each: ticker, a green delta, a sparkline,
+ * and a "watching" count.
+ *
+ * TWO HONESTY EDITS to the drawn card:
+ *  · the board's "▲ 324%" is an attention figure painted in the price green.
+ *    The real number behind it is `club_change_14d`, a SCORE delta with no
+ *    percent unit — so it renders as a signed score in the LIME sentiment ramp
+ *    (community attention is not a price), and the gloss states the window.
+ *  · the board's "1.2K watching" appears on every card. Watcher counts stay
+ *    hidden below FLOORS.tickerParticipants, so a two-member club reads
+ *    "New on the board" instead of a number that means nothing yet.
+ * The sparkline IS a price series, so it keeps the price ramp.
+ */
+function RisingFast({ rows, loading }: { rows: TrendingRow[]; loading: boolean }) {
+  return (
+    <section aria-labelledby="discover-rising">
+      <SectionMark
+        id="discover-rising"
+        label="Rising fast"
+        gloss="Biggest gain in Club attention against the last two weeks"
+        right={
+          <Link href="/watchlist/community" className="f0-focus rounded">
+            See all
+          </Link>
+        }
+      />
+
+      {loading ? (
+        <div className="mt-2.5 grid grid-cols-3 gap-2.5" aria-busy="true">
+          {[0, 1, 2].map((i) => (
+            <BoardCard key={i} radius={14} className="space-y-2 px-3 py-3">
+              <Bone w={36} h={9} />
+              <Bone w={48} h={9} />
+              <Bone w="100%" h={20} className="rounded-md" />
+              <Bone w={54} h={7} />
+            </BoardCard>
+          ))}
+          <span className="sr-only">Loading the names gaining attention</span>
+        </div>
+      ) : rows.length === 0 ? (
+        <FoundingLine className="mt-3">
+          No name has gained ground on the board this fortnight. Watch a ticker,
+          ask Kai about it, or post a thesis — attention is the only thing that
+          moves a name onto this row.
+        </FoundingLine>
+      ) : (
+        <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+          {rows.map((r) => {
+            const watchers = r.watchers ?? 0;
+            const shown = watchers >= FLOORS.tickerParticipants;
+            return (
+              <BoardCard
+                key={r.ticker}
+                radius={14}
+                className="transition-colors hover:border-accent"
+              >
+                <Link
+                  href={`/research/${encodeURIComponent(r.ticker)}`}
+                  className="f0-focus block rounded-[14px] px-3 py-[11px]"
+                >
+                  <span className="block font-mono text-[12px] font-semibold text-ink">
+                    {r.ticker.toUpperCase()}
+                  </span>
+                  <span className="mt-[3px] block font-mono text-[11px] text-sentiment">
+                    ▲ +{Math.round(r.change ?? 0)}
+                  </span>
+                  <TickerSpark symbol={r.ticker} className="mt-1.5 block" height={22} />
+                  <span className="mt-1.5 block truncate text-[9.5px] text-soft">
+                    {shown ? `${watchers.toLocaleString()} watching` : "New on the board"}
+                  </span>
+                </Link>
+              </BoardCard>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── MOST DIVISIVE ───────────────────────────────────────────────────────── */
+/**
+ * Board 02 §2, built as drawn: one white card, the bull share on the left, the
+ * bear share on the right, and a 104px DONUT between them with the company's
+ * mark punched into the middle.
+ *
+ * The previous pass replaced the donut with a split bar. The owner overruled
+ * that; the ring is back, and it is a real conic arc at the real bull share.
+ *
+ * A split needs BODIES before it can be called divisive: the row must carry at
+ * least DIVISIVE_MIN_POSITIONED positioned members and sit inside the contested
+ * band, and the denominator always ships with the percentages — so a four-vote
+ * split can never masquerade as consensus.
+ */
+const DIVISIVE_MIN_POSITIONED = 4;
+const DIVISIVE_MAX_GAP = 20; // bullPct within 30–70
+
+function pickDivisive(rows: TrendingRow[]): TrendingRow | null {
+  let best: TrendingRow | null = null;
+  let bestGap = Infinity;
+  for (const r of rows) {
+    const s = r.sentiment;
+    if (!s || s.bullPct == null) continue;
+    if (s.bull + s.neutral + s.bear < DIVISIVE_MIN_POSITIONED) continue;
+    const gap = Math.abs(50 - s.bullPct);
+    if (gap <= DIVISIVE_MAX_GAP && gap < bestGap) {
+      best = r;
+      bestGap = gap;
+    }
+  }
+  return best;
+}
+
+function MostDivisive({ row, loading }: { row: TrendingRow | null; loading: boolean }) {
+  const s = row?.sentiment;
+  const positioned = s ? s.bull + s.neutral + s.bear : 0;
+  const bullPct = s?.bullPct ?? null;
+  const bearPct = s && positioned > 0 ? Math.round((s.bear / positioned) * 100) : null;
+
+  return (
+    <section className="mt-6" aria-labelledby="discover-divisive">
+      <SectionMark
+        id="discover-divisive"
+        label="Most divisive"
+        gloss="Biggest split in opinions"
+        right={
+          row ? (
+            <Link
+              href={`/research/${encodeURIComponent(row.ticker)}?tab=community`}
+              className="f0-focus rounded text-[12px]"
+              aria-label={`Open the ${row.ticker} thread`}
+            >
+              →
+            </Link>
+          ) : undefined
+        }
+      />
+
+      {loading ? (
+        <BoardCard radius={16} className="mt-2.5 flex items-center gap-4 p-4" aria-busy="true">
+          <div className="flex flex-1 flex-col items-center gap-2">
+            <Bone w={44} h={18} />
+            <Bone w={38} h={7} />
+          </div>
+          <Bone w={104} h={104} className="shrink-0 !rounded-full" />
+          <div className="flex flex-1 flex-col items-center gap-2">
+            <Bone w={44} h={18} />
+            <Bone w={38} h={7} />
+          </div>
+          <span className="sr-only">Loading the widest split</span>
+        </BoardCard>
+      ) : row && bullPct != null ? (
+        <>
+          <BoardCard radius={16} className="mt-2.5 flex items-center gap-4 p-4">
+            <SplitSide
+              pct={bullPct}
+              label="Bullish"
+              count={s!.bull}
+              className="text-sentiment"
+            />
+            <Donut pct={bullPct} size={104} ring={7} tone="sentiment">
+              <Link
+                href={`/research/${encodeURIComponent(row.ticker)}?tab=community`}
+                className="f0-focus flex flex-col items-center rounded"
+              >
+                <CompanyLogo
+                  symbol={row.ticker}
+                  name={row.company}
+                  size={34}
+                  rounded="rounded-[9px]"
+                />
+                <span className="mt-1 font-mono text-[10px] text-ink">
+                  {row.ticker.toUpperCase()}
+                </span>
+              </Link>
+            </Donut>
+            <SplitSide
+              pct={bearPct ?? 0}
+              label="Bearish"
+              count={s!.bear}
+              className="text-ink"
+            />
+          </BoardCard>
+          <p className="mt-1.5 text-center text-[10px] text-soft">
+            {positioned.toLocaleString()} {positioned === 1 ? "opinion" : "opinions"}
+            {s!.neutral > 0 ? ` · ${s!.neutral} neutral` : ""}
+          </p>
+        </>
+      ) : (
+        <FoundingLine className="mt-3">
+          Nothing is contested yet — a split needs at least{" "}
+          {DIVISIVE_MIN_POSITIONED} members on the same name taking opposite
+          sides. Take a position on any ticker and the argument starts here.
+        </FoundingLine>
+      )}
+    </section>
+  );
+}
+
+function SplitSide({
+  pct,
+  label,
+  count,
+  className,
+}: {
+  pct: number;
+  label: string;
+  count: number;
+  className: string;
+}) {
+  return (
+    <div className="flex-1 text-center">
+      <p className={`text-[22px] font-extrabold tracking-[-0.02em] ${className}`}>{pct}%</p>
+      <p
+        className={`mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] ${className}`}
+      >
+        {label}
+      </p>
+      <p className="mt-2 font-mono text-[9.5px] tabular-nums text-soft">
+        {count} {count === 1 ? "member" : "members"}
+      </p>
+    </div>
+  );
+}
+
+/* ── BLACK BELTS ARE WATCHING ────────────────────────────────────────────── */
+/**
+ * Board 02 §3 — a row of 46px company discs with the ticker beneath each.
+ *
+ * REAL ROSTER, not a relabelled trending list: `getDiscoverExtras` derives the
+ * black-belt set from `xp_leaderboard_individuals` through the same `beltForXp`
+ * the belt ladder uses, then counts their `ticker_sentiment` watches. With no
+ * black belts on the roster the row does not borrow a fallback — it says the
+ * belt is unclaimed, which is the true and more interesting sentence.
+ */
+function BlackBeltsWatching({
+  names,
+  blackBelts,
+}: {
+  names: DiscoverExtras["beltWatch"];
+  blackBelts: number;
+}) {
+  return (
+    <section className="mt-6" aria-labelledby="discover-belts">
+      <SectionMark
+        id="discover-belts"
+        label="Black belts are watching"
+        right={
+          <Link href="/leaderboard" className="f0-focus rounded">
+            See all
+          </Link>
+        }
+      />
+
+      {names.length === 0 ? (
+        <FoundingLine className="mt-3">
+          {blackBelts === 0
+            ? "No one has reached Black Belt yet. The first member who does sets this row — and everyone gets to see what they're watching."
+            : "The Club's black belts haven't put anything on their watchlists yet."}
+        </FoundingLine>
+      ) : (
+        <div className="club2-track -mx-1 mt-2.5 flex gap-[13px] overflow-x-auto px-1">
+          {names.map((n) => (
+            <Link
+              key={n.ticker}
+              href={`/research/${encodeURIComponent(n.ticker)}`}
+              className="f0-focus shrink-0 rounded-lg text-center"
+              title={`${n.belts} ${n.belts === 1 ? "black belt is" : "black belts are"} watching ${n.ticker}`}
+            >
+              <CompanyLogo
+                symbol={n.ticker}
+                name={n.name}
+                size={46}
+                rounded="rounded-full"
+              />
+              <span className="mt-[5px] block font-mono text-[9px] text-ink/80">
+                {n.ticker}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── FROM QUIET TO LOUD ──────────────────────────────────────────────────── */
+/**
+ * Board 02 §4 — five bare sparklines with the ticker beneath.
+ *
+ * The board paints the five lines in five different hues (red, orange, amber,
+ * green, green) encoding nothing. Here every line is a real 3-month price
+ * series and takes the price ramp from its own direction, which is the only
+ * thing a coloured line on this app may mean.
+ */
+function QuietToLoud({ rows, loading }: { rows: TrendingRow[]; loading: boolean }) {
+  return (
+    <section className="mt-6" aria-labelledby="discover-quiet">
+      <SectionMark
+        id="discover-quiet"
+        label="From quiet to loud"
+        gloss="Names the Club just woke up on"
+      />
+
+      {loading ? (
+        <div className="mt-2.5 grid grid-cols-5 gap-2.5" aria-busy="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-2">
+              <Bone w="100%" h={28} className="rounded-md" />
+              <Bone w={30} h={7} className="mx-auto" />
+            </div>
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <FoundingLine className="mt-3">
+          Nothing new has woken up behind the leaders yet. The moment a quiet
+          name starts collecting watches and theses, it appears here.
+        </FoundingLine>
+      ) : (
+        <div className="mt-2.5 grid grid-cols-5 gap-2.5">
+          {rows.map((r) => (
+            <Link
+              key={r.ticker}
+              href={`/research/${encodeURIComponent(r.ticker)}`}
+              className="f0-focus rounded text-center"
+            >
+              <TickerSpark symbol={r.ticker} height={30} width={60} className="block" />
+              <span className="mt-1 block font-mono text-[10px] text-ink">
+                {r.ticker.toUpperCase()}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── TRENDING ────────────────────────────────────────────────────────────── */
+/**
+ * The ranked attention ledger, drawn in board 15's ROW-CARD language: a 26px
+ * company mark, the ticker in mono, the price, the day move in the price ramp
+ * and the Club's signal as a lime chip. Below it, board 15's paired "Club's
+ * most bullish / most bearish" cards, then the surface's two member-authored
+ * sections.
+ */
+function TrendingPanel({
+  trending,
+  rows,
+  loading,
+  movers,
+  entries,
+  contributions,
+  reports,
+}: {
+  trending: TrendingResponse | null;
+  rows: TrendingRow[];
+  loading: boolean;
+  movers: DiscoverExtras["forYouMovers"];
+  entries: CommunityBoardSeed["entries"];
+  contributions: DiscoverExtras["contributions"];
+  reports: DiscoverExtras["reports"];
+}) {
+  const intel = useMemo(() => {
+    const m = new Map<string, TrendingRow>();
+    for (const r of rows) m.set(r.ticker.toUpperCase(), r);
+    return m;
+  }, [rows]);
+
+  // ONE batched quote request covering the board + For-You universe, which the
+  // trending endpoint does not price. No N+1.
+  const extraTickers = useMemo(() => {
     const s = new Set<string>();
     entries.forEach((e) => e.ticker && s.add(e.ticker.toUpperCase()));
     movers.forEach((mv) => mv.ticker && s.add(mv.ticker.toUpperCase()));
@@ -189,836 +763,329 @@ export default function DiscoverClient({
 
   const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
   useEffect(() => {
-    if (!quoteTickers.length) return;
+    if (!extraTickers.length) return;
     const ctrl = new AbortController();
-    fetchQuotes(quoteTickers, ctrl.signal).then(setQuotes).catch(() => {});
+    fetchQuotes(extraTickers, ctrl.signal).then(setQuotes).catch(() => {});
     return () => ctrl.abort();
-  }, [quoteTickers]);
+  }, [extraTickers]);
 
-  /* — segment models ——————————————————————————————————————————————— */
-  const forYouItems: LedgerItem[] = useMemo(
+  const discussed = useMemo(
     () =>
-      movers.map((mv) => {
-        const t = mv.ticker.toUpperCase();
-        const intel = intelByTicker.get(t);
-        const q = quotes[t];
-        return {
-          key: `fy-${t}`,
-          ticker: mv.ticker,
-          company: mv.name,
-          price: q?.price ?? intel?.price ?? null,
-          changePct: q?.changePercent ?? intel?.changePct ?? mv.chg_1d ?? null,
-          ...stanceOf(intel),
-          watchers: intel?.watchers ?? null,
-          comments: null,
-        };
-      }),
-    [movers, intelByTicker, quotes]
+      [...entries]
+        .sort((a, b) => (b.comment_count ?? 0) - (a.comment_count ?? 0))
+        .filter((e) => (e.comment_count ?? 0) > 0)
+        .slice(0, 6),
+    [entries]
   );
 
-  const trendingItems: LedgerItem[] = useMemo(
+  const stanced = useMemo(
+    () => rows.filter((r) => r.sentiment?.bullPct != null),
+    [rows]
+  );
+  const mostBullish = useMemo(
     () =>
-      trendingRows.map((r) => ({
-        key: `tr-${r.ticker}`,
-        ticker: r.ticker,
-        company: r.company ?? null,
-        price: r.price ?? null,
-        changePct: r.changePct ?? null,
-        ...stanceOf(r),
-        watchers: r.watchers ?? null,
-        comments: null,
-        rank: r.rank,
-      })),
-    [trendingRows]
+      [...stanced]
+        .sort((a, b) => (b.sentiment!.bullPct ?? 0) - (a.sentiment!.bullPct ?? 0))
+        .slice(0, 3),
+    [stanced]
   );
-
-  const discussedItems: LedgerItem[] = useMemo(
+  const mostBearish = useMemo(
     () =>
-      byDiscussion.slice(0, 12).map((e) => {
-        const t = e.ticker.toUpperCase();
-        const intel = intelByTicker.get(t);
-        const q = quotes[t];
-        return {
-          key: `md-${e.id}`,
-          ticker: e.ticker,
-          company: e.company_name,
-          price: q?.price ?? intel?.price ?? e.latest_close ?? null,
-          changePct: q?.changePercent ?? intel?.changePct ?? null,
-          ...stanceOf(intel),
-          watchers: intel?.watchers ?? null,
-          comments: e.comment_count ?? 0,
-        };
-      }),
-    [byDiscussion, intelByTicker, quotes]
+      [...stanced]
+        .sort((a, b) => (a.sentiment!.bullPct ?? 0) - (b.sentiment!.bullPct ?? 0))
+        .slice(0, 3),
+    [stanced]
   );
 
-  const researchCount = contributions.length + reports.length;
-
-  /* — canvas v2 board 02 §"From quiet to loud" ————————————————————————
-   * `change` is club_change_14d off the snapshot ledger — the row's score
-   * against the PRIOR window, i.e. exactly "names the Club just woke up on".
-   * Nothing is derived here that the server did not already compute. */
-  const risingRows = useMemo(
-    () =>
-      trendingRows
-        .filter((r) => (r.change ?? 0) > 0)
-        .sort((a, b) => (b.change ?? 0) - (a.change ?? 0))
-        .slice(0, 8),
-    [trendingRows]
-  );
-
-  /* — canvas v2 board 02 §"Most divisive" ————————————————————————————
-   * The single widest split in opinion. A split needs BODIES before it can be
-   * called divisive, so a row must clear DIVISIVE_MIN_POSITIONED and sit inside
-   * the contested band; otherwise the section renders its founding state. The
-   * denominator always ships with the percentage, exactly as StanceBar does. */
-  const divisive = useMemo(() => {
-    let best: TrendingRow | null = null;
-    let bestGap = Infinity;
-    for (const r of trendingRows) {
-      const s = r.sentiment;
-      if (!s || s.bullPct == null) continue;
-      const positioned = s.bull + s.neutral + s.bear;
-      if (positioned < DIVISIVE_MIN_POSITIONED) continue;
-      const gap = Math.abs(50 - s.bullPct);
-      if (gap <= DIVISIVE_MAX_GAP && gap < bestGap) {
-        best = r;
-        bestGap = gap;
-      }
-    }
-    return best;
-  }, [trendingRows]);
-
-  /* — the control ————————————————————————————————————————————————— */
-  const segments: { key: SegmentKey; label: string; count: number }[] = [
-    { key: "foryou", label: "For you", count: forYouItems.length },
-    { key: "trending", label: "Trending", count: trendingItems.length },
-    { key: "research", label: "Top research", count: researchCount },
-    { key: "discussed", label: "Most discussed", count: discussedItems.length },
-  ];
-
-  // Open on the segment the member actually has content in. Derived, not an
-  // effect: the For-You set arrives with the server seed, so the default resolves
-  // on first paint and only a real click pins it.
-  const [picked, setPicked] = useState<SegmentKey | null>(null);
-  const segment: SegmentKey = picked ?? (forYouItems.length ? "foryou" : "trending");
-  const setSegment = setPicked;
-
-  const rankedCount =
-    segment === "foryou"
-      ? forYouItems.length
-      : segment === "trending"
-        ? trendingItems.length
-        : discussedItems.length;
-
-  return (
-    <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">
-      {/* ── MASTHEAD ─────────────────────────────────────────────────────── */}
-      <header>
-        <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
-          Cheat Code Club
-        </p>
-        <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase text-ink">
-          Discover
-        </h1>
-        <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-soft">
-          Every name the Club is working on, ranked by attention — then the thinking
-          behind it.
-        </p>
-      </header>
-
-      {/* ── SEARCH ───────────────────────────────────────────────────────── */}
-      <SearchAnchor />
-
-      {/* ── WHAT THE CLUB IS SEEING ─────────────────────────────────────── */}
-      <div className="mt-10">
-        <TickerCarousel trending={trending} pulse={pulse} loading={ledgerLoading} />
-      </div>
-
-      {/* ── MOVING UP THE BOARD (canvas 02 · "From quiet to loud") ───────── */}
-      <RisingStrip rows={risingRows} loading={ledgerLoading} />
-
-      {/* ── MOST DIVISIVE (canvas 02 §2) ────────────────────────────────── */}
-      <DivisiveSplit row={divisive} loading={ledgerLoading} />
-
-      {/* ── THE LEDGER ───────────────────────────────────────────────────── */}
-      <section className="mt-11" aria-labelledby="discover-ledger">
-        <h2 id="discover-ledger" className="sr-only">
-          Discover the Club
-        </h2>
-
-        <Segmented
-          segments={segments}
-          value={segment}
-          onChange={setSegment}
-        />
-
-        <div
-          id="discover-panel"
-          role="tabpanel"
-          aria-labelledby={`discover-tab-${segment}`}
-          className="mt-5"
-        >
-          {segment === "foryou" && (
-            <Ledger
-              items={forYouItems}
-              /* For You ranks by the size of the member's own move, not by club rank. */
-              empty={
-                <FoundingNote>
-                  Like a few names (👍 on any research page) and this becomes your
-                  ledger — their moves, and the Club&apos;s read on each. Until then,{" "}
-                  <button
-                    type="button"
-                    onClick={() => setSegment("trending")}
-                    className={ORANGE_LINK}
-                  >
-                    see what&apos;s trending
-                  </button>
-                  .
-                </FoundingNote>
-              }
-            />
-          )}
-
-          {segment === "trending" && (
-            <>
-              <Ledger
-                items={trendingItems}
-                loading={ledgerLoading}
-                empty={
-                  <FoundingNote>
-                    The Club hasn&apos;t formed a read yet. Rate a ticker on the{" "}
-                    <Link
-                      href="/watchlist/community"
-                      className={ORANGE_LINK}
-                    >
-                      Community Watchlist
-                    </Link>{" "}
-                    and you&apos;ll be the first signal on this board.
-                  </FoundingNote>
-                }
-              />
-              {trending?.locked && (
-                <LedgerWall
-                  shown={trendingItems.length}
-                  total={trending.totalCount ?? trendingItems.length}
-                />
-              )}
-            </>
-          )}
-
-          {segment === "research" && (
-            <ResearchLedger contributions={contributions} reports={reports} />
-          )}
-
-          {segment === "discussed" && (
-            <Ledger
-              items={discussedItems}
-              empty={
-                <FoundingNote>
-                  No thread has caught yet. Champion an idea on the{" "}
-                  <Link
-                    href="/watchlist/community"
-                    className={ORANGE_LINK}
-                  >
-                    Community Watchlist
-                  </Link>{" "}
-                  and the conversation starts here.
-                </FoundingNote>
-              }
-            />
-          )}
-        </div>
-
-        {/* Compliance line, verbatim from the ledger endpoint — attention inside
-            the Club is not a recommendation. Renders on every ranked view, since
-            all three read the same attention/sentiment ledger. */}
-        {segment !== "research" && rankedCount > 0 && (
-          <p className="mt-5 font-mono text-[11px] leading-relaxed text-soft">
-            {trending?.disclaimer ?? "Attention inside the Club — not a recommendation."}
-            {" · Prices delayed ~15 min."}
-          </p>
-        )}
-      </section>
-
-      {/* ── STOCK FINDER — the one orange field on this surface ──────────── */}
-      {showStockFinder && <StockFinderBand />}
-
-      {/* ── NEWSROOM (preserved: rows keep their own /news/[slug] detail) ── */}
-      <section className="mt-11" aria-labelledby="discover-news">
-        <div className="f0-section-rule mb-4">
-          <h2
-            id="discover-news"
-            className="font-display text-eyebrow font-bold uppercase text-ink"
-          >
-            News moving the Club
-          </h2>
-        </div>
-        {/* `embedded` drops the newsroom's own display-1 masthead, its page box
-            and its ticker strip — Discover already owns all three. */}
-        <NewsClient initialArticles={initialNews} embedded />
-      </section>
-    </div>
-  );
-}
-
-/* ── community stance, joined onto any ledger row ────────────────────────── */
-function stanceOf(r?: TrendingRow | null): Pick<
-  LedgerItem,
-  "bullPct" | "positioned" | "heat" | "floorMet"
-> {
-  const s = r?.sentiment;
-  const positioned = s ? s.bull + s.neutral + s.bear : 0;
-  return {
-    bullPct: s?.bullPct ?? null,
-    positioned,
-    heat: r?.heat ?? null,
-    floorMet: r?.floorMet ?? false,
-  };
-}
-
-/* ── live club data ──────────────────────────────────────────────────────── */
-/**
- * Discover reads the two endpoints it actually needs rather than the nine-section
- * /api/club/home batch: the ranked ledger, and Pulse for the carousel's inline
- * series. Both fail soft to null — every section below renders a designed founding
- * state instead of a spinner or a fabricated number.
- */
-function useClubLedger() {
-  const [trending, setTrending] = useState<TrendingResponse | null>(null);
-  const [pulse, setPulse] = useState<PulseResponse | null>(null);
-  // LOADING IS NOT EMPTY. Trending is the DEFAULT segment for any member without
-  // For-You movers, so without this flag every Discover open rendered "The Club
-  // hasn't formed a read yet" before the ranked ledger swapped in.
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    const get = async <T,>(path: string): Promise<T | null> => {
-      try {
-        const res = await fetch(path, {
-          signal: ctrl.signal,
-          headers: { accept: "application/json" },
-        });
-        if (!res.ok) return null;
-        return (await res.json()) as T;
-      } catch {
-        return null;
-      }
-    };
-    // The ledger's founding state is gated on the TRENDING read specifically —
-    // Pulse only decorates rows with a series, so it must not hold the gate.
-    void get<TrendingResponse>("/api/club/trending")
-      .then((d) => {
-        if (d) setTrending(d);
-      })
-      .finally(() => setLoading(false));
-    void get<PulseResponse>("/api/club/pulse").then((d) => d && setPulse(d));
-    return () => ctrl.abort();
-  }, []);
-
-  return { trending, pulse, loading };
-}
-
-/* ── SEARCH ANCHOR ───────────────────────────────────────────────────────── */
-function SearchAnchor() {
-  const router = useRouter();
-  const { openKai } = useKaiSheet();
-  const [q, setQ] = useState("");
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const t = q.trim().toUpperCase().replace(/[^A-Z.]/g, "");
-    if (t) router.push(`/research/${encodeURIComponent(t)}`);
-  }
-
-  function askKai() {
-    const asked = q.trim();
-    openKai({ chip: "Discover", query: asked || null });
-  }
-
-  return (
-    <form onSubmit={onSubmit} role="search" className="mt-8">
-      {/* The rule is the field. In light it is a near-black 2px bar on cream; at
-          80% of a near-WHITE ink on obsidian that same bar glares, so dark drops
-          it to 40% — same weight and intent, correct value contrast. */}
-      <div className="group flex items-center gap-3 border-b-2 border-ink/80 pb-3 transition-colors focus-within:border-accent dark:border-ink/40">
-        <Search
-          className="h-5 w-5 shrink-0 text-soft transition-colors group-focus-within:text-gold-700"
-          aria-hidden
-        />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search any stock"
-          aria-label="Search stocks"
-          className="min-w-0 flex-1 bg-transparent font-display text-[22px] font-bold tracking-tight text-ink outline-none placeholder:font-semibold placeholder:text-soft/60 dark:placeholder:text-soft/75 sm:text-[26px]"
-        />
-        {q.trim() && (
-          <button
-            type="submit"
-            aria-label="Open research"
-            className={`f0-focus f0-press shrink-0 rounded-full p-1.5 ${ORANGE_ACTION}`}
-          >
-            <ArrowRight className="h-5 w-5" />
-          </button>
-        )}
-      </div>
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
-          Ticker, company, or a theme
-        </p>
-        <button
-          type="button"
-          onClick={askKai}
-          className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded font-display text-[13px] font-bold ${ORANGE_ACTION}`}
-        >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          or ask Kai
-        </button>
-      </div>
-    </form>
-  );
-}
-
-/* ── SECTION HEAD ────────────────────────────────────────────────────────── */
-/** The canvas's own section marker: charged tick + label + hairline to the edge,
- *  with the plain-English gloss beneath it. */
-function SectionHead({ title, gloss }: { title: string; gloss: string }) {
   return (
     <>
-      <h2 className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink">
-        <span className="shrink-0 whitespace-nowrap">{title}</span>
-      </h2>
-      <p className="mt-2 text-[12.5px] leading-relaxed text-soft">{gloss}</p>
+      <SectionMark
+        label={
+          loading
+            ? "Ranked by Club signal"
+            : `${rows.length} ${rows.length === 1 ? "name" : "names"} · sorted by Club signal`
+        }
+        gloss="Live ranking by member attention and conviction"
+      />
+
+      {loading ? (
+        <div className="mt-2.5 flex flex-col gap-[7px]" aria-busy="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <BoardCard key={i} radius={12} className="flex items-center gap-2.5 px-[11px] py-[9px]">
+              <Bone w={26} h={26} className="!rounded-lg" />
+              <Bone w={44} h={9} />
+              <Bone w="40%" h={9} className="ml-auto" />
+            </BoardCard>
+          ))}
+          <span className="sr-only">Loading the ledger</span>
+        </div>
+      ) : rows.length === 0 ? (
+        <FoundingLine className="mt-3">
+          The Club hasn&apos;t formed a read yet. Rate a ticker on the{" "}
+          <Link href="/watchlist/community" className="font-bold text-gold-700 underline decoration-1 underline-offset-2">
+            Community Watchlist
+          </Link>{" "}
+          and you&apos;ll be the first signal on this board.
+        </FoundingLine>
+      ) : (
+        <div className="mt-2.5 flex flex-col gap-[7px]">
+          {rows.map((r) => (
+            <SignalRow
+              key={r.ticker}
+              ticker={r.ticker}
+              name={r.company ?? null}
+              price={r.price ?? null}
+              changePct={r.changePct ?? null}
+              signal={r.sentiment?.bullPct ?? null}
+              rank={r.rank}
+            />
+          ))}
+        </div>
+      )}
+
+      {trending?.locked && (
+        <BoardCard radius={12} className="mt-2.5 px-[13px] py-3">
+          <p className="font-display text-[13px] font-bold text-ink">
+            You&apos;re seeing the top {rows.length} of {trending.totalCount ?? rows.length}.
+          </p>
+          <p className="mt-1 max-w-[52ch] text-[11.5px] leading-relaxed text-soft">
+            The full attention ledger — every rank, plus its history — is part of
+            the Club.
+          </p>
+          <Link
+            href="/upgrade"
+            className="f0-focus mt-2 inline-flex items-center gap-1.5 rounded font-display text-[12px] font-bold text-gold-700"
+          >
+            See the full rankings <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </BoardCard>
+      )}
+
+      {rows.length > 0 && (
+        <p className="mt-3 font-mono text-[10px] leading-relaxed text-soft">
+          {trending?.disclaimer ?? "Attention inside the Club — not a recommendation."}
+          {" · Prices delayed ~15 min."}
+        </p>
+      )}
+
+      {/* Board 15's paired conviction cards — green-tinted hairline on the bull
+          card, pink on the bear card, exactly as drawn. The percentages inside
+          are COMMUNITY SENTIMENT, so they take the lime ramp and an ink tint
+          rather than the price green/red the board paints them in. */}
+      {(mostBullish.length > 0 || mostBearish.length > 0) && (
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <ConvictionCard title="Club's most bullish" rows={mostBullish} tone="bull" />
+          <ConvictionCard title="Club's most bearish" rows={mostBearish} tone="bear" />
+        </div>
+      )}
+
+      {/* MOST DISCUSSED */}
+      <section className="mt-7" aria-labelledby="discover-discussed">
+        <SectionMark
+          id="discover-discussed"
+          label="Most discussed"
+          gloss="Where the Club is actually talking"
+        />
+        {discussed.length === 0 ? (
+          <FoundingLine className="mt-3">
+            No thread has caught yet. Champion an idea on the{" "}
+            <Link href="/watchlist/community" className="font-bold text-gold-700 underline decoration-1 underline-offset-2">
+              Community Watchlist
+            </Link>{" "}
+            and the conversation starts here.
+          </FoundingLine>
+        ) : (
+          <div className="mt-2.5 flex flex-col gap-[7px]">
+            {discussed.map((e) => {
+              const t = e.ticker.toUpperCase();
+              const q = quotes[t];
+              const row = intel.get(t);
+              return (
+                <SignalRow
+                  key={e.id}
+                  ticker={e.ticker}
+                  name={e.company_name}
+                  price={q?.price ?? row?.price ?? e.latest_close ?? null}
+                  changePct={q?.changePercent ?? row?.changePct ?? null}
+                  signal={row?.sentiment?.bullPct ?? null}
+                  comments={e.comment_count ?? 0}
+                />
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* TOP RESEARCH */}
+      <section className="mt-7" aria-labelledby="discover-research">
+        <SectionMark
+          id="discover-research"
+          label="Top research"
+          gloss="The thinking behind the names"
+        />
+        <ResearchCards contributions={contributions} reports={reports} />
+      </section>
     </>
   );
 }
 
-/* ── MOVING UP THE BOARD ─────────────────────────────────────────────────── */
 /**
- * Canvas board 02, "From quiet to loud — names the Club just woke up on".
- *
- * The canvas draws five bare sparklines in five different colours (red, orange,
- * amber, green, green) with a ticker under each — five hues encoding nothing,
- * two of which are the price ramp. Adopted as the <TickerTile /> strip instead:
- * one achromatic ground, identity carried by the mark, and the ONLY colour on
- * the object is the delta, which is genuinely a price.
- *
- * LOADING ≠ EMPTY (§0.4) and FOUNDING IS MANDATORY (§0.5) are both visible here:
- * in flight the strip pulses filled tiles; with nothing rising it renders six
- * DASHED slots plus founding copy, so a young club reads as one that is filling
- * up rather than as a section that failed.
+ * Board 15's result row, as a card: mark · ticker · sparkline · price · move ·
+ * signal chip. The sparkline is a real 3-month series, deferred until the row
+ * scrolls into view.
  */
-function RisingStrip({ rows, loading }: { rows: TrendingRow[]; loading: boolean }) {
-  return (
-    <section className="mt-11" aria-labelledby="discover-rising">
-      <div id="discover-rising">
-        <SectionHead
-          title="Moving up the board"
-          gloss="Names the Club just woke up on — biggest gain in attention against the last two weeks."
-        />
-      </div>
-
-      {loading ? (
-        <TickerTileStrip className="mt-4" loading loadingCount={6} />
-      ) : rows.length > 0 ? (
-        <TickerTileStrip className="mt-4" minSlots={6}>
-          {rows.map((r) => (
-            <TickerTile
-              key={r.ticker}
-              ticker={r.ticker}
-              changePct={r.changePct ?? null}
-              href={`/research/${encodeURIComponent(r.ticker)}`}
-            />
-          ))}
-        </TickerTileStrip>
-      ) : (
-        <>
-          <TickerTileStrip className="mt-4" minSlots={6} />
-          <p className="mt-3 max-w-[56ch] text-[13px] leading-relaxed text-soft">
-            No name has gained ground on the board this fortnight. Every slot here
-            fills itself — watch a ticker, ask Kai about it, or post a thesis, and
-            it starts climbing.
-          </p>
-        </>
-      )}
-    </section>
-  );
-}
-
-/* ── MOST DIVISIVE ───────────────────────────────────────────────────────── */
-/**
- * Canvas board 02 §2, "Most divisive — biggest split in opinions".
- *
- * TWO DELIBERATE DIVERGENCES FROM THE CANVAS:
- *  1. The canvas renders the split as a conic-gradient DONUT. Plan §1.5 keeps
- *     exactly one radial gauge in the system (the club-sentiment arc), so this
- *     is a split BAR — which carries a two-part proportion at least as legibly
- *     and costs no new visual idiom.
- *  2. The canvas paints bullish GREEN and bearish RED. Both halves of this split
- *     are COMMUNITY SENTIMENT, and the colour law reserves green/red for price.
- *     The bull share therefore takes the sentiment ramp and the bear share takes
- *     a neutral ink tint — the object still reads as a contest, and no price
- *     colour is spent on an opinion.
- *
- * The tile suppresses its delta on purpose: this object is about disagreement,
- * and hanging a price move off it invites the split to be read as a forecast.
- */
-function DivisiveSplit({ row, loading }: { row: TrendingRow | null; loading: boolean }) {
-  const s = row?.sentiment;
-  const bullPct = s?.bullPct ?? null;
-  const positioned = s ? s.bull + s.neutral + s.bear : 0;
-
-  return (
-    <section className="mt-11" aria-labelledby="discover-divisive">
-      <div id="discover-divisive">
-        <SectionHead
-          title="Most divisive"
-          gloss="Where the Club disagrees with itself the most."
-        />
-      </div>
-
-      {loading ? (
-        <div className="mt-4 flex items-center gap-4" aria-busy="true">
-          <TickerTile size="lg" loading showDelta={false} />
-          <div className="min-w-0 flex-1 space-y-2.5">
-            <div className="h-3.5 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
-            <div className="h-[6px] w-full rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
-            <div className="h-2.5 w-40 rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
-          </div>
-          <span className="sr-only">Loading the widest split</span>
-        </div>
-      ) : row && bullPct != null ? (
-        <Link
-          href={`/research/${encodeURIComponent(row.ticker)}?tab=community`}
-          className="f0-focus group mt-4 flex items-center gap-4 rounded-lg"
-        >
-          <TickerTile ticker={row.ticker} size="lg" showDelta={false} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-[17px] font-extrabold tracking-tight text-ink">
-              <span className="text-soft">$</span>
-              {row.ticker.toUpperCase()}
-            </p>
-            {row.company && (
-              <p className="truncate text-[12px] leading-tight text-soft">{row.company}</p>
-            )}
-
-            {/* The split. Sentiment owns the bull share; the bear share is a
-                neutral ink tint, never the price red. */}
-            <span
-              className="mt-2 flex h-[6px] w-full overflow-hidden rounded-full bg-ink/12"
-              aria-hidden
-            >
-              <span
-                className="h-full bg-sentiment-fill"
-                style={{ width: `${Math.max(2, Math.min(98, bullPct))}%` }}
-              />
-            </span>
-
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
-              <span className="text-sentiment">{bullPct}% bull</span>
-              {" · "}
-              {100 - bullPct}% not
-              {" · "}
-              {positioned} positioned
-            </p>
-          </div>
-          <ArrowRight
-            className="h-4 w-4 shrink-0 text-soft transition-colors group-hover:text-gold-700"
-            aria-hidden
-          />
-        </Link>
-      ) : (
-        <div className="mt-4 flex items-center gap-4">
-          <TickerTile size="lg" showDelta={false} />
-          <p className="max-w-[46ch] text-[13px] leading-relaxed text-soft">
-            Nothing is contested yet — a split needs at least{" "}
-            {DIVISIVE_MIN_POSITIONED} members on the same name taking opposite
-            sides. Take a position on any ticker and the argument starts here.
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-/* ── SEGMENTED CONTROL ───────────────────────────────────────────────────── */
-/**
- * Underline-driven tabs riding a single hairline. Deliberately NOT pills: a row
- * of rounded chips reads as five competing objects, where the rule + one charged
- * underline reads as one control with a current position.
- *
- * WHY NOT <SegmentedRail /> (canvas2): the rail is a `radiogroup` — a FORM
- * control with roving tabindex, correct for stance and post type. This control
- * drives a `tabpanel`, so it must stay `tablist`/`tab` or the panel loses its
- * relationship to the thing that switched it. Per the L0 contract the geometry
- * is shared instead: the same `.f0-seg-bar` indicator and the same `.f0-focus`
- * ring, so the two controls look and feel identical and only their semantics
- * differ. The bar rides `bg-accent` (--accent-solid) rather than a frozen
- * `volt-*` step, so it is mode-correct in family gold / club orange / FTA.
- */
-function Segmented<T extends string>({
-  segments,
-  value,
-  onChange,
+function SignalRow({
+  ticker,
+  name,
+  price,
+  changePct,
+  signal,
+  rank,
+  comments,
 }: {
-  segments: { key: T; label: string; count: number }[];
-  value: T;
-  onChange: (k: T) => void;
+  ticker: string;
+  name: string | null;
+  price: number | null;
+  changePct: number | null;
+  /** community bull share — the "Club signal". null until anyone positions. */
+  signal: number | null;
+  rank?: number;
+  comments?: number;
 }) {
+  const tone = changeTone(changePct ?? undefined);
   return (
-    <div
-      role="tablist"
-      aria-label="Discover views"
-      /* The inactive hairline needs the same dark lift the foundation gives
-         .f0-ledger: --sand (#2A2E37) at 1px all but vanishes on the obsidian
-         page, which would leave the control with no baseline for the underline
-         to travel along. The active volt underline is unchanged — orange holds
-         its value in both themes. */
-      className="club2-track f0-rule-bottom -mx-4 flex gap-7 overflow-x-auto px-4"
-    >
-      {segments.map((s) => {
-        const active = s.key === value;
-        return (
-          <button
-            key={s.key}
-            id={`discover-tab-${s.key}`}
-            role="tab"
-            type="button"
-            aria-selected={active}
-            aria-controls="discover-panel"
-            onClick={() => onChange(s.key)}
-            className={`f0-focus f0-press relative -mb-px shrink-0 pb-3 font-display text-[13px] font-bold uppercase tracking-[0.1em] transition-colors ${
-              active ? "text-ink" : "text-soft hover:text-ink"
-            }`}
-          >
-            {s.label}
-            {s.count > 0 && (
-              <span
-                className={`ml-1.5 font-mono text-[10px] font-semibold tabular-nums ${
-                  active ? "text-gold-700" : "text-soft/70"
-                }`}
-              >
-                {s.count}
-              </span>
-            )}
-            {active && <span className="f0-seg-bar bg-accent" aria-hidden />}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ── THE RANKED LEDGER ───────────────────────────────────────────────────── */
-function Ledger({
-  items,
-  empty,
-  loading = false,
-}: {
-  items: LedgerItem[];
-  empty: React.ReactNode;
-  /** Still arriving. Renders ruled placeholder rows instead of the founding
-   *  note, so "loading" is never mistaken for "the club has ranked nothing". */
-  loading?: boolean;
-}) {
-  if (loading && items.length === 0) {
-    return (
-      <ol className="f0-ledger" aria-busy="true">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <li key={i} className="flex items-center justify-between gap-4 py-3.5">
-            <div className="h-3.5 w-20 rounded-full bg-ink/10 motion-safe:animate-pulse" />
-            <div className="h-3.5 w-24 rounded-full bg-ink/[0.07] motion-safe:animate-pulse" />
-          </li>
-        ))}
-        <span className="sr-only">Loading the ledger</span>
-      </ol>
-    );
-  }
-  if (items.length === 0) return <>{empty}</>;
-  return (
-    <ol className="f0-ledger f0-stagger">
-      {items.map((it, i) => (
-        <li key={it.key} style={{ "--i": i } as React.CSSProperties}>
-          <LedgerRow item={it} rank={it.rank ?? i + 1} />
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/**
- * The object IS the typography. A large muted rank numeral gives the row its
- * identity — no box, no border, no fill. Price stays green/red; the community
- * stance bar is the only lime on the surface.
- */
-function LedgerRow({ item, rank }: { item: LedgerItem; rank: number }) {
-  const tone = changeTone(item.changePct ?? undefined);
-  const price = formatPrice(item.price ?? undefined);
-  const pct = formatChangePct(item.changePct ?? undefined);
-
-  return (
-    <Link
-      href={`/research/${encodeURIComponent(item.ticker)}`}
-      className="f0-ledger-row group -mx-2 px-2"
-    >
-      {/* THE RANK NUMERAL — the row's identity, and the piece most sensitive to
-          the theme flip. 15% of a near-BLACK ink on cream is a soft grey that
-          still holds its shape at 34px; 15% of a near-WHITE ink on obsidian is
-          a ghost, because a light tint loses far more perceived presence over a
-          dark field than a dark tint does over a light one. Dark runs it at 25%
-          (and lifts the hover to 70%) so it reads as deliberately muted rather
-          than as something that failed to load. */}
-      <span
-        aria-hidden
-        className="w-11 shrink-0 text-right font-display text-[34px] font-extrabold leading-none tracking-tight tabular-nums text-ink/15 transition-colors group-hover:text-accent dark:text-ink/25"
+    <BoardCard radius={12} className="transition-colors hover:border-accent">
+      <Link
+        href={`/research/${encodeURIComponent(ticker)}`}
+        className="f0-focus flex items-center gap-2.5 rounded-[12px] px-[11px] py-[9px]"
       >
-        {rank}
-      </span>
-
-      <CompanyLogo symbol={item.ticker} name={item.company} size={34} rounded="rounded-lg" />
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-display text-[15px] font-extrabold tracking-tight text-ink">
-          <span className="text-soft">$</span>
-          {item.ticker.toUpperCase()}
-        </p>
-        {item.company && (
-          <p className="truncate text-[12px] leading-tight text-soft">{item.company}</p>
+        {rank != null && (
+          <span
+            aria-hidden
+            className="w-4 shrink-0 text-right font-mono text-[10px] tabular-nums text-soft"
+          >
+            {rank}
+          </span>
         )}
-        <StanceBar item={item} />
-      </div>
-
-      <div className="shrink-0 text-right">
-        <p className="font-mono text-[15px] font-semibold tabular-nums text-ink">
-          {price || "—"}
-        </p>
-        <p
-          className={`font-mono text-[12px] font-bold tabular-nums ${
-            tone === "up"
-              ? "text-price-up"
-              : tone === "down"
-                ? "text-price-down"
-                : "text-soft"
+        <CompanyLogo symbol={ticker} name={name} size={26} rounded="rounded-[8px]" />
+        <span className="w-[46px] shrink-0 font-mono text-[11px] font-semibold text-ink">
+          {ticker.toUpperCase()}
+        </span>
+        <span className="hidden w-[52px] shrink-0 sm:block">
+          <TickerSpark symbol={ticker} height={18} width={52} strokeWidth={1.6} className="block" />
+        </span>
+        <span className="flex-1 truncate text-right font-mono text-[10.5px] tabular-nums text-ink">
+          {formatPrice(price ?? undefined) || "—"}
+        </span>
+        <span
+          className={`w-[46px] shrink-0 text-right font-mono text-[10px] tabular-nums ${
+            tone === "up" ? "text-price-up" : tone === "down" ? "text-price-down" : "text-soft"
           }`}
         >
-          {pct || "—"}
-        </p>
-        {item.comments != null && item.comments > 0 && (
-          <p className="mt-0.5 inline-flex items-center justify-end gap-1 font-mono text-[10px] tabular-nums text-soft">
-            <MessageSquare className="h-2.5 w-2.5" aria-hidden />
-            {item.comments}
-          </p>
+          {formatChangePct(changePct ?? undefined) || "—"}
+        </span>
+        {comments != null ? (
+          <span className="shrink-0 rounded-[8px] bg-sand px-[7px] py-[3px] font-mono text-[10px] font-semibold tabular-nums text-soft">
+            {comments}
+          </span>
+        ) : signal != null ? (
+          <span className="shrink-0 rounded-[8px] bg-sentiment-fill/12 px-[7px] py-[3px] font-mono text-[10px] font-semibold tabular-nums text-sentiment">
+            {signal}%
+          </span>
+        ) : (
+          <span className="shrink-0 rounded-[8px] px-[7px] py-[3px] font-mono text-[10px] text-soft/70">
+            —
+          </span>
         )}
-      </div>
-    </Link>
-  );
-}
-
-/**
- * COMMUNITY SENTIMENT — the only lime on the surface.
- *
- * The percentage always ships with its denominator, so a three-vote read can
- * never masquerade as consensus. With nobody positioned there is no bar at all
- * and the row says so in founding language. Watcher counts stay hidden until
- * FLOORS.tickerParticipants, and `heat` is already null below its own floor
- * server-side — nothing here is invented to fill a gap.
- */
-function StanceBar({ item }: { item: LedgerItem }) {
-  const hasStance = item.bullPct != null && item.positioned > 0;
-  const showWatchers = (item.watchers ?? 0) >= FLOORS.tickerParticipants;
-
-  if (!hasStance) {
-    return (
-      <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-soft/80">
-        {item.floorMet ? "Stance forming" : "Early — no read yet"}
-      </p>
-    );
-  }
-
-  return (
-    <div className="mt-1.5 flex items-center gap-2">
-      {/* The unfilled track rides --sand, so it re-maps with the theme. The fill
-          is `bg-sentiment-fill` — the canonical community-sentiment token, which
-          carries BOTH theme steps itself, so this never needs (and must never
-          get) a dark: variant. It replaced a hand-written `bg-lime-500`, the
-          per-surface divergence the token was minted to end. */}
-      <span
-        className="h-[3px] w-16 shrink-0 overflow-hidden rounded-full bg-sand sm:w-24"
-        aria-hidden
-      >
-        <span
-          className="block h-full rounded-full bg-sentiment-fill"
-          style={{ width: `${Math.max(2, Math.min(100, item.bullPct as number))}%` }}
-        />
-      </span>
-      <span className="truncate font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-        <span className="text-sentiment">{item.bullPct}% bull</span> ·{" "}
-        {item.positioned} positioned
-        {showWatchers ? ` · ${item.watchers} watching` : ""}
-        {item.heat != null ? ` · club ${item.heat}` : ""}
-      </span>
-    </div>
-  );
-}
-
-/** The server-authoritative free cap, stated plainly rather than blurred out. */
-function LedgerWall({ shown, total }: { shown: number; total: number }) {
-  return (
-    <div className="f0-rule-top mt-5 pt-4">
-      <p className="font-display text-[15px] font-bold text-ink">
-        You&apos;re seeing the top {shown} of {total}.
-      </p>
-      <p className="mt-1 max-w-[52ch] text-[13px] leading-relaxed text-soft">
-        The full attention ledger — every rank, plus its history — is part of the
-        Club.
-      </p>
-      <Link
-        href="/upgrade"
-        className={`f0-focus mt-2.5 inline-flex items-center gap-1.5 rounded font-display text-[13px] font-bold ${ORANGE_ACTION}`}
-      >
-        See the full rankings <ArrowRight className="h-3.5 w-3.5" />
       </Link>
+    </BoardCard>
+  );
+}
+
+/** Board 15's paired conviction cards. */
+function ConvictionCard({
+  title,
+  rows,
+  tone,
+}: {
+  title: string;
+  rows: TrendingRow[];
+  tone: "bull" | "bear";
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div
+      className={`rounded-[16px] border bg-card px-3.5 py-[13px] ${
+        tone === "bull" ? "border-sentiment/40" : "border-sand"
+      }`}
+    >
+      <p
+        className={`font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em] ${
+          tone === "bull" ? "text-sentiment" : "text-soft"
+        }`}
+      >
+        {title}
+      </p>
+      <div className="mt-2.5 flex flex-col gap-2">
+        {rows.map((r) => (
+          <Link
+            key={r.ticker}
+            href={`/research/${encodeURIComponent(r.ticker)}?tab=community`}
+            className="f0-focus flex items-center justify-between rounded"
+          >
+            <span className="font-mono text-[11px] font-semibold text-ink">
+              {r.ticker.toUpperCase()}
+            </span>
+            <span
+              className={`font-mono text-[10.5px] tabular-nums ${
+                tone === "bull" ? "text-sentiment" : "text-ink"
+              }`}
+            >
+              {tone === "bull"
+                ? `${r.sentiment!.bullPct}%`
+                : `${100 - (r.sentiment!.bullPct ?? 0)}%`}
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
 
-/* ── TOP RESEARCH — author identity leads ────────────────────────────────── */
-function ResearchLedger({
+/* ── TOP RESEARCH ────────────────────────────────────────────────────────── */
+function ResearchCards({
   contributions,
   reports,
 }: {
   contributions: DiscoverExtras["contributions"];
   reports: DiscoverExtras["reports"];
 }) {
+  const now = useNowHour();
+
   if (contributions.length === 0 && reports.length === 0) {
     return (
-      <FoundingNote>
-        The best deep-dives land here as members post them. Be first — drop a thesis
-        on any idea&apos;s{" "}
-        <Link
-          href="/community"
-          className={ORANGE_LINK}
-        >
+      <FoundingLine className="mt-3">
+        The best deep-dives land here as members post them. Be first — drop a
+        thesis on any idea&apos;s{" "}
+        <Link href="/community" className="font-bold text-gold-700 underline decoration-1 underline-offset-2">
           research page
         </Link>
         .
-      </FoundingNote>
+      </FoundingLine>
     );
   }
 
   return (
-    <div className="f0-ledger f0-stagger">
-      {contributions.map((c, i) => {
+    <div className="mt-2.5 flex flex-col gap-2.5">
+      {contributions.map((c) => {
         const meta = contributionMeta(c.contribution_type);
+        const stamp = timeAgoAt(c.created_at, now);
         return (
-          <article key={c.id} style={{ "--i": i } as React.CSSProperties}>
+          <BoardCard key={c.id} radius={16} className="transition-colors hover:border-accent">
             <Link
               href={`/research/${encodeURIComponent(c.ticker)}`}
-              className="f0-focus block -mx-2 rounded px-2 py-4 transition-colors hover:bg-accent/[0.06]"
+              className="f0-focus block rounded-[16px] px-[15px] py-[14px]"
             >
-              {/* identity first — who is talking, and why you should listen */}
               <div className="flex items-center gap-2">
                 <Avatar
                   name={c.author?.display_name}
@@ -1026,139 +1093,100 @@ function ResearchLedger({
                   role={c.author?.role}
                   size="sm"
                 />
-                <span className="truncate font-display text-[13px] font-bold text-ink">
+                <span className="truncate font-display text-[12.5px] font-bold text-ink">
                   {c.author?.username
                     ? `@${c.author.username}`
                     : c.author?.display_name || "A member"}
                 </span>
                 <AgeBadge role={c.author?.role} ageGroup={c.author?.age_group} />
-                {/* Credibility tag as TYPE, not as a coloured chip — the semantic
-                    chip tokens are red/green, which the colour law reserves for
-                    price. A hairline-separated mono label carries the same
-                    information without spending a market colour. */}
-                <span
-                  aria-hidden
-                  className="shrink-0 text-soft/50"
-                >
-                  ·
-                </span>
-                <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-soft">
+                <span className="shrink-0 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
                   {meta.label}
                 </span>
-                <span className="ml-auto shrink-0 font-mono text-[10px] text-soft">
-                  {timeAgo(c.created_at)}
-                </span>
+                {stamp && (
+                  <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft">
+                    {stamp}
+                  </span>
+                )}
               </div>
-
-              {/* then the thinking */}
-              <p className="mt-2.5 line-clamp-2 font-display text-[19px] font-bold leading-snug tracking-tight text-ink">
+              <p className="mt-2.5 line-clamp-3 text-[13px] leading-relaxed text-ink">
                 {c.snippet}
               </p>
-              <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
+              <p className="mt-2 font-mono text-[10px] font-semibold text-gold-700">
                 ${c.ticker.toUpperCase()}
               </p>
             </Link>
-          </article>
+          </BoardCard>
         );
       })}
 
-      {reports.map((r, i) => (
-        <article
-          key={`kai-${r.ticker}`}
-          style={{ "--i": contributions.length + i } as React.CSSProperties}
-        >
-          <Link
-            href={`/research/${encodeURIComponent(r.ticker)}`}
-            className="f0-focus block -mx-2 rounded px-2 py-4 transition-colors hover:bg-accent/[0.06]"
+      {reports.map((r) => {
+        const stamp = timeAgoAt(r.generated_at, now);
+        return (
+          <BoardCard
+            key={`kai-${r.ticker}`}
+            radius={16}
+            className="transition-colors hover:border-accent"
           >
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kai-500/12 text-kai-600 dark:bg-kai-500/22 dark:text-kai-300">
-                <Bot className="h-4 w-4" aria-hidden />
-              </span>
-              <span className="font-display text-[13px] font-bold text-ink">Kai</span>
-              <span aria-hidden className="shrink-0 text-soft/50">
-                ·
-              </span>
-              <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-kai-600 dark:text-kai-300">
-                AI deep-dive
-              </span>
-              <span className="ml-auto shrink-0 font-mono text-[10px] text-soft">
-                {timeAgo(r.generated_at)}
-              </span>
-            </div>
-            <p className="mt-2.5 font-display text-[19px] font-bold leading-snug tracking-tight text-ink">
-              {r.company_name ? `${r.company_name} — full research report` : "Full research report"}
-            </p>
-            <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
-              ${r.ticker.toUpperCase()}
-            </p>
-          </Link>
-        </article>
-      ))}
+            <Link
+              href={`/research/${encodeURIComponent(r.ticker)}`}
+              className="f0-focus block rounded-[16px] px-[15px] py-[14px]"
+            >
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-kai-500/12 text-kai-600 dark:bg-kai-500/22 dark:text-kai-300">
+                  <Bot className="h-4 w-4" aria-hidden />
+                </span>
+                <span className="font-display text-[12.5px] font-bold text-ink">Kai</span>
+                <span className="shrink-0 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-kai-600 dark:text-kai-300">
+                  AI deep-dive
+                </span>
+                {stamp && (
+                  <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft">
+                    {stamp}
+                  </span>
+                )}
+              </div>
+              <p className="mt-2.5 font-display text-[15px] font-bold leading-snug text-ink">
+                {r.company_name
+                  ? `${r.company_name} — full research report`
+                  : "Full research report"}
+              </p>
+              <p className="mt-2 font-mono text-[10px] font-semibold text-gold-700">
+                ${r.ticker.toUpperCase()}
+              </p>
+            </Link>
+          </BoardCard>
+        );
+      })}
     </div>
   );
 }
 
-/* ── STOCK FINDER — the surface's single orange field ────────────────────── */
+/* ── live club data ──────────────────────────────────────────────────────── */
 /**
- * Full-bleed orange band. It breaks the container deliberately so orange reads as
- * energy rather than trim, and it carries ACTIONS only — no price, no percentage
- * ever sits on this field (the colour law: they render illegibly on orange).
- *
- * THEME-INVARIANT BY DESIGN. `.club2-band` stays orange in both themes (the
- * foundation only drops a little luminance at night so it doesn't glare), which
- * means the type on it is measured against ORANGE, not against the page. So the
- * light action pill here is correct in both themes and must NOT be swapped for
- * semantic tokens — `text-ink` on this band flips to near-black in light and
- * near-white in dark, i.e. it breaks in one of them.
- *
- * The pill's ground is `bg-night-50` and its type `text-night-950`: both are
- * CONSTANT ramp steps (they are not remapped by the theme blocks), which is the
- * same fix ActionBand carries, expressed with tokens instead of a literal
- * `bg-white` — so this file holds no raw colour keyword at all.
+ * Discover reads the one endpoint it needs rather than the nine-section
+ * /api/club/home batch. It fails soft to null — every section renders a
+ * designed founding state instead of a spinner or a fabricated number — and
+ * LOADING IS NOT EMPTY: the flag is what keeps a slow ledger from painting
+ * "the Club hasn't formed a read yet".
  */
-function StockFinderBand() {
-  return (
-    <section className="club2-band f0-grain relative mt-11" aria-labelledby="stock-finder">
-      <div className="mx-auto max-w-2xl px-4 py-6 lg:max-w-3xl">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-white/90">
-          Stock Finder
-        </span>
-        <h2
-          id="stock-finder"
-          className="mt-2 max-w-[22ch] font-display text-display-3 font-extrabold text-white"
-        >
-          Screen the whole market on your own terms.
-        </h2>
-        <p className="mt-2 max-w-[46ch] text-[14px] leading-relaxed text-white/85">
-          Filters, club heat, and plain-English screening — the full finder, behind
-          one door.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <Link
-            href="/screener"
-            className="f0-focus f0-press inline-flex items-center gap-2 rounded-full bg-night-50 px-4 py-2 font-display text-[13px] font-bold text-night-950"
-          >
-            <Telescope className="h-4 w-4 text-volt-600" aria-hidden />
-            Open Stock Finder
-          </Link>
-          <Link
-            href="/watchlist/community"
-            className="f0-focus inline-flex items-center gap-1 rounded font-display text-[13px] font-bold text-white/90 transition-colors hover:text-white"
-          >
-            Community Watchlist <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
+function useClubLedger() {
+  const [trending, setTrending] = useState<TrendingResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
-/* ── founding-era copy (never an empty rectangle, never a fake number) ───── */
-function FoundingNote({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="max-w-[56ch] border-l-2 border-accent pl-4 text-[15px] leading-relaxed text-soft">
-      {children}
-    </p>
-  );
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch("/api/club/trending", {
+      signal: ctrl.signal,
+      headers: { accept: "application/json" },
+    })
+      .then((res) => (res.ok ? (res.json() as Promise<TrendingResponse>) : null))
+      .then((d) => {
+        if (d) setTrending(d);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    return () => ctrl.abort();
+  }, []);
+
+  return { trending, loading };
 }

@@ -1,49 +1,50 @@
 /**
- * Route shell for /news. The masthead is known at build time, so navigation
- * lands on finished page furniture and only the story column fills in.
+ * Route shell for /news. The masthead, the pill row and the desk discs are
+ * known at build time, so navigation lands on finished page furniture in the
+ * board's card language and only the story column fills in.
  */
-import { TickerTileStrip } from "@/components/canvas2";
 import { AI_GENERATED_TAG } from "@/lib/news/types";
+import { Bone, SectionMark } from "@/components/discover/board";
 import { NewsSkeleton } from "./NewsClient";
 
 export default function NewsLoading() {
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 sm:px-6">
+    <div className="mx-auto max-w-2xl px-4 pb-24 sm:px-6 lg:max-w-3xl" aria-busy="true">
       <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Cheat Code Club
-        </p>
-        <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase text-ink">
-          Newsroom
+        <h1 className="font-display text-[34px] font-extrabold lowercase leading-none tracking-[-0.035em] text-ink sm:text-[40px]">
+          news
         </h1>
-        <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-soft">
-          The market, explained for the whole family.
+        <p className="mt-2 text-[12.5px] leading-snug text-soft">
+          The market, explained for the whole family
         </p>
-        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-soft opacity-70">
+        <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
           {AI_GENERATED_TAG} · delayed market data
         </p>
       </header>
 
-      {/* The desk strip is page furniture too — without its placeholder the
-          section bar and the whole column jumped 60px the moment the route
-          resolved. */}
-      <section className="mt-8">
-        <h2 className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink">
-          <span className="shrink-0 whitespace-nowrap">In the news today</span>
-        </h2>
-        <TickerTileStrip className="mt-4" loading loadingCount={7} size="sm" />
+      {/* The pill row and the desk discs are furniture too — without their
+          placeholders the whole column jumped the moment the route resolved. */}
+      <div className="mt-5 flex items-center gap-4">
+        <Bone w={54} h={22} className="!rounded-full" />
+        <Bone w={72} h={10} />
+        <Bone w={72} h={10} />
+      </div>
+
+      <section className="mt-6">
+        <SectionMark label="In the news today" gloss="The names the desk is filing on" />
+        <div className="mt-2.5 flex gap-[13px]">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="space-y-1.5">
+              <Bone w={46} h={46} className="!rounded-full" />
+              <Bone w={28} h={7} className="mx-auto" />
+            </div>
+          ))}
+        </div>
       </section>
 
-      <div className="f0-rule-top mt-8">
-        <div className="flex items-center gap-6 py-3">
-          <div className="h-2.5 w-8 animate-pulse rounded bg-sand" />
-          <div className="h-2.5 w-20 animate-pulse rounded bg-sand" />
-          <div className="h-2.5 w-16 animate-pulse rounded bg-sand" />
-        </div>
+      <div className="mt-6">
+        <NewsSkeleton />
       </div>
-      <div className="f0-rule-top" />
-
-      <NewsSkeleton />
     </div>
   );
 }
