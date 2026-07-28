@@ -23,6 +23,9 @@ export type { TickerTileProps, TickerTileSize } from "./TickerTile";
 export { default as SegmentedRail } from "./Segmented";
 export type { SegmentedOption } from "./Segmented";
 
+export { default as ScrollRow } from "./ScrollRow";
+export type { ScrollRowProps } from "./ScrollRow";
+
 export { default as StanceControl } from "./StanceControl";
 export type { StanceControlProps } from "./StanceControl";
 

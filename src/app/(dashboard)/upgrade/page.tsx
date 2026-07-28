@@ -465,6 +465,8 @@ export default function UpgradePage() {
           Questions about your membership? Reach out to your coach in the
           community.
         </p>
+
+        <ManageBilling />
       </div>
     );
   }
@@ -848,11 +850,120 @@ export default function UpgradePage() {
           trading, ever.
         </span>
       </p>
+
+      <ManageBilling />
     </div>
   );
 }
 
 // ── small helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * MANAGE BILLING (B10) — the door out, on the page that sold the door in.
+ *
+ * A paying member had no way to change a card, read an invoice or cancel from
+ * inside the product. This is deliberately QUIET: a hairline row under the
+ * pitch, not a competing button. It is not a price, an offer or a checkout —
+ * it opens Stripe's own Customer Portal for the family's existing customer,
+ * and every commercial string on this page is untouched by it.
+ *
+ * NEVER A DEAD BUTTON. The row asks the API on mount whether a portal exists
+ * for this family and renders one of three real states — checking, openable, or
+ * the honest "we cannot open one for you, here is who can" — so it can never be
+ * a control that looks live and does nothing. A family provisioned by hand (the
+ * beta path this page's own copy describes) legitimately has no Stripe customer.
+ */
+function ManageBilling() {
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [opening, setOpening] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/billing/portal");
+        const json = (await res.json()) as { available?: boolean };
+        if (!cancelled) setAvailable(res.ok && json.available === true);
+      } catch {
+        if (!cancelled) setAvailable(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function open() {
+    setOpening(true);
+    setFailed(false);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const json = (await res.json()) as { url?: string };
+      if (res.ok && json.url) {
+        window.location.href = json.url;
+        return;
+      }
+      setFailed(true);
+    } catch {
+      setFailed(true);
+    }
+    setOpening(false);
+  }
+
+  // Still asking. A row that has not resolved says nothing rather than
+  // flashing the wrong state on the most sensitive page in the app.
+  if (available === null) return null;
+
+  return (
+    <div className="mt-8 border-t border-sand pt-5">
+      <p className="text-eyebrow font-display font-bold uppercase text-soft">
+        Billing
+      </p>
+      {available ? (
+        <>
+          <button
+            type="button"
+            onClick={open}
+            disabled={opening}
+            className="f0-focus mt-2 inline-flex items-center gap-1.5 font-display text-sm font-semibold text-ink transition-colors hover:text-accent"
+          >
+            {opening ? "Opening…" : "Manage billing"}
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+          <p className="mt-1.5 max-w-[52ch] text-xs leading-relaxed text-soft">
+            Update your card, download receipts, or cancel — in Stripe, where
+            your payment details already live.
+          </p>
+          {failed && (
+            <p className="mt-1.5 text-xs text-soft" role="status">
+              That didn&apos;t open. Try again in a moment, or email{" "}
+              <a
+                href="mailto:support@cheatcode.com"
+                className="font-semibold text-gold-700 hover:text-gold-600"
+              >
+                support@cheatcode.com
+              </a>
+              .
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="mt-2 max-w-[52ch] text-xs leading-relaxed text-soft">
+          Your membership isn&apos;t linked to a self-serve billing account, so
+          there&apos;s nothing here to open yet. Email{" "}
+          <a
+            href="mailto:support@cheatcode.com"
+            className="font-semibold text-gold-700 hover:text-gold-600"
+          >
+            support@cheatcode.com
+          </a>{" "}
+          and we&apos;ll make any change you need.
+        </p>
+      )}
+    </div>
+  );
+}
 
 function SectionHead({
   eyebrow,

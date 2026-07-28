@@ -21,6 +21,11 @@ import BeltChip from "@/components/dashboard/BeltChip";
  * their parents. A match is exact or a path segment below the prefix. Kid
  * personas get the kid-worded labels used in their nav (Kids Corner / My
  * Lessons / My Cards / My Badges) so the header matches the sidebar.
+ *
+ * A ROUTE MISSING FROM THIS MAP DOES NOT FALL BACK GRACEFULLY — it falls back
+ * to "Home", which is a lie about where you are and, on a phone, the only
+ * label on screen. /circles, /belts and /vip-room were all shipping as "Home".
+ * Anything added under (dashboard) belongs here.
  */
 const ROUTE_TITLES: [string, string][] = [
   ["/fta/chat", "FTA Traders Chat"],
@@ -41,8 +46,12 @@ const ROUTE_TITLES: [string, string][] = [
   ["/community", "The Club"],
   ["/research", "Research"],
   ["/watchlist/community", "Community Watchlist"],
+  // The member's own board. Register-aware — see WATCHLIST_TITLE below.
   ["/watchlist", "Family Watchlist"],
   ["/screener", "Stock Screener"],
+  ["/circles", "Circles"],
+  ["/belts", "Belts"],
+  ["/vip-room", "VIP Room"],
   ["/alerts", "Alerts"],
   ["/kai", "Ask Kai"],
   ["/news", "Newsroom"],
@@ -76,10 +85,22 @@ const KID_TITLE_OVERRIDES: Record<string, string> = {
   "/missions": "Missions",
 };
 
-function resolveTitle(pathname: string, isKid: boolean): string {
+/**
+ * REGISTER-AWARE TITLES. A solo Club member has no household, so "Family
+ * Watchlist" is a header about somebody else's product. The sidebar already
+ * splits these two labels ("My Family" for a household, "My Watchlist" for a
+ * solo member) and the header was the last place still saying Family to
+ * everyone. Keyed by route prefix so more can join without another branch.
+ */
+const SOLO_TITLE_OVERRIDES: Record<string, string> = {
+  "/watchlist": "My Watchlist",
+};
+
+function resolveTitle(pathname: string, isKid: boolean, isSolo: boolean): string {
   for (const [prefix, title] of ROUTE_TITLES) {
     if (pathname === prefix || pathname.startsWith(prefix + "/")) {
       if (isKid && KID_TITLE_OVERRIDES[prefix]) return KID_TITLE_OVERRIDES[prefix];
+      if (isSolo && SOLO_TITLE_OVERRIDES[prefix]) return SOLO_TITLE_OVERRIDES[prefix];
       return title;
     }
   }
@@ -109,7 +130,7 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isKid = user.role === "child" && user.age_group === "kids";
-  const pageTitle = resolveTitle(pathname, isKid);
+  const pageTitle = resolveTitle(pathname, isKid, !!user.isSolo);
   const mode = modeFromSolo(user.isSolo);
 
   useEffect(() => {

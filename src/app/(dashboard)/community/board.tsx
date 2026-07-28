@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
+import ScrollRow from "@/components/canvas2/ScrollRow";
 
 /* ══════════════════════════════════════════════════════════════════════════
    THE CLUB SCREENS — the drawn kit.
@@ -136,10 +137,10 @@ export function BoardTabs({
   ariaLabel: string;
 }) {
   return (
-    <div
+    <ScrollRow
       role="tablist"
       aria-label={ariaLabel}
-      className="-mb-px flex gap-x-6 gap-y-0 overflow-x-auto border-b-[1.5px] border-sand [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="-mb-px flex gap-x-6 gap-y-0 border-b-[1.5px] border-sand"
     >
       {tabs.map((t) => {
         const on = t.id === active;
@@ -176,7 +177,7 @@ export function BoardTabs({
           </button>
         );
       })}
-    </div>
+    </ScrollRow>
   );
 }
 
@@ -185,7 +186,7 @@ export function BoardTabs({
 /** HOT · NEW · TICKERS · MINE — the drawn filter row (boards 02, 06, 07). */
 export function PillRow({ children }: { children: ReactNode }) {
   return (
-    <div className="club2-track -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">{children}</div>
+    <ScrollRow className="-mx-1 flex gap-1.5 px-1 py-0.5">{children}</ScrollRow>
   );
 }
 

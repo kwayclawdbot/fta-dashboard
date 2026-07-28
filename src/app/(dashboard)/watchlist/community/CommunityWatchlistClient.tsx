@@ -35,6 +35,7 @@ import {
 } from "@/components/alerts/board";
 import SocialBar from "@/components/research/SocialBar";
 import TickerThread from "@/components/research/TickerThread";
+import { formatMove, moveToneClass } from "@/lib/format-move";
 import { fetchFavorites, type Favorite, type Vote } from "@/lib/research/social";
 import type {
   CommunityBoardSeed,
@@ -810,13 +811,11 @@ function EntryCard({
                 </span>
               )}
               {dayPct != null && (
+                /* Flat gets no arrow and no price colour. src/lib/format-move. */
                 <span
-                  className={`font-mono text-[10px] tabular-nums ${
-                    dayPct >= 0 ? "text-price-up" : "text-price-down"
-                  }`}
+                  className={`font-mono text-[10px] tabular-nums ${moveToneClass(dayPct)}`}
                 >
-                  {dayPct >= 0 ? "▲" : "▼"}
-                  {Math.abs(dayPct).toFixed(1)}%
+                  {formatMove(dayPct)}
                 </span>
               )}
             </div>

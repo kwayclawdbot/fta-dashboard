@@ -114,7 +114,9 @@ export default async function ChallengeDayPage({
   const seed = await seedDay(supabase, uid, dayNo);
 
   return (
-    <ChallengeShell>
+    /* A day mission is one level below HQ, so the chrome walks UP to HQ rather
+       than dropping the member out of the challenge entirely. */
+    <ChallengeShell back="/challenge/hq" backLabel="Challenge HQ" home="/dashboard">
       <DayMission
         day={day}
         state={state}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Bot, ChevronRight, ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { showsKaiFab } from "@/lib/kai-fab";
 import type { FamilyTier } from "@/lib/tier";
 
 /**
@@ -22,18 +23,23 @@ import type { FamilyTier } from "@/lib/tier";
  * to a slim edge sliver (still discoverable, tap to restore). The preference
  * persists per member (localStorage) across sessions and routes.
  *
- * Visibility rules:
- *   • paying members only — never the free tier (/kai is members-gated; a FAB
- *     there would only bounce). Kids and teens see it too now: the panel Kai is
- *     the same age-scoped, kid-strict-server-side experience they already reach
- *     from their nav, just one tap closer — not an unscoped AI.
- *   • hidden on /kai itself — you don't need a shortcut to the page you're on.
+ * Visibility is NOT decided here — it is decided by `showsKaiFab()` in
+ * src/lib/kai-fab.ts (the single-FAB rule), because DashboardShell has to reach
+ * the same answer to know how much bottom room the page must reserve. Read that
+ * file for the three reasons the FAB stands down. Kids and teens see it: the
+ * panel Kai is the same age-scoped, kid-strict-server-side experience they
+ * already reach from their nav, just one tap closer — not an unscoped AI.
  *
- * Layout: bottom-right, above the mobile tab bar (safe-area + tab bar) on phones.
- * On surfaces that also float a Club Chat launcher (/community, /chart) it stacks
- * ABOVE that button so the two never collide. Kai-blue (#2563FF, the AI surface
- * colour) in every mode so it never competes with the volt-orange brand actions;
- * the panel itself follows the mode/register skin (club volt · family gold · kid).
+ * LAYOUT. Bottom-right, clearing the mobile tab bar (4rem) plus the iOS safe
+ * area plus a real gap, and the shell pads `<main>` by the FAB's whole footprint
+ * so the last row of a list is never parked underneath it. Stacking is explicit:
+ * the FAB is z-40/z-0 within its own group and the tuck control is z-10 above
+ * it — the chevron used to be drawn under the button's 4px paper ring, which is
+ * why "Tuck Kai away" looked broken.
+ *
+ * Kai-blue (#2563FF, the AI surface colour) in every mode so it never competes
+ * with the volt-orange brand actions; the panel itself follows the mode/register
+ * skin (club volt · family gold · kid).
  */
 
 interface FloatingKaiButtonProps {
@@ -101,24 +107,15 @@ export default function FloatingKaiButton({
     persistCollapsed(false);
   }, [persistCollapsed]);
 
-  const isFree = (tier ?? "fic") === "free";
-  const onKaiPage = pathname === "/kai" || pathname.startsWith("/kai/");
+  if (!showsKaiFab(pathname, tier)) return null;
 
-  // Surfaces that also float a Club Chat launcher (bottom-right). Stack Kai above
-  // it so the two buttons never overlap the same corner.
-  const hasClubChat =
-    pathname.startsWith("/community") || pathname.startsWith("/chart");
-
-  // Gate: never free tier, never on /kai. (Kids/teens now included — see header.)
-  const gatedOut = isFree || onKaiPage;
-
-  if (gatedOut) return null;
-
-  // Bottom offset: clear the mobile tab bar + safe area on phones; a normal
-  // offset on md+ (no tab bar). Raised further where Club Chat shares the corner.
-  const bottomClass = hasClubChat
-    ? "bottom-[calc(env(safe-area-inset-bottom)+9.5rem)] md:bottom-[5.75rem]"
-    : "bottom-[calc(env(safe-area-inset-bottom)+5rem)] md:bottom-6";
+  // Bottom offset — MUST stay in step with MAIN_PADDING_WITH_FAB in
+  // src/lib/kai-fab.ts: the tab bar is 4rem tall plus the safe area, and the FAB
+  // sits a 0.75rem gap above it. There is no longer a raised variant, because
+  // there is no longer a screen where a second floating button shares this
+  // corner (see the single-FAB rule).
+  const bottomClass =
+    "bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] md:bottom-6";
 
   return (
     <>
@@ -145,20 +142,25 @@ export default function FloatingKaiButton({
               onClick={onOpen}
               aria-label="Ask Kai"
               title="Ask Kai — your AI research co-pilot"
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-kai-500 text-white shadow-[0_6px_20px_rgba(37,99,255,0.45)] ring-4 ring-[var(--paper)] transition-transform hover:scale-105 active:scale-95"
+              className="relative z-0 flex h-14 w-14 items-center justify-center rounded-full bg-kai-500 text-white shadow-[0_6px_20px_rgba(37,99,255,0.45)] ring-4 ring-[var(--paper)] transition-transform hover:scale-105 active:scale-95"
             >
               <Bot className="h-6 w-6" strokeWidth={2.1} />
               {/* Subtle teal-green "AI online" dot, per the club AI accent. */}
               <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-teal-400 ring-2 ring-kai-500" />
             </button>
-            {/* Tuck-away control — collapses the FAB to the edge sliver. Faintly
-                present on touch, full on hover. */}
+            {/* Tuck-away control — collapses the FAB to the edge sliver.
+                STACKING: the FAB carries a 4px paper ring, and the chevron sat
+                inside that ring's radius with no z-index of its own, so it read
+                as being drawn UNDER the button. It now sits clear of the circle
+                and explicitly above it (z-10 over the button's z-0), on the
+                card ground with a page-coloured ring so it reads as a separate
+                control rather than a smudge on the FAB. */}
             <button
               type="button"
               onClick={collapse}
               aria-label="Tuck Kai away"
               title="Tuck away"
-              className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-midnight-900 text-soft opacity-60 ring-2 ring-[var(--paper)] transition-all hover:bg-midnight-800 hover:text-ink hover:opacity-100 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute -left-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-card text-soft opacity-90 shadow-soft ring-2 ring-[var(--paper)] transition-all hover:bg-sand hover:text-ink hover:opacity-100 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
             >
               <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
             </button>

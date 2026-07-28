@@ -6,6 +6,11 @@ import { usePathname } from "next/navigation";
 import { Flame, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp } from "@/lib/xp";
+import {
+  showsKaiFab,
+  MAIN_PADDING_WITH_FAB,
+  MAIN_PADDING_NO_FAB,
+} from "@/lib/kai-fab";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
 import MobileTabBar from "./MobileTabBar";
@@ -191,9 +196,17 @@ export default function DashboardShell({
           onMenuClick={() => setMobileOpen(true)}
         />
 
-        {/* Bottom padding on phones so content never hides behind the tab bar
-            (bar is 4rem + the iOS safe-area inset). Reverts at md+. */}
-        <main className="px-4 lg:px-8 pt-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">
+        {/* Bottom room. The tab bar (4rem + the iOS safe-area inset) was the
+            only thing this ever cleared, so on every route that also floats the
+            Kai FAB the last row of a list ended up parked underneath it. The
+            two measurements now come from ONE place — see src/lib/kai-fab. */}
+        <main
+          className={`px-4 lg:px-8 pt-6 ${
+            showsKaiFab(pathname, user.tier)
+              ? MAIN_PADDING_WITH_FAB
+              : MAIN_PADDING_NO_FAB
+          }`}
+        >
           {challengeDaysLeft !== null && !freeLocked && (
             <Link
               href="/upgrade"

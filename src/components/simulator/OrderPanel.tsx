@@ -132,14 +132,16 @@ export default function OrderPanel({
           />
         </SimRow>
 
+        {/* $0.00, not "—". Nothing is missing here: zero shares costs zero,
+            and that is a real answer to the question the row asks. The dash is
+            reserved for a reading we could not take (see the mark row above,
+            where an absent quote genuinely has no price). */}
         <SimRow label="Estimated cost">
           <SimValue tone={qty > 0 ? "text-ink" : "text-soft"}>
-            {qty > 0
-              ? `$${orderCost.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`
-              : "—"}
+            {`$${(qty > 0 ? orderCost : 0).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`}
           </SimValue>
         </SimRow>
       </div>

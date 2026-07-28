@@ -513,7 +513,24 @@ export function TextAction({
    belt's knot bar across it, and a star pip on the rung the member is standing
    on. Belt colour is INTRINSIC — a blue belt is blue in both themes — so these
    are inline styles from BELTS, never tokens. Purple is a legal belt colour
-   and enters no other chrome. */
+   and enters no other chrome.
+
+   TWO THINGS THE INTRINSIC-COLOUR RULE COSTS, both fixed here rather than by
+   lying about a belt's colour:
+
+   1. THE ENDS DISAPPEAR. Black (#1F2430) against the dark card and White
+      (#E8EAF0 / #B9BFCC) against the warm light page are each within a hair of
+      their ground, so the top and bottom of the ladder had no silhouette at
+      all — the Black rung's disc was simply not visible in dark. `.f0-belt-disc`
+      adds a neutral hairline drawn from the PAGE's ink, which is dark on light
+      and light on dark and therefore always the opposite of whatever the belt
+      is losing against.
+
+   2. UNEARNED RUNGS WENT GREY. Muting a saturated belt to 55% on the light page
+      washes it into the sand — a new member (White belt) saw four grey discs and
+      no ladder. The mute is now shallow, and the disc BODY is the card rather
+      than the sand, so the belt hue reads against white instead of beige. An
+      unearned rung is still obviously quieter; it is just still a belt. */
 export function BeltDisc({
   hex,
   borderHex,
@@ -529,12 +546,12 @@ export function BeltDisc({
 }) {
   return (
     <span
-      className="relative grid shrink-0 place-items-center rounded-full bg-sand"
+      className="f0-belt-disc relative grid shrink-0 place-items-center rounded-full bg-card"
       style={{
         width: size,
         height: size,
         border: `${Math.max(2, size * 0.066)}px solid ${hex === "#E8EAF0" ? borderHex : hex}`,
-        opacity: muted ? 0.55 : 1,
+        opacity: muted ? 0.8 : 1,
       }}
       aria-hidden
     >

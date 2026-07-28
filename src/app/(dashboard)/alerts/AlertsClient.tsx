@@ -68,6 +68,7 @@ import {
   type WatchCurrentState,
   type AlertSetup,
 } from "@/lib/alerts/types";
+import ScrollRow from "@/components/canvas2/ScrollRow";
 import type { TrackRecord, AlertOutcome } from "@/lib/alerts/history";
 import type { WatchState } from "@/lib/alerts/watch-state";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
@@ -2219,7 +2220,7 @@ function WatchlistPlays({
         tells you when it trips — a plain, rules-based signal to study.
       </p>
 
-      <div className="club2-track mt-3 flex gap-1.5 overflow-x-auto pb-1">
+      <ScrollRow tone="card" className="mt-3 flex gap-1.5 pb-1">
         {watchlistTickers.map((w) => {
           const on = selected === w.ticker;
           return (
@@ -2235,7 +2236,7 @@ function WatchlistPlays({
             </button>
           );
         })}
-      </div>
+      </ScrollRow>
 
       <div className="mt-3 space-y-2">
         {STRATEGY_PLAYS.map((play) => {

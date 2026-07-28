@@ -21,7 +21,10 @@ import Link from "next/link";
      • The delta uses text-price-up / text-price-down and NEVER a dark: variant —
        those tokens already re-map per theme.
 
-   HONEST ABSENCE: a tile with no delta renders "—", never a fabricated 0.00%.
+   HONEST ABSENCE: a tile that HAS a company but no quote renders "—", never a
+   fabricated 0.00%. A tile with no company renders nothing under it at all —
+   an absence marker under an empty slot is a statement about nothing, and a
+   nine-slot strip holding three names was printing six of them in a row.
    LOADING ≠ EMPTY: `loading` pulses a filled tile (content is coming);
    omitting `ticker` renders the dashed slot (there is nothing here).
    ══════════════════════════════════════════════════════════════════════════ */
@@ -164,11 +167,19 @@ export default function TickerTile({
             +
           </span>
         </div>
+        {/* NO DASH UNDER AN EMPTY SLOT. A dash is an honest absence for a
+            company whose quote has not arrived; under a slot with no company in
+            it, it is a claim about nothing — and a strip padded to nine slots
+            printed a row of six of them ("— — — — — —") under every watchlist
+            and club board. The line is still RESERVED so the tiles in a strip
+            stay on one baseline; it just says nothing, because there is nothing
+            to say. */}
         {showDelta && (
           <p
-            className={`text-center font-mono font-semibold tabular-nums text-soft/45 ${s.delta} ${s.gap}`}
+            className={`text-center font-mono font-semibold tabular-nums ${s.delta} ${s.gap}`}
+            aria-hidden
           >
-            —
+            &nbsp;
           </p>
         )}
       </div>

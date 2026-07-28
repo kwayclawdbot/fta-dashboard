@@ -86,8 +86,26 @@ export default function HqBoard({ state }: { state: ChallengeState }) {
     [supabase]
   );
 
+  /* THE PHANTOM STREAK.
+     `challenge_join()` stamps the activity ledger with source 'join', and the
+     HQ page calls it on every load — so the streak function counted the visit
+     itself and the very first pre-season screen a member ever saw greeted them
+     with "🔥 1-day streak" for having arrived. A streak is a claim that you
+     did something on consecutive days; being present is not doing something,
+     and the whole board is built on never printing a number nobody earned.
+
+     So the streak is only spoken once there is a real activity day behind it:
+     a completed pre-season beat, a completed step of a day mission, or Day 0.
+     All three are server-derived fields already on the state (no clock is read
+     here, and `beats` is the live client copy, so finishing a beat lights the
+     streak in the same interaction that earns it). */
+  const hasEarnedDay =
+    beats.some((b) => b.completed_at != null) ||
+    state.days.some((d) => d.brief_done || d.do_done || d.share_done) ||
+    state.member?.day0_completed_at != null;
+
   const streakLine =
-    state.streak > 0 ? (
+    hasEarnedDay && state.streak > 0 ? (
       <span className="inline-flex items-center gap-1.5 font-mono text-[13px] font-semibold tabular-nums text-soft">
         <Flame className="h-3.5 w-3.5" aria-hidden />
         {state.streak}-day streak
@@ -164,7 +182,10 @@ export default function HqBoard({ state }: { state: ChallengeState }) {
         <MeasureStrip
           items={[
             { label: "Days done", value: `${doneCount}/5` },
-            { label: "Streak", value: state.streak > 0 ? `${state.streak}` : "—" },
+            // Same gate as `streakLine` — a join stamp is not a streak. Zero is
+            // a real reading here (this strip is a recap of days actually done),
+            // so it prints 0 rather than the absence marker.
+            { label: "Streak", value: hasEarnedDay ? `${state.streak}` : "0" },
             { label: "XP", value: state.xp.toLocaleString() },
           ]}
         />

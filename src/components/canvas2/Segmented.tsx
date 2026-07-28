@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import ScrollRow from "./ScrollRow";
 
 /* ══════════════════════════════════════════════════════════════════════════
    SEGMENTED RAIL — the shared "pick one of N" mechanism behind StanceControl
@@ -26,6 +27,14 @@ import { useRef } from "react";
    SEMANTICS: this is a form control, not navigation — radiogroup/radio, not
    tablist/tab. Roving tabindex, so the group is one tab stop and arrows move
    within it, which is what a radiogroup is required to do.
+
+   OVERFLOW: the packing (non-`fill`) form runs off the right edge on a phone
+   the moment the labels are long — four post types at 390px, the club
+   watchlist's sort rail, the leaderboard's period rails. It now scrolls inside
+   <ScrollRow>, which supplies the edge fade and clears it at the end of the
+   track, so the systemic affordance arrives everywhere this rail is used
+   rather than being hand-rolled per surface. The `fill` form distributes and
+   cannot overflow, so it stays a plain rail.
    ══════════════════════════════════════════════════════════════════════════ */
 
 export interface SegmentedOption<T extends string> {
@@ -52,6 +61,7 @@ export default function SegmentedRail<T extends string>({
   size = "md",
   className = "",
   railClassName = "border-b border-sand",
+  fadeTone = "paper",
 }: {
   options: SegmentedOption<T>[];
   value: T | null;
@@ -73,6 +83,8 @@ export default function SegmentedRail<T extends string>({
    * the selected bar then needs to sit somewhere other than -1px.
    */
   railClassName?: string;
+  /** What the overflow fade fades to — set "card" for a rail inside a card. */
+  fadeTone?: "paper" | "card";
 }) {
   const railRef = useRef<HTMLDivElement>(null);
 
@@ -105,13 +117,8 @@ export default function SegmentedRail<T extends string>({
   const label = size === "sm" ? "text-[10px]" : "text-[11px]";
   const pad = size === "sm" ? "pb-2.5" : "pb-3";
 
-  return (
-    <div
-      ref={railRef}
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className={`flex ${railClassName} ${fill ? "" : "club2-track gap-6 overflow-x-auto"} ${className}`}
-    >
+  const cells = (
+    <>
       {options.map((o, i) => {
         const on = value === o.id;
         return (
@@ -137,6 +144,33 @@ export default function SegmentedRail<T extends string>({
           </button>
         );
       })}
-    </div>
+    </>
+  );
+
+  // `fill` distributes and can never overflow, so it stays a plain rail — no
+  // wrapper, no observer, nothing to clear.
+  if (fill) {
+    return (
+      <div
+        ref={railRef}
+        role="radiogroup"
+        aria-label={ariaLabel}
+        className={`flex ${railClassName} ${className}`}
+      >
+        {cells}
+      </div>
+    );
+  }
+
+  return (
+    <ScrollRow
+      ref={railRef}
+      role="radiogroup"
+      aria-label={ariaLabel}
+      tone={fadeTone}
+      className={`flex ${railClassName} gap-6 ${className}`}
+    >
+      {cells}
+    </ScrollRow>
   );
 }

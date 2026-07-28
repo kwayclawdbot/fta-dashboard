@@ -56,6 +56,7 @@ import {
 } from "@/lib/screener";
 import { SECTORS, SUBSECTORS, type Sector } from "@/lib/screener-sectors";
 import { formatExchange } from "@/lib/market/exchange";
+import ScrollRow from "@/components/canvas2/ScrollRow";
 
 const PAGE_SIZE = 100;
 const METRIC_COLS =
@@ -126,11 +127,12 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
    number the app actually has — the count of members who have warmed the name —
    rather than a percentage the screener's data cannot support. */
 function HeatChip({ n }: { n: number | null | undefined }) {
-  if (!n || n <= 0) {
-    return (
-      <span className="shrink-0 px-[7px] py-[3px] font-mono text-[10px] text-soft/70">—</span>
-    );
-  }
+  // NOTHING, not a dash. Heat is a POSITIVE signal — "members have warmed this
+  // name" — so its absence is already carried by the chip not being there. A
+  // dash is the honest form of "we measured and got no reading"; here we
+  // measured and got zero, and printing it turned the last column of a
+  // founding-club result list into a stack of dashes on every single row.
+  if (!n || n <= 0) return null;
   return (
     <span className="shrink-0 rounded-[8px] bg-sentiment-fill/12 px-[7px] py-[3px] font-mono text-[10px] font-semibold tabular-nums text-sentiment">
       {n}
@@ -697,7 +699,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
           <p className="mb-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
             Quick start
           </p>
-          <div className="club2-track -m-1 flex gap-[7px] overflow-x-auto p-1">
+          <ScrollRow className="-m-1 flex gap-[7px] p-1">
             {PRESETS.map((p) => (
               <BoardChip
                 key={p.id}
@@ -711,7 +713,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
                 {p.label}
               </BoardChip>
             ))}
-          </div>
+          </ScrollRow>
         </div>
 
         {activePresetId && (
@@ -755,7 +757,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
             <p className="mb-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
               Your screens
             </p>
-            <div className="club2-track -m-1 flex gap-[7px] overflow-x-auto p-1">
+            <ScrollRow className="-m-1 flex gap-[7px] p-1">
               {saved.map((s) => {
                 const on = appliedScreenId === s.id;
                 return (
@@ -778,7 +780,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
                   </BoardChip>
                 );
               })}
-            </div>
+            </ScrollRow>
           </div>
         )}
 

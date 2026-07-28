@@ -286,6 +286,16 @@
   --island-ink: #F0F2F5;
   --urgency-bg: #FEF3C7;
   --urgency-border: #FDE68A;
+
+  /* OFF — the one disabled ground. Literal values, never a var() chain: a
+     custom property that reads another custom property is substituted against
+     the element it is DECLARED on, so an --off-bg written in terms of --card
+     would keep the page's card colour inside a subtree that re-skins --card
+     (every club/FTA subtree does). See the disabled-primary block near the
+     foot of this file for why a disabled action may never be the brand colour
+     at reduced opacity. */
+  --off-bg: #EFECE7;
+  --off-edge: #E0DAD0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -334,6 +344,11 @@
   --island-ink: #F0F2F5;
   --urgency-bg: rgba(251, 191, 36, 0.12);
   --urgency-border: rgba(251, 191, 36, 0.22);
+
+  /* Dark lifts UP from the card rather than down from the ink, so "off" is a
+     quiet raised chip and never a dark smear on a dark page. */
+  --off-bg: #2E2820;
+  --off-edge: #3E372E;
 }
 
 /* ================================================================== */
@@ -454,6 +469,10 @@
 
   --urgency-bg: rgba(255, 138, 0, 0.12);
   --urgency-border: rgba(255, 138, 0, 0.24);
+
+  /* Off, on the plum-black club card. */
+  --off-bg: #232028;
+  --off-edge: #322D3A;
 
   /* Lift the text-end of the orange ramp so active-nav text reads on dark. */
   --g600: #FF8A47;
@@ -595,6 +614,49 @@ body {
 .cta-button:hover {
   box-shadow: var(--shadow-lift);
   transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------------ */
+/* OFF — the disabled state of a BRAND-FILLED action                    */
+/* ------------------------------------------------------------------ */
+/* Every primary in the app was written as "the brand fill, at 35–60%
+   opacity, when disabled". On the warm paper that is merely pale. On the
+   dark page it composites into a MUDDY BROWN — #F59E0B at 35% over the
+   #221C14 card lands on ~#4A3315, and #FF6A00 at 40% over the #0D0B0E club
+   page lands on ~#6E3105. Both are colours, and a colour reads as a
+   deliberate (if ugly) enabled state, not as "off". That is exactly how
+   Buy, Publish, Send and Post note — all four of which are disabled the
+   moment you ARRIVE on their screen, before you have typed or chosen
+   anything — came to look like burnt buttons rather than waiting ones.
+
+   So disabled is drawn as a NEUTRAL: the off ground, a hairline, soft
+   type, and full opacity. It cannot be mistaken for the brand, which in
+   turn makes the enabled primary unmistakable — it is the only thing on
+   the screen wearing the accent.
+
+   HOW IT REACHES EVERY CALL SITE WITH NO COMPONENT EDITS: it is keyed off
+   the fill utility already in the class list (`[class~="bg-accent"]` matches
+   the exact whitespace-separated token, so `bg-accent/12` is untouched), and
+   globals.css is UNLAYERED — it therefore outranks the `disabled:opacity-*`
+   utility in Tailwind's layer regardless of specificity. Same mechanism
+   .f0-tile-field already relies on.
+
+   `:disabled` only ever matches form controls, so nothing decorative can be
+   caught by this. */
+.cta-button:disabled,
+[class~="bg-accent"]:disabled,
+[class~="bg-volt-500"]:disabled,
+[class~="bg-volt-600"]:disabled,
+[class~="bg-gold-500"]:disabled,
+[class~="bg-gold-600"]:disabled,
+[class~="bg-kai-500"]:disabled {
+  opacity: 1;
+  background: var(--off-bg);
+  background-image: none;
+  color: var(--soft);
+  border-color: var(--off-edge);
+  box-shadow: inset 0 0 0 1px var(--off-edge);
+  transform: none;
 }
 
 .urgency-bar {
@@ -1478,12 +1540,23 @@ body {
   background: linear-gradient(157deg, #1C1F26 0%, #131519 58%, #0E1013 100%);
   box-shadow: 0 8px 18px -12px color-mix(in srgb, #0F1115 66%, transparent);
 }
+/* Dark. The lift is right; the HUE was not. #322A1D → #221B12 is a warm
+   olive-brown, and the letter-mark fallback — a cream glyph on that ground —
+   read as an olive chip rather than as the same achromatic object the light
+   theme draws (a cool obsidian #1C1F26 → #0E1013). Identity is supposed to be
+   carried by the mark, which means the ground must stay neutral in BOTH
+   themes; a brown ground also fought every warm page it sat on.
+
+   So dark now lifts the LIGHT ground rather than re-hueing it: the same cool
+   graphite, two steps up in value so it still sits above the #17120B / #0D0B0E
+   pages, with a brighter inset edge so the silhouette survives where fill and
+   page land close together. Cream #F7F3EA on the mid stop is ~12.9:1. */
 :root[data-theme="dark"] .f0-tile-field,
 :root[data-theme="dark"] [data-mode] .f0-tile-field {
-  background: linear-gradient(157deg, #322A1D 0%, #282117 60%, #221B12 100%);
+  background: linear-gradient(157deg, #343941 0%, #272B32 58%, #1D2026 100%);
   box-shadow:
     0 8px 18px -12px rgba(0, 0, 0, 0.8),
-    inset 0 0 0 1px color-mix(in srgb, #FFFFFF 10%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, #FFFFFF 16%, transparent);
 }
 
 /* --- Placeholder tile ------------------------------------------------ */
@@ -1497,6 +1570,23 @@ body {
 .f0-tile-empty {
   border: 1px dashed color-mix(in srgb, var(--sand) 100%, var(--ink) 8%);
   background: transparent;
+}
+
+/* --- Belt disc edge --------------------------------------------------- */
+/* A belt's colour is INTRINSIC (a black belt is #1F2430 in every theme), so
+   the two ends of the ladder each dissolve into one of the two themes: the
+   Black rung's disc against the #2A2530 / #38322A dark card, and the White
+   rung's against the warm sand of the light page. The belt colour cannot be
+   theme-corrected without lying about the belt, so the DISC gets an edge
+   instead — a neutral hairline drawn from the page's own ink, which is dark
+   on light and light on dark, and therefore always the opposite of whatever
+   the belt is failing against. */
+.f0-belt-disc {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+:root[data-theme="dark"] .f0-belt-disc,
+:root[data-theme="dark"] [data-mode] .f0-belt-disc {
+  box-shadow: 0 0 0 1px color-mix(in srgb, #FFFFFF 32%, transparent);
 }
 
 /* --- Shared focus ring ----------------------------------------------- */
@@ -1599,19 +1689,38 @@ body {
       var(--card) 100%
     );
 }
-/* Dark: the wash has to LIFT off the obsidian page rather than sink into
-   it — the same correction club2-card, f0-hero-field and f0-tile-field
-   each needed. Stronger tint, brighter edge. */
+/* Dark: NOT the light recipe with more tint in it.
+   A peach wash is a light-theme idea — it works because the accent is being
+   mixed toward WHITE. Mixed toward a near-black card it goes the other way:
+   #F59E0B at 20% over the #221C14 card computes to #503812, and #FF7A1A at
+   20% over #17141A computes to #453423. Those are sepia. Twelve screens were
+   carrying one (worst: the flashcards hero, where it is the whole field
+   behind the card), and the earlier "stronger tint, brighter edge"
+   correction made the mud deeper rather than fixing the idea.
+
+   The dark twin is therefore a DIFFERENT construction with the same job:
+   the ground stays the honest card colour, and the brand arrives as LIGHT —
+   a soft accent glow thrown in from the top-left corner, a bright hairline,
+   and a lit top edge. Almost no pigment is mixed into the surface, so
+   nothing can go muddy; the object still reads unmistakably branded, and
+   type on it stays on the page ramp exactly as in light.
+
+   --accent-strong (not --accent-solid) is the light source: it is the
+   brighter end of every mode's ramp, which is what a glow needs on black. */
 :root[data-theme="dark"] .f0-brief-field,
 :root[data-theme="dark"] [data-mode] .f0-brief-field {
-  border-color: color-mix(in srgb, var(--accent-solid) 34%, var(--sand));
+  border-color: color-mix(in srgb, var(--accent-strong) 40%, transparent);
   background:
-    linear-gradient(
-      118deg,
-      color-mix(in srgb, var(--accent-solid) 20%, var(--card)) 0%,
-      color-mix(in srgb, var(--accent-solid) 9%, var(--card)) 56%,
-      var(--card) 100%
-    );
+    radial-gradient(
+      132% 152% at 4% 0%,
+      color-mix(in srgb, var(--accent-strong) 13%, transparent) 0%,
+      color-mix(in srgb, var(--accent-strong) 4%, transparent) 46%,
+      transparent 68%
+    ),
+    var(--card);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--accent-strong) 26%, transparent),
+    0 12px 30px -22px color-mix(in srgb, var(--accent-solid) 60%, transparent);
 }
 
 /* --- Rank pip --------------------------------------------------------- */
@@ -1672,14 +1781,20 @@ body {
    scroll that cannot happen (toggle `opacity-0` from the caller). Fades to
    the live page colour, so it works in both themes untouched. Hoisted out
    of TickerCarousel, where it was an inline style, so the tile strips can
-   share it. */
+   share it.
+
+   `--strip-fade-to` is the surface the track actually sits on. It defaults to
+   the page, because most tracks do; a rail inside a card sets it to --card so
+   the fade does not read as a pale block floating on the card (which is
+   exactly what TopInTheClub hit and worked around by hand). <ScrollRow> is the
+   one component that owns this class — see src/components/canvas2/ScrollRow. */
 .f0-strip-fade {
   position: absolute;
   inset-block: 0;
   right: 0;
   width: 3.5rem;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, var(--paper));
+  background: linear-gradient(90deg, transparent, var(--strip-fade-to, var(--paper)));
   transition: opacity 300ms ease;
 }
 
@@ -1742,16 +1857,24 @@ body {
       var(--card) 100%
     );
 }
+/* Dark — same correction as .f0-brief-field above, and for the same reason:
+   the warm card is the second half of the twelve muddy-sepia screens. Ground
+   stays the card, brand arrives as light. Tuned one step quieter than the
+   brief field because this object is often repeated down a page (the upgrade
+   money bands, the belts "you are here" rung) where a repeated glow would
+   read as a smear. */
 :root[data-theme="dark"] .club-b-warm,
 :root[data-theme="dark"] [data-mode] .club-b-warm {
-  border-color: color-mix(in srgb, var(--accent-solid) 30%, var(--sand));
+  border-color: color-mix(in srgb, var(--accent-strong) 34%, transparent);
   background:
-    linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--accent-solid) 22%, var(--card)) 0%,
-      color-mix(in srgb, var(--accent-solid) 9%, var(--card)) 55%,
-      var(--card) 100%
-    );
+    radial-gradient(
+      128% 148% at 3% 0%,
+      color-mix(in srgb, var(--accent-strong) 11%, transparent) 0%,
+      color-mix(in srgb, var(--accent-strong) 3%, transparent) 48%,
+      transparent 70%
+    ),
+    var(--card);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent-strong) 22%, transparent);
 }
 
 /* Round orange action button on a warm card (the board's play affordance).

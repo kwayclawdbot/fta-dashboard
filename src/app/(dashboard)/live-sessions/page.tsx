@@ -23,6 +23,7 @@ import {
 import TierBadge from "@/components/TierBadge";
 import { BoardSection } from "@/components/clubhome/board";
 import RecordingPlayerModal from "@/components/live/RecordingPlayerModal";
+import ScrollRow from "@/components/canvas2/ScrollRow";
 import {
   resolveRecordingKind,
   type RecordingKind,
@@ -224,13 +225,13 @@ function ViewPills({
   }
 
   return (
-    <div
+    <ScrollRow
       ref={railRef}
       role="tablist"
       aria-label="Live class views"
       /* py-1/-my-1: the 2px-offset focus ring would otherwise be clipped by the
          scroll box, and the negative margin keeps the row where it was. */
-      className="club2-track -my-1 flex gap-2 overflow-x-auto py-1"
+      className="-my-1 flex gap-2 py-1"
     >
       {TABS.map((t) => {
         const on = value === t.id;
@@ -264,7 +265,7 @@ function ViewPills({
           </button>
         );
       })}
-    </div>
+    </ScrollRow>
   );
 }
 
@@ -300,11 +301,11 @@ function TrackPills({
   }
 
   return (
-    <div
+    <ScrollRow
       ref={railRef}
       role="radiogroup"
       aria-label="Filter classes by track"
-      className="club2-track -my-1 flex gap-1.5 overflow-x-auto py-1"
+      className="-my-1 flex gap-1.5 py-1"
     >
       {OPTIONS.map((o, i) => {
         const on = value === o.id;
@@ -334,7 +335,7 @@ function TrackPills({
           </button>
         );
       })}
-    </div>
+    </ScrollRow>
   );
 }
 

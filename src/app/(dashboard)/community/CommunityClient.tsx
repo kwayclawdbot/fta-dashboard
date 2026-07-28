@@ -44,7 +44,7 @@ import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import AnnouncementCard from "@/components/community/AnnouncementCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import { TextAction } from "@/components/f0/parts";
-import { TickerTile, TickerTileStrip } from "@/components/canvas2";
+import { ScrollRow, TickerTile, TickerTileStrip } from "@/components/canvas2";
 import {
   Cashtag,
   CredibilityTag,
@@ -1143,7 +1143,7 @@ export default function CommunityClient({
               Real distinct voices from the feed, newest first. Never a
               manufactured crowd — these are members who actually posted. */}
           {voices.length > 0 && (
-            <div className="club2-track -mx-1 flex gap-2 overflow-x-auto px-1">
+            <ScrollRow className="-mx-1 flex gap-2 px-1">
               {voices.map((a, i) => (
                 <ProfileLink key={a.id} username={a.username} variant="avatar">
                   <StoryRing live={i === 0} label={(a.display_name || "Member").split(" ")[0]}>
@@ -1158,7 +1158,7 @@ export default function CommunityClient({
                   </StoryRing>
                 </ProfileLink>
               ))}
-            </div>
+            </ScrollRow>
           )}
 
           {/* ── TOP IN THE CLUB (board 01) ────────────────────────────────

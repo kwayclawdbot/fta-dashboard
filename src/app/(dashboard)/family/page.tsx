@@ -180,9 +180,9 @@ export default async function FamilyHomePage() {
 
             {benchmark == null && (
               <AbsenceNote>
-                No S&amp;P reading yet — the index close cache has nothing to
-                compare this week against, so the benchmark stays blank rather
-                than showing a number we did not measure.
+                No S&amp;P reading yet — we don&apos;t have this week&apos;s
+                index close to compare against, so the benchmark stays blank
+                rather than showing a number we did not measure.
               </AbsenceNote>
             )}
 
@@ -197,9 +197,14 @@ export default async function FamilyHomePage() {
       </FamilyCard>
 
       {/* ── Watching together ────────────────────────────────────────────
-          The household watchlist as the board's row cards. Deltas are honestly
-          absent: nothing in this lane quotes a live price, so every row reads
-          "—" rather than a fabricated 0.00%. */}
+          The household watchlist as the board's row cards.
+
+          NO TRAILING DASH. This lane quotes no live price, so every row used to
+          end in "—" and the section read as a column of failures. But a dash is
+          for "we measured and got nothing"; here nothing was ever measured, and
+          the honest thing is to say so ONCE, under the list, instead of six
+          times inside it. Each row now ends in the way IN to the price — the
+          research page it already links to. */}
       <SectionLabel
         className="mt-7"
         action={<TextAction href="/family/watchlist">Edit</TextAction>}
@@ -234,9 +239,18 @@ export default async function FamilyHomePage() {
               <span className="min-w-0 flex-1 truncate text-[11.5px] text-soft">
                 {w.company_name}
               </span>
-              <span className="shrink-0 font-mono text-[11px] tabular-nums text-soft">—</span>
+              <span
+                aria-hidden
+                className="shrink-0 font-mono text-[11px] font-semibold text-soft/70"
+              >
+                &rarr;
+              </span>
             </Link>
           ))}
+          <p className="pt-0.5 text-[11px] leading-relaxed text-soft/80">
+            Prices live on each company&apos;s research page — open one to see
+            where it stands today.
+          </p>
         </div>
       )}
 

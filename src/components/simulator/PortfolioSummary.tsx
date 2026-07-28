@@ -36,7 +36,9 @@ import { getEquity, getWinRate, getReturnPct } from "@/lib/simulator/portfolio-m
  * not coloured at all: a $0 move is not a win. The timeframe rail is a control,
  * so its bar is brand orange, never a price colour.
  *
- * HONESTY: win rate shows "—" until a trade has actually closed; the weekly
+ * HONESTY: win rate says so in words until a trade has actually closed (a rate
+ * with no denominator is not a dash, it is a thing that does not exist yet, and
+ * "Closed 0" is a real reading rather than an absence); the weekly
  * read is computed from the member's own closed trades or is not rendered; and
  * the curve shows a founding state until there is real history behind it. This
  * is a PRACTICE record — never presented as a track record or a reason to
@@ -191,9 +193,19 @@ export default function PortfolioSummary({
       value: `${unrealizedPnl > 0 ? "+" : ""}$${money(unrealizedPnl)}`,
       tone: unrealizedPnl === 0 ? "ink" : unrealizedPnl > 0 ? "up" : "down",
     },
-    { label: "Win rate", value: state.totalTrades > 0 ? `${winRate}%` : "—", tone: "ink" },
-    { label: "Closed", value: state.totalTrades > 0 ? `${state.totalTrades}` : "—", tone: "ink" },
+    // NOT A DASH. A dash means "we measured and got no reading"; a brand-new
+    // practice account has closed exactly zero trades, and zero IS the reading.
+    // Win rate is the one figure that genuinely does not exist yet — a rate
+    // needs a denominator — so it says so in words instead of printing the
+    // absence marker beside a count that is perfectly real.
+    {
+      label: "Win rate",
+      value: state.totalTrades > 0 ? `${winRate}%` : "Not yet",
+      tone: "ink",
+    },
+    { label: "Closed", value: `${state.totalTrades}`, tone: "ink" },
   ];
+  const noClosedTrades = state.totalTrades === 0;
 
   // Two captured points is the floor for a line — one point is a dot, and a dot
   // drawn as a curve would imply a history that does not exist.
@@ -240,6 +252,12 @@ export default function PortfolioSummary({
           <StatCard key={mm.label} value={mm.value} label={mm.label} tone={mm.tone} />
         ))}
       </div>
+      {noClosedTrades && (
+        <p className="mt-2 text-[11px] leading-relaxed text-soft/85">
+          Your win rate starts counting the first time you close a position —
+          open one, run the tape, and take the trade off.
+        </p>
+      )}
 
       {/* ── EQUITY CURVE ──────────────────────────────────────────────────
           Canvas puts the curve immediately under the value with a timeframe

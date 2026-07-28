@@ -49,6 +49,7 @@ import Celebrate, {
   type CelebrateOptions,
   type Register,
 } from "@/components/fic/Celebrate";
+import { formatMove, moveToneClass } from "@/lib/format-move";
 import { beltCelebrateFields } from "@/lib/belts";
 import {
   fetchQuote,
@@ -854,7 +855,6 @@ export default function WatchlistPage() {
                       const q = quotes[item.ticker];
                       const open = openRow === item.id;
                       const pct = q?.changePercent ?? null;
-                      const up = (pct ?? 0) >= 0;
 
                       // The move SINCE IT LANDED — the number this board has
                       // always claimed to measure. `snapshot_price` is written
@@ -920,13 +920,13 @@ export default function WatchlistPage() {
                                     </span>
                                   )}
                                   {pct != null && (
+                                    /* Flat gets no arrow and no price colour —
+                                       "▼0.0%" is a down arrow on a number that
+                                       says nothing moved. src/lib/format-move. */
                                     <span
-                                      className={`font-mono text-[10px] tabular-nums ${
-                                        up ? "text-price-up" : "text-price-down"
-                                      }`}
+                                      className={`font-mono text-[10px] tabular-nums ${moveToneClass(pct)}`}
                                     >
-                                      {up ? "▲" : "▼"}
-                                      {Math.abs(pct).toFixed(1)}%
+                                      {formatMove(pct)}
                                     </span>
                                   )}
                                 </div>

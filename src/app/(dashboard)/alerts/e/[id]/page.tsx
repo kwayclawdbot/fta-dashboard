@@ -17,6 +17,7 @@ import {
   Eyebrow as BoardEyebrow,
 } from "@/components/alerts/board";
 import DetailActions from "./DetailActions";
+import { formatMove, moveToneClass } from "@/lib/format-move";
 import type { AlertEvent, AlertRule } from "@/lib/alerts/types";
 import type { WatchState } from "@/lib/alerts/watch-state";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
@@ -221,10 +222,12 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
                 maximumFractionDigits: 2,
               })}
               {perfPct != null && (
-                <span className={perfPct >= 0 ? " text-price-up" : " text-price-down"}>
+                /* A move that rounds to 0.0% gets no arrow and no price
+                   colour — "▼0.0%" is a down arrow on a number saying nothing
+                   moved. See src/lib/format-move. */
+                <span className={` ${moveToneClass(perfPct)}`}>
                   {" "}
-                  {perfPct >= 0 ? "▲" : "▼"}
-                  {Math.abs(perfPct).toFixed(1)}%
+                  {formatMove(perfPct)}
                 </span>
               )}
             </span>

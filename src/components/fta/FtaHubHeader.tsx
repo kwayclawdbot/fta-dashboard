@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { m } from "@/lib/motion";
+import ScrollRow from "@/components/canvas2/ScrollRow";
 
 /**
  * THE FTA DESK — the masthead that tops /fta/chat, /fta/courses, /fta/recordings.
@@ -29,9 +30,10 @@ import { m } from "@/lib/motion";
  * TABS: three real destinations, so these are LINKS with aria-current, not a
  * radiogroup. They reuse the shared `.f0-seg-bar` geometry (a 3px bar on a
  * hairline rail) so the FTA rail and every other rail in the app are visibly
- * one mechanism. Three long labels overflow at 390px, so the track scrolls
- * behind the shared `.f0-strip-fade` — the peek alone is too quiet to read as
- * "this scrolls".
+ * one mechanism. Three long labels overflow at 390px, so the track is a
+ * <ScrollRow> — the peek alone is too quiet to read as "this scrolls", and the
+ * hand-rolled fade this used to carry never cleared at the end of the track,
+ * so it promised a scroll that was already finished.
  */
 
 const TABS: { label: string; href: string }[] = [
@@ -86,8 +88,8 @@ export default function FtaHubHeader({
       </div>
 
       {/* The desk's three rooms. */}
-      <nav aria-label="FTA desk" className="relative mt-7">
-        <div className="club2-track flex gap-7 overflow-x-auto border-b border-sand">
+      <nav aria-label="FTA desk" className="mt-7">
+        <ScrollRow className="flex gap-7 border-b border-sand">
           {TABS.map((t) => {
             const active = pathname === t.href || pathname.startsWith(t.href + "/");
             return (
@@ -104,8 +106,7 @@ export default function FtaHubHeader({
               </Link>
             );
           })}
-        </div>
-        <span className="f0-strip-fade" aria-hidden />
+        </ScrollRow>
       </nav>
     </m.header>
   );
