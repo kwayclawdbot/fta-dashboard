@@ -16,6 +16,8 @@ import {
   GuideLine,
   EASE_OUT,
 } from "../ui";
+import OrderBookFigure from "../OrderBookFigure";
+import LessonScene from "../LessonScene";
 
 /**
  * Prediction → reveal. The member commits to a call, THEN sees what actually
@@ -46,6 +48,12 @@ export default function PredictionStep({
       <StepPrompt sub="Make your call first. No peeking — that's the fun part.">
         {spec.question}
       </StepPrompt>
+
+      {/* The object the call is being made AGAINST — shown with the question,
+          then eaten on reveal so the member watches the price move. */}
+      {spec.illustration && (
+        <OrderBookFigure spec={spec.illustration} playWalk={revealed} />
+      )}
 
       <ChoiceGroup
         ariaLabel="Your call"
@@ -114,15 +122,37 @@ export default function PredictionStep({
               <p className="relative mt-3 max-w-[34ch] font-display text-display-3 font-extrabold leading-tight text-[#F7F3EA]">
                 {spec.reveal.headline}
               </p>
-              <p className="relative mt-2.5 max-w-[58ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
-                {spec.reveal.body}
-              </p>
+              {/* Authored as paragraphs (blank-line separated) — a three-beat
+                  reveal read as one slab was a wall, and the third beat is the
+                  one that generalises the lesson. */}
+              {spec.reveal.body.split(/\n\s*\n/).map((para, i) => (
+                <p
+                  key={i}
+                  className="relative mt-2.5 max-w-[58ch] text-[15px] leading-relaxed text-[#F7F3EA]/70"
+                >
+                  {para}
+                </p>
+              ))}
             </div>
+
+            {/* The authored price figure — the tape the outcome left behind.
+                Hand-written points, dated in the JSON, never a live quote. */}
+            {spec.reveal.scene && (
+              <div className="mt-4">
+                <LessonScene scene={spec.reveal.scene} />
+              </div>
+            )}
+
             <div className="mt-4">
+              {/* Kai speaks to the specific wrong pick when the author wrote a
+                  line for it — "that was the smartest wrong answer, and here
+                  is why". Otherwise the engine default. */}
               <GuideLine register={register}>
-                {correct
-                  ? "You called it. That's the read of an investor."
-                  : "Not the call you made — and that's exactly how you learn to read one."}
+                {spec.guideOn && picked === spec.guideOn.value
+                  ? spec.guideOn.line
+                  : correct
+                    ? "You called it. That's the read of an investor."
+                    : "Not the call you made — and that's exactly how you learn to read one."}
               </GuideLine>
             </div>
             <div className="flex justify-end">

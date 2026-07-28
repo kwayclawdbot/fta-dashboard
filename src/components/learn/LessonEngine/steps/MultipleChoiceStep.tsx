@@ -35,6 +35,7 @@ export default function MultipleChoiceStep({
         register={register}
         soundOn={soundOn}
         onResolve={onResolve}
+        feedbackFor={(i) => spec.wrongFeedback?.[i] ?? null}
         layout="list"
         ariaLabel="Answer choices"
         footerNote={xpNote}

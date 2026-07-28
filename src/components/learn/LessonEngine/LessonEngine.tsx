@@ -20,7 +20,8 @@ import {
   completeLesson,
   recordQuizAttempt,
 } from "@/lib/learn/engine-io";
-import { hasXpForRef } from "@/lib/xp";
+import { hasXpForRef, getUserXp, levelProgress } from "@/lib/xp";
+import useXpAward, { CountUp, XpAwardBar } from "@/components/canvas2/XpAward";
 import { useSoundOptIn } from "@/components/fic/Celebrate";
 import Celebrate, { type CelebrateOptions } from "@/components/fic/Celebrate";
 import Burst from "@/components/games/Burst";
@@ -88,6 +89,14 @@ export default function LessonEngine({
   // are allowed to print "+N XP", nothing else. The award itself is still
   // de-duped inside completeLesson(); this never gates a write.
   const [xpBanked, setXpBanked] = useState(false);
+  // Lifetime XP either side of this completion — what the award moment needs to
+  // spring the bar and decide whether a belt was crossed. Null until we know.
+  const [ledger, setLedger] = useState<{
+    before: number;
+    after: number;
+    awarded: number;
+  } | null>(null);
+  const award = useXpAward();
 
   // Score accumulator across scored steps (first-try correctness).
   const scored = useRef<{ total: number; correct: number }>({
@@ -137,7 +146,10 @@ export default function LessonEngine({
       register: celebrateRegister(register),
       title: register === "kid" ? "Lesson done!" : "Lesson complete",
       subtitle: lesson.title,
-      xp: lesson.xp,
+      // NO xp here. The award is spent ONCE, on the completion card, by
+      // <XpAward/> — count-up, springing bar, rising chip. Printing it on this
+      // overlay too gave the member two "+50 XP" moments a beat apart, which
+      // reads as a bug rather than a reward.
       sound: soundOn && register !== "adult",
     });
 
@@ -148,16 +160,22 @@ export default function LessonEngine({
           { engine: true, score, correct: s.correct, total: s.total },
         ]);
       }
-      // Completion → lesson_progress + one-time lesson XP + belt ceremony.
-      const belt = await completeLesson(
-        supabase,
-        userId,
-        lessonId,
-        register,
-        lesson.xp
-      );
-      if (belt) enqueue(belt);
+      // Read the ledger BEFORE the write so the award moment has a real
+      // before/after to spring between. The award itself is still de-duped
+      // inside completeLesson — this read never gates a write.
+      const before = await getUserXp(supabase, userId);
+      const alreadyBanked = await hasXpForRef(supabase, userId, "lesson", lessonId);
+      const awarded = alreadyBanked ? 0 : lesson.xp;
+
+      // Completion → lesson_progress + one-time lesson XP.
+      // NOTE: completeLesson still returns the legacy `levelup` Celebrate
+      // payload; we deliberately do not enqueue it here, because the belt
+      // crossing is now spent by <XpAward/>'s BeltCrossPop to the motion spec
+      // (fill, 200ms hold, 400/12 belt pop) instead of a second overlay.
+      await completeLesson(supabase, userId, lessonId, register, lesson.xp);
       await saveStepProgress(supabase, userId, lessonId, total, { done: true });
+
+      setLedger({ before, after: before + awarded, awarded });
     }
 
     setSummary({ xp: lesson.xp, score: s.total > 0 ? score : null });
@@ -174,6 +192,25 @@ export default function LessonEngine({
     lesson.xp,
     enqueue,
   ]);
+
+  // The award moment. Fired once the write has actually landed and the
+  // completion screen is on, never before — the chip is a receipt, not a
+  // promise. A replay (awarded 0) gets no chip, which is the honest read.
+  const fireAward = award.fire;
+  useEffect(() => {
+    if (!finished || !ledger || ledger.awarded <= 0) return;
+    const t = window.setTimeout(
+      () =>
+        fireAward({
+          amount: ledger.awarded,
+          xpBefore: ledger.before,
+          xpAfter: ledger.after,
+          reason: "Lesson complete",
+        }),
+      reduce ? 0 : 260
+    );
+    return () => window.clearTimeout(t);
+  }, [finished, ledger, fireAward, reduce]);
 
   const handleResolve = useCallback(
     (result: StepResult) => {
@@ -282,23 +319,63 @@ export default function LessonEngine({
                 "That concept is yours now. Take it into the market."}
             </p>
 
-            <div className="mt-7 flex items-center justify-center gap-6">
-              <div>
-                <p className="font-display text-display-3 font-extrabold tabular-nums text-ink">
-                  +{summary.xp}
-                </p>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-soft">
-                  XP earned
-                </p>
-              </div>
-              {summary.score != null && (
-                <div className="border-l border-sand pl-6">
+            {/* THE AWARD MOMENT (motion spec #1). The figure counts up over
+                800ms in tabular figures, the level bar springs 180/26 with the
+                ~3% overshoot left in, the "+N XP" chip rises and fades, and a
+                belt crossing holds the fill 200ms before the belt pops. Under
+                prefers-reduced-motion all four collapse to a 120ms fade and
+                the count-up becomes an immediate set. */}
+            <div className="relative mt-7">
+              {award.overlay}
+              <div className="flex items-center justify-center gap-6">
+                <div>
                   <p className="font-display text-display-3 font-extrabold tabular-nums text-ink">
-                    {summary.score}%
+                    +
+                    <CountUp
+                      value={summary.xp}
+                      from={0}
+                      format={(n) => String(Math.round(n))}
+                    />
                   </p>
                   <p className="mt-1 text-eyebrow font-display font-bold uppercase text-soft">
-                    Right first try
+                    XP earned
                   </p>
+                </div>
+                {summary.score != null && (
+                  <div className="border-l border-sand pl-6">
+                    <p className="font-display text-display-3 font-extrabold tabular-nums text-ink">
+                      <CountUp
+                        value={summary.score}
+                        from={0}
+                        format={(n) => String(Math.round(n))}
+                      />
+                      %
+                    </p>
+                    <p className="mt-1 text-eyebrow font-display font-bold uppercase text-soft">
+                      Right first try
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Where that XP put them on the ladder. Only drawn when we
+                  actually read the ledger — a number we did not measure is
+                  never invented. */}
+              {ledger && (
+                <div className="mx-auto mt-6 max-w-[280px]">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-gold-700">
+                      Level {levelProgress(ledger.after).current.level} ·{" "}
+                      {levelProgress(ledger.after).current.name}
+                    </span>
+                    <span className="font-mono text-[10.5px] font-bold tabular-nums text-gold-700">
+                      <CountUp value={ledger.after} from={ledger.before} /> XP
+                    </span>
+                  </div>
+                  <XpAwardBar
+                    pct={levelProgress(ledger.after).pct}
+                    className="mt-2.5"
+                  />
                 </div>
               )}
             </div>
@@ -337,8 +414,18 @@ export default function LessonEngine({
   // The canvas prints "+10 XP" beside Check on every micro-lesson question. Our
   // XP is per-lesson and de-duped by ref, so it is shown ONCE — on the step that
   // actually banks it — and never on a replay of a lesson already paid out.
+  // It rides the LAST GRADED step, not the last step: a real_world rep or an
+  // explainer has no Check bar to print it beside, so pinning it to total-1
+  // silently dropped the note on every lesson that closes on one.
+  let xpNoteIndex = total - 1;
+  for (let i = total - 1; i >= 0; i--) {
+    if (isGradedStep(steps[i].type)) {
+      xpNoteIndex = i;
+      break;
+    }
+  }
   const xpNote =
-    !xpBanked && userId && stepIndex === total - 1 && lesson.xp > 0
+    !xpBanked && userId && stepIndex === xpNoteIndex && lesson.xp > 0
       ? `+${lesson.xp} XP`
       : undefined;
 

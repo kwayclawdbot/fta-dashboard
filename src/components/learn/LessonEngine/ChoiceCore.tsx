@@ -43,6 +43,7 @@ export default function ChoiceCore({
   reaskLabel = "Let's try that again.",
   ariaLabel = "Answer choices",
   footerNote,
+  feedbackFor,
 }: {
   options: ChoiceOption[];
   correctIndex: number;
@@ -58,6 +59,10 @@ export default function ChoiceCore({
   /** Quiet line beside Check (the canvas's "+10 XP"). Callers must only pass
    *  XP that will actually be awarded — see LessonEngine's xpNote. */
   footerNote?: string;
+  /** Resolve the feedback for the option the member actually picked, so a
+   *  wrong answer is answered with the reason THAT option was tempting rather
+   *  than one generic line for four different mistakes. */
+  feedbackFor?: (optIdx: number) => { text: string; kai?: boolean } | null | undefined;
 }) {
   const reduce = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("first");
@@ -129,6 +134,9 @@ export default function ChoiceCore({
     activeOrder.findIndex((optIdx) => optIdx === selected)
   );
 
+  // The authored line for the option they actually picked, when there is one.
+  const picked = selected != null ? feedbackFor?.(selected) : null;
+
   return (
     <div>
       <ChoiceGroup
@@ -190,16 +198,29 @@ export default function ChoiceCore({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
-            {explanation && (
-              <FeedbackNote kind="explain">{explanation}</FeedbackNote>
-            )}
-            <div className="mt-4">
-              <GuideLine register={register}>{reaskLabel}</GuideLine>
-              <div className="flex justify-end">
-                <PrimaryButton onClick={toReask} icon="arrow">
-                  Try it
-                </PrimaryButton>
+            {picked?.kai ? (
+              // Kai takes the wrong answer himself: he names why that option
+              // was tempting and hands the question straight back, so there is
+              // no note repeating him underneath.
+              <div className="mt-4">
+                <GuideLine register={register}>{picked.text}</GuideLine>
               </div>
+            ) : (
+              <>
+                {picked?.text ?? explanation ? (
+                  <FeedbackNote kind="explain">
+                    {picked?.text ?? explanation}
+                  </FeedbackNote>
+                ) : null}
+                <div className="mt-4">
+                  <GuideLine register={register}>{reaskLabel}</GuideLine>
+                </div>
+              </>
+            )}
+            <div className="flex justify-end">
+              <PrimaryButton onClick={toReask} icon="arrow">
+                Try it
+              </PrimaryButton>
             </div>
           </m.div>
         )}
@@ -213,9 +234,9 @@ export default function ChoiceCore({
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
             <FeedbackNote kind="explain">
-              {explanation
-                ? explanation
-                : "Here's the one — the highlighted answer above."}
+              {picked?.text ??
+                explanation ??
+                "Here's the one — the highlighted answer above."}
             </FeedbackNote>
             <div className="mt-4 flex justify-end">
               <PrimaryButton

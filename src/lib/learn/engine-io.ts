@@ -175,6 +175,38 @@ export async function recordQuizAttempt(
   }
 }
 
+/**
+ * Real-world action check for `research_ticker`: did the member actually come
+ * back from the quote with something to show for it?
+ *
+ * The rep for this skill is READING a live two-sided quote and forming a view,
+ * so the artifact we accept is a real one — a stance the member recorded on the
+ * ticker (ticker_stances, own-row RLS), or the ticker sitting on the family
+ * watchlist. Opening a tab is not evidence; a written stance is. Returns false
+ * on any error, so a member is never told they did something they did not.
+ */
+export async function checkResearchedTicker(
+  supabase: DB,
+  userId: string | null,
+  familyId: string | null,
+  ticker: string
+): Promise<boolean> {
+  const t = ticker.toUpperCase();
+  if (userId) {
+    try {
+      const { count } = await supabase
+        .from("ticker_stances")
+        .select("ticker", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("ticker", t);
+      if ((count || 0) > 0) return true;
+    } catch {
+      /* fall through to the watchlist artifact */
+    }
+  }
+  return checkWatchlistHas(supabase, familyId, t);
+}
+
 /** Real-world action check: does the family already watch this ticker? */
 export async function checkWatchlistHas(
   supabase: DB,

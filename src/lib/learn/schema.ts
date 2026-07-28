@@ -36,6 +36,8 @@ export interface ExplainerStep extends BaseStep {
   body: string[];
   /** Optional pull-quote / big-number figure shown alongside. */
   figure?: { kind: "stat" | "quote"; value: string; caption?: string };
+  /** Optional authored teaching object drawn under the prose. */
+  illustration?: LessonIllustration;
 }
 
 /* ── Scene ──────────────────────────────────────────────────────────────
@@ -64,6 +66,43 @@ export interface LessonSceneSpec {
   endLabel?: string;
 }
 
+/* ── Illustration ───────────────────────────────────────────────────────
+   The authored TEACHING OBJECT (CURRICULUM-OVERVIEW §6): "objects, not
+   scenes". A named drawing with identity that is reused across a phase and
+   accumulates meaning — never a stock scene, never a generic container.
+
+   `order_book` is the first: two facing ladders of resting orders with the
+   gap between them measured. It is drawn hand-ruled (bar lengths deliberately
+   uneven), ink for structure, the accent for the ONE thing being pointed at
+   (best bid / best ask), gold for annotation only. It returns on Day 9 and
+   Day 27, so it lives in the schema rather than inside one lesson.
+
+   The numbers are AUTHORED and dated in the lesson JSON — never a live feed —
+   so a lesson reads identically in five years. */
+export interface OrderBookIllustration {
+  kind: "order_book";
+  /** `ladder` = one book. `before_after` = the same book twice, one variable
+   *  changed, so the change is legible. `walk_up` = a book that gets eaten. */
+  mode: "ladder" | "before_after" | "walk_up";
+  /** Resting bids, best (highest) first. */
+  bids: string[];
+  /** Resting asks, best (lowest) first. */
+  asks: string[];
+  /** Gold hairline label across the gap. */
+  spreadLabel?: string;
+  /** `before_after` only — the second state of the same drawing. */
+  after?: { bids: string[]; asks: string[]; label?: string };
+  /** `before_after` only — label on the first state. */
+  beforeLabel?: string;
+  /** `walk_up` only — the running price printed above the book while the
+   *  ask side is consumed, in order. Last entry is where it settles. */
+  walkPrices?: string[];
+  /** Mono caption under the figure — the dated provenance line. */
+  caption?: string;
+}
+
+export type LessonIllustration = OrderBookIllustration;
+
 /** Multiple choice (QuizPanel restyle, single question).
  *
  *  THIS IS ALSO THE MICRO-LESSON FORMAT (canvas App 21). A lesson whose
@@ -83,6 +122,14 @@ export interface MultipleChoiceStep extends BaseStep {
   correctIndex: number;
   /** Shown after a wrong pick, before the mastery-loop re-ask. */
   explanation?: string;
+  /** PER-OPTION wrong-answer feedback, parallel to `options`.
+   *
+   *  The curriculum's rule is that feedback must name WHY the wrong option was
+   *  tempting, which means it cannot be one string for four different mistakes.
+   *  A `kai: true` entry is spoken in the guide's voice and carries its own
+   *  hand-back to the question; a plain entry is the note, followed by the
+   *  engine's re-ask line. Missing / null entries fall back to `explanation`. */
+  wrongFeedback?: ({ text: string; kai?: boolean } | null)[];
   /** Reinforcement shown on the correct pick. */
   reinforce?: string;
 }
@@ -115,7 +162,20 @@ export interface PredictionStep extends BaseStep {
   options: { label: string; value: string }[];
   /** The value that actually happened. */
   outcomeValue: string;
-  reveal: { headline: string; body: string };
+  /** Authored teaching object shown WITH the question — the thing the member is
+   *  predicting against. On reveal it plays its outcome motion (a `walk_up`
+   *  book is consumed level by level while the price counts up). */
+  illustration?: LessonIllustration;
+  reveal: {
+    headline: string;
+    body: string;
+    /** The authored price figure for the reveal — the tape the outcome left
+     *  behind. Hand-written points, never a live quote. */
+    scene?: LessonSceneSpec;
+  };
+  /** Authored guide line shown only when the member picked this value — the
+   *  "that was the smartest wrong answer, and here is why" beat. */
+  guideOn?: { value: string; line: string };
 }
 
 export type RealWorldAction = "save_watchlist" | "research_ticker";

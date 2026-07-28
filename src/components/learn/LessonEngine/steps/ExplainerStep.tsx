@@ -3,6 +3,7 @@
 import { m, useReducedMotion } from "@/lib/motion";
 import type { ExplainerStep as Spec, StepComponentProps } from "@/lib/learn/schema";
 import { PrimaryButton, StepPrompt, EASE_OUT } from "../ui";
+import OrderBookFigure from "../OrderBookFigure";
 
 /** Non-interactive concept block. The "video is one block type" idea, in text/
  *  figure form — a passive step the member reads, then continues. */
@@ -54,6 +55,8 @@ export default function ExplainerStep({
           </m.figure>
         )}
       </div>
+      {/* The authored teaching object, under the prose it belongs to. */}
+      {spec.illustration && <OrderBookFigure spec={spec.illustration} />}
       <div className="mt-7 flex justify-end">
         <PrimaryButton onClick={() => onResolve({})} icon="arrow">
           Continue

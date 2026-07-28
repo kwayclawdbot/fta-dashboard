@@ -8,7 +8,7 @@ import type {
   StepComponentProps,
 } from "@/lib/learn/schema";
 import { playCue } from "@/lib/learn/feedback";
-import { checkWatchlistHas } from "@/lib/learn/engine-io";
+import { checkWatchlistHas, checkResearchedTicker } from "@/lib/learn/engine-io";
 import { useEngineRuntime } from "../EngineContext";
 import { FeedbackNote, GuideLine, PrimaryButton, StepPrompt, EASE_OUT } from "../ui";
 
@@ -42,13 +42,19 @@ export default function RealWorldStep({
   const runCheck = useCallback(
     async (soft = false) => {
       if (!rt) return false;
-      if (spec.action !== "save_watchlist") {
-        // research_ticker: opening the page is the action; treat a return click
-        // as done (no persistent artifact to verify).
-        return true;
-      }
       setChecking(true);
-      const has = await checkWatchlistHas(rt.supabase, rt.familyId, spec.ticker);
+      // Both actions verify a REAL artifact. research_ticker accepts a stance
+      // the member recorded on the ticker (that is the rep — a written view
+      // off a live quote) or the ticker on the family watchlist.
+      const has =
+        spec.action === "save_watchlist"
+          ? await checkWatchlistHas(rt.supabase, rt.familyId, spec.ticker)
+          : await checkResearchedTicker(
+              rt.supabase,
+              rt.userId,
+              rt.familyId,
+              spec.ticker
+            );
       setChecking(false);
       if (has) {
         setConfirmed(true);
@@ -141,8 +147,19 @@ export default function RealWorldStep({
             transition={{ duration: 0.2, ease: EASE_OUT }}
           >
             <FeedbackNote kind="explain">
-              We don&apos;t see {spec.ticker.toUpperCase()} on your watchlist
-              yet. Add it on the page that opened, then tap “I did it — check”.
+              {spec.action === "save_watchlist" ? (
+                <>
+                  We don&apos;t see {spec.ticker.toUpperCase()} on your
+                  watchlist yet. Add it on the page that opened, then tap “I did
+                  it — check”.
+                </>
+              ) : (
+                <>
+                  Nothing recorded on {spec.ticker.toUpperCase()} yet. On the
+                  page that opened, leave your read of it — bull, bear or
+                  neutral — then tap “I did it — check”.
+                </>
+              )}
             </FeedbackNote>
           </m.div>
         )}
