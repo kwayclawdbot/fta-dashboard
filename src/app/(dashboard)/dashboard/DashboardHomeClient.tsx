@@ -47,6 +47,8 @@ import FreeHome from "@/components/dashboard/FreeHome";
 import FamilyProfileHome from "@/components/dashboard/FamilyProfileHome";
 import AddFamily from "@/components/dashboard/AddFamily";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
+import TeenHomeRails from "@/components/family/TeenHomeRails";
+import KidTodayHero from "@/components/family/KidTodayHero";
 import { getFamilyTier } from "@/lib/tier";
 import { isSoloProfile, deriveRegister, type Register } from "@/lib/register";
 import { Meter, TabRail } from "@/components/f0/parts";
@@ -170,6 +172,9 @@ export default function DashboardHomeClient() {
   const [orientationDone, setOrientationDone] = useState(0);
   const [hasFamily, setHasFamily] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
+  // The viewer's own id — the teen family rails need it to find THEIR bar in the
+  // household standings and to know whether they have voted tonight.
+  const [userId, setUserId] = useState("");
   const [isFree, setIsFree] = useState(false);
   // FTA premium home rail (audit #3): tier==='fta' families get a distinct
   // Academy module above the fold — next live academy class + 6-week program
@@ -306,6 +311,7 @@ export default function DashboardHomeClient() {
 
       const hs = state as HomeState;
       setHome(hs);
+      setUserId(user.id);
       setFirstName(profile?.display_name?.split(" ")[0] || "");
       setFicWeek(week);
       setXp(xpTotal);
@@ -568,6 +574,32 @@ export default function DashboardHomeClient() {
   const showProfileCard =
     isParent && hasFamily && !!familyId && (showProfileFirst || setupResolved);
 
+  // ── TEEN: the household's live objects ─────────────────────────────────────
+  // Tonight's watchlist vote and the family paper challenge, read from the same
+  // rows the parent surfaces read (family_watchlist_votes + the
+  // family_paper_standings definer RPC — both open to any member of the family,
+  // minors included). Built once and rendered in exactly ONE of the two slots
+  // below, so an enrolled teen gets it under their hero and an un-enrolled teen
+  // still gets it. Self-gating: renders nothing until it resolves, and nothing
+  // at all when the household has no vote and no paper accounts.
+  const teenRails =
+    isTeen && familyId && userId ? (
+      <TeenHomeRails familyId={familyId} viewerId={userId} />
+    ) : null;
+
+  // ── KID: the hero always carries a real action ─────────────────────────────
+  // Kids never see the enrollment upsell (standing rule) and never see the
+  // "You did it!" win screen at zero progress. KidTodayHero resolves today's
+  // mission → today's lesson → the first-adventure door, so every kid path —
+  // including program:null and today:null at 0 XP — lands on something to do.
+  const kidHero = (
+    <KidTodayHero
+      xp={xp}
+      track={home?.track}
+      art={heroArt(home?.track ?? "kids", false)}
+    />
+  );
+
   return (
     <div className="mx-auto max-w-5xl space-y-4 pb-14">
       {/* ── Masthead ────────────────────────────────────────────────────────
@@ -797,7 +829,18 @@ export default function DashboardHomeClient() {
               So: children never see a pitch (their next step is a lesson), a
               paid household never sees a pitch, and the offer survives only for
               the adult who genuinely has nothing yet. */}
-          {!home?.program && (isChild || isPaidTier) && (
+          {/* A KID gets the real thing rather than a generic "start a lesson"
+              door: today's mission, else today's lesson, else the first
+              adventure. Same intent as the child branch below — kids never see a
+              pitch — resolved to an actual piece of content. Teens and paid
+              adults keep the block below untouched. */}
+          {!home?.program && isKid && kidHero}
+
+          {/* An un-enrolled TEEN still has a household: the vote and the paper
+              challenge don't wait on an enrollments row. */}
+          {!home?.program && teenRails}
+
+          {!home?.program && !isKid && (isChild || isPaidTier) && (
             <div className="f0-rule-left py-1 pl-4">
               <p className="font-display text-display-3 font-extrabold text-ink">
                 Pick up where you left off
@@ -824,7 +867,7 @@ export default function DashboardHomeClient() {
               <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-soft">
                 {isSolo
                   ? "The Cheat Code Club is where you learn one money concept, study one company, and build the habit every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."
-                  : "The Family Investing Club is where your family learns one money concept, studies one company, and builds the habit together every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."}
+                  : "The Cheat Code Club is where your family learns one money concept, studies one company, and builds the habit together every week. Want the deep end too? The FTA academy adds a 6-week live, beginner-to-trade-ready program on top."}
               </p>
               <Link
                 href="/upgrade"
@@ -841,7 +884,17 @@ export default function DashboardHomeClient() {
                      the art becomes the ground, the scrim keeps the type
                      legible over it, and the whole object is the dominant
                      value contrast on the page rather than a bordered card
-                     with a picture glued to its left half. ───────────────── */}
+                     with a picture glued to its left half.
+
+                     A KID with no `today` never gets the win screen here: at
+                     zero progress "You did it!" is a lie, and even a caught-up
+                     kid deserves the next real thing. KidTodayHero owns that
+                     path — same hero field, resolved to a mission or a lesson,
+                     with the honest all-caught-up state only once they have
+                     actually done work. ─────────────────────────────────── */}
+              {isKid && !home.today ? (
+                kidHero
+              ) : (
               <section className="f0-hero-field relative">
                 <Image
                   src={heroArt(home.track, home.caught_up)}
@@ -922,6 +975,11 @@ export default function DashboardHomeClient() {
                   )}
                 </div>
               </section>
+              )}
+
+              {/* TEEN: the household's live objects, directly under their own
+                  one thing. Renders nothing until it resolves. */}
+              {teenRails}
 
               {/* ── THIS WEEK — live class + drill (academy execution rail) ── */}
               {home.this_week && (
