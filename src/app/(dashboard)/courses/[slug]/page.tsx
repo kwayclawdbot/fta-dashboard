@@ -6,36 +6,36 @@ import { m as mm } from "@/lib/motion";
 import { Check, ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Meter, EmptyLine, TextAction } from "@/components/f0/parts";
+import { getUserXp } from "@/lib/xp";
+import { EmptyLine, TextAction } from "@/components/f0/parts";
+import {
+  LearnWordmark,
+  MonoEyebrow,
+  StatRail,
+  dayStreak,
+  warmFieldStyle,
+} from "@/components/learn/kit";
 import LearnPath, {
   LearnPathSkeleton,
-  PathUnitHead,
+  PathUnitBand,
   type PathNode,
   type PathNodeKind,
 } from "@/components/learn/LearnPath";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   COURSE DETAIL — /courses/[slug]
+   COURSE DETAIL — /courses/[slug]. Built to board 20 (`light-r3-*`,
+   "20 LEARN · PATH"; dark twin `dark-r3-*`).
 
-   The path, opened — now drawn as the path (canvas App 20). Composition follows
-   the F0 vocabulary the Learn index was rebuilt on: a masthead, ONE obsidian
-   hero field (the continue/start object), then the syllabus as a winding strand
-   of nodes grouped by hairline-ruled unit heads. No card containers, no
-   equal-column grids.
+   The board's screen, exactly: the script wordmark with 🔥 streak and ⚡ XP on
+   the right, the warm UNIT band, then the unit as a winding dotted strand of
+   bubbles — orange with a ✓ behind you, the pinging ★ where you stand, white
+   hairline bubbles with 🔒 / 🏆 ahead — plus the off-strand side tiles. One
+   band + one strand per unit, because a course page has to show the whole
+   syllabus, not just the unit you are standing in.
 
-   The accordion this replaces hid the shape of the program behind a chevron:
-   you could see "Module 2, 3/6" but never how far in you were. The strand
-   answers that in one glance and still opens the exact same lesson URLs.
-
-   COLOUR LAW: volt orange (the themed `gold-*` ramp) = brand + ACTION only, so
-   it marks the CTA, the meter, the walked strand and the node fills.
-   Completion is the accent fill + a check, never green: green/red belong to
-   price.
-
-   BEHAVIOUR IS UNCHANGED from the previous viewer — same Supabase reads
-   (courses → modules → lessons → lesson_progress), same drip lock rule, same
-   mock-catalog fallback, same lesson hrefs. No progress or XP write lives on
-   this route; it only reads `lesson_progress`.
+   BEHAVIOUR IS UNCHANGED — same Supabase reads (courses → modules → lessons →
+   lesson_progress), same drip lock rule, same mock-catalog fallback, same
+   lesson hrefs. No progress or XP write lives on this route; it only reads.
    ══════════════════════════════════════════════════════════════════════════ */
 
 interface Lesson {
@@ -192,6 +192,11 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState<CourseData>(DEFAULT_COURSE);
   const [loading, setLoading] = useState(true);
+  /** Board 20's header rail. Measured, never decorative — the streak is
+   *  consecutive local days with a real completion, the XP is the sum of
+   *  `xp_events`. Read here, in the fetch: never off the clock in render. */
+  const [streak, setStreak] = useState(0);
+  const [xp, setXp] = useState<number | null>(null);
 
   const loadCourse = useCallback(async () => {
     // Try Supabase first
@@ -305,20 +310,44 @@ export default function CourseDetailPage() {
     setLoading(false);
   }, [supabase, slug]);
 
+  const loadStats = useCallback(async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: rows } = await supabase
+        .from("lesson_progress")
+        .select("completed_at")
+        .eq("user_id", user.id)
+        .eq("status", "completed");
+      setStreak(
+        dayStreak(
+          ((rows ?? []) as { completed_at: string | null }[]).map((r) => r.completed_at),
+          Date.now()
+        )
+      );
+      setXp(await getUserXp(supabase, user.id));
+    } catch {
+      /* the rail simply doesn't draw — it never invents a number */
+    }
+  }, [supabase]);
+
   useEffect(() => {
     loadCourse();
   }, [loadCourse]);
+
+  // Kicked off AFTER the first paint so the header rail never makes React see
+  // a synchronous state cascade on mount.
+  useEffect(() => {
+    const t = setTimeout(() => void loadStats(), 0);
+    return () => clearTimeout(t);
+  }, [loadStats]);
 
   const totalLessons = course.modules.reduce(
     (sum, m) => sum + m.lessons.length,
     0
   );
-  const completedLessons = course.modules.reduce(
-    (sum, m) => sum + m.lessons.filter((l) => l.status === "completed").length,
-    0
-  );
-  const progress =
-    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   const allLessons = course.modules.flatMap((m) =>
     m.lessons.map((l) => ({ ...l, moduleId: m.id }))
@@ -328,8 +357,8 @@ export default function CourseDetailPage() {
   if (loading) return <CourseSkeleton />;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 pb-16">
-      {/* ── Masthead ─────────────────────────────────────────────────── */}
+    <div className="mx-auto max-w-2xl space-y-6 pb-16">
+      {/* ── Header — board 20 ─────────────────────────────────────────── */}
       <mm.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -343,79 +372,55 @@ export default function CourseDetailPage() {
           All paths
         </Link>
 
-        <p className="mt-5 text-eyebrow font-display font-bold uppercase text-gold-700">
-          The path
-        </p>
-        <h1 className="mt-2 font-display text-display-2 font-extrabold leading-[1.05] text-ink">
-          {course.title}
-        </h1>
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <h1>
+            <LearnWordmark>learn</LearnWordmark>
+            <span className="sr-only">{course.title}</span>
+          </h1>
+          <StatRail streak={streak} xp={xp} />
+        </div>
+
         {course.description && (
-          <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-soft">
+          <p className="mt-3 max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
             {course.description}
-          </p>
-        )}
-        {totalLessons > 0 && (
-          <p className="mt-3 font-mono text-[12px] tabular-nums text-soft">
-            {totalLessons} lesson{totalLessons === 1 ? "" : "s"} ·{" "}
-            {completedLessons} complete
           </p>
         )}
       </mm.div>
 
-      {/* ── The one dark object: pick the path back up ────────────────── */}
-      {nextUp && (
-        <mm.section
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="f0-hero-field f0-grain p-6 sm:p-7"
-        >
-          <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
-            {completedLessons > 0 ? "Next up" : "Start here"}
-          </p>
-          <h2 className="mt-2 font-display text-display-3 font-extrabold leading-tight text-[#F7F3EA]">
-            {nextUp.title}
-          </h2>
-
-          <Meter pct={progress} onDark className="mt-5" />
-          <p className="mt-2 font-mono text-[12px] tabular-nums text-[#F7F3EA]/60">
-            {progress}% of this path complete
-          </p>
-
-          <Link
-            href={`/courses/${slug}/${nextUp.moduleId}/${nextUp.id}`}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
-          >
-            {completedLessons > 0 ? "Continue lesson" : "Open the first lesson"}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </mm.section>
-      )}
-
+      {/* ── Every lesson complete ─────────────────────────────────────── */}
       {!nextUp && totalLessons > 0 && (
-        <div className="f0-rule-top pt-4">
-          <p className="inline-flex items-center gap-2 font-display text-[15px] font-bold text-ink">
-            <Check className="h-4 w-4" />
-            Every lesson on this path is complete
-          </p>
-          <p className="mt-1 text-[13px] text-soft">
-            Nothing left open here — the rest of your journey is on the Learn
-            index.
-          </p>
-          <div className="mt-3">
-            <TextAction href="/courses">
-              Back to Learn <ArrowRight className="h-3.5 w-3.5" />
-            </TextAction>
+        <div
+          className="flex items-center gap-3 rounded-2xl border px-4 py-3.5"
+          style={warmFieldStyle()}
+        >
+          <span
+            aria-hidden
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[#1A1614]"
+            style={{
+              background: "var(--accent-solid)",
+              boxShadow: "0 3px 0 color-mix(in srgb, var(--accent-solid) 68%, #000)",
+            }}
+          >
+            <Check className="h-4 w-4" strokeWidth={3} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <MonoEyebrow>Path complete</MonoEyebrow>
+            <p className="mt-[3px] font-display text-[15px] font-extrabold text-ink">
+              Every lesson on this path is done
+            </p>
           </div>
+          <TextAction href="/courses">
+            Learn <ArrowRight className="h-3.5 w-3.5" />
+          </TextAction>
         </div>
       )}
 
-      {/* ── The path ─────────────────────────────────────────────────────
-          One strand per unit. Every node is a real lesson row and opens the
-          same URL the ledger opened; locked nodes stay drawn (a drip lock is
-          information, not an absence). */}
+      {/* ── The units ────────────────────────────────────────────────────
+          One warm band + one strand per unit. Every node is a real lesson
+          row and opens the same URL the ledger opened; locked nodes stay
+          drawn (a drip lock is information, not an absence). */}
       {course.modules.length > 0 && (
-        <div className="space-y-10">
+        <div className="space-y-8">
           {course.modules.map((module, mi) => {
             const moduleProgress = module.lessons.filter(
               (l) => l.status === "completed"
@@ -450,9 +455,10 @@ export default function CourseDetailPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: mi * 0.04, duration: 0.28 }}
               >
-                <PathUnitHead
+                <PathUnitBand
                   index={mi + 1}
                   title={module.title}
+                  eyebrow={course.title}
                   done={moduleProgress}
                   total={module.lessons.length}
                 />
@@ -464,7 +470,7 @@ export default function CourseDetailPage() {
                   <LearnPath
                     nodes={nodes}
                     ariaLabel={`${module.title} lessons`}
-                    className="mt-6"
+                    className="mt-4"
                   />
                 )}
               </mm.section>
@@ -491,15 +497,15 @@ export default function CourseDetailPage() {
 
 function CourseSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16">
-      <div className="space-y-3">
-        <div className="h-3 w-24 rounded bg-sand/60" />
-        <div className="h-9 w-64 rounded bg-sand/60" />
-        <div className="h-4 w-full max-w-md rounded bg-sand/40" />
+    <div className="mx-auto max-w-2xl animate-pulse space-y-6 pb-16" aria-hidden>
+      <div className="h-3 w-20 rounded bg-sand/40" />
+      <div className="flex items-center justify-between">
+        <div className="h-9 w-32 rounded bg-sand/60" />
+        <div className="h-3 w-24 rounded bg-sand/40" />
       </div>
-      <div className="h-48 rounded-[1.5rem] bg-sand/40" />
-      {/* Loading is the STRAND's silhouette, not an empty path (plan §0.4). */}
-      <div className="h-4 w-40 rounded bg-sand/40" />
+      {/* Board 20's silhouette: the unit band, then the strand. Loading is
+          never mistaken for an empty path. */}
+      <div className="h-[62px] rounded-2xl bg-sand/40" />
       <LearnPathSkeleton count={4} />
     </div>
   );

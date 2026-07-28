@@ -28,6 +28,7 @@ import { playCue, feedbackScale } from "@/lib/learn/feedback";
 import { STEP_REGISTRY } from "./registry";
 import { EngineProvider } from "./EngineContext";
 import { EASE_OUT, GuideLine, PrimaryButton } from "./ui";
+import { MonoEyebrow, warmFieldStyle } from "@/components/learn/kit";
 
 /**
  * <LessonEngine/> — the universal renderer (FIC-LEARNING-WORLD §1). Reads a
@@ -244,46 +245,58 @@ export default function LessonEngine({
           opts={celebrateQueue[0] ?? null}
           onDone={() => setCelebrateQueue((q) => q.slice(1))}
         />
+        {/* Completion — the board's own vocabulary: the warm field, and the
+            path's accent bubble with its bevel, at rest. */}
         <m.div
           initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: EASE_OUT }}
-          className="f0-hero-field f0-grain px-6 py-10 text-center sm:px-10"
+          className="relative overflow-hidden rounded-[22px] border px-6 py-10 text-center sm:px-10"
+          style={warmFieldStyle("160deg")}
         >
           {scale.burst > 0 && !reduce && (
             <div className="pointer-events-none absolute inset-0 grid place-items-center">
               <Burst key={winBurst} count={scale.burst} power={scale.burstPower} />
             </div>
           )}
-          {/* Inside the obsidian field the type is theme-invariant cream — the
-              same rule the Learn hero follows. Volt is the only accent. */}
           <div className="relative">
-            <div className="text-eyebrow font-display font-bold uppercase text-volt-400">
-              {moduleTitle}
+            <span
+              aria-hidden
+              className="mx-auto grid h-[70px] w-[70px] place-items-center rounded-full font-display text-[28px] font-extrabold text-[#1A1614]"
+              style={{
+                background: "var(--accent-solid)",
+                boxShadow: "0 4px 0 color-mix(in srgb, var(--accent-solid) 68%, #000)",
+              }}
+            >
+              ✓
+            </span>
+
+            <div className="mt-5">
+              <MonoEyebrow>{moduleTitle}</MonoEyebrow>
             </div>
-            <h1 className="mt-3 font-display text-display-2 font-extrabold text-[#F7F3EA]">
+            <h1 className="mt-2 font-display text-display-2 font-extrabold text-ink">
               {register === "kid" ? "You did it!" : "Lesson complete"}
             </h1>
-            <p className="mx-auto mt-3 max-w-[46ch] text-[15px] leading-relaxed text-[#F7F3EA]/70">
+            <p className="mx-auto mt-3 max-w-[46ch] text-[15px] leading-relaxed text-soft">
               {lesson.guide?.outro ??
                 "That concept is yours now. Take it into the market."}
             </p>
 
             <div className="mt-7 flex items-center justify-center gap-6">
               <div>
-                <p className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]">
+                <p className="font-display text-display-3 font-extrabold tabular-nums text-ink">
                   +{summary.xp}
                 </p>
-                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                <p className="mt-1 text-eyebrow font-display font-bold uppercase text-soft">
                   XP earned
                 </p>
               </div>
               {summary.score != null && (
-                <div className="border-l border-white/15 pl-6">
-                  <p className="font-display text-display-3 font-extrabold tabular-nums text-[#F7F3EA]">
+                <div className="border-l border-sand pl-6">
+                  <p className="font-display text-display-3 font-extrabold tabular-nums text-ink">
                     {summary.score}%
                   </p>
-                  <p className="mt-1 text-eyebrow font-display font-bold uppercase text-[#F7F3EA]/55">
+                  <p className="mt-1 text-eyebrow font-display font-bold uppercase text-soft">
                     Right first try
                   </p>
                 </div>
@@ -293,14 +306,18 @@ export default function LessonEngine({
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href={nextHref ?? backHref}
-                className="inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
+                className="f0-press inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-display text-[14px] font-extrabold text-[#1A1614]"
+                style={{
+                  background: "var(--accent-solid)",
+                  boxShadow: "0 0 12px color-mix(in srgb, var(--accent-solid) 22%, transparent)",
+                }}
               >
                 {nextHref ? "Next lesson" : "Back to course"}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <button
                 onClick={replay}
-                className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2.5 font-display text-[14px] font-bold text-[#F7F3EA]/80 transition-colors hover:text-[#F7F3EA]"
+                className="f0-press inline-flex items-center gap-2 rounded-full border border-sand bg-card px-4 py-2.5 font-display text-[14px] font-bold text-soft transition-colors hover:text-ink"
               >
                 <RotateCcw className="h-4 w-4" />
                 Replay
@@ -333,38 +350,42 @@ export default function LessonEngine({
           onDone={() => setCelebrateQueue((q) => q.slice(1))}
         />
 
-        {/* Header: breadcrumb-lite + progress + exit */}
-        <div className="mb-6 flex items-center gap-3">
+        {/* Header — board 21: a bare ✕, the fat 10px progress bar with the
+            accent gradient fill, and the mono step count. */}
+        <div className="mb-5 flex items-center gap-3">
           <Link
             href={backHref}
             aria-label="Exit lesson"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-sand text-soft transition-colors hover:text-ink"
+            className="f0-press f0-focus shrink-0 rounded-md p-1 text-soft transition-colors hover:text-ink"
           >
-            <X className="h-4 w-4" />
+            <X className="h-[18px] w-[18px]" />
           </Link>
           <div className="min-w-0 flex-1">
-            <div className="h-1.5 overflow-hidden rounded-full bg-sand">
+            <div className="h-2.5 overflow-hidden rounded-full bg-sand">
               <m.div
-                className="h-full rounded-full bg-volt-500"
+                className="h-full rounded-full"
+                style={{
+                  transformOrigin: "left",
+                  width: "100%",
+                  background:
+                    "linear-gradient(90deg, var(--accent-solid), color-mix(in srgb, var(--accent-solid) 55%, #FFFFFF))",
+                }}
                 initial={false}
                 animate={{ transform: `scaleX(${pct / 100})` }}
-                style={{ transformOrigin: "left", width: "100%" }}
                 transition={{ duration: 0.35, ease: EASE_OUT }}
               />
             </div>
           </div>
-          <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
+          <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-gold-700">
             {stepIndex + 1}/{total}
           </span>
         </div>
 
         {/* Lesson title (small) + guide intro on the first step */}
         {stepIndex === 0 && (
-          <div className="mb-6">
-            <p className="text-eyebrow font-display font-bold uppercase text-soft">
-              {moduleTitle}
-            </p>
-            <h1 className="mt-2 max-w-[28ch] font-display text-display-3 font-extrabold text-ink">
+          <div className="mb-5">
+            <MonoEyebrow>{moduleTitle}</MonoEyebrow>
+            <h1 className="mt-1.5 max-w-[28ch] font-display text-[17px] font-bold text-soft">
               {lesson.title}
             </h1>
             {lesson.guide?.intro && (
@@ -375,9 +396,9 @@ export default function LessonEngine({
           </div>
         )}
 
-        {/* The step — no container. A hairline separates it from the header and
-            the type carries the hierarchy (the register bans card boxes). */}
-        <div className="f0-rule-top pt-7">
+        {/* The step. Board 21 runs the question straight off the progress bar —
+            no rule, no container between them. */}
+        <div className="pt-1">
           <AnimatePresence mode="wait">
             <m.div
               key={`${stepIndex}-${spec.id}`}

@@ -2,33 +2,31 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Flag, Gamepad2, Lock, Play, Target, Trophy } from "lucide-react";
+
+import { KIND_GLYPH, MonoEyebrow, warmFieldStyle } from "@/components/learn/kit";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LEARN PATH — the journey visual (canvas App 20).
+   LEARN PATH — board 20 (`light-r3-*` / `dark-r3-*`, "20 LEARN · PATH").
 
-   A winding strand of nodes: what you finished, where you are, what is still
-   ahead. It is NOT decoration — every node is a real `lessons` row, its state
-   comes from `lesson_progress`, and its glyph comes from `lessons.node_kind`
-   (migration 162: lesson · game · challenge · boss · mission), a column that
-   existed in the schema and had never been rendered anywhere.
+   Built to the mockup, node for node:
+     · a dotted sand strand (stroke-width 4, dasharray 1 10, round caps) that
+       winds centre → left → centre → right;
+     · 58px accent bubbles with the toy bevel (`box-shadow: 0 4px 0`) for what
+       you finished, carrying the board's own ✓ glyph;
+     · a 70px ★ bubble with a pinging ring for where you are standing, its
+       label in a white pill;
+     · white 2px-hairline bubbles with the sand bevel for what is ahead —
+       🔒 for a drip/tier lock, 🏆 for a unit test;
+     · off-strand 46px rounded-square tiles for the side objects (the board's
+       "XP chest" and "Motion recap"), which we drive off the REAL
+       `lessons.node_kind` values game / mission rather than inventing props.
 
-   WHY A DRAWN PATH AND NOT A LIST: a list answers "what is next"; the strand
-   answers "how far in am I", which is the question a 40-lesson program actually
-   raises. The ledger index still exists one level up — this replaces the
-   accordion, not the index.
+   Every node is a real `lessons` row; its state comes from `lesson_progress`
+   and its glyph from `lessons.node_kind` (migration 162). A locked node is
+   DRAWN, never hidden — a drip lock is information.
 
-   COLOUR LAW: the strand behind you is `--accent-solid` (brand + progress, gold
-   in Family, orange in Club) and the strand ahead is a sand hairline. No green
-   for "done" — green is price. No purple. Completion is the accent fill plus a
-   mark, so it survives colour being stripped.
-
-   ADULT-FIRST: the canvas draws 58px emoji bubbles with a toy bevel
-   (`box-shadow: 0 4px 0`). Ours are flat discs with a real icon set and a mono
-   numeral — the same information, read as a program rather than a game board.
-
-   GEOMETRY: the swing is a fraction of the MEASURED width, so the connector and
-   the nodes are computed from one source and cannot drift apart at 390px. The
+   GEOMETRY: the swing is a fraction of the MEASURED width, so the connector
+   and the nodes are computed from one source and cannot drift at 390px. The
    SVG is aria-hidden; the semantics live in the <ol> of links.
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -49,22 +47,17 @@ export interface PathNode {
   meta?: string;
 }
 
-const NODE = 54;
-const STEP_Y = 118;
+const NODE = 58;
+const CURRENT = 70;
+const ASIDE = 46;
+const STEP_Y = 116;
+const LABEL_ROOM = 52;
 /** The winding cycle: centre · left · centre · right. */
 const SWING = [0, -1, 0, 1];
-/** Horizontal swing as a fraction of the strand's width. Nodes place with this
- *  as a PERCENTAGE and the connector with it as pixels, off one measurement, so
- *  the two can never disagree — and the nodes need no measurement to be right. */
+/** Horizontal swing as a fraction of the strand's width. */
 const AMP = 0.22;
-
-const KIND_ICON: Record<PathNodeKind, typeof Play> = {
-  lesson: Play,
-  game: Gamepad2,
-  challenge: Flag,
-  boss: Trophy,
-  mission: Target,
-};
+/** Side objects sit off the strand entirely, near the edges. */
+const ASIDE_X = [0.82, 0.17];
 
 const STATE_LABEL: Record<PathNodeState, string> = {
   done: "Completed",
@@ -73,35 +66,45 @@ const STATE_LABEL: Record<PathNodeState, string> = {
   locked: "Locked",
 };
 
-/** Left edge of a 136px-wide node cell, centred on the strand at row `i`.
- *  Signed explicitly because `calc(50% + -22%)` is not reliably parsed. */
-function swingLeft(i: number): string {
-  const swing = SWING[i % SWING.length] * AMP * 100;
-  return `calc(50% ${swing < 0 ? "-" : "+"} ${Math.abs(swing)}% - 68px)`;
+/** game / mission nodes are the board's off-strand tiles. */
+function isAside(kind: PathNodeKind): boolean {
+  return kind === "game" || kind === "mission";
+}
+
+interface Placed {
+  node: PathNode;
+  /** Horizontal position as a fraction of the strand width. */
+  fx: number;
+  /** Vertical centre in px. */
+  y: number;
+  aside: boolean;
+  /** 1-based position among on-strand nodes (drives the numeral). */
+  seq: number;
+}
+
+function place(nodes: PathNode[]): Placed[] {
+  let strandSeq = 0;
+  let asideSeq = 0;
+  return nodes.map((node, i) => {
+    const aside = isAside(node.kind);
+    let fx: number;
+    let seq = 0;
+    if (aside) {
+      fx = ASIDE_X[asideSeq % ASIDE_X.length];
+      asideSeq += 1;
+    } else {
+      fx = 0.5 + SWING[strandSeq % SWING.length] * AMP;
+      strandSeq += 1;
+      seq = strandSeq;
+    }
+    return { node, fx, y: CURRENT / 2 + i * STEP_Y, aside, seq };
+  });
 }
 
 /** Smooth cubic between two points on the strand. */
-function segment(
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number
-): string {
+function segment(x0: number, y0: number, x1: number, y1: number): string {
   const k = (y1 - y0) * 0.5;
   return `C ${x0.toFixed(1)} ${(y0 + k).toFixed(1)}, ${x1.toFixed(1)} ${(y1 - k).toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
-}
-
-function strand(
-  points: { x: number; y: number }[],
-  from: number,
-  to: number
-): string {
-  if (to <= from) return "";
-  let d = `M ${points[from].x.toFixed(1)} ${points[from].y.toFixed(1)}`;
-  for (let i = from; i < to; i++) {
-    d += ` ${segment(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y)}`;
-  }
-  return d;
 }
 
 export default function LearnPath({
@@ -129,24 +132,29 @@ export default function LearnPath({
 
   if (nodes.length === 0) return null;
 
-  const height = NODE + (nodes.length - 1) * STEP_Y + 46;
-  const points = nodes.map((_, i) => ({
-    x: width / 2 + SWING[i % SWING.length] * AMP * width,
-    y: NODE / 2 + i * STEP_Y,
-  }));
+  const placed = place(nodes);
+  const height = CURRENT + (nodes.length - 1) * STEP_Y + LABEL_ROOM;
+  const strand = placed.filter((p) => !p.aside);
 
-  // The strand behind you is accent; ahead of you it is a hairline. "Behind"
-  // ends at the current node, or covers everything when the path is finished.
-  const currentIdx = nodes.findIndex((n) => n.state === "current");
-  const walked =
-    currentIdx >= 0 ? currentIdx : nodes.every((n) => n.state === "done") ? nodes.length - 1 : 0;
+  let d = "";
+  if (width > 0 && strand.length > 1) {
+    d = `M ${(strand[0].fx * width).toFixed(1)} ${strand[0].y.toFixed(1)}`;
+    for (let i = 0; i < strand.length - 1; i++) {
+      d += ` ${segment(
+        strand[i].fx * width,
+        strand[i].y,
+        strand[i + 1].fx * width,
+        strand[i + 1].y
+      )}`;
+    }
+  }
 
   return (
     <div ref={wrapRef} className={`relative mx-auto w-full max-w-[420px] ${className}`}>
       {/* Decoration only — it waits for the measurement rather than drawing at a
           guessed width and snapping. The nodes never wait: they place off
           percentages, so the list is correct on the first paint. */}
-      {width > 0 && (
+      {d && (
         <svg
           aria-hidden
           width={width}
@@ -155,37 +163,27 @@ export default function LearnPath({
           className="pointer-events-none absolute left-0 top-0"
         >
           <path
-            d={strand(points, 0, nodes.length - 1)}
+            d={d}
             fill="none"
             stroke="var(--sand)"
             strokeWidth={4}
             strokeDasharray="1 10"
             strokeLinecap="round"
           />
-          {walked > 0 && (
-            <path
-              d={strand(points, 0, walked)}
-              fill="none"
-              stroke="var(--accent-solid)"
-              strokeWidth={4}
-              strokeDasharray="1 10"
-              strokeLinecap="round"
-            />
-          )}
         </svg>
       )}
 
       <ol className="relative" style={{ height }} aria-label={ariaLabel}>
-        {nodes.map((node, i) => (
+        {placed.map((p) => (
           <li
-            key={node.id}
+            key={p.node.id}
             className="absolute w-[136px] text-center"
             style={{
-              left: swingLeft(i),
-              top: points[i].y - NODE / 2,
+              left: `calc(${(p.fx * 100).toFixed(2)}% - 68px)`,
+              top: p.y - (p.node.state === "current" ? CURRENT : NODE) / 2,
             }}
           >
-            <PathNodeMark node={node} index={i} />
+            {p.aside ? <AsideTile node={p.node} /> : <StrandNode node={p.node} seq={p.seq} />}
           </li>
         ))}
       </ol>
@@ -193,63 +191,89 @@ export default function LearnPath({
   );
 }
 
-function PathNodeMark({ node, index }: { node: PathNode; index: number }) {
+/* ── The bubble ───────────────────────────────────────────────────────────
+   Board: 58px disc, `box-shadow: 0 4px 0` bevel, emoji glyph. The accent fill
+   is theme-invariant, so the glyph on it is the board's near-black in BOTH
+   themes (which is exactly what the dark twin draws). */
+
+function StrandNode({ node, seq }: { node: PathNode; seq: number }) {
   const { state, kind } = node;
   const filled = state === "done" || state === "current";
-  const Icon = KIND_ICON[kind];
+  const current = state === "current";
+  const size = current ? CURRENT : NODE;
+
+  const glyph =
+    state === "done"
+      ? "✓"
+      : current
+        ? "★"
+        : kind !== "lesson"
+          ? KIND_GLYPH[kind]
+          : state === "locked"
+            ? "🔒"
+            : String(seq).padStart(2, "0");
 
   const disc = (
-    <span className="relative mx-auto block h-[54px] w-[54px]">
-      {state === "current" && (
+    <span
+      className="relative mx-auto block"
+      style={{ width: size, height: size }}
+    >
+      {current && (
         <span
           aria-hidden
-          className="absolute -inset-[6px] rounded-full border-2 border-accent/35"
+          className="absolute -inset-[7px] rounded-full border-[2.5px] motion-safe:animate-ping"
+          style={{ borderColor: "color-mix(in srgb, var(--accent-solid) 50%, transparent)" }}
         />
       )}
       <span
-        className={`grid h-full w-full place-items-center rounded-full ${
+        className={`relative grid h-full w-full place-items-center rounded-full ${
+          filled ? "text-[#1A1614]" : "text-soft"
+        } ${state === "locked" ? "opacity-90" : ""}`}
+        style={
           filled
-            ? "bg-accent text-night-950"
-            : state === "locked"
-              ? "f0-frame text-soft opacity-70"
-              : "f0-frame text-soft"
-        }`}
+            ? {
+                background: "var(--accent-solid)",
+                boxShadow: "0 4px 0 color-mix(in srgb, var(--accent-solid) 68%, #000)",
+              }
+            : {
+                background: "var(--card)",
+                border: "2px solid var(--sand)",
+                boxShadow: "0 4px 0 color-mix(in srgb, var(--sand) 88%, #000)",
+              }
+        }
       >
-        {state === "done" ? (
-          <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden />
-        ) : state === "locked" ? (
-          <Lock className="h-4 w-4" aria-hidden />
-        ) : kind === "lesson" && state === "open" ? (
-          <span className="font-mono text-[13px] font-semibold tabular-nums">
-            {String(index + 1).padStart(2, "0")}
-          </span>
-        ) : (
-          <Icon className="h-[18px] w-[18px]" aria-hidden />
-        )}
+        <span
+          aria-hidden
+          className={
+            state === "done" || current
+              ? "font-display font-extrabold"
+              : kind === "lesson" && state !== "locked"
+                ? "font-mono font-semibold tabular-nums"
+                : ""
+          }
+          style={{ fontSize: current ? 26 : state === "done" ? 22 : 18 }}
+        >
+          {glyph}
+        </span>
       </span>
     </span>
   );
 
-  const label = (
-    <>
-      <span
-        className={`mt-2.5 line-clamp-2 block text-[12px] leading-tight ${
-          state === "current"
-            ? "font-display font-extrabold text-ink"
-            : state === "done"
-              ? "text-ink"
-              : "text-soft"
-        }`}
-      >
-        {node.title}
-      </span>
-      {node.meta && (
-        <span className="mt-0.5 block font-mono text-[10.5px] tabular-nums text-soft">
-          {node.meta}
-        </span>
-      )}
-    </>
+  const label = current ? (
+    <span className="mt-[7px] inline-block max-w-full truncate rounded-[10px] border border-sand bg-card px-2.5 py-[3px] font-display text-[11px] font-bold text-ink">
+      {node.title}
+    </span>
+  ) : (
+    <span className="mt-[5px] line-clamp-2 block text-[10.5px] font-semibold leading-tight text-soft">
+      {node.title}
+    </span>
   );
+
+  const meta = node.meta ? (
+    <span className="mt-0.5 block font-mono text-[9.5px] tabular-nums text-soft">
+      {node.meta}
+    </span>
+  ) : null;
 
   const srState = <span className="sr-only">, {STATE_LABEL[state]}</span>;
 
@@ -258,6 +282,7 @@ function PathNodeMark({ node, index }: { node: PathNode; index: number }) {
       <div aria-disabled className="block">
         {disc}
         {label}
+        {meta}
         {srState}
       </div>
     );
@@ -267,64 +292,136 @@ function PathNodeMark({ node, index }: { node: PathNode; index: number }) {
     <Link href={node.href} className="f0-press f0-focus block rounded-xl">
       {disc}
       {label}
+      {meta}
       {srState}
     </Link>
   );
 }
 
-/* ── Unit head ────────────────────────────────────────────────────────────
-   The strand is grouped by unit (a module). A hairline, a mono index, the
-   title, and the honest count — never a card header. */
-export function PathUnitHead({
+/* ── The side object ──────────────────────────────────────────────────────
+   Board 20's "XP chest" / "Motion recap": a 46px rounded square off the
+   strand. Drawn only for the node_kinds that really are side quests. */
+
+function AsideTile({ node }: { node: PathNode }) {
+  const tile = (
+    <span
+      className="mx-auto grid place-items-center rounded-xl"
+      style={{
+        width: ASIDE,
+        height: ASIDE,
+        background: "var(--card)",
+        border: `1.5px solid ${
+          node.state === "locked"
+            ? "var(--sand)"
+            : "color-mix(in srgb, var(--accent-solid) 30%, var(--sand))"
+        }`,
+      }}
+    >
+      <span aria-hidden style={{ fontSize: 18 }}>
+        {node.state === "locked" ? "🔒" : KIND_GLYPH[node.kind]}
+      </span>
+    </span>
+  );
+
+  const body = (
+    <>
+      {tile}
+      <span className="mt-1 line-clamp-2 block text-[9px] leading-tight text-soft">
+        {node.title}
+      </span>
+      <span className="sr-only">, {STATE_LABEL[node.state]}</span>
+    </>
+  );
+
+  if (!node.href) return <div aria-disabled className="block">{body}</div>;
+  return (
+    <Link href={node.href} className="f0-press f0-focus block rounded-xl">
+      {body}
+    </Link>
+  );
+}
+
+/* ── Unit band ────────────────────────────────────────────────────────────
+   Board 20's warm header band: mono "UNIT 2 · MARKETS 101", the unit title,
+   and a pill on the right. Replaces the old hairline unit head. */
+
+export function PathUnitBand({
   index,
   title,
+  eyebrow,
   done,
   total,
-  eyebrow,
+  href,
+  action,
 }: {
   index: number;
   title: string;
+  eyebrow?: string;
   done: number;
   total: number;
-  eyebrow?: string;
+  href?: string;
+  action?: React.ReactNode;
 }) {
-  return (
-    <div className="f0-rule-top flex items-baseline gap-4 pt-4">
-      <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
-        {String(index).padStart(2, "0")}
-      </span>
-      <span className="min-w-0 flex-1">
-        {eyebrow && (
-          <span className="block text-eyebrow font-display font-bold uppercase text-gold-700">
-            {eyebrow}
-          </span>
-        )}
-        <span className="block font-display text-[16px] font-bold leading-snug text-ink">
+  const inner = (
+    <>
+      <div className="min-w-0 flex-1">
+        <MonoEyebrow>
+          Unit {index}
+          {eyebrow ? ` · ${eyebrow}` : ""}
+        </MonoEyebrow>
+        <p className="mt-[3px] truncate font-display text-[16px] font-extrabold text-ink">
           {title}
+        </p>
+      </div>
+      {action ?? (
+        <span className="shrink-0 rounded-[14px] border border-[color-mix(in_srgb,var(--ink)_14%,transparent)] bg-[color-mix(in_srgb,var(--card)_55%,transparent)] px-3 py-1.5 font-mono text-[11px] font-semibold tabular-nums text-ink">
+          {done}/{total}
         </span>
-      </span>
-      <span className="shrink-0 font-mono text-[12px] tabular-nums text-soft">
-        {done}/{total}
-      </span>
+      )}
+    </>
+  );
+
+  const className =
+    "flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition-transform active:scale-[0.995]";
+
+  if (href) {
+    return (
+      <Link href={href} className={`${className} f0-focus`} style={warmFieldStyle()}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <div className={className} style={warmFieldStyle()}>
+      {inner}
     </div>
   );
 }
 
 /* ── Path skeleton ────────────────────────────────────────────────────────
-   Loading is NOT the founding state (plan §0.4): this draws the strand's
-   silhouette while the fetch is in flight, so an empty path never flashes. */
+   Loading is NOT the founding state: this draws the strand's silhouette while
+   the fetch is in flight, so an empty path never flashes. */
 export function LearnPathSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="mx-auto w-full max-w-[420px] animate-pulse" aria-hidden>
-      <ol className="relative" style={{ height: NODE + (count - 1) * STEP_Y + 46 }}>
+      <ol
+        className="relative"
+        style={{ height: CURRENT + (count - 1) * STEP_Y + LABEL_ROOM }}
+      >
         {Array.from({ length: count }).map((_, i) => (
           <li
             key={i}
             className="absolute w-[136px] text-center"
-            style={{ left: swingLeft(i), top: i * STEP_Y }}
+            style={{
+              left: `calc(${((0.5 + SWING[i % SWING.length] * AMP) * 100).toFixed(2)}% - 68px)`,
+              top: i * STEP_Y,
+            }}
           >
-            <span className="mx-auto block h-[54px] w-[54px] rounded-full bg-sand/60" />
-            <span className="mx-auto mt-2.5 block h-3 w-20 rounded bg-sand/40" />
+            <span
+              className="mx-auto block rounded-full bg-sand/60"
+              style={{ width: NODE, height: NODE }}
+            />
+            <span className="mx-auto mt-[7px] block h-3 w-20 rounded bg-sand/40" />
           </li>
         ))}
       </ol>

@@ -159,17 +159,23 @@ export default function ChoiceCore({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: EASE_OUT }}
-            className="mt-5 flex items-center justify-end gap-4"
+            className="f0-rule-top mt-6 flex items-center gap-3 pt-4"
           >
+            {/* Board 21's footer bar: the quiet XP note, then the full-width
+                Check. The note is only ever XP that will really be banked. */}
             {footerNote && (
-              <span className="mr-auto font-mono text-[11px] tabular-nums text-gold-700">
+              <span
+                className="shrink-0 font-mono text-[11px] tabular-nums"
+                style={{ color: "color-mix(in srgb, #D99A00 78%, var(--ink))" }}
+              >
                 {footerNote}
               </span>
             )}
             <PrimaryButton
               onClick={check}
               disabled={selected === null}
-              icon="check"
+              icon="none"
+              block
             >
               Check
             </PrimaryButton>

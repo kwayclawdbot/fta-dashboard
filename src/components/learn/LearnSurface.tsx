@@ -2,46 +2,52 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Lock, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Lock, RotateCcw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
+import { getUserXp } from "@/lib/xp";
 import type { LiveEventCardData } from "@/lib/live/types";
 import {
-  DisplayHead,
   SectionRule,
   Ledger,
   LedgerRow,
-  LedgerLink,
-  Meter,
   EmptyLine,
   TabRail,
   TextAction,
 } from "@/components/f0/parts";
-import LearnPath, {
-  LearnPathSkeleton,
-  PathUnitHead,
-  type PathNode,
-  type PathNodeKind,
-} from "@/components/learn/LearnPath";
+import {
+  KIND_GLYPH,
+  LearnWordmark,
+  MonoEyebrow,
+  StatRail,
+  dayStreak,
+  pathFieldStyle,
+  pathGlyph,
+  pathHue,
+  pathInk,
+  warmFieldStyle,
+  type NodeGlyphKind,
+} from "@/components/learn/kit";
+import type { PathNodeKind } from "@/components/learn/LearnPath";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LEARN — "Grow your edge". Route: /courses (the Learn nav slot).
+   LEARN — route /courses (the Learn nav slot). Built to board 08
+   (`light-r1-c0` + `light-r1-c1`, "08 LEARN"; dark twin `dark-r1-*`).
 
-   Three tabs, one surface:
-     · JOURNEY  — the obsidian "continue learning" field (the single hero on
-                  this surface), the next class as a line, then every path you
-                  can open as hairline rows with a meter. Honest empty states.
-     · CLASSES  — real live_events off /api/live (live · upcoming · replays),
-                  with a working Remind Me write to /api/live/[id]/remind.
-     · MISSIONS — real fic_missions + mission_completions. club_missions
-                  (migrations 180/181) DO NOT EXIST on this branch, so nothing
-                  here pretends they do.
+   The board, top to bottom: the script wordmark, YOUR PATHS as hue-washed
+   rows carrying a real percentage, a CONTINUE card beside a YOUR STREAK card,
+   then UP NEXT as two hairline rows. That is exactly what the Journey tab now
+   renders — no obsidian hero, no meters, no ledger rows left over from the
+   previous pass.
 
-   REAL DATA ONLY. Nothing renders a plausible-looking number: a path with no
-   lessons is dropped, a tab with no rows states the absence and offers a way
-   out. No card grids anywhere — rules and type carry the hierarchy.
+   Classes and Missions are not drawn on any board; they keep their working
+   shape and their real reads.
+
+   REAL DATA ONLY. The percentage is `lesson_progress` over `lessons`; the
+   streak is consecutive local days with a real completion; the XP is the sum
+   of `xp_events`. A path with no lessons is dropped rather than padded.
    ══════════════════════════════════════════════════════════════════════════ */
 
 type Tab = "journey" | "classes" | "missions";
@@ -73,12 +79,30 @@ interface MissionLine {
   done: boolean;
 }
 
+/** A course's lessons flattened into program order. */
+interface OrderedLesson {
+  id: string;
+  title: string;
+  is_free: boolean;
+  moduleId: string;
+  kind: PathNodeKind;
+  durationSec: number | null;
+}
+
+/** One "UP NEXT" line on board 08 — glyph, title, and the honest minutes. */
+interface UpNextLine {
+  ref: LessonRef;
+  glyph: string;
+  meta: string | null;
+}
+
 interface RawLesson {
   id: string;
   title: string;
   sort_order: number;
   is_free: boolean;
   node_kind: string | null;
+  video_duration_sec: number | null;
 }
 
 interface RawModule {
@@ -99,41 +123,33 @@ interface RawCourse {
   modules: RawModule[] | null;
 }
 
-/** The unit the member is standing in, drawn as the path (canvas App 20). */
-interface ActiveUnit {
-  courseSlug: string;
-  courseTitle: string;
-  unitTitle: string;
-  unitIndex: number;
-  unitCount: number;
-  done: number;
-  nodes: PathNode[];
-}
-
 interface LearnState {
   tier: FamilyTier;
   isKid: boolean;
   /** The single most-recent unfinished lesson — the Continue target. */
   pickup: (LessonRef & { courseTitle: string; pct: number; index: number; total: number }) | null;
-  /** The path strand for the unit that contains `pickup`. */
-  activeUnit: ActiveUnit | null;
-  /** The unit after the active one — drawn as the honest "what's next" line. */
-  nextUnit: { title: string; lessons: number } | null;
   paths: PathLine[];
+  /** The two lessons queued behind the Continue target (board 08 "UP NEXT"). */
+  upNext: UpNextLine[];
   /** Free tier only: the fully-playable sampler. */
   sampler: LessonRef[];
   lockedLessonCount: number;
+  /** Consecutive local days with a real lesson completion. 0 = no streak yet. */
+  streak: number;
+  /** Lifetime XP (sum of xp_events); null when it could not be read. */
+  xp: number | null;
 }
 
 const EMPTY: LearnState = {
   tier: "fic",
   isKid: false,
   pickup: null,
-  activeUnit: null,
-  nextUnit: null,
   paths: [],
+  upNext: [],
   sampler: [],
   lockedLessonCount: 0,
+  streak: 0,
+  xp: null,
 };
 
 const NODE_KINDS: PathNodeKind[] = ["lesson", "game", "challenge", "boss", "mission"];
@@ -180,7 +196,7 @@ export default function LearnSurface() {
         supabase
           .from("courses")
           .select(
-            "id, slug, title, description, program, sort_order, modules(id, title, track, sort_order, lessons(id, title, sort_order, is_free, node_kind))"
+            "id, slug, title, description, program, sort_order, modules(id, title, track, sort_order, lessons(id, title, sort_order, is_free, node_kind, video_duration_sec))"
           )
           .in("program", ["fic", "fta"])
           .eq("published", true)
@@ -203,10 +219,8 @@ export default function LearnSurface() {
       let pickup: LearnState["pickup"] = null;
       /** The path whose most recent completion is newest wins the Continue slot. */
       let pickupRank = Number.POSITIVE_INFINITY;
-      /** Ordered units per course slug — the strand's source, kept so the path
-       *  can be drawn for whichever course wins the Continue slot. */
-      const unitsBySlug = new Map<string, RawModule[]>();
-      const titleBySlug = new Map<string, string>();
+      /** Ordered lessons per course slug — the source of the UP NEXT queue. */
+      const orderedBySlug = new Map<string, OrderedLesson[]>();
       /** Lessons a free family can see listed but not open. */
       const gatedLessonIds = new Set<string>();
 
@@ -218,22 +232,22 @@ export default function LearnSurface() {
           .filter((m) => (c.program === "fta" ? true : Boolean(m.track)))
           .sort((a, b) => a.sort_order - b.sort_order);
 
-        const ordered: { id: string; title: string; is_free: boolean }[] = [];
+        const ordered: OrderedLesson[] = [];
         for (const m of modules) {
           for (const l of [...(m.lessons ?? [])].sort((a, b) => a.sort_order - b.sort_order)) {
-            ordered.push({ id: l.id, title: l.title, is_free: l.is_free });
+            ordered.push({
+              id: l.id,
+              title: l.title,
+              is_free: l.is_free,
+              moduleId: m.id,
+              kind: toNodeKind(l.node_kind),
+              durationSec: l.video_duration_sec,
+            });
           }
         }
         if (ordered.length === 0) continue;
 
-        unitsBySlug.set(
-          c.slug,
-          modules.map((m) => ({
-            ...m,
-            lessons: [...(m.lessons ?? [])].sort((a, b) => a.sort_order - b.sort_order),
-          }))
-        );
-        titleBySlug.set(c.slug, c.title);
+        orderedBySlug.set(c.slug, ordered);
 
         const moduleOfLesson = new Map<string, string>();
         for (const m of modules) for (const l of m.lessons ?? []) moduleOfLesson.set(l.id, m.id);
@@ -322,64 +336,56 @@ export default function LearnSurface() {
         }
       }
 
-      /* ── The strand ──────────────────────────────────────────────────
-         The path is drawn for the unit that CONTAINS the pickup lesson —
-         the canvas's "Unit 2 · Markets 101" band plus its nodes. A member
-         at lesson 0 gets the first unit with node 1 marked current, which
-         is the real founding state, not an empty screen. */
-      let activeUnit: ActiveUnit | null = null;
-      let nextUnit: LearnState["nextUnit"] = null;
+      /* ── UP NEXT (board 08) ──────────────────────────────────────────
+         The two unfinished lessons queued behind the Continue target, in
+         the same path. Real rows only — when there is nothing behind it,
+         the section states that rather than padding the list. */
+      const upNext: UpNextLine[] = [];
       if (pickup) {
-        const units = unitsBySlug.get(pickup.courseSlug) ?? [];
-        const unitIdx = units.findIndex((m) =>
-          (m.lessons ?? []).some((l) => l.id === pickup!.lessonId)
-        );
-        const unit = unitIdx >= 0 ? units[unitIdx] : null;
-        if (unit) {
-          const lessons = unit.lessons ?? [];
-          activeUnit = {
-            courseSlug: pickup.courseSlug,
-            courseTitle: titleBySlug.get(pickup.courseSlug) ?? pickup.courseTitle,
-            unitTitle: unit.title ?? `Unit ${unitIdx + 1}`,
-            unitIndex: unitIdx + 1,
-            unitCount: units.length,
-            done: lessons.filter((l) => completed.has(l.id)).length,
-            nodes: lessons.map((l) => {
-              const gated = gatedLessonIds.has(l.id);
-              return {
-                id: l.id,
-                title: l.title,
-                href: gated ? null : `/courses/${pickup!.courseSlug}/${unit.id}/${l.id}`,
-                kind: toNodeKind(l.node_kind),
-                state: completed.has(l.id)
-                  ? "done"
-                  : gated
-                    ? "locked"
-                    : l.id === pickup!.lessonId
-                      ? "current"
-                      : "open",
-              } satisfies PathNode;
-            }),
-          };
-          const after = units[unitIdx + 1];
-          if (after) {
-            nextUnit = {
-              title: after.title ?? `Unit ${unitIdx + 2}`,
-              lessons: (after.lessons ?? []).length,
-            };
-          }
+        const ordered = orderedBySlug.get(pickup.courseSlug) ?? [];
+        const at = ordered.findIndex((l) => l.id === pickup!.lessonId);
+        for (let i = at + 1; i < ordered.length && upNext.length < 2; i++) {
+          const l = ordered[i];
+          if (completed.has(l.id) || gatedLessonIds.has(l.id)) continue;
+          upNext.push({
+            ref: {
+              courseSlug: pickup.courseSlug,
+              moduleId: l.moduleId,
+              lessonId: l.id,
+              title: l.title,
+            },
+            glyph: KIND_GLYPH[l.kind as NodeGlyphKind] ?? KIND_GLYPH.lesson,
+            meta: l.durationSec ? `${Math.max(1, Math.round(l.durationSec / 60))} min` : null,
+          });
         }
+      }
+
+      /* ── The streak + the XP (board 08 / board 20 header) ────────────
+         Both are measured, never decorative: consecutive local days that
+         carry a real `lesson_progress` completion, and the lifetime sum of
+         `xp_events`. The clock is read HERE, in the fetch — never during a
+         render. */
+      const streak = dayStreak(
+        completedRows.map((r) => r.completed_at),
+        Date.now()
+      );
+      let xp: number | null = null;
+      try {
+        xp = await getUserXp(supabase, user.id);
+      } catch {
+        xp = null;
       }
 
       setState({
         tier,
         isKid,
         pickup,
-        activeUnit,
-        nextUnit,
         paths,
+        upNext,
         sampler,
         lockedLessonCount,
+        streak,
+        xp,
       });
       setLoading(false);
     } catch {
@@ -420,16 +426,16 @@ export default function LearnSurface() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 pb-16">
-      <DisplayHead
-        eyebrow="Grow your edge"
-        title="Learn"
-        lede={
-          state.isKid
-            ? "Your adventures, your classes, and the missions that turn them into XP."
-            : "One concept at a time, live classes when you want a room, and missions that put it to work."
-        }
-      />
+    <div className="mx-auto max-w-2xl space-y-6 pb-16">
+      {/* Board 08 head: the script wordmark alone, with board 20's stat rail
+          carrying the streak and the lifetime XP. */}
+      <div className="flex items-center justify-between gap-4">
+        <h1>
+          <LearnWordmark>learn</LearnWordmark>
+          <span className="sr-only">Learn</span>
+        </h1>
+        <StatRail streak={state.streak} xp={state.xp} />
+      </div>
 
       <TabRail tabs={TABS} value={tab} onChange={setTab} ariaLabel="Learn sections" />
 
@@ -440,205 +446,213 @@ export default function LearnSurface() {
   );
 }
 
-/* ── JOURNEY ─────────────────────────────────────────────────────────────── */
+/* ── JOURNEY — board 08 ──────────────────────────────────────────────────
+   YOUR PATHS · CONTINUE + YOUR STREAK · UP NEXT. Drawn in that order, with
+   the board's own objects. */
 
 function JourneyTab({ state }: { state: LearnState }) {
-  const { pickup, paths, tier, sampler, lockedLessonCount, activeUnit, nextUnit } = state;
+  const { pickup, paths, tier, sampler, lockedLessonCount, upNext, streak } = state;
   const started = pickup ? pickup.index > 1 : false;
 
   return (
-    <div className="space-y-10">
-      {/* ── CONTINUE — the one obsidian field on this surface ─────────────
-          f0-hero-field is deliberately obsidian in BOTH themes, so its own
-          type is theme-invariant cream (the same rule as type on the orange
-          band). Every colour OUTSIDE this field is a semantic token. */}
-      {pickup ? (
-        <section className="f0-hero-field f0-grain p-6 sm:p-7">
-          <p className="text-eyebrow font-display font-bold uppercase text-volt-400">
-            {started ? "Continue learning" : "Start here"}
-          </p>
-          <h2 className="mt-2 font-display text-display-2 font-extrabold leading-[1.08] text-[#F7F3EA]">
-            {pickup.title}
-          </h2>
-          <p className="mt-2 font-mono text-[12px] text-[#F7F3EA]/60">
-            {pickup.courseTitle} · Lesson {pickup.index} of {pickup.total}
-          </p>
+    <div className="space-y-7">
+      {/* ── YOUR PATHS ───────────────────────────────────────────────── */}
+      <section>
+        <MonoEyebrow tone="ink">{state.isKid ? "Your adventures" : "Your paths"}</MonoEyebrow>
+        {paths.length === 0 ? (
+          <div className="mt-3">
+            <EmptyLine
+              title="No paths published yet"
+              body="Lessons appear here as they're published — nothing is hidden behind a placeholder."
+            />
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-col gap-2.5">
+            {paths.map((p, i) => (
+              <PathRow key={p.slug} path={p} index={i} />
+            ))}
+          </div>
+        )}
+      </section>
 
-          <Meter pct={pickup.pct} onDark className="mt-5" />
-          <p className="mt-2 font-mono text-[12px] text-[#F7F3EA]/60">
-            {pickup.pct}% of this path complete
+      {/* ── CONTINUE + YOUR STREAK ───────────────────────────────────── */}
+      <section className="flex gap-3">
+        {pickup ? (
+          <div className="min-w-0 flex-[1.3] rounded-2xl border border-sand bg-card p-4 sm:p-5">
+            <MonoEyebrow>Continue</MonoEyebrow>
+            <p className="mt-2.5 truncate text-[12px] text-soft">{pickup.courseTitle}</p>
+            <p className="mt-0.5 font-display text-[17px] font-extrabold leading-tight text-ink">
+              {pickup.title}
+            </p>
+            <p className="mt-1 font-mono text-[11px] tabular-nums text-soft">
+              Lesson {pickup.index} of {pickup.total} · {pickup.pct}%
+            </p>
+            <Link
+              href={`/courses/${pickup.courseSlug}/${pickup.moduleId}/${pickup.lessonId}`}
+              className="f0-press f0-focus mt-4 block rounded-full bg-accent py-2.5 text-center font-display text-[13px] font-extrabold text-[#1A1614]"
+            >
+              {started ? "Continue" : "Start"}
+            </Link>
+          </div>
+        ) : (
+          <div className="min-w-0 flex-[1.3] rounded-2xl border border-sand bg-card p-4 sm:p-5">
+            <MonoEyebrow>Continue</MonoEyebrow>
+            <p className="mt-2.5 text-[13px] leading-relaxed text-soft">
+              Your place in a path shows up here the moment you open a lesson — with the
+              exact lesson to pick back up on.
+            </p>
+            {tier === "free" && (
+              <div className="mt-3">
+                <TextAction href="/upgrade">
+                  See what the Club opens <ArrowRight className="h-3.5 w-3.5" />
+                </TextAction>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div
+          className="min-w-0 flex-1 rounded-2xl border p-4 text-center sm:p-5"
+          style={warmFieldStyle("160deg")}
+        >
+          <MonoEyebrow>Your streak</MonoEyebrow>
+          <div aria-hidden className="mt-2.5 text-[26px] leading-none">
+            🔥
+          </div>
+          <div className="mt-1.5 font-display text-[30px] font-extrabold leading-none tabular-nums tracking-tight text-ink">
+            {streak}
+          </div>
+          <p className="mt-1.5 text-[11px] text-soft">
+            {streak === 0
+              ? "Finish a lesson to start it"
+              : streak === 1
+                ? "Day in a row"
+                : "Days in a row"}
           </p>
+        </div>
+      </section>
 
-          <Link
-            href={`/courses/${pickup.courseSlug}/${pickup.moduleId}/${pickup.lessonId}`}
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-volt-500 px-5 py-2.5 font-display text-[14px] font-bold text-white transition-transform active:scale-[0.98]"
-          >
-            {started ? "Continue lesson" : "Open the first lesson"}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </section>
-      ) : (
-        <EmptyLine
-          title="Nothing open yet"
-          body="Your place in a path shows up here the moment you open a lesson — with the exact lesson to pick back up on."
-          action={
-            tier === "free" ? (
-              <TextAction href="/upgrade">
-                See what the Club opens <ArrowRight className="h-3.5 w-3.5" />
-              </TextAction>
-            ) : undefined
-          }
-        />
-      )}
-
-      {/* ── THE PATH ─────────────────────────────────────────────────────
-          The unit you are standing in, drawn as a strand. Nodes are real
-          lessons; the walked strand is your actual completion. A single
-          untouched lesson still draws — node 1, marked current — because a
-          learner at zero is the real state, not an empty screen. */}
-      {activeUnit && activeUnit.nodes.length > 0 && (
+      {/* ── UP NEXT ──────────────────────────────────────────────────── */}
+      {pickup && (
         <section>
-          <PathUnitHead
-            index={activeUnit.unitIndex}
-            title={activeUnit.unitTitle}
-            done={activeUnit.done}
-            total={activeUnit.nodes.length}
-            eyebrow={activeUnit.courseTitle}
-          />
-          <LearnPath
-            nodes={activeUnit.nodes}
-            ariaLabel={`${activeUnit.unitTitle} lessons`}
-            className="mt-6"
-          />
-
-          {nextUnit ? (
-            <div className="f0-rule-top flex items-baseline gap-4 pt-4">
-              <span className="shrink-0 font-mono text-[12px] font-semibold tabular-nums text-soft">
-                {String(activeUnit.unitIndex + 1).padStart(2, "0")}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-eyebrow font-display font-bold uppercase text-soft">
-                  Up next
-                </span>
-                <span className="block font-display text-[15px] font-bold leading-snug text-soft">
-                  {nextUnit.title}
-                </span>
-              </span>
-              <span className="shrink-0 font-mono text-[12px] tabular-nums text-soft">
-                {nextUnit.lessons} lesson{nextUnit.lessons === 1 ? "" : "s"}
-              </span>
-            </div>
+          <MonoEyebrow>Up next</MonoEyebrow>
+          {upNext.length === 0 ? (
+            <p className="mt-3 text-[13px] leading-relaxed text-soft">
+              Nothing queued behind this one — it&apos;s the last open lesson on the path.
+            </p>
           ) : (
-            <div className="f0-rule-top pt-4">
-              <p className="text-[13px] leading-relaxed text-soft">
-                Last unit on this path — finish it and the whole path is yours.
-              </p>
+            <div className="mt-3 flex flex-col gap-2">
+              {upNext.map((l) => (
+                <NextRow key={l.ref.lessonId} line={l} />
+              ))}
             </div>
           )}
-
-          <div className="mt-4">
-            <TextAction href={`/courses/${activeUnit.courseSlug}`}>
-              See the whole path <ArrowRight className="h-3.5 w-3.5" />
-            </TextAction>
-          </div>
         </section>
       )}
 
-      {/* ── FREE SAMPLER ─────────────────────────────────────────────────── */}
+      {/* ── FREE SAMPLER ─────────────────────────────────────────────── */}
       {tier === "free" && sampler.length > 0 && (
-        <section className="space-y-4">
-          <SectionRule>Free lessons — yours to keep</SectionRule>
-          <Ledger>
+        <section>
+          <MonoEyebrow>Free lessons — yours to keep</MonoEyebrow>
+          <div className="mt-3 flex flex-col gap-2">
             {sampler.map((l) => (
-              <LedgerLink
+              <NextRow
                 key={l.lessonId}
-                href={`/courses/${l.courseSlug}/${l.moduleId}/${l.lessonId}`}
-                label={l.title}
-                sub="Full lesson, quiz and XP — no card needed"
-                tone="volt"
+                line={{ ref: l, glyph: KIND_GLYPH.lesson, meta: null }}
               />
             ))}
-          </Ledger>
+          </div>
           {lockedLessonCount > 0 && (
-            <p className="text-[13px] leading-relaxed text-soft">
+            <p className="mt-3 text-[13px] leading-relaxed text-soft">
               {lockedLessonCount} more lesson{lockedLessonCount === 1 ? "" : "s"} open when
               you join the Club.{" "}
-              <Link
-                href="/upgrade"
-                className="font-display font-bold text-gold-700"
-              >
+              <Link href="/upgrade" className="font-display font-bold text-gold-700">
                 See the plans
               </Link>
             </p>
           )}
         </section>
       )}
-
-      {/* ── PATHS ────────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <SectionRule>{state.isKid ? "Your adventures" : "Your paths"}</SectionRule>
-        {paths.length === 0 ? (
-          <EmptyLine
-            title="No paths published yet"
-            body="Lessons appear here as they're published — nothing is hidden behind a placeholder."
-          />
-        ) : (
-          <Ledger>
-            {paths.map((p) => (
-              <PathRow key={p.slug} path={p} />
-            ))}
-          </Ledger>
-        )}
-      </section>
     </div>
   );
 }
 
-function PathRow({ path }: { path: PathLine }) {
+/* One path as board 08 draws it: a hue wash whose width IS the percentage,
+   the path glyph, the real done/total, and the numeral in that hue. */
+function PathRow({ path, index }: { path: PathLine; index: number }) {
   const pct = path.total > 0 ? Math.round((path.done / path.total) * 100) : 0;
-  const complete = path.total > 0 && path.done === path.total;
+  const hue = pathHue(index);
+  const href = path.locked
+    ? "/upgrade"
+    : path.next
+      ? `/courses/${path.slug}/${path.next.moduleId}/${path.next.lessonId}`
+      : `/courses/${path.slug}`;
 
-  const body = (
-    <>
-      <div className="flex w-full items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[15px] font-bold text-ink">{path.title}</p>
-          {path.program === "fta" && (
-            <p className="mt-0.5 text-[13px] text-soft">The live 6-week program</p>
-          )}
-        </div>
+  return (
+    <Link
+      href={href}
+      className="f0-press f0-focus relative block overflow-hidden rounded-2xl border px-4 py-3"
+      style={pathFieldStyle(hue)}
+    >
+      {/* The progress wash — its width is the real percentage, nothing else. */}
+      {!path.locked && pct > 0 && (
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0"
+          style={{
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, color-mix(in srgb, ${hue} 22%, transparent), transparent)`,
+          }}
+        />
+      )}
+      <span className="relative flex items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span aria-hidden className="text-[15px] leading-none">
+            {pathGlyph(index)}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate font-display text-[14px] font-bold text-ink">
+              {path.title}
+            </span>
+            <span className="mt-px block truncate text-[10.5px] text-soft">
+              {path.locked
+                ? path.program === "fta"
+                  ? "Opens with enrollment"
+                  : "Opens in the Club"
+                : `${path.done} of ${path.total} lesson${path.total === 1 ? "" : "s"}`}
+            </span>
+          </span>
+        </span>
         {path.locked ? (
-          <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-[13px] font-bold text-soft">
-            <Lock className="h-3.5 w-3.5" />
-            {path.program === "fta" ? "Enrollment" : "In the Club"}
-          </span>
-        ) : complete ? (
-          <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-[13px] font-bold text-ink">
-            <Check className="h-4 w-4" /> Complete
-          </span>
+          <Lock className="h-3.5 w-3.5 shrink-0 text-soft" />
         ) : (
-          <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-soft">
-            {path.done}/{path.total}
+          <span
+            className="shrink-0 font-mono text-[13px] font-semibold tabular-nums"
+            style={pathInk(hue)}
+          >
+            {pct}%
           </span>
         )}
-      </div>
-      {!path.locked && <Meter pct={pct} className="mt-2 w-full" />}
-    </>
+      </span>
+    </Link>
   );
+}
 
-  if (path.locked) {
-    return (
-      <Link href="/upgrade" className="f0-ledger-row group block">
-        {body}
-      </Link>
-    );
-  }
-  const href = path.next
-    ? `/courses/${path.slug}/${path.next.moduleId}/${path.next.lessonId}`
-    : `/courses/${path.slug}`;
+/** An UP NEXT / sampler line: glyph, title, minutes, chevron. */
+function NextRow({ line }: { line: UpNextLine }) {
   return (
-    <Link href={href} className="f0-ledger-row group block">
-      {body}
+    <Link
+      href={`/courses/${line.ref.courseSlug}/${line.ref.moduleId}/${line.ref.lessonId}`}
+      className="f0-press f0-focus flex items-center gap-2.5 rounded-xl border border-sand bg-card px-3 py-2.5"
+    >
+      <span aria-hidden className="text-[13px] leading-none">
+        {line.glyph}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[13px] text-ink">
+        {line.ref.title}
+        {line.meta && <span className="text-soft"> · {line.meta}</span>}
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-soft" />
     </Link>
   );
 }
@@ -1013,17 +1027,27 @@ function MissionsTab({ isKid }: { isKid: boolean }) {
 
 function LearnSkeleton() {
   return (
-    <div className="mx-auto max-w-2xl animate-pulse space-y-8 pb-16">
-      <div className="space-y-3">
-        <div className="h-3 w-32 rounded bg-sand/60" />
-        <div className="h-11 w-44 rounded bg-sand/60" />
+    <div className="mx-auto max-w-2xl animate-pulse space-y-6 pb-16" aria-hidden>
+      <div className="flex items-center justify-between">
+        <div className="h-9 w-32 rounded bg-sand/60" />
+        <div className="h-3 w-24 rounded bg-sand/40" />
       </div>
       <div className="h-10 rounded bg-sand/40" />
-      <div className="h-56 rounded-[1.5rem] bg-sand/40" />
-      {/* The strand's silhouette — loading must not be mistaken for an empty
-          path (plan §0.4). */}
-      <div className="h-4 w-40 rounded bg-sand/40" />
-      <LearnPathSkeleton count={3} />
+      {/* Board 08's silhouette: four path rows, the two-up, then the queue —
+          loading must never be mistaken for an empty Learn. */}
+      <div className="space-y-2.5">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[58px] rounded-2xl bg-sand/40" />
+        ))}
+      </div>
+      <div className="flex gap-3">
+        <div className="h-[168px] flex-[1.3] rounded-2xl bg-sand/40" />
+        <div className="h-[168px] flex-1 rounded-2xl bg-sand/30" />
+      </div>
+      <div className="space-y-2">
+        <div className="h-11 rounded-xl bg-sand/30" />
+        <div className="h-11 rounded-xl bg-sand/30" />
+      </div>
     </div>
   );
 }

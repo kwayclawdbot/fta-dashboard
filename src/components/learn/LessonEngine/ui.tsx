@@ -6,19 +6,21 @@ import { Check, X, ArrowRight, Sparkles } from "lucide-react";
 import type { Register } from "@/lib/register";
 
 /**
- * Shared visual kit for LessonEngine steps.
+ * Shared visual kit for LessonEngine steps — board 21 (`light-r2-c1` +
+ * `light-r3-c1`, "21 LEARN · MICRO LESSON"; dark twin `dark-r2/r3-c1`).
  *
- * COLOUR LAW (hard, and the reason this file no longer paints answers green or
- * red): green/red are PRICE colours. A quiz result is not a price move, so
- * correctness is carried by INK + a mark (the settled, "locked-in" register)
- * and a wrong answer steps back into `soft` while the explanation does the
- * teaching — which is exactly the mastery-loop pedagogy ChoiceCore already
- * describes ("a wrong answer is NEVER just red + retry"). Volt orange is the
- * ACTION colour, so it marks the primary button and the live selection only.
- * Kai blue is the AI voice, so the guide line wears it.
+ * The board's answer object: a white 1.5px-hairline card, radius 14, with a
+ * 24px rounded-8 letter chip. Chosen = the accent field, an accent letter chip,
+ * a 600-weight label and a soft accent glow. That is what OptionButton draws
+ * now — the f0-chip rail it used to borrow is gone.
+ *
+ * COLOUR LAW that still holds: correctness never rides the green/red PRICE
+ * ramp. Being chosen and being right are both the accent plus a mark; a wrong
+ * answer steps back into `soft` while the explanation teaches.
  *
  * SURFACES are semantic tokens (paper/ink/soft/sand/card) — never bg-white,
- * which renders a white slab on the dark theme.
+ * which renders a white slab on the dark theme. The accent field is
+ * theme-invariant, so type sitting ON it is the board's near-black in both.
  *
  * Motion follows the emil-design framework: transform+opacity only, strong
  * ease-out under 300ms, scale-on-press feedback, prefers-reduced-motion honored.
@@ -56,11 +58,13 @@ export function StepPrompt({
     }
   }
   return (
-    <div className="mb-6">
-      <h2 className="max-w-[34ch] font-display text-display-3 font-extrabold text-ink">
+    <div className="mb-4">
+      {/* Board 21: 18px / 800 / -0.01em / 1.3 — the question is the head of the
+          screen, not a display headline sitting above one. */}
+      <h2 className="max-w-[34ch] font-display text-[20px] font-extrabold leading-[1.3] tracking-[-0.01em] text-ink sm:text-[22px]">
         {head}
       </h2>
-      {sub && <p className="mt-2.5 text-[14px] leading-snug text-soft">{sub}</p>}
+      {sub && <p className="mt-2 text-[13.5px] leading-snug text-soft">{sub}</p>}
     </div>
   );
 }
@@ -165,30 +169,43 @@ export function GuideLine({
   );
 }
 
-/** Primary action button — press feedback, single-line label.
- *  `action` = volt (do the thing) · `confirm` = ink (seal the thing). */
+/** Primary action button — the board's pill: accent field, near-black label,
+ *  800 weight, soft accent glow. `block` makes it the full-width Check bar.
+ *  `action` = accent (do the thing) · `confirm` = ink (seal the thing). */
 export function PrimaryButton({
   children,
   onClick,
   disabled,
   icon = "arrow",
   tone = "action",
+  block = false,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
   icon?: "arrow" | "check" | "none";
   tone?: "action" | "confirm";
+  block?: boolean;
 }) {
-  const base =
-    tone === "confirm"
-      ? "bg-ink text-paper hover:opacity-90"
-      : "bg-volt-500 text-white hover:bg-volt-600";
+  const confirm = tone === "confirm";
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 font-display text-sm font-bold transition-[transform,background-color,opacity] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:bg-sand disabled:text-soft ${base}`}
+      style={
+        confirm || disabled
+          ? undefined
+          : {
+              background: "var(--accent-solid)",
+              color: "#1A1614",
+              boxShadow: "0 0 12px color-mix(in srgb, var(--accent-solid) 22%, transparent)",
+            }
+      }
+      className={`${
+        block ? "flex w-full" : "inline-flex"
+      } items-center justify-center gap-2 rounded-full px-5 py-3 font-display text-[14px] font-extrabold transition-[transform,opacity] duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:bg-sand disabled:text-soft disabled:shadow-none ${
+        confirm ? "bg-ink text-paper hover:opacity-90" : ""
+      }`}
     >
       {icon === "check" && <Check className="h-4 w-4" />}
       <span className="whitespace-nowrap">{children}</span>
@@ -256,19 +273,12 @@ export function OptionButton({
   /** Roving tab stop when inside a <ChoiceGroup/>. */
   tabIndex?: number;
 }) {
-  // f0-chip carries the structure (hairline, radius, transition) and f0-chip-on
-  // is the selected field — the foundation's own selection chip, so a lesson
-  // answer and a stance chip are the SAME object at different sizes. Choosing
-  // and being right are told apart by the mark and by weight, never by the
-  // price ramp: green on a right answer would put price colour on a quiz.
-  const styles: Record<OptionState, string> = {
-    idle: "text-ink",
-    selected: "f0-chip-on",
-    correct: "f0-chip-on",
-    wrong: "text-soft opacity-70",
-    reveal: "f0-chip-on",
-  };
+  // Board 21's answer card. `on` (chosen, correct, revealed) is the accent
+  // field with the accent letter chip; wrong steps back into soft. Being right
+  // is the accent + a check — never green, which is price.
   const on = state === "selected" || state === "correct" || state === "reveal";
+  const wrong = state === "wrong";
+
   return (
     <button
       data-choice
@@ -278,13 +288,30 @@ export function OptionButton({
       tabIndex={tabIndex}
       onClick={onClick}
       disabled={disabled}
-      className={`f0-chip f0-press f0-focus w-full gap-3 px-4 py-3.5 text-left text-[15px] disabled:cursor-default ${styles[state]}`}
+      style={
+        on
+          ? {
+              background: "color-mix(in srgb, var(--accent-solid) 9%, var(--card))",
+              borderColor: "var(--accent-solid)",
+              boxShadow: "0 0 10px color-mix(in srgb, var(--accent-solid) 14%, transparent)",
+            }
+          : {
+              background: "var(--card)",
+              borderColor: "var(--sand)",
+            }
+      }
+      className={`f0-press f0-focus flex w-full items-center gap-3 rounded-[14px] border-[1.5px] px-4 py-3.5 text-left text-[14.5px] transition-[border-color,background-color] duration-150 ease-out disabled:cursor-default ${
+        wrong ? "text-soft opacity-70" : "text-ink"
+      }`}
     >
       {letter && (
         <span
-          className={`w-4 shrink-0 self-start pt-0.5 text-center font-mono text-[11px] font-semibold ${
-            on ? "" : "text-soft"
-          }`}
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-lg font-mono text-[11px] font-semibold"
+          style={
+            on
+              ? { background: "var(--accent-solid)", color: "#1A1614" }
+              : { background: "var(--sand)", color: "var(--soft)" }
+          }
         >
           {letter}
         </span>
@@ -292,7 +319,7 @@ export function OptionButton({
       <span className={`min-w-0 flex-1 ${on ? "font-semibold" : ""}`}>{label}</span>
       {state === "correct" || state === "reveal" ? (
         <Check className="h-4 w-4 shrink-0 self-center" strokeWidth={2.5} />
-      ) : state === "wrong" ? (
+      ) : wrong ? (
         <X className="h-4 w-4 shrink-0 self-center" />
       ) : null}
     </button>
