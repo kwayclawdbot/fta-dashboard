@@ -33,10 +33,14 @@ import {
   type TopArgument,
 } from "@/lib/social/ticker-debate";
 
-const STANCE_UI: Record<DebateStance, { label: string; bar: string; text: string; btn: string }> = {
-  bull: { label: "Bull", bar: "bg-green-500", text: "text-green-700", btn: "bg-green-500 hover:bg-green-600" },
-  bear: { label: "Bear", bar: "bg-red-500", text: "text-red-600", btn: "bg-red-500 hover:bg-red-600" },
-  undecided: { label: "Undecided", bar: "bg-soft", text: "text-soft", btn: "bg-midnight-400 hover:bg-midnight-500" },
+/* The CLUB SENTIMENT vocabulary from Club Screens 04 — Bullish green, Bearish
+   red, Watching grey. The fills are LITERALS, deliberately outside the price
+   tokens: this column sits inches from a real quote and the two must never be
+   the same colour by the stylesheet's reckoning, even where they agree by eye. */
+const STANCE_UI: Record<DebateStance, { label: string; fill: string; text: string }> = {
+  bull: { label: "Bullish", fill: "#1BA94C", text: "#1BA94C" },
+  bear: { label: "Bearish", fill: "#E0392B", text: "#E0392B" },
+  undecided: { label: "Watching", fill: "#A39A8E", text: "#8A8279" },
 };
 
 export default function TickerDebate({
@@ -130,26 +134,38 @@ export default function TickerDebate({
           : "Be an early voice — the first stances set the tone."}
       </p>
 
-      {/* three-way split bars */}
-      <div className="mt-4 space-y-2">
-        {(["bull", "bear", "undecided"] as DebateStance[]).map((k) => {
-          const n = k === "bull" ? state.bull : k === "bear" ? state.bear : state.undecided;
-          const ui = STANCE_UI[k];
-          return (
-            <div key={k} className="flex items-center gap-2">
-              <span className={`w-20 shrink-0 text-xs font-bold ${ui.text}`}>{ui.label}</span>
-              <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-sand">
-                <div
-                  className={`h-full rounded-full ${ui.bar} transition-all`}
-                  style={{ width: `${floorMet ? pct(n) : n > 0 ? 8 : 0}%` }}
-                />
+      {/* CLUB SENTIMENT — board 04's labelled bar column. Percentages print only
+          above the participation floor; below it the bar shows presence without
+          publishing a percentage computed from three votes. */}
+      <div className="mt-4">
+        <p className="mb-2.5 font-display text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-ink">
+          Club sentiment
+        </p>
+        <div className="space-y-2">
+          {(["bull", "bear", "undecided"] as DebateStance[]).map((k) => {
+            const n = k === "bull" ? state.bull : k === "bear" ? state.bear : state.undecided;
+            const ui = STANCE_UI[k];
+            return (
+              <div key={k}>
+                <div className="flex items-baseline justify-between text-[10.5px] font-semibold">
+                  <span style={{ color: ui.text }}>{ui.label}</span>
+                  <span className="font-mono tabular-nums text-ink">
+                    {floorMet ? `${pct(n)}%` : n > 0 ? "·" : ""}
+                  </span>
+                </div>
+                <div className="mt-1 h-[5px] overflow-hidden rounded-full bg-sand">
+                  <span
+                    className="block h-full rounded-full transition-all"
+                    style={{
+                      width: `${floorMet ? pct(n) : n > 0 ? 8 : 0}%`,
+                      background: ui.fill,
+                    }}
+                  />
+                </div>
               </div>
-              <span className="w-12 shrink-0 text-right font-mono text-xs tabular-nums text-soft">
-                {floorMet ? `${pct(n)}%` : n > 0 ? "·" : ""}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* vote / one-reason capture */}
@@ -207,7 +223,8 @@ export default function TickerDebate({
                 type="button"
                 onClick={() => vote(k)}
                 disabled={pending}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-60 ${STANCE_UI[k].btn}`}
+                className="f0-press flex-1 rounded-[9px] py-2.5 font-display text-[12px] font-bold text-white transition-transform disabled:opacity-60"
+                style={{ background: STANCE_UI[k].fill }}
               >
                 {STANCE_UI[k].label}
               </button>

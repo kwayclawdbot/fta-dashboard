@@ -17,13 +17,13 @@ import {
   timeLeft,
   type CircleListRow,
 } from "@/lib/circles";
+import { EmptyLine, TextAction } from "@/components/f0/parts";
 import {
-  DisplayHead,
-  SectionRule,
-  Ledger,
-  EmptyLine,
-  TextAction,
-} from "@/components/f0/parts";
+  BoardCard,
+  BoardMasthead,
+  PresenceLine,
+  SectionLabel,
+} from "@/app/(dashboard)/community/board";
 
 /* ══════════════════════════════════════════════════════════════════════════
    CIRCLES — the list (canvas v2, App board 16). Route: /circles.
@@ -73,11 +73,16 @@ function Skeleton() {
   );
 }
 
-/** One Circle as a ledger row. The clock is the loudest thing after the name. */
+/** One Circle as a CARD — the Club's unit, so a Circle sits in the same system
+ *  as everything else the member just walked past. The clock is the loudest
+ *  thing after the name. */
 function CircleRow({ c }: { c: CircleListRow }) {
   const left = timeLeft(c.expires_at);
   return (
-    <Link href={`/circles/${c.slug}`} className="f0-ledger-row group">
+    <Link
+      href={`/circles/${c.slug}`}
+      className="group flex items-center gap-3 rounded-[14px] border border-sand bg-card p-3.5 transition-colors hover:border-gold-300"
+    >
       {c.ticker ? (
         <span className="shrink-0 self-center">
           <TickerTile ticker={c.ticker} size="sm" showDelta={false} />
@@ -154,7 +159,7 @@ function OpenForm({ onOpened }: { onOpened: (slug: string) => void }) {
     "w-full bg-transparent pb-2 text-[15px] text-ink placeholder:text-soft/70 f0-rule-bottom focus:outline-none focus:border-gold-600";
 
   return (
-    <div className="space-y-6">
+    <BoardCard className="space-y-6">
       <div>
         <label
           htmlFor="circle-title"
@@ -239,7 +244,7 @@ function OpenForm({ onOpened }: { onOpened: (slug: string) => void }) {
       >
         {busy ? "Opening…" : "Open the Circle"}
       </button>
-    </div>
+    </BoardCard>
   );
 }
 
@@ -291,11 +296,23 @@ export default function CirclesSurface() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 pb-16">
-      <DisplayHead
-        eyebrow="Cheat Code Club"
-        title="Circles"
-        lede="Breakout rooms around one event or one thesis. Every Circle runs a 30-day clock — when it ends the room closes and the thread stands as the record."
-      />
+      <div>
+        <BoardMasthead
+          title="Circles"
+          presence={
+            <PresenceLine>
+              {rows.length > 0
+                ? `${rows.length} ${rows.length === 1 ? "room" : "rooms"} on the clock`
+                : "Breakout rooms, 30 days each"}
+            </PresenceLine>
+          }
+        />
+        <p className="mt-3.5 max-w-[52ch] text-[14px] leading-relaxed text-soft">
+          Breakout rooms around one event or one thesis. Every Circle runs a
+          30-day clock — when it ends the room closes and the thread stands as
+          the record.
+        </p>
+      </div>
 
       {failed ? (
         <EmptyLine
@@ -322,17 +339,12 @@ export default function CirclesSurface() {
         <>
           {/* ── OPEN ──────────────────────────────────────────────────────── */}
           <section className="space-y-5">
-            <SectionRule
-              action={
-                isKid ? null : (
-                  <TextAction onClick={() => setComposing((v) => !v)}>
-                    {composing ? "Never mind" : "Start a Circle"}
-                  </TextAction>
-                )
-              }
+            <SectionLabel
+              action={isKid ? undefined : composing ? "Never mind" : "Start a Circle"}
+              onAction={() => setComposing((v) => !v)}
             >
               Open now
-            </SectionRule>
+            </SectionLabel>
 
             {composing && !isKid && (
               <OpenForm
@@ -360,25 +372,25 @@ export default function CirclesSurface() {
                 }
               />
             ) : (
-              <Ledger className="f0-stagger">
+              <div className="f0-stagger space-y-3">
                 {open.map((c, i) => (
                   <div key={c.id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
                     <CircleRow c={c} />
                   </div>
                 ))}
-              </Ledger>
+              </div>
             )}
           </section>
 
           {/* ── CLOSED ────────────────────────────────────────────────────── */}
           {closed.length > 0 && (
             <section className="space-y-5">
-              <SectionRule>Clock ran out</SectionRule>
-              <Ledger>
+              <SectionLabel>Clock ran out</SectionLabel>
+              <div className="space-y-3">
                 {closed.map((c) => (
                   <CircleRow key={c.id} c={c} />
                 ))}
-              </Ledger>
+              </div>
               <p className="text-[13px] leading-relaxed text-soft">
                 A closed Circle keeps its thread. Nobody is scored on it — the record is the
                 point.
@@ -388,7 +400,7 @@ export default function CirclesSurface() {
 
           {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
           <section className="space-y-4">
-            <SectionRule>How a Circle works</SectionRule>
+            <SectionLabel>How a Circle works</SectionLabel>
             <p className="max-w-xl text-[14px] leading-relaxed text-soft">
               One event or one thesis per room, {CIRCLE_DAYS} days on the clock, no extensions.
               Join to post; leave whenever. Your stance inside a Circle belongs to that room&apos;s

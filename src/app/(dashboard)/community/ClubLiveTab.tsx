@@ -2,40 +2,43 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, BellRing, Play, Radio, Link2Off } from "lucide-react";
+import { Bell, BellRing, Play } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { LiveEvent } from "@/lib/clubhome/live-events";
-import { SectionRule } from "@/components/f0/parts";
 import {
-  AvatarStack,
-  FoundingNote,
-  VoltAction,
-  useClubPresence,
-} from "./parts";
+  BoardCard,
+  Marker,
+  Pill,
+  PillRow,
+  RingMark,
+  SectionLabel,
+  StripeField,
+} from "./board";
+import { AvatarStack, useClubPresence } from "./parts";
 
 /**
- * THE CLUB · LIVE — the room, not a room list.
+ * THE CLUB · LIVE — Club Screens 07, built as drawn.
  *
- * COMPOSITION LAW for this tab: exactly ONE object dominates, and it is the ONLY
- * dark object on the entire Community surface — the f0-hero-field. Everything
- * beneath it (what's coming, what was recorded) is a hairline ledger on cream.
- * There is no equal-column card grid anywhere on this tab; the previous version
- * rendered three `sm:grid-cols-2` grids of LiveEventCards, which is exactly the
- * pattern the register bans.
+ * The board: a NOW LIVE / UPCOMING / REPLAYS pill row, then the on-air room as a
+ * striped near-black field carrying the room title, the head count, the lassoed
+ * orange ring with "live!" written across it and the JOIN ROOM action — then
+ * UPCOMING SESSIONS and RECENT REPLAY as cards of rows with Set Reminder and
+ * WATCH on the right.
  *
- * THE HERO HAS THREE STATES and always renders — a dark room is still a room:
- *   1. ON AIR      — a live / starting_soon room. Host identity, title, the
- *                    member stack, and the join action.
- *   2. NEXT ON AIR — nothing live, but something scheduled. The hero carries the
- *                    countdown and Remind Me so the tab still has a subject.
- *   3. DARK        — nothing scheduled at all (the founding reality today). The
- *                    hero states that plainly, says what a room IS, and hands
- *                    the member somewhere alive (the Lounge) rather than
- *                    dead-ending. It is never a grey "no rooms" placeholder.
+ * THE FIELD ALWAYS RENDERS — a dark room is still a room. Three states, all
+ * drawn the same way so the screen never collapses into a placeholder:
+ *   1. ON AIR      — the live/starting room, its host, its head count, JOIN ROOM.
+ *   2. NEXT ON AIR — nothing live but something scheduled: the countdown and
+ *                    Remind me take the action slot.
+ *   3. DARK        — nothing scheduled at all (the founding reality before the
+ *                    first host opens one). The field says so plainly and hands
+ *                    the member to the always-on Lounge.
  *
- * PRESENCE is real: `viewer_count` from /api/live, roster faces from
- * /api/club/collective. Below the participation floor no raw count is printed —
- * founding copy replaces it. Nothing here can render "0 online".
+ * PRESENCE IS REAL. `viewer_count` comes from /api/live and the roster faces from
+ * /api/club/collective; the stack is capped by the count it actually has, so
+ * nothing on this screen can print "0 in the room" or stack faces that are not
+ * in it. `loading` is distinct from empty — the dark-room copy is TRUE only once
+ * the read has come back with nothing.
  *
  * `focusId` is the go-live deep-link target (/club?live={id} → /community?mode=
  * live&live={id}): the matching room scrolls into view and pulses briefly.
@@ -80,7 +83,7 @@ const ROOM_LABEL: Record<string, string> = {
 
 /* ── remind me ────────────────────────────────────────────────────────────── */
 /** Preserves the S2.5 behaviour: POST /api/live/{id}/remind, optimistic + revert. */
-function RemindMe({ event }: { event: LiveEvent }) {
+function RemindMe({ event, onDark = false }: { event: LiveEvent; onDark?: boolean }) {
   const [interested, setInterested] = useState(Boolean(event.interested));
   const [busy, setBusy] = useState(false);
 
@@ -103,15 +106,19 @@ function RemindMe({ event }: { event: LiveEvent }) {
     }
   }
 
+  const cls = onDark
+    ? "rounded-[8px] bg-[#F7F3EA]/12 px-4 py-2.5 text-[#F7F3EA] hover:bg-[#F7F3EA]/20"
+    : `rounded-[8px] border border-sand bg-card px-3 py-2.5 ${
+        interested ? "text-soft" : "text-ink hover:border-gold-300"
+      }`;
+
   return (
     <button
       type="button"
       onClick={toggle}
       disabled={busy}
       aria-pressed={interested}
-      className={`inline-flex shrink-0 items-center gap-1.5 font-display text-[11px] font-bold uppercase tracking-[0.1em] transition-colors disabled:opacity-60 ${
-        interested ? "text-soft" : "text-gold-700 hover:text-gold-600"
-      }`}
+      className={`f0-focus f0-press inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap font-display text-[11px] font-bold transition-colors disabled:opacity-60 ${cls}`}
     >
       {interested ? (
         <>
@@ -119,70 +126,16 @@ function RemindMe({ event }: { event: LiveEvent }) {
         </>
       ) : (
         <>
-          <Bell className="h-3.5 w-3.5" /> Remind me
+          <Bell className="h-3.5 w-3.5" /> Set Reminder
         </>
       )}
     </button>
   );
 }
 
-/* ── the hero field — the one dark object ─────────────────────────────────── */
+/* ── the drawn room field ─────────────────────────────────────────────────── */
 
-function OnAirDot({ live }: { live: boolean }) {
-  return (
-    <span className="relative flex h-2 w-2" aria-hidden>
-      {live && (
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-70 motion-reduce:hidden" />
-      )}
-      <span
-        className={`relative inline-flex h-2 w-2 rounded-full ${
-          live ? "bg-red-500" : "bg-[#F7F3EA]/35"
-        }`}
-      />
-    </span>
-  );
-}
-
-/**
- * The hero shell.
- *
- * THEME NOTE — the cream literals below (#F7F3EA) are deliberate and
- * theme-INVARIANT, exactly as in the read-only foundation (club2/ClubCard.tsx).
- * `.f0-hero-field` sets `color: #F7F3EA` and stays obsidian in BOTH themes by
- * design, so its contents are painted against a known ground, not against the
- * page. Semantic tokens would be WRONG here: `text-ink` flips to near-black in
- * light and would be unreadable on the field.
- *
- * DARK SEPARATION is now handled by the FOUNDATION: `.f0-hero-field` gained a
- * `:root[data-theme="dark"]` variant that warms the field and gives it a defined
- * inset edge, so it still reads as a deliberate island on the warm near-black
- * page. The component-level `dark:ring-1 dark:ring-sand` stopgap that used to sit
- * here has been removed — the primitive owns it.
- */
-function HeroShell({
-  eyebrow,
-  live = false,
-  children,
-}: {
-  eyebrow: string;
-  live?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="f0-hero-field f0-grain px-5 py-6 sm:px-7 sm:py-8">
-      <div className="flex items-center gap-2">
-        <OnAirDot live={live} />
-        <span className="font-display text-eyebrow font-bold uppercase text-[#F7F3EA]/70">
-          {eyebrow}
-        </span>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/** STATE 1 + 2 — a real room fills the field. */
-function RoomHero({
+function RoomField({
   event,
   faces,
   now,
@@ -192,205 +145,185 @@ function RoomHero({
   now: number;
 }) {
   const live = event.status === "live";
-  const cd = event.status === "starting_soon" ? countdown(event.starts_at, now) : null;
+  const soon = event.status === "starting_soon";
+  const cd = soon ? countdown(event.starts_at, now) : null;
   const roomLabel = ROOM_LABEL[event.room_type] ?? "Live room";
-  const eyebrow = live
-    ? `On air · ${roomLabel}`
-    : event.status === "starting_soon"
-      ? `Starting ${cd ?? "any moment"} · ${roomLabel}`
-      : `Next on air · ${roomLabel}`;
 
   // PRESENCE HONESTY: never stack more faces than the room actually holds.
-  // /api/live gives us a viewer COUNT but not viewer identities, so the stack is
-  // capped by the real count and captioned by it.
   const inRoom = live ? event.viewer_count : 0;
-  const stack = inRoom > 0 ? faces.slice(0, Math.min(5, inRoom)) : [];
+  const stack = inRoom > 0 ? faces.slice(0, Math.min(4, inRoom)) : [];
 
   return (
-    <HeroShell eyebrow={eyebrow} live={live}>
-      <h2 className="mt-4 max-w-[18ch] font-display text-display-2 font-extrabold text-[#F7F3EA]">
-        {event.title}
-      </h2>
-
-      {event.description && (
-        <p className="mt-2.5 max-w-[44ch] text-[14.5px] leading-relaxed text-[#F7F3EA]/70">
-          {event.description}
-        </p>
-      )}
-
-      <div className="mt-4 flex items-center gap-2.5">
-        <Avatar name={event.host.name} avatarUrl={event.host.avatarUrl} size="md" />
-        <span className="min-w-0">
-          <span className="block font-display text-[14px] font-bold leading-tight text-[#F7F3EA]">
-            {event.host.name}
-          </span>
-          <span className="block font-mono text-[9.5px] uppercase tracking-[0.16em] text-[#F7F3EA]/50">
-            Host
-          </span>
-        </span>
-      </div>
-
-      {event.tickers.length > 0 && (
-        <p className="mt-3.5 font-mono text-[11px] font-bold tracking-wide text-[#F7F3EA]/70">
-          {event.tickers
-            .slice(0, 6)
-            .map((t) => `$${t.toUpperCase()}`)
-            .join("   ")}
-        </p>
-      )}
-
-      {/* hairline floor — presence on the left, the action on the right */}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#F7F3EA]/12 pt-4">
-        <div className="flex min-w-0 items-center gap-3">
-          {stack.length > 0 && (
-            <AvatarStack
-              faces={stack}
-              max={5}
-              ring="ring-[#171A21]"
-              label="Club members"
-            />
-          )}
-          <p className="font-mono text-[11px] tracking-wide text-[#F7F3EA]/60">
-            {live && inRoom > 0 ? (
+    <StripeField className="p-4 sm:p-5">
+      <div className="relative">
+        <h2 className="max-w-[15ch] font-display text-[clamp(22px,6.5vw,27px)] font-black uppercase leading-[1.02] tracking-[-0.03em] text-[#F7F3EA]">
+          {event.title}
+        </h2>
+        <p className="mt-2.5 text-[11.5px] text-[#F7F3EA]/62">
+          {live ? (
+            inRoom > 0 ? (
               <>
-                <span className="font-bold tabular-nums text-[#F7F3EA]">{inRoom}</span> in
-                the room
+                Live now · <span className="font-bold tabular-nums text-[#F7F3EA]">{inRoom}</span>{" "}
+                in room
               </>
-            ) : live ? (
-              "The room is open — walk in first"
             ) : (
-              formatStartET(event.starts_at)
-            )}
-          </p>
-        </div>
-
-        {live || event.status === "starting_soon" ? (
-          event.join_url ? (
-            <VoltAction href={event.join_url}>
-              <Radio className="h-3.5 w-3.5" />
-              {live ? "Join now" : "Enter room"}
-            </VoltAction>
+              "Live now · the room is open, walk in first"
+            )
+          ) : soon ? (
+            `Starting ${cd ?? "any moment"} · ${roomLabel}`
           ) : (
-            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-[#F7F3EA]/50">
-              <Link2Off className="h-3.5 w-3.5" /> Link coming
-            </span>
-          )
-        ) : (
-          <RemindMe event={event} />
-        )}
-      </div>
-    </HeroShell>
-  );
-}
-
-/**
- * STATE 3 — DARK. The founding reality: no host has opened a room yet.
- *
- * This is the state the surface will be in most of the time before Sept 1, so it
- * gets the most design attention, not the least. The field stays: a dark room is
- * still the room. It says what a room IS (so the empty state teaches), it shows
- * the real founding floor (faces we actually have), and it hands the member to
- * the Lounge — which is always on — instead of leaving them at a dead end.
- */
-function DarkRoomHero({
-  faces,
-  onGoToLounge,
-}: {
-  faces: { avatar_url: string | null }[];
-  onGoToLounge: () => void;
-}) {
-  return (
-    <HeroShell eyebrow="The room is dark">
-      <h2 className="mt-4 max-w-[16ch] font-display text-display-2 font-extrabold text-[#F7F3EA]">
-        Nobody is on the air.
-      </h2>
-      <p className="mt-3 max-w-[42ch] text-[14.5px] leading-relaxed text-[#F7F3EA]/70">
-        A room opens the moment a host starts one — a market walk-through, a
-        class, or an open audio hang. The first ones drop with the challenge.
-      </p>
-
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#F7F3EA]/12 pt-4">
-        <div className="flex min-w-0 items-center gap-3">
-          {faces.length > 0 && (
-            <AvatarStack faces={faces} max={5} ring="ring-[#171A21]" label="Club members" />
+            `${formatStartET(event.starts_at)} · ${roomLabel}`
           )}
-          <p className="font-mono text-[11px] tracking-wide text-[#F7F3EA]/60">
-            The founding floor is already here
+        </p>
+        {event.description && (
+          <p className="mt-2 max-w-[30ch] text-[13px] font-semibold leading-[1.35] text-[#F7F3EA]">
+            {event.description}
           </p>
+        )}
+
+        {/* The lassoed ring + marker the board draws over the top-right corner. */}
+        <RingMark size={72} className="hidden sm:block" style={{ right: 6, top: 4 }} />
+        <Marker className="absolute right-[18px] top-[38px] hidden text-[21px] sm:block" rotate={-8}>
+          {live ? "live!" : soon ? "soon!" : "next up"}
+        </Marker>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {live || soon ? (
+            event.join_url ? (
+              <a
+                href={event.join_url}
+                className="f0-press rounded-[8px] bg-volt-500 px-[18px] py-2.5 font-display text-[11px] font-extrabold uppercase tracking-[0.1em] text-white transition-colors hover:bg-volt-600"
+              >
+                Join room
+              </a>
+            ) : (
+              <span className="rounded-[8px] bg-[#F7F3EA]/12 px-[18px] py-2.5 font-mono text-[11px] uppercase tracking-[0.1em] text-[#F7F3EA]/60">
+                Link coming
+              </span>
+            )
+          ) : (
+            <RemindMe event={event} onDark />
+          )}
+
+          <span className="flex items-center gap-2.5">
+            {stack.length > 0 && (
+              <AvatarStack faces={stack} max={4} size="xs" ring="ring-[#14110F]" label="In the room" />
+            )}
+            <span className="flex items-center gap-2">
+              <Avatar name={event.host.name} avatarUrl={event.host.avatarUrl} size="xs" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#F7F3EA]/60">
+                {event.host.name}
+              </span>
+            </span>
+          </span>
         </div>
-        <VoltAction onClick={onGoToLounge} onDark>
-          Go to the Lounge
-        </VoltAction>
       </div>
-    </HeroShell>
+    </StripeField>
   );
 }
 
-/* ── the ledger rows ──────────────────────────────────────────────────────── */
+/** STATE 3 — the founding reality: no host has opened a room yet. */
+function DarkRoomField({ faces, onGoToLounge }: { faces: { avatar_url: string | null }[]; onGoToLounge: () => void }) {
+  return (
+    <StripeField className="p-4 sm:p-5">
+      <div className="relative">
+        <p className="font-mono text-[9px] font-extrabold uppercase tracking-[0.16em] text-volt-300">
+          The room is dark
+        </p>
+        <h2 className="mt-3 max-w-[14ch] font-display text-[clamp(22px,6.5vw,27px)] font-black uppercase leading-[1.02] tracking-[-0.03em] text-[#F7F3EA]">
+          Nobody is on the air.
+        </h2>
+        <p className="mt-2.5 max-w-[38ch] text-[12.5px] leading-relaxed text-[#F7F3EA]/65">
+          A room opens the moment a host starts one — a market walk-through, a
+          class, or an open audio hang. The first ones drop with the challenge.
+        </p>
+        <RingMark size={72} className="hidden sm:block" style={{ right: 6, top: 4 }} />
+        <Marker className="absolute right-[22px] top-[38px] hidden sm:block" rotate={-8}>
+          soon
+        </Marker>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onGoToLounge}
+            className="f0-press rounded-[8px] bg-volt-500 px-[18px] py-2.5 font-display text-[11px] font-extrabold uppercase tracking-[0.1em] text-white transition-colors hover:bg-volt-600"
+          >
+            Go to the Lounge
+          </button>
+          {faces.length > 0 && (
+            <span className="flex items-center gap-2.5">
+              <AvatarStack faces={faces} max={4} size="xs" ring="ring-[#14110F]" label="Club members" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#F7F3EA]/60">
+                The founding floor is here
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+    </StripeField>
+  );
+}
 
-function ScheduledRow({ event, now }: { event: LiveEvent; now: number }) {
+/* ── the rows ─────────────────────────────────────────────────────────────── */
+
+function SessionCard({ event, now }: { event: LiveEvent; now: number }) {
   const cd = countdown(event.starts_at, now);
   return (
-    <div className="f0-ledger-row">
-      <div className="w-[70px] shrink-0">
-        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-gold-700">
-          {cd ?? "Now"}
-        </p>
-        <p className="mt-0.5 font-mono text-[10px] tracking-wide text-soft">
-          {ROOM_LABEL[event.room_type] ?? "Room"}
-        </p>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-[15px] font-bold leading-snug text-ink">
+    <BoardCard className="flex items-center gap-3">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[11px] bg-sand font-mono text-[9px] uppercase tracking-wide text-soft">
+        {ROOM_LABEL[event.room_type]?.split(" ")[0] ?? "Room"}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-[13px] font-bold text-ink">
           {event.title}
-        </p>
-        <p className="mt-0.5 font-mono text-[10.5px] tracking-wide text-soft">
-          {formatStartET(event.starts_at)} · {event.host.name}
-        </p>
-      </div>
+        </span>
+        <span className="mt-0.5 block truncate text-[11px] text-soft">
+          {formatStartET(event.starts_at)}
+          {cd ? ` · ${cd}` : ""}
+        </span>
+        <span className="block truncate text-[11px] text-soft/80">w/ {event.host.name}</span>
+      </span>
       <RemindMe event={event} />
-    </div>
+    </BoardCard>
   );
 }
 
-function ReplayRow({ event }: { event: LiveEvent }) {
-  const covered = event.tickers.slice(0, 4).map((t) => `$${t.toUpperCase()}`);
+function ReplayCard({ event }: { event: LiveEvent }) {
+  const covered = event.tickers.slice(0, 4).map((t) => t.toUpperCase());
   return (
-    <div className="f0-ledger-row">
-      <div className="min-w-0 flex-1">
-        <p className="font-display text-[15px] font-bold leading-snug text-ink">
+    <BoardCard className="flex items-center gap-3">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[11px] bg-[#14110F]">
+        <Play className="h-4 w-4 fill-volt-500 text-volt-500" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-[13px] font-bold text-ink">
           {event.title}
-        </p>
-        <p className="mt-0.5 font-mono text-[10.5px] tracking-wide text-soft">
-          {event.host.name}
-          {event.duration_min ? ` · ${event.duration_min} min` : ""}
-          {covered.length > 0 ? ` · ${covered.join(" ")}` : ""}
-        </p>
-        {event.kai_summary && (
-          <p className="mt-1.5 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
-            {event.kai_summary}
-          </p>
-        )}
-      </div>
+        </span>
+        <span className="mt-0.5 block truncate text-[11px] text-soft">
+          {event.duration_min ? `${event.duration_min} min` : event.host.name}
+          {covered.length > 0 ? ` · ${covered.join(", ")}` : ""}
+        </span>
+      </span>
       {event.replay_url ? (
         <a
           href={event.replay_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 font-display text-[11px] font-bold uppercase tracking-[0.1em] text-gold-700 hover:text-gold-600"
+          className="f0-focus shrink-0 font-display text-[11px] font-extrabold uppercase tracking-[0.04em] text-gold-700 hover:text-gold-600"
         >
-          <Play className="h-3.5 w-3.5" /> Watch
+          Watch
         </a>
       ) : (
         <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
           Soon
         </span>
       )}
-    </div>
+    </BoardCard>
   );
 }
 
 /* ── the tab ──────────────────────────────────────────────────────────────── */
+
+type LiveFilter = "now" | "upcoming" | "replays";
 
 export default function ClubLiveTab({
   events,
@@ -399,10 +332,7 @@ export default function ClubLiveTab({
   onGoToLounge,
 }: {
   events: LiveEvent[];
-  /** LOADING IS NOT EMPTY. The /api/live read starts at `[]`, so without this
-   *  the tab rendered "Nobody is on the air." — its largest type — on every
-   *  open, then swapped in the real rooms. The dark-room copy is TRUE only once
-   *  the read has come back with nothing. */
+  /** LOADING IS NOT EMPTY — the dark-room copy is only true once the read is in. */
   loading?: boolean;
   focusId?: string | null;
   /** Never dead-end a dark room — hand the member to the always-on Lounge. */
@@ -413,13 +343,14 @@ export default function ClubLiveTab({
     () => (presence?.avatars ?? []).map((a) => ({ avatar_url: a.url })),
     [presence]
   );
+  const [filter, setFilter] = useState<LiveFilter>("now");
 
   const onAir = events.filter((e) => e.status === "live" || e.status === "starting_soon");
   const scheduled = events.filter((e) => e.status === "scheduled");
   const replays = events.filter((e) => e.status === "replay_ready" || e.status === "ended");
 
-  // The hero subject: the focused deep-link room if it is still active, else the
-  // loudest live room, else the soonest scheduled one, else nothing.
+  // The field's subject: the focused deep-link room if it is still active, else
+  // the loudest live room, else the soonest scheduled one, else nothing.
   const hero = useMemo(() => {
     const focused = focusId ? events.find((e) => e.id === focusId) : null;
     if (focused && focused.status !== "ended" && focused.status !== "replay_ready")
@@ -441,7 +372,7 @@ export default function ClubLiveTab({
     return () => clearInterval(t);
   }, [needsClock, scheduled.length]);
 
-  // Deep-link focus: scroll the hero into view and pulse it briefly.
+  // Deep-link focus: scroll the field into view and pulse it briefly.
   const heroRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!focusId) return;
@@ -458,63 +389,81 @@ export default function ClubLiveTab({
   const upcoming = scheduled.filter((e) => e.id !== hero?.id);
 
   return (
-    <div className="f0-stagger space-y-9">
-      <div ref={heroRef} style={{ ["--i" as string]: 0 }}>
+    <div className="space-y-6">
+      <PillRow>
+        <Pill active={filter === "now"} onClick={() => setFilter("now")}>
+          Now live
+        </Pill>
+        <Pill active={filter === "upcoming"} onClick={() => setFilter("upcoming")}>
+          Upcoming
+        </Pill>
+        <Pill active={filter === "replays"} onClick={() => setFilter("replays")}>
+          Replays
+        </Pill>
+      </PillRow>
+
+      {/* The field is the screen's subject in every filter — a schedule with no
+          room at the top of it is a list, not a place. */}
+      <div ref={heroRef}>
         {hero ? (
-          <RoomHero event={hero} faces={faces} now={now} />
+          <RoomField event={hero} faces={faces} now={now} />
         ) : loading ? (
-          <div className="space-y-3" aria-busy="true">
-            <div className="h-3 w-28 rounded-full bg-ink/10 motion-safe:animate-pulse" />
-            <div className="h-[0.9em] w-[80%] rounded-full bg-ink/10 text-display-2 motion-safe:animate-pulse" />
-            <div className="h-[0.9em] w-[48%] rounded-full bg-ink/10 text-display-2 motion-safe:animate-pulse" />
+          <div
+            className="h-[186px] rounded-[16px] bg-sand motion-safe:animate-pulse"
+            aria-busy="true"
+          >
             <span className="sr-only">Loading live rooms</span>
           </div>
         ) : (
-          <DarkRoomHero faces={faces} onGoToLounge={onGoToLounge ?? (() => {})} />
+          <DarkRoomField faces={faces} onGoToLounge={onGoToLounge ?? (() => {})} />
         )}
       </div>
 
-      {upcoming.length > 0 && (
-        <section style={{ ["--i" as string]: 1 }}>
-          <SectionRule>On the schedule</SectionRule>
-          <div className="f0-ledger mt-3">
+      {filter !== "replays" && upcoming.length > 0 && (
+        <section>
+          <SectionLabel>Upcoming sessions</SectionLabel>
+          <div className="space-y-2.5">
             {upcoming.map((e) => (
-              <ScheduledRow key={e.id} event={e} now={now} />
+              <SessionCard key={e.id} event={e} now={now} />
             ))}
           </div>
         </section>
       )}
 
-      {replays.length > 0 && (
-        <section style={{ ["--i" as string]: 2 }}>
-          <SectionRule>Recorded</SectionRule>
-          <div className="f0-ledger mt-3">
+      {filter !== "upcoming" && replays.length > 0 && (
+        <section>
+          <SectionLabel>{replays.length === 1 ? "Recent replay" : "Recent replays"}</SectionLabel>
+          <div className="space-y-2.5">
             {replays.map((e) => (
-              <ReplayRow key={e.id} event={e} />
+              <ReplayCard key={e.id} event={e} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Founding tail: a dark room with nothing scheduled and nothing recorded
-          is the club's real state today. Say what happens next instead of
-          leaving the tab to end on silence. */}
+      {/* FOUNDING TAIL: a dark room with nothing scheduled and nothing recorded is
+          the club's real state today. Say what happens next rather than ending
+          the screen on silence. */}
       {!hero && !loading && replays.length === 0 && (
-        <section style={{ ["--i" as string]: 1 }} className="f0-rule-top pt-1">
-          <FoundingNote
-            eyebrow="What lands here"
-            headline="Every room becomes a recording."
-            body="Rooms run live, then stay — covered tickers, the host's read, and Kai's recap attached underneath. The shelf fills from the first session."
-            action={
-              <Link
-                href="/fta/recordings"
-                className="inline-flex items-center gap-1.5 font-display text-[12px] font-bold uppercase tracking-[0.08em] text-gold-700 hover:text-gold-600"
-              >
-                Browse the archive
-              </Link>
-            }
-          />
-        </section>
+        <BoardCard>
+          <p className="font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold-700">
+            What lands here
+          </p>
+          <p className="mt-2 max-w-[24ch] font-display text-[19px] font-extrabold leading-[1.15] tracking-[-0.02em] text-ink">
+            Every room becomes a recording.
+          </p>
+          <p className="mt-2 max-w-[46ch] text-[13.5px] leading-relaxed text-soft">
+            Rooms run live, then stay — covered tickers, the host&apos;s read, and
+            Kai&apos;s recap attached underneath. The shelf fills from the first
+            session.
+          </p>
+          <Link
+            href="/fta/recordings"
+            className="mt-3.5 inline-flex font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-gold-700 hover:text-gold-600"
+          >
+            Browse the archive
+          </Link>
+        </BoardCard>
       )}
     </div>
   );

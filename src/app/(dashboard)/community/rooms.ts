@@ -5,27 +5,27 @@ import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   ROOMS BY TOPIC — canvas v2, Club Screens 02.
+   ROOMS BY TOPIC — Club Screens 02.
    Registry + real activity, kept out of the view so the view stays a view.
 
-   ── WHAT THE CANVAS DREW, AND WHAT SHIPS ─────────────────────────────────
-   Four saturated tiles: green "Semis & AI infra", purple "Options desk",
-   orange "Macro & rates", blue "First 100 days". Two of those cannot ship.
+   ── THE GRID SHIPS AS DRAWN ──────────────────────────────────────────────
+   The board draws a 2×2 of saturated tiles — green "Semis & AI infra", purple
+   "Options desk", orange "Macro & rates", blue "First 100 days" — and that is
+   what ships: coloured tiles, one colour per room, carried on `tile` below. The
+   colour is the room's IDENTITY, which is why it is registry data rather than a
+   view decision: a member should navigate this grid by shape and colour instead
+   of re-reading four labels every time.
 
-     · The COLOURS. Green and blue are spoken for — green is price-up and blue is
-       Kai — and purple is dropped from the system outright. Four saturated tiles
-       in a grid also make four equal-weight boxes, which is exactly the "generic
-       card container" the brand register forbids. Rooms are differentiated here
-       by ONE accent and by type weight: the room a member has business in gets
-       the accent and the heavier line; the rest are ink on the same hairline.
-     · The OPTIONS DESK. Club surfaces are equities-only. It is not created, not
-       hidden — it does not exist (see migration 190).
+   ONE substitution, and only one. Club surfaces are equities-only, so there is
+   no Options desk — it is not created, not hidden, it does not exist (migration
+   190). The purple tile in that slot carries MAIN CIRCLE, the room the club
+   actually has and the one a member walks into first.
 
    ── THE COUNTS ARE REAL ──────────────────────────────────────────────────
-   The canvas prints "418 talking" under every tile. We count DISTINCT senders in
+   The board prints "418 talking" under every tile. We count DISTINCT senders in
    the room over the last 24h (get_room_activity, migration 190) and floor it: a
    tile that says "1 talking" publishes how small the room is on every render,
-   which is worse than saying nothing. Below the floor the room states its
+   which is worse than saying nothing. Below the floor the tile states its
    founding line instead. No branch prints a fabricated number.
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -39,6 +39,8 @@ export interface TopicRoom {
   founding: string;
   /** Members-only rooms are visible to free members but not open to them. */
   membersOnly: boolean;
+  /** The tile ground from Club Screens 02. Stable per room — it is identity. */
+  tile: string;
 }
 
 /** Fixed ids continue the 016/033/086/190 scheme. */
@@ -58,6 +60,7 @@ export const TOPIC_ROOMS: TopicRoom[] = [
     brief: "The whole club, one room. Anything that does not have a room of its own.",
     founding: "The room the club started in",
     membersOnly: true,
+    tile: "#7C4DFF",
   },
   {
     id: "c0000000-0000-4000-a000-000000000004",
@@ -65,6 +68,7 @@ export const TOPIC_ROOMS: TopicRoom[] = [
     brief: "Chips, data centres, power and the companies selling picks and shovels.",
     founding: "Open for the names the club watches hardest",
     membersOnly: true,
+    tile: "#1BA94C",
   },
   {
     id: "c0000000-0000-4000-a000-000000000005",
@@ -72,6 +76,7 @@ export const TOPIC_ROOMS: TopicRoom[] = [
     brief: "Rates, inflation prints and the weather every position sits in.",
     founding: "Open for the weather, not the forecast",
     membersOnly: true,
+    tile: "#F05A28",
   },
   {
     id: "c0000000-0000-4000-a000-000000000006",
@@ -79,6 +84,7 @@ export const TOPIC_ROOMS: TopicRoom[] = [
     brief: "New members, first questions. Nothing here is too basic.",
     founding: "Open for your first question",
     membersOnly: false,
+    tile: "#2F6BFF",
   },
   {
     id: FREE_LOUNGE_ROOM_ID,
@@ -86,6 +92,7 @@ export const TOPIC_ROOMS: TopicRoom[] = [
     brief: "Open to everyone, members included. Say hi.",
     founding: "Open to everyone",
     membersOnly: false,
+    tile: "#00A38C",
   },
 ];
 

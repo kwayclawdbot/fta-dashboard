@@ -7,14 +7,16 @@ import { createClient } from "@/lib/supabase/client";
 import { checkClean } from "@/lib/profanity";
 import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
+import { POST_TYPES, POST_TYPE_BY_KEY, type PostType } from "@/components/canvas2";
+import { SOCIAL_FLOORS } from "@/lib/social/reactions";
 import {
-  PostTypeControl,
-  POST_TYPE_BY_KEY,
-  StanceControl,
-  TickerTile,
-  type PostType,
-} from "@/components/canvas2";
-import { SectionRule } from "@/components/f0/parts";
+  BoardCard,
+  Marker,
+  Pill,
+  PillRow,
+  SectionLabel,
+  TickerMark,
+} from "../board";
 import {
   CHANGE_REASONS,
   fetchStanceSummary,
@@ -55,16 +57,38 @@ import {
    instruction and there is no BUY anywhere on this screen. Equities only: there
    is no options type, no options room, no options anything in Club surfaces.
 
-   ── WHAT THE CANVAS DREW THAT DID NOT SURVIVE ────────────────────────────
-   · "Save as draft". There is no draft table. A button that discards the
-     member's writing while claiming to save it is worse than no button.
-   · A three-dot progress bar filled to 2/3 regardless of state. Ours reflects
-     the three real declarations, so it is a status, not decoration.
-   · Green "Bullish". Green is PRICE; StanceControl is lime-keyed by law.
+   ── THE BOARD, BUILT ─────────────────────────────────────────────────────
+   Cancel / progress / Post across the top, the ask with the underlined phrase
+   and the "be specific!" marker, the company card with the Bearish · Neutral ·
+   Bullish trio, the POST TYPE pill row, the writing card with its footer rule,
+   and PUBLISH TO THE CLUB over Save as draft. Two notes on the drawing:
+
+   · SAVE AS DRAFT is real, and local. There is no draft table, so the draft is
+     written to this browser, restored the next time the composer opens, and
+     cleared the moment the call publishes. The button says where it went.
+   · THE PROGRESS RAIL reflects the three real declarations rather than sitting
+     at a decorative 2-of-3, so it is a status line.
    ══════════════════════════════════════════════════════════════════════════ */
 
 const BODY_MAX = 2000;
 const HEADLINE_MAX = 120;
+const DRAFT_KEY = "cc-club-call-draft";
+
+/** The stance trio as board 05 draws it: the picked one takes a solid field.
+ *  Literals, not the price tokens — a stance is never a quote. */
+const STANCE_CHOICES: { key: Stance; label: string; fill: string }[] = [
+  { key: "bear", label: "Bearish", fill: "#E0392B" },
+  { key: "neutral", label: "Neutral", fill: "#8A8279" },
+  { key: "bull", label: "Bullish", fill: "#1BA94C" },
+];
+
+interface CallDraft {
+  ticker: string;
+  stance: Stance | null;
+  type: PostType | null;
+  headline: string;
+  body: string;
+}
 
 function isPostType(v: string | null): v is PostType {
   return v === "thesis" || v === "risk" || v === "chart" || v === "changed_mind";
@@ -114,7 +138,58 @@ export default function ShareYourCallClient({
 
   const [err, setErr] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
+  const [draftNote, setDraftNote] = useState<string | null>(null);
   const tickerInput = useRef<HTMLInputElement>(null);
+
+  /* ── Save as draft (board 05) ─────────────────────────────────────────
+     Local to this browser. Restored once, on mount, and only into fields the
+     member has not already been handed by a ?ticker= / ?type= deep link — a
+     link should always beat a stale draft. */
+  const draftRestored = useRef(false);
+  useEffect(() => {
+    if (draftRestored.current) return;
+    draftRestored.current = true;
+    if (typeof window === "undefined") return;
+    // Deferred past the commit ON PURPOSE: localStorage does not exist during
+    // the server render, so restoring inside the render pass (or synchronously
+    // in the effect body) would hand the client different markup than the
+    // server produced. One microtask later the DOM is already hydrated.
+    queueMicrotask(() => {
+      try {
+        const raw = window.localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const d = JSON.parse(raw) as CallDraft;
+        if (!initialTicker && d.ticker) {
+          setDraftTicker(d.ticker);
+          setQuery(d.ticker);
+        }
+        if (d.stance) setStance(d.stance);
+        if (!isPostType(initialType) && d.type) setType(d.type);
+        if (d.headline) setHeadline(d.headline);
+        if (d.body) setBody(d.body);
+        setDraftNote("Draft restored — saved on this device");
+      } catch {
+        /* a corrupt draft is simply not restored */
+      }
+    });
+  }, [initialTicker, initialType]);
+
+  const saveDraft = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const draft: CallDraft = {
+      ticker: (query || draftTicker || "").toUpperCase(),
+      stance,
+      type,
+      headline,
+      body,
+    };
+    try {
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      setDraftNote("Saved on this device");
+    } catch {
+      setDraftNote("Couldn't save the draft in this browser");
+    }
+  }, [query, draftTicker, stance, type, headline, body]);
 
   /* ── Resolve the company ──────────────────────────────────────────────
      Against screener_metrics, the same universe the feed composer validates
@@ -250,6 +325,13 @@ export default function ShareYourCallClient({
       return;
     }
 
+    // The call is filed — the local draft has done its job.
+    try {
+      window.localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+
     const today = await countXpToday(supabase, userId, "community");
     if (today < 3) await awardXp(supabase, userId, "community", XP.COMMUNITY, data.id);
 
@@ -307,9 +389,13 @@ export default function ShareYourCallClient({
       </div>
 
       {/* ── The ask ───────────────────────────────────────────────────────
-          ONE phrase carries the emphasis, via f0-underline-mark. */}
-      <header>
-        <h1 className="max-w-[15ch] font-display text-display-1 font-extrabold leading-[0.98] text-ink">
+          ONE phrase carries the emphasis, via f0-underline-mark, with board 05's
+          marker note pinned to the right of it. */}
+      <header className="relative pr-24">
+        <Marker className="absolute right-0 top-0 text-[21px]" rotate={7}>
+          be specific!
+        </Marker>
+        <h1 className="max-w-[15ch] font-display text-[clamp(26px,8vw,32px)] font-black leading-[1.0] tracking-[-0.035em] text-ink">
           What&apos;s <span className="f0-underline-mark">your call</span>
           {security ? ` on ${security.ticker}?` : "?"}
         </h1>
@@ -318,37 +404,74 @@ export default function ShareYourCallClient({
         </p>
       </header>
 
-      {/* ── 1 · the company ───────────────────────────────────────────────── */}
+      {/* ── 1 · the company + the call ─────────────────────────────────────
+          Board 05 draws these as ONE card: the black ticker mark, the symbol and
+          company name, and the Bearish / Neutral / Bullish trio on the right. The
+          fills are literals rather than the price tokens, so a stance can never
+          be confused with a quote by the stylesheet. */}
       <section className="space-y-3">
-        <SectionRule>The company</SectionRule>
+        <SectionLabel>The company</SectionLabel>
         {security ? (
-          <div className="flex items-center gap-3">
-            <TickerTile
-              ticker={security.ticker}
-              changePct={security.chg1d}
-              size="md"
-              showDelta
-            />
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-[15px] font-extrabold text-ink">{security.ticker}</p>
-              <p className="truncate text-[13px] text-soft">{security.name || "Listed security"}</p>
+          <BoardCard>
+            <div className="flex flex-wrap items-center gap-3">
+              <TickerMark ticker={security.ticker} size={34} radius={10} tone="up" />
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-[14px] font-extrabold text-ink">{security.ticker}</p>
+                <p className="truncate text-[11px] text-soft">{security.name || "Listed security"}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftTicker("");
+                  setQuery("");
+                  setStanceAnswer(null);
+                  setStance(null);
+                  setTimeout(() => tickerInput.current?.focus(), 0);
+                }}
+                className="f0-focus shrink-0 font-display text-[11px] font-bold uppercase tracking-[0.1em] text-soft transition-colors hover:text-ink"
+              >
+                Change
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setDraftTicker("");
-                setQuery("");
-                setStanceAnswer(null);
-                setStance(null);
-                setTimeout(() => tickerInput.current?.focus(), 0);
-              }}
-              className="f0-focus shrink-0 font-display text-[12px] font-bold uppercase tracking-[0.1em] text-soft transition-colors hover:text-ink"
-            >
-              Change
-            </button>
-          </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {STANCE_CHOICES.map((c) => {
+                const on = stance === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={summaryLoading}
+                    onClick={() => {
+                      setStance(c.key);
+                      setErr(null);
+                    }}
+                    className={`f0-focus f0-press rounded-[8px] px-3 py-2 font-display text-[11px] font-bold transition-colors disabled:opacity-50 ${
+                      on ? "text-white" : "border border-sand text-soft hover:text-ink"
+                    }`}
+                    style={on ? { background: c.fill } : undefined}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* The club's split on this name — REAL counts, withheld below the
+                social floor so a 1-0-1 "split" is never dressed up as a signal. */}
+            {summary &&
+              summary.bull + summary.bear + summary.neutral >= SOCIAL_FLOORS.debateStance && (
+                <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+                  Club: {summary.bull} bull · {summary.neutral} neutral · {summary.bear} bear
+                </p>
+              )}
+            {!stance && (
+              <p className="mt-2.5 text-[12.5px] leading-snug text-soft">
+                Pick a stance. You can change it later — the Club rewards the update.
+              </p>
+            )}
+          </BoardCard>
         ) : (
-          <div>
+          <BoardCard>
             <label htmlFor="call-ticker" className="sr-only">
               Ticker symbol
             </label>
@@ -378,43 +501,28 @@ export default function ShareYourCallClient({
                   ? `We don't carry ${draftTicker} — check the symbol, or pick a company the Club follows.`
                   : "One company per call. It binds the post to that name's thread and the Club's stance on it."}
             </p>
-          </div>
+          </BoardCard>
         )}
       </section>
 
-      {/* ── 2 · the call ──────────────────────────────────────────────────── */}
+      {/* ── 2 · post type — board 05's pill row ────────────────────────────── */}
       <section className="space-y-3">
-        <SectionRule>Your stance</SectionRule>
-        <StanceControl
-          value={stance}
-          onChange={(s) => {
-            setStance(s);
-            setErr(null);
-          }}
-          counts={
-            summary ? { bull: summary.bull, bear: summary.bear, neutral: summary.neutral } : null
-          }
-          loading={!!security && summaryLoading}
-          disabled={!security}
-          ariaLabel={security ? `Your stance on ${security.ticker}` : "Your stance"}
-          emptyHint={
-            security
-              ? "Pick a stance. You can change it later — the Club rewards the update."
-              : "Name the company first."
-          }
-        />
-      </section>
-
-      <section className="space-y-3">
-        <SectionRule>Post type</SectionRule>
-        <PostTypeControl
-          value={type}
-          onChange={(t) => {
-            setType(t);
-            setErr(null);
-          }}
-          ariaLabel="What kind of call is this"
-        />
+        <SectionLabel>Post type</SectionLabel>
+        <PillRow>
+          {POST_TYPES.map((t) => (
+            <Pill
+              key={t.key}
+              active={type === t.key}
+              onClick={() => {
+                setType(t.key);
+                setErr(null);
+              }}
+            >
+              {t.label}
+            </Pill>
+          ))}
+        </PillRow>
+        {type && <p className="text-[12.5px] leading-snug text-soft">{POST_TYPE_BY_KEY[type].hint}</p>}
       </section>
 
       {/* ── the reason taxonomy, only when something actually changed ─────── */}
@@ -429,7 +537,7 @@ export default function ShareYourCallClient({
 
       {needsReason && !noPriorForFlip && security && (
         <section className="space-y-3">
-          <SectionRule>What changed</SectionRule>
+          <SectionLabel>What changed</SectionLabel>
           <div className="flex flex-wrap gap-2">
             {CHANGE_REASONS.map((r) => {
               const on = reason === r.key;
@@ -458,72 +566,92 @@ export default function ShareYourCallClient({
         </section>
       )}
 
-      {/* ── 3 · the writing ───────────────────────────────────────────────── */}
+      {/* ── 3 · the writing ───────────────────────────────────────────────
+          Board 05 draws the body as a white card: the hook set in display
+          weight, the prose under it, and the card's own footer rule carrying the
+          bound $TICKER and the counter. */}
       <section className="space-y-3">
-        <SectionRule>The call</SectionRule>
-        <label htmlFor="call-headline" className="sr-only">
-          One-line hook
-        </label>
-        <input
-          id="call-headline"
-          value={headline}
-          onChange={(e) => {
-            setHeadline(e.target.value);
-            setErr(null);
-          }}
-          maxLength={HEADLINE_MAX}
-          placeholder="Lead with the claim, in one line"
-          className="f0-focus w-full bg-transparent font-display text-[19px] font-extrabold leading-tight tracking-tight text-ink placeholder:font-bold placeholder:text-soft/70 focus:outline-none"
-        />
-        <label htmlFor="call-body" className="sr-only">
-          Your call
-        </label>
-        <textarea
-          id="call-body"
-          value={body}
-          onChange={(e) => {
-            setBody(e.target.value.slice(0, BODY_MAX));
-            setErr(null);
-          }}
-          rows={8}
-          placeholder={
-            type
-              ? POST_TYPE_BY_KEY[type].hint
-              : "The evidence you ran, the level you are reading, or what would make you wrong."
-          }
-          className="f0-focus w-full resize-none bg-transparent text-[15px] leading-relaxed text-ink placeholder:text-soft focus:outline-none"
-        />
-        <div className="flex items-center justify-between gap-3 f0-rule-top pt-2.5">
-          <span className="font-mono text-[11px] tracking-tight text-soft">
-            {security ? (
-              <>
-                <span className="text-teal-600 dark:text-teal-300">$</span>
-                {security.ticker}
-              </>
-            ) : (
-              "—"
-            )}
-          </span>
-          <span
-            className={`font-mono text-[11px] tabular-nums ${
-              body.length > BODY_MAX - 100 ? "text-ink" : "text-soft"
-            }`}
-          >
-            {body.length.toLocaleString()} / {BODY_MAX.toLocaleString()}
-          </span>
-        </div>
+        <SectionLabel>The call</SectionLabel>
+        <BoardCard>
+          <label htmlFor="call-headline" className="sr-only">
+            One-line hook
+          </label>
+          <input
+            id="call-headline"
+            value={headline}
+            onChange={(e) => {
+              setHeadline(e.target.value);
+              setErr(null);
+            }}
+            maxLength={HEADLINE_MAX}
+            placeholder="Lead with the claim, in one line"
+            className="f0-focus w-full bg-transparent font-display text-[17px] font-extrabold leading-[1.2] tracking-[-0.02em] text-ink placeholder:font-bold placeholder:text-soft/70 focus:outline-none"
+          />
+          <label htmlFor="call-body" className="sr-only">
+            Your call
+          </label>
+          <textarea
+            id="call-body"
+            value={body}
+            onChange={(e) => {
+              setBody(e.target.value.slice(0, BODY_MAX));
+              setErr(null);
+            }}
+            rows={8}
+            placeholder={
+              type
+                ? POST_TYPE_BY_KEY[type].hint
+                : "The evidence you ran, the level you are reading, or what would make you wrong."
+            }
+            className="f0-focus mt-2 w-full resize-none bg-transparent text-[13px] leading-[1.55] text-ink placeholder:text-soft focus:outline-none"
+          />
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-sand pt-3">
+            <span className="font-mono text-[12px] tracking-tight text-soft">
+              {security ? (
+                <>
+                  <span className="text-teal-600 dark:text-teal-300">$</span>
+                  {security.ticker}
+                </>
+              ) : (
+                "—"
+              )}
+            </span>
+            <span
+              className={`font-mono text-[11px] tabular-nums ${
+                body.length > BODY_MAX - 100 ? "text-ink" : "text-soft"
+              }`}
+            >
+              {body.length.toLocaleString()} / {BODY_MAX.toLocaleString()}
+            </span>
+          </div>
+        </BoardCard>
       </section>
 
       {err && <p className="font-body text-[13px] font-semibold text-ink">{err}</p>}
 
-      <button
-        type="button"
-        onClick={publish}
-        disabled={!canPublish}
-        className="f0-focus f0-press w-full rounded-xl bg-volt-500 px-4 py-4 font-display text-[13px] font-extrabold uppercase tracking-[0.12em] text-white transition-colors hover:bg-volt-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-volt-600"
-      >
-        {posting ? "Publishing…" : "Publish to the Club"}
-      </button>
+      <div>
+        <button
+          type="button"
+          onClick={publish}
+          disabled={!canPublish}
+          className="f0-focus f0-press w-full rounded-[9px] bg-volt-500 px-4 py-4 font-display text-[13px] font-extrabold uppercase tracking-[0.12em] text-white transition-colors hover:bg-volt-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {posting ? "Publishing…" : "Publish to the Club"}
+        </button>
+        {/* SAVE AS DRAFT. The board draws it and it is real: the draft is written
+            to this browser, restored the next time the composer opens, and
+            cleared the moment the call publishes. There is no draft table, so it
+            says plainly that it is on this device rather than claiming a server
+            it does not have. */}
+        <button
+          type="button"
+          onClick={saveDraft}
+          disabled={!headline.trim() && !body.trim() && !security}
+          className="f0-focus mt-3 block w-full text-center font-display text-[12px] font-semibold text-gold-700 transition-colors hover:text-gold-600 disabled:opacity-40"
+        >
+          {draftNote ?? "Save as draft"}
+        </button>
+      </div>
 
       <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
     </div>

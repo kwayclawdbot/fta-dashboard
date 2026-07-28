@@ -9,45 +9,59 @@ import { timeAgo } from "@/lib/feed";
 import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import { RespectAction } from "@/components/canvas2";
 import { FoundingNote } from "../parts";
-import { SectionRule } from "@/components/f0/parts";
+import {
+  BoardCard,
+  BoardMasthead,
+  BoardTabs,
+  Marker,
+  SectionLabel,
+  StanceChip,
+  type BoardTab,
+} from "../board";
 import {
   REASON_BY_KEY,
-  STANCE_META,
   toggleRespect,
   type ChangedMindEntry,
   type ChangedMindsFeed,
 } from "@/lib/social/stance";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CHANGED MY MIND — the destination. Canvas v2, Club Screens 03.
+   CHANGED MY MIND — Club Screens 03, built as drawn.
+
+   Top to bottom, exactly the board: THE CLUB masthead, the tab strip with
+   CHANGED MY MIND lit, the argument set as a headline with ONE word lassoed,
+   the marker note in the top-right corner, then the updates as white cards —
+   avatar, name, "6h · TSLA", the BEAR → BULL chips, the note, the quoted rule
+   block, and the reaction row with RESPECT on the right. It closes on the
+   near-black YOUR TURN field with the orange CTA.
 
    ── THE ARGUMENT THE SCREEN HAS TO MAKE ──────────────────────────────────
-   Every other feed in every other product rewards being right, loudly, early.
-   This one publishes the moment a member said "I was wrong, and here is what
-   changed it" — and it has to make that read as status, not as a confession.
-   The whole design is in service of that one inversion, which is why the page
-   leads with an editorial line rather than a list header, and why the reaction
-   is RESPECT and not a like: a like on a reversal is ambiguous (do you agree
-   with the new position, or approve of the update?), and RESPECT is not.
+   Every other feed rewards being right, loudly, early. This one publishes the
+   moment a member said "I was wrong, and here is what changed it" — and it has
+   to read as status, not confession. That is why the reaction is RESPECT and not
+   a like: a like on a reversal is ambiguous (do you agree with the new position,
+   or approve of the update?) and RESPECT is not.
 
-   ── WHAT THE CANVAS DREW THAT DID NOT SURVIVE ────────────────────────────
-   · Handwritten Caveat annotations ("strong opinions, loosely held"). The app
-     ships three typefaces and a script face is not one of them; faking one with
-     an italic serif reads as a stock template, and adding a fourth font for two
-     words is not a trade worth making. The line survives as a mono aside — the
-     system's own voice for a margin note.
-   · Green "BULL" / grey "BEAR" pills. Green is PRICE. Stance is COMMUNITY
-     SENTIMENT and rides the lime ramp through STANCE_META, where direction is
-     carried by the label and the ▲▼ mark rather than by hue.
-   · "♡ 92 · 💬 41" on a club with a handful of flips. Counts are floored
-     (RespectAction withholds its own below SOCIAL_FLOORS.reactionHighlight).
+   TWO THINGS THE BOARD DRAWS THAT THE DATA CANNOT BACK:
+     · "WHAT I SAID BEFORE" quoting the member's previous claim. Nothing stores
+       the old note — stance_events keeps the old STANCE and the reason. The
+       block keeps its drawn shape and carries WHAT CHANGED, which is real.
+     · "♡ 92 · 💬 41" on a club with a handful of flips. Counts are floored;
+       RespectAction withholds its own below SOCIAL_FLOORS.reactionHighlight.
 
-   ── FOUNDING STATE (plan §0.5) ───────────────────────────────────────────
-   Production has almost no flips. The zero case is not an error state here — it
-   is the most honest version of the page's own argument, so it gets the full
-   editorial treatment and an invitation, not a shrug. The masthead and the CTA
-   render in BOTH states; only the ledger swaps.
+   FOUNDING STATE: production has almost no flips. The zero case is the most
+   honest version of the page's own argument, so it gets the full editorial
+   treatment and an invitation. The masthead, the argument and the CTA render in
+   BOTH states; only the ledger swaps.
    ══════════════════════════════════════════════════════════════════════════ */
+
+const TABS: BoardTab[] = [
+  { id: "feed", label: "Feed", href: "/community" },
+  { id: "discussions", label: "Discussions", href: "/community?mode=discussions" },
+  { id: "cmm", label: "Changed my mind" },
+  { id: "lounge", label: "Lounge", href: "/community?mode=lounge" },
+  { id: "live", label: "Live", href: "/community?mode=live" },
+];
 
 export default function ChangedMyMindClient({
   seed,
@@ -96,30 +110,32 @@ export default function ChangedMyMindClient({
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-7 pb-10">
-      {/* ── The editorial line ───────────────────────────────────────────
-          ONE word carries the emphasis (f0-circle-mark), which is the system's
-          answer to the canvas's lassoed ellipse and is mode-correct through
-          --accent-solid. Not a masthead + lede pair: this page has an argument,
-          and an argument is a sentence. */}
-      <header className="pt-1">
-        <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
-          The Club
-        </p>
-        <h1 className="mt-3 max-w-[13ch] font-display text-display-1 font-extrabold leading-[0.95] text-ink">
-          Where the Club{" "}
-          <span className="f0-circle-mark">updated</span> its thinking.
-        </h1>
-        <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.16em] text-soft">
-          Strong opinions, loosely held
-        </p>
+    <div className="mx-auto max-w-2xl pb-10">
+      <BoardMasthead title="The Club" />
+
+      <div className="mt-4">
+        <BoardTabs tabs={TABS} active="cmm" onSelect={() => {}} ariaLabel="The Club" />
+      </div>
+
+      {/* ── The argument ─────────────────────────────────────────────────
+          ONE word carries the emphasis (f0-circle-mark) — the system's own
+          lasso, mode-correct through --accent-solid — with the board's marker
+          note pinned to the right of it. Not a masthead + lede pair: this page
+          has an argument, and an argument is a sentence. */}
+      <header className="relative mt-6 pr-24 sm:pr-32">
+        <h2 className="max-w-[13ch] font-display text-[clamp(24px,7.5vw,30px)] font-black leading-[1.02] tracking-[-0.035em] text-ink">
+          Where the Club <span className="f0-circle-mark">updated</span> its thinking.
+        </h2>
+        <Marker className="absolute right-0 top-0 text-right" rotate={-9}>
+          {"strong opinions,\nloosely held"}
+        </Marker>
       </header>
 
       {/* The club's own numbers, stated. Zeros are dropped rather than printed —
           "0 members" on a page about members changing their minds is the single
           worst thing this surface could say. */}
       {(seed.total_flips > 0 || seed.members > 0) && (
-        <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft">
+        <p className="mt-4 font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft">
           {[
             seed.total_flips > 0
               ? `${seed.total_flips.toLocaleString()} ${seed.total_flips === 1 ? "update" : "updates"}`
@@ -136,70 +152,73 @@ export default function ChangedMyMindClient({
         </p>
       )}
 
-      {items.length === 0 ? (
-        <FoundingNote
-          eyebrow="Nobody has flipped yet"
-          headline="The first update sets the standard."
-          body="Change your stance on any company you follow, say what changed it, and it files here under your name. That is the whole bar — not being right first, being willing to say you were wrong."
-          action={
-            <Link
-              href="/community/compose?type=changed_mind"
-              className="inline-flex items-center gap-1.5 rounded-full bg-volt-500 px-4 py-2 font-display text-[12px] font-bold uppercase tracking-[0.08em] text-white transition-transform hover:-translate-y-px hover:bg-volt-600 active:translate-y-0 motion-reduce:hover:translate-y-0 dark:bg-volt-600"
-            >
-              Post a change of mind
-            </Link>
-          }
-        />
-      ) : (
-        <section className="space-y-5">
-          <SectionRule>Recent updates</SectionRule>
-          <div className="f0-ledger">
-            {items.map((entry) => (
-              <FlipEntry
-                key={entry.id}
-                entry={entry}
-                canRespect={!!userId && !isKid}
-                busy={busy.has(entry.id)}
-                onRespect={() => respect(entry)}
-              />
-            ))}
-          </div>
+      <div className="mt-6 space-y-6">
+        {items.length === 0 ? (
+          <BoardCard className="px-3.5">
+            <FoundingNote
+              eyebrow="Nobody has flipped yet"
+              headline="The first update sets the standard."
+              body="Change your stance on any company you follow, say what changed it, and it files here under your name. That is the whole bar — not being right first, being willing to say you were wrong."
+              action={
+                <Link
+                  href="/community/compose?type=changed_mind"
+                  className="inline-flex items-center gap-1.5 rounded-[8px] bg-volt-500 px-4 py-2.5 font-display text-[11px] font-extrabold uppercase tracking-[0.1em] text-white transition-colors hover:bg-volt-600"
+                >
+                  Post a change of mind
+                </Link>
+              }
+            />
+          </BoardCard>
+        ) : (
+          <section>
+            <SectionLabel>Recent updates</SectionLabel>
+            <div className="space-y-3">
+              {items.map((entry) => (
+                <FlipCard
+                  key={entry.id}
+                  entry={entry}
+                  canRespect={!!userId && !isKid}
+                  busy={busy.has(entry.id)}
+                  onRespect={() => respect(entry)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── The line the whole feature is built around ──────────────────
+            The single dark object on the page, drawn as board 03 draws it: the
+            orange YOUR TURN eyebrow, the claim, and the full-width CTA. */}
+        <section className="rounded-[16px] bg-[#14110F] p-4">
+          {/* text-volt-300 deliberately: the volt ramp is FROZEN across themes and
+              this field is near-black in both, so a frozen orange is the only one
+              that holds. text-gold-700 would flip with the PAGE and drop to ~3:1
+              on the field in light mode. */}
+          <p className="font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-volt-300">
+            Your turn
+          </p>
+          <p className="mt-2 max-w-[20ch] font-display text-[19px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#F7F3EA]">
+            The Club rewards the update, not the ego.
+          </p>
+          <Link
+            href="/community/compose?type=changed_mind"
+            className="mt-3.5 flex w-full items-center justify-center rounded-[8px] bg-volt-500 px-4 py-3.5 font-display text-[12px] font-extrabold uppercase tracking-[0.1em] text-white transition-colors hover:bg-volt-600"
+          >
+            Post a change of mind
+          </Link>
         </section>
-      )}
 
-      {/* ── The line the whole feature is built around ────────────────────
-          The single dark object on the page, so it carries the argument
-          without a second heavy field competing with it. */}
-      <section className="f0-hero-field px-5 py-6">
-        {/* text-volt-300 deliberately: the volt ramp is FROZEN across themes,
-            and this field is obsidian in both, so a frozen orange is the only
-            one that holds. text-gold-700 would flip with the PAGE and drop to
-            ~3:1 on the field in light mode. The body line takes the field's own
-            cream (.f0-hero-field sets color) rather than restating it. */}
-        <p className="font-display text-eyebrow font-bold uppercase text-volt-300">
-          Your turn
-        </p>
-        <p className="mt-2.5 max-w-[20ch] font-display text-[22px] font-extrabold leading-[1.15] tracking-tight">
-          The Club rewards the update, not the ego.
-        </p>
-        <Link
-          href="/community/compose?type=changed_mind"
-          className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-volt-500 px-4 py-3.5 font-display text-[12px] font-extrabold uppercase tracking-[0.12em] text-night-950 transition-transform hover:-translate-y-px active:translate-y-0 motion-reduce:hover:translate-y-0"
-        >
-          Post a change of mind
-        </Link>
-      </section>
-
-      <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
+        <p className="text-[11px] leading-relaxed text-soft">{COMMUNITY_DISCLAIMER}</p>
+      </div>
     </div>
   );
 }
 
 /* ── one update ───────────────────────────────────────────────────────────
-   The object with identity: who, on what, from where to where, and why. The
-   "why" is the reason taxonomy — a closed vocabulary, which is what makes this
-   feed readable at a glance instead of a wall of paragraphs. */
-function FlipEntry({
+   The drawn card: who, on what, from where to where, and why. The "why" is the
+   reason taxonomy — a closed vocabulary, which is what makes this feed readable
+   at a glance instead of a wall of paragraphs. */
+function FlipCard({
   entry,
   canRespect,
   busy,
@@ -210,93 +229,71 @@ function FlipEntry({
   busy: boolean;
   onRespect: () => void;
 }) {
-  const from = entry.from_stance ? STANCE_META[entry.from_stance] : null;
-  const to = STANCE_META[entry.to_stance];
   const name = entry.display_name || "Member";
-
   return (
-    <article className="f0-ledger-row gap-3">
-      <span className="shrink-0 self-start pt-0.5">
+    <BoardCard>
+      <div className="flex items-center gap-2.5">
         <Avatar name={entry.display_name} avatarUrl={entry.avatar_url} role={entry.role} size="sm" />
-      </span>
-
-      <div className="min-w-0 flex-1 self-start">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          {entry.username ? (
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            {entry.username ? (
+              <Link
+                href={`/u/${entry.username}`}
+                className="font-display text-[13px] font-bold text-ink transition-colors hover:text-gold-700"
+              >
+                {name}
+              </Link>
+            ) : (
+              <span className="font-display text-[13px] font-bold text-ink">{name}</span>
+            )}
+            <AgeBadge role={entry.role} ageGroup={entry.age_group} />
+          </div>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-soft">
+            <span>{timeAgo(entry.created_at)}</span>
+            <span aria-hidden>·</span>
             <Link
-              href={`/u/${entry.username}`}
-              className="font-display text-[14px] font-bold text-ink transition-colors hover:text-gold-700"
+              href={`/research/${entry.ticker.toUpperCase()}`}
+              className="font-mono font-bold tracking-tight text-ink underline decoration-teal-500/40 decoration-2 underline-offset-[3px] transition-colors hover:decoration-teal-500"
             >
-              {name}
+              {entry.ticker.toUpperCase()}
             </Link>
-          ) : (
-            <span className="font-display text-[14px] font-bold text-ink">{name}</span>
-          )}
-          <AgeBadge role={entry.role} ageGroup={entry.age_group} />
-          <Link
-            href={`/research/${entry.ticker.toUpperCase()}`}
-            className="font-mono text-[11px] font-bold tracking-tight text-ink underline decoration-teal-500/40 decoration-2 underline-offset-[3px] transition-colors hover:decoration-teal-500"
-          >
-            <span className="text-teal-600 dark:text-teal-300">$</span>
-            {entry.ticker.toUpperCase()}
-          </Link>
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
-            {timeAgo(entry.created_at)}
-          </span>
+          </p>
         </div>
-
-        {/* The flip itself. Two stance marks and an arrow — the smallest thing
-            that says "this moved", and it survives greyscale because ▲/▼ and
-            the words differ, not just the tint. */}
-        <p className="mt-2 flex flex-wrap items-center gap-2">
-          {from && <StanceMark stance={from} muted />}
-          <span aria-hidden className="font-display text-[13px] font-extrabold text-gold-700">
-            →
-          </span>
-          <StanceMark stance={to} />
-          {entry.reason && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
-              {REASON_BY_KEY[entry.reason].label}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {entry.from_stance && <StanceChip stance={entry.from_stance} muted />}
+          {entry.from_stance && (
+            <span aria-hidden className="font-display text-[11px] font-extrabold text-gold-700">
+              →
             </span>
           )}
-        </p>
-
-        {entry.note && (
-          <p className="mt-2.5 border-l-2 border-sand pl-3 text-[14px] leading-relaxed text-ink">
-            {entry.note}
-          </p>
-        )}
-
-        <div className="mt-2.5">
-          <RespectAction
-            count={entry.respect_count}
-            active={entry.my_respect}
-            onToggle={onRespect}
-            disabled={!canRespect || busy}
-            size="sm"
-          />
+          <StanceChip stance={entry.to_stance} />
         </div>
       </div>
-    </article>
-  );
-}
 
-/** A stance as a mark, not a pill: direction glyph + word, on the lime ramp. */
-function StanceMark({
-  stance,
-  muted = false,
-}: {
-  stance: (typeof STANCE_META)[keyof typeof STANCE_META];
-  muted?: boolean;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] ${
-        muted ? "bg-sand text-soft" : stance.chip
-      }`}
-    >
-      <span aria-hidden>{stance.mark}</span>
-      {stance.label}
-    </span>
+      {entry.note && (
+        <p className="mt-3 text-[13.5px] leading-[1.5] text-ink">{entry.note}</p>
+      )}
+
+      {entry.reason && (
+        <div className="mt-3 border-l-[3px] border-sand py-0.5 pl-3">
+          <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-soft">
+            What changed
+          </p>
+          <p className="mt-1 text-[12px] leading-[1.45] text-soft">
+            {REASON_BY_KEY[entry.reason].label}
+          </p>
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center justify-end border-t border-sand pt-3">
+        <RespectAction
+          count={entry.respect_count}
+          active={entry.my_respect}
+          onToggle={onRespect}
+          disabled={!canRespect || busy}
+          size="sm"
+        />
+      </div>
+    </BoardCard>
   );
 }

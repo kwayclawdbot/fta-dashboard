@@ -31,6 +31,7 @@ export default function ChatComposer({
   uploading,
   tone = "paper",
   placeholder,
+  variant = "compact",
 }: {
   me: ChatMe | null;
   onSend: (body: string, file: File | null) => Promise<SendResult>;
@@ -38,6 +39,9 @@ export default function ChatComposer({
   uploading: boolean;
   tone?: "paper" | "dark";
   placeholder?: string;
+  /** "lounge" is the drawn Club Screens 06 bar: a full-round field on the warm
+   *  ground with a 42px orange send disc. "compact" is the original drawer bar. */
+  variant?: "compact" | "lounge";
 }) {
   const supabase = createClient();
   const dark = tone === "dark";
@@ -138,15 +142,26 @@ export default function ChatComposer({
     }
   }
 
-  const surface = dark
-    ? "border-t border-night-700/70 p-2.5 bg-night-900"
-    : "border-t border-sand p-2.5";
-  const attachBtn = dark
-    ? "border-night-700 text-night-300 hover:text-gold-400"
-    : "border-sand text-soft hover:text-gold-700";
-  const taClass = dark
-    ? "flex-1 resize-none bg-night-950 border border-night-700 rounded-lg px-2.5 py-1.5 text-xs text-night-50 placeholder:text-night-300 focus:outline-none focus:border-gold-500 max-h-24"
-    : "flex-1 resize-none bg-paper border border-sand rounded-lg px-2.5 py-1.5 text-xs text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 max-h-24";
+  const lounge = variant === "lounge";
+  const surface = lounge
+    ? "border-t border-sand pt-3"
+    : dark
+      ? "border-t border-night-700/70 p-2.5 bg-night-900"
+      : "border-t border-sand p-2.5";
+  const attachBox = lounge ? "h-[42px] w-[42px] rounded-full" : "h-8 w-8 rounded-lg";
+  const attachBtn = lounge
+    ? "border-sand bg-card text-soft hover:text-gold-700"
+    : dark
+      ? "border-night-700 text-night-300 hover:text-gold-400"
+      : "border-sand text-soft hover:text-gold-700";
+  const taClass = lounge
+    ? "flex-1 resize-none bg-card border border-sand rounded-[21px] px-4 py-3 text-[13px] leading-[1.35] text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 max-h-28"
+    : dark
+      ? "flex-1 resize-none bg-night-950 border border-night-700 rounded-lg px-2.5 py-1.5 text-xs text-night-50 placeholder:text-night-300 focus:outline-none focus:border-gold-500 max-h-24"
+      : "flex-1 resize-none bg-paper border border-sand rounded-lg px-2.5 py-1.5 text-xs text-ink placeholder:text-soft focus:outline-none focus:border-gold-400 max-h-24";
+  const sendClass = lounge
+    ? "h-[42px] w-[42px] shrink-0 rounded-full bg-volt-500 text-white flex items-center justify-center transition-colors hover:bg-volt-600 disabled:opacity-40"
+    : "cta-button w-8 h-8 shrink-0 rounded-lg flex items-center justify-center disabled:opacity-40";
 
   return (
     <div className={surface}>
@@ -165,7 +180,7 @@ export default function ChatComposer({
       )}
       <div className="relative flex items-end gap-1.5">
         <input ref={fileRef} type="file" accept={[...CHAT_IMAGE_MIMES, ...CHAT_VIDEO_MIMES].join(",")} className="hidden" onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
-        <button onClick={() => fileRef.current?.click()} disabled={posting} aria-label="Attach" className={`w-8 h-8 shrink-0 rounded-lg border flex items-center justify-center disabled:opacity-40 ${attachBtn}`}>
+        <button onClick={() => fileRef.current?.click()} disabled={posting} aria-label="Attach" className={`shrink-0 border flex items-center justify-center disabled:opacity-40 ${attachBox} ${attachBtn}`}>
           <Paperclip className="w-4 h-4" />
         </button>
         <textarea
@@ -189,8 +204,8 @@ export default function ChatComposer({
           placeholder={placeholder ?? (me?.role === "child" ? "Say something…" : "Message the room…")}
           className={taClass}
         />
-        <button onClick={submit} disabled={(!text.trim() && !attachment) || posting || !me} aria-label="Send" className="cta-button w-8 h-8 shrink-0 rounded-lg flex items-center justify-center disabled:opacity-40">
-          <Send className="w-3.5 h-3.5" />
+        <button onClick={submit} disabled={(!text.trim() && !attachment) || posting || !me} aria-label="Send" className={sendClass}>
+          <Send className={lounge ? "w-[17px] h-[17px]" : "w-3.5 h-3.5"} />
         </button>
         {mention && mentionCandidates.length > 0 && (
           <div className={`absolute bottom-full left-9 mb-1 w-56 rounded-lg shadow-lg overflow-hidden z-20 border ${dark ? "bg-night-900 border-night-700" : "bg-card border-sand"}`}>

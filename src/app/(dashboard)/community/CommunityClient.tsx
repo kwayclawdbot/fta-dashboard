@@ -25,7 +25,7 @@ import {
   TIME_HORIZON_META, CONTENT_TYPE_META,
   type WatchlistSharePayload, type PostPosition, type TimeHorizon, type ContentType,
   type FeedPost, type FeedAuthor, type PostComment, type ActivityPayload,
-  type AnchorPayload, type Role,
+  type Role,
 } from "@/lib/feed";
 import { MentionProvider, RichBody, extractHandles, type MentionMap } from "@/lib/mentions";
 import { deriveRegister } from "@/lib/register";
@@ -41,6 +41,7 @@ import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import AnnouncementCard from "@/components/community/AnnouncementCard";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import { TextAction } from "@/components/f0/parts";
+import { TickerTile, TickerTileStrip } from "@/components/canvas2";
 import {
   Cashtag,
   CredibilityTag,
@@ -48,6 +49,14 @@ import {
   StanceLabel,
   VoltAction,
 } from "./parts";
+import {
+  BoardCard,
+  SectionLabel,
+  StanceChip,
+  StoryRing,
+  TickerMark,
+} from "./board";
+import { REASON_BY_KEY, type ChangedMindEntry } from "@/lib/social/stance";
 
 const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   award: Award, eye: Eye, check: CheckCircle2, target: Target,
@@ -93,18 +102,14 @@ function normAuthor(a: FeedAuthor | FeedAuthor[] | null): FeedAuthor | null {
 export default function CommunityClient({
   initialData = null,
   embedded = false,
-  showOrientation = false,
+  onOpenDiscussions,
 }: {
   initialData?: CommunityFeedSeed | null;
   /** Rendered inside The Club's Feed mode — the mode shell owns the Lounge chat,
    *  so the always-on ClubChatDrawer is suppressed to avoid a duplicate chat. */
   embedded?: boolean;
-  /** New-member orientation is ON. Resolved once in ClubModeShell (account age +
-   *  participation) and passed down, so the whole surface agrees on new vs
-   *  returning. Gates the "This week in the Club" anchor, which the owner
-   *  explicitly named: it is a standing title, and the board is not a landing
-   *  page. Returning members open straight onto entries. */
-  showOrientation?: boolean;
+  /** Board 01's HOT DISCUSSIONS block hands off to the Discussions screen. */
+  onOpenDiscussions?: () => void;
 }) {
   const supabase = createClient();
   // Server-first: when the feed is seeded, the states below start populated so
@@ -207,6 +212,9 @@ export default function CommunityClient({
   // composer is actually rendered (not for read-only free viewers), then focus +
   // scroll it into view and strip the param so a refresh doesn't re-seed.
   const composeSeeded = useRef(false);
+  // Board 01 draws the composer CLOSED — a pill. It opens on the first touch and
+  // stays open for the rest of the session.
+  const [composerOpen, setComposerOpen] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -228,10 +236,9 @@ export default function CommunityClient({
     setTickerTags((prev) => prev.filter((x) => x !== t));
   }
 
-  // R5 feed tabs
-  const [tab, setTab] = useState<"foryou" | "following" | "research" | "discussions">("foryou");
-
-  // Mobile Live Rooms drawer
+  // Board 01's Feed is ONE stream. The old four-way filter rail (All / Following
+  // / Research / Tickers) is gone: the board draws no second control on this
+  // screen, and per-ticker threading is the Discussions screen's whole subject.
 
   // ── @mention autocomplete ──
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -453,10 +460,13 @@ export default function CommunityClient({
 
   // Reveal + focus the composer — used by warm empty states to invite a post.
   const focusComposer = useCallback(() => {
-    const el = taRef.current;
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.focus();
+    setComposerOpen(true);
+    requestAnimationFrame(() => {
+      const el = taRef.current;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus();
+    });
   }, []);
 
   // ── Create post ──
@@ -638,6 +648,7 @@ export default function CommunityClient({
     const seed = params.get("compose");
     if (!seed) return;
     composeSeeded.current = true;
+    setComposerOpen(true);
     setText(seed);
     // Strip the param so a refresh / back doesn't re-seed over their edits.
     params.delete("compose");
@@ -657,7 +668,6 @@ export default function CommunityClient({
     });
   }, [tierResolved, readOnly]);
 
-  const anchor = posts.find((p) => p.kind === "anchor");
   // Latest announcement pins above the feed for 7 days; older ones flow in-feed.
   const SEVEN_DAYS = 7 * 24 * 3600 * 1000;
   const pinnedAnnouncement = posts.find(
@@ -667,105 +677,122 @@ export default function CommunityClient({
     (p) => p.kind !== "anchor" && p.id !== pinnedAnnouncement?.id
   );
 
-  // ── R5 tabs ──────────────────────────────────────────────────────────────
-  // Following = authors whose posts the viewer has liked ("members whose picks
-  // they liked"). Derived honestly from the like state already in memory.
-  const followedAuthorIds = useMemo(() => {
-    const s = new Set<string>();
-    for (const p of posts) {
-      if (likedByMe.has(p.id) && p.author?.id && p.author.id !== me?.id) {
-        s.add(p.author.id);
-      }
-    }
-    return s;
-  }, [posts, likedByMe, me?.id]);
-
-  const hasTicker = (p: FeedPost) => (p.ticker_tags?.length ?? 0) > 0;
-
-  const displayList = useMemo(() => {
-    switch (tab) {
-      case "following":
-        return feedList.filter((p) => p.author?.id && followedAuthorIds.has(p.author.id));
-      case "research":
-        // Typed contributions stream: posts that tag a ticker or share a pick.
-        return feedList.filter((p) => hasTicker(p) || isWatchlistShare(p.activity_payload));
-      case "discussions":
-        return feedList.filter(hasTicker);
-      default:
-        return feedList;
-    }
-  }, [tab, feedList, followedAuthorIds]);
-
-  // Discussions view groups the ticker-tagged posts into per-ticker threads.
-  const discussionThreads = useMemo(() => {
-    if (tab !== "discussions") return [];
-    const byTicker = new Map<string, FeedPost[]>();
-    for (const p of displayList) {
-      for (const t of p.ticker_tags ?? []) {
-        const arr = byTicker.get(t) ?? [];
-        arr.push(p);
-        byTicker.set(t, arr);
-      }
-    }
-    return Array.from(byTicker.entries())
-      .map(([ticker, list]) => ({ ticker, list }))
-      .sort((a, b) => b.list.length - a.list.length);
-  }, [tab, displayList]);
-
-  // ── Two-lane split (D1) ────────────────────────────────────────────────────
+  // ── Two lanes ─────────────────────────────────────────────────────────────
   // The editorial lane = human posts (the dominant conversation). The ambient
   // lane = auto-generated activity ("is now researching / going to class"),
-  // collapsed into one quiet strip instead of ~25 interchangeable cards. Only
-  // the For You feed mixes activity in; the other tabs are already post-only.
-  const isForYou = tab === "foryou";
+  // collapsed into one quiet strip instead of ~25 interchangeable cards.
   const threadPosts = useMemo(
-    () => displayList.filter((p) => p.kind === "post"),
-    [displayList]
+    () => feedList.filter((p) => p.kind === "post"),
+    [feedList]
   );
   const feedAnnouncements = useMemo(
-    () => displayList.filter((p) => p.kind === "announcement"),
-    [displayList]
+    () => feedList.filter((p) => p.kind === "announcement"),
+    [feedList]
   );
   const activityItems = useMemo(
-    () => (isForYou ? displayList.filter((p) => p.kind === "activity") : []),
-    [displayList, isForYou]
+    () => feedList.filter((p) => p.kind === "activity"),
+    [feedList]
   );
 
-  const TABS = [
-    { key: "foryou", label: "All" },
-    { key: "following", label: "Following" },
-    { key: "research", label: "Research" },
-    { key: "discussions", label: "Tickers" },
-  ] as const;
-
-  // FOUNDING STATE COPY. Every one of these takes a position instead of
-  // apologising for a small room — the surface most exposed to emptiness earns
-  // the most deliberate writing.
-  const EMPTY_COPY: Record<
-    typeof tab,
-    { eyebrow: string; title: string; body: string }
-  > = {
-    foryou: {
-      eyebrow: "The floor is open",
-      title: "Nothing on the floor yet.",
-      body: "The first entry sets the tone for every member who walks in after it. Share a read, ask the thing you're stuck on, or post your family's pick.",
-    },
-    following: {
-      eyebrow: "Nobody followed yet",
-      title: "You haven't picked your people.",
-      body: "Like a member's entry and their writing gathers here — a narrower floor of the few voices you actually trust.",
-    },
-    research: {
-      eyebrow: "No theses filed",
-      title: "The research shelf is empty.",
-      body: "Tag a ticker on your next entry and it files here — the club's running record of ideas, notes and theses, with the date attached.",
-    },
-    discussions: {
-      eyebrow: "No ticker threads",
-      title: "No ticker has a thread yet.",
-      body: "Tag a ticker on an entry and every other tagged entry joins it. That's how a name gets a conversation instead of a mention.",
-    },
+  // FOUNDING STATE COPY. It takes a position instead of apologising for a small
+  // room — the surface most exposed to emptiness earns the most deliberate
+  // writing.
+  const EMPTY_COPY = {
+    eyebrow: "The floor is open",
+    title: "Nothing on the floor yet.",
+    body: "The first entry sets the tone for every member who walks in after it. Share a read, ask the thing you're stuck on, or post your family's pick.",
   };
+
+  // ── Board 01 sections ─────────────────────────────────────────────────────
+  // WHO'S AROUND — the real distinct voices in the seeded feed, newest first.
+  // Never a manufactured crowd: these are members who actually posted.
+  const voices = useMemo(() => {
+    const seen = new Set<string>();
+    const out: FeedAuthor[] = [];
+    for (const p of threadPosts) {
+      const a = p.author;
+      if (!a?.id || seen.has(a.id)) continue;
+      seen.add(a.id);
+      out.push(a);
+      if (out.length >= 6) break;
+    }
+    return out;
+  }, [threadPosts]);
+
+  // TOP IN THE CLUB — the names the club is actually tagging, most-tagged first.
+  const topTickers = useMemo(() => {
+    const count = new Map<string, number>();
+    for (const p of threadPosts) {
+      for (const t of p.ticker_tags ?? []) {
+        const k = t.toUpperCase();
+        count.set(k, (count.get(k) ?? 0) + 1);
+      }
+    }
+    return Array.from(count.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([ticker]) => ticker);
+  }, [threadPosts]);
+
+  // HOT DISCUSSIONS — the two busiest ticker threads, by real entry count.
+  const hotThreads = useMemo(() => {
+    const by = new Map<string, number>();
+    for (const p of threadPosts) {
+      for (const t of p.ticker_tags ?? []) {
+        const k = t.toUpperCase();
+        by.set(k, (by.get(k) ?? 0) + 1);
+      }
+    }
+    return Array.from(by.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([ticker, entries]) => ({ ticker, entries }));
+  }, [threadPosts]);
+
+  // Live deltas for the TOP IN THE CLUB strip. A tile with no quote renders the
+  // honest dash rather than a fabricated 0.00% (TickerTile owns that contract).
+  const [quotes, setQuotes] = useState<Record<string, number | null>>({});
+  const topKey = topTickers.join(",");
+  useEffect(() => {
+    const list = topKey ? topKey.split(",") : [];
+    if (!list.length) return;
+    let live = true;
+    void Promise.all(
+      list.map(async (t) => {
+        try {
+          const r = await fetch(`/api/market/quote?symbol=${encodeURIComponent(t)}`);
+          if (!r.ok) return [t, null] as const;
+          const j = await r.json();
+          const pct = Number(j?.quote?.changePercent);
+          return [t, Number.isFinite(pct) ? pct : null] as const;
+        } catch {
+          return [t, null] as const;
+        }
+      })
+    ).then((rows) => {
+      if (!live) return;
+      setQuotes(Object.fromEntries(rows));
+    });
+    return () => {
+      live = false;
+    };
+  }, [topKey]);
+
+  // The newest change of mind, for board 01's preview card. One row, one RPC —
+  // the same aggregate the destination reads (get_changed_minds, migration 190).
+  const [latestFlip, setLatestFlip] = useState<ChangedMindEntry | null>(null);
+  useEffect(() => {
+    let live = true;
+    void supabase.rpc("get_changed_minds", { p_limit: 1 }).then(({ data }) => {
+      if (!live) return;
+      const first = (data as { items?: ChangedMindEntry[] } | null)?.items?.[0] ?? null;
+      setLatestFlip(first);
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Real ledger counts for the founding note — the club's actual numbers,
   // stated rather than hidden. Never inferred, never rounded up, and ZEROS ARE
@@ -792,37 +819,44 @@ export default function CommunityClient({
           {/* VIP Room entry — gated: only renders for Challenge VIP members. */}
           <VipRoomBanner />
 
-          {/* Weekly anchor ("This week in the Club") — ORIENTATION ONLY.
-              The owner named this one directly: it is a standing title on a
-              board that is not a landing page. A new member gets it once as
-              framing for what the club is working through; a returning member
-              opens on entries and reaches the class from Home. */}
-          {showOrientation && anchor && (
-            <AnchorMasthead post={anchor} expanded={threadPosts.length < 4} />
-          )}
-
           {/* Pinned latest announcement (first 7 days) */}
           {pinnedAnnouncement && <AnnouncementCard post={pinnedAnnouncement} pinned />}
 
-          {/* Composer — or a read-only upsell for free members. Render NEITHER
-              until the tier is known, so a free viewer never flashes the member
-              composer while getFamilyTier is still in flight. A quiet skeleton
-              holds the slot's height to avoid a layout jump.
-              The composer is NOT a card: it is the first entry on the ledger,
-              opened by the same hairline every post below it sits on. */}
+          {/* Composer — board 01 draws it CLOSED: a white pill with the member's
+              avatar and "What's on your mind?". It opens into the full composer
+              on the first touch, so the screen leads with the room rather than
+              with a form. Renders NEITHER pill nor upsell until the tier is
+              known, so a free viewer never flashes the member composer while
+              getFamilyTier is in flight. */}
           {!tierResolved ? (
-            <div className="f0-rule-top py-4">
-              <div className="flex gap-3 animate-pulse">
-                <div className="w-11 h-11 rounded-full bg-sand/60 shrink-0" />
-                <div className="flex-1 h-[76px] rounded-lg bg-sand/40" />
-              </div>
+            <div className="flex animate-pulse items-center gap-3 rounded-[14px] border border-sand bg-card p-3">
+              <div className="h-8 w-8 shrink-0 rounded-full bg-sand/60" />
+              <div className="h-4 flex-1 rounded bg-sand/40" />
             </div>
           ) : readOnly ? (
             <FreeComposerUpsell />
           ) : feedReadOnlyKid ? (
             <KidFeedReadOnlyNote />
+          ) : !composerOpen ? (
+            <button
+              type="button"
+              onClick={() => {
+                setComposerOpen(true);
+                requestAnimationFrame(() => taRef.current?.focus());
+              }}
+              className="f0-focus flex w-full items-center gap-3 rounded-[14px] border border-sand bg-card px-3.5 py-3 text-left transition-colors hover:border-gold-300"
+            >
+              <Avatar
+                name={me?.display_name}
+                avatarUrl={me?.avatar_url}
+                role={me?.role}
+                tier={(me?.family_id && tiers[me.family_id]) || myTier}
+                size="sm"
+              />
+              <span className="text-[13px] text-soft">What&apos;s on your mind?</span>
+            </button>
           ) : (
-          <div className="f0-rule-top py-4">
+          <div className="rounded-[14px] border border-sand bg-card p-3.5">
             <div className="flex gap-3">
               <Avatar name={me?.display_name} avatarUrl={me?.avatar_url} role={me?.role} tier={(me?.family_id && tiers[me.family_id]) || myTier} size="lg" />
               <div className="flex-1 min-w-0">
@@ -1000,85 +1034,148 @@ export default function CommunityClient({
           </div>
           )}
 
-          {/* R5 feed filters — a quiet mono rail, NOT a second segmented control.
-              The surface already has one (Feed / Lounge / Live); a second pill
-              group at the same weight would read as two competing navigations. */}
-          <div role="tablist" aria-label="Filter the feed" className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-sand pb-3">
-            {TABS.map((t) => {
-              const on = tab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  role="tab"
-                  type="button"
-                  aria-selected={on}
-                  onClick={() => setTab(t.key)}
-                  className={`font-mono text-[10.5px] font-bold uppercase tracking-[0.14em] transition-colors ${
-                    on
-                      ? "text-ink underline decoration-volt-500 decoration-2 underline-offset-[6px]"
-                      : "text-soft hover:text-ink"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* ── WHO'S AROUND (board 01's story rail) ───────────────────────
+              Real distinct voices from the feed, newest first. Never a
+              manufactured crowd — these are members who actually posted. */}
+          {voices.length > 0 && (
+            <div className="club2-track -mx-1 flex gap-2 overflow-x-auto px-1">
+              {voices.map((a, i) => (
+                <ProfileLink key={a.id} username={a.username} variant="avatar">
+                  <StoryRing live={i === 0} label={(a.display_name || "Member").split(" ")[0]}>
+                    <Avatar
+                      name={a.display_name}
+                      avatarUrl={a.avatar_url}
+                      role={a.role}
+                      tier={tierOf(a)}
+                      xp={xpOf(a.id)}
+                      size="lg"
+                    />
+                  </StoryRing>
+                </ProfileLink>
+              ))}
+            </div>
+          )}
 
-          {/* ── Feed ─────────────────────────────────────────────────────────
-              Two lanes. The ambient strip carries the auto-activity as a quiet
-              pulse; the editorial thread carries the real conversation as the
-              dominant, typography-led lane — hairline-ruled ENTRIES (f0-ledger),
-              never a stack of cards. Discussions keeps its per-ticker
-              aggregation, also as a ledger. */}
+          {/* ── TOP IN THE CLUB (board 01) ────────────────────────────────
+              The names the club is actually tagging, most-tagged first, with
+              live deltas. A tile with no quote prints the honest dash. */}
+          {topTickers.length > 0 && (
+            <section>
+              <SectionLabel glyph="🔥">Top in the Club</SectionLabel>
+              <TickerTileStrip>
+                {topTickers.map((t) => (
+                  <TickerTile
+                    key={t}
+                    ticker={t}
+                    changePct={quotes[t] ?? null}
+                    href={`/research/${encodeURIComponent(t)}`}
+                  />
+                ))}
+              </TickerTileStrip>
+            </section>
+          )}
+
+          {/* ── CHANGED MY MIND (board 01's preview card) ─────────────────── */}
+          {latestFlip && (
+            <section>
+              <SectionLabel action="See all" actionHref="/community/changed-my-mind">
+                Changed my mind
+              </SectionLabel>
+              <BoardCard>
+                <div className="flex items-start gap-2.5">
+                  <Avatar
+                    name={latestFlip.display_name}
+                    avatarUrl={latestFlip.avatar_url}
+                    role={latestFlip.role}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-[13px] font-bold text-ink">
+                      {latestFlip.display_name || "Member"}
+                    </p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-soft">
+                      <span>Changed on ${latestFlip.ticker.toUpperCase()}</span>
+                      {latestFlip.from_stance && (
+                        <StanceChip stance={latestFlip.from_stance} muted size="sm" />
+                      )}
+                      <span aria-hidden className="font-bold text-gold-700">
+                        →
+                      </span>
+                      <StanceChip stance={latestFlip.to_stance} size="sm" />
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2.5 pl-[42px]">
+                  <p className="font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-gold-700">
+                    Changed my mind
+                  </p>
+                  <p className="mt-1.5 text-[13px] leading-[1.5] text-ink">
+                    {latestFlip.note ||
+                      (latestFlip.reason
+                        ? REASON_BY_KEY[latestFlip.reason].label
+                        : "Position updated.")}
+                  </p>
+                  {latestFlip.respect_count > 0 && (
+                    <p className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.12em] text-soft">
+                      {latestFlip.respect_count} respect
+                    </p>
+                  )}
+                </div>
+              </BoardCard>
+            </section>
+          )}
+
+          {/* ── HOT DISCUSSIONS (board 01) ────────────────────────────────── */}
+          {hotThreads.length > 0 && (
+            <section>
+              <SectionLabel
+                action="See all"
+                onAction={onOpenDiscussions}
+                actionHref={onOpenDiscussions ? undefined : "/community?mode=discussions"}
+              >
+                Hot discussions
+              </SectionLabel>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {hotThreads.map((t) => (
+                  <BoardCard key={t.ticker} href={`/research/${encodeURIComponent(t.ticker)}`}>
+                    <div className="flex items-center gap-2.5">
+                      <TickerMark ticker={t.ticker} size={30} tone="cream" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display text-[12.5px] font-bold text-ink">
+                          ${t.ticker} thread
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-soft">
+                          {t.entries} {t.entries === 1 ? "entry" : "entries"}
+                        </span>
+                      </span>
+                      <ArrowRight className="h-4 w-4 shrink-0 text-soft" aria-hidden />
+                    </div>
+                  </BoardCard>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── The feed itself ──────────────────────────────────────────────
+              Board 01 builds the whole screen out of cards, so an entry is a
+              card: white ground, one sand hairline, 14px radius. Hierarchy
+              inside the card is still type — byline, promoted opening line,
+              prose, marks, reactions. */}
           {loading ? (
-            <div className="f0-ledger">
+            <div className="space-y-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="py-5 animate-pulse">
+                <div key={i} className="animate-pulse rounded-[14px] border border-sand bg-card p-3.5">
                   <div className="flex gap-3">
-                    <div className="w-10 h-10 rounded-full bg-sand/60 shrink-0" />
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-sand/60" />
                     <div className="flex-1">
-                      <div className="h-3.5 w-32 bg-sand/70 rounded mb-3" />
-                      <div className="h-3 w-full bg-sand/50 rounded mb-1.5" />
-                      <div className="h-3 w-2/3 bg-sand/50 rounded" />
+                      <div className="mb-3 h-3.5 w-32 rounded bg-sand/70" />
+                      <div className="mb-1.5 h-3 w-full rounded bg-sand/50" />
+                      <div className="h-3 w-2/3 rounded bg-sand/50" />
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          ) : tab === "discussions" ? (
-            discussionThreads.length === 0 ? (
-              <EmptyRoom copy={EMPTY_COPY[tab]} ledger={foundingLedger} onStart={!readOnly ? focusComposer : undefined} />
-            ) : (
-              <div className="space-y-8">
-                {discussionThreads.map(({ ticker, list }) => (
-                  <section key={ticker}>
-                    {/* Ticker thread header — a hairline row, not a card lid.
-                        This one does NOT use the shared SectionRule: that
-                        primitive types its own label (eyebrow / uppercase /
-                        soft) and the head here is a $CASHTAG mark carrying its
-                        own mono treatment, which the label classes would fight. */}
-                    <div className="flex items-center gap-3 pb-2.5">
-                      <Link href={`/research/${encodeURIComponent(ticker)}`} className="group/tag shrink-0">
-                        <Cashtag ticker={ticker} />
-                      </Link>
-                      <span className="shrink-0 font-mono text-[10px] tracking-[0.14em] text-soft">
-                        {list.length} {list.length === 1 ? "entry" : "entries"}
-                      </span>
-                      <span aria-hidden className="h-px min-w-4 flex-1 bg-sand" />
-                      <TextAction href={`/research/${encodeURIComponent(ticker)}`}>
-                        Research <ArrowRight className="w-3.5 h-3.5" />
-                      </TextAction>
-                    </div>
-                    <div className="f0-ledger">
-                      {list.slice(0, 4).map((p) => (
-                        <DiscussionRow key={p.id} post={p} tier={tierOf(p.author)} xpOf={xpOf} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            )
           ) : (
             <div className="space-y-6">
               {/* In-feed announcements (rare — pinned ones live above) */}
@@ -1086,19 +1183,19 @@ export default function CommunityClient({
                 <AnnouncementCard key={p.id} post={p} />
               ))}
 
-              {/* Ambient activity — collapsed grouped strip (For You only) */}
+              {/* Ambient activity — collapsed grouped strip */}
               {activityItems.length > 0 && <AmbientActivityStrip items={activityItems} />}
 
-              {/* Editorial thread — the dominant conversation lane */}
+              {/* The conversation */}
               {threadPosts.length === 0 ? (
                 <EmptyRoom
-                  copy={EMPTY_COPY[tab]}
+                  copy={EMPTY_COPY}
                   ledger={foundingLedger}
-                  onStart={!readOnly && !feedReadOnlyKid && isForYou ? focusComposer : undefined}
+                  onStart={!readOnly && !feedReadOnlyKid ? focusComposer : undefined}
                 />
               ) : (
                 <>
-                  <div className="f0-ledger">
+                  <div className="space-y-3">
                     {threadPosts.map((p, i) => (
                       <m.div key={p.id} initial={seededPostIds.current.has(p.id) ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.03, 0.2) }}>
                         <PostEntry
@@ -1117,7 +1214,7 @@ export default function CommunityClient({
                       counts, one action. A thin room reads as a room that
                       started, not one that failed. */}
                   {threadPosts.length < 6 && (
-                    <div className="f0-rule-top">
+                    <BoardCard className="px-3.5">
                       <FoundingNote
                         eyebrow="The floor is open"
                         headline={
@@ -1145,7 +1242,7 @@ export default function CommunityClient({
                           )
                         }
                       />
-                    </div>
+                    </BoardCard>
                   )}
                 </>
               )}
@@ -1303,10 +1400,11 @@ function LikeCommentBar({ liked, likeCount, onLike, commentCount, onToggleCommen
   );
 }
 
-// Read-only composer slot for free members — a hairline entry, not an upsell box.
+// Read-only composer slot for free members — the composer's card, saying what
+// the card is for instead of pretending to be a form they can use.
 function FreeComposerUpsell() {
   return (
-    <div className="f0-rule-top py-5">
+    <div className="rounded-[14px] border border-sand bg-card p-3.5">
       <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
         Reading as a free member
       </p>
@@ -1331,7 +1429,7 @@ function FreeComposerUpsell() {
 // A warm, non-punishing note in place of the composer — no upsell shown to a child.
 function KidFeedReadOnlyNote() {
   return (
-    <div className="f0-rule-top py-5">
+    <div className="rounded-[14px] border border-sand bg-card p-3.5">
       <p className="font-display text-eyebrow font-bold uppercase text-teal-700 dark:text-teal-300">
         Your space is coming
       </p>
@@ -1380,41 +1478,9 @@ function TickerRow({
   );
 }
 
-// R5 — compact entry inside a ticker thread. Same editorial grammar as the main
-// ledger, one register quieter: byline, promoted opening line, stance.
-function DiscussionRow({ post, tier, xpOf }: { post: FeedPost; tier: FamilyTier; xpOf?: (id: string | null | undefined) => number }) {
-  const { headline, rest } = splitEntry(post.body);
-  return (
-    <div className="flex items-start gap-3 py-3.5">
-      <ProfileLink username={post.author?.username} variant="avatar">
-        <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={post.author?.role} tier={tier} xp={xpOf?.(post.author?.id)} size="sm" />
-      </ProfileLink>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-          <ProfileLink username={post.author?.username} className="font-display text-[13px] font-bold text-ink">{post.author?.display_name || "Member"}</ProfileLink>
-          <CredibilityTag role={post.author?.role} xp={xpOf?.(post.author?.id)} />
-          {post.position && <StanceLabel position={post.position} size="sm" />}
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">{timeAgo(post.created_at)}</span>
-        </div>
-        {headline && (
-          <p className="mt-1 font-display text-[15px] font-bold leading-snug text-ink">
-            <RichBody body={headline} />
-          </p>
-        )}
-        {rest && (
-          <p className="mt-1 line-clamp-2 whitespace-pre-wrap break-words text-[13.5px] leading-relaxed text-soft">
-            <RichBody body={rest} />
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /**
- * ONE ENTRY on the ledger — an editorial record, not a card and not a chat
- * bubble. The parent owns the hairline (f0-ledger); the row itself carries zero
- * chrome, so hierarchy has to come from type alone:
+ * ONE ENTRY — a card, the unit board 01 is built from: white ground, one sand
+ * hairline, 14px radius. Inside the card, hierarchy is still TYPE:
  *
  *   byline      avatar · name · CREDIBILITY (belt or authority) · age · time
  *   headline    the entry's own opening line, promoted to 20px Sora extrabold
@@ -1423,7 +1489,7 @@ function DiscussionRow({ post, tier, xpOf }: { post: FeedPost; tier: FamilyTier;
  *   reactions   a tight mono rail
  *
  * The credibility tag is EARNED standing (belt) or ROLE authority — the paid
- * tier badge was dropped from the byline on purpose: a tier is a purchase, not
+ * tier badge stays out of the byline on purpose: a tier is a purchase, not
  * credibility, and it was the loudest thing in the row.
  */
 function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
@@ -1432,7 +1498,7 @@ function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
   const xp = props.xpOf?.(post.author?.id);
   const { headline, rest } = splitEntry(post.body);
   return (
-    <div className="py-5 transition-colors">
+    <div className="rounded-[14px] border border-sand bg-card p-3.5 transition-colors">
       <div className="flex items-start gap-3">
         <ProfileLink username={post.author?.username} variant="avatar">
           <Avatar name={post.author?.display_name} avatarUrl={post.author?.avatar_url} role={role} tier={tier} xp={xp} size="lg" />
@@ -1567,7 +1633,7 @@ function EmptyRoom({
   onStart?: () => void;
 }) {
   return (
-    <div className="border-b border-sand">
+    <div className="rounded-[14px] border border-sand bg-card px-3.5">
       <FoundingNote
         eyebrow={copy.eyebrow}
         headline={copy.title}
@@ -1724,56 +1790,6 @@ function CommentThread(props: EngagementProps) {
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * AnchorMasthead — the weekly "This Week" anchor as an editorial masthead that
- * opens the room. Collapsed (`expanded={false}`) it's a confident one-line
- * banner; when the feed is thin (`expanded`) it leads with the teaching thesis
- * so a near-empty community still feels warm and purposeful, not barren. Links
- * into the academy This Week detail on the Home tab (route preserved).
- */
-function AnchorMasthead({ post, expanded }: { post: FeedPost; expanded: boolean }) {
-  const a = post.activity_payload as AnchorPayload;
-  const title = a.class_title || "This week in the club";
-  const thesis = a.discussion_question;
-  return (
-    <Link href="/dashboard?tab=this-week" className="group block border-b border-sand pb-5">
-      <p className="font-display text-eyebrow font-bold uppercase text-gold-700">
-        This week in the Club
-      </p>
-      <div className="mt-2.5 flex items-start gap-3.5">
-        {a.company_ticker && (
-          <span className="mt-1 shrink-0">
-            <CompanyLogo symbol={a.company_ticker} name={a.company_name || undefined} size={expanded ? 44 : 36} />
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
-          <h2
-            className={`font-display font-extrabold text-ink ${
-              expanded ? "text-display-2" : "text-display-3"
-            }`}
-          >
-            {title}
-          </h2>
-          {a.company_name && (
-            <p className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-soft">
-              {a.company_name}
-              {a.company_ticker && ` · ${a.company_ticker}`}
-            </p>
-          )}
-          {expanded && thesis && (
-            <p className="mt-3 max-w-[52ch] border-l-2 border-volt-500/50 pl-3.5 font-body text-[15px] leading-relaxed text-soft">
-              {thesis}
-            </p>
-          )}
-          <span className="mt-3.5 inline-flex items-center gap-1.5 font-display text-[11px] font-bold uppercase tracking-[0.1em] text-gold-700 group-hover:text-gold-600">
-            Open this week&apos;s class <ArrowRight className="h-3.5 w-3.5" />
-          </span>
-        </div>
-      </div>
-    </Link>
   );
 }
 

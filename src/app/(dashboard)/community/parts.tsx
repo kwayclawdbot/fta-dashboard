@@ -4,167 +4,35 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Avatar from "@/components/Avatar";
 import { beltForXp } from "@/lib/belts";
-import type { FeedPost, PostPosition } from "@/lib/feed";
-import { useNewMemberHints } from "@/components/hints/useNewMemberHints";
+import type { PostPosition } from "@/lib/feed";
 
 /**
  * COMMUNITY — surface-specific primitives (canvas rebuild B, board: Community).
  *
- * The generic vocabulary (DisplayHead, SectionRule, Ledger, TextAction…) lives in
- * @/components/f0/parts and is imported, not re-implemented. What stays here is
- * what only the Community board needs: the mode control, the stance/cashtag/
- * credibility marks, presence, and the founding-state note.
+ * The DRAWN vocabulary (masthead, tab strip, pills, cards, room tiles, the
+ * stripe field, the marker notes) lives in ./board and is the system this
+ * surface is built from. What stays HERE is the small set of marks that are not
+ * on the boards but are the club's own language: the stance label, the cashtag,
+ * the credibility tag, the avatar stack, the real presence read, the
+ * founding-state note and the one orange action.
  *
- * Everything obeys the locked system:
- *   · LIGHT PRIMARY — warm sand/cream ground. The ONE dark object on the whole
- *     surface is the Live tab's f0-hero-field room. Nothing here paints dark.
- *   · NO generic card containers. Objects get identity from RULES, TYPE SCALE
- *     and MONO LEDGER captions — never from border + shadow + bg-card.
- *   · COLOUR LAW: green/red = PRICE only · lime = COMMUNITY SENTIMENT only ·
- *     orange = BRAND + ACTION only. Orange TEXT uses the gold-* ramp (themed);
- *     orange FILLS keep bg-volt-500. The volt ramp is frozen across themes.
+ * The old mode chrome that used to live in this file — the recessed segmented
+ * control and the mono presence rail — is GONE. The boards draw a masthead and
+ * an underlined tab strip, and that is what ships (./board).
+ *
+ * What still holds:
+ *   · LIGHT GROUND, warm paper, with the boards' near-black fields as the
+ *     deliberate dark objects (the pinned thread, the on-air room, YOUR TURN).
+ *   · CARDS ARE THE UNIT — the boards are built from them, so the surface is.
+ *   · COLOUR: the price tokens (`text-price-up` / `text-price-down`) stay PRICE
+ *     ONLY. Orange TEXT uses the gold-* ramp (themed); orange FILLS keep
+ *     bg-volt-500, and the volt ramp is frozen across themes. The boards' room
+ *     tiles and stance fills are literals precisely so they can never be
+ *     mistaken for a quote by the stylesheet.
  *   · REAL DATA ONLY. Counts render from the live club contract; below the
  *     participation floor the surface renders designed founding copy instead of
  *     a raw small number. There is no path in this file that prints "0 online".
  */
-
-/* ── orientation: new member vs returning ─────────────────────────────────── */
-/**
- * THE BOARD IS THE PAGE.
- *
- * Owner law: Community is not a landing page. A returning member opens it and
- * lands in content — no hero title, no "This week in the Club" masthead eating
- * the first viewport. A NEW member still gets the orienting title, because they
- * genuinely do not yet know what this surface is.
- *
- * The condition is keyed off state that ALREADY EXISTS. No column was invented:
- *
- *   1. ACCOUNT AGE — `useNewMemberHints` (the app's existing first-run
- *      mechanism) resolves `profiles.created_at` and reports whether the account
- *      is inside the 24h new-member window. It also carries the permanent
- *      per-key dismissal in localStorage (`fic-hint-community-board`), so a new
- *      member who dismisses the title never sees it again on that device.
- *
- *   2. PARTICIPATION — the orientation disappears EARLY, before the 24h window
- *      closes, the moment the member actually takes part. Both signals come free
- *      with the server feed seed, so this costs zero extra queries:
- *        · `feed_posts.author_id === me.id` in the seeded feed → they have
- *          written an entry;
- *        · a row in `post_likes` for this viewer (`likedByMe`) → they have
- *          backed one.
- *      Someone who posts in their first hour stops being told what the board is.
- *
- * The 60-row feed window can't produce a false "new": account age gates it, so a
- * member older than a day never sees the title regardless of what the window
- * holds. Participation only ever REMOVES the title, never restores it.
- *
- * No "?" reopen affordance is rendered for this spot on purpose. The hints
- * convention keeps help reachable behind a small icon, but a permanent icon at
- * the top of the board is exactly the standing chrome the owner asked to remove,
- * and the board explains itself once you are standing in it.
- */
-export function useClubOrientation({
-  meId,
-  posts,
-  likedByMe,
-}: {
-  meId: string | null | undefined;
-  posts: FeedPost[];
-  likedByMe: string[] | Set<string>;
-}): { ready: boolean; show: boolean } {
-  const hint = useNewMemberHints("community-board");
-
-  const likedCount =
-    likedByMe instanceof Set ? likedByMe.size : (likedByMe?.length ?? 0);
-  const hasParticipated =
-    !!meId &&
-    (likedCount > 0 || posts.some((p) => p.author?.id === meId));
-
-  return { ready: hint.ready, show: hint.show && !hasParticipated };
-}
-
-/* ── segmented control ────────────────────────────────────────────────────── */
-/**
- * The premium segmented control that carries Feed / Lounge / Live.
- *
- * A recessed sand track with ONE raised paper segment. The raised segment is
- * paper (never ink, never orange) so the surface keeps exactly one dark object —
- * the on-air room field — and so orange stays reserved for actions. The active
- * segment earns a volt tick to its left: the accent marks the selection without
- * flooding a navigation control with brand colour.
- *
- * DARK flips the MECHANISM, not the composition (same move the foundation makes
- * for club2-card): in light the track is darker than the page and the active pill
- * is the page colour, so the pill reads RAISED. On a near-black page `bg-paper`
- * would vanish into the ground, so dark inverts it — the track drops to `card`
- * and the active pill lifts to `sand`. Selected still means "closer to you" in
- * both themes.
- */
-export interface Segment {
-  id: string;
-  label: string;
-  /** Renders a red on-air pulse in place of the volt tick (live rooms only). */
-  onAir?: boolean;
-  count?: number;
-}
-
-export function SegmentedControl({
-  segments,
-  active,
-  onSelect,
-  ariaLabel,
-}: {
-  segments: Segment[];
-  active: string;
-  onSelect: (id: string) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <div
-      role="tablist"
-      aria-label={ariaLabel}
-      className="flex w-full items-stretch gap-1 rounded-full bg-sand/55 p-1 dark:bg-card"
-    >
-      {segments.map((s) => {
-        const isActive = s.id === active;
-        return (
-          <button
-            key={s.id}
-            role="tab"
-            type="button"
-            aria-selected={isActive}
-            onClick={() => onSelect(s.id)}
-            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 font-display text-[12px] font-bold uppercase tracking-[0.1em] transition-all duration-200 ${
-              isActive
-                ? "bg-paper text-ink shadow-soft dark:bg-sand"
-                : "text-soft hover:text-ink"
-            }`}
-          >
-            {s.onAir ? (
-              <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-70 motion-reduce:hidden" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
-              </span>
-            ) : (
-              <span
-                aria-hidden
-                className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
-                  isActive ? "bg-volt-500" : "bg-transparent"
-                }`}
-              />
-            )}
-            <span className="truncate">{s.label}</span>
-            {s.count != null && s.count > 0 && (
-              <span className="font-mono text-[10px] font-bold tabular-nums text-soft">
-                {s.count}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /* ── stance label ─────────────────────────────────────────────────────────── */
 /**
@@ -345,67 +213,6 @@ export function useClubPresence(): ClubPresence | null {
     };
   }, []);
   return presence;
-}
-
-/**
- * The presence rail — "who's here" as a mono ledger line, not a stat box.
- *
- * ABOVE the floor it states the real numbers. BELOW the floor (the founding
- * club: a handful of members, a handful of moves a day) it never prints the raw
- * count. It reframes: the faces that exist are shown, and the copy says the room
- * is small ON PURPOSE. There is no branch that can render "0 online".
- *
- * `compact` is the returning-member form: a single ~18px line with a smaller
- * face stack, sitting directly under the mode control so the first ENTRY starts
- * high in the viewport. With the masthead gone this is the only standing chrome
- * the board carries, so it has to earn its line.
- */
-export function PresenceRail({
-  presence,
-  founding,
-  compact = false,
-}: {
-  presence: ClubPresence | null;
-  /** Founding line used below the floor / with no data. */
-  founding: string;
-  compact?: boolean;
-}) {
-  const faces =
-    presence?.avatars.map((a) => ({ name: null, avatar_url: a.url })) ?? [];
-  const atScale = presence?.floorMet ?? false;
-
-  return (
-    <div className={`flex items-center ${compact ? "gap-2" : "gap-3"}`}>
-      {faces.length > 0 && (
-        <AvatarStack faces={faces} max={compact ? 4 : 5} size={compact ? "xs" : "sm"} />
-      )}
-      <p
-        className={`min-w-0 font-mono leading-tight tracking-wide text-soft ${
-          compact ? "text-[10.5px]" : "text-[11px]"
-        }`}
-      >
-        {atScale && presence ? (
-          <>
-            <span className="font-bold text-ink tabular-nums">
-              {presence.connectedMinds}
-            </span>{" "}
-            members
-            {presence.actionsToday > 0 && (
-              <>
-                {" · "}
-                <span className="font-bold text-ink tabular-nums">
-                  {presence.actionsToday}
-                </span>{" "}
-                moves today
-              </>
-            )}
-          </>
-        ) : (
-          founding
-        )}
-      </p>
-    </div>
-  );
 }
 
 /* ── founding note ────────────────────────────────────────────────────────── */

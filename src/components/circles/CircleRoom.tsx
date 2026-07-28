@@ -21,7 +21,12 @@ import {
   type CircleRoom as Room,
   type CircleStance,
 } from "@/lib/circles";
-import { DisplayHead, SectionRule, Ledger, EmptyLine, TextAction } from "@/components/f0/parts";
+import { EmptyLine, TextAction } from "@/components/f0/parts";
+import {
+  BoardCard,
+  BoardMasthead,
+  SectionLabel,
+} from "@/app/(dashboard)/community/board";
 
 /* ══════════════════════════════════════════════════════════════════════════
    ONE CIRCLE — the room (canvas v2, App board 16 → detail). /circles/[slug].
@@ -223,7 +228,12 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <DisplayHead eyebrow={circle.topic} title={circle.title} />
+            <p className="font-display text-[10px] font-extrabold uppercase tracking-[0.14em] text-gold-700">
+              {circle.topic}
+            </p>
+            <div className="mt-2">
+              <BoardMasthead title={circle.title} />
+            </div>
           </div>
         </div>
 
@@ -249,17 +259,12 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
 
       {/* ── THE ROOM ─────────────────────────────────────────────────────── */}
       <section className="space-y-5">
-        <SectionRule
-          action={
-            closed || isKid ? null : (
-              <TextAction onClick={toggleMembership}>
-                {busy ? "…" : joined ? "Leave" : "Join this Circle"}
-              </TextAction>
-            )
-          }
+        <SectionLabel
+          action={closed || isKid ? undefined : busy ? "…" : joined ? "Leave" : "Join this Circle"}
+          onAction={toggleMembership}
         >
           In the room
-        </SectionRule>
+        </SectionLabel>
 
         {roster.length === 0 ? (
           <EmptyLine
@@ -295,7 +300,7 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
 
       {/* ── WHERE THE ROOM STANDS ────────────────────────────────────────── */}
       <section className="space-y-4">
-        <SectionRule>Where the room stands</SectionRule>
+        <SectionLabel>Where the room stands</SectionLabel>
         <StanceControl
           value={stance}
           onChange={(s) => setStance(s)}
@@ -313,7 +318,7 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
       {/* ── YOUR NOTE ────────────────────────────────────────────────────── */}
       {canPost && (
         <section className="space-y-4">
-          <SectionRule>Add to the thread</SectionRule>
+          <SectionLabel>Add to the thread</SectionLabel>
           <textarea
             value={body}
             maxLength={2000}
@@ -352,7 +357,7 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
 
       {/* ── THE THREAD ───────────────────────────────────────────────────── */}
       <section className="space-y-5">
-        <SectionRule>The thread</SectionRule>
+        <SectionLabel>The thread</SectionLabel>
         {notes.length === 0 ? (
           <EmptyLine
             title="Nothing said yet"
@@ -363,9 +368,9 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
             }
           />
         ) : (
-          <Ledger>
+          <div className="space-y-3">
             {notes.map((n) => (
-              <div key={n.id} className="f0-ledger-row">
+              <BoardCard key={n.id} className="flex items-start gap-3">
                 <span className="shrink-0 self-start pt-0.5">
                   <Avatar
                     name={n.author?.display_name}
@@ -396,9 +401,9 @@ export default function CircleRoomSurface({ slug }: { slug: string }) {
                     {n.body}
                   </span>
                 </span>
-              </div>
+              </BoardCard>
             ))}
-          </Ledger>
+          </div>
         )}
       </section>
 
