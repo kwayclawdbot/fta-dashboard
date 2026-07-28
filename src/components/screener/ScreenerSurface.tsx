@@ -37,8 +37,8 @@ import { getClubTier, type FamilyTier } from "@/lib/tier";
 import { fetchQuote } from "@/lib/market/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
-import LockedState from "@/components/dashboard/LockedState";
-import { FIC_CHECKOUT_URL } from "@/lib/free-class";
+import UnlockLine from "@/components/entitlements/UnlockLine";
+import { wallFor } from "@/lib/entitlements/paywall";
 import {
   useNewMemberHints,
   HintDismiss,
@@ -175,6 +175,16 @@ interface Meta {
    screen and a hand-built one are the same object. */
 const SAVED_SCREEN_LIMIT = 20;
 
+/**
+ * What a free member reads when they reach for a saved screen. A saved screen
+ * is the Club half of "Screener / Stock Finder — free: Basic filters"
+ * (PRICING_MATRIX): running a scan is free, KEEPING one is the membership. The
+ * rail still renders and existing screens still load and delete — nothing a
+ * lapsed member saved is ever taken away — only the new write is withheld.
+ */
+const SAVED_SCREENS_FREE_LINE =
+  "Saved screens are how members keep a scan and re-run it tomorrow. The Club opens them, alongside the full screener and AI search.";
+
 interface SavedScreen {
   id: string;
   name: string;
@@ -262,6 +272,10 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   const [appliedScreenId, setAppliedScreenId] = useState<string | null>(null);
 
   const isFTA = tier === "fta";
+  // Free is a METER on this surface now, not a door: the basic groups and the
+  // results table run, and only the two things the Club actually buys — the
+  // Advanced group (already FTA-gated below) and saving a screen — are held.
+  const isFree = tier === "free";
 
   /* Board 15's tail — "Club's most bullish / bearish" and "Trending in the
      Club" — is COMMUNITY data, which `screener_metrics` does not carry. It
@@ -393,6 +407,13 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   async function saveScreen() {
     const name = screenName.trim();
     if (!name || !userId || savingScreen) return;
+    // Client half of the meter. The server half is the RLS insert policy on
+    // screener_saved_screens (migration 204) — this return only spares a free
+    // member a round trip to a row the database was going to refuse anyway.
+    if (isFree) {
+      setSavedError(SAVED_SCREENS_FREE_LINE);
+      return;
+    }
     setSavingScreen(true);
     setSavedError(null);
     // `q` is a free-text search, not a filter — it is deliberately NOT saved:
@@ -414,10 +435,18 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         { onConflict: "user_id,name" }
       );
     if (error) {
+      // A row-level-security refusal is the SERVER meter talking (migration
+      // 204). Say what it means in the surface's own words instead of leaking
+      // "new row violates row-level security policy" at a member.
+      const refusedByPolicy =
+        error.code === "42501" ||
+        /row-level security|policy/i.test(error.message ?? "");
       setSavedError(
-        (saved?.length ?? 0) >= SAVED_SCREEN_LIMIT
-          ? `You can keep ${SAVED_SCREEN_LIMIT} screens — delete one to save this.`
-          : "Couldn't save that screen. Try again."
+        refusedByPolicy
+          ? SAVED_SCREENS_FREE_LINE
+          : (saved?.length ?? 0) >= SAVED_SCREEN_LIMIT
+            ? `You can keep ${SAVED_SCREEN_LIMIT} screens — delete one to save this.`
+            : "Couldn't save that screen. Try again."
       );
     } else {
       setScreenName("");
@@ -565,19 +594,12 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
   if (loading || !tierResolved) return <ScreenerSkeleton embedded={embedded} />;
 
-  if (tier === "free") {
-    return (
-      <div className={embedded ? "" : "mx-auto max-w-3xl px-4 py-6 sm:px-6"}>
-        <LockedState
-          icon={Telescope}
-          eyebrow="Members discover here"
-          title="The Stock Screener"
-          body="Search every stock on the NYSE, Nasdaq and AMEX and filter the whole market down to companies worth studying — by size, sector, momentum, volume and more. It opens the moment you join."
-          cta={{ label: "Unlock the screener — join the Club", href: FIC_CHECKOUT_URL, external: true }}
-        />
-      </div>
-    );
-  }
+  // FREE = BASIC FILTERS, not a closed door (PRICING_MATRIX "Screener / Stock
+  // Finder — free: Basic filters"). The full-page wall that used to stand here
+  // is gone: the Universe and Price-and-movement groups and the results table
+  // work, and the two things the Club actually buys — the Advanced group and
+  // saved screens — are metered inline where they live. The kid redirect / RLS
+  // wall is untouched and still governs the universe read.
 
   const chips = activeChips(custom);
   const coverage =
@@ -883,6 +905,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
                 saving={savingScreen}
                 error={savedError}
                 count={saved?.length ?? 0}
+                locked={isFree}
               />
             )}
             {/* The sort is a stated fact, not a hidden default: the surface
@@ -1221,6 +1244,7 @@ function SaveScreenControl({
   saving,
   error,
   count,
+  locked = false,
 }: {
   name: string;
   onName: (v: string) => void;
@@ -1228,6 +1252,8 @@ function SaveScreenControl({
   saving: boolean;
   error: string | null;
   count: number;
+  /** Free tier: the affordance stands, the last step is withheld. */
+  locked?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -1241,6 +1267,20 @@ function SaveScreenControl({
         <Bookmark className="h-3.5 w-3.5" />
         Save screen
       </button>
+    );
+  }
+
+  /* THE WITHHELD LAST STEP. A free member reaches for "Save screen" and gets
+     the real answer — what a saved screen is and who has them — in the same
+     place the name field would have opened. Not a wall over the screener: the
+     scan they just built is still on the page behind this line. */
+  if (locked) {
+    return (
+      <span className="w-full">
+        <UnlockLine rule={false} className="mt-0" cta={wallFor("screener_full").cta}>
+          {SAVED_SCREENS_FREE_LINE}
+        </UnlockLine>
+      </span>
     );
   }
 
