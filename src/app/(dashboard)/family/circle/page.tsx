@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SectionRule } from "@/components/f0/parts";
 import Avatar from "@/components/Avatar";
 import {
   getFamilyContext,
@@ -14,22 +13,26 @@ import FamilyActivityPing from "@/components/family/FamilyActivityPing";
 import {
   FamilySurface,
   BackLine,
-  Numeral,
-  NumeralRow,
+  FamilyCard,
+  Eyebrow,
+  Chip,
   pct,
-  priceTone,
 } from "@/components/family/canvas";
 
 /**
- * F4 · FAMILY CIRCLE.
+ * F4 · FAMILY CIRCLE — board tile "F4 Family Circle".
  *
  * "Private circle · never expires" — and that claim is structural, not a
  * promise: family_circle_messages is family-scoped by RLS, there is no public
  * read policy, and no retention job touches it.
  *
- * The live challenge scoreboard rides along the bottom of the thread the way
- * the canvas draws it, because the standings are the thing the household is
- * actually arguing about.
+ * Drawn as the board draws it: the household header bar with the house mark and
+ * the safety chip, the thread, and the live challenge scoreboard riding along
+ * the bottom — because the standings are the thing the household is actually
+ * arguing about.
+ *
+ * The board's 🛡 SAFE chip is green; green is reserved for PRICE in this system,
+ * so the chip renders in the accent register instead. Same object, legal colour.
  */
 export default async function FamilyCirclePage() {
   const db = await createClient();
@@ -42,30 +45,42 @@ export default async function FamilyCirclePage() {
   ]);
 
   const inChallenge = standings.filter((s) => s.return_pct != null);
+  const MEDALS = ["🥇", "🥈", "🥉"];
 
   return (
     <FamilySurface className="pb-16">
       <FamilyActivityPing active={!ctx.isParent} />
 
-      <div className="mb-6">
+      <div className="mb-5">
         <BackLine href="/family" label="Family" />
       </div>
 
-      <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Private circle · never expires
-        </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-none text-ink">
-          {ctx.familyName ? `${ctx.familyName} HQ` : "Family HQ"}
-        </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
-          {ctx.members.length} {ctx.members.length === 1 ? "member" : "members"} · no
-          strangers, no DMs, nothing public. This thread is the household&rsquo;s
-          and stays that way.
-        </p>
+      {/* ── Household header bar ─────────────────────────────────────────*/}
+      <header className="flex items-center gap-3 rounded-xl border border-sand bg-card p-3 shadow-soft">
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent text-[17px]"
+          aria-hidden
+        >
+          🏠
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-display text-[16px] font-extrabold text-ink">
+            {ctx.familyName ? `${ctx.familyName} HQ` : "Family HQ"}
+          </h1>
+          <p className="mt-0.5 text-[10.5px] text-soft">
+            Private circle · never expires · {ctx.members.length}{" "}
+            {ctx.members.length === 1 ? "member" : "members"}
+          </p>
+        </div>
+        <Chip tone="accent">🛡 Safe</Chip>
       </header>
 
-      <div className="mt-10">
+      <p className="mt-3 max-w-md text-[12px] leading-relaxed text-soft">
+        No strangers, no DMs, nothing public. This thread is the household&rsquo;s and
+        stays that way.
+      </p>
+
+      <div className="mt-6">
         <CircleThread
           familyId={ctx.familyId}
           viewerId={ctx.userId}
@@ -74,47 +89,51 @@ export default async function FamilyCirclePage() {
         />
       </div>
 
+      {/* ── Challenge scoreboard ─────────────────────────────────────────*/}
       {inChallenge.length > 0 && (
-        <section className="mt-14">
-          <SectionRule>Challenge scoreboard · live</SectionRule>
-          <div className="f0-ledger mt-2">
-            {inChallenge.map((s, i) => (
-              <div key={s.user_id} className="f0-ledger-row">
-                <span className="w-5 shrink-0 self-center font-display text-[13px] font-bold tabular-nums text-soft">
-                  {i + 1}
-                </span>
-                <Avatar
-                  name={s.display_name}
-                  avatarUrl={s.avatar_url}
-                  role={s.role}
-                  size="sm"
-                />
-                <p className="min-w-0 flex-1 self-center truncate font-display text-[15px] font-bold text-ink">
+        <FamilyCard className="mt-8">
+          <Eyebrow tone="accent">Challenge scoreboard · live</Eyebrow>
+          <div className="mt-3 flex gap-2">
+            {inChallenge.slice(0, 3).map((s, i) => (
+              <div
+                key={s.user_id}
+                className={`min-w-0 flex-1 rounded-lg px-2 py-3 text-center ${
+                  i === 0 ? "" : "bg-paper"
+                }`}
+                style={
+                  i === 0
+                    ? {
+                        background:
+                          "color-mix(in srgb, var(--accent-solid) 15%, var(--card))",
+                      }
+                    : undefined
+                }
+              >
+                <div className="text-[14px] leading-none" aria-hidden>
+                  {MEDALS[i]}
+                </div>
+                <div className="mt-1.5 flex justify-center">
+                  <Avatar
+                    name={s.display_name}
+                    avatarUrl={s.avatar_url}
+                    role={s.role}
+                    size="xs"
+                  />
+                </div>
+                <p className="mt-1.5 truncate text-[10.5px] font-display font-bold text-ink">
                   {s.display_name || "Member"}
                 </p>
-                <span
-                  className={`shrink-0 self-center font-display text-[15px] font-extrabold tabular-nums ${
-                    priceTone(s.return_pct) === "price-down"
-                      ? "text-price-down"
-                      : "text-price-up"
+                <p
+                  className={`font-mono text-[11px] font-semibold tabular-nums ${
+                    (s.return_pct ?? 0) >= 0 ? "text-price-up" : "text-price-down"
                   }`}
                 >
                   {pct(s.return_pct)}
-                </span>
+                </p>
               </div>
             ))}
           </div>
-          <div className="mt-6">
-            <NumeralRow>
-              <Numeral
-                value={String(inChallenge.length)}
-                label="In the challenge"
-                size="sm"
-              />
-              <Numeral value={String(messages.length)} label="Messages" size="sm" />
-            </NumeralRow>
-          </div>
-        </section>
+        </FamilyCard>
       )}
     </FamilySurface>
   );

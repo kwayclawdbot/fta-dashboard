@@ -1,9 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { SectionRule } from "@/components/f0/parts";
 import Avatar from "@/components/Avatar";
 import { beltForXp, beltProgress } from "@/lib/belts";
 import { levelForXp, levelProgress } from "@/lib/xp";
@@ -17,27 +15,36 @@ import {
 import {
   FamilySurface,
   BackLine,
+  FamilyCard,
+  SectionLabel,
+  Eyebrow,
+  Chip,
+  Ring,
+  Bar,
+  StatTiles,
+  XpTag,
+  TextAction,
   FoundingState,
   AbsenceNote,
-  Bar,
-  Numeral,
-  NumeralRow,
-  XpTag,
 } from "@/components/family/canvas";
 import FamilyActivityPing from "@/components/family/FamilyActivityPing";
 
 /**
- * F9 · TEEN PROGRESS.
+ * F9 · TEEN PROGRESS — board tile "F9 Teen Progress".
  *
- * The canvas's proudest screen and the one most at risk of overclaiming. Every
+ * Drawn as the board draws it: the ringed avatar header with the level chip and
+ * the trophy tile, the stat trio, the skill-mastery card, the warm family-bonus
+ * card, the family-XP card with its dark level tile, and the badge row.
+ *
+ * The board's proudest screen and the one most at risk of overclaiming. Every
  * number below is read from a table something else writes — XP from xp_events,
  * lessons from lesson_progress, mastery from skill_mastery, badges from
- * user_badges. Where a reading does not exist yet it says so; nothing is
- * back-filled with a flattering zero.
+ * user_badges, missions from mission_completions. Where a reading does not
+ * exist yet it says so; nothing is back-filled with a flattering zero.
  *
- * Skill mastery is bars, not rings (adoption plan §1.5). The household total is
- * the same shared ladder Family Home uses, so a teen's contribution and the
- * family's level can never drift apart.
+ * "16 day streak" is drawn in the first stat slot. Family Mode has no streak
+ * table, so the slot carries missions finished instead — the same shape of
+ * encouragement, measured.
  */
 export default async function TeenProgressPage({
   params,
@@ -55,7 +62,7 @@ export default async function TeenProgressPage({
   const [counts, skills, badges, missions] = await Promise.all([
     getLessonCounts(db, [memberId]),
     getSkillMastery(db, memberId),
-    getRecentBadges(db, memberId, 6),
+    getRecentBadges(db, memberId, 4),
     getFamilyMissions(db, ctx.familyId, ctx.members.map((m) => m.id)),
   ]);
 
@@ -64,158 +71,211 @@ export default async function TeenProgressPage({
   const belt = beltForXp(member.xp);
   const bp = beltProgress(member.xp);
   const lessons = counts.get(memberId)?.completed ?? 0;
-  const learnMinutes = counts.get(memberId)?.minutes ?? 0;
 
   const missionsDone = missions.filter((m) => m.completed_by.includes(memberId)).length;
+  // "Together" = every member of the household has finished it.
+  const allIds = ctx.members.map((m) => m.id);
+  const together = missions.filter((m) =>
+    allIds.every((id) => m.completed_by.includes(id))
+  ).length;
+
   const familyLevel = levelForXp(ctx.familyXp);
   const familyProgress = levelProgress(ctx.familyXp);
+  const name = member.display_name || "Member";
 
   return (
     <FamilySurface className="pb-16">
       <FamilyActivityPing active={ctx.userId === memberId && member.role === "child"} />
 
-      <div className="mb-6">
-        <BackLine href={`/family/teen/${memberId}`} label={member.display_name || "Member"} />
+      <div className="mb-5">
+        <BackLine href={`/family/teen/${memberId}`} label={name} />
       </div>
 
-      <header className="flex items-start gap-4">
-        <Avatar
-          name={member.display_name}
-          avatarUrl={member.avatar_url}
-          role={member.role}
-          xp={member.xp}
-          size="xl"
-        />
-        <div className="min-w-0">
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-            Level {level.level} · {level.name}
-          </p>
-          <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-none text-ink">
-            {member.display_name || "Member"}
-          </h1>
-          <p className="mt-2 text-[15px] text-soft">
-            {member.xp.toLocaleString()} XP
-            {lp.next && <> · {lp.toNext.toLocaleString()} to Level {lp.next.level}</>}
+      {/* ── Header ───────────────────────────────────────────────────────*/}
+      <header className="flex items-center gap-3">
+        <Ring
+          pct={lp.pct}
+          ariaLabel={`${lp.pct} percent to the next level`}
+          size={66}
+          thickness={5}
+        >
+          <Avatar
+            name={member.display_name}
+            avatarUrl={member.avatar_url}
+            role={member.role}
+            size="xl"
+          />
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-display text-[19px] font-extrabold text-ink">{name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Chip tone="accent">Level {level.level}</Chip>
+            <span className="text-[11px] text-soft">{level.name}</span>
+          </div>
+          <p className="mt-1 font-mono text-[10.5px] font-semibold tabular-nums text-ink">
+            ⚡ {member.xp.toLocaleString()}{" "}
+            <span className="text-soft">
+              {lp.next ? `/ ${lp.next.min.toLocaleString()} XP to Level ${lp.next.level}` : "XP"}
+            </span>
           </p>
         </div>
+        <span
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[17px]"
+          style={{ background: "var(--grad-metal)" }}
+          aria-hidden
+        >
+          🏅
+        </span>
       </header>
 
-      <div className="mt-6">
-        <Bar pct={lp.pct} />
-      </div>
-
       {/* ── The measures ─────────────────────────────────────────────────*/}
-      <section className="mt-12">
-        <NumeralRow>
-          <Numeral value={String(lessons)} label="Lessons done" size="sm" />
-          <Numeral value={String(badges.length)} label="Badges earned" size="sm" />
-          <Numeral value={String(missionsDone)} label="Missions finished" size="sm" />
-          <Numeral
-            value={learnMinutes >= 60 ? `${Math.round(learnMinutes / 60)}h` : `${learnMinutes}m`}
-            label="Time in lessons"
-            size="sm"
-          />
-        </NumeralRow>
-        <AbsenceNote>
-          Participation and progress only. This screen does not publish a win
-          rate or a call accuracy — a practice record is something to learn
-          from, not something to claim with.
-        </AbsenceNote>
-      </section>
+      <StatTiles
+        className="mt-4"
+        items={[
+          { value: String(missionsDone), label: "Missions done", tone: "accent" },
+          { value: String(lessons), label: "Lessons done" },
+          { value: String(badges.length), label: "Badges earned" },
+        ]}
+      />
+      <AbsenceNote>
+        Participation and progress only. This screen does not publish a win rate
+        or a call accuracy — a practice record is something to learn from, not
+        something to claim with. There is no day-streak counter because nothing
+        in Family Mode records one.
+      </AbsenceNote>
 
       {/* ── Belt ─────────────────────────────────────────────────────────*/}
-      <section className="mt-12">
-        <SectionRule>Belt</SectionRule>
-        <p className="mt-4 font-display text-display-2 font-extrabold text-ink">
-          {belt.label}
-        </p>
-        <div className="mt-4">
+      <FamilyCard className="mt-5 flex items-center gap-3">
+        <span
+          className="h-[6px] w-[18px] shrink-0 rounded-full"
+          style={{ background: belt.belt.hex }}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
           <Bar
             pct={bp.pct}
-            label={bp.next ? `Next: ${bp.next.label}` : "Top of the ladder"}
-            value={bp.next ? `${bp.toNext.toLocaleString()} XP to go` : undefined}
+            label={belt.label}
+            valueLabel={bp.next ? `${bp.toNext.toLocaleString()} XP to ${bp.next.label}` : "Top of the ladder"}
+            height={6}
           />
         </div>
-      </section>
+      </FamilyCard>
 
       {/* ── Skill mastery ────────────────────────────────────────────────*/}
-      <section className="mt-12">
-        <SectionRule>Skill mastery</SectionRule>
-        {skills.length === 0 || skills.every((s) => s.mastery === 0) ? (
-          <div className="mt-5">
-            <FoundingState
-              title="No readings yet"
-              body="Mastery is measured by answering, not by watching. The first quiz or review puts a real number here — and until there is one, an empty bar is the honest picture."
-              action={
-                <Link
-                  href="/learn"
-                  className="f0-focus f0-press inline-flex items-center gap-1.5 font-display text-[14px] font-bold text-gold-700"
-                >
-                  Start a lesson →
-                </Link>
-              }
+      <SectionLabel className="mt-6" action={<TextAction href="/learn">See all</TextAction>}>
+        Skill mastery
+      </SectionLabel>
+      {skills.length === 0 || skills.every((s) => s.mastery === 0) ? (
+        <div className="mt-3">
+          <FoundingState
+            title="No readings yet"
+            body="Mastery is measured by answering, not by watching. The first quiz or review puts a real number here — and until there is one, an empty bar is the honest picture."
+            action={<TextAction href="/learn">Start a lesson →</TextAction>}
+          />
+        </div>
+      ) : (
+        <FamilyCard className="mt-3 flex flex-col gap-3">
+          {skills.map((s) => (
+            <Bar
+              key={s.id}
+              pct={s.mastery}
+              label={s.name}
+              valueLabel={`${s.mastery}%`}
+              height={6}
             />
-          </div>
-        ) : (
-          <div className="mt-5 space-y-4">
-            {skills.map((s) => (
-              <Bar key={s.id} pct={s.mastery} label={s.name} value={`${s.mastery}%`} />
-            ))}
-          </div>
-        )}
-      </section>
+          ))}
+        </FamilyCard>
+      )}
 
-      {/* ── Recent badges ────────────────────────────────────────────────*/}
-      <section className="mt-12">
-        <SectionRule>Recent badges</SectionRule>
-        {badges.length === 0 ? (
-          <div className="mt-5">
-            <FoundingState
-              title="None yet"
-              body="Badges mark the things that compound — a first finished unit, a week of showing up, a mission the whole household ran together."
-            />
+      {/* ── The household bonus ──────────────────────────────────────────*/}
+      {missions.length > 0 && (
+        <FamilyCard tone="warm" className="mt-4 flex items-center gap-3">
+          <span className="shrink-0 text-[26px] leading-none" aria-hidden>
+            🧰
+          </span>
+          <div className="min-w-0 flex-1">
+            <Eyebrow tone="accent">Family bonus</Eyebrow>
+            <p className="mt-1 font-display text-[13px] font-bold text-ink">
+              Missions the whole household has finished
+            </p>
+            <div className="mt-2 flex items-center gap-3">
+              <Bar pct={(together / missions.length) * 100} height={6} className="flex-1" />
+              <span className="shrink-0 font-mono text-[9.5px] tabular-nums text-soft">
+                {together} / {missions.length}
+              </span>
+            </div>
           </div>
-        ) : (
-          <div className="f0-ledger mt-2">
-            {badges.map((b) => (
-              <div key={b.id} className="f0-ledger-row justify-between">
-                <p className="min-w-0 flex-1 font-display text-[15px] font-bold text-ink">
-                  {b.title}
-                </p>
-                <span className="shrink-0 self-center text-[13px] text-soft">
-                  {new Date(b.earned_at).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+          <XpTag
+            amount={missions.reduce((s, m) => s + m.xp_reward, 0)}
+            prefix=""
+            suffix=""
+            className="shrink-0"
+          />
+        </FamilyCard>
+      )}
 
       {/* ── The household total ──────────────────────────────────────────*/}
-      <section className="mt-12">
-        <SectionRule>
-          {ctx.familyName ? `${ctx.familyName} total` : "Household total"}
-        </SectionRule>
-        <p className="mt-4 font-display text-display-2 font-extrabold tabular-nums text-ink">
-          {ctx.familyXp.toLocaleString()} XP
-        </p>
-        <p className="mt-1 text-[13px] text-soft">
-          Level {familyLevel.level}
-          {familyProgress.next && (
-            <> · {familyProgress.toNext.toLocaleString()} XP to Level {familyProgress.next.level}</>
-          )}
-        </p>
-        <div className="mt-4">
-          <Bar pct={familyProgress.pct} />
+      <FamilyCard className="mt-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-display text-[15px] font-extrabold text-ink">
+            {ctx.familyName ?? "Your household"}
+          </p>
+          <Eyebrow>Family XP</Eyebrow>
         </div>
-        <p className="mt-4 text-[15px] text-soft">
-          {member.display_name || "This member"} has put{" "}
-          <XpTag amount={member.xp} prefix="" /> into it.
+        <div className="mt-3 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[16px] font-semibold tabular-nums text-ink">
+              {ctx.familyXp.toLocaleString()} XP
+            </p>
+            <Bar pct={familyProgress.pct} height={7} className="mt-2" />
+            <p className="mt-1.5 text-[10px] text-soft">
+              {familyProgress.next
+                ? `Next level: ${familyProgress.next.min.toLocaleString()} XP`
+                : "Top of the ladder"}
+            </p>
+          </div>
+          {/* A deliberate dark island. `bg-ink` would invert in dark (ink is
+              the page's off-white there), so this pins the constant night
+              ground the level tile is drawn on. */}
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-night-950 font-mono text-[13px] font-semibold text-ftagold-300">
+            {familyLevel.level}
+          </span>
+        </div>
+        <p className="mt-3 text-[11.5px] text-soft">
+          {name} has put <XpTag amount={member.xp} prefix="" suffix="" /> into it.
         </p>
-      </section>
+      </FamilyCard>
+
+      {/* ── Recent badges ────────────────────────────────────────────────*/}
+      <SectionLabel className="mt-6">Recent badges</SectionLabel>
+      {badges.length === 0 ? (
+        <div className="mt-3">
+          <FoundingState
+            title="None yet"
+            body="Badges mark the things that compound — a first finished unit, a week of showing up, a mission the whole household ran together."
+          />
+        </div>
+      ) : (
+        <div className="mt-3 flex gap-2">
+          {badges.map((b) => (
+            <div
+              key={b.id}
+              className="min-w-0 flex-1 rounded-lg border border-sand bg-card px-2 py-3 text-center shadow-soft"
+            >
+              <div className="text-[17px] leading-none" aria-hidden>
+                🏅
+              </div>
+              <p className="mt-1.5 truncate text-[9.5px] text-soft">{b.title}</p>
+              <p className="mt-0.5 font-mono text-[8.5px] font-bold text-gold-700">
+                {new Date(b.earned_at).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </FamilySurface>
   );
 }

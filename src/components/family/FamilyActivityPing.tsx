@@ -50,11 +50,19 @@ export default function FamilyActivityPing({ active = true }: { active?: boolean
   if (!locked) return null;
 
   return (
-    <div className="f0-rule-left mb-8 py-1 pl-4" role="status">
-      <p className="font-display text-[15px] font-extrabold text-ink">
-        Your account is resting
+    <div
+      className="mb-6 rounded-xl border p-4"
+      role="status"
+      style={{
+        background:
+          "linear-gradient(120deg, color-mix(in srgb, var(--accent-solid) 16%, var(--card)) 0%, var(--card) 72%)",
+        borderColor: "color-mix(in srgb, var(--accent-solid) 32%, var(--sand))",
+      }}
+    >
+      <p className="font-display text-[14px] font-extrabold text-ink">
+        🌙 Your account is resting
       </p>
-      <p className="mt-1 max-w-md text-[14px] leading-relaxed text-soft">
+      <p className="mt-1 max-w-md text-[12.5px] leading-relaxed text-soft">
         A guardrail on this account is active right now — either downtime or the
         daily limit. Reading stays open; posting, paper trades and Circle
         messages resume when it lifts.

@@ -3,16 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/Avatar";
+import { beltForXp } from "@/lib/belts";
 import type { CircleMessage, FamilyMember } from "@/lib/family/queries";
-import { FoundingState } from "@/components/family/canvas";
+import { FoundingState, FamilyCard, Chip } from "@/components/family/canvas";
 
 /**
- * F4 · FAMILY CIRCLE — the private household thread.
+ * F4 · FAMILY CIRCLE — the private household thread, drawn as the board draws
+ * it: a day divider, ringed avatars beside each message, the author's name in
+ * their belt colour, an AUTO card for the events the system posts, and the
+ * composer as a rounded bar with a round accent send button.
  *
  * `seed` arrives from the server, so the thread is never empty-then-populated:
  * loading is over before this component exists, and the founding state below is
  * the real answer for a household that has not spoken yet — not a skeleton
- * mistaken for one (adoption plan §0.4/§0.5).
+ * mistaken for one.
  *
  * A refresh runs on an interval rather than a realtime subscription. That is a
  * deliberate choice, not a shortcut: Supabase Realtime cannot authorize a
@@ -20,6 +24,11 @@ import { FoundingState } from "@/components/family/canvas";
  * per-family predicate is exactly such a policy. Polling a private thread of
  * three people is cheap; risking the community room's realtime authorization is
  * not.
+ *
+ * NOT DRAWN HERE, because nothing writes them: the 🔥/👏 reaction chips (no
+ * reaction store on family_circle_messages), the "Jaylen is typing…" line (no
+ * presence channel), and the Kai mini-lesson offer (no lesson-suggestion
+ * store). Each would be a control or a claim with nothing behind it.
  *
  * The Circle stays open under the "chat: Family Circle only" guardrail — that
  * is the entire point of the guardrail. Downtime and the daily limit still
@@ -102,33 +111,75 @@ export default function CircleThread({
           body="This thread belongs to your household and nobody else — it never expires and no stranger can ever read it. Somebody go first: what did you notice about a company this week?"
         />
       ) : (
-        <div className="f0-ledger">
-          {messages.map((m) => {
+        <div className="flex flex-col gap-4">
+          {messages.map((m, i) => {
             const author = m.author_id ? byId.get(m.author_id) : null;
             const mine = m.author_id === viewerId;
+            const day = new Date(m.created_at).toDateString();
+            const prevDay =
+              i > 0 ? new Date(messages[i - 1].created_at).toDateString() : null;
+
+            const divider =
+              day !== prevDay ? (
+                <div key={`d-${m.id}`} className="my-1 text-center">
+                  <Chip tone="muted">{dayLabel(m.created_at)}</Chip>
+                </div>
+              ) : null;
+
+            // Anything the system wrote is an event, not a message — the board
+            // gives those their own warm card with an AUTO mark.
+            if (m.kind !== "message") {
+              return (
+                <div key={m.id}>
+                  {divider}
+                  <FamilyCard tone="warm" className="flex items-center gap-3 p-3">
+                    <span className="shrink-0 text-[15px]" aria-hidden>
+                      🎉
+                    </span>
+                    <p className="min-w-0 flex-1 text-[12px] leading-snug text-soft">{m.body}</p>
+                    <Chip tone="muted">Auto</Chip>
+                  </FamilyCard>
+                </div>
+              );
+            }
+
+            const belt = author ? beltForXp(author.xp) : null;
             return (
-              <div key={m.id} className="f0-ledger-row">
-                <Avatar
-                  name={author?.display_name ?? null}
-                  avatarUrl={author?.avatar_url ?? null}
-                  role={author?.role ?? null}
-                  xp={author?.xp}
-                  size="sm"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] text-soft">
-                    <span className="font-display font-bold text-ink">
-                      {mine ? "You" : author?.display_name || "Member"}
-                    </span>{" "}
-                    ·{" "}
-                    {new Date(m.created_at).toLocaleTimeString(undefined, {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
-                    {m.body}
-                  </p>
+              <div key={m.id}>
+                {divider}
+                <div className="flex gap-3">
+                  <span
+                    className="grid h-fit shrink-0 place-items-center rounded-full p-[2px]"
+                    style={{ background: belt?.belt.hex ?? "var(--sand)" }}
+                  >
+                    <span className="grid place-items-center rounded-full bg-paper p-[1px]">
+                      <Avatar
+                        name={author?.display_name ?? null}
+                        avatarUrl={author?.avatar_url ?? null}
+                        role={author?.role ?? null}
+                        size="sm"
+                      />
+                    </span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span
+                        className="text-[12.5px] font-display font-bold"
+                        style={{ color: belt ? belt.belt.hex : undefined }}
+                      >
+                        {mine ? "You" : author?.display_name || "Member"}
+                      </span>
+                      <span className="font-mono text-[9.5px] tabular-nums text-soft">
+                        {new Date(m.created_at).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink">
+                      {m.body}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
@@ -138,32 +189,52 @@ export default function CircleThread({
       )}
 
       {error && (
-        <p className="f0-rule-left mt-5 py-1 pl-4 text-[14px] leading-relaxed text-ink" role="alert">
+        <p
+          className="mt-4 rounded-xl border border-sand bg-card p-3 text-[13px] leading-relaxed text-ink shadow-soft"
+          role="alert"
+        >
           {error}
         </p>
       )}
 
-      <form onSubmit={send} className="mt-6 flex items-end gap-3">
-        <label htmlFor="circle-draft" className="sr-only">
-          Message the family
-        </label>
-        <textarea
-          id="circle-draft"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={2}
-          maxLength={2000}
-          placeholder="Message the family"
-          className="f0-focus min-w-0 flex-1 resize-none rounded-lg border border-sand bg-transparent px-3 py-2.5 text-[15px] leading-relaxed text-ink placeholder:text-soft"
-        />
-        <button
-          type="submit"
-          disabled={!draft.trim() || sending}
-          className="f0-focus f0-press shrink-0 rounded-lg bg-accent px-4 py-2.5 font-display text-[14px] font-extrabold uppercase tracking-[0.06em] text-night-950 disabled:opacity-45"
-        >
-          {sending ? "Sending" : "Send"}
-        </button>
+      {/* ── Composer ─────────────────────────────────────────────────────*/}
+      <form onSubmit={send} className="mt-5 border-t border-sand pt-4">
+        <div className="flex items-end gap-2.5">
+          <label htmlFor="circle-draft" className="sr-only">
+            Message the family
+          </label>
+          <textarea
+            id="circle-draft"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={1}
+            maxLength={2000}
+            placeholder="Message the family"
+            className="f0-focus min-w-0 flex-1 resize-none rounded-2xl border border-sand bg-card px-4 py-2.5 text-[13.5px] leading-relaxed text-ink shadow-soft placeholder:text-soft"
+          />
+          <button
+            type="submit"
+            disabled={!draft.trim() || sending}
+            aria-label="Send"
+            className="f0-focus f0-press grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent font-display text-[14px] font-extrabold text-night-950 disabled:opacity-45"
+          >
+            {sending ? "…" : "➤"}
+          </button>
+        </div>
       </form>
     </div>
   );
+}
+
+/** "Today" / "Yesterday" / a short date — computed from a message timestamp,
+ *  never from a bare Date.now() inside the render path of a server component. */
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const diff = Math.round(
+    (new Date(today.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 864e5
+  );
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }

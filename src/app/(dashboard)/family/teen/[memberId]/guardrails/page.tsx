@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SectionRule } from "@/components/f0/parts";
+import Avatar from "@/components/Avatar";
+import { beltForXp } from "@/lib/belts";
 import {
   getFamilyContext,
   getGuardrails,
@@ -14,15 +15,19 @@ import GuardrailControls from "@/components/family/GuardrailControls";
 import {
   FamilySurface,
   BackLine,
+  FamilyCard,
+  RowCard,
+  Row,
+  SectionLabel,
+  Eyebrow,
+  StatTiles,
   FoundingState,
   AbsenceNote,
-  Numeral,
-  NumeralRow,
   pct,
 } from "@/components/family/canvas";
 
 /**
- * F3 · PARENTAL CONTROLS.
+ * F3 · PARENTAL CONTROLS — board tile "F3 Parental Controls".
  *
  * "Only admins can change these · changes are logged" — both halves are real.
  * The write path is a definer RPC that checks the caller is a parent in this
@@ -58,35 +63,49 @@ export default async function GuardrailsPage({
   ]);
 
   const name = member.display_name || "your teen";
+  const belt = beltForXp(member.xp);
 
   return (
     <FamilySurface className="pb-16">
-      <div className="mb-6">
+      <div className="mb-5">
         <BackLine href={`/family/teen/${memberId}`} label={name} />
       </div>
 
-      <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Parental controls
-        </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase leading-none text-ink">
-          {name}&rsquo;s guardrails
-        </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-soft">
-          Only parents in this household can change these, and changes are
-          logged.
-        </p>
+      {/* ── Header ───────────────────────────────────────────────────────*/}
+      <header className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <Eyebrow tone="accent">Parental controls</Eyebrow>
+          <h1 className="mt-1.5 font-display text-display-2 font-extrabold text-ink">
+            {name}&rsquo;s guardrails
+          </h1>
+          <p className="mt-1.5 text-[12px] text-soft">
+            Only parents in this household can change these · every change is logged
+          </p>
+        </div>
+        <span
+          className="grid shrink-0 place-items-center rounded-full p-[2.5px]"
+          style={{ background: belt.belt.hex }}
+        >
+          <span className="grid place-items-center rounded-full bg-paper p-[1.5px]">
+            <Avatar
+              name={member.display_name}
+              avatarUrl={member.avatar_url}
+              role={member.role}
+              size="lg"
+            />
+          </span>
+        </span>
       </header>
 
-      <div className="mt-12">
+      <div className="mt-7">
         <GuardrailControls initial={guardrails} childName={name} />
       </div>
 
       {/* ── The weekly digest ────────────────────────────────────────────*/}
-      <section className="mt-14">
-        <SectionRule>This week&rsquo;s digest</SectionRule>
+      <FamilyCard tone="warm" className="mt-2">
+        <Eyebrow tone="accent">This week&rsquo;s digest</Eyebrow>
         {!digest ? (
-          <div className="mt-5">
+          <div className="mt-3">
             <FoundingState
               title="Nothing to report yet"
               body="The digest fills in once there is a week to summarise — time in the app, lessons finished, how the paper account moved, and the XP earned along the way."
@@ -94,84 +113,93 @@ export default async function GuardrailsPage({
           </div>
         ) : (
           <>
-            <div className="mt-6">
-              <NumeralRow>
-                <Numeral
-                  value={minutesLabel(digest.app_minutes)}
-                  label="Time in app"
-                  size="sm"
-                />
-                <Numeral value={String(digest.lessons)} label="Lessons" size="sm" />
-                <Numeral
-                  value={pct(digest.paper_pct, 1)}
-                  label="Paper P&L"
-                  size="sm"
-                  tone={
+            <StatTiles
+              inset
+              className="mt-3"
+              items={[
+                { value: minutesLabel(digest.app_minutes), label: "Time in app" },
+                { value: String(digest.lessons), label: "Lessons" },
+                {
+                  value: pct(digest.paper_pct, 1),
+                  label: "Paper P&L",
+                  tone:
                     digest.paper_pct == null
                       ? "ink"
                       : digest.paper_pct >= 0
                         ? "price-up"
-                        : "price-down"
-                  }
-                />
-                <Numeral value={digest.xp.toLocaleString()} label="XP earned" size="sm" />
-                <Numeral value="—" label="Flags" size="sm" />
-              </NumeralRow>
-            </div>
-
-            <AbsenceNote>
-              Time in app counts the minutes a Family Mode screen was open —
-              it is measured, not estimated, and it does not yet include the
-              rest of the app. Flags shows an em-dash because this product has
-              no moderation-flag store; a zero there would be a claim we cannot
-              make.
-            </AbsenceNote>
+                        : "price-down",
+                },
+                { value: `⚡${digest.xp.toLocaleString()}`, label: "XP earned", tone: "accent" },
+                { value: "—", label: "Flags" },
+              ]}
+            />
 
             {digest.learn_seconds > 0 && (
-              <p className="mt-3 text-[13px] text-soft">
-                {minutesLabel(Math.round(digest.learn_seconds / 60))} of that was
-                inside lessons.
+              <p className="mt-3 text-[11.5px] text-soft">
+                {minutesLabel(Math.round(digest.learn_seconds / 60))} of that was inside
+                lessons.
               </p>
             )}
+
+            <AbsenceNote>
+              Time in app counts the minutes a Family Mode screen was open — it is
+              measured, not estimated, and it does not yet include the rest of the
+              app. Flags shows an em-dash because this product has no
+              moderation-flag store; a zero there would be a claim we cannot make.
+            </AbsenceNote>
           </>
         )}
-      </section>
+      </FamilyCard>
 
       {/* ── Recent changes ───────────────────────────────────────────────*/}
-      <section className="mt-12">
-        <SectionRule>Recent changes</SectionRule>
-        {events.length === 0 ? (
-          <div className="mt-5">
-            <FoundingState
-              title="No changes yet"
-              body="Every guardrail change lands here with the parent who made it and when. Nothing has been altered since this account was set up."
-            />
-          </div>
-        ) : (
-          <div className="f0-ledger mt-2">
-            {events.map((e) => (
-              <div key={e.id} className="f0-ledger-row justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-[15px] font-bold text-ink">
-                    {describeChange(e.setting, e.new_value)}
-                  </p>
-                  <p className="mt-0.5 text-[13px] text-soft">
-                    by {e.actor_name || "a parent"}
-                  </p>
-                </div>
-                <span className="shrink-0 self-center text-[13px] uppercase tracking-[0.06em] text-soft">
-                  {new Date(e.created_at).toLocaleDateString(undefined, {
-                    weekday: "short",
-                  })}
+      <SectionLabel tone="accent" className="mt-6">
+        Recent changes
+      </SectionLabel>
+      {events.length === 0 ? (
+        <div className="mt-3">
+          <FoundingState
+            title="No changes yet"
+            body="Every guardrail change lands here with the parent who made it and when. Nothing has been altered since this account was set up."
+          />
+        </div>
+      ) : (
+        <RowCard className="mt-3">
+          {events.map((e) => (
+            <Row
+              key={e.id}
+              icon={GLYPHS[e.setting] ?? "🛡"}
+              label={
+                <span className="font-normal">
+                  {describeChange(e.setting, e.new_value)}{" "}
+                  <span className="text-soft">· by {e.actor_name || "a parent"}</span>
                 </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+              }
+              right={
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-soft">
+                  {new Date(e.created_at).toLocaleDateString(undefined, { weekday: "short" })}
+                </span>
+              }
+            />
+          ))}
+        </RowCard>
+      )}
+
+      <p className="mt-6 border-t border-sand pt-4 text-center text-[11px] text-soft">
+        Guardrail changes notify both parents.
+      </p>
     </FamilySurface>
   );
 }
+
+const GLYPHS: Record<string, string> = {
+  chat_family_only: "👥",
+  downtime_enabled: "🌙",
+  downtime_start_hour: "🌙",
+  downtime_end_hour: "🌙",
+  daily_limit_min: "🕐",
+  live_listen_only: "((·))",
+  tz: "🌍",
+};
 
 /** Turns an audit row into the sentence a parent would have said. */
 function describeChange(setting: string, value: unknown): string {
