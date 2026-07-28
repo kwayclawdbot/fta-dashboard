@@ -17,7 +17,11 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_KEY = "fta-theme";
 export const THEME_EVENT = "fta-themechange";
 
-const LIGHT_META = "#FBF7EF";
+/* The browser-chrome colour, which must track --paper or the status bar reads
+   as a seam above the page. Light moved to the reference canvases' warm paper
+   when the base neutrals did; dark is unchanged. Mirrored by the inline
+   THEME_INIT script in layout.tsx (it runs before this module loads). */
+const LIGHT_META = "#F7F4EF";
 const DARK_META = "#17120B";
 
 export function getThemePref(): ThemePref {

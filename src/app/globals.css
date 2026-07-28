@@ -142,6 +142,18 @@
   --font-display: var(--font-sora), var(--font-inter), sans-serif;
   --font-body: var(--font-inter), sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  /* Two HAND faces, two different jobs — both loaded in layout.tsx. Prefer the
+     `.script-mark` / `.marker-note` classes further down: they set the family
+     AND the optical corrections each face needs. These keys exist so Tailwind
+     generates plain `font-script` / `font-marker` utilities for the rare case
+     where only the family is wanted.
+       --font-script  the SECTION MARK. A formal brush script for a surface
+                      wordmark ("discover", "club", "belts"). One word, display
+                      sizes, never body copy.
+       --font-marker  the MARGIN NOTE. A felt-tip hand for an annotation
+                      written ON the page (a callout, a count, an aside). */
+  --font-script: var(--font-kaushan), "Brush Script MT", cursive;
+  --font-marker: var(--font-caveat), "Segoe Print", "Bradley Hand", cursive;
 
   /* ---------------------------------------------------------------- */
   /* DISPLAY SCALE (F0)                                                */
@@ -1673,25 +1685,35 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */
-/* BOARD 01 — HOME, built as drawn                                        */
+/* THE BOARD CARD SYSTEM — shared, every surface                          */
 /* ══════════════════════════════════════════════════════════════════════ */
-/* The reference board (.planning/design-project-v2, screen "01 Home") is
-   composed from CARDS: a white rounded rectangle with a hairline border,
-   14–16px radius, no shadow in light. An earlier pass read the standing
-   "no generic card containers" rule as forbidding that and rebuilt Home
-   out of hairline ledgers instead; the owner overruled it — the board is
-   the spec, so the card vocabulary lives here, once, and every board-01
-   object is composed from it.
+/* Written for board 01 (Home) and now the app's card vocabulary, used by
+   every rebuilt surface. The `club-b-` prefix is historical — it is NOT
+   club-mode-only and nothing in this block reads a mode; it rides the
+   semantic tokens, so it is family gold / club orange / FTA metallic and
+   light / dark for free.
 
-   Two grounds only:
-     .club-b-card       neutral card — the ranked ticker card, a signal row
-     .club-b-warm       brand-tinted card — the digest and the YOU strip
+   The reference canvases (.planning/design-project-v2) are composed from
+   CARDS: a white rounded rectangle with a hairline border, 14–16px radius,
+   no shadow in light. An earlier pass read the standing "no generic card
+   containers" rule as forbidding that and rebuilt Home out of hairline
+   ledgers instead; the owner overruled it — the boards are the spec.
 
-   Both flip on the semantic tokens, so dark is not hand-rolled: the light
-   system's white-card-on-paper becomes lifted-charcoal-on-near-black. */
+   The set:
+     .club-b-card       neutral card — a ranked tile, a signal row
+     .club-b-card-lead  the #1 object in a ranked strip
+     .club-b-warm       brand-tinted card — a digest, a status strip
+     .club-b-orb        round accent action button on a warm card
+     .club-b-chip       translucent well for a stat on a warm card
+     .club-b-pip        numeric rank badge hung on a card corner
+     .club-b-tile       per-brand identity square (colours from the caller)
+     .club-b-stack      the wrapper that spaces cards instead of ruling them
+
+   Dark is not hand-rolled: the light system's white-card-on-paper becomes
+   lifted-charcoal-on-near-black through the tokens alone. */
 
 .club-b-card {
-  border-radius: 14px;
+  border-radius: var(--club-b-radius, 14px);
   background: var(--card);
   border: 1px solid var(--sand);
 }
@@ -1711,7 +1733,7 @@ body {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--club-b-radius-warm, 16px);
   border: 1px solid color-mix(in srgb, var(--accent-solid) 26%, var(--sand));
   background:
     linear-gradient(
@@ -1809,4 +1831,89 @@ body {
 .club-b-card.f0-ledger-row {
   --f0-row-pad: 0.875rem;
   padding-block: 0.625rem;
+}
+
+/* --- The two hand faces ----------------------------------------------- */
+/* Script and marker are LOUD by nature, so each ships as a class carrying
+   the family PLUS the optical corrections that keep it from looking pasted
+   on. Both are for ONE short string at a time. Faces loaded in layout.tsx.
+
+   WHY THESE NAME THE next/font VARIABLE DIRECTLY, and do not read
+   --font-script / --font-marker: the type tokens live in `@theme inline`,
+   and `inline` means Tailwind substitutes those values into the utilities
+   it generates instead of emitting them as runtime custom properties. So
+   `var(--font-script)` resolves to nothing in a hand-written rule — which
+   is exactly how the first version of this block silently rendered in the
+   default sans. The theme keys still exist and still generate working
+   `font-script` / `font-marker` Tailwind utilities for anyone who wants
+   only the family; these classes are the family plus the corrections, and
+   are named differently so the two can never collide.
+
+   Neither carries a colour. A mark inherits the ink of whatever it is
+   marking, and the caller adds `text-accent` on the surfaces where the
+   canvases draw it in brand colour. */
+
+/* SECTION MARK — a surface wordmark set in brush script. The canvases set
+   these lowercase at display sizes; the negative tracking closes the gaps
+   the face leaves at large sizes, and the block padding absorbs the
+   overshoot (script faces sit high in their em box and would otherwise
+   collide with whatever sits above them in a tight stack). */
+.script-mark {
+  font-family: var(--font-kaushan), "Brush Script MT", cursive;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  padding-block: 0.06em;
+}
+
+/* MARGIN NOTE — an annotation written on the page. Kept SMALL relative to
+   its neighbours (it is an aside, not a heading). */
+.marker-note {
+  font-family: var(--font-caveat), "Segoe Print", "Bradley Hand", cursive;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  line-height: 1.15;
+}
+
+/* The slight counter-rotation that makes a note read as written rather
+   than typeset. STATIC, not motion — there is no reduced-motion variant
+   because nothing here moves. */
+.marker-tilt {
+  display: inline-block;
+  transform: rotate(-2.5deg);
+}
+
+/* --- Conic progress dial --------------------------------------------- */
+/* Five surfaces independently re-derived the same object: a conic ring
+   with a disc punched out of the middle. The geometry is identical every
+   time and only the paint differs, so it lives here once.
+
+   `--dial-pct` is the sweep, `--dial-size` the outer box and `--dial-ring`
+   the ring thickness; `--dial-fill` and `--dial-track` are the paint and
+   default to the accent on sand. The hole is painted with the CARD colour
+   rather than punched with a mask, because a mask would show the page
+   through a dial that sits on a card.
+
+   A ring can only honestly carry a BOUNDED 0-100 read. Anything else — an
+   unbounded score, a count, a rate — is the caller's bug, not this
+   class's. */
+.f0-dial {
+  display: grid;
+  place-items: center;
+  width: var(--dial-size, 48px);
+  height: var(--dial-size, 48px);
+  border-radius: 999px;
+  background: conic-gradient(
+    var(--dial-fill, var(--accent-solid)) 0 calc(var(--dial-pct, 0) * 1%),
+    var(--dial-track, var(--sand)) calc(var(--dial-pct, 0) * 1%) 100%
+  );
+}
+.f0-dial > * {
+  display: grid;
+  place-items: center;
+  width: calc(var(--dial-size, 48px) - var(--dial-ring, 10px));
+  height: calc(var(--dial-size, 48px) - var(--dial-ring, 10px));
+  border-radius: 999px;
+  background: var(--dial-hole, var(--card));
+  text-align: center;
 }

@@ -147,7 +147,11 @@ export function signedCount(n: number | null | undefined): string {
 /* ── Score dial ───────────────────────────────────────────────────────────
    The board's 48px conic ring with a numeral and a five-character label
    inside it. A ring is a ring: it can only ever show a bounded 0–100 read, so
-   the caller must hand it something that genuinely IS one. */
+   the caller must hand it something that genuinely IS one.
+
+   The geometry is the shared `.f0-dial` (globals.css) — five surfaces had each
+   re-derived the same conic-plus-punched-disc by hand, so it now lives in one
+   place and this supplies only the sweep, the size and what goes in the hole. */
 export function Dial({
   pct,
   value,
@@ -166,22 +170,16 @@ export function Dial({
   title: string;
 }) {
   const sweep = Math.max(0, Math.min(100, Math.round(pct)));
-  const inner = size - 10;
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-full"
-      style={{
-        width: size,
-        height: size,
-        background: `conic-gradient(var(--accent-solid) 0 ${sweep}%, var(--sand) ${sweep}% 100%)`,
-      }}
+      className="f0-dial shrink-0"
+      style={
+        { "--dial-pct": sweep, "--dial-size": `${size}px` } as React.CSSProperties
+      }
       role="img"
       aria-label={title}
     >
-      <span
-        className="grid place-items-center rounded-full bg-card text-center"
-        style={{ width: inner, height: inner }}
-      >
+      <span>
         <span>
           <span className="block font-mono text-[13px] font-semibold leading-none text-ink tabular-nums">
             {value}
