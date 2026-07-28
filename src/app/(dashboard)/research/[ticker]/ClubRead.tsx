@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
@@ -29,20 +30,41 @@ import {
  * snapshot has no score the ring draws its track, the centre reads "—", and
  * the sub-line says the club hasn't scored this name yet.
  *
- * SOURCES (real, floor-gated, never fabricated) — unchanged from the version
- * this replaces:
- *   • get_ticker_community_stats (migration 132) — the bull/neutral/bear tally
- *     over positioned feed posts, plus watchers and this week's discussions.
- *   • ticker_intel_snapshots via /api/club/intel/[ticker] (migration 141) —
- *     club score, rank, watchers, participants, the 24h sentiment shift, and
- *     the sentiment fallback when the RPC has no tally.
- *   • feed_posts → profiles — the portraits behind the tally, surfaced by the
- *     canvas head as the "N watching now" stack.
+ * ── WHICH STORE THE SPLIT ACTUALLY COMES FROM (stance-pipeline repair) ──────
+ * This block's centrepiece floored out on EVERY ticker, permanently, and the
+ * reason was a plumbing mismatch rather than a quiet club:
+ *
+ *   • it counted `feed_posts.position` (via get_ticker_community_stats, mig
+ *     132) — a column with ZERO rows in production, because nothing members
+ *     actually use writes it;
+ *   • members DO declare stances, through the "Changed My Mind" flow, and those
+ *     land in `ticker_stances` (mig 151) where nothing on this page read them;
+ *   • the snapshot fallback (`/api/club/intel`) does bridge stances (mig 160),
+ *     but it only exists for tickers already inside club_trending and it is
+ *     walled for free members and for kids — so it could never be the floor.
+ *
+ * So the hook now reads the stance store DIRECTLY (get_ticker_stance_summary,
+ * the same RPC the stance picker beside it already uses) and picks the single
+ * RICHEST source rather than mixing two definitions of "positioned". Mixing
+ * would double-count the member who both posted a position and holds a stance;
+ * picking one keeps every percentage a statement about one well-defined set.
+ *
+ * SOURCES (real, floor-gated, never fabricated):
+ *   • get_ticker_stance_summary (migration 151) — bull/bear/neutral over
+ *     `ticker_stances`. THE STORE WITH DATA, and the one the picker writes.
+ *   • get_ticker_community_stats (migration 132) — the same tally over
+ *     positioned feed posts, plus watchers and this week's discussions.
+ *   • ticker_intel_snapshots via /api/club/intel/[ticker] (migration 141/160) —
+ *     club score, rank, watchers, participants, the 24h sentiment shift.
+ *   • feed_posts / ticker_stances → profiles — the portraits behind the tally,
+ *     surfaced by the canvas head as the "N watching now" stack.
  *
  * FLOORS: the split only draws once SPLIT_FLOOR members have positioned.
- * Below that the section degrades to the honest attention line (or renders
- * nothing at all when the ticker is genuinely cold) — a founding club never
- * sees a 100% bullish ring built from one person.
+ * Below that the section shows the DESIGNED PRE-FLOOR state — "N of 4 members
+ * positioned" with the tally drawn as filled/empty slots — rather than
+ * disappearing. A block that vanishes teaches nothing; a block that says how
+ * far off the read is turns the floor into an invitation. A founding club still
+ * never sees a 100% bullish ring built from one person.
  *
  * KID WALL: sentiment is an adults+teens surface everywhere else in the club.
  * `showSentiment={false}` keeps that wall intact here.
@@ -55,6 +77,15 @@ import {
 const SPLIT_FLOOR = 4; // positioned members required before the split draws
 const WATCHERS_FLOOR = 3;
 
+/**
+ * THE SETTLE DEADLINE. Three independent reads feed this block, and a single one
+ * that never answers used to leave a brand-orange section mark standing over an
+ * animated grey nothing for the life of the page — a heading with no body, which
+ * is the one shape a section must never take. After this long the block gives up
+ * waiting and renders whatever DID arrive, honestly.
+ */
+const SETTLE_MS = 4000;
+
 export interface Portrait {
   id: string;
   name: string;
@@ -62,6 +93,14 @@ export interface Portrait {
   side: "bull" | "bear";
   /** epoch ms of the post — the canvas head places its marks with this. */
   at: number;
+}
+
+/** `get_ticker_stance_summary` (mig 151) — the tally over `ticker_stances`. */
+interface StanceTally {
+  bull: number | null;
+  bear: number | null;
+  neutral: number | null;
+  mind_changes?: number | null;
 }
 
 interface CommunityStats {
@@ -132,10 +171,31 @@ export function useClubRead(supabase: SupabaseClient, ticker: string): ClubReadD
   // the effect body (which would cascade a render on every mount).
   const [stats, setStats] = useState<{ for: string; row: CommunityStats | null } | null>(null);
   const [intel, setIntel] = useState<{ for: string; row: IntelResponse | null } | null>(null);
+  const [stance, setStance] = useState<{ for: string; row: StanceTally | null } | null>(null);
   const [faces, setFaces] = useState<Portrait[]>([]);
+  const [settled, setSettled] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let on = true;
+
+    // The deadline. Cleared on unmount / ticker change so it can never fire for
+    // a ticker the member has already left.
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      if (on) setSettled(ticker);
+    }, SETTLE_MS);
+
+    // THE STORE WITH DATA. Same RPC the stance picker writes through, so what
+    // the ring counts and what a member just clicked are the same rows.
+    supabase.rpc("get_ticker_stance_summary", { p_ticker: ticker }).then(
+      ({ data }) => {
+        if (!on) return;
+        const d = (data ?? null) as StanceTally | null;
+        setStance({ for: ticker, row: d });
+      },
+      () => on && setStance({ for: ticker, row: null })
+    );
 
     supabase.rpc("get_ticker_community_stats", { p_ticker: ticker }).then(
       ({ data }) => {
@@ -196,20 +256,40 @@ export function useClubRead(supabase: SupabaseClient, ticker: string): ClubReadD
 
     return () => {
       on = false;
+      if (timer.current) clearTimeout(timer.current);
     };
   }, [supabase, ticker]);
 
-  // The RPC tally wins (it is the same rows the portraits come from); the
-  // snapshot fills in when the RPC has no tally.
   const st = stats?.for === ticker ? stats.row : null;
   const it = intel?.for === ticker ? intel.row : null;
+  const ss = stance?.for === ticker ? stance.row : null;
   const snapSent = it?.sentiment ?? null;
-  const bull = st?.positioned ? st.bull : snapSent?.bullish ?? 0;
-  const neutral = st?.positioned ? st.neutral : snapSent?.neutral ?? 0;
-  const bear = st?.positioned ? st.bear : snapSent?.bearish ?? 0;
+
+  /* ONE SOURCE, NOT A BLEND. Three stores answer the same question over
+     overlapping populations, so summing them would count one member twice and
+     make the denominator meaningless. The richest single tally wins — it is the
+     fullest true statement available, and every percentage printed below is
+     then a statement about ONE well-defined set of members. */
+  const candidates = [
+    ss ? { bull: ss.bull ?? 0, neutral: ss.neutral ?? 0, bear: ss.bear ?? 0 } : null,
+    st ? { bull: st.bull, neutral: st.neutral, bear: st.bear } : null,
+    snapSent
+      ? { bull: snapSent.bullish, neutral: snapSent.neutral, bear: snapSent.bearish }
+      : null,
+  ].filter(Boolean) as { bull: number; neutral: number; bear: number }[];
+  const best =
+    candidates.sort(
+      (a, b) => b.bull + b.neutral + b.bear - (a.bull + a.neutral + a.bear)
+    )[0] ?? { bull: 0, neutral: 0, bear: 0 };
+  const { bull, neutral, bear } = best;
+
+  const allIn =
+    stats?.for === ticker && intel?.for === ticker && stance?.for === ticker;
 
   return {
-    resolved: stats?.for === ticker && intel?.for === ticker,
+    // Resolved when every lane has answered OR the settle deadline has passed —
+    // "still waiting" is a state with an end, not a permanent one.
+    resolved: allIn || settled === ticker,
     bull,
     neutral,
     bear,
@@ -227,10 +307,18 @@ export function useClubRead(supabase: SupabaseClient, ticker: string): ClubReadD
 export default function ClubRead({
   data = EMPTY,
   showSentiment = true,
+  stance,
 }: {
   data?: ClubReadData;
   /** false for kids — the same sentiment wall the debate and intel API apply */
   showSentiment?: boolean;
+  /**
+   * The member's OWN stance control, rendered inside this block. It used to be
+   * its own section further down the page, which meant the club's read and the
+   * member's contribution to it were two unrelated objects with a debate widget
+   * (carrying a third sentiment bar) between them. One question, one object.
+   */
+  stance?: ReactNode;
 }) {
   const { resolved, bull, neutral, positioned, watchers, discussions } = data;
 
@@ -263,8 +351,10 @@ export default function ClubRead({
     );
   }
 
-  // Genuinely cold ticker, nothing verified to say → say nothing.
-  if (!hasSplit && !hasAttention) return null;
+  // Genuinely cold ticker AND no stance control to offer → say nothing. (With
+  // a control to offer, the pre-floor state below is the better answer: it tells
+  // the member exactly how far the read is from unlocking.)
+  if (!hasSplit && !hasAttention && positioned === 0 && !stance) return null;
 
   const bullPct = hasSplit ? Math.round((bull / positioned) * 100) : 0;
   const neutralPct = hasSplit ? Math.round((neutral / positioned) * 100) : 0;
@@ -364,12 +454,40 @@ export default function ClubRead({
           </div>
         </>
       ) : (
-        <Card radius="md" className="mt-3 p-[14px_15px]">
-          <p className="text-[13px] leading-relaxed text-soft">
-            The club hasn&apos;t formed a read on this name yet
+        /* ── THE PRE-FLOOR STATE ──────────────────────────────────────────
+           Designed, not omitted. The block used to disappear below the floor,
+           which on a founding club meant it disappeared everywhere — the
+           centrepiece of this page was invisible in production and nobody could
+           tell whether that was a quiet club or a broken feature. It now COUNTS
+           DOWN: the slots show how many members have positioned against how many
+           the split needs, so the floor reads as a threshold you can move rather
+           than a section that failed to load. */
+        <Card radius="md" className="mt-3 p-[15px_16px]">
+          <div className="flex items-center gap-2.5" aria-hidden>
+            {Array.from({ length: SPLIT_FLOOR }).map((_, i) => (
+              <span
+                key={i}
+                className={`h-[9px] flex-1 rounded-full ${
+                  i < Math.min(positioned, SPLIT_FLOOR) ? "bg-volt-500" : "bg-sand"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="mt-3 font-display text-[15px] font-extrabold leading-snug text-ink">
+            {positioned > 0 ? (
+              <>
+                <span className="font-mono tabular-nums">{positioned}</span> of{" "}
+                <span className="font-mono tabular-nums">{SPLIT_FLOOR}</span> members
+                positioned
+              </>
+            ) : (
+              <>Nobody has taken a side on this name yet</>
+            )}
+          </p>
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-soft">
             {showSentiment
-              ? " — take a side below and you'll be the first signal on this board."
-              : "."}
+              ? `The club's read unlocks at ${SPLIT_FLOOR} — a split built from one or two people isn't a read, it's an anecdote.`
+              : "The club's read on this name isn't published on your account."}
           </p>
           {(watchers >= WATCHERS_FLOOR || discussions >= 1) && (
             <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
@@ -385,6 +503,9 @@ export default function ClubRead({
           )}
         </Card>
       )}
+
+      {/* The member's own stance — the same question, answered by them. */}
+      {stance && <div className="f0-rule-top mt-5 pt-5">{stance}</div>}
     </section>
   );
 }

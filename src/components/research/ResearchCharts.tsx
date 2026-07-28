@@ -17,6 +17,27 @@
 
 import type { ResearchQuarter, ResearchAnnual } from "@/lib/research/types";
 import { abbreviateMoney } from "@/lib/kai/report";
+import { seriesBreaks, splitAdjustedEps } from "@/lib/research/labels";
+
+/**
+ * A missing filing between two periods, drawn between the two slots it separates
+ * so the series visibly BREAKS instead of pretending the bars are consecutive.
+ */
+function GapMark({ x, top, bottom }: { x: number; top: number; bottom: number }) {
+  return (
+    <line
+      x1={x}
+      x2={x}
+      y1={top}
+      y2={bottom}
+      stroke="currentColor"
+      className="text-soft"
+      strokeWidth={1}
+      strokeDasharray="3 3"
+      opacity={0.7}
+    />
+  );
+}
 
 /* An honest absence, stated on a rule rather than fenced in a dashed box —
    a missing series is information, not an error state needing a container. */
@@ -59,6 +80,7 @@ interface PairedSpec {
 
 function PairedBarsLine(spec: PairedSpec) {
   const { labels, barA, barB, line } = spec;
+  const breaks = seriesBreaks(labels);
   const H = spec.height ?? 220;
   const W = 640;
   const padT = 18;
@@ -85,15 +107,28 @@ function PairedBarsLine(spec: PairedSpec) {
   const zero = yBar(0);
   const cx = (i: number) => padX + slot * i + slot / 2;
 
-  const linePts = line
-    .map((v, i) => (v == null ? null : `${cx(i).toFixed(1)},${yLine(v).toFixed(1)}`))
-    .filter((p): p is string => p != null);
+  /* THE LINE MUST NOT CROSS A HOLE. A polyline drawn straight through a missing
+     filing asserts a trajectory nobody reported. The series is split into RUNS
+     of consecutive periods and each run is stroked separately. */
+  const runs: string[][] = [];
+  let run: string[] = [];
+  line.forEach((v, i) => {
+    if (breaks[i] && run.length) {
+      runs.push(run);
+      run = [];
+    }
+    if (v != null) run.push(`${cx(i).toFixed(1)},${yLine(v).toFixed(1)}`);
+  });
+  if (run.length) runs.push(run);
 
   return (
     <div className="w-full overflow-hidden">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" className="block">
         {/* zero / baseline */}
         <line x1={padX} x2={W - padX} y1={zero} y2={zero} className="text-sand" stroke="currentColor" strokeWidth={1} />
+        {breaks.map((b, i) =>
+          b ? <GapMark key={`gap-${i}`} x={cx(i) - slot / 2} top={padT - 6} bottom={H - padB + 4} /> : null
+        )}
         {labels.map((lab, i) => {
           const a = barA[i];
           const b = barB[i];
@@ -125,16 +160,19 @@ function PairedBarsLine(spec: PairedSpec) {
             </g>
           );
         })}
-        {/* secondary-axis line */}
-        {linePts.length >= 2 && (
-          <polyline
-            points={linePts.join(" ")}
-            fill="none"
-            stroke={spec.lineColor}
-            strokeWidth={2}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
+        {/* secondary-axis line, one stroke per contiguous run */}
+        {runs.map((pts, i) =>
+          pts.length >= 2 ? (
+            <polyline
+              key={`run-${i}`}
+              points={pts.join(" ")}
+              fill="none"
+              stroke={spec.lineColor}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ) : null
         )}
         {line.map((v, i) =>
           v == null ? null : (
@@ -216,8 +254,31 @@ export function AnnualBarsChart({
   annual: ResearchAnnual[];
   metric: "revenue" | "eps";
 }) {
-  const rows = (annual || []).filter((a) => a[metric] != null);
+  /* SPLIT-BROKEN EPS. Filings report earnings per share AS FILED, so NVDA's
+     10-for-1 left the chart drawing $11.93 in 2024 against $2.94 in 2025 — a
+     collapse in earnings that never happened, on the exact chart a member reads
+     to judge whether earnings are growing. `splitAdjustedEps` recovers the true
+     series from net income (which splits can't touch) and refuses — returns null
+     — when the step change can't be explained as a clean split. A refusal draws
+     the honest note; it never draws the wrong history. */
+  const eps = metric === "eps" ? splitAdjustedEps(annual || []) : null;
+  if (metric === "eps" && !eps) {
+    return (
+      <EmptyNote>
+        This company&apos;s reported earnings per share change basis part-way
+        through the history we hold — most often a stock split — and we can&apos;t
+        restate the older years onto today&apos;s share count, so the chart is out
+        rather than wrong.
+      </EmptyNote>
+    );
+  }
+
+  const rows: { label: string; revenue?: number | null; eps?: number | null }[] =
+    eps
+      ? eps.rows.map((r) => ({ label: r.label, eps: r.eps }))
+      : (annual || []).filter((a) => a[metric] != null);
   if (rows.length < 2) return <EmptyNote>Annual {metric === "eps" ? "EPS" : "revenue"} history isn&apos;t available.</EmptyNote>;
+  const breaks = seriesBreaks(rows.map((r) => r.label));
 
   const H = 200;
   const W = 640;
@@ -240,6 +301,9 @@ export function AnnualBarsChart({
     <div className="w-full overflow-hidden">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" className="block">
         <line x1={padX} x2={W - padX} y1={zero} y2={zero} className="text-sand" stroke="currentColor" strokeWidth={1} />
+        {breaks.map((b, i) =>
+          b ? <GapMark key={`gap-${i}`} x={cx(i) - slot / 2} top={padT - 6} bottom={H - padB + 4} /> : null
+        )}
         {rows.map((a, i) => {
           const v = a[metric] as number;
           const yy = Math.min(y(v), zero);
@@ -256,6 +320,19 @@ export function AnnualBarsChart({
           );
         })}
       </svg>
+      {eps?.adjusted && (
+        <p className="px-1 text-[10.5px] leading-relaxed text-soft">
+          Restated onto today&apos;s share count — this company has split its stock
+          since the earliest year shown, so the figures as originally filed are
+          not comparable.
+        </p>
+      )}
+      {breaks.some(Boolean) && (
+        <p className="px-1 text-[10.5px] leading-relaxed text-soft">
+          The dashed rule marks a reporting year we don&apos;t have — the bars
+          either side of it are not consecutive.
+        </p>
+      )}
     </div>
   );
 }

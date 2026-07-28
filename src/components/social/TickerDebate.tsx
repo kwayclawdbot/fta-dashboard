@@ -33,14 +33,26 @@ import {
   type TopArgument,
 } from "@/lib/social/ticker-debate";
 
-/* The CLUB SENTIMENT vocabulary from Club Screens 04 — Bullish green, Bearish
-   red, Watching grey. The fills are LITERALS, deliberately outside the price
-   tokens: this column sits inches from a real quote and the two must never be
-   the same colour by the stylesheet's reckoning, even where they agree by eye. */
-const STANCE_UI: Record<DebateStance, { label: string; fill: string; text: string }> = {
-  bull: { label: "Bullish", fill: "#1BA94C", text: "#1BA94C" },
-  bear: { label: "Bearish", fill: "#E0392B", text: "#E0392B" },
-  undecided: { label: "Watching", fill: "#A39A8E", text: "#8A8279" },
+/* ── THE DEBATE IS NOT A THIRD SENTIMENT READING ───────────────────────────
+   This component used to open with its own "Club sentiment" bar column —
+   Bullish / Bearish / Watching in saturated #1BA94C and #E0392B — on a page
+   that ALREADY carried the club's split in the club-read block above and a
+   stance picker beside it. Three objects answering "what does the club think?"
+   with three different tallies, two of which were empty rails at 0%, and the
+   loudest colour on the tab spent on the emptiest one.
+   The split is now stated ONCE, in the club read. What survives here is the
+   thing only this component has: a QUESTION and the arguments made either way.
+
+   COLOUR LAW REPAIR: the vote buttons were solid green and solid red — the
+   price ramp, at full saturation, on the control where a member states an
+   OPINION, inches below an actual quote. Direction is carried by the LABEL and
+   by position, the way it is everywhere else in the club (see STANCE_META in
+   lib/social/stance), and the chosen side takes the brand fill because being
+   selected is an ACTION state, not a market one. */
+const STANCE_UI: Record<DebateStance, { label: string }> = {
+  bull: { label: "Bullish" },
+  bear: { label: "Bearish" },
+  undecided: { label: "Watching" },
 };
 
 export default function TickerDebate({
@@ -134,39 +146,15 @@ export default function TickerDebate({
           : "Be an early voice — the first stances set the tone."}
       </p>
 
-      {/* CLUB SENTIMENT — board 04's labelled bar column. Percentages print only
-          above the participation floor; below it the bar shows presence without
-          publishing a percentage computed from three votes. */}
-      <div className="mt-4">
-        <p className="mb-2.5 font-display text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-ink">
-          Club sentiment
+      {/* The split that used to be drawn here is stated once, in the club-read
+          block above. Above the participation floor this line reports the same
+          tally in one sentence rather than a second bar column. */}
+      {floorMet && (
+        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          {pct(state.bull)}% bullish · {pct(state.bear)}% bearish ·{" "}
+          {pct(state.undecided)}% watching
         </p>
-        <div className="space-y-2">
-          {(["bull", "bear", "undecided"] as DebateStance[]).map((k) => {
-            const n = k === "bull" ? state.bull : k === "bear" ? state.bear : state.undecided;
-            const ui = STANCE_UI[k];
-            return (
-              <div key={k}>
-                <div className="flex items-baseline justify-between text-[10.5px] font-semibold">
-                  <span style={{ color: ui.text }}>{ui.label}</span>
-                  <span className="font-mono tabular-nums text-ink">
-                    {floorMet ? `${pct(n)}%` : n > 0 ? "·" : ""}
-                  </span>
-                </div>
-                <div className="mt-1 h-[5px] overflow-hidden rounded-full bg-sand">
-                  <span
-                    className="block h-full rounded-full transition-all"
-                    style={{
-                      width: `${floorMet ? pct(n) : n > 0 ? 8 : 0}%`,
-                      background: ui.fill,
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* vote / one-reason capture */}
       {canParticipate ? (
@@ -223,8 +211,7 @@ export default function TickerDebate({
                 type="button"
                 onClick={() => vote(k)}
                 disabled={pending}
-                className="f0-press flex-1 rounded-[9px] py-2.5 font-display text-[12px] font-bold text-white transition-transform disabled:opacity-60"
-                style={{ background: STANCE_UI[k].fill }}
+                className="f0-press f0-focus flex-1 rounded-full border border-sand bg-card py-2.5 font-display text-[12px] font-bold text-ink transition-colors hover:border-volt-300 hover:text-gold-700 disabled:opacity-60"
               >
                 {STANCE_UI[k].label}
               </button>
@@ -238,8 +225,8 @@ export default function TickerDebate({
       {/* top argument per side */}
       {(state.topBull || state.topBear) && (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <TopArgCard label="Top bull case" arg={state.topBull} tone="green" />
-          <TopArgCard label="Top bear case" arg={state.topBear} tone="red" />
+          <TopArgCard label="Top bull case" arg={state.topBull} />
+          <TopArgCard label="Top bear case" arg={state.topBear} />
         </div>
       )}
 
@@ -266,20 +253,13 @@ export default function TickerDebate({
   );
 }
 
-function TopArgCard({
-  label,
-  arg,
-  tone,
-}: {
-  label: string;
-  arg: TopArgument | null;
-  tone: "green" | "red";
-}) {
-  const ring = tone === "green" ? "border-green-500/30" : "border-red-500/25";
-  const text = tone === "green" ? "text-green-700" : "text-red-600";
+/* The side is in the LABEL. It used to also be in a green or red ring and a
+   green or red heading — the price ramp doing duty as "which side of an
+   argument this is", on a card that sits under a live quote. */
+function TopArgCard({ label, arg }: { label: string; arg: TopArgument | null }) {
   return (
-    <div className={`rounded-xl border ${ring} bg-paper p-3`}>
-      <p className={`mb-1.5 font-display text-[11px] font-bold uppercase tracking-wider ${text}`}>{label}</p>
+    <div className="rounded-xl border border-sand bg-paper p-3">
+      <p className="mb-1.5 font-display text-[11px] font-bold uppercase tracking-wider text-soft">{label}</p>
       {arg ? (
         <>
           <p className="text-[13px] leading-snug text-midnight-200">{arg.body}</p>
@@ -375,11 +355,7 @@ function ArgumentsBoard({
       <div className="grid gap-4 sm:grid-cols-2">
         {(["bull", "bear"] as ArgumentSide[]).map((s) => (
           <div key={s}>
-            <p
-              className={`mb-2 font-display text-[11px] font-bold uppercase tracking-wider ${
-                s === "bull" ? "text-green-700" : "text-red-600"
-              }`}
-            >
+            <p className="mb-2 font-display text-[11px] font-bold uppercase tracking-wider text-soft">
               {s === "bull" ? "Bull case" : "Bear case"}
             </p>
             <div className="space-y-2">
@@ -426,18 +402,14 @@ function ArgumentsBoard({
                 key={s}
                 onClick={() => setSide(s)}
                 className={`rounded-md px-2.5 py-1 text-[11px] font-bold capitalize transition-colors ${
-                  side === s
-                    ? s === "bull"
-                      ? "bg-green-500 text-white"
-                      : "bg-red-500 text-white"
-                    : "text-soft"
+                  side === s ? "bg-volt-500 text-[#1A1614]" : "text-soft"
                 }`}
               >
                 {s} case
               </button>
             ))}
           </div>
-          {err && <p className="mb-1 text-[11px] text-red-600">{err}</p>}
+          {err && <p className="mb-1 text-[11px] font-semibold text-ink">{err}</p>}
           <div className="flex items-end gap-2">
             <textarea
               value={draft}

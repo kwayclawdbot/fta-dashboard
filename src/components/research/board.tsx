@@ -181,7 +181,7 @@ export function PillTabs<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
-      className={`club2-track -mx-1 -my-1 flex gap-1.5 overflow-x-auto px-1 py-1 ${className}`}
+      className={`club2-track -mx-1 -my-1 flex gap-0.5 overflow-x-auto px-1 py-1 sm:gap-1.5 ${className}`}
     >
       {tabs.map((t) => {
         const on = t.key === active;
@@ -196,7 +196,12 @@ export function PillTabs<T extends string>({
             aria-controls={panelId(t.key)}
             tabIndex={on ? 0 : -1}
             onClick={() => onSelect(t.key)}
-            className={`f0-focus shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] transition-colors ${
+            /* FIVE PILLS MUST FIT A 390px PHONE. At px-3/11.5px the fifth pill
+               (News) was physically clipped off the right edge — a whole tab
+               invisible unless you knew to swipe a strip that gives no scroll
+               affordance. Tighter padding and a half-point of type buys the
+               ~40px the row was over by; sm: restores the roomier board metric. */
+            className={`f0-focus shrink-0 whitespace-nowrap rounded-full px-2 py-1.5 text-[10.5px] tracking-[-0.006em] transition-colors sm:px-3 sm:text-[11.5px] sm:tracking-normal ${
               on
                 ? kai
                   ? "bg-kai-500 font-extrabold text-white"
@@ -214,7 +219,13 @@ export function PillTabs<T extends string>({
 
 /* ── Range pills ─────────────────────────────────────────────────────────
    Board 03's 1D · 1W · 1M · 3M · 1Y · ALL strip: squarer (r8) and mono, the
-   active one filled brand orange. */
+   active one filled brand orange.
+
+   NOT A TABLIST. These carried `role="tablist"` / `role="tab"` with no
+   `aria-controls` and no panel to point at — they don't swap a region, they
+   re-scope the one chart above them. A screen reader following the tab contract
+   goes looking for a tabpanel that does not exist. They are what they are: a
+   group of toggle buttons, one of which is pressed. */
 export function RangePills<T extends string>({
   ranges,
   active,
@@ -227,15 +238,14 @@ export function RangePills<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <div className="club2-track -mx-1 flex gap-1.5 overflow-x-auto px-1" role="tablist" aria-label={ariaLabel}>
+    <div className="club2-track -mx-1 flex gap-1.5 overflow-x-auto px-1" role="group" aria-label={ariaLabel}>
       {ranges.map((r) => {
         const on = r === active;
         return (
           <button
             key={r}
             type="button"
-            role="tab"
-            aria-selected={on}
+            aria-pressed={on}
             onClick={() => onSelect(r)}
             className={`f0-focus shrink-0 rounded-lg px-2.5 py-1 font-mono text-[10.5px] transition-colors ${
               on
@@ -256,21 +266,32 @@ export function RangePills<T extends string>({
    the track colour can be a token and the arc can animate. `pct == null` is an
    HONEST ABSENCE: the track draws, the arc does not, and the caller puts a
    dash in the middle. */
+/**
+ * SIGNED RINGS. `pct` used to be clamped at zero, which meant a −38% net margin
+ * and "we have no margin data" drew the identical empty ring — in the positive
+ * colour. A loss is a fact the ring should STATE: the arc is drawn at the
+ * magnitude of the figure and takes `negativeColor` when the figure is below
+ * zero, so a loss-making quarter reads as a filled ring in the loss tone rather
+ * than as an absence.
+ */
 export function Donut({
   pct,
   size = 116,
   thickness = 8,
   color = "var(--color-accent)",
+  negativeColor,
   track = "var(--color-sand)",
   glow = false,
   children,
   label,
 }: {
-  /** 0–100, or null when the source hasn't resolved / has nothing to say. */
+  /** −100–100, or null when the source hasn't resolved / has nothing to say. */
   pct: number | null;
   size?: number;
   thickness?: number;
   color?: string;
+  /** Arc colour when `pct` is negative. Defaults to `color` (unsigned rings). */
+  negativeColor?: string;
   track?: string;
   glow?: boolean;
   children?: ReactNode;
@@ -278,7 +299,8 @@ export function Donut({
 }) {
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
-  const p = pct == null ? 0 : Math.max(0, Math.min(100, pct));
+  const p = pct == null ? 0 : Math.min(100, Math.abs(pct));
+  const arcColor = pct != null && pct < 0 ? negativeColor ?? color : color;
   return (
     <span
       className="relative inline-grid shrink-0 place-items-center"
@@ -305,7 +327,7 @@ export function Donut({
             cy={size / 2}
             r={r}
             fill="none"
-            stroke={color}
+            stroke={arcColor}
             strokeWidth={thickness}
             strokeLinecap="butt"
             strokeDasharray={c}

@@ -81,14 +81,28 @@ function ChartFigure({ label, children }: { label: string; children: ReactNode }
   );
 }
 
+/** The prose sections a caller can already have shown above this body. */
+export type KaiSectionKey = "business_plain" | "the_numbers" | "moat" | "risks";
+
 export default function KaiReportSection({
   report,
   showHead = true,
+  surfaced,
 }: {
   report: KaiReport;
   /** false when KaiReportPanel's Kai field already carries the headline. */
   showHead?: boolean;
+  /**
+   * Sections the CALLER has already printed in full above this body. Board 14
+   * surfaces three of them as signal cards and the complete risk register as
+   * its own field — and then mounted this, which printed all four again,
+   * verbatim, a screen further down. Eight thousand pixels, half of them a
+   * second copy. A section named here is not repeated; anything the caller only
+   * TEASED (a truncated lede) is not named, and its full text still ships here.
+   */
+  surfaced?: readonly KaiSectionKey[];
 }) {
+  const seen = new Set<KaiSectionKey>(surfaced ?? []);
   const s = report.sections;
   const bars = report.data?.bars || [];
   const financials = report.data?.financials || null;
@@ -128,7 +142,7 @@ export default function KaiReportSection({
         </Card>
       )}
 
-      {s.business_plain && (
+      {s.business_plain && !seen.has("business_plain") && (
         <Block title="The business, in plain English">
           <Paras text={s.business_plain} />
         </Block>
@@ -144,11 +158,11 @@ export default function KaiReportSection({
               <RevenueChart periods={financials} />
             </ChartFigure>
           )}
-          {s.the_numbers && <Paras text={s.the_numbers} />}
+          {s.the_numbers && !seen.has("the_numbers") && <Paras text={s.the_numbers} />}
         </div>
       </Block>
 
-      {(s.moat || s.thesis) && (
+      {(s.moat || s.thesis) && !seen.has("moat") && (
         <Block title="Moat & thesis">
           <div className="space-y-3.5">
             <Paras text={s.moat} />
@@ -157,7 +171,7 @@ export default function KaiReportSection({
         </Block>
       )}
 
-      {risks.length > 0 && (
+      {risks.length > 0 && !seen.has("risks") && (
         <Block title="What could go wrong">
           {/* Each risk is a numbered row inside the block's card, so the list
               reads as a register a member can work down. `.f0-ledger` supplies

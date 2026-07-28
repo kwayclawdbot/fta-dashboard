@@ -4,9 +4,9 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Bell, Share2, Sparkles } from "lucide-react";
 
-import KaiReportSection from "@/components/kai/KaiReportSection";
+import KaiReportSection, { type KaiSectionKey } from "@/components/kai/KaiReportSection";
 import { toParagraphs, type KaiReport } from "@/lib/kai/report";
-import { Card, CardLabel, Donut, InsightCard } from "@/components/research/board";
+import { Card, CardLabel, Donut } from "@/components/research/board";
 
 /**
  * TICKER · KAI REPORT — board 14 of the owner's mockup.
@@ -84,14 +84,53 @@ function coverage(report: KaiReport): number {
   return Math.round((parts.filter(Boolean).length / parts.length) * 100);
 }
 
-/** First paragraph of a section, trimmed to a card-sized read. */
-function lede(text: string | null | undefined, max = 128): string | null {
-  const p = toParagraphs(text)[0];
-  if (!p) return null;
-  if (p.length <= max) return p;
-  const cut = p.slice(0, max);
-  const at = cut.lastIndexOf(" ");
-  return `${(at > 60 ? cut.slice(0, at) : cut).trimEnd()}…`;
+/**
+ * ── SAY IT ONCE ────────────────────────────────────────────────────────────
+ * The board's three signal cards used to carry a 128-character TEASE of three
+ * sections, and the long report mounted below then printed those same three
+ * sections in full, verbatim, a screen further down — along with the identical
+ * five risks under a second heading. Eight thousand pixels of Kai tab, roughly
+ * half of it a second copy, and a member who read the cards had no way to know
+ * the paragraphs below were the same words.
+ *
+ * The repair is not to truncate harder. These cards now carry the sections
+ * THEMSELVES — the visual, the title, and every paragraph — and the long body
+ * skips exactly what they carry. Nothing Kai wrote is lost; it is printed once,
+ * next to the object drawn for it, and the tab is half the height.
+ *
+ * What the body below still owns, because only it has them: the price and
+ * revenue charts, the kids explainer, the family questions, the sources note
+ * and the compliance line.
+ */
+function SignalCard({
+  visual,
+  title,
+  text,
+}: {
+  visual: ReactNode;
+  title: string;
+  text: string;
+}) {
+  const paras = toParagraphs(text);
+  return (
+    <Card radius="md" className="p-[15px_16px]">
+      <div className="flex items-center gap-3.5">
+        {visual && (
+          <span className="grid h-11 w-14 shrink-0 place-items-center" aria-hidden>
+            {visual}
+          </span>
+        )}
+        <h3 className="min-w-0 flex-1 text-[13.5px] font-bold leading-snug text-ink">{title}</h3>
+      </div>
+      <div className="mt-2.5 space-y-3">
+        {paras.map((p, i) => (
+          <p key={i} className="text-[13px] leading-relaxed text-midnight-200">
+            {p}
+          </p>
+        ))}
+      </div>
+    </Card>
+  );
 }
 
 /** A tiny close-only sparkline off the report's own stored series. */
@@ -259,16 +298,34 @@ export default function KaiReportPanel({
   const risks = s.risks || [];
   const bars = report.data?.bars || [];
 
-  const insights = [
-    {
-      key: "business",
-      title: "The business, in plain English",
-      body: lede(s.business_plain),
-      visual: <RevenueSpark report={report} />,
-    },
-    { key: "numbers", title: "What the numbers say", body: lede(s.the_numbers), visual: <Spark bars={bars} /> },
-    { key: "moat", title: "What protects it", body: lede(s.moat || s.thesis), visual: <MoatRing /> },
-  ].filter((i) => i.body);
+  const insights = (
+    [
+      {
+        key: "business_plain" as const,
+        title: "The business, in plain English",
+        text: s.business_plain,
+        visual: <RevenueSpark report={report} />,
+      },
+      {
+        key: "the_numbers" as const,
+        title: "What the numbers say",
+        text: s.the_numbers,
+        visual: <Spark bars={bars} />,
+      },
+      {
+        key: "moat" as const,
+        title: "What protects it",
+        text: [s.moat, s.thesis].filter(Boolean).join("\n\n"),
+        visual: <MoatRing />,
+      },
+    ] as const
+  ).filter((i) => toParagraphs(i.text).length > 0);
+
+  /* Everything the cards above carry is skipped by the long body below. */
+  const surfaced: KaiSectionKey[] = [
+    ...insights.map((i) => i.key),
+    ...(risks.length > 0 ? (["risks"] as const) : []),
+  ];
 
   return (
     <div>
@@ -306,7 +363,7 @@ export default function KaiReportPanel({
       {/* ── THE THREE SIGNALS ──────────────────────────────────────────────── */}
       <div className="mt-3 space-y-2.5">
         {insights.map((i) => (
-          <InsightCard key={i.key} visual={i.visual} title={i.title} body={i.body} />
+          <SignalCard key={i.key} visual={i.visual} title={i.title} text={i.text} />
         ))}
       </div>
 
@@ -332,7 +389,7 @@ export default function KaiReportPanel({
           family questions, sources and the compliance line, all verbatim. The
           head is suppressed because the field above already carries it. */}
       <div className="mt-6">
-        <KaiReportSection report={report} showHead={false} />
+        <KaiReportSection report={report} showHead={false} surfaced={surfaced} />
       </div>
 
       <KaiActions ticker={ticker} onAskKai={onAskKai} />

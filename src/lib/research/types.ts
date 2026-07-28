@@ -95,6 +95,13 @@ export interface ResearchPayload {
   };
   /** True when Polygon serves no usable financials (sparse small-cap / ETF). */
   insufficient: boolean;
+  /**
+   * True when this payload is the HONEST PARTIAL: a cold ticker whose vendor
+   * fetch hasn't landed yet, served so the page paints. In-house momentum is
+   * real; the company block and financials are simply not here yet. Surfaces
+   * must say "still arriving", never "this company publishes nothing".
+   */
+  partial?: boolean;
   cachedAt: string;
 }
 

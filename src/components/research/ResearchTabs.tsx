@@ -103,6 +103,12 @@ export default function ResearchTabBar({
           )}
         </div>
       )}
+      {/* ALL FIVE PILLS ON A 390px PHONE. The rail is a scroller, but a scroller
+          with no affordance reads as a fixed row — so the fifth tab (News) was
+          simply invisible to anyone who didn't think to swipe it, on the
+          narrowest and most common viewport this app has. The pills carry
+          tighter metrics below `sm` and the rail claims back the shell's own
+          gutter here, which is enough for the row to fit outright. */}
       <PillTabs<ResearchTabKey>
         tabs={tabs}
         active={active}
@@ -110,6 +116,7 @@ export default function ResearchTabBar({
         ariaLabel="Research sections"
         tabId={tabId}
         panelId={panelId}
+        className="!-mx-3 !px-3 sm:!-mx-1 sm:!px-1"
       />
     </div>
   );

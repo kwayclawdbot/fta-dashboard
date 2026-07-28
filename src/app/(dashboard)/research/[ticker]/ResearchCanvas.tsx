@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Sparkles, Star } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -10,6 +10,8 @@ import { fetchBars, type MarketBar, type MarketQuote } from "@/lib/market/client
 import { formatExchange } from "@/lib/market/exchange";
 import { fmtMcap, fmtVol } from "@/lib/screener";
 import type { ResearchPayload } from "@/lib/research/types";
+import { fmtBound } from "@/lib/research/labels";
+import { useClientNow } from "@/lib/research/clock";
 import { Card, RangePills, StatCard } from "@/components/research/board";
 import type { Portrait } from "./ClubRead";
 
@@ -224,8 +226,11 @@ export default function ResearchCanvas({
   quote,
   research,
   dailyBars,
+  barsResolved = false,
   supabase,
   back,
+  familyId,
+  userId,
   onAskKai,
   clubRank,
   watchers,
@@ -237,8 +242,19 @@ export default function ResearchCanvas({
   research: ResearchPayload | null;
   /** the 2y daily close series the page already loads (slices the long ranges) */
   dailyBars: MarketBar[];
+  /**
+   * Whether the PAGE's bars lane has finished. Three components used to reach
+   * for `/api/market/bars?range=2y` on mount — the page, this head, and the
+   * technicals panel — because "I have no bars" and "nobody is fetching bars"
+   * looked identical from inside each of them. The head only falls back to its
+   * own fetch once the owner's lane has answered and come up empty.
+   */
+  barsResolved?: boolean;
   supabase: SupabaseClient;
   back: { href: string; label: string };
+  /** the member's family — the watchlist this star writes to */
+  familyId: string | null;
+  userId: string;
   onAskKai: () => void;
   /** ticker_intel_snapshots.rank — the board's "#1 in the Club ›" pill. */
   clubRank: number | null;
@@ -253,6 +269,85 @@ export default function ResearchCanvas({
   const [screenerResolved, setScreenerResolved] = useState(false);
   const [shared, setShared] = useState(false);
   const asked = useRef<Set<string>>(new Set());
+
+  /* ── THE WATCHLIST TOGGLE ────────────────────────────────────────────────
+     The star in this row was a permanently-filled `<Link href="/watchlist">`:
+     it looked like state, it read to a screen reader as state, and it was
+     neither — every ticker in the club showed as watched, and tapping it left
+     the page. It is now a real toggle bound to the row the /watchlist board
+     actually reads (`family_watchlist`), with the membership resolved on mount
+     so the fill means what it looks like. Failure is reported, never swallowed
+     into a fill that isn't backed by a row. */
+  // The read is STAMPED with the ticker it answered (the same pattern the other
+  // lanes on this page use), so switching ticker invalidates it for free and no
+  // effect body ever calls setState synchronously.
+  const [watch, setWatch] = useState<{ for: string; row: { id: string } | null } | null>(
+    null
+  );
+  const [watchBusy, setWatchBusy] = useState(false);
+  const [watchErr, setWatchErr] = useState(false);
+
+  useEffect(() => {
+    if (!familyId) return;
+    let on = true;
+    supabase
+      .from("family_watchlist")
+      .select("id")
+      .eq("family_id", familyId)
+      .eq("ticker", ticker)
+      .maybeSingle()
+      .then(
+        ({ data }) => {
+          if (on) setWatch({ for: ticker, row: (data as { id: string } | null) ?? null });
+        },
+        () => {
+          if (on) setWatch({ for: ticker, row: null });
+        }
+      );
+    return () => {
+      on = false;
+    };
+  }, [supabase, familyId, ticker]);
+
+  const watchRow = watch?.for === ticker ? watch.row : null;
+  const watchKnown = watch?.for === ticker;
+  const watching = watchRow != null;
+
+  const toggleWatch = useCallback(async () => {
+    if (!familyId || watchBusy || watch?.for !== ticker) return;
+    setWatchBusy(true);
+    setWatchErr(false);
+    const current = watch.row;
+    if (current) {
+      const { error } = await supabase.from("family_watchlist").delete().eq("id", current.id);
+      setWatchBusy(false);
+      if (error) {
+        setWatchErr(true);
+        return;
+      }
+      setWatch({ for: ticker, row: null });
+      return;
+    }
+    const { data, error } = await supabase
+      .from("family_watchlist")
+      .insert({
+        family_id: familyId,
+        ticker,
+        company_name: companyName,
+        status: "watch",
+        champion_id: userId || null,
+        snapshot_price: quote?.price ?? null,
+        snapshot_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    setWatchBusy(false);
+    if (error || !data) {
+      setWatchErr(true);
+      return;
+    }
+    setWatch({ for: ticker, row: data as { id: string } });
+  }, [supabase, familyId, ticker, companyName, userId, quote?.price, watch, watchBusy]);
 
   /* Volume is not part of the research aggregate — it lives in screener_metrics
      (same nightly Polygon grouped-daily pull that powers the screener). One
@@ -304,10 +399,12 @@ export default function ResearchCanvas({
     };
   }, [ticker, range]);
 
-  /* Fallback: if the page never handed us daily bars (a failed load upstream),
-     pull the 2y series here rather than showing a permanently empty chart. */
+  /* Fallback: if the page's own lane RESOLVED with no daily bars, pull the 2y
+     series here rather than showing a permanently empty chart. Gated on
+     `barsResolved` so this is a genuine last resort and not a third racing copy
+     of the same request. */
   useEffect(() => {
-    if (dailyBars.length > 0 || asked.current.has("daily")) return;
+    if (!barsResolved || dailyBars.length > 0 || asked.current.has("daily")) return;
     asked.current.add("daily");
     let on = true;
     fetchBars(ticker, "2y").then((b) => {
@@ -316,7 +413,7 @@ export default function ResearchCanvas({
     return () => {
       on = false;
     };
-  }, [ticker, dailyBars.length]);
+  }, [ticker, dailyBars.length, barsResolved]);
 
   const daily = useMemo(
     () => (dailyBars.length > 0 ? dailyBars : intraday.daily ?? []),
@@ -346,15 +443,29 @@ export default function ResearchCanvas({
   const rangeTf = RANGES[range].tf;
   const loading = rangeTf ? intraday[rangeTf] === undefined : daily.length === 0;
 
-  /* Window delta — derived from the first and last close of what is actually
-     drawn, so the label can never disagree with the line above it. */
+  /* Window delta.
+     ── ONE DAY, ONE NUMBER ────────────────────────────────────────────────
+     This used to be first-drawn-bar → last-drawn-bar unconditionally, which on
+     1D measured from the first 15-minute bar the feed happened to include —
+     often a pre-market print — while the header measured from the previous
+     session's CLOSE. The result was a head reading "▼ 5.18% today" directly
+     above a chart labelled "−6.17%" for the same day, with nothing on screen to
+     say why. They are the same claim, so they are now the same arithmetic: on
+     1D the window is anchored to `quote.prevClose`, exactly like the header,
+     and falls back to the drawn series only when there is no quote to anchor to.
+     Longer ranges are still first-to-last, which is what they mean. */
   const windowPct = useMemo(() => {
     if (visible.length < 2) return null;
+    const last = visible[visible.length - 1].c;
+    if (range === "1D") {
+      if (quote?.changePercent != null) return quote.changePercent;
+      const prev = quote?.prevClose ?? null;
+      if (prev != null && prev > 0) return ((last - prev) / prev) * 100;
+    }
     const a = visible[0].c;
-    const b = visible[visible.length - 1].c;
     if (!a) return null;
-    return ((b - a) / a) * 100;
-  }, [visible]);
+    return ((last - a) / a) * 100;
+  }, [visible, range, quote]);
 
   // 52-week extremes: prefer the true series max/min, fall back to the aggregate.
   const week52 = useMemo(() => {
@@ -397,10 +508,43 @@ export default function ResearchCanvas({
     return out;
   }, [faces, visible]);
 
+  /* THE MARK.
+     `quote` is a source like any other, so it gets the same three-state contract
+     the stat cards have: RESOLVED-WITH-A-PRICE prints the price, RESOLVED-WITH-
+     NOTHING falls back to the last daily close (labelled as such), and NOT YET
+     ANSWERED draws a loading shape. It used to print a bare grey "—" the moment
+     the page rendered — the single largest element on the screen announcing that
+     the company has no price — and then swap to the real number a beat later. */
+  const lastClose = daily.length > 0 ? daily[daily.length - 1].c : null;
+  const quoteResolved = quote != null || barsResolved;
   const price = quote?.price ?? null;
+  const shownPrice = price ?? (quoteResolved ? lastClose : null);
+  const priceIsClose = price == null && shownPrice != null;
   const chgPct = quote?.changePercent ?? null;
   const up = (chgPct ?? 0) >= 0;
   const exchange = research?.company.exchange ? formatExchange(research.company.exchange) : null;
+
+  /* HOW OLD IS THIS NUMBER, REALLY.
+     The head printed "▲ 4.72% today · DELAYED ~15 MIN" seven days a week. Read
+     on a Sunday it says the market is open and this moved today, both false.
+     The quote carries its own timestamp; the label is derived from it, and the
+     wall clock is read ONCE after mount (never during render, which would
+     desync server and client and re-introduce the same lie in a new form). */
+  const mountedAt = useClientNow();
+
+  const freshness = useMemo(() => {
+    const t = quote?.updated ?? null;
+    if (t == null || mountedAt == null) {
+      return { move: "today", feed: quote?.delayed === false ? "Real time" : "Delayed ~15 min" };
+    }
+    const stamped = new Date(t);
+    const sameDay = new Date(mountedAt).toDateString() === stamped.toDateString();
+    if (sameDay) {
+      return { move: "today", feed: quote?.delayed === false ? "Real time" : "Delayed ~15 min" };
+    }
+    const day = stamped.toLocaleDateString(undefined, { weekday: "long" });
+    return { move: `at ${day}'s close`, feed: `${day}'s close · market closed` };
+  }, [quote?.updated, quote?.delayed, mountedAt]);
 
   async function onShare() {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -453,9 +597,13 @@ export default function ResearchCanvas({
       ready: screenerResolved,
     },
     {
+      /* PRECISION HAS TO SURVIVE THE PRICE. `toFixed(0)` reads fine on a $200
+         name and annihilates a small cap: PLUG's genuine $1.40–$4.14 year
+         printed as "1–4", a range that is both wrong and useless. The number of
+         decimals now follows the size of the number. */
       label: "52-week range",
-      value: week52 ? `${week52.low.toFixed(0)}–${week52.high.toFixed(0)}` : null,
-      ready: week52 != null || researchReady,
+      value: week52 ? `${fmtBound(week52.low)}–${fmtBound(week52.high)}` : null,
+      ready: week52 != null || (researchReady && barsResolved),
     },
   ];
 
@@ -469,14 +617,47 @@ export default function ResearchCanvas({
         >
           <ArrowLeft className="h-4 w-4" /> {back.label}
         </Link>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/watchlist"
-            aria-label="Your watchlist"
-            className="f0-focus rounded-full p-1 text-gold-700 transition-colors hover:text-gold-600"
-          >
-            <Star className="h-[18px] w-[18px]" fill="currentColor" />
-          </Link>
+        <div className="flex items-center gap-2.5">
+          {watchErr && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-soft">
+              Couldn&apos;t save
+            </span>
+          )}
+          {watching && !watchErr && (
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-gold-700">
+              Watching
+            </span>
+          )}
+          {familyId ? (
+            <button
+              type="button"
+              onClick={toggleWatch}
+              disabled={!watchKnown || watchBusy}
+              aria-pressed={watching}
+              aria-label={
+                watching
+                  ? `Remove ${ticker} from your watchlist`
+                  : `Add ${ticker} to your watchlist`
+              }
+              className={`f0-focus rounded-full p-1 transition-colors disabled:opacity-45 ${
+                watching ? "text-gold-700 hover:text-gold-600" : "text-soft hover:text-gold-700"
+              }`}
+            >
+              <Star
+                className="h-[18px] w-[18px]"
+                fill={watching ? "currentColor" : "none"}
+                strokeWidth={watching ? 1.5 : 2}
+              />
+            </button>
+          ) : (
+            <Link
+              href="/watchlist"
+              aria-label="Your watchlist"
+              className="f0-focus rounded-full p-1 text-soft transition-colors hover:text-gold-700"
+            >
+              <Star className="h-[18px] w-[18px]" fill="none" strokeWidth={2} />
+            </Link>
+          )}
           <button
             type="button"
             onClick={onShare}
@@ -508,12 +689,17 @@ export default function ResearchCanvas({
 
       {/* the mark */}
       <div className="mt-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        {price != null ? (
+        {shownPrice != null ? (
           <span className="font-mono text-[28px] font-semibold leading-none tabular-nums text-ink">
-            {money(price)}
+            {money(shownPrice)}
           </span>
-        ) : (
+        ) : quoteResolved ? (
           <span className="font-mono text-[28px] font-semibold leading-none text-soft/50">—</span>
+        ) : (
+          <span
+            className="block h-[28px] w-[132px] rounded-md bg-ink/10 motion-safe:animate-pulse"
+            aria-hidden
+          />
         )}
         {chgPct != null && (
           <span
@@ -521,12 +707,12 @@ export default function ResearchCanvas({
               up ? "text-price-up" : "text-price-down"
             }`}
           >
-            {up ? "▲" : "▼"} {Math.abs(chgPct).toFixed(2)}% today
+            {up ? "▲" : "▼"} {Math.abs(chgPct).toFixed(2)}% {freshness.move}
           </span>
         )}
       </div>
       <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-soft/80">
-        {quote?.delayed === false ? "Real time" : "Delayed ~15 min"}
+        {priceIsClose ? "Last daily close" : freshness.feed}
         {exchange ? ` · ${exchange}` : ""}
         {research?.company.sector ? ` · ${research.company.sector}` : ""}
       </p>

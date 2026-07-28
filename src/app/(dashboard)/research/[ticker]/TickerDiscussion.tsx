@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Send, Trash2, StickyNote, Lightbulb, TriangleAlert, Newspaper, LineChart, HelpCircle } from "lucide-react";
 import AgeBadge from "@/components/community/AgeBadge";
 import { CONTRIBUTION_TYPES, contributionMeta, type ContributionType } from "@/lib/research/social";
+import { useClientNow } from "@/lib/research/clock";
 
 /**
  * THE DISCUSSION — the persistent community thread on a ticker.
@@ -60,8 +61,13 @@ export interface DiscussionComment {
   } | null;
 }
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
+/* The wall clock is read ONCE after mount and threaded through, never during
+   render — a server render and a client render that disagree about "now" is a
+   hydration mismatch, and "just now" printed off a server clock is a claim about
+   a moment the reader isn't in. */
+function timeAgo(dateStr: string, now: number | null) {
+  if (now == null) return "";
+  const diff = now - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
@@ -124,6 +130,7 @@ export default function TickerDiscussion({
   userId,
   role,
   canPost,
+  entitlementsResolved = true,
   draft,
   draftType,
   posting,
@@ -144,6 +151,14 @@ export default function TickerDiscussion({
   role: string;
   /** free tier reads only — same wall as before */
   canPost: boolean;
+  /**
+   * Whether the TIER read has come back. `canPost` defaults to false while
+   * entitlement is unknown, which is the safe default for a WRITE but a lie as
+   * COPY: a paying member was shown "Join the Club to add your own research
+   * notes" for the length of the auth round-trip on every load. Until this is
+   * true the region shows neither the wall nor the composer.
+   */
+  entitlementsResolved?: boolean;
   draft: string;
   draftType: ContributionType;
   posting: boolean;
@@ -155,6 +170,7 @@ export default function TickerDiscussion({
 }) {
   const [filter, setFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState(false);
+  const now = useClientNow();
 
   const filtered = filter === "all" ? comments : comments.filter((c) => c.contribution_type === filter);
   const presentTypes = useMemo(() => {
@@ -173,23 +189,39 @@ export default function TickerDiscussion({
         <span className="font-display text-eyebrow font-bold uppercase text-ink">The discussion</span>
       </h2>
 
-      <p className="mt-3.5 font-display text-display-3 font-extrabold text-ink">
-        {comments.length > 0 ? (
-          <>
+      {/* AN EMPTY THREAD IS ONE LINE. This used to open with "Nobody has written
+          up $NVDA yet" set in display-3 — the second-largest type on the page,
+          spent on the absence of content — followed by a two-line invitation.
+          On a phone that put a heading about nothing above the fold on every
+          cold ticker. A thread WITH notes still earns the display count, because
+          then the number is the news. */}
+      {comments.length > 0 ? (
+        <>
+          <p className="mt-3.5 font-display text-display-3 font-extrabold text-ink">
             <span className="font-mono tabular-nums">{comments.length}</span>{" "}
             {comments.length === 1 ? "note" : "notes"} on ${ticker}
-          </>
-        ) : (
-          <>Nobody has written up ${ticker} yet</>
-        )}
-      </p>
-      <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-soft">
-        Study {companyName} together — what it makes, how it earns, what could go right or wrong. Tag
-        your note so the club can find theses, risks, and questions at a glance.
-      </p>
+          </p>
+          <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-soft">
+            Study {companyName} together — what it makes, how it earns, what could go
+            right or wrong. Tag your note so the club can find theses, risks, and
+            questions at a glance.
+          </p>
+        </>
+      ) : (
+        <p className="mt-3 max-w-xl text-[13px] leading-relaxed text-soft">
+          No notes on ${ticker} yet — what it makes, how it earns, what could go
+          right or wrong.
+        </p>
+      )}
 
       {/* ── COMPOSER FIRST — participation is the point of this region ────── */}
-      {!canPost ? (
+      {!entitlementsResolved ? (
+        /* Entitlement unknown: neither the wall nor the composer. A member who
+           pays for this should never read "Join the Club" on their own page. */
+        <div className="f0-rule-top mt-4 pt-4" aria-busy="true">
+          <div className="h-3.5 w-48 max-w-full rounded-full bg-ink/10 motion-safe:animate-pulse" />
+        </div>
+      ) : !canPost ? (
         <p className="f0-rule-top mt-4 pt-4 text-[13px] text-soft">
           Join the Club to add your own research notes.
         </p>
@@ -287,7 +319,7 @@ export default function TickerDiscussion({
                       </span>
                     )}
                     <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
-                      {timeAgo(c.created_at)}
+                      {timeAgo(c.created_at, now)}
                     </span>
                     {(c.user_id === userId || role === "admin") && (
                       <button

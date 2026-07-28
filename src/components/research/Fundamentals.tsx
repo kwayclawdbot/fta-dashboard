@@ -29,13 +29,14 @@
  * states that plainly instead of drawing an empty chart.
  */
 
-import { useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Lock } from "lucide-react";
 
 import type { GradesResult } from "@/lib/research/grades";
 import type { ResearchPayload } from "@/lib/research/types";
 import { letterColor } from "@/components/research/GradeVisuals";
+import { lastPairAdjacent, proseName, seriesBreaks } from "@/lib/research/labels";
 import {
   BoardFoot,
   Card,
@@ -43,6 +44,13 @@ import {
   CompareBar,
   Donut,
 } from "@/components/research/board";
+
+/** The tone a negative figure takes. Not the price ramp — this is a loss on a
+ *  filing, not a move on the tape, and the two must not share a colour. */
+const LOSS = "color-mix(in srgb, var(--color-ink) 62%, transparent)";
+
+/** How many strengths / weaknesses read before the card asks to be opened. */
+const POINTS_PREVIEW = 4;
 
 function abbrev(v: number | null): string {
   if (v == null || !Number.isFinite(v)) return "—";
@@ -96,18 +104,29 @@ export default function Fundamentals({
   }, [research.charts.quarterly]);
 
   /* Annual revenue — the board's four-bar chart. Uses whatever the aggregate
-     reported, newest last, capped at four so the bars stay readable. */
+     reported, newest last, capped at four so the bars stay readable.
+
+     PERIODS ARE NOT ALWAYS CONSECUTIVE. Polygon's annual set can miss a filing
+     (PLUG has 2023 then 2025), and four bars in a row IS a claim that they are
+     four years in a row. So: `breaks` marks where a year is missing and the
+     chart draws the discontinuity, and the year-on-year figure is only computed
+     when the last two bars genuinely are adjacent — a "−20% YoY" measured across
+     a two-year hole is not a year-on-year anything.
+
+     `peak` is on MAGNITUDE because a restated year can be negative, and a
+     negative bar must be drawn as a loss, not clipped to a stub. */
   const revenue = useMemo(() => {
     const rows = research.charts.annual.filter((a) => a.revenue != null).slice(-4);
     if (rows.length < 2) return null;
-    const peak = Math.max(...rows.map((r) => r.revenue!));
+    const labels = rows.map((r) => r.label);
+    const breaks = seriesBreaks(labels);
+    const peak = Math.max(...rows.map((r) => Math.abs(r.revenue!)), 1);
+    const prev = rows[rows.length - 2].revenue;
     const yoy =
-      rows.length >= 2 && rows[rows.length - 2].revenue
-        ? ((rows[rows.length - 1].revenue! - rows[rows.length - 2].revenue!) /
-            rows[rows.length - 2].revenue!) *
-          100
+      lastPairAdjacent(labels) && prev != null && prev > 0
+        ? ((rows[rows.length - 1].revenue! - prev) / prev) * 100
         : null;
-    return { rows, peak, yoy };
+    return { rows, peak, yoy, breaks, gapped: breaks.some(Boolean) };
   }, [research.charts.annual]);
 
   /* Valuation — this name against the two medians the aggregate stores. */
@@ -209,34 +228,60 @@ export default function Fundamentals({
           <div className="mt-3 flex h-[92px] items-end gap-2.5 px-1">
             {revenue.rows.map((r, i) => {
               const newest = i === revenue.rows.length - 1;
+              const loss = (r.revenue ?? 0) < 0;
               return (
-                <div key={r.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-                  <span
-                    className={`font-mono text-[8.5px] tabular-nums ${
-                      newest ? "text-gold-700" : "text-soft"
-                    }`}
-                  >
-                    {abbrev(r.revenue)}
-                  </span>
-                  <span
-                    className={`w-full rounded-t-[5px] ${newest ? "bg-volt-500" : "bg-sand"}`}
-                    style={{
-                      height: `${Math.max(6, (r.revenue! / revenue.peak) * 100)}%`,
-                      minHeight: 6,
-                    }}
-                    aria-hidden
-                  />
-                  <span className="font-mono text-[8px] uppercase text-soft">{r.label}</span>
-                </div>
+                <Fragment key={r.label}>
+                  {/* The hole in the filing history, drawn as a hole. */}
+                  {revenue.breaks[i] && (
+                    <span
+                      className="flex h-full w-[9px] shrink-0 flex-col items-center justify-center gap-[3px]"
+                      title="A reporting year is missing between these two"
+                    >
+                      {[0, 1, 2].map((d) => (
+                        <span key={d} className="h-[3px] w-[3px] rounded-full bg-sand" />
+                      ))}
+                      <span className="sr-only">missing reporting year</span>
+                    </span>
+                  )}
+                  <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span
+                      className={`font-mono text-[8.5px] tabular-nums ${
+                        newest ? "text-gold-700" : "text-soft"
+                      }`}
+                    >
+                      {abbrev(r.revenue)}
+                    </span>
+                    <span
+                      className={`w-full rounded-t-[5px] ${
+                        loss ? "" : newest ? "bg-volt-500" : "bg-sand"
+                      }`}
+                      style={{
+                        height: `${Math.max(6, (Math.abs(r.revenue!) / revenue.peak) * 100)}%`,
+                        minHeight: 6,
+                        ...(loss ? { background: LOSS } : null),
+                      }}
+                      aria-hidden
+                    />
+                    <span className="font-mono text-[8px] uppercase text-soft">{r.label}</span>
+                  </div>
+                </Fragment>
               );
             })}
           </div>
+          {revenue.gapped && (
+            <p className="mt-2.5 text-[10.5px] leading-snug text-soft">
+              A reporting year is missing from this filing history — the bars
+              either side of the break are not consecutive, so no year-on-year
+              change is shown.
+            </p>
+          )}
         </Card>
       ) : (
         <Card radius="md" className="px-4 py-3.5">
           <CardLabel tone="brand">Revenue</CardLabel>
           <p className="mt-2 text-[12px] leading-relaxed text-soft">
-            {companyName} hasn&apos;t reported enough annual periods for a revenue
+            {proseName(companyName, research.company.ticker)} hasn&apos;t reported
+            enough annual periods for a revenue
             chart yet.
           </p>
         </Card>
@@ -285,7 +330,15 @@ export default function Fundamentals({
   );
 }
 
-/** One margin ring — board 13's three-up row. */
+/**
+ * One margin ring — board 13's three-up row.
+ *
+ * A NEGATIVE MARGIN IS A NUMBER, NOT A GAP. The ring used to clamp at zero, so
+ * a company losing 38 cents on the dollar drew the same empty track as a company
+ * whose margin we simply couldn't compute — and drew it in the positive colour.
+ * Now the arc is filled to the magnitude and takes the loss tone, the figure
+ * carries its own minus sign, and "—" is reserved for genuine absence.
+ */
 function MarginRing({
   pct,
   label,
@@ -295,6 +348,7 @@ function MarginRing({
   label: string;
   color: string;
 }) {
+  const loss = pct != null && pct < 0;
   return (
     <Card radius="sm" className="flex min-w-0 flex-1 flex-col items-center px-2 py-3.5">
       <Donut
@@ -302,18 +356,35 @@ function MarginRing({
         size={64}
         thickness={7}
         color={color}
-        label={pct == null ? `${label} unavailable` : `${label} ${pct} percent`}
+        negativeColor={LOSS}
+        label={
+          pct == null
+            ? `${label} unavailable`
+            : loss
+              ? `${label}: a loss of ${Math.abs(pct)} percent of revenue`
+              : `${label} ${pct} percent`
+        }
       >
         <span className="font-mono text-[13px] font-semibold tabular-nums text-ink">
-          {pct == null ? "—" : `${pct}%`}
+          {pct == null ? "—" : `${pct < 0 ? "−" : ""}${Math.abs(pct)}%`}
         </span>
       </Donut>
-      <span className="mt-2 text-center text-[9.5px] leading-tight text-soft">{label}</span>
+      <span className="mt-2 text-center text-[9.5px] leading-tight text-soft">
+        {label}
+        {loss && <span className="mt-0.5 block text-[8.5px] uppercase tracking-[0.1em]">loss</span>}
+      </span>
     </Card>
   );
 }
 
-/** Strengths / weaknesses, as the board's card rather than a hairline ledger. */
+/**
+ * Strengths / weaknesses, as the board's card rather than a hairline ledger.
+ *
+ * BOUNDED. The grades engine can emit a dozen bullets per side, and two dozen
+ * one-line assertions stacked under a ring is where the Fundamentals subpage
+ * started running to eleven thousand pixels. Four read; the rest are one tap
+ * away and stay in place when they open.
+ */
 function PointsCard({
   label,
   items,
@@ -325,7 +396,9 @@ function PointsCard({
   locked: boolean;
   empty: string;
 }) {
-  const shown = locked ? items.slice(0, 1) : items;
+  const [all, setAll] = useState(false);
+  const shown = locked ? items.slice(0, 1) : all ? items : items.slice(0, POINTS_PREVIEW);
+  const hidden = items.length - shown.length;
   return (
     <Card radius="md" className="px-4 py-3.5">
       <CardLabel>{label}</CardLabel>
@@ -349,6 +422,15 @@ function PointsCard({
             </li>
           )}
         </ul>
+      )}
+      {!locked && (hidden > 0 || all) && (
+        <button
+          type="button"
+          onClick={() => setAll((v) => !v)}
+          className="f0-focus mt-3 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-gold-700 transition-colors hover:text-ink"
+        >
+          {all ? "Show fewer" : `Show all ${items.length}`}
+        </button>
       )}
     </Card>
   );

@@ -67,22 +67,51 @@ interface Signal {
   state: boolean | null;
 }
 
+/** Momentum when the aggregate itself hasn't landed — every check abstains. */
+const NO_MOMENTUM: MomentumStats = {
+  rsi14: null,
+  ema20State: null,
+  ema50State: null,
+  dist52wHigh: null,
+  dist52wLow: null,
+  volRatio: null,
+  gapPct: null,
+  chg1d: null,
+  chg5d: null,
+  chg1m: null,
+  chg3m: null,
+};
+
 export default function PriceTechnicals({
   symbol,
-  momentum,
+  momentum = NO_MOMENTUM,
   bars: providedBars,
+  barsOwned = false,
 }: {
   symbol: string;
-  momentum: MomentumStats;
+  /** Optional: the panel reads the tape on its own when the aggregate is late. */
+  momentum?: MomentumStats;
   /** Pre-loaded 2Y bars from the page (avoids a duplicate fetch). */
   bars?: MarketBar[];
+  /**
+   * TRUE when the CALLER owns the bars lane and has already resolved it. The
+   * page, the canvas head and this panel each used to reach for the same
+   * `/api/market/bars?range=2y` on mount — three identical requests for one
+   * series, because "I have no bars yet" and "nobody is fetching bars" looked
+   * the same from in here. When the caller owns the lane it says so, and this
+   * panel renders what it was handed instead of racing for a fourth copy.
+   */
+  barsOwned?: boolean;
 }) {
   const [fetched, setFetched] = useState<MarketBar[] | null>(null);
   const hasProvided = providedBars != null && providedBars.length > 0;
-  const bars: MarketBar[] | null = hasProvided ? providedBars! : fetched;
+  const bars: MarketBar[] | null = useMemo(
+    () => (hasProvided ? providedBars! : barsOwned ? providedBars ?? [] : fetched),
+    [hasProvided, providedBars, barsOwned, fetched]
+  );
 
   useEffect(() => {
-    if (hasProvided) return;
+    if (hasProvided || barsOwned) return;
     let live = true;
     fetchBars(symbol, "2y").then((b) => {
       if (live) setFetched(b);
@@ -90,7 +119,7 @@ export default function PriceTechnicals({
     return () => {
       live = false;
     };
-  }, [symbol, hasProvided]);
+  }, [symbol, hasProvided, barsOwned]);
 
   const closes = useMemo(() => (bars || []).map((b) => b.c), [bars]);
   const last = closes.length > 0 ? closes[closes.length - 1] : null;
@@ -131,8 +160,26 @@ export default function PriceTechnicals({
       { label: "60-day low", v: Math.min(...w60), side: "down" as const },
       { label: "52-week low", v: Math.min(...w252), side: "down" as const },
     ];
-    const above = rows.filter((r) => r.v > last).sort((a, b) => b.v - a.v).slice(0, 2);
-    const below = rows.filter((r) => r.v < last).sort((a, b) => b.v - a.v).slice(0, 2);
+
+    /* ONE RULE PER PRICE. When the 60-day window contains the year's extreme —
+       which is exactly what happens on a name making new highs, i.e. the case a
+       member cares about most — the 60-day and 52-week rows are the SAME NUMBER,
+       and the card printed 235.74 twice on two rules as though they were two
+       levels. They are one level with two names, so they are drawn once, with
+       the wider window's name (it is the stronger statement) and the narrower
+       one folded into the label. */
+    const merged: { label: string; v: number; side: "up" | "down" }[] = [];
+    for (const r of rows) {
+      const twin = merged.find((m) => Math.abs(m.v - r.v) < 0.005 && m.side === r.side);
+      if (twin) {
+        if (!twin.label.includes("·")) twin.label = `${twin.label} · ${r.label}`;
+        continue;
+      }
+      merged.push({ ...r });
+    }
+
+    const above = merged.filter((r) => r.v > last).sort((a, b) => b.v - a.v).slice(0, 2);
+    const below = merged.filter((r) => r.v < last).sort((a, b) => b.v - a.v).slice(0, 2);
     if (above.length === 0 && below.length === 0) return null;
     return { above, below };
   }, [closes, last]);

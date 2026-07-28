@@ -19,6 +19,7 @@
  */
 
 import { useState } from "react";
+import { useClientNow } from "@/lib/research/clock";
 import { ExternalLink, Building2, Users, MapPin, Calendar, Globe } from "lucide-react";
 import type { ResearchPayload } from "@/lib/research/types";
 import type { NewsHeadline } from "@/lib/market/client";
@@ -27,57 +28,17 @@ import {
   RevenueMarginChart,
   AssetsLiabilitiesChart,
   AnnualBarsChart,
-  PeComparisonChart,
 } from "@/components/research/ResearchCharts";
 
-/* ─────────────────────────────── key stats ─────────────────────────────── */
-
-function fmtX(v: number | null): string {
-  return v == null || v <= 0 ? "—" : `${v.toFixed(1)}×`;
-}
-function fmtPrice(v: number | null): string {
-  return v == null ? "—" : `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function KeyStatsGrid({ k }: { k: ResearchPayload["keyStats"] }) {
-  const stats: { label: string; value: string; hint?: string }[] = [
-    { label: "P/E", value: fmtX(k.pe), hint: "price ÷ earnings" },
-    { label: "P/B", value: fmtX(k.pb), hint: "price ÷ book value" },
-    { label: "P/S", value: fmtX(k.ps), hint: "price ÷ sales" },
-    { label: "PEG", value: k.peg == null || k.peg <= 0 ? "—" : k.peg.toFixed(2), hint: "value vs growth" },
-    { label: "52w low", value: fmtPrice(k.week52Low) },
-    { label: "52w high", value: fmtPrice(k.week52High) },
-    { label: "Market cap", value: k.marketCapText ?? "—" },
-    { label: "Dividend yield", value: k.divYield == null ? "—" : `${k.divYield.toFixed(2)}%` },
-  ];
-  // A ruled definition ledger: label + plain-English hint on the left, the mono
-  // figure on the right. Two ruled columns on sm+ — the rules are the grid, so
-  // no cell is ever a box.
-  return (
-    <dl className="grid grid-cols-1 border-b border-sand sm:grid-cols-2 sm:gap-x-10">
-      {stats.map((s) => (
-        <div
-          key={s.label}
-          className="flex items-baseline justify-between gap-4 border-t border-sand py-3"
-        >
-          <dt className="min-w-0">
-            <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-soft">
-              {s.label}
-            </span>
-            {s.hint && <span className="mt-0.5 block text-[10.5px] text-soft/80">{s.hint}</span>}
-          </dt>
-          <dd
-            className={`shrink-0 font-mono text-[15px] font-semibold tabular-nums ${
-              s.value === "—" ? "text-soft/60" : "text-ink"
-            }`}
-          >
-            {s.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
+/* ─────────────────────────────── key stats ─────────────────────────────────
+   KeyStatsGrid IS GONE (ticker overhaul, P3). It printed P/E, P/B, P/S, PEG,
+   market cap and the 52-week range on the Fundamentals subpage — every one of
+   which the same subpage already draws as a board object (the valuation compare
+   bars) or the head above it already prints (market cap, P/E, the 52-week
+   range). Eight rows of a second opinion on the same numbers is most of what
+   made this panel eleven thousand pixels tall, and when the two disagreed —
+   which they did, on the 52-week low — the member had no way to tell which one
+   to believe. The board objects are the single statement now. */
 
 /* ───────────────────────────── company profile ─────────────────────────── */
 
@@ -159,9 +120,13 @@ export function CompanyProfileCard({
 
 /* ─────────────────────────────────── news ──────────────────────────────── */
 
-function timeAgo(iso: string | null): string {
-  if (!iso) return "";
-  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+/* NO WALL CLOCK IN RENDER. `Date.now()` read during render makes the server and
+   the client disagree about what "today" is, and on a Sunday it happily labelled
+   Friday's headline "today". The clock is read ONCE after mount and passed in;
+   until then the age is simply not printed. */
+function timeAgo(iso: string | null, now: number | null): string {
+  if (!iso || now == null) return "";
+  const d = Math.floor((now - new Date(iso).getTime()) / 86400000);
   if (d <= 0) return "today";
   if (d === 1) return "yesterday";
   if (d < 7) return `${d}d ago`;
@@ -169,6 +134,7 @@ function timeAgo(iso: string | null): string {
 }
 
 export function NewsList({ news }: { news: NewsHeadline[] }) {
+  const now = useClientNow();
   if (news.length === 0) {
     return <p className="f0-rule-top pt-4 text-[13px] text-soft">No recent headlines found for this company.</p>;
   }
@@ -189,8 +155,8 @@ export function NewsList({ news }: { news: NewsHeadline[] }) {
               </span>
               <span className="mt-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-soft">
                 {n.publisher && <span className="truncate">{n.publisher}</span>}
-                {n.publisher && n.published && <span aria-hidden>·</span>}
-                <span>{timeAgo(n.published)}</span>
+                {n.publisher && n.published && now != null && <span aria-hidden>·</span>}
+                <span>{timeAgo(n.published, now)}</span>
                 <ExternalLink className="h-3 w-3 shrink-0" />
               </span>
             </span>
@@ -224,14 +190,16 @@ function View({ title, note, children }: { title: string; note?: string; childre
   );
 }
 
+/**
+ * THE CHARTS. Three views, not four: the P/E-vs-industry-vs-market chart that
+ * used to close this block is the SAME comparison the "Valuation vs peers" bars
+ * make at the top of the Fundamentals subpage, off the same two medians. One of
+ * them had to go and the board object is the one on the board.
+ */
 export function FinancialsSection({
   charts,
-  keyStats,
-  medians,
 }: {
   charts: ResearchPayload["charts"];
-  keyStats: ResearchPayload["keyStats"];
-  medians: ResearchPayload["sectorMedians"];
 }) {
   const [period, setPeriod] = useState<"quarterly" | "yearly">("quarterly");
 
@@ -270,19 +238,6 @@ export function FinancialsSection({
       <View title="Annual earnings per share">
         <AnnualBarsChart annual={charts.annual} metric="eps" />
       </View>
-      <View
-        title="P/E vs industry vs market"
-        note={`Industry and market medians are computed in-house from the ${medians.marketN} companies the club has studied so far — they sharpen as more get analysed.`}
-      >
-        <PeComparisonChart
-          company={keyStats.pe}
-          industry={medians.sectorMedian}
-          market={medians.marketMedian}
-          sectorN={medians.sectorN}
-          marketN={medians.marketN}
-        />
-      </View>
-
       {charts.dividends.length > 0 && (
         <View title="Recent dividends">
           <dl className="border-b border-sand">

@@ -36,12 +36,12 @@ import ResearchTabBar, {
 import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
 import ContinuePath from "@/components/learn/ContinuePath";
 import {
-  KeyStatsGrid,
   CompanyProfileCard,
   NewsList,
   FinancialsSection,
 } from "@/components/research/ResearchSections";
 import { fetchResearch, type ResearchPayload } from "@/lib/research/types";
+import { proseName } from "@/lib/research/labels";
 import { fetchClubNewsForTicker } from "@/lib/news/client";
 import { KindChip } from "@/components/news/NewsCard";
 import { timeAgo as newsTimeAgo, type NewsCardData } from "@/lib/news/types";
@@ -72,16 +72,26 @@ const COMMENT_SELECT =
 
 /** Dynamic back-breadcrumb (J2 fix) — reflect the true referrer instead of
  *  always claiming "Community Watchlist". Keyed by an explicit `?from=` param
- *  (deep-links set it) with a same-origin referrer fallback. */
+ *  (deep-links set it) with a same-origin referrer fallback.
+ *
+ *  THE DEFAULT USED TO LIE. Home is where most ticker pages are opened from and
+ *  there was no entry for it, so the chip claimed "COMMUNITY WATCHLIST" and sent
+ *  the member somewhere they had never been. Home is now a first-class target
+ *  AND the fallback: a back control that points at Home is at worst uninformative,
+ *  where one that points at a list you weren't on is wrong. */
 type BackTarget = { href: string; label: string };
 const BACK_MAP: Record<string, BackTarget> = {
+  dashboard: { href: "/dashboard", label: "Home" },
+  home: { href: "/dashboard", label: "Home" },
   screener: { href: "/screener", label: "Stock Finder" },
   community: { href: "/watchlist/community", label: "Community Watchlist" },
   watchlist: { href: "/watchlist", label: "My Watchlist" },
   discover: { href: "/discover", label: "Discover" },
   news: { href: "/news", label: "Newsroom" },
+  alerts: { href: "/alerts", label: "Alerts" },
+  leaderboard: { href: "/leaderboard", label: "Leaderboard" },
 };
-const BACK_DEFAULT: BackTarget = BACK_MAP.community;
+const BACK_DEFAULT: BackTarget = BACK_MAP.dashboard;
 
 function backFromReferrer(): BackTarget | null {
   try {
@@ -91,11 +101,14 @@ function backFromReferrer(): BackTarget | null {
     const ref = new URL(document.referrer);
     if (ref.origin !== window.location.origin) return null;
     const p = ref.pathname;
+    if (p.startsWith("/dashboard")) return BACK_MAP.dashboard;
     if (p.startsWith("/screener")) return BACK_MAP.screener;
     if (p.startsWith("/watchlist/community")) return BACK_MAP.community;
     if (p.startsWith("/watchlist")) return BACK_MAP.watchlist;
     if (p.startsWith("/discover")) return BACK_MAP.discover;
     if (p.startsWith("/news")) return BACK_MAP.news;
+    if (p.startsWith("/alerts")) return BACK_MAP.alerts;
+    if (p.startsWith("/leaderboard")) return BACK_MAP.leaderboard;
     if (p.startsWith("/community")) return { href: "/community", label: "Community" };
   } catch {
     /* ignore — keep default */
@@ -202,8 +215,15 @@ export default function ResearchClient({
   // momentum / a warm cache.
   const [research, setResearch] = useState<ResearchPayload | null>(initialResearch);
   const [researchResolved, setResearchResolved] = useState(initialResearch != null);
+  const [familyId, setFamilyId] = useState<string | null>(null);
   const [bars, setBars] = useState<MarketBar[]>([]);
-  const [barsState, setBarsState] = useState<"idle" | "loading" | "done">("idle");
+  /* FAIL CLOSED. The old union had no terminal failure: `barsState` only ever
+     reached "done" on a resolved fetch, and the Technicals panel gated on
+     `research && barsState === "done"`. A ticker whose aggregate 504'd — or
+     whose bar feed came back empty — therefore sat on an animated skeleton
+     FOREVER, with no message, no retry and nothing on screen that admitted
+     anything had gone wrong. "error" is the state that was missing. */
+  const [barsState, setBarsState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [news, setNews] = useState<NewsHeadline[]>([]);
   const [clubNews, setClubNews] = useState<NewsCardData[]>([]);
   const [newsState, setNewsState] = useState<"idle" | "loading" | "done">("idle");
@@ -228,6 +248,7 @@ export default function ResearchClient({
   // history entry per tab. Only tab keys are matched, so the page's existing
   // `#research-notes` / `#practice` anchors still behave as anchors.
   const [tab, setTab] = useState<ResearchTabKey>("overview");
+  const tabRail = useRef<HTMLDivElement>(null);
 
   const selectTab = useCallback((k: ResearchTabKey) => {
     setTab(k);
@@ -238,6 +259,34 @@ export default function ResearchClient({
     } catch {
       /* history unavailable — the tab still switches */
     }
+    /* KEEP THE RAIL UNDER YOUR THUMB. The tab strip is sticky WITHIN its own
+       container, so switching from a tall panel to a short one could leave the
+       scroll position past the container's end — the rail you just tapped
+       vanished upward and the member landed mid-way down a panel they hadn't
+       chosen.
+       TWO FRAMES, NOT ONE: the new panel has to COMMIT before the rail's
+       position means anything. Measuring on the next frame reads the OLD
+       layout, computes a target for a document that is about to get shorter,
+       and the browser then clamps the scroll somewhere past it — which is the
+       same bug wearing a different hat. */
+    const settle = () => {
+      const col = tabRail.current;
+      const rail = col?.querySelector<HTMLElement>('[role="tablist"]');
+      if (!col || !rail) return;
+      // The rail is PINNED at 56 for as long as its column is on screen, so a
+      // rail sitting above that means the scroll has run off the end of the
+      // column. Bring the column's own top back to the pin.
+      if (rail.getBoundingClientRect().top < 56) {
+        // INSTANT, not smooth: a smooth scroll is still travelling while the
+        // panel's own late content (charts, images) changes the document height
+        // under it, and the browser clamps the destination somewhere short.
+        // You tapped a tab; being at it is the whole point.
+        window.scrollTo({ top: window.scrollY + col.getBoundingClientRect().top - 56 });
+      }
+    };
+    requestAnimationFrame(() => requestAnimationFrame(settle));
+    // One more pass once the panel's own late layout has landed.
+    setTimeout(settle, 260);
   }, []);
 
   const [back, setBack] = useState<BackTarget>(BACK_DEFAULT);
@@ -250,14 +299,19 @@ export default function ResearchClient({
   // stay eager. Tabs change what is COMPOSED, never what is fetched — switching
   // a tab must not stall on a request.
   const ensureTabData = useCallback(
-    (lane: "charts" | "news") => {
-      if (lane === "charts" && !barsReq.current) {
+    (lane: "charts" | "news", force = false) => {
+      if (lane === "charts" && (!barsReq.current || force)) {
         barsReq.current = true;
         setBarsState("loading");
-        fetchBars(ticker, "2y").then((b) => {
-          setBars(b);
-          setBarsState("done");
-        });
+        fetchBars(ticker, "2y").then(
+          (b) => {
+            setBars(b);
+            // An empty series is a FAILURE for this panel, not a success with
+            // nothing in it — every listed name has a price history.
+            setBarsState(b.length >= 2 ? "done" : "error");
+          },
+          () => setBarsState("error")
+        );
       }
       if (lane === "news" && !newsReq.current) {
         newsReq.current = true;
@@ -302,6 +356,7 @@ export default function ResearchClient({
         .maybeSingle();
       setRole(profile?.role || "parent");
       setAgeGroup(profile?.age_group ?? null);
+      setFamilyId(profile?.family_id ?? null);
       const t = await getClubTier(supabase, profile?.family_id);
       setTier(t);
     } catch {
@@ -359,12 +414,32 @@ export default function ResearchClient({
     fetchQuote(ticker).then(setQuote, swallow);
     fetchResearch(ticker).then(
       (r) => {
-        setResearch(r);
+        // Never let a partial OVERWRITE a complete payload the server already
+        // seeded — the partial is a floor, not a correction.
+        setResearch((prev) => (r?.partial && prev && !prev.partial ? prev : r ?? prev));
         setResearchResolved(true);
       },
       () => setResearchResolved(true)
     );
   }, [supabase, ticker]);
+
+  /* THE PARTIAL SETTLES ITSELF. A cold ticker paints from the in-house half
+     while the vendor write finishes out of band; one re-read a few seconds later
+     picks up the completed row so the member gets the real page without having
+     to know to reload. Exactly one retry — if it is still partial, the surfaces
+     say so and stop pretending. */
+  const partial = research?.partial === true;
+  const retriedPartial = useRef(false);
+  useEffect(() => {
+    if (!partial || retriedPartial.current) return;
+    retriedPartial.current = true;
+    const t = setTimeout(() => {
+      fetchResearch(ticker).then((r) => {
+        if (r && !r.partial) setResearch(r);
+      }, () => {});
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [partial, ticker]);
 
   useEffect(() => {
     // load() setStates only after awaits (data arrives async) — the initial
@@ -404,6 +479,9 @@ export default function ResearchClient({
     () => research?.company.name || entries.find((e) => e.company_name)?.company_name || ticker,
     [research, entries, ticker]
   );
+  /** The name a SENTENCE uses — "Nvidia", not "Nvidia Corp Common Stock". The
+   *  identity heading keeps the registered name; prose gets the short one. */
+  const shortName = useMemo(() => proseName(companyName, ticker), [companyName, ticker]);
 
   const isKid = ageGroup === "kids";
   // Default to LOCKED until the tier resolves, so a server-seeded first paint can
@@ -469,8 +547,70 @@ export default function ResearchClient({
   const adminEntry = entries.find((e) => e.kind === "admin") || null;
   const ungraded = !!research && research.insufficient && research.grades.overall.graded === 0;
 
+  /* THE CLUB COLUMN — what the club thinks, and what the club is saying.
+     It USED to sit between the head and the tab strip, which put 48% of the
+     first mobile screen in front of the analysis: a member arriving at $NVDA
+     scrolled past a full-width "Nobody has written up $NVDA yet" in display type
+     before reaching a single number. Same two objects, same data, moved AFTER
+     the analysis in document order — which on a phone is where a community layer
+     belongs relative to the thing being discussed, and on a wide screen becomes
+     the right-hand rail where it is visible the whole time. */
+  const clubColumn = (
+    <div className="space-y-8">
+      <ClubRead
+        data={club}
+        showSentiment={!isKid}
+        /* ONE SENTIMENT OBJECT. The stance picker used to be its own section
+           further down the Overview panel, so a member met the club's split, a
+           second sentiment bar column inside the debate, and a third control to
+           declare their own position — three readings of one question. The
+           picker now lives INSIDE the club read: you see where the club stands
+           and you take your side in the same object. */
+        stance={
+          !isKid ? (
+            <ChangedMyMind
+              supabase={supabase}
+              ticker={ticker}
+              userId={userId}
+              canFlip={canVote && !isKid}
+            />
+          ) : null
+        }
+      />
+
+      <TickerDiscussion
+        ticker={ticker}
+        companyName={shortName}
+        comments={comments}
+        commentsResolved={commentsResolved}
+        userId={userId}
+        role={role}
+        canPost={canVote}
+        entitlementsResolved={tierResolved}
+        draft={draft}
+        draftType={draftType}
+        posting={posting}
+        err={err}
+        onDraft={(v) => {
+          setDraft(v);
+          if (err) setErr("");
+        }}
+        onDraftType={setDraftType}
+        onPost={post}
+        onRemove={remove}
+      />
+    </div>
+  );
+
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
+    /* THE DESKTOP GRID. At 1280 this page used to be 768px of content between a
+       376px sidebar and a 136px gutter — a phone layout centred in a desk
+       window, with the club column stacked under the analysis and 1,900px of
+       empty margin either side of it. The measure is still capped for reading,
+       but the shell now widens past the phone column and the body splits: the
+       analysis holds the reading measure on the left, the club rail takes the
+       space that was doing nothing on the right. */
+    <div className="mx-auto w-full max-w-3xl px-4 pb-20 sm:px-6 lg:max-w-[1160px]">
       {/* ── BOARD 03 — the ticker head, rebuilt to the mockup ────────────────
           Back / watch / share row, logo + name + club-rank pill, the mark, the
           watching stack, the chart CARD with its member marks and filled range
@@ -481,8 +621,11 @@ export default function ResearchClient({
         quote={quote}
         research={research}
         dailyBars={bars}
+        barsResolved={barsState === "done" || barsState === "error"}
         supabase={supabase}
         back={back}
+        familyId={familyId}
+        userId={userId}
         clubRank={club.rank}
         watchers={club.watchers}
         faces={club.faces}
@@ -499,51 +642,26 @@ export default function ResearchClient({
         levels={researchLevels(quote?.price ?? null, keyStats)}
       />
 
-      {/* ── THE COMMUNITY LAYER — persistent, ABOVE the analysis ─────────────
-          Both blocks sit OUTSIDE the tab system, so they are on screen whichever
-          analysis tab is open. Placing them before the tab strip is what makes
-          the discussion reachable at 390px without scrolling past a whole panel
-          — and it is the honest order for a community product: what the club
-          thinks and what the club is saying come before the analyst tabs. */}
-      <div className="mt-8 space-y-8">
-        <ClubRead data={club} showSentiment={!isKid} />
-
-        <TickerDiscussion
-          ticker={ticker}
-          companyName={companyName}
-          comments={comments}
-          commentsResolved={commentsResolved}
-          userId={userId}
-          role={role}
-          canPost={canVote}
-          draft={draft}
-          draftType={draftType}
-          posting={posting}
-          err={err}
-          onDraft={(v) => {
-            setDraft(v);
-            if (err) setErr("");
-          }}
-          onDraftType={setDraftType}
-          onPost={post}
-          onRemove={remove}
-        />
-      </div>
-
-      {/* ── THE ANALYSIS — four tabbed subpages ──────────────────────────────
-          Everything from strengths-and-weaknesses down used to be one vertical
-          scroll. It is now real navigation the member clicks through. */}
-      <div className="mt-10">
-        <ResearchTabBar
-          active={tab}
-          onSelect={selectTab}
-          head={{
-            ticker,
-            companyName,
-            price: quote?.price ?? null,
-            changePct: quote?.changePercent ?? null,
-          }}
-        />
+      <div className="mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10">
+        {/* ── THE ANALYSIS — five tabbed subpages ────────────────────────────
+            Everything from strengths-and-weaknesses down used to be one vertical
+            scroll. It is now real navigation the member clicks through. */}
+        {/* The ref sits on THE COLUMN, not on the rail — `position: sticky` only
+            travels inside its own containing block, so a wrapper hugging the
+            rail would pin it to nothing and it would scroll away on the first
+            swipe. The column is the region the rail belongs to, and it is what
+            we scroll back to when a tab change strands it. */}
+        <div ref={tabRail} className="min-w-0">
+          <ResearchTabBar
+            active={tab}
+            onSelect={selectTab}
+            head={{
+              ticker,
+              companyName,
+              price: quote?.price ?? null,
+              changePct: quote?.changePercent ?? null,
+            }}
+          />
 
         {tab === "overview" && (
           <div
@@ -559,14 +677,28 @@ export default function ResearchClient({
                 member across — the same read printed twice on one page is what
                 made this scroll interminable. */}
             {research ? (
-              ungraded ? (
+              partial ? (
+                /* STILL ARRIVING ≠ NOTHING TO REPORT. A cold ticker paints from
+                   the in-house half while the vendor row finishes writing behind
+                   the response. Saying "this company doesn't publish financials"
+                   here would be a flat lie about a company we simply haven't
+                   read yet. */
+                <Card radius="md" className="px-4 py-3.5" aria-busy="true">
+                  <CardLabel>Scorecard</CardLabel>
+                  <p className="mt-2 text-[13px] leading-relaxed text-soft">
+                    We&apos;re pulling {shortName}&apos;s filings in now — this is the
+                    first time the club has opened this name. The price, chart and
+                    news below are live already; the scorecard lands in a moment.
+                  </p>
+                </Card>
+              ) : ungraded ? (
                 <Card radius="md" className="px-4 py-3.5">
                   <CardLabel>Scorecard</CardLabel>
                   <p className="mt-2 text-[13px] leading-relaxed text-soft">
-                    We don&apos;t have enough published financials to grade {companyName}{" "}
+                    We don&apos;t have enough published financials to grade {shortName}{" "}
                     yet — many smaller companies and funds don&apos;t report the numbers
                     our scorecard needs. The price chart, news, and community research
-                    below still work.
+                    still work.
                   </p>
                 </Card>
               ) : (
@@ -601,8 +733,8 @@ export default function ResearchClient({
             ) : researchResolved ? (
               <Card radius="md" className="px-4 py-3.5">
                 <p className="text-[13px] leading-relaxed text-soft">
-                  The scorecard for {companyName} is updating and will be back shortly.
-                  The price, charts, news, and community research below still work.
+                  The scorecard for {shortName} is updating and will be back shortly.
+                  The price, charts, news, and community research still work.
                 </p>
               </Card>
             ) : (
@@ -730,18 +862,9 @@ export default function ResearchClient({
               canParticipate={canVote && !isKid}
             />
 
-            {/* Changed My Mind — the member's stance + flip flow (kid-walled) +
-                the club's recent "changed their mind" moments. */}
-            {!isKid && (
-              <section className="f0-rule-top pt-6">
-                <ChangedMyMind
-                  supabase={supabase}
-                  ticker={ticker}
-                  userId={userId}
-                  canFlip={canVote && !isKid}
-                />
-              </section>
-            )}
+            {/* Changed My Mind used to open its own section here. It is now part
+                of the club-read block (see `clubColumn`) — one place a member
+                reads the club's position and states their own. */}
 
             {/* On the board — one card, rows inside it */}
             {entries.length > 0 && (
@@ -797,7 +920,7 @@ export default function ResearchClient({
             {/* About — description + the company definition ledger */}
             {research?.company.description && (
               <section>
-                <SectionMark>About {companyName}</SectionMark>
+                <SectionMark>About {shortName}</SectionMark>
                 <Card radius="md" className="mt-3 px-4 py-3.5">
                   <CompanyProfileCard company={research.company} kidsMode={isKid} />
                 </Card>
@@ -814,8 +937,35 @@ export default function ResearchClient({
             tabIndex={0}
             className="mt-7 focus:outline-none"
           >
-            {research && barsState === "done" ? (
-              <PriceTechnicals symbol={ticker} momentum={research.momentum} bars={bars} />
+            {/* THE SKELETON HAS A DEADLINE NOW. This panel used to require BOTH
+                `research` and a resolved bars fetch — so a ticker whose
+                aggregate timed out pulsed forever with nothing to say. The two
+                are separated: the tape is drawn from the bars alone (momentum
+                measures abstain when the aggregate is missing), and a bars lane
+                that fails says so and offers the retry. */}
+            {barsState === "done" ? (
+              <PriceTechnicals
+                symbol={ticker}
+                momentum={research?.momentum}
+                bars={bars}
+                barsOwned
+              />
+            ) : barsState === "error" ? (
+              <Card radius="md" className="px-5 py-8">
+                <CardLabel>Price history</CardLabel>
+                <p className="mt-2.5 text-[13px] leading-relaxed text-soft">
+                  We couldn&apos;t load {shortName}&apos;s price history, so there
+                  is nothing honest to draw here. Everything on this page that
+                  doesn&apos;t depend on the daily series still works.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => ensureTabData("charts", true)}
+                  className="f0-focus mt-4 rounded-full border border-sand bg-card px-4 py-2 text-[12.5px] font-bold text-ink transition-colors hover:border-volt-300 hover:text-gold-700"
+                >
+                  Try again
+                </button>
+              </Card>
             ) : (
               <div className="space-y-3" aria-busy="true">
                 <Card className="h-[104px] motion-safe:animate-pulse" />
@@ -853,37 +1003,28 @@ export default function ResearchClient({
               </div>
             )}
 
-            {keyStats && (
-              <section>
-                <SectionMark>Key stats</SectionMark>
-                <Card radius="md" className="mt-3 px-4 py-1">
-                  <KeyStatsGrid k={keyStats} />
-                </Card>
-              </section>
-            )}
+            {/* "Key stats" was here — eight rows restating P/E, P/B, P/S, PEG,
+                market cap and the 52-week range that the head above and the
+                valuation bars beside them already say. See ResearchSections. */}
 
             <section>
               <SectionMark>The charts</SectionMark>
               <div className="mt-3">
-                {!research || !keyStats ? (
+                {!research ? (
                   <Card radius="md" className="h-64 motion-safe:animate-pulse" />
-                ) : research.insufficient ? (
+                ) : research.insufficient || research.partial ? (
                   <Card radius="md" className="px-4 py-8">
                     <p className="text-center text-[13px] leading-relaxed text-soft">
-                      We don&apos;t have enough published financials for {companyName} to
-                      chart yet — many smaller companies and funds don&apos;t report the
-                      quarterly numbers these charts need.
+                      {research.partial
+                        ? `We're pulling ${shortName}'s filings in now — the charts land as soon as they arrive.`
+                        : `We don't have enough published financials for ${shortName} to chart yet — many smaller companies and funds don't report the quarterly numbers these charts need.`}
                     </p>
                   </Card>
                 ) : locked ? (
                   <UpsellCard context="watchlist" />
                 ) : (
                   <Card radius="md" className="px-4 py-3.5">
-                    <FinancialsSection
-                      charts={research.charts}
-                      keyStats={keyStats}
-                      medians={research.sectorMedians}
-                    />
+                    <FinancialsSection charts={research.charts} />
                   </Card>
                 )}
               </div>
@@ -905,7 +1046,7 @@ export default function ResearchClient({
           >
             <KaiReportPanel
               ticker={ticker}
-              companyName={companyName}
+              companyName={shortName}
               report={report}
               // The tier gate is part of "resolved" here: `locked` defaults to
               // TRUE until the tier read lands, so without this a paying member
@@ -982,12 +1123,19 @@ export default function ResearchClient({
             )}
           </div>
         )}
-      </div>
 
-      {/* Practice — the ticker-relevant Continue Path lesson (amendment #3).
-          Outside the tabs so the "Practice" action always resolves. */}
-      <div id="practice" className="mt-12 scroll-mt-20">
-        <ContinuePath pickup={null} ticker={ticker} />
+          {/* Practice — the ticker-relevant Continue Path lesson (amendment #3).
+              Outside the tabs so the "Practice" action always resolves. */}
+          <div id="practice" className="mt-12 scroll-mt-20">
+            <ContinuePath pickup={null} ticker={ticker} />
+          </div>
+        </div>
+
+        {/* ── THE CLUB RAIL ────────────────────────────────────────────────
+            AFTER the analysis in document order (so a phone reaches the numbers
+            first) and beside it from `lg` up (so a desk never loses sight of
+            what the club is saying). */}
+        <aside className="mt-12 min-w-0 lg:sticky lg:top-20 lg:mt-0">{clubColumn}</aside>
       </div>
 
       {/* The way out — nine identity marks and nine deltas (canvas TickerTile).
