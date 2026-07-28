@@ -13,7 +13,7 @@ import PortfolioSummary, {
 } from "@/components/simulator/PortfolioSummary";
 import PositionsList from "@/components/simulator/PositionsList";
 import TradeHistory from "@/components/simulator/TradeHistory";
-import { SegmentedRail } from "@/components/canvas2";
+import { Card, PillTabs, RangePills } from "@/components/research/board";
 import {
   MarketEngine,
   SYMBOL_PRESETS,
@@ -68,7 +68,6 @@ const CandlestickChart = dynamic(
 );
 
 const SYMBOLS = Object.keys(SYMBOL_PRESETS);
-const SYMBOL_OPTIONS = SYMBOLS.map((s) => ({ id: s, label: `$${s}` }));
 
 type LedgerTab = "positions" | "history";
 
@@ -449,14 +448,12 @@ export default function SimulatorPage() {
           equal-column card grid, and neither side is boxed. */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_310px]">
         <div className="min-w-0 space-y-4">
-          {/* Instrument — the tape you're watching. One-of-N, so it is the
-              shared rail: one tab stop, arrows move within it. */}
-          <SegmentedRail<string>
-            options={SYMBOL_OPTIONS}
-            value={symbol}
-            onChange={setSymbol}
+          {/* Instrument — the tape you're watching, as the board's pills. */}
+          <RangePills<string>
+            ranges={SYMBOLS}
+            active={symbol}
+            onSelect={setSymbol}
             ariaLabel="Instrument"
-            barClassName="bg-accent"
           />
 
           <TimeControls
@@ -480,36 +477,39 @@ export default function SimulatorPage() {
             />
           </m.div>
 
-          {/* The mark — every number mono, the move in the price ramp. */}
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[12px] tabular-nums text-soft">
-            <span className="font-display text-[13px] font-extrabold tracking-tight text-ink">
-              ${symbol}
-            </span>
-            <span className="text-[15px] font-semibold text-ink">
-              {currentPrice > 0 ? `$${currentPrice.toFixed(2)}` : "—"}
-            </span>
-            {barMove != null && prevClose ? (
-              <span
-                className={`font-semibold ${
-                  barMove === 0
-                    ? "text-soft"
-                    : barMove > 0
-                      ? "text-price-up"
-                      : "text-price-down"
-                }`}
-              >
-                {barMove > 0 ? "+" : ""}
-                {barMove.toFixed(2)} ({barMove > 0 ? "+" : ""}
-                {((barMove / prevClose) * 100).toFixed(2)}%)
+          {/* The mark — every number mono, the move in the price ramp, inside
+              the board's card so it reads as one object under the tape. */}
+          <Card radius="sm" className="px-4 py-3">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[12px] tabular-nums text-soft">
+              <span className="font-display text-[13px] font-extrabold tracking-tight text-ink">
+                ${symbol}
               </span>
-            ) : (
-              <span>—</span>
-            )}
-            <span className="uppercase tracking-[0.14em]">
-              Vol{" "}
-              {bars.length > 0 ? bars[bars.length - 1].volume.toLocaleString() : "—"}
-            </span>
-          </div>
+              <span className="text-[15px] font-semibold text-ink">
+                {currentPrice > 0 ? `$${currentPrice.toFixed(2)}` : "—"}
+              </span>
+              {barMove != null && prevClose ? (
+                <span
+                  className={`font-semibold ${
+                    barMove === 0
+                      ? "text-soft"
+                      : barMove > 0
+                        ? "text-price-up"
+                        : "text-price-down"
+                  }`}
+                >
+                  {barMove > 0 ? "+" : ""}
+                  {barMove.toFixed(2)} ({barMove > 0 ? "+" : ""}
+                  {((barMove / prevClose) * 100).toFixed(2)}%)
+                </span>
+              ) : (
+                <span>—</span>
+              )}
+              <span className="uppercase tracking-[0.14em]">
+                Vol{" "}
+                {bars.length > 0 ? bars[bars.length - 1].volume.toLocaleString() : "—"}
+              </span>
+            </div>
+          </Card>
         </div>
 
         <div className="min-w-0">
@@ -522,55 +522,34 @@ export default function SimulatorPage() {
         </div>
       </div>
 
-      {/* THE LEDGER — canvas "1a Portfolio" (L234-238) tabs the account record
-          rather than stacking it: an underline rule, not a pill box. These are
-          real tabs over real panels, so the semantics are tablist/tab/tabpanel
-          (SegmentedRail is a radiogroup and would be the wrong contract here);
-          the geometry is the shared `.f0-seg-bar` so the mark is identical. */}
+      {/* THE ACCOUNT RECORD — tabbed rather than stacked, as filled pills to
+          match the owner's mockup. These are real tabs over real panels, so the
+          semantics stay tablist/tab/tabpanel. */}
       <section aria-label="Account record">
-        <div role="tablist" aria-label="Account record" className="flex gap-6 border-b border-sand">
-          {(
-            [
-              { id: "positions" as const, label: "Open positions", count: portfolio.positions.length },
-              { id: "history" as const, label: "Trade history", count: portfolio.trades.length },
-            ]
-          ).map((t) => {
-            const on = ledgerTab === t.id;
-            return (
-              <button
-                key={t.id}
-                role="tab"
-                id={`sim-tab-${t.id}`}
-                aria-selected={on}
-                aria-controls={`sim-panel-${t.id}`}
-                tabIndex={on ? 0 : -1}
-                onClick={() => setLedgerTab(t.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-                    e.preventDefault();
-                    setLedgerTab((v) => (v === "positions" ? "history" : "positions"));
-                  }
-                }}
-                className={`f0-focus relative -mb-px shrink-0 pb-3 font-display text-[11px] font-extrabold uppercase tracking-[0.12em] transition-colors ${
-                  on ? "text-ink" : "text-soft hover:text-ink"
-                }`}
-              >
-                <span className="whitespace-nowrap">
-                  {t.label}
-                  {t.count > 0 ? ` · ${t.count}` : ""}
-                </span>
-                {on && <span className="f0-seg-bar bg-accent" aria-hidden />}
-              </button>
-            );
-          })}
-        </div>
+        <PillTabs<LedgerTab>
+          tabs={[
+            {
+              key: "positions",
+              label: `Open positions${portfolio.positions.length > 0 ? ` · ${portfolio.positions.length}` : ""}`,
+            },
+            {
+              key: "history",
+              label: `Trade history${portfolio.trades.length > 0 ? ` · ${portfolio.trades.length}` : ""}`,
+            },
+          ]}
+          active={ledgerTab}
+          onSelect={setLedgerTab}
+          ariaLabel="Account record"
+          tabId={(k) => `sim-tab-${k}`}
+          panelId={(k) => `sim-panel-${k}`}
+        />
 
         <div
           role="tabpanel"
           id="sim-panel-positions"
           aria-labelledby="sim-tab-positions"
           hidden={ledgerTab !== "positions"}
-          className="pt-1"
+          className="pt-3"
         >
           <PositionsList
             positions={portfolio.positions}
@@ -583,7 +562,7 @@ export default function SimulatorPage() {
           id="sim-panel-history"
           aria-labelledby="sim-tab-history"
           hidden={ledgerTab !== "history"}
-          className="pt-1"
+          className="pt-3"
         >
           <TradeHistory trades={portfolio.trades} />
         </div>

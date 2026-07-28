@@ -39,9 +39,13 @@ export default function Loading() {
         <div className="flex-1 px-4 py-5">
           <div className="mx-auto max-w-2xl">
             <div className="f0-hero-field h-44 w-full animate-pulse" />
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-6 h-2.5 w-24 animate-pulse rounded bg-sand" />
+            <div className="mt-3 flex flex-wrap gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-8 w-44 animate-pulse rounded-lg bg-sand/70" />
+                <div
+                  key={i}
+                  className="h-8 w-44 animate-pulse rounded-full border border-sand bg-card"
+                />
               ))}
             </div>
           </div>

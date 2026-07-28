@@ -2,13 +2,19 @@
 
 import * as React from "react";
 
+import { Card, CardLabel } from "@/components/research/board";
+
 /* ══════════════════════════════════════════════════════════════════════════
    PRACTICE — the shared vocabulary for the simulator cluster (Trading Floor,
    Pattern Practice, Simbot).
 
-   The register bans generic card containers and equal-column card grids, so
-   every object in this cluster is built from: a section rule, hairline ledger
-   rows, underlined mono fields and pill chips. Nothing is a box.
+   Each object in this cluster is a CARD carrying a brand-orange mono label,
+   matching the owner's mockup, with hairline rows, underlined mono fields and
+   pill chips inside it. An earlier pass built these as un-boxed section rules
+   on bare paper and the owner rejected that reading — `SimSection` is now the
+   board's card, so every consumer (the order ticket, the positions list, the
+   trade history, the time controls, the drawing tools, the scenario panels)
+   picks the change up from one place.
 
    COLOUR LAW (hard):
      green / red = PRICE only · lime = community sentiment only ·
@@ -27,7 +33,7 @@ import * as React from "react";
    with `self-start`, which is what `wrap` does below.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/** A section marker: charged tick + label + hairline running to the edge. */
+/** One object on the practice surface: a card with a brand mono label. */
 export function SimSection({
   id,
   label,
@@ -41,16 +47,17 @@ export function SimSection({
 }) {
   return (
     <section aria-labelledby={id}>
-      <div className="flex items-center gap-4">
-        <h2
-          id={id}
-          className="f0-section-rule min-w-0 flex-1 font-display text-eyebrow font-bold uppercase text-soft"
-        >
-          <span className="shrink-0 whitespace-nowrap">{label}</span>
-        </h2>
-        {action && <div className="shrink-0">{action}</div>}
-      </div>
-      {children}
+      <Card radius="md" className="px-4 py-3.5">
+        <div className="flex items-center justify-between gap-4">
+          <h2 id={id} className="min-w-0">
+            <CardLabel tone="brand" className="truncate">
+              {label}
+            </CardLabel>
+          </h2>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+        <div className="mt-3">{children}</div>
+      </Card>
     </section>
   );
 }

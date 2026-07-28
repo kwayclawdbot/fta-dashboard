@@ -1,13 +1,16 @@
 "use client";
 
 /**
- * /chart — the Practice Chart, rebuilt on canvas v2.
+ * /chart — the Practice Chart, built to the owner's mockup.
  *
  * There is no dedicated chart board in the archive, so this is derived from
- * `Cheat Code App Light.dc.html` "03 Ticker · NVDA" (L245-341), which is the
- * canvas's own price screen: an IDENTITY ROW (logo tile + company name), the
- * PRICE LINE set in mono at display scale with the delta beside it, the chart,
- * and the switchers underneath — no gridlines, no crosshair, no boxes.
+ * `Cheat Code App Light.dc.html` "03 Ticker · NVDA", which is the canvas's own
+ * price screen — and it now uses that board's ACTUAL objects rather than a
+ * reinterpretation of them: the back row, the logo tile + company name, the
+ * mono mark with the delta beside it, the search and style controls inside a
+ * CARD, filled pill switchers, and the chart in a rounded card frame. An
+ * earlier pass rendered all of this as hairline rules on bare paper; the owner
+ * rejected that reading, so the cards and pills the board draws are what ship.
  *
  * BACKEND — this surface used to be chrome around an embed with no data of its
  * own. It now reads real, delayed market data through the existing server
@@ -38,7 +41,8 @@ import { createClient } from "@/lib/supabase/client";
 import TradingViewAdvancedChart from "@/components/fic/TradingViewAdvancedChart";
 import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import { TickerTile, TickerTileStrip, SegmentedRail } from "@/components/canvas2";
+import { TickerTile, TickerTileStrip } from "@/components/canvas2";
+import { Card, CardLabel, RangePills } from "@/components/research/board";
 import {
   fetchCompany,
   fetchQuotes,
@@ -64,12 +68,9 @@ function bareSymbol(raw: string): string {
 const QUICK_SYMBOLS = ["SPY", "AAPL", "NKE", "DIS", "MCD", "ROBLOX:RBLX"];
 const QUICK_BARE = QUICK_SYMBOLS.map(bareSymbol);
 
-type ChartStyle = "line" | "candles";
+type ChartStyle = "Line" | "Candles";
 
-const STYLE_OPTIONS: { id: ChartStyle; label: string }[] = [
-  { id: "line", label: "Line" },
-  { id: "candles", label: "Candles" },
-];
+const STYLE_OPTIONS = ["Line", "Candles"] as const;
 
 function ChartInner() {
   const supabase = createClient();
@@ -125,7 +126,7 @@ function ChartInner() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return { style: "candles", me: null, tier: null };
+    if (!user) return { style: "Candles", me: null, tier: null };
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -136,13 +137,13 @@ function ChartInner() {
       profile?.age_group === "kids" ||
       (profile?.role === "child" && profile?.age_group !== "teens");
 
-    if (!profile) return { style: isKid ? "line" : "candles", me: null, tier: null };
+    if (!profile) return { style: isKid ? "Line" : "Candles", me: null, tier: null };
 
     const tier = await getFamilyTier(supabase, profile.family_id ?? null).catch(
       () => null
     );
     return {
-      style: isKid ? "line" : "candles",
+      style: isKid ? "Line" : "Candles",
       me: {
         id: user.id,
         display_name: profile.display_name || "You",
@@ -268,24 +269,25 @@ function ChartInner() {
       >
         <Link
           href="/watchlist"
-          className="f0-focus inline-flex items-center gap-1.5 rounded-full text-eyebrow font-display font-bold uppercase text-soft transition-colors hover:text-gold-700"
+          className="f0-focus inline-flex items-center gap-1.5 rounded-full font-mono text-[10px] uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Watchlist
+          <ArrowLeft className="h-4 w-4" /> Watchlist
         </Link>
 
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-          <div className="flex min-w-0 items-center gap-3.5">
+        {/* Board 03's identity row — logo tile, name, then the mark. */}
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 items-center gap-2.5">
             <CompanyLogo
               symbol={shownSymbol}
               name={company?.name ?? shownSymbol}
-              size={44}
-              rounded="rounded-xl"
+              size={40}
+              rounded="rounded-[11px]"
             />
             <div className="min-w-0">
-              <h1 className="truncate font-display text-display-2 font-extrabold uppercase text-ink">
+              <h1 className="truncate font-display text-[21px] font-extrabold leading-tight tracking-tight text-ink">
                 {company?.name ?? shownSymbol}
               </h1>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
+              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
                 <span className="opacity-50">$</span>
                 {shownSymbol}
                 {company?.primaryExchange ? ` · ${company.primaryExchange}` : ""}
@@ -305,30 +307,26 @@ function ChartInner() {
                 <p className="font-mono text-[28px] font-semibold leading-none tracking-tight tabular-nums text-ink">
                   {quote?.price != null ? `$${quote.price.toFixed(2)}` : "—"}
                 </p>
-                <p
-                  className={`mt-2 font-mono text-[12px] font-semibold tabular-nums ${moveTone}`}
-                >
+                <p className={`mt-1.5 font-mono text-[12px] font-semibold tabular-nums ${moveTone}`}>
                   {hasMove
-                    ? `${changePct > 0 ? "▲ +" : changePct < 0 ? "▼ " : ""}${changePct.toFixed(2)}% today`
+                    ? `${changePct > 0 ? "▲ " : changePct < 0 ? "▼ " : ""}${Math.abs(changePct).toFixed(2)}% today`
                     : "Move unavailable"}
-                  <span className="ml-2 uppercase tracking-[0.14em] text-soft/70">
-                    delayed
-                  </span>
+                  <span className="ml-2 uppercase tracking-[0.14em] text-soft/70">delayed</span>
                 </p>
               </>
             )}
           </div>
         </div>
 
-        <p className="mt-3 max-w-[52ch] text-[14px] leading-relaxed text-soft">
+        <p className="mt-3 max-w-[52ch] text-[13.5px] leading-relaxed text-soft">
           Practice reading charts — this is learning, not financial advice.
         </p>
       </m.header>
 
-      {/* ── CONTROL STRIP ─────────────────────────────────────────────────── */}
-      {/* Search and style — one ruled band, no boxes. */}
-      <div className="f0-rule-top mt-5">
-        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3">
+      {/* ── CONTROL CARD ──────────────────────────────────────────────────── */}
+      {/* Search and style live inside one card, as the board draws its controls. */}
+      <Card radius="md" className="mt-4 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <div className="relative">
             <form onSubmit={submitSymbol} className="flex items-center gap-2">
               <Search className="h-3.5 w-3.5 shrink-0 text-soft" />
@@ -344,16 +342,19 @@ function ChartInner() {
               />
               <button
                 type="submit"
-                className="f0-focus f0-press rounded-full font-display text-eyebrow font-bold uppercase text-gold-700 transition-colors hover:text-gold-600"
+                className="f0-focus f0-press shrink-0 rounded-full bg-volt-500 px-3 py-1 text-[11px] font-extrabold text-[#1A1614] transition-colors hover:bg-volt-600"
               >
                 Load
               </button>
             </form>
 
-            {/* Suggestions — a hairline ledger hanging off the field, not a
-                floating card. Real results from the ranked ticker universe. */}
+            {/* Suggestions — real results from the ranked ticker universe,
+                inside the same card object the control sits in. */}
             {suggestOpen && (
-              <div className="absolute left-0 top-full z-30 mt-2 w-72 rounded-xl bg-paper p-1 shadow-lift">
+              <Card
+                radius="sm"
+                className="absolute left-0 top-full z-30 mt-2 w-72 overflow-hidden p-1 shadow-lift"
+              >
                 {suggesting && hits.length === 0 ? (
                   <p className="flex items-center gap-2 px-3 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
                     <Loader2 className="h-3 w-3 animate-spin" /> Searching
@@ -363,14 +364,14 @@ function ChartInner() {
                     No listed company matches that. Try the ticker.
                   </p>
                 ) : (
-                  <div className="f0-ledger px-2">
+                  <div className="px-2">
                     {hits.map((h) => (
                       <button
                         key={h.ticker}
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => go(h.ticker)}
-                        className="f0-focus f0-ledger-row w-full text-left"
+                        className="f0-focus flex w-full items-center gap-2.5 border-b border-sand py-2.5 text-left last:border-b-0"
                       >
                         <span className="shrink-0 font-mono text-[12px] font-bold tracking-[0.04em] text-ink">
                           {h.ticker}
@@ -387,67 +388,59 @@ function ChartInner() {
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             )}
           </div>
 
           {roleLoaded && style && (
-            <div className="min-w-[168px]">
-              <SegmentedRail<ChartStyle>
-                options={STYLE_OPTIONS}
-                value={style}
-                onChange={setStyle}
-                ariaLabel="Chart style"
-                barClassName="bg-accent"
-                fill
-                size="sm"
-              />
-            </div>
+            <RangePills<ChartStyle>
+              ranges={STYLE_OPTIONS}
+              active={style}
+              onSelect={setStyle}
+              ariaLabel="Chart style"
+            />
           )}
         </div>
-      </div>
+      </Card>
 
       {/* ── TRY THESE ─────────────────────────────────────────────────────── */}
       {/* The canvas ticker tile, carrying a REAL delta. A symbol we could not
           get a quote for renders "—", never a fabricated flat. */}
-      <div className="f0-rule-top">
-        <div className="flex items-center gap-4 py-3">
-          <span className="shrink-0 text-eyebrow font-display font-bold uppercase text-soft opacity-70">
-            Try
-          </span>
-          <TickerTileStrip size="sm" loading={quickLoading} loadingCount={6}>
-            {QUICK_SYMBOLS.map((s) => {
-              const bare = bareSymbol(s);
-              return (
-                <TickerTile
-                  key={s}
-                  ticker={bare}
-                  changePct={quickQuotes?.[bare]?.changePercent ?? null}
-                  size="sm"
-                  href={`/chart?symbol=${encodeURIComponent(s)}`}
-                />
-              );
-            })}
-          </TickerTileStrip>
-        </div>
+      <div className="mt-3 flex items-center gap-3">
+        <CardLabel tone="brand" className="shrink-0">
+          Try
+        </CardLabel>
+        <TickerTileStrip size="sm" loading={quickLoading} loadingCount={6}>
+          {QUICK_SYMBOLS.map((s) => {
+            const bare = bareSymbol(s);
+            return (
+              <TickerTile
+                key={s}
+                ticker={bare}
+                changePct={quickQuotes?.[bare]?.changePercent ?? null}
+                size="sm"
+                href={`/chart?symbol=${encodeURIComponent(s)}`}
+              />
+            );
+          })}
+        </TickerTileStrip>
       </div>
 
       {/* ── THE CHART ─────────────────────────────────────────────────────── */}
-      {/* The one framed media object on the surface: a hairline frame and no
-          fill of its own, so the embed's own surface is what you see and the
-          pane is theme-correct by construction rather than by a dark: class.
-          (`.chart-frame` is deliberately dark in BOTH themes — right for the
-          simulator's lightweight-charts pane, wrong here, because this embed
-          renders its own LIGHT theme on a light page and would flip from a
-          dark frame to a light chart on load.) */}
+      {/* The media object, in the board's card frame. No fill of its own, so
+          the embed's own surface is what you see and the pane is theme-correct
+          by construction rather than by a dark: class. (`.chart-frame` is
+          deliberately dark in BOTH themes — right for the simulator's
+          lightweight-charts pane, wrong here, because this embed renders its
+          own LIGHT theme on a light page.) */}
       <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="f0-frame mt-4 min-h-0 flex-1 overflow-hidden rounded-2xl"
+        className="mt-3 min-h-0 flex-1 overflow-hidden rounded-[18px] border border-sand shadow-soft"
       >
         {roleLoaded && style ? (
-          <TradingViewAdvancedChart symbol={urlSymbol} lineStyle={style === "line"} />
+          <TradingViewAdvancedChart symbol={urlSymbol} lineStyle={style === "Line"} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />

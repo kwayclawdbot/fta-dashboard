@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { m } from "@/lib/motion";
-import { SegmentedRail } from "@/components/canvas2";
+import { Card, CardLabel, RangePills, StatCard } from "@/components/research/board";
 import type { PortfolioState, EquityPoint } from "@/lib/simulator/portfolio-manager";
 import { getEquity, getWinRate, getReturnPct } from "@/lib/simulator/portfolio-manager";
 
@@ -149,12 +149,20 @@ function EquityCurve({ points, height = 116 }: { points: EquityPoint[]; height?:
   );
 }
 
-const RANGE_OPTIONS: { id: EquityRange; label: string }[] = [
-  { id: "1d", label: "1D" },
-  { id: "1w", label: "1W" },
-  { id: "1m", label: "1M" },
-  { id: "all", label: "All" },
-];
+/** The board's range pills read as their own labels, so the id IS the label. */
+const RANGE_OPTIONS = ["1D", "1W", "1M", "ALL"] as const;
+const RANGE_ID: Record<(typeof RANGE_OPTIONS)[number], EquityRange> = {
+  "1D": "1d",
+  "1W": "1w",
+  "1M": "1m",
+  ALL: "all",
+};
+const RANGE_LABEL: Record<EquityRange, (typeof RANGE_OPTIONS)[number]> = {
+  "1d": "1D",
+  "1w": "1W",
+  "1m": "1M",
+  all: "ALL",
+};
 
 export default function PortfolioSummary({
   state,
@@ -173,20 +181,18 @@ export default function PortfolioSummary({
   const up = state.totalPnl > 0;
   const tone = flat ? "opacity-70" : up ? "text-green-400" : "text-red-500";
 
-  const measures: { label: string; value: string; tone?: string }[] = [
-    { label: "Cash", value: `$${money(state.balance)}` },
+  // The measure row is the board's four-up stat cards, sitting on the paper
+  // under the field. Off the obsidian field they can use the canonical price
+  // tokens, which is why the row moved out of it.
+  const measures: { label: string; value: string; tone: "ink" | "up" | "down" }[] = [
+    { label: "Cash", value: `$${money(state.balance)}`, tone: "ink" },
     {
       label: "Open P&L",
       value: `${unrealizedPnl > 0 ? "+" : ""}$${money(unrealizedPnl)}`,
-      tone:
-        unrealizedPnl === 0
-          ? undefined
-          : unrealizedPnl > 0
-            ? "text-green-400"
-            : "text-red-500",
+      tone: unrealizedPnl === 0 ? "ink" : unrealizedPnl > 0 ? "up" : "down",
     },
-    { label: "Win rate", value: state.totalTrades > 0 ? `${winRate}%` : "—" },
-    { label: "Closed", value: state.totalTrades > 0 ? `${state.totalTrades}` : "—" },
+    { label: "Win rate", value: state.totalTrades > 0 ? `${winRate}%` : "—", tone: "ink" },
+    { label: "Closed", value: state.totalTrades > 0 ? `${state.totalTrades}` : "—", tone: "ink" },
   ];
 
   // Two captured points is the floor for a line — one point is a dot, and a dot
@@ -225,41 +231,25 @@ export default function PortfolioSummary({
             </p>
           </div>
 
-          {/* Measure strip — hairlines, not tiles. */}
-          <div className="flex items-stretch">
-            {measures.map((mm, i) => (
-              <div
-                key={mm.label}
-                className={`min-w-0 ${
-                  i > 0 ? "border-l border-white/15 pl-4 sm:pl-5" : ""
-                } ${i < measures.length - 1 ? "pr-4 sm:pr-5" : ""}`}
-              >
-                <p
-                  className={`font-mono text-[17px] font-semibold tabular-nums ${mm.tone ?? ""}`}
-                >
-                  {mm.value}
-                </p>
-                <p className="mt-1.5 text-eyebrow font-display font-bold uppercase opacity-60">
-                  {mm.label}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </m.section>
+
+      {/* The four measures, as the board's stat cards on the paper. */}
+      <div className="mt-3 flex gap-2">
+        {measures.map((mm) => (
+          <StatCard key={mm.label} value={mm.value} label={mm.label} tone={mm.tone} />
+        ))}
+      </div>
 
       {/* ── EQUITY CURVE ──────────────────────────────────────────────────
           Canvas puts the curve immediately under the value with a timeframe
           rail beneath it. Real captured history only. */}
-      <section aria-labelledby="sim-equity" className="mt-5">
+      <Card radius="md" className="mt-3 px-4 py-3.5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-          <h2
-            id="sim-equity"
-            className="font-display text-eyebrow font-bold uppercase text-soft"
-          >
-            Equity curve
-          </h2>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
+          <CardLabel tone="brand">
+            <span id="sim-equity">Equity curve</span>
+          </CardLabel>
+          <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft/70">
             {historyLoading
               ? "Reading your history"
               : hasCurve
@@ -281,8 +271,8 @@ export default function PortfolioSummary({
           ) : (
             /* FOUNDING — the real state of a new practice account. Designed,
                and deliberately NOT a flat line, which would imply history. */
-            <div className="f0-rule-top f0-rule-bottom flex h-[116px] flex-col justify-center py-4">
-              <p className="max-w-lg text-[13.5px] leading-relaxed text-soft">
+            <div className="flex h-[116px] flex-col justify-center">
+              <p className="max-w-lg text-[13px] leading-relaxed text-soft">
                 Your equity line starts drawing as soon as you run the tape. It
                 records what this practice account is worth over time — nothing
                 is plotted until there is something real to plot.
@@ -291,39 +281,31 @@ export default function PortfolioSummary({
           )}
         </div>
 
-        <div className="mt-3 max-w-xs">
-          <SegmentedRail<EquityRange>
-            options={RANGE_OPTIONS}
-            value={range}
-            onChange={onRangeChange}
+        <div className="mt-3">
+          <RangePills
+            ranges={RANGE_OPTIONS}
+            active={RANGE_LABEL[range]}
+            onSelect={(k) => onRangeChange(RANGE_ID[k])}
             ariaLabel="Equity curve timeframe"
-            barClassName="bg-accent"
-            fill
-            size="sm"
           />
         </div>
-      </section>
+      </Card>
 
-      {/* Kai reviewed your week — Kai blue by law (this is the AI voice), a
-          ruled note on the page rather than a second boxed card. Kai explains
-          the member's own record; it never issues a call. */}
+      {/* Kai reviewed your week — Kai blue by law (this is the AI voice), in
+          the board's tinted Kai field. Kai explains the member's own record;
+          it never issues a call. */}
       {read && (
-        <m.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-5 border-l-[3px] border-kai-500 py-1 pl-3.5 dark:border-kai-400"
-        >
-          <p className="flex items-center gap-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
-            <span
-              aria-hidden
-              className="relative flex h-2 w-2 items-center justify-center"
-            >
-              <span className="absolute inline-flex h-2 w-2 rounded-full bg-kai-400/50 motion-safe:animate-ping" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-kai-500" />
-            </span>
-            Kai reviewed your week
-          </p>
-          <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-soft">{read}</p>
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3">
+          <Card tone="kai" radius="md" className="px-4 py-3.5">
+            <p className="flex items-center gap-2 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-kai-600">
+              <span aria-hidden className="relative flex h-2 w-2 items-center justify-center">
+                <span className="absolute inline-flex h-2 w-2 rounded-full bg-kai-400/50 motion-safe:animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-kai-500" />
+              </span>
+              Kai reviewed your week
+            </p>
+            <p className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-midnight-200">{read}</p>
+          </Card>
         </m.div>
       )}
     </div>

@@ -1,8 +1,8 @@
 /**
- * Route shell for the Trading Floor. Paints the practice tab rail, the obsidian
- * portfolio field and the asymmetric chart/ticket layout that are known ahead of
- * time — the shared DashboardSkeleton's "chart" variant is a two-column card
- * grid, the pattern the register retired.
+ * Route shell for the Trading Floor. Paints the practice PILL rail, the
+ * obsidian portfolio field, its four measure cards, the equity card and the
+ * asymmetric chart/ticket layout that are known ahead of time. Geometry mirrors
+ * page.tsx so the swap is a fill, not a reflow.
  *
  * LOADING, not EMPTY: every pending slot pulses. The founding states (an empty
  * equity curve, no open positions) live in the page itself and must never be
@@ -11,9 +11,9 @@
 export default function Loading() {
   return (
     <div className="mx-auto max-w-6xl space-y-7 pb-24">
-      <div className="flex gap-6 border-b border-sand pb-3 sm:gap-8">
+      <div className="flex gap-1.5 py-1">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-3 w-28 animate-pulse rounded bg-sand" />
+          <div key={i} className="h-7 w-32 animate-pulse rounded-full bg-sand" />
         ))}
       </div>
 
@@ -23,32 +23,31 @@ export default function Loading() {
         <div className="mt-3 h-3 w-80 animate-pulse rounded bg-sand/70" />
       </div>
 
-      <div className="f0-hero-field h-44 w-full animate-pulse" />
-
       <div>
-        <div className="h-2.5 w-24 animate-pulse rounded bg-sand" />
-        <div className="mt-3 h-[116px] w-full animate-pulse rounded-lg bg-sand/60" />
+        <div className="f0-hero-field h-44 w-full animate-pulse" />
+        <div className="mt-3 flex gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-14 flex-1 animate-pulse rounded-xl border border-sand bg-card"
+            />
+          ))}
+        </div>
+        <div className="mt-3 h-[188px] w-full animate-pulse rounded-[16px] border border-sand bg-card" />
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_310px]">
         <div className="min-w-0 space-y-4">
-          <div className="flex gap-6 border-b border-sand pb-3">
+          <div className="flex gap-1.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-2.5 w-12 animate-pulse rounded bg-sand" />
+              <div key={i} className="h-6 w-14 animate-pulse rounded-lg bg-sand" />
             ))}
           </div>
-          <div className="flex items-center gap-2.5">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-9 w-9 animate-pulse rounded-full bg-sand" />
-            ))}
-          </div>
+          <div className="h-[72px] w-full animate-pulse rounded-[16px] border border-sand bg-card" />
           <div className="chart-frame h-[420px] w-full animate-pulse" />
         </div>
-        <div className="min-w-0 space-y-3">
-          <div className="h-2.5 w-24 animate-pulse rounded bg-sand" />
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-10 w-full animate-pulse rounded bg-sand/60" />
-          ))}
+        <div className="min-w-0">
+          <div className="h-[340px] w-full animate-pulse rounded-[16px] border border-sand bg-card" />
         </div>
       </div>
     </div>

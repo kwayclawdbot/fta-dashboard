@@ -23,6 +23,7 @@ import type { KaiChatSeed } from "@/lib/kai/chat-seed";
 import { KAI_CHAT_DAILY_CAP, type KaiProfile } from "@/lib/kai/persona";
 import { PriceChart } from "@/components/kai/ReportCharts";
 import Markdown from "@/components/kai/Markdown";
+import { Card, CardLabel, SectionMark } from "@/components/research/board";
 import {
   useNewMemberHints,
   HintReopen,
@@ -780,10 +781,11 @@ export default function KaiChatShared({
           </header>
         )}
 
-        {/* The conversation — attributed entries on hairlines. NOT bubbles: the
-            member's question reads as the lead and Kai's answer as the body
-            beneath it, so a thread scans as one column of the member's own
-            research rather than as a messaging app. */}
+        {/* The conversation — the member's question reads as the LEAD and Kai's
+            answer sits in the board's tinted Kai field beneath it, so a thread
+            scans as one column of the member's own research rather than as a
+            messaging app. Kai speaks inside a card wherever the mockup lets Kai
+            speak (boards 14 and 18); this surface follows that. */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5">
           {messages.length === 0 ? (
             <div className="mx-auto max-w-2xl">
@@ -826,11 +828,7 @@ export default function KaiChatShared({
                 ))}
 
               <div className="mt-6">
-                <div className="f0-section-rule">
-                  <span className="font-display text-eyebrow font-bold uppercase text-ink">
-                    Start here
-                  </span>
-                </div>
+                <SectionMark>Start here</SectionMark>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {(profile === "kid"
                     ? ["What does Apple make?", "Tell me about Disney", "How does Nintendo earn money?"]
@@ -841,7 +839,7 @@ export default function KaiChatShared({
                     <button
                       key={q}
                       onClick={() => setInput(q)}
-                      className="f0-chip f0-focus f0-press px-3 py-1.5 text-[12.5px] font-medium text-soft transition hover:text-ink"
+                      className="f0-focus f0-press rounded-full border border-sand bg-card px-3 py-1.5 text-[12px] font-semibold text-soft shadow-soft transition-colors hover:border-volt-300 hover:text-ink"
                     >
                       {q}
                     </button>
@@ -850,35 +848,17 @@ export default function KaiChatShared({
               </div>
             </div>
           ) : (
-            <div className="mx-auto max-w-[65ch]">
-              <div className="f0-ledger">
-                {messages.map((m, i) => (
-                  <article key={m.id || i} className="py-5 first:pt-0">
-                    {/* attribution — who is speaking, on the hairline */}
-                    <div className="flex items-center gap-2">
-                      {m.role === "assistant" && (
-                        <span
-                          aria-hidden
-                          className="h-3.5 w-[3px] shrink-0 rounded-full bg-kai-500"
-                        />
-                      )}
-                      <span
-                        className={`font-mono text-eyebrow font-semibold uppercase ${
-                          m.role === "assistant" ? KAI_INK : "text-soft"
-                        }`}
-                      >
-                        {m.role === "assistant"
-                          ? m.error
-                            ? "Kai · couldn't answer"
-                            : "Kai"
-                          : "You asked"}
-                      </span>
-                    </div>
-
-                    {m.role === "assistant" ? (
+            <div className="mx-auto max-w-[65ch] space-y-4">
+              {messages.map((m, i) =>
+                m.role === "assistant" ? (
+                  <article key={m.id || i}>
+                    <Card tone="kai" radius="md" className="px-4 py-3.5">
+                      <CardLabel tone="kai">
+                        {m.error ? "Kai · couldn't answer" : "Kai"}
+                      </CardLabel>
                       <div className="mt-2.5">
                         <div
-                          className={`text-[15px] leading-relaxed ${
+                          className={`text-[14.5px] leading-relaxed ${
                             m.error ? "text-soft" : "text-ink"
                           }`}
                         >
@@ -886,8 +866,8 @@ export default function KaiChatShared({
                         </div>
                         {m.streaming && !m.content && (
                           <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Kai
-                            is reading
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Kai is
+                            reading
                           </span>
                         )}
                         {m.blocks.map((b, bi) => (
@@ -908,14 +888,19 @@ export default function KaiChatShared({
                           </button>
                         )}
                       </div>
-                    ) : (
-                      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] font-bold leading-snug tracking-tight text-ink">
-                        {m.content}
-                      </p>
-                    )}
+                    </Card>
                   </article>
-                ))}
-              </div>
+                ) : (
+                  <article key={m.id || i} className="pt-1">
+                    <span className="font-mono text-[9px] font-semibold uppercase leading-none tracking-[0.14em] text-soft">
+                      You asked
+                    </span>
+                    <p className="mt-2 whitespace-pre-wrap font-display text-[17px] font-bold leading-snug tracking-tight text-ink">
+                      {m.content}
+                    </p>
+                  </article>
+                )
+              )}
             </div>
           )}
         </div>

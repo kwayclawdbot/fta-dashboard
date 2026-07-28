@@ -11,9 +11,10 @@ import { LineChart, Target, Bot } from "lucide-react";
  * top of each page so they read as one destination with tabs — Pattern Practice
  * is not a separate card in the Games arcade (audit item 12).
  *
- * It is a hairline-underscored rail, not a segmented pill box: the labels stay
- * in the ink/soft register so the rail reads as a set of headings, and the
- * active face is marked by a volt underscore (the action colour) plus weight.
+ * CONTROL LANGUAGE: filled PILLS, matching the owner's mockup (boards 12–14
+ * draw the subpage nav as pills, not as an underline rail). The active face is
+ * the brand orange fill; the resting faces are white bordered pills. An
+ * earlier pass shipped the underline rail; the owner rejected that reading.
  */
 const TABS = [
   { href: "/simulator", label: "Trading floor", icon: LineChart },
@@ -24,7 +25,7 @@ const TABS = [
 export default function SimulatorTabs() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Practice" className="flex gap-6 overflow-x-auto border-b border-sand sm:gap-8">
+    <nav aria-label="Practice" className="club2-track -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1">
       {TABS.map((t) => {
         const active =
           t.href === "/simulator" ? pathname === "/simulator" : pathname.startsWith(t.href);
@@ -34,13 +35,14 @@ export default function SimulatorTabs() {
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`f0-focus relative -mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap pb-3 font-display text-[13px] font-extrabold uppercase tracking-[0.08em] transition-colors ${
-              active ? "text-ink" : "text-soft hover:text-ink"
+            className={`f0-focus inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11.5px] transition-colors ${
+              active
+                ? "bg-volt-500 font-extrabold text-[#1A1614]"
+                : "border border-sand bg-card font-semibold text-soft shadow-soft hover:text-ink"
             }`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" />
             {t.label}
-            {active && <span className="f0-seg-bar bg-accent" aria-hidden />}
           </Link>
         );
       })}
