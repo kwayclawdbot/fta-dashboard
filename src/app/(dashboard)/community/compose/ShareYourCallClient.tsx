@@ -229,6 +229,19 @@ export default function ShareYourCallClient({
     setQuery(raw.trim().toUpperCase().replace(/[^A-Z.]/g, ""));
   }, []);
 
+  /* ── The symbol commits itself ────────────────────────────────────────
+     The composer used to wait for an Enter it never asked for: typing NVDA and
+     looking at the screen produced nothing — no company, no stance control, and
+     a PUBLISH button that stayed grey without saying why. Typing now commits on
+     its own ~500ms after the member stops, and Enter / blur still commit
+     immediately, so the fast paths that already worked are untouched. */
+  useEffect(() => {
+    const raw = draftTicker.trim().toUpperCase().replace(/[^A-Z.]/g, "");
+    if (!raw || raw === query) return;
+    const t = setTimeout(() => setQuery(raw), 500);
+    return () => clearTimeout(t);
+  }, [draftTicker, query]);
+
   /* ── The club's split on this name ────────────────────────────────────
      Real counts from get_ticker_stance_summary, handed to StanceControl, which
      withholds the split below SOCIAL_FLOORS.debateStance. The control renders
@@ -273,6 +286,22 @@ export default function ShareYourCallClient({
     !(needsReason && !reason) &&
     !noPriorForFlip &&
     !posting;
+
+  /* ── What is still missing ────────────────────────────────────────────
+     PUBLISH is refused for several genuinely different reasons and used to
+     state none of them — a grey button and no sentence. This reads the SAME
+     gates canPublish reads, in the order the screen asks for them, with the
+     satisfied ones ticked. A status line, under the button, not a tooltip. */
+  const requirements: { label: string; done: boolean }[] = [
+    { label: "Pick a company", done: !!security },
+    { label: "Take a stance", done: !!stance },
+    { label: "Choose a post type", done: !!type },
+    { label: "Write your call", done: !!headline.trim() && !!body.trim() },
+    ...(needsReason && !noPriorForFlip
+      ? [{ label: "Say what changed", done: !!reason }]
+      : []),
+  ];
+  const allRequirementsMet = requirements.every((r) => r.done);
 
   async function publish() {
     if (!canPublish || !security || !stance || !type || !userId) return;
@@ -638,6 +667,41 @@ export default function ShareYourCallClient({
         >
           {posting ? "Publishing…" : "Publish to the Club"}
         </button>
+
+        {/* The refusal, spoken. Only while the button is actually refusing. */}
+        {!canPublish && !posting && (
+          <div className="mt-2.5" role="status" aria-live="polite">
+            {allRequirementsMet ? (
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+                {!userId
+                  ? "Sign in to file this call"
+                  : "Pick another post type — this is your first call on this name"}
+              </p>
+            ) : (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+                {requirements.map((r, i) => (
+                  <span key={r.label} className="inline-flex items-center gap-2">
+                    {i > 0 && (
+                      <span aria-hidden className="text-soft/60">
+                        ·
+                      </span>
+                    )}
+                    <span className={r.done ? "text-ink" : undefined}>
+                      <span aria-hidden className="mr-1">
+                        {r.done ? "✓" : "○"}
+                      </span>
+                      {r.label}
+                      <span className="sr-only">
+                        {r.done ? " — done" : " — still needed"}
+                      </span>
+                    </span>
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* SAVE AS DRAFT. The board draws it and it is real: the draft is written
             to this browser, restored the next time the composer opens, and
             cleared the moment the call publishes. There is no draft table, so it
