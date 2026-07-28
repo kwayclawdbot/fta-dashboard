@@ -38,3 +38,24 @@ export type { PostType, PostTypeDef, PostTypeControlProps } from "./PostTypeCont
 
 export { default as RespectAction } from "./RespectAction";
 export type { RespectActionProps } from "./RespectAction";
+
+/* ── The gamification spine (design-system lane) ────────────────────────
+   LevelObject is the canonical XP-progress object, extracted from the one
+   Family block that graded A−; XpAward is the award MOMENT (count-up, spring
+   overshoot, +N chip, belt-cross pop) as a reusable primitive. Every surface
+   that shows or grants XP consumes these two so the ladder can never drift
+   between screens again. The drawn marks they compose with live in
+   src/components/art. */
+
+export { default as LevelObject, XpLevelObject } from "./LevelObject";
+export type { LevelObjectProps, XpLevelObjectProps, LevelObjectTone } from "./LevelObject";
+
+export {
+  useXpAward,
+  XpAwardBar,
+  XpAwardChip,
+  XpAwardMeter,
+  BeltCrossPop,
+  CountUp,
+} from "./XpAward";
+export type { XpAwardEvent, UseXpAward } from "./XpAward";
