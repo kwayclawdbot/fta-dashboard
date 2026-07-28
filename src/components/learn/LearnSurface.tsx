@@ -9,6 +9,7 @@ import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
 import { getUserXp } from "@/lib/xp";
 import type { LiveEventCardData } from "@/lib/live/types";
+import { CourseMark, CourseMarkRing } from "@/components/art";
 import {
   SectionRule,
   Ledger,
@@ -23,9 +24,8 @@ import {
   MonoEyebrow,
   StatRail,
   pathFieldStyle,
-  pathGlyph,
-  pathHue,
-  pathInk,
+  pathMark,
+  pathTone,
   warmFieldStyle,
   type NodeGlyphKind,
 } from "@/components/learn/kit";
@@ -37,8 +37,8 @@ import { StreakFlame } from "@/components/art";
    LEARN — route /courses (the Learn nav slot). Built to board 08
    (`light-r1-c0` + `light-r1-c1`, "08 LEARN"; dark twin `dark-r1-*`).
 
-   The board, top to bottom: the script wordmark, YOUR PATHS as hue-washed
-   rows carrying a real percentage, a CONTINUE card beside a YOUR STREAK card,
+   The board, top to bottom: the script wordmark, YOUR PATHS as warm rows
+   carrying a real percentage, a CONTINUE card beside a YOUR STREAK card,
    then UP NEXT as two hairline rows. That is exactly what the Journey tab now
    renders — no obsidian hero, no meters, no ledger rows left over from the
    previous pass.
@@ -584,11 +584,19 @@ function JourneyTab({ state }: { state: LearnState }) {
   );
 }
 
-/* One path as board 08 draws it: a hue wash whose width IS the percentage,
-   the path glyph, the real done/total, and the numeral in that hue. */
-function PathRow({ path, index }: { path: PathLine; index: number }) {
+/* One path row: the drawn mark with the real percentage as a ring around it,
+   the title, the real done/total, and the numeral.
+
+   Two things the board did are deliberately not done here. The row no longer
+   carries a per-path hue (four unrelated colours, two of which already mean
+   price and action — see the learn kit's "Path identity" note), and the
+   progress wash that used to stretch across the row is gone, because the same
+   percentage is now stated three times in one row and the ring says it best.
+   `index` is still taken so the caller's map stays honest about order, but
+   nothing visual depends on position any more. */
+function PathRow({ path }: { path: PathLine; index?: number }) {
   const pct = path.total > 0 ? Math.round((path.done / path.total) * 100) : 0;
-  const hue = pathHue(index);
+  const tone = pathTone(path.program);
   const href = path.locked
     ? "/upgrade"
     : path.next
@@ -599,24 +607,29 @@ function PathRow({ path, index }: { path: PathLine; index: number }) {
     <Link
       href={href}
       className="f0-press f0-focus relative block overflow-hidden rounded-2xl border px-4 py-3"
-      style={pathFieldStyle(hue)}
+      style={pathFieldStyle()}
     >
-      {/* The progress wash — its width is the real percentage, nothing else. */}
-      {!path.locked && pct > 0 && (
-        <span
-          aria-hidden
-          className="absolute inset-y-0 left-0"
-          style={{
-            width: `${pct}%`,
-            background: `linear-gradient(90deg, color-mix(in srgb, ${hue} 22%, transparent), transparent)`,
-          }}
-        />
-      )}
       <span className="relative flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2.5">
-          <span aria-hidden className="text-[15px] leading-none">
-            {pathGlyph(index)}
-          </span>
+        <span className="flex min-w-0 items-center gap-3">
+          {/* The mark is the path's identity and the ring is its real
+              progress — one object doing both jobs. A locked path draws the
+              mark bare: there is no progress to ring when nothing is open. */}
+          {path.locked ? (
+            <CourseMark
+              mark={pathMark(path.slug)}
+              tone={tone}
+              size={26}
+              className="shrink-0 opacity-70"
+            />
+          ) : (
+            <CourseMarkRing
+              pct={pct}
+              mark={pathMark(path.slug)}
+              tone={tone}
+              size={40}
+              className="shrink-0"
+            />
+          )}
           <span className="min-w-0">
             <span className="block truncate font-display text-[14px] font-bold text-ink">
               {path.title}
@@ -633,10 +646,7 @@ function PathRow({ path, index }: { path: PathLine; index: number }) {
         {path.locked ? (
           <Lock className="h-3.5 w-3.5 shrink-0 text-soft" />
         ) : (
-          <span
-            className="shrink-0 font-mono text-[13px] font-semibold tabular-nums"
-            style={pathInk(hue)}
-          >
+          <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-ink">
             {pct}%
           </span>
         )}

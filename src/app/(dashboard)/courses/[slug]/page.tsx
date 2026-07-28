@@ -8,11 +8,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp } from "@/lib/xp";
 import { EmptyLine, TextAction } from "@/components/f0/parts";
+import { CourseMarkRing } from "@/components/art";
 import {
   LearnWordmark,
   MonoEyebrow,
   StatRail,
   dayStreak,
+  pathMark,
+  pathTone,
   warmFieldStyle,
 } from "@/components/learn/kit";
 import LearnPath, {
@@ -354,6 +357,17 @@ export default function CourseDetailPage() {
   );
   const nextUp = allLessons.find((l) => l.status === "available");
 
+  // Completion for the whole path, off the same `status` the strand reads.
+  // No lessons means no percentage to claim — 0, not a divide by zero.
+  const coursePct =
+    totalLessons > 0
+      ? Math.round(
+          (allLessons.filter((l) => l.status === "completed").length /
+            totalLessons) *
+            100
+        )
+      : 0;
+
   if (loading) return <CourseSkeleton />;
 
   return (
@@ -373,9 +387,23 @@ export default function CourseDetailPage() {
         </Link>
 
         <div className="mt-4 flex items-center justify-between gap-4">
-          <h1>
-            <LearnWordmark>learn</LearnWordmark>
-            <span className="sr-only">{course.title}</span>
+          <h1 className="flex min-w-0 items-center gap-3">
+            {/* The path's own mark, ringed by how much of THIS path is done —
+                counted off the same lesson statuses the strand below draws, so
+                the header and the units can never disagree. It is also the
+                only thing that tells one path's header from another's: the
+                wordmark is "learn" on every one of them. */}
+            <CourseMarkRing
+              pct={coursePct}
+              mark={pathMark(slug)}
+              tone={pathTone(slug.startsWith("fta-") ? "fta" : "fic")}
+              size={46}
+              className="shrink-0"
+            />
+            <span className="min-w-0">
+              <LearnWordmark>learn</LearnWordmark>
+              <span className="sr-only">{course.title}</span>
+            </span>
           </h1>
           <StatRail streak={streak} xp={xp} />
         </div>

@@ -1,13 +1,19 @@
 import { Kaushan_Script } from "next/font/google";
 import { computeStreak as computeStreakImpl } from "@/lib/streak";
-import { StreakFlame } from "@/components/art";
+import {
+  StreakFlame,
+  markForSlug,
+  type CourseMarkKey,
+  type CourseMarkTone,
+} from "@/components/art";
 
 /* ══════════════════════════════════════════════════════════════════════════
    LEARN KIT — the shared vocabulary of the Learn boards (canvas 08 / 20 / 21).
 
    Every object here is drawn from the owner's mockup rather than interpreted:
-   the script wordmark, the per-path hue + glyph, the mono stat rail, the warm
-   two-up cards. Nothing in this file reads or writes data.
+   the script wordmark, the path identity, the mono stat rail, the warm two-up
+   cards. Nothing in this file reads or writes data. (The mockup's per-path
+   pastel hue has since been retired — see "Path identity" below for why.)
 
    THEMING: the boards are the Club light palette, which IS this app's token set
    (paper #F7F4EF · ink #1A1614 · soft #7B7369 · sand #E5DFD5 · card #FFFFFF ·
@@ -43,39 +49,68 @@ export function LearnWordmark({
 }
 
 /* ── Path identity ─────────────────────────────────────────────────────────
-   Board 08 gives each path its own hue and glyph (orange · lime · purple ·
-   sky). The first is the register accent, so Family reads gold and Club reads
-   orange without a second palette. */
+   The board used to give each path its own hue — orange, lime, purple, sky —
+   rotated by index. That is four unrelated colours carrying meaning they do
+   not have, and two of them are already spoken for: in this app green means
+   price up and orange means the one action on the screen. A path tinted lime
+   was reading, at a glance, as a gain. Worse, the hue rotated by POSITION, so
+   the same path changed colour the moment a course was published above it.
 
-export const PATH_HUES = [
-  "var(--accent-solid)",
-  "#A3E635",
-  "#A66BFF",
-  "#5BC4F0",
-] as const;
+   So the rainbow is gone. Every path now sits on ONE warm surface, and what
+   tells them apart is the MARK — a drawn object with its own identity, which
+   is stable per slug and survives reordering. Colour is left to say the one
+   thing it says everywhere else in the app.
 
-export const PATH_GLYPHS = ["📊", "📈", "🎯", "🧱"] as const;
+   The mark table is explicit for every published slug; `markForSlug` is the
+   deterministic fallback (a stable hash, never a random draw) for anything
+   seeded later. */
 
-export function pathHue(index: number): string {
-  return PATH_HUES[index % PATH_HUES.length];
+const PATH_MARKS: Record<string, CourseMarkKey> = {
+  // FIC / Club foundations — the same ground, three registers.
+  "fic-adult-foundations": "foundations",
+  "fic-teens-foundations": "foundations",
+  "fic-kids-foundations": "foundations",
+  // FTA — six weeks of structure, sweeps and execution: chart work.
+  "fta-trade-ready": "charts",
+  // Legacy catalog.
+  "stocks-options": "foundations",
+  forex: "charts",
+  futures: "charts",
+  crypto: "money",
+  "candlestick-patterns": "charts",
+  "chart-patterns": "charts",
+  // Trading foundations track.
+  "tf-100": "foundations",
+  "tf-101": "charts",
+  "tf-102": "discipline",
+  "tf-103": "discipline",
+  // Investing track — all four are about what money does over time.
+  "inv-101": "money",
+  "inv-102": "money",
+  "inv-200": "money",
+  "inv-201": "money",
+};
+
+/** The mark a path is drawn with. Explicit where we know it, hashed where we
+ *  don't — either way the same slug always draws the same object. */
+export function pathMark(slug: string): CourseMarkKey {
+  return PATH_MARKS[(slug || "").toLowerCase()] ?? markForSlug(slug);
 }
 
-export function pathGlyph(index: number): string {
-  return PATH_GLYPHS[index % PATH_GLYPHS.length];
+/** FTA surfaces are the metallic register; everything else is Club. */
+export function pathTone(program?: string | null): CourseMarkTone {
+  return program === "fta" ? "fta" : "club";
 }
 
-/** The wash the board lays across a path row: hue → paper, left to right. */
-export function pathFieldStyle(hue: string): React.CSSProperties {
+/** The one warm field every path row sits on — no per-path hue. It is the
+ *  band's warmth held back a step, so a path row reads as a sibling of the
+ *  unit band rather than competing with it. */
+export function pathFieldStyle(): React.CSSProperties {
   return {
-    background: `linear-gradient(90deg, color-mix(in srgb, ${hue} 26%, var(--card)) 0%, var(--card) 76%)`,
-    borderColor: `color-mix(in srgb, ${hue} 42%, var(--sand))`,
+    background:
+      "linear-gradient(100deg, color-mix(in srgb, var(--accent-solid) 10%, var(--card)) 0%, var(--card) 72%)",
+    borderColor: "color-mix(in srgb, var(--accent-solid) 20%, var(--sand))",
   };
-}
-
-/** The percentage numeral: the hue, pulled toward ink so it stays legible on
- *  cream AND on the dark twin off one declaration. */
-export function pathInk(hue: string): React.CSSProperties {
-  return { color: `color-mix(in srgb, ${hue} 80%, var(--ink))` };
 }
 
 /* ── Glyphs ───────────────────────────────────────────────────────────────
