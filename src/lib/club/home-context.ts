@@ -1,8 +1,14 @@
 import type { NextRequest } from "next/server";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ensureClubMetricsFresh } from "@/lib/club/cache";
-import { getClubTier, type FamilyTier } from "@/lib/tier";
+import { effectiveClubTier, type FamilyTier } from "@/lib/tier";
+import {
+  getRequestProfile,
+  getRequestTierState,
+  getRequestUser,
+  type SessionUser,
+} from "@/lib/supabase/rsc";
 import { deriveRegister, type Register } from "@/lib/register";
 import { siteUrl } from "@/lib/site-url";
 
@@ -62,7 +68,7 @@ export interface CoreResult {
 
 export interface ClubCtx {
   supabase: SupabaseClient;
-  user: User;
+  user: SessionUser;
   /** Absolute origin for building share links (invite). */
   origin: string;
   /** Memoised service-role client (created on first use). */
@@ -94,26 +100,27 @@ export async function resolveClubCtx(
   supabase: SupabaseClient,
   req?: NextRequest
 ): Promise<ClubCtx | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // SPEED: was `supabase.auth.getUser()` — a GoTrue round trip (measured
+  // 309–340ms) paid AGAIN here after the page and the shell had each already
+  // paid it. It is now the request-scoped local token verification, and the
+  // profile / tier getters below delegate to the same request-scoped reads, so
+  // resolving this context costs zero extra round trips on a page render.
+  const user = await getRequestUser();
   if (!user) return null;
 
   let adminClient: SupabaseClient | null = null;
   const admin = () => (adminClient ??= createAdminClient());
 
-  const getProfile = once<ClubProfileRow | null>(async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("family_id, role, age_group, track")
-      .eq("id", user.id)
-      .maybeSingle();
-    return (data as ClubProfileRow | null) ?? null;
-  });
+  const getProfile = once<ClubProfileRow | null>(
+    async () => (await getRequestProfile()) as ClubProfileRow | null
+  );
 
   const getTier = once<FamilyTier>(async () => {
+    // Identical to the previous getClubTier(supabase, family_id): the real tier
+    // folded through the Club clock. Only the fetch is shared.
     const prof = await getProfile();
-    return getClubTier(supabase, prof?.family_id);
+    const { tier, clubLapsed } = await getRequestTierState(prof?.family_id);
+    return effectiveClubTier(tier, clubLapsed);
   });
 
   const getRegister = once<Register>(async () => {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getRequestProfile, getRequestUser } from "@/lib/supabase/rsc";
 import type { FamilyGuardrails } from "@/lib/family/guardrails";
 import { DEFAULT_GUARDRAILS } from "@/lib/family/guardrails";
 import { researchComplete, type WatchlistItem } from "@/lib/watchlist";
@@ -50,17 +51,13 @@ export interface FamilyContext {
  * no family — the caller redirects rather than rendering an empty household.
  */
 export async function getFamilyContext(db: DB): Promise<FamilyContext | null> {
-  const {
-    data: { user },
-  } = await db.auth.getUser();
+  // SPEED: was a GoTrue round trip followed by a `profiles` read, both of which
+  // the dashboard shell had already made on this same request. Both are now the
+  // request-scoped shared reads (src/lib/supabase/rsc.ts) — same values, zero
+  // extra round trips — which takes two hops off the front of EVERY Family Mode
+  // screen, since they all start from this context.
+  const [user, me] = await Promise.all([getRequestUser(), getRequestProfile()]);
   if (!user) return null;
-
-  const { data: me } = await db
-    .from("profiles")
-    .select("id, role, family_id")
-    .eq("id", user.id)
-    .maybeSingle();
-
   if (!me?.family_id) return null;
 
   const [{ data: family }, { data: rows }] = await Promise.all([

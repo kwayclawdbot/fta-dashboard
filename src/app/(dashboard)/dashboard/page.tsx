@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { getRequestClient } from "@/lib/supabase/rsc";
 import { resolveHomeRoute } from "@/lib/club/home-route";
 import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
 import ClubHomeV2 from "@/components/clubhome/ClubHomeV2";
@@ -54,7 +54,10 @@ import DashboardHomeClient from "./DashboardHomeClient";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardHome() {
-  const supabase = await createClient();
+  // The request-scoped client the shell is already using (src/lib/supabase/rsc)
+  // — the session, profile and tier this route needs have therefore already
+  // been resolved by the time it asks for them.
+  const supabase = await getRequestClient();
   const route = await resolveHomeRoute(supabase);
 
   if (route.kind === "club") {

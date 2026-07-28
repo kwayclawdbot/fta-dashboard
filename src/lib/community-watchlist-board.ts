@@ -1,7 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
-import { getClubTier, type FamilyTier } from "@/lib/tier";
+import { effectiveClubTier, type FamilyTier } from "@/lib/tier";
+import {
+  getRequestProfile,
+  getRequestTierState,
+  getRequestUser,
+} from "@/lib/supabase/rsc";
+import {
+  getCachedCommunityBoard,
+  getCachedStanceShifts,
+} from "@/lib/club/club-cache";
 import { fetchFavorites, type Favorite } from "@/lib/research/social";
 import type { CommunityEntry } from "@/lib/community-watchlist";
 
@@ -49,18 +58,19 @@ export interface CommunityBoardSeed {
 export async function getCommunityBoardSeed(
   supabase: SupabaseClient
 ): Promise<CommunityBoardSeed | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // SPEED: was getUser() (a GoTrue round trip) → profiles → getClubTier, three
+  // sequential round trips that the shell and the page had ALREADY paid for on
+  // the same request. All three are now the request-scoped shared reads.
+  const [user, profile] = await Promise.all([
+    getRequestUser(),
+    getRequestProfile(),
+  ]);
   if (!user) return null;
+  const tierState = await getRequestTierState(profile?.family_id);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("family_id, age_group, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const tier = await getClubTier(supabase, profile?.family_id);
+  // Identical to the previous getClubTier(): real tier folded through the Club
+  // clock, so a lapsed FTA family still reads 'free' here.
+  const tier = effectiveClubTier(tierState.tier, tierState.clubLapsed);
   const base: CommunityBoardSeed = {
     userId: user.id,
     tier,
@@ -75,14 +85,30 @@ export async function getCommunityBoardSeed(
   // Never seed board data to a free member — the page renders the upsell.
   if (tier === "free") return base;
 
-  const { data: raw } = await withTimeout(
-    supabase.rpc("get_community_board"),
+  // SPEED — the board, the favourites strip and the stance-shift aggregate do
+  // NOT depend on each other; only the like counts need the board's tickers.
+  // They used to run board → [likes, favourites, shifts], i.e. everything
+  // waited on the single most expensive query in this file. Now the two
+  // independent reads start immediately alongside it.
+  //
+  // `get_community_board` and `get_stance_shifts` are SECURITY DEFINER
+  // functions that never reference the caller, so their result is identical for
+  // every member and comes from the 60s club-wide cache (club-cache.ts). The
+  // board is the expensive one: a correlated comment count plus a lateral
+  // latest-close join per entry, re-run for every viewer until now.
+  const boardPromise = withTimeout(
+    getCachedCommunityBoard(),
     LOAD_TIMEOUT_MS,
-    { data: null } as { data: unknown }
+    [] as CommunityEntry[]
   );
-  const board = (raw || {}) as { entries?: CommunityEntry[] };
-  const entries = board.entries || [];
+  const favoritesPromise = fetchFavorites(supabase, "all", 5).catch(
+    () => [] as Favorite[]
+  );
+  // Migration 195. Fails soft to [] so a board without the function deployed
+  // simply omits the section rather than erroring the whole first paint.
+  const shiftsPromise = getCachedStanceShifts(24).catch(() => [] as StanceShift[]);
 
+  const entries = await boardPromise;
   const tickers = Array.from(new Set(entries.map((e) => e.ticker).filter(Boolean)));
 
   const [likeRows, favorites, shiftRows] = await Promise.all([
@@ -93,13 +119,8 @@ export async function getCommunityBoardSeed(
           .in("ticker", tickers)
           .then(({ data }) => data ?? [])
       : Promise.resolve([]),
-    fetchFavorites(supabase, "all", 5).catch(() => [] as Favorite[]),
-    // Migration 195. Fails soft to [] so a board without the function deployed
-    // simply omits the section rather than erroring the whole first paint.
-    Promise.resolve(supabase.rpc("get_stance_shifts", { p_hours: 24 })).then(
-      ({ data }) => (data ?? []) as StanceShift[],
-      () => [] as StanceShift[]
-    ),
+    favoritesPromise,
+    shiftsPromise,
   ]);
 
   const likeCounts: Record<string, LikeCount> = {};

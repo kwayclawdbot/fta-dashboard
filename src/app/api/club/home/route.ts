@@ -37,5 +37,12 @@ export async function GET(req: NextRequest) {
   if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const payload = await buildClubHomePayload(ctx);
-  return NextResponse.json(payload);
+  // EXPLICIT no-store. This payload is entitlement-shaped (the free-tier
+  // trending cap, the kid wall, the brief gate) and carries the member's own
+  // For-You mix, so it must never be held by a CDN or a shared proxy. The
+  // club-WIDE aggregates inside it are cached server-side instead, keyed by
+  // content rather than by viewer (src/lib/club/club-cache.ts).
+  return NextResponse.json(payload, {
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }

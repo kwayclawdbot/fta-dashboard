@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import { fetchNewsFeed } from "@/lib/news/client";
+import { getRequestClient, getRequestProfile } from "@/lib/supabase/rsc";
+import { getCachedNewsFeed } from "@/lib/club/club-cache";
 import { getCommunityBoardSeed } from "@/lib/community-watchlist-board";
 import { getDiscoverExtras } from "@/lib/discover";
 import { deriveRegister } from "@/lib/register";
@@ -27,23 +27,18 @@ import DiscoverClient from "./DiscoverClient";
 export const dynamic = "force-dynamic";
 
 export default async function DiscoverPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // SPEED: the auth call and the profile read that used to open this page were
+  // the THIRD copy of each on the same request (the shell and both seed
+  // builders below made their own). They are now the request-scoped shared
+  // reads, and the newsroom feed — the same published rows for every member —
+  // comes from the 60s club-wide cache instead of a query per view.
+  const supabase = await getRequestClient();
 
   const [initialNews, board, extras, profile] = await Promise.all([
-    fetchNewsFeed(supabase, { kind: null, limit: 30 }).catch(() => null),
+    getCachedNewsFeed(30).catch(() => null),
     getCommunityBoardSeed(supabase).catch(() => null),
     getDiscoverExtras(supabase).catch(() => null),
-    user
-      ? supabase
-          .from("profiles")
-          .select("role, age_group, track")
-          .eq("id", user.id)
-          .maybeSingle()
-          .then(({ data }) => data, () => null)
-      : Promise.resolve(null),
+    getRequestProfile().catch(() => null),
   ]);
 
   // /screener redirects kids server-side (and migration 137 closed the data

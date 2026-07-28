@@ -1,6 +1,11 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { beltForXp } from "@/lib/belts";
+import { getRequestUser } from "@/lib/supabase/rsc";
+import {
+  getCachedBeltWatch,
+  getCachedContributions,
+  getCachedKaiReports,
+} from "@/lib/club/club-cache";
 
 /**
  * Server-first extras for /discover (Cheat Code Club redesign, R3). Composes the
@@ -71,15 +76,6 @@ export interface DiscoverExtras {
   blackBelts: number;
 }
 
-const AUTHOR_SEL =
-  "author:profiles!community_ticker_comments_user_id_fkey(display_name, username, avatar_url, role, age_group)";
-
-type RawAuthor = ResearchContribution["author"];
-
-function normAuthor(a: RawAuthor | RawAuthor[] | null): RawAuthor {
-  return Array.isArray(a) ? a[0] ?? null : a;
-}
-
 export async function getDiscoverExtras(
   supabase: SupabaseClient
 ): Promise<DiscoverExtras> {
@@ -92,14 +88,21 @@ export async function getDiscoverExtras(
     blackBelts: 0,
   };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Local token verification, not a GoTrue round trip, and shared with the page
+  // and the shell (src/lib/supabase/rsc.ts).
+  const user = await getRequestUser();
   if (!user) return empty;
 
-  // Parallel, independent reads. Each caught to [] so one failure never blanks
-  // the tab.
-  const [votesRes, contribRes, reportsRes] = await Promise.all([
+  // SPEED — this used to be THREE sequential waves: [votes, contributions,
+  // reports] → screener_metrics → getBeltWatch (itself another three serial
+  // reads). Only ONE of those dependencies is real (the For-You movers need the
+  // viewer's watched tickers first), so everything else now runs alongside it.
+  //
+  // Three of the four are club-wide — the same rows for every member — so they
+  // come from the 60s shared cache in src/lib/club/club-cache.ts rather than
+  // being recomputed per view. The viewer's OWN votes are per-user and are
+  // deliberately NOT cached: a member must see their own watchlist immediately.
+  const [votesRes, contributions, reports, belts] = await Promise.all([
     supabase
       .from("ticker_sentiment")
       .select("ticker")
@@ -108,27 +111,17 @@ export async function getDiscoverExtras(
       .order("updated_at", { ascending: false })
       .limit(20)
       .then(({ data }) => data ?? [], () => [] as { ticker: string }[]),
-    supabase
-      .from("community_ticker_comments")
-      .select(`id, ticker, body, contribution_type, created_at, ${AUTHOR_SEL}`)
-      .in("contribution_type", ["thesis", "risk", "chart"])
-      .order("created_at", { ascending: false })
-      .limit(12)
-      .then(({ data }) => data ?? [], () => []),
-    supabase
-      .from("kai_reports")
-      .select("ticker, company_name, generated_at")
-      .eq("status", "published")
-      .order("generated_at", { ascending: false })
-      .limit(30)
-      .then(({ data }) => data ?? [], () => []),
+    getCachedContributions().catch(() => [] as ResearchContribution[]),
+    getCachedKaiReports(8).catch(() => [] as KaiReportRef[]),
+    getCachedBeltWatch().catch(() => ({ beltWatch: [], blackBelts: 0 })),
   ]);
 
   const watched = Array.from(
     new Set((votesRes as { ticker: string }[]).map((r) => r.ticker).filter(Boolean))
   );
 
-  // For-You movers: the viewer's watched tickers, ranked by |day move|.
+  // For-You movers: the viewer's watched tickers, ranked by |day move|. The one
+  // genuinely dependent read — it cannot start until `watched` is known.
   let forYouMovers: ForYouMover[] = [];
   if (watched.length) {
     const metrics = await supabase
@@ -142,35 +135,19 @@ export async function getDiscoverExtras(
       .slice(0, 6);
   }
 
-  const contributions: ResearchContribution[] = (
-    contribRes as (ResearchContribution & { author: RawAuthor | RawAuthor[] | null; body: string })[]
-  ).map((r) => ({
-    id: r.id,
-    ticker: r.ticker,
-    snippet: (r.body || "").slice(0, 180),
-    contribution_type: r.contribution_type,
-    created_at: r.created_at,
-    author: normAuthor(r.author),
-  }));
-
-  // Newest published report per ticker (dedupe versions).
-  const seen = new Set<string>();
-  const reports: KaiReportRef[] = [];
-  for (const r of reportsRes as KaiReportRef[]) {
-    const key = (r.ticker || "").toUpperCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    reports.push(r);
-    if (reports.length >= 8) break;
-  }
-
-  const { beltWatch, blackBelts } = await getBeltWatch(supabase);
-
-  return { watched, forYouMovers, contributions, reports, beltWatch, blackBelts };
+  return {
+    watched,
+    forYouMovers,
+    contributions,
+    reports,
+    beltWatch: belts.beltWatch,
+    blackBelts: belts.blackBelts,
+  };
 }
 
 /* ── board 02 §"Black belts are watching" ──────────────────────────────────
- * Two reads, both already granted to an authenticated member:
+ * Now built by getCachedBeltWatch() in src/lib/club/club-cache.ts, where it is
+ * shared across members on a 60s TTL. It is the same three reads it always was:
  *
  *   1. `xp_leaderboard_individuals` (security definer, migration 099) returns
  *      every member with their summed XP. `beltForXp` maps XP → belt, so the
@@ -178,65 +155,12 @@ export async function getDiscoverExtras(
  *      the leaderboard use — this surface cannot disagree with them.
  *   2. `ticker_sentiment` is readable by any authenticated member (`select
  *      using (true)`, migration 110). A vote of 1 is the app's "watching" act.
+ *   3. `screener_metrics` for the company names.
+ *
+ * The answer does not depend on WHO is asking — every member sees the same
+ * black-belt roster — which is exactly why one cache entry serves all of them.
  *
  * Fails soft to nothing. An empty result is a real answer — a club with no
  * black belts yet has no black-belt watchlist, and the surface says exactly
  * that rather than borrowing the trending list and relabelling it.
  */
-async function getBeltWatch(
-  supabase: SupabaseClient
-): Promise<{ beltWatch: BeltWatch[]; blackBelts: number }> {
-  const board = await supabase
-    .rpc("xp_leaderboard_individuals", { p_window: "all", p_scope: "all" })
-    .then(
-      ({ data }) => (data as { rows?: { id: string; xp: number }[] } | null)?.rows ?? [],
-      () => [] as { id: string; xp: number }[]
-    );
-
-  const blackIds = board
-    .filter((r) => beltForXp(Number(r.xp) || 0).belt.key === "black")
-    .map((r) => r.id)
-    .filter(Boolean);
-
-  if (blackIds.length === 0) return { beltWatch: [], blackBelts: 0 };
-
-  const rows = await supabase
-    .from("ticker_sentiment")
-    .select("ticker")
-    .in("user_id", blackIds)
-    .eq("vote", 1)
-    .limit(500)
-    .then(({ data }) => (data as { ticker: string }[] | null) ?? [], () => []);
-
-  const counts = new Map<string, number>();
-  for (const r of rows) {
-    const t = (r.ticker || "").toUpperCase();
-    if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
-  }
-  const top = Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, 6);
-
-  if (top.length === 0) return { beltWatch: [], blackBelts: blackIds.length };
-
-  const names = await supabase
-    .from("screener_metrics")
-    .select("ticker, name")
-    .in(
-      "ticker",
-      top.map(([t]) => t)
-    )
-    .then(
-      ({ data }) => new Map((data ?? []).map((m) => [m.ticker.toUpperCase(), m.name])),
-      () => new Map<string, string | null>()
-    );
-
-  return {
-    beltWatch: top.map(([ticker, belts]) => ({
-      ticker,
-      name: names.get(ticker) ?? null,
-      belts,
-    })),
-    blackBelts: blackIds.length,
-  };
-}

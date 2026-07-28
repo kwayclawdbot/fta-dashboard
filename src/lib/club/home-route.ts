@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getFamilyTier } from "@/lib/tier";
+import { getRequestProfile, getRequestTierState, getRequestUser } from "@/lib/supabase/rsc";
 import { deriveRegister, isSoloProfile, type Register } from "@/lib/register";
 import type { LearningPickup } from "@/components/clubhome/ClubHomeV2";
 
@@ -30,13 +30,10 @@ interface HomeStateRow {
   } | null;
 }
 
-interface ProfileRow {
-  display_name: string | null;
-  family_id: string | null;
-  role: string | null;
-  age_group: string | null;
-  track: string | null;
-}
+/* The profile shape this file needs (display_name, family_id, role, age_group,
+   track) is a subset of SessionProfile, which getRequestProfile() returns — so
+   the local interface it used to declare would only be a second place to keep
+   in sync. */
 
 export type HomeRoute =
   | { kind: "client" }
@@ -65,31 +62,15 @@ export async function resolveHomeRoute(
   supabase: SupabaseClient
 ): Promise<HomeRoute> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { kind: "client" };
-
-    // XP joins this batch rather than adding a round trip: it depends only on
-    // user.id, which is already known, so it rides alongside the two reads that
-    // were already here. `xp_for_users` (migration 118) is the SECURITY DEFINER
-    // grouped SUM — a client-side sum over `xp_events` is capped by PostgREST's
-    // max-rows and would silently under-report a long-standing member's belt.
-    const [{ data: state }, { data: profile }, xpRes] = await Promise.all([
-      supabase.rpc("get_home_state", { p_user_id: user.id }),
-      supabase
-        .from("profiles")
-        .select("display_name, family_id, role, age_group, track")
-        .eq("id", user.id)
-        .single(),
-      // Promise.resolve(): the PostgREST builder is a thenable, not a Promise,
-      // so it has no .catch of its own to hang the degradation off.
-      Promise.resolve(supabase.rpc("xp_for_users", { p_user_ids: [user.id] })).catch(
-        () => null
-      ),
+    // SPEED: the session is now a LOCAL signature check and the profile is the
+    // request-scoped read the dashboard layout is already making, so neither
+    // costs this route a round trip of its own (it used to pay a GoTrue call
+    // plus a duplicate `profiles` select — see src/lib/supabase/rsc.ts).
+    const [user, prof] = await Promise.all([
+      getRequestUser(),
+      getRequestProfile(),
     ]);
-
-    const prof = profile as ProfileRow | null;
+    if (!user) return { kind: "client" };
     if (!prof) return { kind: "client" };
 
     const firstName = prof.display_name?.split(" ")[0] || "";
@@ -101,13 +82,26 @@ export async function resolveHomeRoute(
     const isParentRole = prof.role === "parent" || prof.role === "admin";
     const needSolo = isParentRole && !!familyId;
 
-    // PERF: these three used to be three SEQUENTIAL awaits (tier → family_profiles
-    // → enrollments) on the critical path, so /dashboard cost FIVE serial Supabase
-    // round trips before a single byte of HTML streamed. They all depend only on
-    // familyId, which is known above — so they collapse into ONE round trip.
-    // Ordering of the GATES below is unchanged; only the fetching is parallel.
-    const [tier, fpRes, passRes] = await Promise.all([
-      getFamilyTier(supabase, familyId),
+    // ONE round trip for everything left. `get_home_state` and `xp_for_users`
+    // depend only on user.id; tier / family_profiles / enrollments depend only
+    // on familyId — all four inputs are known, so nothing here has to wait on
+    // anything else. (This used to be three sequential waves behind an auth
+    // call: getUser → [home_state, profile, xp] → [tier, family_profiles,
+    // enrollments].) `xp_for_users` (migration 118) is the SECURITY DEFINER
+    // grouped SUM — a client-side sum over `xp_events` is capped by PostgREST's
+    // max-rows and would silently under-report a long-standing member's belt.
+    const [{ data: state }, xpRes, { tier }, fpRes, passRes] = await Promise.all([
+      supabase.rpc("get_home_state", { p_user_id: user.id }),
+      // Promise.resolve(): the PostgREST builder is a thenable, not a Promise,
+      // so it has no .catch of its own to hang the degradation off.
+      Promise.resolve(supabase.rpc("xp_for_users", { p_user_ids: [user.id] })).catch(
+        () => null
+      ),
+      // Same `family_tiers.tier` column getFamilyTier() read, resolved once per
+      // request and shared with the shell — the free/fic/fta verdict below is
+      // unchanged (the Club-clock lapse is deliberately NOT folded in here,
+      // exactly as before).
+      getRequestTierState(familyId),
       needSolo
         ? supabase
             .from("family_profiles")
