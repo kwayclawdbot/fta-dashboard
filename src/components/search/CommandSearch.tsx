@@ -56,6 +56,19 @@ type FlatItem =
   | { kind: "screener" }
   | { kind: "hit"; hit: Hit; group: string };
 
+/**
+ * The palette's other front door. ⌘K is a keyboard, and a phone does not have
+ * one — surfaces that draw their OWN search affordance (The Club's masthead
+ * glyph) raise this same modal by dispatching the event rather than routing
+ * somewhere that pretends to be search.
+ */
+export const COMMAND_SEARCH_EVENT = "cc:command-search";
+
+export function openCommandSearch() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(COMMAND_SEARCH_EVENT));
+}
+
 export default function CommandSearch() {
   const router = useRouter();
   const { openKai } = useKaiSheet();
@@ -81,8 +94,15 @@ export default function CommandSearch() {
         setOpen((v) => !v);
       }
     }
+    function onOpenRequest() {
+      setOpen(true);
+    }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener(COMMAND_SEARCH_EVENT, onOpenRequest);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(COMMAND_SEARCH_EVENT, onOpenRequest);
+    };
   }, []);
 
   // Focus the input + lock scroll while open.

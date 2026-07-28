@@ -179,7 +179,7 @@ export default async function FamilyLearnPage() {
                 {next.title}
               </p>
             </div>
-            <PillAction href="/learn">Continue</PillAction>
+            <PillAction href="/courses">Continue</PillAction>
           </div>
         </FamilyCard>
       )}

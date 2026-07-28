@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Pencil, Search } from "lucide-react";
 import { deriveRegister } from "@/lib/register";
+import { openCommandSearch } from "@/components/search/CommandSearch";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEventsState, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
@@ -145,13 +146,17 @@ export default function ClubModeShell({
         presence={<PresenceLine>{presenceLine}</PresenceLine>}
         actions={
           <>
-            <Link
-              href="/research"
+            {/* The masthead glyph raises the universal ⌘K palette — the one
+                surface that actually searches members, theses, debates and
+                names. It used to link /research, which is not a route. */}
+            <button
+              type="button"
+              onClick={openCommandSearch}
               aria-label="Search the Club"
               className="f0-focus text-ink transition-colors hover:text-gold-700"
             >
               <Search className="h-[21px] w-[21px]" strokeWidth={2} />
-            </Link>
+            </button>
             {!isKid && (
               <Link
                 href="/community/compose"

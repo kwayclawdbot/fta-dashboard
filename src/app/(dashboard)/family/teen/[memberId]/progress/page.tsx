@@ -162,7 +162,7 @@ export default async function TeenProgressPage({
       </FamilyCard>
 
       {/* ── Skill mastery ────────────────────────────────────────────────*/}
-      <SectionLabel className="mt-6" action={<TextAction href="/learn">See all</TextAction>}>
+      <SectionLabel className="mt-6" action={<TextAction href="/courses">See all</TextAction>}>
         Skill mastery
       </SectionLabel>
       {skills.length === 0 || skills.every((s) => s.mastery === 0) ? (
@@ -170,7 +170,7 @@ export default async function TeenProgressPage({
           <FoundingState
             title="No readings yet"
             body="Mastery is measured by answering, not by watching. The first quiz or review puts a real number here — and until there is one, an empty bar is the honest picture."
-            action={<TextAction href="/learn">Start a lesson →</TextAction>}
+            action={<TextAction href="/courses">Start a lesson →</TextAction>}
           />
         </div>
       ) : (
