@@ -26,10 +26,18 @@ import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 import WatchlistDowngradeScreen from "@/components/entitlements/WatchlistDowngradeScreen";
-import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import Sparkline from "@/components/fic/Sparkline";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import WatchRail from "@/components/watch/WatchRail";
+import { TickerTile, TickerTileStrip } from "@/components/canvas2";
+import {
+  Card,
+  Dial,
+  BoardSkeleton,
+  Eyebrow as BoardEyebrow,
+  BoardLead,
+} from "@/components/alerts/board";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import KaiWatch from "@/components/kai/KaiWatch";
 import WatchlistPerformance from "@/components/fic/WatchlistPerformance";
@@ -63,18 +71,23 @@ import {
 } from "@/lib/watchlist";
 
 /**
- * WATCHLIST — canvas rebuild (light-primary club system).
+ * WATCHLIST — my board. CANVAS BOARDS 06 + 17.
  *
- * COMPOSITION LAW: one dark object (the performance hero, f0-hero-field), then
- * hairline ledgers all the way down. The old surface was a four-column kanban of
- * bordered cards — the exact "equal-column card grid" the brand register bans, and
- * on mobile it collapsed into a single tall stack of boxes anyway. The ladder
- * (Watching → Studying → verdict) survives as LEDGER GROUPS: same teaching
- * mechanic, no containers.
+ * Same objects as the club's board, because on the canvas they are the same
+ * screen with a different rail cell selected: the lowercase wordmark, the
+ * orange pill rail, then one CARD per company — logo tile, ticker with price
+ * and move, the sub-line, a ring, a sparkline, and the footer strip. The ladder
+ * (Watching → Studying → verdict) survives as the card GROUPS, so the teaching
+ * mechanic is untouched.
+ *
+ * Neither the obsidian performance slab that used to open this screen nor the
+ * hairline-ledger rows below it are on any board. The performance reading has
+ * moved to the bottom, where board 17 puts it.
  *
  * COLOUR LAW on this surface:
- *   green/red = price only · lime = community sentiment only · orange = brand +
- *   action only · Kai blue = the Kai affordance. Price never sits on orange.
+ *   green/red = price only · lime = community sentiment only (including the
+ *   ring) · orange = brand + action only · Kai blue = the Kai affordance.
+ *   Price never sits on orange.
  *
  * Every behaviour of the previous board is preserved: the research gate on
  * verdicts, XP + belt celebration, community promotion, feed share, notes,
@@ -135,26 +148,6 @@ function timeAgo(dateStr: string) {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   return d === 1 ? "yesterday" : `${d}d ago`;
-}
-
-/** Section marker — the eyebrow + hairline that replaces a column header. */
-function SectionRule({
-  label,
-  meta,
-}: {
-  label: string;
-  meta?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-1 flex items-center gap-3">
-      <h2 className="f0-section-rule flex-1">
-        <span className="font-display text-eyebrow font-bold uppercase text-ink">
-          {label}
-        </span>
-      </h2>
-      {meta}
-    </div>
-  );
 }
 
 export default function WatchlistPage() {
@@ -669,7 +662,7 @@ export default function WatchlistPage() {
     );
   }
   if (loading || !tierResolved) {
-    return <DashboardSkeleton variant="board" title="Watchlist" />;
+    return <BoardSkeleton label="your watchlist" />;
   }
 
   // Solo member = a family of one (no other members on the board).
@@ -682,48 +675,40 @@ export default function WatchlistPage() {
         onDone={() => setQueue((q) => q.slice(1))}
       />
 
-      {/* ── Masthead ───────────────────────────────────────────────────────── */}
+      {/* ── Board head — canvas 06/17: wordmark, pill rail, actions ───────── */}
       <m.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <p className="font-mono text-eyebrow font-semibold uppercase text-soft">
-          {isSolo ? "Your research board" : "The family research board"}
-        </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
-          Watchlist
-        </h1>
-        <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-soft">
-          {isSolo
-            ? "Companies you know, studied properly, decided with conviction. A verdict only unlocks after the homework."
-            : isKid
-              ? "Companies your family knows. Study one, then decide together — the verdict unlocks after the homework."
-              : "Anyone adds, everyone studies, verdicts come only after the homework."}
-        </p>
+        <BoardLead
+          word="watch"
+          sub={
+            isSolo
+              ? "Companies you know, studied properly, decided with conviction. A verdict only unlocks after the homework."
+              : isKid
+                ? "Companies your family knows. Study one, then decide together — the verdict unlocks after the homework."
+                : "Anyone adds, everyone studies, verdicts come only after the homework."
+          }
+        />
 
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+        <WatchRail active="board" showKai={!isKid} className="mt-4" />
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             onClick={() => openAdd()}
-            className="cta-button inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm"
+            className="cta-button f0-focus f0-press inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm"
           >
             <Plus className="h-4 w-4" />
             Add a company
           </button>
-          <Link
-            href="/watchlist/community"
-            className="inline-flex items-center gap-1.5 rounded-full border border-sand px-4 py-2.5 text-sm font-semibold text-soft transition hover:border-volt-400 hover:text-ink"
-          >
-            <Users2 className="h-4 w-4" />
-            Community board
-          </Link>
           {!isKid && (
             <button
               onClick={() => {
                 setKaiTicker(null);
                 setKaiOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-kai-500/35 bg-kai-500/[0.07] px-4 py-2.5 text-sm font-semibold text-kai-600 transition hover:bg-kai-500/[0.12]"
+              className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-kai-500/35 bg-kai-500/[0.07] px-4 py-2.5 text-sm font-semibold text-kai-600 transition hover:bg-kai-500/[0.12]"
             >
               <Sparkles className="h-4 w-4" />
               Ask Kai to watch
@@ -732,30 +717,49 @@ export default function WatchlistPage() {
         </div>
       </m.header>
 
-      {/* ── The one dark object: performance ───────────────────────────────── */}
-      {!isKid && items.length > 0 && (
-        <div className="mt-8">
-          <WatchlistPerformance
-            tickers={items.map((i) => i.ticker)}
-            familyId={familyId}
-          />
-        </div>
+      {/* ── The board at a glance (canvas 01/17 ticker tile) ────────────────
+          Padded out to nine slots on purpose: production IS a board of a
+          handful of names, and a strip that ends in designed empty slots reads
+          as a board filling up, where a strip of three reads as a broken row.
+          A tile with no quote yet prints "—", never a fabricated 0.00%. */}
+      {items.length > 0 && (
+        <section className="mt-7">
+          <BoardEyebrow
+            className="mb-3"
+            meta={
+              <span className="font-mono text-[10px] tabular-nums text-soft/70">
+                {items.length}
+              </span>
+            }
+          >
+            On the board
+          </BoardEyebrow>
+          <TickerTileStrip minSlots={9} size="md">
+            {items.map((it) => (
+              <TickerTile
+                key={it.id}
+                ticker={it.ticker}
+                changePct={quotes[it.ticker]?.changePercent ?? null}
+                href={`/research/${encodeURIComponent(it.ticker)}`}
+              />
+            ))}
+          </TickerTileStrip>
+        </section>
       )}
 
       {/* ── Filters — a line of chips, never a filter bar box ──────────────── */}
       {items.length > 0 && (trendsPresent.length > 0 || championIds.length > 0) && (
-        <div className="mt-8 flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-sand pb-4">
+        <div className="mt-7 flex flex-wrap items-center gap-x-2 gap-y-2">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
             Filter
           </span>
           {trendsPresent.map((t) => (
             <button
               key={t}
+              aria-pressed={fTrend === t}
               onClick={() => setFTrend(fTrend === t ? null : t)}
-              className={`rounded-full px-3 py-1 text-[12px] font-semibold transition ${
-                fTrend === t
-                  ? "bg-volt-500 text-white"
-                  : "text-soft hover:text-ink"
+              className={`f0-chip f0-focus f0-press text-[12px] font-semibold ${
+                fTrend === t ? "f0-chip-on" : "text-soft hover:text-ink"
               }`}
             >
               {t}
@@ -765,7 +769,7 @@ export default function WatchlistPage() {
             <select
               value={fMember || ""}
               onChange={(e) => setFMember(e.target.value || null)}
-              className="rounded-full border border-sand bg-transparent px-3 py-1 text-[12px] font-semibold text-soft focus:border-volt-400 focus:outline-none"
+              className="f0-chip f0-focus bg-transparent text-[12px] font-semibold text-soft"
             >
               <option value="">All champions</option>
               {championIds.map((id) => (
@@ -781,7 +785,7 @@ export default function WatchlistPage() {
                 setFTrend(null);
                 setFMember(null);
               }}
-              className="ml-auto text-[12px] font-semibold text-volt-700 hover:text-volt-600"
+              className="f0-focus ml-auto text-[12px] font-semibold text-gold-700 hover:text-gold-600"
             >
               Clear
             </button>
@@ -811,27 +815,31 @@ export default function WatchlistPage() {
         </div>
       )}
 
-      {/* ── MY STOCKS — one ledger, grouped by rung of the ladder ──────────── */}
+      {/* ── MY STOCKS — one card per company, grouped by rung of the ladder ── */}
       {items.length > 0 && (
-        <div className="mt-8 space-y-9">
+        <div className="mt-8 space-y-8">
           {STATUS_ORDER.map((status) => {
             const meta = STATUS_META[status];
             const colItems = filtered.filter((i) => i.status === status);
             if (colItems.length === 0 && (fTrend || fMember)) return null;
             return (
               <section key={status}>
-                <SectionRule
-                  label={meta.label}
+                <BoardEyebrow
+                  className="mb-3"
                   meta={
-                    <span className="font-mono text-[11px] tabular-nums text-soft/70">
+                    <span className="font-mono text-[10px] tabular-nums text-soft/70">
                       {colItems.length}
                     </span>
                   }
-                />
+                >
+                  {meta.label}
+                </BoardEyebrow>
                 {colItems.length === 0 ? (
-                  <p className="py-4 text-[13px] text-soft/70">{meta.blurb}</p>
+                  <Card className="px-4 py-4">
+                    <p className="text-[12.5px] text-soft/85">{meta.blurb}</p>
+                  </Card>
                 ) : (
-                  <div className="f0-ledger f0-stagger border-t border-sand/70">
+                  <div className="f0-stagger space-y-2.5">
                     {colItems.map((item, idx) => {
                       const champ = item.champion_id
                         ? members[item.champion_id]
@@ -848,17 +856,32 @@ export default function WatchlistPage() {
                       const pct = q?.changePercent ?? null;
                       const up = (pct ?? 0) >= 0;
 
+                      // The move SINCE IT LANDED — the number this board has
+                      // always claimed to measure. `snapshot_price` is written
+                      // by the add flow above and backfilled by the daily cron;
+                      // it is not on the shared WatchlistItem type (which the
+                      // watchlist lib owns), so it is read defensively and the
+                      // line simply does not draw when the board RPC did not
+                      // return one. Honest absence, never a fabricated 0%.
+                      const snapPrice =
+                        (item as WatchlistItem & { snapshot_price?: number | null })
+                          .snapshot_price ?? null;
+                      const sincePct =
+                        snapPrice != null && snapPrice > 0 && q?.price != null
+                          ? ((q.price - snapPrice) / snapPrice) * 100
+                          : null;
+
                       return (
-                        <div
+                        <Card
                           key={item.id}
-                          style={{ ["--i" as string]: idx }}
-                          className={`relative ${
-                            unlockedId === item.id ? "bg-volt-500/[0.07]" : ""
+                          padded={false}
+                          className={`px-4 py-4 ${
+                            unlockedId === item.id ? "border-accent/50" : ""
                           }`}
                         >
-                          {/* ── the row ── */}
                           <div
-                            className="f0-ledger-row cursor-pointer"
+                            style={{ ["--i" as string]: idx }}
+                            className="f0-focus cursor-pointer"
                             onClick={() =>
                               setOpenRow((v) => (v === item.id ? null : item.id))
                             }
@@ -874,76 +897,120 @@ export default function WatchlistPage() {
                               }
                             }}
                           >
-                            <CompanyLogo
-                              symbol={item.ticker}
-                              name={item.company_name}
-                              size={34}
-                              rounded="rounded-lg"
-                            />
+                            <div className="flex items-center gap-3">
+                              <CompanyLogo
+                                symbol={item.ticker}
+                                name={item.company_name}
+                                size={40}
+                                rounded="rounded-[11px]"
+                              />
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-baseline gap-2">
-                                <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-                                  ${item.ticker}
-                                </span>
-                                <span className="min-w-0 truncate text-[12.5px] text-soft">
-                                  {item.company_name}
-                                </span>
-                              </div>
-                              <div className="mt-1 flex items-center gap-2">
-                                {!isKid ? (
-                                  <SentimentDots
-                                    net={likeCounts[item.ticker]?.net ?? 0}
-                                    votes={likeCounts[item.ticker]?.votes ?? 0}
-                                  />
-                                ) : (
-                                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft/70">
-                                    {researchFilledCount(item)}/
-                                    {RESEARCH_FIELDS.length} researched
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                  <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
+                                    {item.ticker}
                                   </span>
-                                )}
-                                {champ && !isSolo && (
-                                  <span className="hidden items-center gap-1 sm:flex">
-                                    <Avatar member={champ} size={16} />
-                                    <span className="text-[11px] text-soft/80">
-                                      {champ.display_name}
+                                  {q?.price != null ? (
+                                    <span className="font-mono text-[12px] tabular-nums text-ink">
+                                      {q.price.toFixed(2)}
                                     </span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* price — mono, green/red, never on an orange field */}
-                            <div className="shrink-0 text-right">
-                              {q?.price != null ? (
-                                <>
-                                  <div className="font-mono text-[15px] font-semibold tabular-nums text-ink">
-                                    {q.price.toFixed(2)}
-                                  </div>
+                                  ) : (
+                                    <span className="font-mono text-[11px] text-soft/50">
+                                      no quote
+                                    </span>
+                                  )}
                                   {pct != null && (
-                                    <div
-                                      className={`font-mono text-[11.5px] font-semibold tabular-nums ${
-                                        up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-500"
+                                    <span
+                                      className={`font-mono text-[10px] tabular-nums ${
+                                        up ? "text-price-up" : "text-price-down"
                                       }`}
                                     >
-                                      {up ? "+" : ""}
-                                      {pct.toFixed(2)}%
-                                    </div>
+                                      {up ? "▲" : "▼"}
+                                      {Math.abs(pct).toFixed(1)}%
+                                    </span>
                                   )}
-                                </>
-                              ) : (
-                                <div className="font-mono text-[11px] text-soft/50">
-                                  no quote
                                 </div>
-                              )}
+                                <p className="mt-0.5 truncate text-[10px] text-soft/85">
+                                  {item.company_name}
+                                  {snapPrice != null && (
+                                    <>
+                                      {" · on the board at "}
+                                      {snapPrice.toFixed(2)}
+                                    </>
+                                  )}
+                                  {sincePct != null && (
+                                    <>
+                                      {" · "}
+                                      <span
+                                        className={`font-mono ${
+                                          sincePct >= 0
+                                            ? "text-price-up"
+                                            : "text-price-down"
+                                        }`}
+                                      >
+                                        {sincePct >= 0 ? "+" : ""}
+                                        {sincePct.toFixed(1)}%
+                                      </span>
+                                      {" since"}
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+
+                              {/* The ring is the RESEARCH ladder — how much of
+                                  the homework is done. It is the accent, not a
+                                  price colour: nothing on it is a price. */}
+                              <Dial
+                                value={
+                                  researchFilledCount(item) / RESEARCH_FIELDS.length
+                                }
+                                size={44}
+                                ring={5}
+                                tone={complete ? "teal" : "volt"}
+                                center={`${researchFilledCount(item)}/${RESEARCH_FIELDS.length}`}
+                                centerClassName="text-[9px]"
+                                label={`${researchFilledCount(item)} of ${RESEARCH_FIELDS.length} research fields filled in for ${item.ticker}`}
+                              />
+
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 text-soft/60 transition-transform ${
+                                  open ? "rotate-180" : ""
+                                }`}
+                                aria-hidden
+                              />
                             </div>
 
-                            <ChevronDown
-                              className={`h-4 w-4 shrink-0 text-soft/60 transition-transform ${
-                                open ? "rotate-180" : ""
-                              }`}
-                              aria-hidden
-                            />
+                            <div className="mt-2.5">
+                              <Sparkline symbol={item.ticker} height={38} />
+                            </div>
+
+                            {/* the card footer strip: the club's read (lime) and
+                                who champions it */}
+                            <div className="mt-2.5 flex items-center gap-2.5 border-t border-sand pt-2.5">
+                              {!isKid ? (
+                                <SentimentDots
+                                  net={likeCounts[item.ticker]?.net ?? 0}
+                                  votes={likeCounts[item.ticker]?.votes ?? 0}
+                                  showLabel={false}
+                                />
+                              ) : (
+                                <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/70">
+                                  {researchFilledCount(item)}/
+                                  {RESEARCH_FIELDS.length} researched
+                                </span>
+                              )}
+                              <p className="min-w-0 flex-1 truncate text-[11px] italic leading-relaxed text-soft">
+                                {item.why_we_picked || meta.blurb}
+                              </p>
+                              {champ && !isSolo && (
+                                <span className="flex shrink-0 items-center gap-1">
+                                  <Avatar member={champ} size={18} />
+                                  <span className="hidden text-[10.5px] text-soft/80 sm:inline">
+                                    {champ.display_name}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* ── the detail ── */}
@@ -955,7 +1022,7 @@ export default function WatchlistPage() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden"
                               >
-                                <div className="pb-5 pl-[3.1rem] pr-1">
+                                <div className="border-t border-sand pt-3.5">
                                   <div className="max-w-lg">
                                     <ResearchLadder
                                       status={item.status}
@@ -990,10 +1057,6 @@ export default function WatchlistPage() {
                                     ) : null}
                                   </div>
 
-                                  <div className="mt-3 max-w-md">
-                                    <Sparkline symbol={item.ticker} height={52} />
-                                  </div>
-
                                   {item.status !== "watch" && (
                                     <dl className="mt-3 space-y-1.5 text-[12.5px]">
                                       {item.how_they_make_money && (
@@ -1026,7 +1089,7 @@ export default function WatchlistPage() {
                                     {item.status === "watch" && (
                                       <button
                                         onClick={() => startStudy(item)}
-                                        className="inline-flex items-center gap-1.5 text-volt-700 hover:text-volt-600"
+                                        className="inline-flex items-center gap-1.5 text-gold-700 hover:text-gold-600"
                                       >
                                         <FlaskConical className="h-3.5 w-3.5" />
                                         Start studying
@@ -1057,7 +1120,7 @@ export default function WatchlistPage() {
                                           }
                                           className={`inline-flex items-center gap-1.5 ${
                                             complete
-                                              ? "text-ink hover:text-volt-700"
+                                              ? "text-ink hover:text-gold-700"
                                               : "cursor-not-allowed text-soft/50"
                                           }`}
                                         >
@@ -1080,7 +1143,7 @@ export default function WatchlistPage() {
                                           }
                                           className={`inline-flex items-center gap-1.5 ${
                                             complete
-                                              ? "text-ink hover:text-volt-700"
+                                              ? "text-ink hover:text-gold-700"
                                               : "cursor-not-allowed text-soft/50"
                                           }`}
                                         >
@@ -1118,7 +1181,7 @@ export default function WatchlistPage() {
                                     {promoted[item.id] ? (
                                       <Link
                                         href={`/research/${encodeURIComponent(item.ticker)}`}
-                                        className="inline-flex items-center gap-1.5 text-volt-700 hover:text-volt-600"
+                                        className="inline-flex items-center gap-1.5 text-gold-700 hover:text-gold-600"
                                       >
                                         <Users2 className="h-3.5 w-3.5" />
                                         On club board
@@ -1186,7 +1249,7 @@ export default function WatchlistPage() {
                                       {canDelete && (
                                         <button
                                           onClick={() => deleteItem(item)}
-                                          className="text-soft/60 hover:text-red-600 dark:hover:text-red-500"
+                                          className="f0-focus text-soft/60 transition hover:text-ink"
                                           aria-label="Remove company"
                                         >
                                           <Trash2 className="h-3.5 w-3.5" />
@@ -1257,7 +1320,7 @@ export default function WatchlistPage() {
                                             />
                                             <button
                                               onClick={() => addNote(item)}
-                                              className="text-soft transition hover:text-volt-700"
+                                              className="text-soft transition hover:text-gold-700"
                                               aria-label="Send note"
                                             >
                                               <Send className="h-4 w-4" />
@@ -1271,7 +1334,7 @@ export default function WatchlistPage() {
                               </m.div>
                             )}
                           </AnimatePresence>
-                        </div>
+                        </Card>
                       );
                     })}
                   </div>
@@ -1279,6 +1342,21 @@ export default function WatchlistPage() {
               </section>
             );
           })}
+
+          {/* ── The board's own record — canvas 17's footer object. It sits at
+              the BOTTOM, where the board puts it, instead of opening the screen
+              as an obsidian slab the canvas never draws. */}
+          {!isKid && (
+            <section>
+              <BoardEyebrow accent className="mb-3">
+                How the board is doing
+              </BoardEyebrow>
+              <WatchlistPerformance
+                tickers={items.map((i) => i.ticker)}
+                familyId={familyId}
+              />
+            </section>
+          )}
         </div>
       )}
 
@@ -1365,7 +1443,7 @@ export default function WatchlistPage() {
                           <span className="min-w-0 truncate text-ink">
                             {hit.name}
                           </span>
-                          <span className="shrink-0 font-mono text-xs font-semibold text-volt-700">
+                          <span className="shrink-0 font-mono text-xs font-semibold text-gold-700">
                             ${hit.ticker}
                           </span>
                         </button>
@@ -1443,7 +1521,7 @@ export default function WatchlistPage() {
                 </div>
 
                 <p className="flex items-start gap-2 border-t border-sand pt-3 text-[12px] leading-relaxed text-soft">
-                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-volt-500" />
+                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600" />
                   It starts in <b className="text-ink">Watching</b> — study it to
                   unlock a Favorite or Avoid verdict.
                 </p>
@@ -1548,7 +1626,7 @@ export default function WatchlistPage() {
                 />
                 <div>
                   <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft">
-                    Trend <span className="text-volt-600">*</span>
+                    Trend <span className="text-gold-600">*</span>
                   </label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {TREND_OPTIONS.map((t) => (
@@ -1560,7 +1638,7 @@ export default function WatchlistPage() {
                         }
                         className={`rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition ${
                           rForm.trend === t.value
-                            ? "border-volt-500 bg-volt-500/10 text-volt-700"
+                            ? "border-volt-500 bg-volt-500/10 text-gold-700"
                             : "border-sand text-soft hover:border-volt-300"
                         }`}
                       >
@@ -1570,7 +1648,7 @@ export default function WatchlistPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
                   <ResearchField
                     label="Bull case (optional)"
                     value={rForm.bull_case || ""}
@@ -1597,7 +1675,7 @@ export default function WatchlistPage() {
               <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[12px] text-soft">
                 {rComplete ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                    <Check className="h-3.5 w-3.5 text-gold-700" />
                     Research complete — Favorite / Avoid are unlocked.
                   </>
                 ) : (
@@ -1631,13 +1709,13 @@ export default function WatchlistPage() {
             >
               {shareDone ? (
                 <div className="py-4 text-center">
-                  <Check className="mx-auto mb-2 h-8 w-8 text-green-600 dark:text-green-400" />
+                  <Check className="mx-auto mb-2 h-8 w-8 text-gold-700" />
                   <p className="font-display text-display-3 font-extrabold text-ink">
                     Posted to the club
                   </p>
                   <Link
                     href="/community"
-                    className="mt-3 inline-block text-sm font-semibold text-volt-700 hover:text-volt-600"
+                    className="f0-focus mt-3 inline-block text-sm font-semibold text-gold-700 hover:text-gold-600"
                   >
                     See it in the feed →
                   </Link>
@@ -1720,7 +1798,7 @@ function ResearchField({
     <div>
       <label className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft">
         {label}
-        {required && <span className="ml-0.5 text-volt-600">*</span>}
+        {required && <span className="ml-0.5 text-gold-600">*</span>}
       </label>
       <textarea
         value={value}

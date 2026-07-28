@@ -17,13 +17,15 @@ import Link from "next/link";
 
    IT IS NAVIGATION, NOT TABS. Real anchors, `aria-current="page"`, no
    radiogroup and no roving tabindex — the SegmentedRail keyboard model would be
-   wrong here, because arrowing between these would fire a page navigation. What
-   is shared with SegmentedRail is the GEOMETRY only: the same hairline, the same
-   3px `.f0-seg-bar`, the same uppercase display cell, so a member cannot tell
-   from looking that one rail is a control and the other is a route.
+   wrong here, because arrowing between these would fire a page navigation.
 
-   COLOUR: the bar rides `bg-accent` (--accent-solid), which is club orange /
-   family gold / FTA metallic per mode. Brand + action, by law.
+   GEOMETRY IS THE CANVAS'S: an orange pill on the current cell, the rest set in
+   grey uppercase at 11px with .04em tracking, on no rule at all. That is what
+   boards 06/17/18 draw under the wordmark, and the underline rail that used to
+   stand in for it is gone.
+
+   COLOUR: the pill rides `bg-accent` (--accent-solid) — club orange, family
+   gold or FTA metallic per mode. Brand + action, by law.
    ══════════════════════════════════════════════════════════════════════════ */
 
 export type WatchSurface = "board" | "community" | "kai";
@@ -40,8 +42,8 @@ export default function WatchRail({
   className?: string;
 }) {
   const items: { id: WatchSurface; label: string; href: string }[] = [
-    { id: "board", label: "My board", href: "/watchlist" },
-    { id: "community", label: "The club's board", href: "/watchlist/community" },
+    { id: "board", label: "Watchlist", href: "/watchlist" },
+    { id: "community", label: "Club picks", href: "/watchlist/community" },
     ...(showKai
       ? [{ id: "kai" as WatchSurface, label: "Kai Watch", href: "/alerts" }]
       : []),
@@ -50,7 +52,7 @@ export default function WatchRail({
   return (
     <nav
       aria-label="Watch"
-      className={`club2-track flex gap-7 overflow-x-auto border-b border-sand ${className}`}
+      className={`club2-track flex items-center gap-3.5 overflow-x-auto ${className}`}
     >
       {items.map((it) => {
         const on = it.id === active;
@@ -59,12 +61,13 @@ export default function WatchRail({
             key={it.id}
             href={it.href}
             aria-current={on ? "page" : undefined}
-            className={`f0-focus relative -mb-px shrink-0 whitespace-nowrap pb-3 font-display text-[11px] font-extrabold uppercase tracking-[0.12em] transition-colors ${
-              on ? "text-ink" : "text-soft hover:text-ink"
+            className={`f0-focus f0-press shrink-0 whitespace-nowrap rounded-full text-[10.5px] font-bold uppercase tracking-[0.06em] transition ${
+              on
+                ? "bg-accent px-3.5 py-1.5 text-night-950"
+                : "px-0.5 py-1.5 tracking-[0.04em] text-soft hover:text-ink"
             }`}
           >
             {it.label}
-            {on && <span className="f0-seg-bar bg-accent" aria-hidden />}
           </Link>
         );
       })}

@@ -23,6 +23,18 @@ export interface LikeCount {
  * For free members it resolves tier only and returns NO board entries — the
  * page renders the upsell, so board data is never seeded to a free client.
  */
+/**
+ * One company the club RE-THOUGHT inside the window — a member who had already
+ * voted changed that vote. Canvas board 06 draws this as "Opinion Changes · 4
+ * tickers shifted today"; migration 195 added the aggregate behind it. Counts
+ * only: `get_stance_shifts` never returns who changed their mind.
+ */
+export interface StanceShift {
+  ticker: string;
+  shifts: number;
+  net_now: number;
+}
+
 export interface CommunityBoardSeed {
   userId: string;
   tier: FamilyTier;
@@ -31,6 +43,7 @@ export interface CommunityBoardSeed {
   entries: CommunityEntry[];
   likeCounts: Record<string, LikeCount>;
   favorites: Favorite[];
+  stanceShifts: StanceShift[];
 }
 
 export async function getCommunityBoardSeed(
@@ -56,6 +69,7 @@ export async function getCommunityBoardSeed(
     entries: [],
     likeCounts: {},
     favorites: [],
+    stanceShifts: [],
   };
 
   // Never seed board data to a free member — the page renders the upsell.
@@ -71,7 +85,7 @@ export async function getCommunityBoardSeed(
 
   const tickers = Array.from(new Set(entries.map((e) => e.ticker).filter(Boolean)));
 
-  const [likeRows, favorites] = await Promise.all([
+  const [likeRows, favorites, shiftRows] = await Promise.all([
     tickers.length
       ? supabase
           .from("ticker_like_counts")
@@ -80,6 +94,12 @@ export async function getCommunityBoardSeed(
           .then(({ data }) => data ?? [])
       : Promise.resolve([]),
     fetchFavorites(supabase, "all", 5).catch(() => [] as Favorite[]),
+    // Migration 195. Fails soft to [] so a board without the function deployed
+    // simply omits the section rather than erroring the whole first paint.
+    Promise.resolve(supabase.rpc("get_stance_shifts", { p_hours: 24 })).then(
+      ({ data }) => (data ?? []) as StanceShift[],
+      () => [] as StanceShift[]
+    ),
   ]);
 
   const likeCounts: Record<string, LikeCount> = {};
@@ -87,5 +107,5 @@ export async function getCommunityBoardSeed(
     likeCounts[r.ticker] = { likes: r.likes, unlikes: r.unlikes, net: r.net };
   }
 
-  return { ...base, entries, likeCounts, favorites };
+  return { ...base, entries, likeCounts, favorites, stanceShifts: shiftRows };
 }

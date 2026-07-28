@@ -93,7 +93,7 @@ export default function SetAlertButton(props: SetAlertButtonProps) {
         onClick={onOpen}
         title="Set alert"
         aria-label="Set alert"
-        className={`inline-flex items-center justify-center rounded-lg border border-sand bg-paper p-1.5 text-soft transition hover:border-gold-300 hover:text-gold-700 ${className}`}
+        className={`inline-flex items-center justify-center rounded-lg border border-sand bg-paper p-1.5 text-soft transition hover:border-accent/50 hover:text-gold-700 ${className}`}
       >
         <Bell className="h-3.5 w-3.5" />
       </button>
@@ -101,7 +101,7 @@ export default function SetAlertButton(props: SetAlertButtonProps) {
       <button
         type="button"
         onClick={onOpen}
-        className={`inline-flex items-center gap-1.5 rounded-lg border border-gold-300/60 bg-chip-amber/50 px-3 py-1.5 text-[13px] font-semibold text-gold-700 transition hover:bg-chip-amber ${className}`}
+        className={`inline-flex items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-[13px] font-semibold text-gold-700 transition hover:bg-accent/15 ${className}`}
       >
         <BellPlus className="h-4 w-4" />
         Set alert
@@ -237,7 +237,7 @@ function AlertModal({
       onClick={onClose}
     >
       <m.div
-        className="w-full max-w-md rounded-t-3xl border border-sand bg-paper p-5 shadow-xl sm:rounded-3xl"
+        className="w-full max-w-md rounded-t-[18px] border border-sand bg-card p-5 shadow-lift sm:rounded-[18px]"
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 24, opacity: 0 }}
@@ -264,7 +264,7 @@ function AlertModal({
 
         {done ? (
           <div className="flex flex-col items-center gap-2 py-8 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/12 text-gold-700">
               <Check className="h-6 w-6" />
             </span>
             <p className="font-semibold text-ink">Alert set</p>
@@ -285,7 +285,7 @@ function AlertModal({
                       className={`rounded-full border px-2.5 py-1 text-[12px] font-semibold transition ${
                         kind === k
                           ? "border-gold-400 bg-chip-amber text-gold-700"
-                          : "border-sand bg-paper text-soft hover:border-gold-300"
+                          : "border-sand bg-paper text-soft hover:border-accent/50"
                       }`}
                     >
                       {KIND_LABEL[k]}
@@ -304,9 +304,14 @@ function AlertModal({
               />
             )}
 
-            <div className="mt-3 rounded-xl border border-sand bg-paper/60 px-3.5 py-2.5">
-              <p className="text-[12px] font-semibold text-soft/70">You&apos;ll be alerted when</p>
-              <p className="text-[14px] font-semibold text-ink">{label}</p>
+            {/* The confirmation of what will actually fire. It was a bordered
+                panel inside an already-bordered sheet — a box in a box. A rule
+                and an eyebrow carry the same separation with no container. */}
+            <div className="f0-rule-top mt-4 pt-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
+                You&apos;ll be alerted when
+              </p>
+              <p className="mt-1 text-[14px] font-semibold text-ink">{label}</p>
             </div>
 
             <label className="mt-3 flex items-center gap-2.5 text-[13px] text-ink">
@@ -319,8 +324,11 @@ function AlertModal({
               Hold for my daily digest (no instant push)
             </label>
 
+            {/* `bg-red-50` was a light-mode-only tint that goes opaque-pale on
+                the night page, and red is the price colour — a failed write is
+                not a stock falling. */}
             {error && (
-              <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[12px] font-medium text-red-700">
+              <p role="status" className="mt-3 text-[12px] font-semibold text-ink">
                 {error}
               </p>
             )}
@@ -328,14 +336,14 @@ function AlertModal({
             <div className="mt-4 flex gap-2">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-sand bg-paper py-2.5 text-[14px] font-semibold text-soft hover:bg-sand"
+                className="f0-focus f0-press flex-1 rounded-full border border-sand bg-paper py-2.5 text-[14px] font-semibold text-soft transition hover:text-ink"
               >
                 Cancel
               </button>
               <button
                 onClick={save}
                 disabled={busy}
-                className="flex-1 rounded-xl bg-gradient-to-b from-gold-400 to-gold-600 py-2.5 text-[14px] font-bold text-white shadow-soft transition hover:brightness-105 disabled:opacity-60"
+                className="f0-focus f0-press flex-1 rounded-full bg-accent py-2.5 text-[14px] font-bold text-night-950 transition hover:brightness-105 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Set alert"}
               </button>
@@ -420,7 +428,7 @@ function ParamInputs({
               <button
                 key={l.label}
                 onClick={() => patch({ price: round2(l.price), op: l.op ?? params.op ?? "above" })}
-                className="rounded-full border border-sand bg-paper px-2 py-0.5 text-[11px] font-medium text-soft hover:border-gold-300"
+                className="rounded-full border border-sand bg-paper px-2 py-0.5 text-[11px] font-medium text-soft hover:border-accent/50"
               >
                 {l.label} · ${round2(l.price).toLocaleString()}
               </button>
@@ -501,7 +509,7 @@ function Seg({ active, onClick, label }: { active: boolean; onClick: () => void;
     <button
       onClick={onClick}
       className={`flex-1 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition ${
-        active ? "border-gold-400 bg-chip-amber text-gold-700" : "border-sand bg-paper text-soft hover:border-gold-300"
+        active ? "border-gold-400 bg-chip-amber text-gold-700" : "border-sand bg-paper text-soft hover:border-accent/50"
       }`}
     >
       {label}

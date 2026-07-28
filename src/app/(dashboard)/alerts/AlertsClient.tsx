@@ -4,24 +4,19 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { m, AnimatePresence } from "@/lib/motion";
 import {
-  Radio,
   Eye,
   Activity,
-  History as HistoryIcon,
-  Trophy,
   ArrowRight,
   Trash2,
   Plus,
   Sparkles,
   TrendingUp,
   TrendingDown,
-  Info,
   Check,
   Target,
   Crosshair,
   Loader2,
   Zap,
-  Clock,
   Search,
   ChevronRight,
   Users,
@@ -29,13 +24,31 @@ import {
   Bell,
   ChevronDown,
   Gauge,
+  LineChart,
+  RefreshCw,
+  Trophy,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import WatchSetupButton from "@/components/alerts/WatchSetupButton";
 import KaiWatch from "@/components/kai/KaiWatch";
-import Tabs from "@/components/ui/Tabs";
+import WatchRail from "@/components/watch/WatchRail";
+import ProximityMeter from "@/components/watch/ProximityMeter";
+import {
+  Card,
+  CardLink,
+  AccentCard,
+  Dial,
+  StatePill,
+  MetricChip,
+  CountPill,
+  NavCard,
+  CondRow,
+  Eyebrow as BoardEyebrow,
+  BoardLead,
+  SectionPills,
+} from "@/components/alerts/board";
 import {
   MAX_ACTIVE_RULES,
   ruleLabel,
@@ -63,18 +76,43 @@ import {
   SETUP_STATE_META,
   watchStateLine,
   setupStateLine,
-  toneClasses,
   marketStatus,
   freshnessLabel,
+  readSetupLevels,
   type StateTone,
   type ObservationalRow,
 } from "@/lib/alerts/watch-ui";
 
-type Tab = "daily" | "watch" | "live" | "history" | "track";
+/**
+ * /alerts — KAI WATCH, rebuilt on the owner's canvas.
+ *
+ * Boards 06 (Watch · overview), 18 (Watch · Kai Alerts) and 19 (Alert setup) are
+ * the reference. They are CARD boards: the big lowercase wordmark, the orange
+ * pill rail, then white cards on warm paper — nav rows, the accent "getting
+ * close" card with its ring, alert cards with a coloured left edge, and compact
+ * dimmed rows for anything older than today. The obsidian Kai masthead that used
+ * to open this screen is not on any of those boards and is gone.
+ *
+ * WHAT THE CANVAS ASKS FOR THAT WE WILL NOT SAY: board 18 labels its cards BUY
+ * SIGNAL and SELL SIGNAL in the price colours. An alert states what HAPPENED, so
+ * the pill carries the state machine's own word (Triggered · Heating up ·
+ * Building · Into earnings) on the state ramp, and green/red stay on price.
+ * The chips under a card body carry MEASURED quantities the cron recorded —
+ * never invented checkmarks.
+ */
+
+type Tab = "overview" | "daily" | "watch" | "history" | "track";
+
+/** What the cron recorded alongside a watch's current state (migration 157). */
+type WatchDetail = WatchCurrentState["detail"];
 
 interface Props {
   userId: string;
   isSolo: boolean;
+  /** Events + broadcasts that landed since this member last opened the hub. */
+  newSinceSeen: number;
+  /** The watermark itself, so History can mark WHICH rows are the new ones. */
+  hubSeenAt: string | null;
   broadcasts: TradeAlert[];
   events: AlertEvent[];
   rules: AlertRule[];
@@ -106,6 +144,8 @@ const KIND_DIMENSION: Record<AlertKind, string> = {
 export default function AlertsClient({
   userId,
   isSolo,
+  newSinceSeen,
+  hubSeenAt,
   broadcasts,
   events,
   rules: initialRules,
@@ -120,16 +160,57 @@ export default function AlertsClient({
   setups: initialSetups,
   observational,
 }: Props) {
-  const [tab, setTab] = useState<Tab>("daily");
+  const [tab, setTab] = useState<Tab>("overview");
   const [rules, setRules] = useState(initialRules);
   const [setups, setSetups] = useState(initialSetups);
 
-  // Deep-link: /alerts#watch (from the detail "Edit" action) opens My Kai Watch.
+  // Deep-link. Two shapes, and they are NOT the same thing:
+  //   #overview|#daily|#watch|#history|#track → a tab name (the detail screen's
+  //     "Edit this watch" uses #watch). #live is kept as an alias: the Live
+  //     Watches tab was absorbed into the canvas's OVERVIEW board, and old links
+  //     must not land on nothing.
+  //   #kai-nl → an ELEMENT inside the watch tab (the ticker page's Kai Report
+  //     panel links here to start a natural-language watch). It selects the
+  //     owning tab first and scrolls to the node once it exists.
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
-    const valid: Tab[] = ["daily", "watch", "live", "history", "track"];
-    if ((valid as string[]).includes(hash)) setTab(hash as Tab);
+    if (!hash) return;
+    if (hash === "live") {
+      setTab("overview");
+      return;
+    }
+    const valid: Tab[] = ["overview", "daily", "watch", "history", "track"];
+    if ((valid as string[]).includes(hash)) {
+      setTab(hash as Tab);
+      return;
+    }
+    if (hash === "kai-nl") {
+      setTab("watch");
+      // Two frames: one for the tab swap to commit, one for the AnimatePresence
+      // enter to lay out, before the node can be measured.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() =>
+          document
+            .getElementById("kai-nl")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        )
+      );
+    }
   }, []);
+
+  // Stamp the "I have seen the hub" watermark that the N-new count reads back
+  // (migration 195). Fire-and-forget on mount: the count on THIS render is
+  // already computed server-side, so writing now only affects the next visit.
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase
+      .from("alert_prefs")
+      .upsert(
+        { user_id: userId, hub_seen_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      )
+      .then(() => undefined);
+  }, [userId]);
 
   const activeRules = useMemo(() => rules.filter((r) => r.active), [rules]);
   const followedSetups = useMemo(
@@ -144,6 +225,15 @@ export default function AlertsClient({
     return map;
   }, [watchStates]);
 
+  // …and the DETAIL the same cron recorded next to it: how close the condition
+  // is (0..1) and the measured quantity. Stored since migration 157 — it is what
+  // fills the canvas's ring and what the meters are drawn from.
+  const detailByRule = useMemo(() => {
+    const map = new Map<string, WatchDetail>();
+    for (const w of watchStates) map.set(w.rule_id, w.detail || {});
+    return map;
+  }, [watchStates]);
+
   // Honest freshness: the most recent time a cron looked at any of my watches.
   const lastChecked = useMemo(() => {
     let max: string | null = null;
@@ -155,7 +245,7 @@ export default function AlertsClient({
 
   const watchingCount = activeRules.length + followedSetups.length;
 
-  // Developing watches (non-baseline machine state) for the Live tab count.
+  // Developing watches (non-baseline machine state) for the overview count.
   const developingCount = useMemo(() => {
     let n = 0;
     for (const r of activeRules) {
@@ -170,29 +260,29 @@ export default function AlertsClient({
 
   const TAB_ITEMS = useMemo(
     () => [
-      { key: "daily" as const, label: "Kai Daily", icon: Radio },
-      { key: "watch" as const, label: "My Kai Watch", icon: Eye, count: activeRules.length },
-      { key: "live" as const, label: "Live Watches", icon: Activity, count: developingCount || undefined },
-      { key: "history" as const, label: "History", icon: HistoryIcon },
-      { key: "track" as const, label: "Track Record", icon: Trophy },
+      { key: "overview" as const, label: "Overview" },
+      { key: "daily" as const, label: "Kai Daily" },
+      { key: "watch" as const, label: "My watches", count: activeRules.length },
+      { key: "history" as const, label: "Alerts" },
+      { key: "track" as const, label: "Record" },
     ],
-    [activeRules.length, developingCount]
+    [activeRules.length]
   );
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6">
-      <KaiMasthead
+      <WatchHead
+        newSinceSeen={newSinceSeen}
         watchingCount={watchingCount}
         developingCount={developingCount}
         lastChecked={lastChecked}
       />
 
-      <Tabs<Tab>
+      <SectionPills
         tabs={TAB_ITEMS}
         active={tab}
         onSelect={setTab}
         ariaLabel="Kai Watch sections"
-        sticky
         className="mb-6 mt-6"
       />
 
@@ -204,6 +294,20 @@ export default function AlertsClient({
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.15 }}
         >
+          {tab === "overview" && (
+            <OverviewTab
+              onGo={setTab}
+              rules={activeRules}
+              stateByRule={stateByRule}
+              detailByRule={detailByRule}
+              followedSetups={followedSetups}
+              priceMap={priceMap}
+              watchlistCount={watchlistTickers.length}
+              activeCount={activeRules.length}
+              broadcastCount={broadcasts.length}
+              newSinceSeen={newSinceSeen}
+            />
+          )}
           {tab === "daily" && (
             <KaiDailyTab
               broadcasts={broadcasts}
@@ -221,28 +325,30 @@ export default function AlertsClient({
               rules={rules}
               setRules={setRules}
               stateByRule={stateByRule}
+              detailByRule={detailByRule}
               isSolo={isSolo}
               prefs={initialPrefs}
               strategy={initialStrategy}
               watchlistTickers={watchlistTickers}
             />
           )}
-          {tab === "live" && (
-            <LiveWatchesTab
-              rules={activeRules}
-              stateByRule={stateByRule}
-              followedSetups={followedSetups}
+          {tab === "history" && (
+            <HistoryTab
+              events={events}
+              broadcasts={broadcasts}
               priceMap={priceMap}
+              hubSeenAt={hubSeenAt}
+              lastChecked={lastChecked}
+              newSinceSeen={newSinceSeen}
             />
           )}
-          {tab === "history" && <HistoryTab events={events} broadcasts={broadcasts} priceMap={priceMap} />}
           {tab === "track" && (
             <TrackRecordTab track={trackRecord} observational={observational} sampleAlert={sampleAlert} />
           )}
         </m.div>
       </AnimatePresence>
 
-      <p className="mt-10 border-t border-sand pt-4 text-[11px] leading-relaxed text-soft/70">
+      <p className="mt-10 text-[11px] leading-relaxed text-soft/70">
         Kai&apos;s watches and briefings are educational market analysis, not financial advice or a
         recommendation to buy or sell. Intraday prices are delayed roughly 15 minutes. Past
         performance never guarantees future results.
@@ -252,133 +358,440 @@ export default function AlertsClient({
 }
 
 /* ============================================================================
- * KAI MASTHEAD — the one dark object on this surface, and the ONE place in the
- * system where BLUE leads. Everywhere else blue is a Kai accent on cream; here
- * the whole field is Kai, because the whole surface is Kai.
- *
- * COPY LAW (owner decision 7): Kai promises SIGNALS + INTERPRETATION. He reports
- * what changed and what it means — never what will happen, never certainty. The
- * promise line is part of the design, not decoration; it is what makes the blue
- * field honest.
- *
- * THEME: built ON TOP of the locked `.f0-hero-field` (obsidian + its own cream
- * foreground in both themes) rather than as a bespoke navy panel, so it inherits
- * the primitive's theme behaviour for free. The only addition is a Kai tint laid
- * over the field, mixed from `--color-kai-*` — so it tracks the token, never a
- * literal hex. In dark the page is already near-black, so the tint LIFTS (the
- * field has less contrast to fight for) and the accents step up the ramp to
- * kai-300, which stays legible where kai-500 goes dense.
+ * BOARD HEAD — canvas 06/17/18: wordmark, pill rail, then (board 18) the Kai
+ * identity row with the "N NEW" pill. No dark field: none of these boards draw
+ * one, and the one that used to sit here was the loudest thing on the screen
+ * that the canvas does not contain.
  * ==========================================================================*/
-const KAI_TINT: React.CSSProperties = {
-  background: [
-    "radial-gradient(118% 130% at 84% 2%, color-mix(in srgb, var(--color-kai-400) 52%, transparent) 0%, transparent 58%)",
-    "radial-gradient(104% 124% at 2% 102%, color-mix(in srgb, var(--color-kai-600) 44%, transparent) 0%, transparent 62%)",
-    "linear-gradient(155deg, color-mix(in srgb, var(--color-kai-700) 46%, transparent) 0%, transparent 72%)",
-  ].join(", "),
-};
-
-function KaiMasthead({
+function WatchHead({
+  newSinceSeen,
   watchingCount,
   developingCount,
   lastChecked,
 }: {
+  newSinceSeen: number;
   watchingCount: number;
   developingCount: number;
   lastChecked: string | null;
 }) {
   const mkt = marketStatus();
-  const live = watchingCount > 0;
-  const monitorLine = mkt.open
-    ? "Monitoring live"
-    : mkt.label === "Pre-market" || mkt.label === "After hours"
-      ? "Watching after hours"
-      : "Watching overnight";
+
+  // Board 18's sub-line is "Generated from your watchlist & positions · 6:02 AM".
+  // Ours says the same thing from real readings: what Kai is on, the session,
+  // and when a cron last actually looked.
+  const readings = [
+    watchingCount === 1 ? "1 watch running" : `${watchingCount} watches running`,
+    mkt.label,
+    lastChecked ? freshnessLabel(lastChecked).toLowerCase() : "not checked yet",
+  ];
 
   return (
-    <header className="f0-hero-field f0-grain px-5 py-7 sm:px-8 sm:py-8">
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-90 dark:opacity-100"
-        style={KAI_TINT}
-      />
+    <header>
+      <BoardLead word="watch" />
 
-      {/* live eyebrow */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-          {live && (
-            <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-kai-400/60 motion-safe:animate-ping" />
-          )}
-          <span
-            className={`relative inline-flex h-2 w-2 rounded-full ${live ? "bg-kai-300" : "bg-current opacity-35"}`}
-          />
+      <WatchRail active="kai" className="mt-3.5" />
+
+      <Card className="mt-4 flex items-center gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-kai-500/12 text-kai-600 ring-1 ring-kai-500/25">
+          <Sparkles className="h-4 w-4" />
         </span>
-        <span className="font-mono text-eyebrow font-semibold uppercase text-kai-300">
-          {live ? "Kai is live" : "Kai is resting"}
-        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-bold text-ink">Kai&apos;s alerts for you</p>
+          <p className="mt-px truncate text-[10px] text-soft/85">
+            {readings.join(" · ")}
+          </p>
+        </div>
         {developingCount > 0 && (
-          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-volt-300">
+          <span className="hidden shrink-0 items-center gap-1 font-mono text-[9.5px] font-semibold uppercase tracking-[0.12em] text-gold-700 sm:inline-flex">
             <Zap className="h-3 w-3" /> {developingCount} developing
           </span>
         )}
-      </div>
-
-      <h1 className="mt-3 font-display text-display-1 font-extrabold uppercase">
-        Kai Watch
-      </h1>
-
-      <p className="mt-3.5 max-w-lg text-[13.5px] leading-relaxed opacity-70">
-        Signals and interpretation. Kai tells you what moved, when your condition
-        was met, and how to read it — never what happens next.
-      </p>
-
-      {/* the honest instrument panel */}
-      <dl className="mt-6 flex flex-wrap items-end gap-x-9 gap-y-4">
-        <Gauge2 label="Watching" value={String(watchingCount)} />
-        <Gauge2
-          label="Developing"
-          value={String(developingCount)}
-          tone={developingCount > 0 ? "volt" : undefined}
-        />
-        <Gauge2 label="Market" value={mkt.label} small />
-        <Gauge2
-          label="Last check"
-          value={lastChecked ? freshnessLabel(lastChecked) : monitorLine}
-          small
-        />
-      </dl>
+        {/* The canvas draws a "3 NEW" pill. It is only allowed to exist because
+            migration 195 gave the hub a real watermark to measure against — a
+            first-ever visit shows nothing rather than inventing a backlog. */}
+        {newSinceSeen > 0 && <CountPill strong>{newSinceSeen} new</CountPill>}
+      </Card>
     </header>
   );
 }
 
-function Gauge2({
-  label,
-  value,
-  small,
-  tone,
+/* ============================================================================
+ * OVERVIEW — canvas board 06.
+ *
+ * The board draws four nav rows, then the "GETTING CLOSE" accent card with its
+ * ring, then a compact row for the next setup along. Three of the four nav rows
+ * have real destinations in this app; the fourth (an earnings calendar) has no
+ * data source, so it is not drawn as a dead row.
+ * ==========================================================================*/
+function OverviewTab({
+  onGo,
+  rules,
+  stateByRule,
+  detailByRule,
+  followedSetups,
+  priceMap,
+  watchlistCount,
+  activeCount,
+  broadcastCount,
+  newSinceSeen,
 }: {
-  label: string;
-  value: string;
-  small?: boolean;
-  tone?: "volt";
+  onGo: (t: Tab) => void;
+  rules: AlertRule[];
+  stateByRule: Map<string, WatchState>;
+  detailByRule: Map<string, WatchDetail>;
+  followedSetups: AlertSetup[];
+  priceMap: Record<string, number>;
+  watchlistCount: number;
+  activeCount: number;
+  broadcastCount: number;
+  newSinceSeen: number;
 }) {
+  // Everything actually developing, ordered by how close the cron says it is.
+  // The nearest one becomes the board's accent card; the rest are compact rows.
+  const developing = useMemo(() => {
+    const rows = rules
+      .map((r) => ({ r, state: stateByRule.get(r.id), detail: detailByRule.get(r.id) ?? null }))
+      .filter(
+        (x): x is { r: AlertRule; state: WatchState; detail: WatchDetail | null } =>
+          !!x.state && WATCH_STATE_META[x.state].developing
+      );
+    return rows.sort((a, b) => (b.detail?.progress ?? 0) - (a.detail?.progress ?? 0));
+  }, [rules, stateByRule, detailByRule]);
+
+  const liveSetups = useMemo(
+    () => followedSetups.filter((s) => SETUP_STATE_META[s.state]?.developing),
+    [followedSetups]
+  );
+
+  const lead = developing[0] ?? null;
+  const rest = developing.slice(1);
+
   return (
-    <div>
-      <dt className="font-mono text-[10px] uppercase tracking-[0.16em] opacity-50">
-        {label}
-      </dt>
-      <dd
-        className={`mt-1 font-mono font-semibold leading-none tabular-nums ${
-          small ? "text-[14px]" : "text-[26px]"
-        } ${tone === "volt" ? "text-volt-300" : ""}`}
-      >
-        {value}
-      </dd>
+    <div className="space-y-6">
+      {/* ── the board's four rows ───────────────────────────────────────── */}
+      <div className="space-y-2">
+        <NavCard
+          href="/watchlist"
+          icon={<LineChart className="h-4 w-4" />}
+          title="My watchlist"
+          sub={
+            watchlistCount === 0
+              ? "Nothing on the board yet"
+              : `${watchlistCount} ${watchlistCount === 1 ? "company" : "companies"}`
+          }
+        />
+        <NavCard
+          onClick={() => onGo("watch")}
+          icon={<Eye className="h-4 w-4" />}
+          title="Kai Watch"
+          sub={
+            activeCount === 0
+              ? "Tell Kai what to watch"
+              : `${activeCount} active ${activeCount === 1 ? "setup" : "setups"}`
+          }
+          badge={developing.length || undefined}
+        />
+        <NavCard
+          onClick={() => onGo("daily")}
+          icon={<Bell className="h-4 w-4" />}
+          title="Kai Daily"
+          sub={
+            broadcastCount === 0
+              ? "Kai's briefing setups land here"
+              : `${broadcastCount} recent ${broadcastCount === 1 ? "setup" : "setups"}`
+          }
+          badge={newSinceSeen || undefined}
+        />
+        <NavCard
+          href="/watchlist/community"
+          icon={<RefreshCw className="h-4 w-4" />}
+          title="Opinion changes"
+          sub="Who the club re-thought in the last 24 hours"
+        />
+      </div>
+
+      {/* ── GETTING CLOSE — the board's centrepiece ─────────────────────── */}
+      {lead ? (
+        <GettingCloseCard
+          r={lead.r}
+          state={lead.state}
+          detail={lead.detail}
+          current={lead.r.ticker ? priceMap[lead.r.ticker] ?? null : null}
+        />
+      ) : (
+        <Card className="px-4 py-5">
+          <BoardEyebrow accent>Getting close</BoardEyebrow>
+          <p className="mt-2 font-display text-[16px] font-extrabold text-ink">
+            Nothing at the doorstep
+          </p>
+          <p className="mt-1.5 max-w-md text-[12.5px] leading-relaxed text-soft">
+            Kai is watching quietly. The moment one of your conditions starts to
+            build, it moves up here with how close it is — so you read it before
+            it trips, not after.
+          </p>
+          <button
+            onClick={() => onGo("watch")}
+            className="f0-focus mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+          >
+            Tell Kai what to watch <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </Card>
+      )}
+
+      {/* ── everything else on the move ─────────────────────────────────── */}
+      {rest.length > 0 && (
+        <section className="space-y-2">
+          <BoardEyebrow className="mb-1">Also developing</BoardEyebrow>
+          {rest.map(({ r, state, detail }) => (
+            <DevelopingRow
+              key={r.id}
+              r={r}
+              state={state}
+              detail={detail}
+              current={r.ticker ? priceMap[r.ticker] ?? null : null}
+            />
+          ))}
+        </section>
+      )}
+
+      {liveSetups.length > 0 && (
+        <section className="space-y-2">
+          <BoardEyebrow className="mb-1">Setups you&apos;re following</BoardEyebrow>
+          {liveSetups.map((s) => (
+            <LiveSetupCard key={s.id} s={s} current={priceMap[s.ticker] ?? null} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }
 
+/**
+ * The canvas's "GETTING CLOSE · NVDA Bullish Break · 2/3" card: accent gradient,
+ * a ring, and a condition list beside it.
+ *
+ * OUR RING IS THE CRON'S OWN NUMBER. `detail.progress` is a 0..1 closeness the
+ * Lane-A cron computes on every transition. It sizes the ring, and the centre
+ * prints the state machine's STEP (e.g. 3 of 5 states walked), not a percentage
+ * — because progress normalises seven different condition kinds and a "%" next
+ * to a ticker would be read as a likelihood, which it is not.
+ *
+ * The condition list is the real machine path: the states this watch has
+ * actually reached, ticked, and the one it is working on, hollow.
+ */
+const WATCH_LADDER: WatchState[] = ["watching", "building", "near_trigger", "triggered"];
+
+function GettingCloseCard({
+  r,
+  state,
+  detail,
+  current,
+}: {
+  r: AlertRule;
+  state: WatchState;
+  detail: WatchDetail | null;
+  current: number | null;
+}) {
+  const meta = WATCH_STATE_META[state];
+  const condition = r.label || ruleLabel(r.kind, r.ticker, r.params);
+  const idx = WATCH_LADDER.indexOf(state);
+  // Off-ladder states (cooled / stood down / into earnings) get no step count —
+  // they are not "N of 4 of the way there", they are somewhere else entirely.
+  const onLadder = idx >= 0;
+  const step = onLadder ? idx + 1 : null;
+  const progress =
+    typeof detail?.progress === "number" && Number.isFinite(detail.progress)
+      ? Math.min(1, Math.max(0, detail.progress))
+      : onLadder
+        ? (idx + 1) / WATCH_LADDER.length
+        : 0.5;
+
+  return (
+    <AccentCard>
+      <div className="flex items-start gap-3">
+        <BoardEyebrow accent>Getting close</BoardEyebrow>
+        <span className="ml-auto shrink-0">
+          <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
+        </span>
+      </div>
+
+      <div className="mt-2 flex items-center gap-2.5">
+        {r.ticker && (
+          <CompanyLogo symbol={r.ticker} name={r.ticker} size={28} rounded="rounded-[9px]" />
+        )}
+        <p className="min-w-0 flex-1 truncate font-display text-[16px] font-extrabold text-ink">
+          {r.ticker ? `$${r.ticker}` : "Screen"} · {condition}
+        </p>
+        {current != null && (
+          <span className="shrink-0 font-mono text-[13px] font-semibold tabular-nums text-ink">
+            {money(current)}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-4 flex items-center gap-4">
+        <Dial
+          value={progress}
+          size={84}
+          tone={meta.tone}
+          center={step ? `${step}/${WATCH_LADDER.length}` : meta.label.slice(0, 1)}
+          centerClassName="text-[16px]"
+          label={
+            step
+              ? `Step ${step} of ${WATCH_LADDER.length} of the way to this condition`
+              : `Kai's current read on this watch: ${meta.label}`
+          }
+        />
+        <div className="min-w-0 flex-1 space-y-2">
+          {onLadder ? (
+            WATCH_LADDER.map((s, i) => (
+              <CondRow
+                key={s}
+                met={i <= idx}
+                tone={meta.tone}
+                label={WATCH_STATE_META[s].label}
+                value={i === idx && typeof detail?.metric === "string" ? detail.metric : null}
+              />
+            ))
+          ) : (
+            <p className="text-[12.5px] leading-relaxed text-ink/85">
+              {watchStateLine(state, r.ticker || "this screen")}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-sand pt-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-soft/75">
+          {r.last_checked_at ? freshnessLabel(r.last_checked_at) : "Queued"}
+        </span>
+        {r.ticker && (
+          <Link
+            href={`/research/${encodeURIComponent(r.ticker)}`}
+            className="ml-auto inline-flex items-center gap-1 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+          >
+            See what Kai found <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    </AccentCard>
+  );
+}
+
+/** The canvas's compact "TSLA earnings setup · 1/3 conditions · 3 days" row. */
+function DevelopingRow({
+  r,
+  state,
+  detail,
+  current,
+}: {
+  r: AlertRule;
+  state: WatchState;
+  detail: WatchDetail | null;
+  current: number | null;
+}) {
+  const meta = WATCH_STATE_META[state];
+  const label = r.label || ruleLabel(r.kind, r.ticker, r.params);
+  return (
+    <Card edge={meta.tone}>
+      <div className="flex items-center gap-3">
+        {r.ticker ? (
+          <CompanyLogo symbol={r.ticker} name={r.ticker} size={30} rounded="rounded-[9px]" />
+        ) : (
+          <span className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[9px] bg-kai-500/10 text-kai-600">
+            <Sparkles className="h-3.5 w-3.5" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[12.5px] text-ink/85">
+            <span className="font-display font-extrabold text-ink">
+              {r.ticker ? `$${r.ticker}` : "Screen"}
+            </span>{" "}
+            · {label}
+          </p>
+          <p className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.1em] text-soft/70">
+            {watchStateLine(state, r.ticker || "this screen")}
+          </p>
+        </div>
+        {current != null && (
+          <span className="shrink-0 font-mono text-[12.5px] font-semibold tabular-nums text-ink">
+            {money(current)}
+          </span>
+        )}
+        <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
+      </div>
+      <ProximityMeter
+        className="mt-2.5"
+        progress={detail?.progress}
+        tone={meta.tone}
+        metric={typeof detail?.metric === "string" ? detail.metric : null}
+      />
+    </Card>
+  );
+}
+
+function LiveSetupCard({ s, current }: { s: AlertSetup; current: number | null }) {
+  const meta = SETUP_STATE_META[s.state];
+  // Board 19 puts the two numbers that DEFINE a setup on the screen — where it
+  // works and where it is wrong. They live on alert_setups.levels.
+  const L = readSetupLevels(s.levels);
+  const marks: { label: string; value: number; tone: "up" | "down" | "flat" }[] = [];
+  if (s.entry != null) marks.push({ label: "Entry", value: s.entry, tone: "flat" });
+  if (L.resistance != null) marks.push({ label: "Level", value: L.resistance, tone: "up" });
+  if (L.stop != null) marks.push({ label: "Invalid", value: L.stop, tone: "down" });
+  else if (L.support != null) marks.push({ label: "Support", value: L.support, tone: "down" });
+
+  return (
+    <Card edge={meta.tone}>
+      <div className="flex items-center gap-3">
+        <CompanyLogo symbol={s.ticker} name={s.ticker} size={30} rounded="rounded-[9px]" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
+              ${s.ticker}
+            </span>
+            <DirChip dir={s.direction} />
+          </div>
+          {s.thesis && <p className="mt-0.5 truncate text-[12px] text-soft">{s.thesis}</p>}
+        </div>
+        {current != null && (
+          <span className="shrink-0 font-mono text-[12.5px] font-semibold tabular-nums text-ink">
+            {money(current)}
+          </span>
+        )}
+        <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
+      </div>
+
+      <p className="mt-2 text-[12.5px] leading-relaxed text-ink/85">
+        {setupStateLine(s.state, s.ticker)}
+      </p>
+
+      {marks.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {marks.map((mk) => (
+            <MetricChip key={mk.label}>
+              <span className="uppercase tracking-[0.1em]">{mk.label}</span>
+              <span
+                className={
+                  mk.tone === "up"
+                    ? "text-price-up"
+                    : mk.tone === "down"
+                      ? "text-price-down"
+                      : "text-ink"
+                }
+              >
+                {money(mk.value)}
+              </span>
+            </MetricChip>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /* ============================================================================
- * KAI DAILY — curated broadcasts, each followable as a setup + its thread.
+ * KAI DAILY — canvas board 18's alert cards, one per broadcast.
  * ==========================================================================*/
 function KaiDailyTab({
   broadcasts,
@@ -397,7 +810,6 @@ function KaiDailyTab({
   marketEvents: Props["marketEvents"];
   sampleAlert: SampleAlert | null;
 }) {
-  // Setup per broadcast (for the Watch-this-setup button + subscribed thread).
   const setupByAlert = useMemo(() => {
     const m = new Map<string, AlertSetup>();
     for (const s of setups) m.set(s.alert_id, s);
@@ -426,68 +838,99 @@ function KaiDailyTab({
     [setSetups]
   );
 
+  // Board 18 groups by day. Broadcasts arrive newest-first, so one pass keeps
+  // that order and drops empty buckets.
+  const groups = useMemo(() => {
+    const out: { label: string; rows: TradeAlert[] }[] = [];
+    let cur: { label: string; rows: TradeAlert[] } | null = null;
+    for (const b of broadcasts) {
+      const label = dateBucket(b.issued_at);
+      if (!cur || cur.label !== label) {
+        cur = { label, rows: [] };
+        out.push(cur);
+      }
+      cur.rows.push(b);
+    }
+    return out;
+  }, [broadcasts]);
+
   return (
-    <div className="space-y-5">
-      <SectionIntro
-        title="Kai Daily"
-        blurb="Kai's read on the market — the setups worth studying, with the levels that define them. Follow one and you get every step as it develops."
-      />
+    <div className="space-y-6">
+      <p className="max-w-lg text-[13px] leading-relaxed text-soft">
+        Kai&apos;s read on the market — the setups worth studying, with the levels
+        that define them. Follow one and you get every step as it develops.
+      </p>
 
       {sampleAlert && <SampleAlertCard s={sampleAlert} />}
 
       {broadcasts.length === 0 ? (
-        <div className="border-t border-sand/70 pt-6">
-          <p className="font-display text-display-3 font-extrabold text-ink">Kai Daily lands here</p>
-          <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
-            Kai&apos;s daily briefing setups post here as soon as they go out. Meanwhile, tell Kai
-            what to watch for you in <span className="font-semibold text-ink">My Kai Watch</span>.
-          </p>
+        <>
+          <Card className="px-4 py-5">
+            <p className="font-display text-[17px] font-extrabold text-ink">
+              Kai Daily lands here
+            </p>
+            <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
+              Kai&apos;s daily briefing setups post here as soon as they go out.
+              Meanwhile, tell Kai what to watch for you in{" "}
+              <span className="font-semibold text-ink">My watches</span>.
+            </p>
+          </Card>
+
           {marketEvents.length > 0 && (
-            <div className="mt-7">
-              <LedgerLabel>This week in the market</LedgerLabel>
-              <div className="f0-ledger border-y border-sand/70">
-                {marketEvents.map((mkt, i) => (
-                  <Link
-                    key={i}
-                    href={mkt.ticker ? `/research/${encodeURIComponent(mkt.ticker)}` : `/news/${mkt.slug}`}
-                    className="f0-ledger-row"
-                  >
+            <section className="space-y-2">
+              <BoardEyebrow className="mb-1">This week in the market</BoardEyebrow>
+              {marketEvents.map((mkt, i) => (
+                <CardLink
+                  key={i}
+                  href={mkt.ticker ? `/research/${encodeURIComponent(mkt.ticker)}` : `/news/${mkt.slug}`}
+                >
+                  <div className="flex items-center gap-3">
                     {mkt.ticker && (
-                      <CompanyLogo symbol={mkt.ticker} name={mkt.ticker} size={30} rounded="rounded-lg" />
+                      <CompanyLogo symbol={mkt.ticker} name={mkt.ticker} size={30} rounded="rounded-[9px]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-semibold text-ink">{mkt.title}</p>
-                      {mkt.dek && <p className="truncate text-[12px] text-soft">{mkt.dek}</p>}
+                      {mkt.dek && <p className="truncate text-[11.5px] text-soft">{mkt.dek}</p>}
                     </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-soft" />
-                  </Link>
-                ))}
-              </div>
-            </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-soft/60" />
+                  </div>
+                </CardLink>
+              ))}
+            </section>
           )}
-        </div>
+        </>
       ) : (
-        <div className="f0-ledger border-t border-sand/70">
-          {broadcasts.map((b) => {
-            const setup = setupByAlert.get(b.id);
-            const thread = setup ? threadBySetup.get(setup.id) || [] : [];
-            return (
-              <BroadcastCard
-                key={b.id}
-                b={b}
-                current={priceMap[b.ticker] ?? null}
-                setup={setup}
-                thread={thread}
-                onSub={onSub}
-              />
-            );
-          })}
-        </div>
+        groups.map((g) => (
+          <section key={g.label} className="space-y-2">
+            <BoardEyebrow className="mb-1">{g.label}</BoardEyebrow>
+            {g.rows.map((b) => {
+              const setup = setupByAlert.get(b.id);
+              const thread = setup ? threadBySetup.get(setup.id) || [] : [];
+              return (
+                <BroadcastCard
+                  key={b.id}
+                  b={b}
+                  current={priceMap[b.ticker] ?? null}
+                  setup={setup}
+                  thread={thread}
+                  onSub={onSub}
+                />
+              );
+            })}
+          </section>
+        ))
       )}
     </div>
   );
 }
 
+/**
+ * ONE ALERT — canvas board 18's card, minus the verdict.
+ *
+ * The canvas puts a green BUY SIGNAL / red SELL SIGNAL pill in this slot. What
+ * ships is the setup's own lifecycle state on the state ramp, so the card says
+ * what happened and never what to do. The left edge takes the same tone.
+ */
 function BroadcastCard({
   b,
   current,
@@ -501,83 +944,118 @@ function BroadcastCard({
   thread: AlertEvent[];
   onSub: (setupId: string, subscribed: boolean) => void;
 }) {
+  const meta = setup ? SETUP_STATE_META[setup.state] : null;
+  const tone: StateTone = meta?.tone ?? "kai";
   const following = !!setup?.subscribed;
+  const L = readSetupLevels(setup?.levels);
+
   return (
-    <article className="py-5">
-      <div>
-        <div className="flex items-start gap-3.5">
-          <CompanyLogo symbol={b.ticker} name={b.ticker} size={40} rounded="rounded-lg" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-                ${b.ticker}
-              </span>
-              <DirChip dir={b.direction} />
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-kai-600">
-                {b.source === "kai_intraday" ? "Kai · intraday" : "Kai · daily"}
-              </span>
-              {setup && <SetupStateChip state={setup.state} />}
-            </div>
-            {b.setup_label && (
-              <p className="mt-0.5 truncate text-[13px] font-medium text-soft">{b.setup_label}</p>
-            )}
-          </div>
-          <div className="shrink-0 text-right">
-            <PerfSince from={b.snapshot_price} to={current} />
-            <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/55">since issued</p>
-          </div>
-        </div>
-
-        {b.narrative && (
-          <p className="mt-2.5 line-clamp-2 max-w-prose text-[13px] leading-relaxed text-ink/80">
-            {b.narrative}
-          </p>
+    <Card edge={tone}>
+      <div className="flex items-center gap-2.5">
+        {meta ? (
+          <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
+        ) : (
+          <StatePill tone="kai" label="Kai daily" />
         )}
+        <span className="font-mono text-[12px] font-semibold text-ink">{b.ticker}</span>
+        <DirChip dir={b.direction} />
+        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
+          {timeAgo(b.issued_at)}
+        </span>
+      </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          {setup ? (
-            <WatchSetupButton
-              setupId={setup.id}
-              initialSubscribed={following}
-              onChange={(sub) => onSub(setup.id, sub)}
-            />
-          ) : null}
-          <Link
-            href={`/research/${encodeURIComponent(b.ticker)}`}
-            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-soft transition hover:text-ink"
-          >
-            Research ${b.ticker} <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-          <span className="ml-auto font-mono text-[10.5px] text-soft/60">{timeAgo(b.issued_at)}</span>
+      <div className="mt-3 flex items-start gap-3">
+        <CompanyLogo symbol={b.ticker} name={b.ticker} size={36} rounded="rounded-[10px]" />
+        <div className="min-w-0 flex-1">
+          {b.setup_label && (
+            <p className="text-[13.5px] font-bold leading-snug text-ink">{b.setup_label}</p>
+          )}
+          {b.narrative && (
+            <p className="mt-1 line-clamp-3 text-[12.5px] leading-relaxed text-ink/80">
+              {b.narrative}
+            </p>
+          )}
         </div>
+        <div className="shrink-0 text-right">
+          <PerfSince from={b.snapshot_price} to={current} />
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
+            since issued
+          </p>
+        </div>
+      </div>
+
+      {/* The canvas's chip row. Every chip here is a stored number — the levels
+          that define the setup and the price it was issued at. Nothing is
+          asserted as "met" that the machine did not measure. */}
+      {(b.entry != null || L.resistance != null || L.stop != null || b.snapshot_price != null) && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {b.entry != null && (
+            <MetricChip>
+              <span className="uppercase tracking-[0.1em]">Entry</span>
+              <span className="text-ink">{money(b.entry)}</span>
+            </MetricChip>
+          )}
+          {L.resistance != null && (
+            <MetricChip>
+              <span className="uppercase tracking-[0.1em]">Level</span>
+              <span className="text-price-up">{money(L.resistance)}</span>
+            </MetricChip>
+          )}
+          {L.stop != null && (
+            <MetricChip>
+              <span className="uppercase tracking-[0.1em]">Invalid</span>
+              <span className="text-price-down">{money(L.stop)}</span>
+            </MetricChip>
+          )}
+          {b.snapshot_price != null && (
+            <MetricChip>
+              <span className="uppercase tracking-[0.1em]">Issued at</span>
+              <span className="text-ink">{money(b.snapshot_price)}</span>
+            </MetricChip>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-sand pt-3">
+        {setup ? (
+          <WatchSetupButton
+            setupId={setup.id}
+            initialSubscribed={following}
+            onChange={(sub) => onSub(setup.id, sub)}
+          />
+        ) : null}
+        <Link
+          href={`/research/${encodeURIComponent(b.ticker)}`}
+          className="ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
+        >
+          Research ${b.ticker} <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
 
       {/* Followed-setup lifecycle thread (opt-ins only). */}
       {following && (
-        <div className="mt-4 border-l-2 border-kai-500/40 pl-4">
-          <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-kai-600">
+        <div className="mt-3 border-t border-sand pt-3">
+          <p className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-kai-600">
             <Eye className="h-3.5 w-3.5" /> You&apos;re following this setup
           </p>
           {thread.length === 0 ? (
             <p className="text-[12px] leading-snug text-soft">
-              {setup ? setupStateLine(setup.state, b.ticker) : `Kai is watching ${b.ticker}.`} You&apos;ll
-              get every step — confirmed, triggered or called off.
+              {setup ? setupStateLine(setup.state, b.ticker) : `Kai is watching ${b.ticker}.`}{" "}
+              You&apos;ll get every step — confirmed, triggered or called off.
             </p>
           ) : (
             <ol className="space-y-2">
               {thread.map((e) => {
                 const st = (e.payload?.state as SetupState) || "waiting";
-                const tone = SETUP_STATE_META[st]?.tone ?? "quiet";
-                const tc = toneClasses(tone);
+                const tm = SETUP_STATE_META[st];
                 return (
                   <li key={e.id} className="flex gap-2.5">
-                    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${tc.dot} ${tc.glow}`} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[12px] leading-snug text-ink/85">
-                        {e.payload?.message || setupStateLine(st, b.ticker)}
-                      </p>
-                      <p className="text-[10px] text-soft/60">{timeAgo(e.fired_at)}</p>
-                    </div>
+                    <CondRow
+                      met
+                      tone={tm?.tone ?? "quiet"}
+                      label={e.payload?.message || setupStateLine(st, b.ticker)}
+                      value={timeAgo(e.fired_at)}
+                    />
                   </li>
                 );
               })}
@@ -585,11 +1063,11 @@ function BroadcastCard({
           )}
         </div>
       )}
-    </article>
+    </Card>
   );
 }
 
-/* ---------- SAMPLE alert (kept from C6 — built from real screener data) ---------- */
+/* ---------- SAMPLE alert (built from real screener data) ---------- */
 function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -600,105 +1078,70 @@ function money0(n: number): string {
 function SampleAlertCard({ s }: { s: SampleAlert }) {
   const L = s.levels;
   return (
-    <div className="border-l-2 border-dashed border-kai-500/45 pl-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-kai-600">
-          <Info className="h-3.5 w-3.5" />
-          Sample — what a Kai Daily setup looks like
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
+    <Card className="border-dashed">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatePill tone="kai" label="Sample" />
+        <span className="text-[11.5px] text-soft">What a Kai Daily setup looks like</span>
+        <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/60">
           example only
         </span>
       </div>
 
-      <div className="pt-3">
-        <div className="flex items-start gap-3">
-          <CompanyLogo symbol={s.ticker} name={s.name} size={44} rounded="rounded-lg" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-                ${s.ticker}
-              </span>
-              <DirChip dir={s.direction} />
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-kai-600">
-                Kai · daily
-              </span>
-            </div>
-            <p className="mt-0.5 text-[13px] font-semibold text-ink/90">{s.setup_label}</p>
+      <div className="mt-3 flex items-start gap-3">
+        <CompanyLogo symbol={s.ticker} name={s.name} size={40} rounded="rounded-[11px]" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
+              ${s.ticker}
+            </span>
+            <DirChip dir={s.direction} />
           </div>
-          <div className="shrink-0 text-right">
-            <p className="font-mono text-[15px] font-semibold tabular-nums text-ink">
-              {money(s.price)}
-            </p>
-            <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/60">{s.tier}</p>
-          </div>
+          <p className="mt-0.5 text-[13px] font-semibold text-ink/90">{s.setup_label}</p>
         </div>
-
-        <p className="mt-3 max-w-prose text-[13px] leading-relaxed text-ink/80">{s.thesis}</p>
-
-        <div className="f0-ledger mt-3 border-y border-sand/70">
-          <LevelRow
-            tone="entry"
-            label="Entry zone"
-            value={`$${money0(L.entryLow)} – $${money0(L.entryHigh)}`}
-            note={`reclaim & hold the $${money0(L.pivot)} pivot`}
-          />
-          {L.targets.map((t) => (
-            <LevelRow
-              key={t.label}
-              tone="target"
-              label={t.label.split(" · ")[0]}
-              value={`$${money0(t.price)}`}
-              note={t.label.split(" · ")[1] ?? "target"}
-            />
-          ))}
-          <LevelRow
-            tone="invalid"
-            label="Invalidation"
-            value={`$${money0(L.invalidation)}`}
-            note={`close below the $${money0(L.shelfLow)} shelf`}
-          />
+        <div className="shrink-0 text-right">
+          <p className="font-mono text-[15px] font-semibold tabular-nums text-ink">
+            {money(s.price)}
+          </p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/60">{s.tier}</p>
         </div>
-
-        <p className="mt-3 flex gap-2 text-[12.5px] leading-relaxed text-ink/80">
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-kai-600" />
-          <span>{s.kaiRead}</span>
-        </p>
-
-        <p className="mt-2.5 text-[11px] leading-relaxed text-soft/70">
-          Kai&apos;s read is educational analysis of price levels — not a recommendation to buy or
-          sell, and not personalized advice. Levels are drawn from recent prices; you decide what to
-          do with them.
-        </p>
       </div>
-    </div>
-  );
-}
 
-function LevelRow({
-  tone,
-  label,
-  value,
-  note,
-}: {
-  tone: "entry" | "target" | "invalid";
-  label: string;
-  value: string;
-  note: string;
-}) {
-  // Levels are PRICE, so only the price ramp appears here: green above, red at
-  // invalidation, neutral ink for the entry zone itself.
-  const dot = tone === "target" ? "bg-green-500" : tone === "invalid" ? "bg-red-500" : "bg-ink/35";
-  const val = tone === "target" ? "text-green-600 dark:text-green-400" : tone === "invalid" ? "text-red-600 dark:text-red-500" : "text-ink";
-  return (
-    <div className="flex min-w-0 items-center gap-2.5 py-2">
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
-      <span className="w-20 shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-soft/80 sm:w-24">
-        {label}
-      </span>
-      <span className={`shrink-0 font-mono text-[13px] font-semibold tabular-nums ${val}`}>{value}</span>
-      <span className="min-w-0 flex-1 truncate text-right text-[11px] text-soft/70">{note}</span>
-    </div>
+      <p className="mt-3 text-[12.5px] leading-relaxed text-ink/80">{s.thesis}</p>
+
+      <div className="mt-3 space-y-2 border-t border-sand pt-3">
+        <CondRow
+          met={false}
+          tone="quiet"
+          label={`Entry zone — reclaim & hold the $${money0(L.pivot)} pivot`}
+          value={`$${money0(L.entryLow)}–${money0(L.entryHigh)}`}
+        />
+        {L.targets.map((t) => (
+          <CondRow
+            key={t.label}
+            met={false}
+            tone="quiet"
+            label={t.label}
+            value={`$${money0(t.price)}`}
+          />
+        ))}
+        <CondRow
+          met={false}
+          tone="quiet"
+          label={`Invalidation — close below the $${money0(L.shelfLow)} shelf`}
+          value={`$${money0(L.invalidation)}`}
+        />
+      </div>
+
+      <p className="mt-3 flex gap-2 text-[12.5px] leading-relaxed text-ink/80">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-kai-600" />
+        <span>{s.kaiRead}</span>
+      </p>
+
+      <p className="mt-2.5 text-[11px] leading-relaxed text-soft/70">
+        Kai&apos;s read is educational analysis of price levels — not a
+        recommendation to buy or sell, and not personalized advice.
+      </p>
+    </Card>
   );
 }
 
@@ -709,7 +1152,11 @@ function PerfSince({ from, to }: { from: number | null; to: number | null }) {
   const pct = ((to - from) / from) * 100;
   const up = pct >= 0;
   return (
-    <span className={`inline-flex items-center gap-1 text-[12px] font-bold tabular-nums ${up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-500"}`}>
+    <span
+      className={`inline-flex items-center gap-1 text-[12.5px] font-bold tabular-nums ${
+        up ? "text-price-up" : "text-price-down"
+      }`}
+    >
       {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
       {up ? "+" : ""}
       {pct.toFixed(1)}%
@@ -717,41 +1164,26 @@ function PerfSince({ from, to }: { from: number | null; to: number | null }) {
   );
 }
 
+/**
+ * Which WAY a setup is drawn — the direction of the level being watched, not an
+ * instruction. Carried by an arrow and the word, never by a green/red pill:
+ * green and red belong to price, and a green LONG badge is a verdict in a
+ * costume.
+ */
+const DIR_GLYPH: Record<string, string> = { long: "↑", short: "↓", watch: "•" };
+
 function DirChip({ dir }: { dir: string }) {
-  const map: Record<string, string> = {
-    // Alpha-mixed fills, not the -50 steps: those are light-mode-only tints and
-    // go opaque-pale on the night page.
-    long: "bg-green-500/12 text-green-600 dark:text-green-400",
-    short: "bg-red-500/12 text-red-600 dark:text-red-500",
-    watch: "bg-sand text-soft",
-  };
+  const glyph = DIR_GLYPH[dir] ?? DIR_GLYPH.watch;
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] ${map[dir] || map.watch}`}
-    >
+    <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft">
+      <span aria-hidden>{glyph}</span>
       {dir}
     </span>
   );
 }
 
-function StateChip({ tone, label, live }: { tone: StateTone; label: string; live?: boolean }) {
-  const tc = toneClasses(tone);
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tc.chip}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${tc.dot} ${live ? tc.glow : ""}`} />
-      {label}
-    </span>
-  );
-}
-
-function SetupStateChip({ state }: { state: SetupState }) {
-  const meta = SETUP_STATE_META[state];
-  if (!meta) return null;
-  return <StateChip tone={meta.tone} label={meta.label} live={meta.live} />;
-}
-
 /* ============================================================================
- * MY KAI WATCH — "What Kai Is Watching" (NL-first, intentions, all management).
+ * MY WATCHES — NL-first, intentions, and every watch as a card.
  * ==========================================================================*/
 const INTENTIONS: { id: string; label: string; icon: typeof Bell; prompt: string }[] = [
   { id: "price", label: "Price Level", icon: Target, prompt: "Tell me if NVDA drops below $150" },
@@ -771,6 +1203,7 @@ function MyWatchTab({
   rules,
   setRules,
   stateByRule,
+  detailByRule,
   isSolo,
   prefs,
   strategy,
@@ -780,6 +1213,7 @@ function MyWatchTab({
   rules: AlertRule[];
   setRules: React.Dispatch<React.SetStateAction<AlertRule[]>>;
   stateByRule: Map<string, WatchState>;
+  detailByRule: Map<string, WatchDetail>;
   isSolo: boolean;
   prefs: AlertPrefs;
   strategy: StrategyProfile | null;
@@ -795,7 +1229,6 @@ function MyWatchTab({
 
   const prefill = useCallback((text: string) => {
     setSeed((s) => ({ text, nonce: s.nonce + 1 }));
-    // Scroll the NL box into view.
     requestAnimationFrame(() => {
       document.getElementById("kai-nl")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
@@ -840,41 +1273,42 @@ function MyWatchTab({
   }, [userId, setRules]);
 
   return (
-    <div className="space-y-5">
-      <SectionIntro
-        title="Tell Kai what to watch"
-        blurb="Say it in plain English — a stock, a price, a moment you care about. Kai turns it into a watch and tells you the moment it happens."
-      />
+    <div className="space-y-6">
+      <p className="max-w-lg text-[13px] leading-relaxed text-soft">
+        Say it in plain English — a stock, a price, a moment you care about. Kai
+        turns it into a watch and tells you the moment it happens.
+      </p>
 
       {/* Intentions — deterministic prefills (usable even if NL parse is offline). */}
-      <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
+      <div className="flex flex-wrap gap-1.5">
         {INTENTIONS.map((it) => {
           const Icon = it.icon;
           return (
             <button
               key={it.id}
               onClick={() => prefill(it.prompt)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-sand bg-paper px-3 py-1.5 text-[12px] font-semibold text-soft transition hover:border-kai-500 hover:text-ink active:scale-[0.98]"
+              className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-1.5 text-[12px] font-semibold text-soft transition hover:border-kai-500 hover:text-ink"
             >
-              <Icon className="h-3.5 w-3.5 text-kai-600 dark:text-kai-300" />
+              <Icon className="h-3.5 w-3.5 text-kai-600" />
               {it.label}
             </button>
           );
         })}
         <button
           onClick={() => setShowAdvanced((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-full border border-dashed border-sand bg-paper px-3 py-1.5 text-[12px] font-semibold text-soft transition hover:border-kai-500"
+          className="f0-focus inline-flex items-center gap-1 rounded-full border border-dashed border-sand bg-card px-3 py-1.5 text-[12px] font-semibold text-soft transition hover:border-kai-500"
         >
-          Advanced <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+          Advanced{" "}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
         </button>
       </div>
       {showAdvanced && (
-        <div className="-mt-2 flex flex-wrap gap-1.5">
+        <div className="-mt-3 flex flex-wrap gap-1.5">
           {ADVANCED_INTENTIONS.map((it) => (
             <button
               key={it.id}
               onClick={() => prefill(it.prompt)}
-              className="rounded-full border border-sand bg-paper px-2.5 py-1 text-[11px] font-medium text-soft transition hover:border-kai-500 hover:text-ink"
+              className="f0-focus rounded-full border border-sand bg-card px-2.5 py-1 text-[11px] font-medium text-soft transition hover:border-kai-500 hover:text-ink"
             >
               {it.label}
             </button>
@@ -882,7 +1316,7 @@ function MyWatchTab({
         </div>
       )}
 
-      {/* NL entry point */}
+      {/* NL entry point — the #kai-nl deep-link target. */}
       <div id="kai-nl">
         <KaiWatch
           userId={userId}
@@ -893,22 +1327,19 @@ function MyWatchTab({
         />
       </div>
 
-      {/* Quick watches on a followed stock (deterministic, no LLM). */}
       <WatchlistPlays userId={userId} watchlistTickers={watchlistTickers} rules={rules} setRules={setRules} />
 
       {/* Manual builder — reachable, tucked. */}
-      <div className="border-t border-sand/70 pt-3">
+      <Card>
         <button
           onClick={() => setShowManual((v) => !v)}
-          className="flex w-full items-center justify-between py-1"
+          className="f0-focus flex w-full items-center justify-between"
         >
-          <span className="font-display text-eyebrow font-bold uppercase text-ink">
-            Or build one by hand
-          </span>
+          <span className="text-[12.5px] font-bold text-ink">Or build one by hand</span>
           <ChevronDown className={`h-4 w-4 text-soft transition-transform ${showManual ? "rotate-180" : ""}`} />
         </button>
         {showManual && (
-          <div className="mt-3">
+          <div className="mt-3 border-t border-sand pt-3">
             <p className="mb-3 text-[12px] text-soft">
               Enter a ticker to set a price, volume or technical watch on it.
             </p>
@@ -927,7 +1358,7 @@ function MyWatchTab({
               ) : (
                 <button
                   disabled
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-sand bg-paper px-3 py-1.5 text-[13px] font-semibold text-soft/50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-[13px] font-semibold text-soft/50"
                 >
                   <Plus className="h-4 w-4" /> Set watch
                 </button>
@@ -935,150 +1366,170 @@ function MyWatchTab({
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* The living list — what Kai is watching, with the real trigger condition
-          spelled out on every row. No "Kai is on it" hand-waving: if you can't
-          read the condition, you can't trust the alert. */}
-      <div>
-        <LedgerLabel
+      {/* The living list — every watch as a card, with the real trigger
+          condition spelled out. No "Kai is on it" hand-waving: if you can't read
+          the condition, you can't trust the alert. */}
+      <section className="space-y-2">
+        <BoardEyebrow
+          className="mb-1"
           meta={
-            <span className="font-mono text-[11px] tabular-nums text-soft/70">
+            <span className="font-mono text-[10px] tabular-nums text-soft/70">
               {activeCount}/{MAX_ACTIVE_RULES} active
             </span>
           }
         >
           What Kai is watching
-        </LedgerLabel>
+        </BoardEyebrow>
         {rules.length === 0 ? (
-          <p className="border-t border-sand/70 py-5 text-[13px] leading-relaxed text-soft">
-            Nothing on watch yet. Tell Kai what to watch above, or add one from any screener row,
-            watchlist row or research page.
-          </p>
+          <Card className="px-4 py-5">
+            <p className="text-[13px] leading-relaxed text-soft">
+              Nothing on watch yet. Tell Kai what to watch above, or add one from
+              any screener row, watchlist row or research page.
+            </p>
+          </Card>
         ) : (
-          <div className="f0-ledger border-t border-sand/70">
-            {rules.map((r) => (
-              <WatchManageRow
-                key={r.id}
-                r={r}
-                state={r.active ? stateByRule.get(r.id) ?? null : null}
-                onToggle={() => toggle(r)}
-                onDigest={(d) => setDigest(r, d)}
-                onRemove={() => remove(r)}
-              />
-            ))}
-          </div>
+          rules.map((r) => (
+            <WatchManageCard
+              key={r.id}
+              r={r}
+              state={r.active ? stateByRule.get(r.id) ?? null : null}
+              detail={r.active ? detailByRule.get(r.id) ?? null : null}
+              onToggle={() => toggle(r)}
+              onDigest={(d) => setDigest(r, d)}
+              onRemove={() => remove(r)}
+            />
+          ))
         )}
-      </div>
+      </section>
 
       <DeliveryPrefs isSolo={isSolo} prefs={prefs} />
 
       {/* Fine-tuning (strategy profile) — reachable, tucked. */}
-      <div className="border-t border-sand/70 pt-3">
-        <button onClick={() => setShowTune((v) => !v)} className="flex w-full items-center justify-between py-1">
-          <span className="flex items-center gap-2 font-display text-eyebrow font-bold uppercase text-ink">
-            <Gauge className="h-3.5 w-3.5 text-volt-600" /> Tune what Kai suggests
+      <Card>
+        <button onClick={() => setShowTune((v) => !v)} className="f0-focus flex w-full items-center justify-between">
+          <span className="flex items-center gap-2 text-[12.5px] font-bold text-ink">
+            <Gauge className="h-3.5 w-3.5 text-gold-700" /> Tune what Kai suggests
           </span>
           <ChevronDown className={`h-4 w-4 text-soft transition-transform ${showTune ? "rotate-180" : ""}`} />
         </button>
         {showTune && (
-          <div className="mt-4">
+          <div className="mt-4 border-t border-sand pt-4">
             <StrategyTuner userId={userId} strategy={strategy} rules={rules} setRules={setRules} />
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
 
-function WatchManageRow({
+function WatchManageCard({
   r,
   state,
+  detail,
   onToggle,
   onDigest,
   onRemove,
 }: {
   r: AlertRule;
   state: WatchState | null;
+  detail: WatchDetail | null;
   onToggle: () => void;
   onDigest: (d: boolean) => void;
   onRemove: () => void;
 }) {
   const meta = state ? WATCH_STATE_META[state] : null;
-  // The condition, in the engine's own words. `label` is what Kai confirmed back
-  // to the member at create time; ruleLabel() is the deterministic rendering of
-  // the stored params. Showing BOTH when they differ is the honest move — the
-  // member sees exactly what will trip, not just the sentence they typed.
+  // The condition in the engine's own words. `label` is what Kai confirmed back
+  // at create time; ruleLabel() is the deterministic rendering of the stored
+  // params. Showing BOTH when they differ is the honest move.
   const condition = ruleLabel(r.kind, r.ticker, r.params);
   const headline = r.label || condition;
   const showCondition = condition && condition !== headline;
 
   return (
-    <div className={`f0-ledger-row ${r.active ? "" : "opacity-55"}`}>
-      {r.ticker ? (
-        <CompanyLogo symbol={r.ticker} name={r.ticker} size={32} rounded="rounded-lg" />
-      ) : (
-        <span className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-lg bg-kai-500/10 text-kai-600">
-          <Sparkles className="h-4 w-4" />
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
-            {r.ticker ? `$${r.ticker}` : "Screen"}
+    <Card edge={meta && meta.tone !== "quiet" ? meta.tone : undefined} dim={!r.active}>
+      <div className="flex items-start gap-3">
+        {r.ticker ? (
+          <CompanyLogo symbol={r.ticker} name={r.ticker} size={32} rounded="rounded-[10px]" />
+        ) : (
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-kai-500/10 text-kai-600">
+            <Sparkles className="h-4 w-4" />
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
-            {KIND_DIMENSION[r.kind]}
-          </span>
-          {meta && meta.tone !== "quiet" && <StateChip tone={meta.tone} label={meta.label} live={meta.live} />}
-        </div>
-        <p className="mt-1 text-[13px] leading-snug text-ink/85">{headline}</p>
-        {showCondition && (
-          <p className="mt-0.5 font-mono text-[11px] leading-snug text-soft/80">
-            Fires when {condition.toLowerCase()}
-          </p>
         )}
-        <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-soft/60">
-          {r.active ? "Watching" : "Paused"}
-          {" · "}
-          {r.last_checked_at ? freshnessLabel(r.last_checked_at).toLowerCase() : "queued"}
-        </p>
-      </div>
-      {/* instant / digest */}
-      <button
-        onClick={() => onDigest(!r.digest)}
-        title={r.digest ? "In daily digest — tap for instant" : "Instant — tap for daily digest"}
-        className={`hidden shrink-0 self-center font-mono text-[10px] uppercase tracking-[0.14em] transition sm:inline-flex ${
-          r.digest ? "text-soft/70 hover:text-ink" : "text-kai-600 hover:text-kai-500"
-        }`}
-      >
-        {r.digest ? "Digest" : "Instant"}
-      </button>
-      {/* pause / resume */}
-      <button
-        type="button"
-        onClick={onToggle}
-        title={r.active ? "Pause" : "Resume"}
-        aria-label={r.active ? "Pause watch" : "Resume watch"}
-        className={`relative h-6 w-11 shrink-0 self-center rounded-full transition ${
-          r.active ? "bg-kai-500" : "bg-sand"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-paper shadow transition-all ${
-            r.active ? "left-[22px]" : "left-0.5"
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
+              {r.ticker ? `$${r.ticker}` : "Screen"}
+            </span>
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft/70">
+              {KIND_DIMENSION[r.kind]}
+            </span>
+            {meta && meta.tone !== "quiet" && (
+              <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
+            )}
+          </div>
+          <p className="mt-1 text-[13px] leading-snug text-ink/85">{headline}</p>
+          {showCondition && (
+            <p className="mt-0.5 font-mono text-[10.5px] leading-snug text-soft/80">
+              Fires when {condition.toLowerCase()}
+            </p>
+          )}
+        </div>
+
+        {/* instant / digest */}
+        <button
+          onClick={() => onDigest(!r.digest)}
+          title={r.digest ? "In daily digest — tap for instant" : "Instant — tap for daily digest"}
+          className={`f0-focus hidden shrink-0 self-center font-mono text-[9.5px] uppercase tracking-[0.14em] transition sm:inline-flex ${
+            r.digest ? "text-soft/70 hover:text-ink" : "text-kai-600 hover:text-kai-500"
           }`}
+        >
+          {r.digest ? "Digest" : "Instant"}
+        </button>
+        {/* pause / resume */}
+        <button
+          type="button"
+          onClick={onToggle}
+          title={r.active ? "Pause" : "Resume"}
+          aria-label={r.active ? "Pause watch" : "Resume watch"}
+          className={`f0-focus relative h-6 w-11 shrink-0 self-center rounded-full transition ${
+            r.active ? "bg-kai-500" : "bg-sand"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-all ${
+              r.active ? "left-[22px]" : "left-0.5"
+            }`}
+          />
+        </button>
+        <button
+          onClick={onRemove}
+          title="Delete"
+          aria-label="Delete watch"
+          className="f0-focus shrink-0 self-center p-0.5 text-soft/60 transition hover:text-ink"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* How close it actually is — the cron's own number, not a mood. Only
+          drawn once the watch has moved off baseline. */}
+      {meta && meta.tone !== "quiet" && (
+        <ProximityMeter
+          className="mt-2.5"
+          progress={detail?.progress}
+          tone={meta.tone}
+          metric={typeof detail?.metric === "string" ? detail.metric : null}
         />
-      </button>
-      <button
-        onClick={onRemove}
-        title="Delete"
-        aria-label="Delete watch"
-        className="shrink-0 self-center p-0.5 text-soft/60 transition hover:text-red-600"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
-    </div>
+      )}
+
+      <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
+        {r.active ? "Watching" : "Paused"}
+        {" · "}
+        {r.last_checked_at ? freshnessLabel(r.last_checked_at).toLowerCase() : "queued"}
+      </p>
+    </Card>
   );
 }
 
@@ -1113,72 +1564,75 @@ function DeliveryPrefs({ isSolo, prefs }: { isSolo: boolean; prefs: AlertPrefs }
     [briefing, digest, cap, quiet]
   );
 
+  // Canvas board 19's "NOTIFY ME" card: a titled card of labelled switches.
   return (
-    <div>
-      <LedgerLabel
+    <Card>
+      <BoardEyebrow
         meta={
           saved ? (
-            <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-green-600 dark:text-green-400">
+            <span className="inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-gold-700">
               <Check className="h-3.5 w-3.5" /> Saved
             </span>
           ) : undefined
         }
       >
-        How Kai reaches you
-      </LedgerLabel>
-      <Row
-        label="Kai Daily push"
-        hint={isSolo ? "On by default for Club members" : "Opt-in for family accounts"}
-        checked={briefing}
-        onChange={(v) => {
-          setBriefing(v);
-          save({ briefing_enabled: v });
-        }}
-      />
-      <Row
-        label="Send everything as a daily digest"
-        hint="One summary push instead of instant alerts"
-        checked={digest}
-        onChange={(v) => {
-          setDigest(v);
-          save({ digest: v });
-        }}
-      />
-      <Row
-        label="Respect quiet hours"
-        hint="Hold non-urgent updates overnight"
-        checked={quiet}
-        onChange={(v) => {
-          setQuiet(v);
-          save({ quiet_hours: v });
-        }}
-      />
-      <div className="flex items-center justify-between border-t border-sand/70 py-2.5">
-        <div>
-          <p className="text-[13px] font-medium text-ink">Daily push limit</p>
-          <p className="text-[11px] text-soft/70">Extra alerts roll into your digest</p>
-        </div>
-        <select
-          value={cap}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setCap(v);
-            save({ daily_cap: v });
+        Notify me
+      </BoardEyebrow>
+      <div className="mt-3 space-y-3">
+        <SwitchRow
+          label="Kai Daily push"
+          hint={isSolo ? "On by default for Club members" : "Opt-in for family accounts"}
+          checked={briefing}
+          onChange={(v) => {
+            setBriefing(v);
+            save({ briefing_enabled: v });
           }}
-          className="rounded-full border border-sand bg-transparent px-3 py-1.5 font-mono text-[12px] font-semibold text-ink outline-none focus:border-kai-500"
-        >
-          {[5, 10, 15, 20, 30].map((n) => (
-            <option key={n} value={n}>
-              {n}/day
-            </option>
-          ))}
-        </select>
+        />
+        <SwitchRow
+          label="Send everything as a daily digest"
+          hint="One summary push instead of instant alerts"
+          checked={digest}
+          onChange={(v) => {
+            setDigest(v);
+            save({ digest: v });
+          }}
+        />
+        <SwitchRow
+          label="Respect quiet hours"
+          hint="Hold non-urgent updates overnight"
+          checked={quiet}
+          onChange={(v) => {
+            setQuiet(v);
+            save({ quiet_hours: v });
+          }}
+        />
+        <div className="flex items-center justify-between gap-3 border-t border-sand pt-3">
+          <div>
+            <p className="text-[12.5px] font-medium text-ink">Daily push limit</p>
+            <p className="text-[11px] text-soft/70">Extra alerts roll into your digest</p>
+          </div>
+          <select
+            value={cap}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setCap(v);
+              save({ daily_cap: v });
+            }}
+            className="rounded-full border border-sand bg-paper px-3 py-1.5 font-mono text-[12px] font-semibold text-ink outline-none focus:border-kai-500"
+          >
+            {[5, 10, 15, 20, 30].map((n) => (
+              <option key={n} value={n}>
+                {n}/day
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
-function Row({
+function SwitchRow({
   label,
   hint,
   checked,
@@ -1190,19 +1644,24 @@ function Row({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between py-2">
-      <div className="pr-3">
-        <p className="text-[13px] font-medium text-ink">{label}</p>
-        <p className="text-[11px] text-soft/70">{hint}</p>
-      </div>
+    <label className="flex cursor-pointer items-center justify-between gap-3">
+      <span className="min-w-0">
+        <span className="block text-[12.5px] font-medium text-ink">{label}</span>
+        <span className="block text-[11px] text-soft/70">{hint}</span>
+      </span>
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition ${checked ? "bg-gold-500" : "bg-sand"}`}
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        className={`f0-focus relative h-[19px] w-[34px] shrink-0 rounded-full transition ${
+          checked ? "bg-accent" : "bg-sand"
+        }`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-paper shadow transition-all ${
-            checked ? "left-[22px]" : "left-0.5"
+          className={`absolute top-[2.5px] h-[14px] w-[14px] rounded-full bg-card shadow transition-all ${
+            checked ? "left-[17px]" : "left-[2.5px]"
           }`}
         />
       </button>
@@ -1211,158 +1670,8 @@ function Row({
 }
 
 /* ============================================================================
- * LIVE WATCHES — only what is actually developing right now.
- * ==========================================================================*/
-function LiveWatchesTab({
-  rules,
-  stateByRule,
-  followedSetups,
-  priceMap,
-}: {
-  rules: AlertRule[];
-  stateByRule: Map<string, WatchState>;
-  followedSetups: AlertSetup[];
-  priceMap: Record<string, number>;
-}) {
-  const developing = useMemo(
-    () =>
-      rules
-        .map((r) => ({ r, state: stateByRule.get(r.id) }))
-        .filter((x): x is { r: AlertRule; state: WatchState } => !!x.state && WATCH_STATE_META[x.state].developing),
-    [rules, stateByRule]
-  );
-  const liveSetups = useMemo(
-    () => followedSetups.filter((s) => SETUP_STATE_META[s.state]?.developing),
-    [followedSetups]
-  );
-
-  if (developing.length === 0 && liveSetups.length === 0) {
-    return (
-      <div className="space-y-5">
-        <SectionIntro
-          title="Live watches"
-          blurb="When one of your watches starts developing, it moves here so you can see it play out."
-        />
-        <div className="border-t border-sand/70 py-6">
-          <p className="font-display text-display-3 font-extrabold text-ink">
-            Nothing developing right now
-          </p>
-          <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
-            Kai is watching quietly. The moment one of your conditions starts to build, it shows up
-            here with what changed — so you read it before it trips, not after.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <SectionIntro
-        title="Live watches"
-        blurb="Conditions that are actively building. Kai shows what he sees and how close it is — the read, not a call."
-      />
-
-      {developing.length > 0 && (
-        <div className="f0-ledger border-y border-sand/70">
-          {developing.map(({ r, state }) => (
-            <LiveWatchEntry key={r.id} r={r} state={state} current={r.ticker ? priceMap[r.ticker] ?? null : null} />
-          ))}
-        </div>
-      )}
-
-      {liveSetups.length > 0 && (
-        <div>
-          <LedgerLabel>Setups you&apos;re following</LedgerLabel>
-          <div className="f0-ledger border-y border-sand/70">
-            {liveSetups.map((s) => (
-              <LiveSetupEntry key={s.id} s={s} current={priceMap[s.ticker] ?? null} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LiveWatchEntry({ r, state, current }: { r: AlertRule; state: WatchState; current: number | null }) {
-  const meta = WATCH_STATE_META[state];
-  const tc = toneClasses(meta.tone);
-  const label = r.label || ruleLabel(r.kind, r.ticker, r.params);
-  return (
-    <div className="f0-ledger-row">
-      {r.ticker ? (
-        <CompanyLogo symbol={r.ticker} name={r.ticker} size={34} rounded="rounded-lg" />
-      ) : (
-        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-kai-500/10 text-kai-600">
-          <Sparkles className="h-4 w-4" />
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
-            {r.ticker ? `$${r.ticker}` : "Screen"}
-          </span>
-          <StateChip tone={meta.tone} label={meta.label} live={meta.live} />
-        </div>
-        <p className="mt-1 font-mono text-[11px] leading-snug text-soft/80">Fires when {label.toLowerCase()}</p>
-        <p className={`mt-1.5 text-[13px] leading-snug ${meta.live ? "font-medium text-ink" : "text-ink/80"}`}>
-          {meta.live && <Zap className="mr-1 inline h-3.5 w-3.5 text-volt-600" />}
-          {watchStateLine(state, r.ticker || "this screen")}
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="inline-flex items-center gap-1 font-mono text-[10.5px] uppercase tracking-[0.1em] text-soft/60">
-            <Clock className="h-3 w-3" /> {r.last_checked_at ? freshnessLabel(r.last_checked_at) : "queued"}
-          </span>
-          {r.ticker && (
-            <Link
-              href={`/research/${encodeURIComponent(r.ticker)}`}
-              className={`inline-flex items-center gap-1 text-[12px] font-semibold ${tc.text}`}
-            >
-              See what Kai found <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          )}
-        </div>
-      </div>
-      {r.ticker && current != null && (
-        <span className="shrink-0 font-mono text-[14px] font-semibold tabular-nums text-ink">
-          {money(current)}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function LiveSetupEntry({ s, current }: { s: AlertSetup; current: number | null }) {
-  const meta = SETUP_STATE_META[s.state];
-  const tc = toneClasses(meta.tone);
-  return (
-    <div className="f0-ledger-row">
-      <CompanyLogo symbol={s.ticker} name={s.ticker} size={34} rounded="rounded-lg" />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
-            ${s.ticker}
-          </span>
-          <DirChip dir={s.direction} />
-          <StateChip tone={meta.tone} label={meta.label} live={meta.live} />
-        </div>
-        {s.thesis && <p className="mt-1 text-[12.5px] leading-snug text-soft">{s.thesis}</p>}
-        <p className={`mt-1.5 text-[13px] leading-snug ${meta.live ? "font-medium" : ""} ${tc.text}`}>
-          {setupStateLine(s.state, s.ticker)}
-        </p>
-      </div>
-      {current != null && (
-        <span className="shrink-0 font-mono text-[14px] font-semibold tabular-nums text-ink">
-          {money(current)}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/* ============================================================================
- * HISTORY — searchable feed of every event (all kinds, state-colored).
+ * ALERTS — canvas board 18's feed: grouped by day, cards for today, compact
+ * dimmed rows for everything older.
  * ==========================================================================*/
 type FeedRow =
   | { type: "event"; at: string; ticker: string; e: AlertEvent }
@@ -1372,10 +1681,16 @@ function HistoryTab({
   events,
   broadcasts,
   priceMap,
+  hubSeenAt,
+  lastChecked,
+  newSinceSeen,
 }: {
   events: AlertEvent[];
   broadcasts: TradeAlert[];
   priceMap: Record<string, number>;
+  hubSeenAt: string | null;
+  lastChecked: string | null;
+  newSinceSeen: number;
 }) {
   const [q, setQ] = useState("");
 
@@ -1391,9 +1706,8 @@ function HistoryTab({
     return rows.filter((r) => r.ticker.toUpperCase().includes(needle));
   }, [rows, q]);
 
-  // Canvas artboard 14: Today / Yesterday timeline grouping. Rows arrive sorted
-  // newest-first, so a single pass into ordered buckets keeps that order and
-  // drops empty buckets (no "Yesterday" header on a day with no yesterday rows).
+  // Board 18: Today / Yesterday. Rows arrive newest-first, so one pass into
+  // ordered buckets keeps that order and drops empty buckets.
   const groups = useMemo(() => {
     const out: { label: string; rows: FeedRow[] }[] = [];
     let cur: { label: string; rows: FeedRow[] } | null = null;
@@ -1410,138 +1724,194 @@ function HistoryTab({
 
   return (
     <div className="space-y-5">
-      <SectionIntro
-        title="History"
-        blurb="Every alert Kai has sent you, newest first — what tripped, when, and what the price did after."
-      />
+      <Card className="flex items-center gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-kai-500/12 text-kai-600 ring-1 ring-kai-500/25">
+          <Bell className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-bold text-ink">Everything Kai has sent you</p>
+          <p className="mt-px truncate text-[10px] text-soft/85">
+            From your watchlist &amp; your watches ·{" "}
+            {lastChecked ? freshnessLabel(lastChecked).toLowerCase() : "not checked yet"}
+          </p>
+        </div>
+        {newSinceSeen > 0 && <CountPill>{newSinceSeen} new</CountPill>}
+      </Card>
 
       <div className="relative">
-        <Search className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-soft/60" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-soft/60" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search by ticker…"
-          className="w-full border-b border-sand bg-transparent py-2.5 pl-6 pr-3 text-[14px] text-ink outline-none placeholder:text-soft/60 focus:border-kai-500"
+          className="w-full rounded-full border border-sand bg-card py-2.5 pl-9 pr-3 text-[13.5px] text-ink outline-none placeholder:text-soft/60 focus:border-kai-500"
         />
       </div>
 
       {filtered.length === 0 ? (
-        <div className="border-t border-sand/70 py-6">
-          <p className="font-display text-display-3 font-extrabold text-ink">
-            {q.trim() ? `Nothing for $${q.trim().toUpperCase()} yet` : "No history yet"}
+        <Card className="px-4 py-5">
+          <p className="font-display text-[16px] font-extrabold text-ink">
+            {q.trim() ? `Nothing for $${q.trim().toUpperCase()} yet` : "No alerts yet"}
           </p>
           <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
-            Kai&apos;s updates and your fired alerts collect here as they happen.
+            Kai&apos;s updates and your fired watches collect here as they happen.
           </p>
-        </div>
+        </Card>
       ) : (
-        <div className="space-y-6">
-          {groups.map((g) => (
-            <div key={g.label}>
-              <div className="sticky top-[7.5rem] z-[1] -mx-1 mb-1 bg-paper/95 px-1 py-1.5 backdrop-blur-sm">
-                <span className="f0-section-rule font-display text-eyebrow font-bold uppercase text-ink">
-                  {g.label}
-                </span>
-              </div>
-              <div className="f0-ledger border-y border-sand/70">
-                {g.rows.map((row) =>
-                  row.type === "broadcast" ? (
-                    <HistoryBroadcastRow key={`b-${row.b.id}`} b={row.b} current={priceMap[row.ticker] ?? null} />
-                  ) : (
-                    <HistoryEventRow key={`e-${row.e.id}`} e={row.e} current={priceMap[row.ticker] ?? null} />
-                  )
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        groups.map((g, gi) => (
+          <section key={g.label} className="space-y-2">
+            <BoardEyebrow className="mb-1">{g.label}</BoardEyebrow>
+            {g.rows.map((row) =>
+              row.type === "broadcast" ? (
+                <HistoryBroadcastRow
+                  key={`b-${row.b.id}`}
+                  b={row.b}
+                  current={priceMap[row.ticker] ?? null}
+                  isNew={!!hubSeenAt && row.at > hubSeenAt}
+                  compact={gi > 0}
+                />
+              ) : (
+                <HistoryEventRow
+                  key={`e-${row.e.id}`}
+                  e={row.e}
+                  current={priceMap[row.ticker] ?? null}
+                  isNew={!!hubSeenAt && row.at > hubSeenAt}
+                  compact={gi > 0}
+                />
+              )
+            )}
+          </section>
+        ))
       )}
     </div>
   );
 }
 
-function HistoryEventRow({ e, current }: { e: AlertEvent; current: number | null }) {
-  const isUpdate = e.kind === "kai_update" || e.kind === "setup_update";
-  const state = e.payload?.state as WatchState | SetupState | undefined;
-  const tone: StateTone = state
-    ? (e.kind === "setup_update"
-        ? SETUP_STATE_META[state as SetupState]?.tone
-        : WATCH_STATE_META[state as WatchState]?.tone) ?? "quiet"
-    : "quiet";
-  const tc = toneClasses(tone);
-  const snap = e.payload?.snapshot_price ?? null;
-
-  const kindLabel =
-    e.kind === "kai_update"
-      ? "Kai update"
-      : e.kind === "setup_update"
-        ? "Setup update"
-        : "Your alert";
-
+/** The "N new" count has to be checkable — every row it counted is marked. */
+function NewMark() {
   return (
-    <Link href={`/alerts/e/${e.id}`} className="f0-ledger-row">
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tc.dot} ${tc.glow}`} aria-hidden />
-      <CompanyLogo symbol={e.ticker} name={e.ticker} size={30} rounded="rounded-lg" />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-[13.5px] font-extrabold tracking-tight text-ink">
-            ${e.ticker}
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
-            {kindLabel}
-          </span>
-          {e.payload?.delayed && (
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/55">
-              delayed ~15m
-            </span>
-          )}
-        </div>
-        <p className="mt-0.5 truncate text-[12.5px] text-ink/80">
-          {e.payload?.message || "Condition met"}
-        </p>
-      </div>
-      {!isUpdate && snap != null ? (
-        <div className="shrink-0 text-right">
-          <PerfSince from={snap} to={current} />
-          <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/55">since fired</p>
-        </div>
-      ) : (
-        <span className="shrink-0 font-mono text-[10.5px] text-soft/60">{timeAgo(e.fired_at)}</span>
-      )}
-      <ChevronRight className="h-4 w-4 shrink-0 text-soft/50" />
-    </Link>
+    <span className="shrink-0 rounded-full bg-volt-500 px-1.5 py-px font-mono text-[8.5px] font-bold uppercase tracking-[0.12em] text-night-950">
+      New
+    </span>
   );
 }
 
-function HistoryBroadcastRow({ b, current }: { b: TradeAlert; current: number | null }) {
+function HistoryEventRow({
+  e,
+  current,
+  isNew,
+  compact,
+}: {
+  e: AlertEvent;
+  current: number | null;
+  isNew?: boolean;
+  compact?: boolean;
+}) {
+  const isUpdate = e.kind === "kai_update" || e.kind === "setup_update";
+  const state = e.payload?.state as WatchState | SetupState | undefined;
+  const meta = state
+    ? e.kind === "setup_update"
+      ? SETUP_STATE_META[state as SetupState]
+      : WATCH_STATE_META[state as WatchState]
+    : null;
+  const tone: StateTone = meta?.tone ?? "quiet";
+  const snap = e.payload?.snapshot_price ?? null;
+
+  const kindLabel =
+    e.kind === "kai_update" ? "Kai update" : e.kind === "setup_update" ? "Setup update" : "Your watch";
+
   return (
-    <Link href={`/research/${encodeURIComponent(b.ticker)}`} className="f0-ledger-row">
-      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-kai-500" aria-hidden />
-      <CompanyLogo symbol={b.ticker} name={b.ticker} size={30} rounded="rounded-lg" />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-[13.5px] font-extrabold tracking-tight text-ink">
-            ${b.ticker}
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-kai-600">
-            Kai Daily
-          </span>
+    <CardLink href={`/alerts/e/${e.id}`} edge={tone} dim={compact}>
+      <div className="flex items-center gap-2.5">
+        {meta ? (
+          <StatePill tone={tone} label={meta.label} live={meta.live && !compact} />
+        ) : (
+          <StatePill tone="quiet" label={kindLabel} />
+        )}
+        <span className="font-mono text-[12px] font-semibold text-ink">{e.ticker}</span>
+        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
+          {timeAgo(e.fired_at)}
+        </span>
+        {isNew && <NewMark />}
+      </div>
+
+      <div className="mt-2.5 flex items-start gap-3">
+        <CompanyLogo symbol={e.ticker} name={e.ticker} size={compact ? 26 : 32} rounded="rounded-[9px]" />
+        <div className="min-w-0 flex-1">
+          <p
+            className={`leading-relaxed text-ink/85 ${
+              compact ? "truncate text-[12px]" : "text-[12.5px]"
+            }`}
+          >
+            {e.payload?.message || "Condition met"}
+          </p>
+          {e.payload?.delayed && (
+            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
+              delayed ~15m
+            </p>
+          )}
         </div>
-        <p className="mt-0.5 truncate text-[12.5px] text-ink/80">
-          {b.setup_label || b.narrative || "Daily setup"}
-        </p>
+        {!isUpdate && snap != null ? (
+          <div className="shrink-0 text-right">
+            <PerfSince from={snap} to={current} />
+            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
+              since fired
+            </p>
+          </div>
+        ) : (
+          <ChevronRight className="h-4 w-4 shrink-0 self-center text-soft/50" />
+        )}
       </div>
-      <div className="shrink-0 text-right">
-        <PerfSince from={b.snapshot_price} to={current} />
-        <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/55">since issued</p>
+    </CardLink>
+  );
+}
+
+function HistoryBroadcastRow({
+  b,
+  current,
+  isNew,
+  compact,
+}: {
+  b: TradeAlert;
+  current: number | null;
+  isNew?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <CardLink href={`/research/${encodeURIComponent(b.ticker)}`} edge="kai" dim={compact}>
+      <div className="flex items-center gap-2.5">
+        <StatePill tone="kai" label="Kai daily" />
+        <span className="font-mono text-[12px] font-semibold text-ink">{b.ticker}</span>
+        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
+          {timeAgo(b.issued_at)}
+        </span>
+        {isNew && <NewMark />}
       </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-soft/50" />
-    </Link>
+      <div className="mt-2.5 flex items-start gap-3">
+        <CompanyLogo symbol={b.ticker} name={b.ticker} size={compact ? 26 : 32} rounded="rounded-[9px]" />
+        <div className="min-w-0 flex-1">
+          <p
+            className={`leading-relaxed text-ink/85 ${
+              compact ? "truncate text-[12px]" : "text-[12.5px]"
+            }`}
+          >
+            {b.setup_label || b.narrative || "Daily setup"}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <PerfSince from={b.snapshot_price} to={current} />
+          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
+            since issued
+          </p>
+        </div>
+      </div>
+    </CardLink>
   );
 }
 
 /* ============================================================================
- * TRACK RECORD — honest split (graded W/L + observational follow-through).
+ * RECORD — honest split (graded W/L for Kai's own setups + observational
+ * follow-through for personal watches, which are NEVER scored).
  * ==========================================================================*/
 function pctStr(n: number | null): string {
   if (n == null) return "—";
@@ -1560,218 +1930,222 @@ function TrackRecordTab({
   const graded = track.total;
   const signals = graded + observational.length;
   const empty = signals === 0;
+  // Board 17's footer summary object: the count, the average, the best.
+  const hit = track.hitRate;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="f0-section-rule">
-          <span className="font-display text-eyebrow font-bold uppercase text-ink">
-            Track record · last 30 days
-          </span>
-        </div>
-        <p className="mt-2.5 max-w-lg text-[12.5px] leading-relaxed text-soft">
-          Signals issued: <span className="font-semibold text-ink">{signals}</span>. Kai Daily setups
-          are graded by their <span className="font-semibold text-ink">peak move in their favor</span>;
-          personal watches show what happened after — never a win or loss.
-        </p>
-        <div className="mt-4 grid grid-cols-4 divide-x divide-sand border-y border-sand py-3 text-center">
-          <Stat label="Setups" value={empty ? "—" : String(graded)} />
-          <Stat label="Avg peak" value={graded === 0 ? "—" : pctStr(track.avgPeak)} tone="up" />
-          <Stat
-            label="Worked"
-            value={track.hitRate == null ? "—" : `${Math.round(track.hitRate * 100)}%`}
-            sub="≥ +5%"
+    <div className="space-y-5">
+      <AccentCard>
+        <BoardEyebrow accent>Track record · last 30 days</BoardEyebrow>
+        <div className="mt-3 flex items-center gap-4">
+          <Dial
+            value={hit ?? 0}
+            size={72}
+            ring={6}
+            tone={hit == null ? "quiet" : "price-up"}
+            center={hit == null ? "—" : `${Math.round(hit * 100)}%`}
+            centerClassName="text-[14px]"
+            label={
+              hit == null
+                ? "No graded setups yet"
+                : `${Math.round(hit * 100)} percent of Kai's graded setups reached at least plus five percent`
+            }
           />
-          <Stat label="Best" value={graded === 0 ? "—" : pctStr(track.bestPeak)} tone="up" />
+          <dl className="flex min-w-0 flex-1 flex-wrap items-end gap-x-7 gap-y-3">
+            <Stat label="Signals" value={empty ? "—" : String(signals)} />
+            <Stat label="Graded" value={graded === 0 ? "—" : String(graded)} />
+            <Stat label="Avg peak" value={graded === 0 ? "—" : pctStr(track.avgPeak)} tone="up" />
+            <Stat label="Best" value={graded === 0 ? "—" : pctStr(track.bestPeak)} tone="up" />
+          </dl>
         </div>
-      </div>
+        <p className="mt-3.5 border-t border-sand pt-3 text-[11.5px] leading-relaxed text-soft">
+          Kai Daily setups are graded by their peak move in their favour (worked
+          = reached +5%). Personal watches show what happened after — never a win
+          or a loss.
+        </p>
+      </AccentCard>
 
       {empty ? (
-        <div className="py-2">
-          <p className="flex items-center gap-2 font-display text-display-3 font-extrabold text-ink">
-            <Trophy className="h-5 w-5 text-volt-600" aria-hidden />
-            The ledger starts soon
+        <Card className="px-4 py-5">
+          <p className="flex items-center gap-2 font-display text-[16px] font-extrabold text-ink">
+            <Trophy className="h-4 w-4 text-gold-700" aria-hidden />
+            The record starts soon
           </p>
           <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
-            Once Kai&apos;s daily setups start going out, each one is tracked here by its peak favorable
-            move — winners and misses in the open.
+            Once Kai&apos;s daily setups start going out, each one is tracked here
+            by its peak favourable move — winners and misses in the open.
           </p>
           {sampleAlert && (
             <p className="mt-2 max-w-md text-[12px] text-soft/75">
-              See <span className="font-semibold text-ink">Kai Daily</span> for a sample of a tracked setup.
+              See <span className="font-semibold text-ink">Kai Daily</span> for a
+              sample of a tracked setup.
             </p>
           )}
-        </div>
+        </Card>
       ) : (
         <>
-          {graded > 0 && (
-            <>
-              {track.winners.length > 0 && (
-                <LedgerSection
-                  title="Top winners"
-                  icon={<TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />}
-                  outcomes={track.winners}
-                  rank="win"
-                />
-              )}
-              {track.losers.length > 0 && (
-                <LedgerSection
-                  title="Didn't work"
-                  icon={<TrendingDown className="h-3.5 w-3.5 text-red-500" />}
-                  outcomes={track.losers}
-                  rank="lose"
-                />
-              )}
-              <div>
-                <LedgerLabel>Every Kai Daily setup</LedgerLabel>
-                <div className="f0-ledger border-y border-sand/70">
-                  {track.outcomes.map((o) => (
-                    <LedgerRow key={o.id} o={o} />
-                  ))}
-                </div>
-              </div>
-            </>
+          {track.winners.length > 0 && (
+            <OutcomeSection
+              title="Furthest ahead"
+              icon={<TrendingUp className="h-3.5 w-3.5 text-price-up" />}
+              outcomes={track.winners}
+              rank
+            />
           )}
-
-          {observational.length > 0 && <ObservationalLedger rows={observational} />}
+          {track.losers.length > 0 && (
+            <OutcomeSection
+              title="Didn't work"
+              icon={<TrendingDown className="h-3.5 w-3.5 text-price-down" />}
+              outcomes={track.losers}
+            />
+          )}
+          {track.outcomes.length > 0 && (
+            <OutcomeSection title="Every Kai Daily setup" outcomes={track.outcomes} />
+          )}
+          {observational.length > 0 && <ObservationalCards rows={observational} />}
         </>
       )}
 
       <p className="text-[11px] leading-relaxed text-soft/70">
-        Peak favorable move is educational performance tracking of past analysis, measured from a
-        setup&apos;s issue price to its best subsequent close. Follow-through figures for personal
-        watches are neutral price context, not graded outcomes. Neither is a claim of realized gains,
-        and past performance never guarantees future results.
+        Peak favourable move is educational performance tracking of past analysis,
+        measured from a setup&apos;s issue price to its best subsequent close.
+        Follow-through figures for personal watches are neutral price context, not
+        graded outcomes. Past performance never guarantees future results.
       </p>
     </div>
   );
 }
 
-function ObservationalLedger({ rows }: { rows: ObservationalRow[] }) {
+function OutcomeSection({
+  title,
+  icon,
+  outcomes,
+  rank = false,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  outcomes: AlertOutcome[];
+  rank?: boolean;
+}) {
   return (
-    <div>
-      <LedgerLabel>
+    <section className="space-y-2">
+      <BoardEyebrow className="mb-1">
+        <span className="inline-flex items-center gap-1.5">
+          {icon} {title}
+        </span>
+      </BoardEyebrow>
+      {outcomes.map((o, i) => {
+        const up = (o.peakPct ?? 0) >= 0;
+        return (
+          <CardLink key={o.id} href={`/research/${encodeURIComponent(o.ticker)}`}>
+            <div className="flex items-center gap-3">
+              {rank && (
+                <span className="w-5 shrink-0 text-center font-mono text-[12px] font-semibold text-gold-700">
+                  #{i + 1}
+                </span>
+              )}
+              <CompanyLogo symbol={o.ticker} name={o.ticker} size={30} rounded="rounded-[9px]" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-display text-[13.5px] font-extrabold tracking-tight text-ink">
+                    ${o.ticker}
+                  </span>
+                  <DirChip dir={o.direction} />
+                </div>
+                {o.setup_label && (
+                  <p className="mt-0.5 truncate text-[11.5px] text-soft/85">{o.setup_label}</p>
+                )}
+              </div>
+              <div className="shrink-0 text-right">
+                <p
+                  className={`font-mono text-[14px] font-semibold tabular-nums ${
+                    up ? "text-price-up" : "text-price-down"
+                  }`}
+                >
+                  {pctStr(o.peakPct)}
+                </p>
+                <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
+                  {o.daysToPeak != null ? `peak in ${o.daysToPeak}d` : "tracking…"}
+                </p>
+              </div>
+            </div>
+          </CardLink>
+        );
+      })}
+    </section>
+  );
+}
+
+function ObservationalCards({ rows }: { rows: ObservationalRow[] }) {
+  return (
+    <section className="space-y-2">
+      <BoardEyebrow className="mb-1">
         <span className="inline-flex items-center gap-1.5">
           <Eye className="h-3.5 w-3.5 text-kai-600" /> Your watches — what happened after
         </span>
-      </LedgerLabel>
-      <p className="mb-2 max-w-lg text-[11.5px] leading-relaxed text-soft/80">
-        Sentiment, activity and news watches have no set target, so they&apos;re never scored. This is
-        neutral follow-through, not a result.
+      </BoardEyebrow>
+      <p className="max-w-lg text-[11.5px] leading-relaxed text-soft/80">
+        Sentiment, activity and news watches have no set target, so they&apos;re
+        never scored. This is neutral follow-through, not a result.
       </p>
-      <div className="f0-ledger border-y border-sand/70">
-        {/* header */}
-        <div className="flex items-center gap-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft/60">
-          <span className="w-[30px] shrink-0" />
-          <span className="min-w-0 flex-1">Watch</span>
-          <span className="w-14 shrink-0 text-right">+1 day</span>
-          <span className="w-14 shrink-0 text-right">+5 days</span>
-        </div>
-        {rows.map((r) => (
-          <div key={r.id} className="f0-ledger-row">
-            <CompanyLogo symbol={r.ticker} name={r.ticker} size={30} rounded="rounded-lg" />
+      {rows.map((r) => (
+        <Card key={r.id}>
+          <div className="flex items-center gap-3">
+            <CompanyLogo symbol={r.ticker} name={r.ticker} size={30} rounded="rounded-[9px]" />
             <div className="min-w-0 flex-1">
               <p className="font-display text-[13px] font-extrabold tracking-tight text-ink">
                 ${r.ticker}
               </p>
               <p className="truncate text-[11.5px] text-soft/85">{r.message}</p>
             </div>
-            <ObsPct value={r.plus1d} />
-            <ObsPct value={r.plus5d} />
+            <dl className="flex shrink-0 items-end gap-4">
+              <ObsPct label="+1 day" value={r.plus1d} />
+              <ObsPct label="+5 days" value={r.plus5d} />
+            </dl>
           </div>
-        ))}
-      </div>
-    </div>
+        </Card>
+      ))}
+    </section>
   );
 }
 
-function ObsPct({ value }: { value: number | null }) {
-  if (value == null) {
-    return <span className="w-14 shrink-0 text-right text-[12px] text-soft/50">—</span>;
-  }
-  const up = value >= 0;
+function ObsPct({ label, value }: { label: string; value: number | null }) {
+  const up = (value ?? 0) >= 0;
   return (
-    <span className={`w-14 shrink-0 text-right text-[13px] font-bold tabular-nums ${up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-500"}`}>
-      {up ? "+" : ""}
-      {value.toFixed(1)}%
-    </span>
+    <div className="text-right">
+      <dt className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-soft/60">{label}</dt>
+      <dd
+        className={`mt-0.5 font-mono text-[13px] font-bold tabular-nums ${
+          value == null ? "text-soft/50" : up ? "text-price-up" : "text-price-down"
+        }`}
+      >
+        {value == null ? "—" : `${up ? "+" : ""}${value.toFixed(1)}%`}
+      </dd>
+    </div>
   );
 }
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "up" }) {
-  return (
-    <div className="px-1">
-      <p className={`font-mono text-[20px] font-semibold tabular-nums ${tone === "up" ? "text-green-600 dark:text-green-400" : "text-ink"}`}>
-        {value}
-      </p>
-      <p className="mt-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft/70">{label}</p>
-      {sub && <p className="font-mono text-[9px] text-soft/55">{sub}</p>}
-    </div>
-  );
-}
-
-function LedgerSection({
-  title,
-  icon,
-  outcomes,
-  rank,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  outcomes: AlertOutcome[];
-  rank: "win" | "lose";
-}) {
+  // `tone="up"` only paints when there is a real, positive figure — a green "—"
+  // would be claiming a gain out of an empty ledger.
+  const priced = tone === "up" && value !== "—" && !value.startsWith("-");
   return (
     <div>
-      <LedgerLabel>
-        <span className="inline-flex items-center gap-1.5">
-          {icon} {title}
-        </span>
-      </LedgerLabel>
-      <div className="f0-ledger border-y border-sand/70">
-        {outcomes.map((o, i) => (
-          <LedgerRow key={o.id} o={o} badge={rank === "win" ? `#${i + 1}` : undefined} />
-        ))}
-      </div>
+      <dt className="font-mono text-[9px] uppercase tracking-[0.16em] text-soft/70">{label}</dt>
+      <dd
+        className={`mt-1 font-mono text-[19px] font-semibold leading-none tabular-nums ${
+          priced ? "text-price-up" : "text-ink"
+        }`}
+      >
+        {value}
+      </dd>
+      {sub && <p className="mt-1 font-mono text-[9px] text-soft/55">{sub}</p>}
     </div>
-  );
-}
-
-function LedgerRow({ o, badge }: { o: AlertOutcome; badge?: string }) {
-  const up = (o.peakPct ?? 0) >= 0;
-  return (
-    <Link href={`/research/${encodeURIComponent(o.ticker)}`} className="f0-ledger-row">
-      {badge ? (
-        <span className="w-6 shrink-0 text-center font-mono text-[12px] font-semibold text-volt-600">
-          {badge}
-        </span>
-      ) : (
-        <span className="w-6 shrink-0" />
-      )}
-      <CompanyLogo symbol={o.ticker} name={o.ticker} size={28} rounded="rounded-lg" />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="font-display text-[13px] font-extrabold tracking-tight text-ink">
-            ${o.ticker}
-          </span>
-          <DirChip dir={o.direction} />
-        </div>
-        {o.setup_label && <p className="truncate text-[11px] text-soft/80">{o.setup_label}</p>}
-      </div>
-      <div className="shrink-0 text-right">
-        <p className={`font-mono text-[14px] font-semibold tabular-nums ${up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-500"}`}>
-          {pctStr(o.peakPct)}
-        </p>
-        <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/55">
-          {o.daysToPeak != null ? `peak in ${o.daysToPeak}d` : "tracking…"}
-        </p>
-      </div>
-    </Link>
   );
 }
 
 /* ============================================================================
- * STRATEGY TUNER + WATCHLIST PLAYS (deterministic, no-LLM — kept, reframed).
+ * STRATEGY TUNER + WATCHLIST PLAYS (deterministic, no LLM).
  * ==========================================================================*/
 const PLAY_ICON: Record<string, typeof Bell> = {
   breakout: TrendingUp,
@@ -1838,24 +2212,22 @@ function WatchlistPlays({
   if (watchlistTickers.length === 0) return null;
 
   return (
-    <div>
-      <LedgerLabel>Or attach a ready-made watch</LedgerLabel>
-      <p className="mb-3 max-w-lg text-[12.5px] leading-relaxed text-soft">
-        Pick a stock you follow and a play. Kai watches for that condition and tells you when it
-        trips — a plain, rules-based signal to study, never advice.
+    <Card>
+      <BoardEyebrow>Or attach a ready-made watch</BoardEyebrow>
+      <p className="mt-2 text-[12.5px] leading-relaxed text-soft">
+        Pick a stock you follow and a play. Kai watches for that condition and
+        tells you when it trips — a plain, rules-based signal to study.
       </p>
 
-      <div className="club2-track -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+      <div className="club2-track mt-3 flex gap-1.5 overflow-x-auto pb-1">
         {watchlistTickers.map((w) => {
           const on = selected === w.ticker;
           return (
             <button
               key={w.ticker}
               onClick={() => setSelected(w.ticker)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-mono text-[12px] font-semibold transition ${
-                on
-                  ? "border-kai-500 bg-kai-500/10 text-kai-600"
-                  : "border-sand text-soft hover:border-kai-500/40"
+              className={`f0-focus flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-mono text-[11.5px] font-semibold transition ${
+                on ? "border-kai-500 bg-kai-500/10 text-kai-600" : "border-sand text-soft hover:border-kai-500/40"
               }`}
             >
               <CompanyLogo symbol={w.ticker} name={w.company_name} size={18} rounded="rounded" />
@@ -1865,7 +2237,7 @@ function WatchlistPlays({
         })}
       </div>
 
-      <div className="f0-ledger mt-3 border-y border-sand/70">
+      <div className="mt-3 space-y-2">
         {STRATEGY_PLAYS.map((play) => {
           const Icon = PLAY_ICON[play.id] ?? Bell;
           const set = selected ? existing.has(`${selected}:${play.kind}`) : false;
@@ -1875,18 +2247,18 @@ function WatchlistPlays({
               key={play.id}
               disabled={set || isBusy || !selected}
               onClick={() => create(play)}
-              className="f0-ledger-row w-full text-left disabled:cursor-default"
+              className="f0-focus flex w-full items-center gap-3 rounded-[13px] border border-sand bg-paper px-3 py-2.5 text-left transition hover:border-accent/45 disabled:cursor-default disabled:hover:border-sand"
             >
               <Icon className="h-4 w-4 shrink-0 text-kai-600" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-bold text-ink">{play.name}</span>
-                <span className="block text-[11.5px] text-soft">{play.tagline}</span>
-                <span className="mt-0.5 block font-mono text-[10.5px] leading-snug text-soft/75">
+                <span className="block text-[12.5px] font-bold text-ink">{play.name}</span>
+                <span className="block text-[11px] text-soft">{play.tagline}</span>
+                <span className="mt-0.5 block font-mono text-[10px] leading-snug text-soft/75">
                   Fires when {selected ?? "it"} {play.watchLine}
                 </span>
               </span>
               {set ? (
-                <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
+                <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft/70">
                   <Check className="h-3.5 w-3.5" /> Set
                 </span>
               ) : isBusy ? (
@@ -1899,8 +2271,14 @@ function WatchlistPlays({
         })}
       </div>
 
-      {error && <p className="mt-2 text-[12px] font-medium text-red-600 dark:text-red-500">{error}</p>}
-    </div>
+      {/* A failed write is not a price falling — red here would be the third
+          meaning of red on a screen that already spends it on price. */}
+      {error && (
+        <p role="status" className="mt-3 border-t border-sand pt-2.5 text-[12px] font-semibold text-ink">
+          {error}
+        </p>
+      )}
+    </Card>
   );
 }
 
@@ -1963,8 +2341,8 @@ function StrategyTuner({
   return (
     <div className="space-y-4">
       <p className="text-[12px] leading-snug text-soft">
-        Tell Kai how you like to study the market and he&apos;ll suggest watches that fit — you stay in
-        control of what actually gets created.
+        Tell Kai how you like to study the market and he&apos;ll suggest watches
+        that fit — you stay in control of what actually gets created.
       </p>
 
       <Section title="How long do you hold?">
@@ -1984,8 +2362,8 @@ function StrategyTuner({
                 key={o.id}
                 onClick={() => setSetups((s) => (on ? s.filter((x) => x !== o.id) : [...s, o.id]))}
                 title={o.blurb}
-                className={`rounded-full border px-3 py-1.5 text-[13px] font-semibold transition ${
-                  on ? "border-volt-500 bg-volt-500/10 text-volt-700" : "border-sand text-soft hover:border-volt-300"
+                className={`f0-focus rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition ${
+                  on ? "border-accent bg-accent/10 text-gold-700" : "border-sand text-soft hover:border-accent/40"
                 }`}
               >
                 {o.label}
@@ -2003,41 +2381,39 @@ function StrategyTuner({
         </div>
       </Section>
 
-      <button
-        onClick={save}
-        className="cta-button w-full rounded-full py-2.5 text-[14px]"
-      >
+      <button onClick={save} className="cta-button w-full rounded-full py-2.5 text-[14px]">
         {saved ? "Saved ✓" : "Save"}
       </button>
 
       {suggestions.length > 0 && (
-        <div>
-          <LedgerLabel>Suggested watches for you</LedgerLabel>
-          <div className="f0-ledger border-y border-sand/70">
-            {suggestions.map((s) => {
-              const added = existingPresetIds.has(s.presetId);
-              return (
-                <div key={s.key} className="f0-ledger-row">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-ink">{s.label}</p>
-                    <p className="text-[11px] leading-snug text-soft">{s.reason}</p>
-                  </div>
-                  {added ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
-                      <Check className="h-3.5 w-3.5" /> Added
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => addSuggestion(s)}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-volt-500/50 px-3 py-1.5 text-[12px] font-semibold text-volt-700 transition hover:bg-volt-500/10"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Add
-                    </button>
-                  )}
+        <div className="space-y-2">
+          <BoardEyebrow className="mb-1">Suggested watches for you</BoardEyebrow>
+          {suggestions.map((s) => {
+            const added = existingPresetIds.has(s.presetId);
+            return (
+              <div
+                key={s.key}
+                className="flex items-center gap-3 rounded-[13px] border border-sand bg-paper px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12.5px] font-semibold text-ink">{s.label}</p>
+                  <p className="text-[11px] leading-snug text-soft">{s.reason}</p>
                 </div>
-              );
-            })}
-          </div>
+                {added ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft/70">
+                    <Check className="h-3.5 w-3.5" /> Added
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => addSuggestion(s)}
+                    className="f0-focus inline-flex shrink-0 items-center gap-1 rounded-full border border-accent/50 px-3 py-1.5 text-[12px] font-semibold text-gold-700 transition hover:bg-accent/10"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -2047,7 +2423,7 @@ function StrategyTuner({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">{title}</p>
+      <p className="mb-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-soft/70">{title}</p>
       {children}
     </div>
   );
@@ -2057,8 +2433,8 @@ function Choice({ active, onClick, label }: { active: boolean; onClick: () => vo
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-3.5 py-2 text-[13px] font-semibold transition ${
-        active ? "border-volt-500 bg-volt-500/10 text-volt-700" : "border-sand text-soft hover:border-volt-300"
+      className={`f0-focus rounded-full border px-3.5 py-2 text-[12.5px] font-semibold transition ${
+        active ? "border-accent bg-accent/10 text-gold-700" : "border-sand text-soft hover:border-accent/40"
       }`}
     >
       {label}
@@ -2067,39 +2443,7 @@ function Choice({ active, onClick, label }: { active: boolean; onClick: () => vo
 }
 
 /* ---------- shared bits ---------- */
-/** Section marker — charged tick + eyebrow + hairline, then the display lead. */
-function SectionIntro({ title, blurb }: { title: string; blurb: string }) {
-  return (
-    <div>
-      <div className="f0-section-rule">
-        <span className="font-display text-eyebrow font-bold uppercase text-ink">
-          {title}
-        </span>
-      </div>
-      <p className="mt-2.5 max-w-lg text-[13px] leading-relaxed text-soft">{blurb}</p>
-    </div>
-  );
-}
-
-/** A trailing eyebrow marker used above ledgers inside a tab. */
-function LedgerLabel({
-  children,
-  meta,
-}: {
-  children: React.ReactNode;
-  meta?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-1 flex items-center gap-3">
-      <span className="f0-section-rule flex-1 font-display text-eyebrow font-bold uppercase text-ink">
-        {children}
-      </span>
-      {meta}
-    </div>
-  );
-}
-
-/** Calendar-relative bucket label for the History timeline (canvas artboard 14). */
+/** Calendar-relative bucket label for the day groups (canvas board 18). */
 function dateBucket(iso: string): string {
   const then = new Date(iso);
   const now = new Date();

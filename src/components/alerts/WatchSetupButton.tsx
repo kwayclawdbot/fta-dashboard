@@ -60,10 +60,13 @@ export default function WatchSetupButton({
       type="button"
       onClick={toggle}
       aria-pressed={subscribed}
-      className={`inline-flex items-center gap-1.5 rounded-xl font-semibold transition active:scale-[0.98] ${pad} ${
+      /* Kai's own blue when it is an offer, a teal outline once it is on. The
+         old unfollowed state was `.kai-gradient` — a teal→GREEN wash, which put
+         the price colour on a control. */
+      className={`f0-focus inline-flex items-center gap-1.5 rounded-full font-semibold transition active:scale-[0.98] ${pad} ${
         subscribed
           ? "border border-teal-500/40 bg-teal-500/10 text-teal-700"
-          : "kai-gradient text-white shadow-soft hover:brightness-105"
+          : "bg-kai-500 text-white hover:brightness-110"
       }`}
     >
       {busy ? (

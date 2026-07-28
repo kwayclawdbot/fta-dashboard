@@ -108,7 +108,7 @@ export default async function AlertsPage() {
       .maybeSingle(),
     supabase
       .from("alert_prefs")
-      .select("briefing_enabled, digest, daily_cap, quiet_hours")
+      .select("briefing_enabled, digest, daily_cap, quiet_hours, hub_seen_at")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -346,7 +346,7 @@ export default async function AlertsPage() {
 
   // ── Member's watchlist tickers (directive 3) — the pool the strategy-play
   // picker draws from. Read-only; the watchlist lane owns writes.
-  let watchlistTickers: { ticker: string; company_name: string }[] = [];
+  const watchlistTickers: { ticker: string; company_name: string }[] = [];
   if (profile?.family_id) {
     const { data: wl } = await supabase
       .from("family_watchlist")
@@ -370,10 +370,24 @@ export default async function AlertsPage() {
     quiet_hours: (prefsData?.quiet_hours as boolean) ?? true,
   };
 
+  // ── "N new" (canvas board 18) — an HONEST count, not a decoration.
+  // hub_seen_at (migration 195) is the watermark stamped when this member last
+  // opened the hub. NULL means they never have, in which case nothing is marked
+  // "new" retroactively: a first visit is not a pile of unread mail, it is a
+  // first visit. Broadcasts count alongside personal events because both are
+  // things that landed on this screen since the member last looked.
+  const hubSeenAt = (prefsData?.hub_seen_at as string | null) ?? null;
+  const newSinceSeen = hubSeenAt
+    ? events.filter((e) => e.fired_at > hubSeenAt).length +
+      broadcasts.filter((b) => b.issued_at > hubSeenAt).length
+    : 0;
+
   return (
     <AlertsClient
       userId={user.id}
       isSolo={isSolo}
+      newSinceSeen={newSinceSeen}
+      hubSeenAt={hubSeenAt}
       broadcasts={broadcasts}
       events={events}
       rules={rules}

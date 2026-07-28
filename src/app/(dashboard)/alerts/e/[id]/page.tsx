@@ -2,12 +2,20 @@ export const dynamic = "force-dynamic";
 
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Activity, Zap } from "lucide-react";
+import { ArrowLeft, Sparkles, Activity } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getClubTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import Sparkline from "@/components/fic/Sparkline";
+import ProximityMeter from "@/components/watch/ProximityMeter";
+import {
+  Card,
+  StatePill,
+  MetricChip,
+  CondRow,
+  Eyebrow as BoardEyebrow,
+} from "@/components/alerts/board";
 import DetailActions from "./DetailActions";
 import type { AlertEvent, AlertRule } from "@/lib/alerts/types";
 import type { WatchState } from "@/lib/alerts/watch-state";
@@ -22,16 +30,20 @@ import {
 } from "@/lib/alerts/watch-ui";
 
 /**
- * /alerts/e/[id] — the alert-detail STORY screen (Kai Watch, Lane B).
+ * /alerts/e/[id] — the alert-detail screen. CANVAS BOARD 19.
  *
- * CANVAS REBUILD: this is a piece of Kai's writing about one moment, so it is
- * built like one — Kai's identity leads, the thing that actually CHANGED is the
- * display headline (not a generic "Kai alerted you" label), and the body runs at
- * a real reading measure. The old screen stacked five rounded panels of equal
- * weight, so the reason for the alert carried no more authority than a chip.
+ * Board 19 is a stack of titled white cards under a plain header row: the back
+ * arrow, the name of the thing, its sub-line and a state pill on the right —
+ * then THE SETUP ON THE CHART, CONDITIONS, NOTIFY ME, a history strip, and a
+ * two-button bar pinned to the bottom. That is what this builds. The obsidian
+ * Kai field that used to open the screen is on no board and is gone.
  *
- * The one dark object is the Kai field at the top, tinted from the --color-kai-*
- * tokens: on a Kai surface, blue leads. Everything below is hairlines on cream.
+ * WHAT THE BOARD ASKS FOR THAT WE DO NOT HAVE: three named conditions with
+ * ticks. A watch has no such triple — it has the machine's own transition log
+ * (`watch_states`, written by the Lane-A cron since migration 157, with the
+ * closeness and the measured metric at each step). So the CONDITIONS card draws
+ * the real sequence Kai walked, ticked in order, and the board's checkmarks are
+ * never invented for steps that did not happen.
  *
  * COPY LAW: Kai reports SIGNALS + INTERPRETATION. "Kai's read" stays strictly
  * DETERMINISTIC (no LLM) and is hidden entirely when nothing honest can be
@@ -40,32 +52,6 @@ import {
  * COMPLIANCE: both regulated strings — the club-figures line and the footer
  * disclaimer — are rendered VERBATIM, unchanged from the previous screen.
  */
-
-/** Kai-blue text: #2563FF is heavy on near-black, so it steps up the ramp. */
-const KAI_INK = "text-kai-600 dark:text-kai-300";
-
-/** The Kai tint over `.f0-hero-field` — mixed from tokens, never a literal hex. */
-const KAI_TINT: React.CSSProperties = {
-  background: [
-    "radial-gradient(118% 130% at 84% 2%, color-mix(in srgb, var(--color-kai-400) 52%, transparent) 0%, transparent 58%)",
-    "radial-gradient(104% 124% at 2% 102%, color-mix(in srgb, var(--color-kai-600) 44%, transparent) 0%, transparent 62%)",
-    "linear-gradient(155deg, color-mix(in srgb, var(--color-kai-700) 46%, transparent) 0%, transparent 72%)",
-  ].join(", "),
-};
-
-/** State colours INSIDE the dark field — the light step of each ramp. */
-function fieldTone(tone: StateTone): { text: string; dot: string } {
-  switch (tone) {
-    case "volt":
-      return { text: "text-volt-300", dot: "bg-volt-400" };
-    case "teal":
-      return { text: "text-teal-300", dot: "bg-teal-400" };
-    case "kai":
-      return { text: "text-kai-300", dot: "bg-kai-400" };
-    default:
-      return { text: "opacity-60", dot: "bg-current opacity-40" };
-  }
-}
 
 export default async function AlertDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -98,9 +84,38 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
 
   // Owning rule (for edit/mute + the human condition label). null for broadcast.
   let rule: AlertRule | null = null;
+  // How this watch GOT here. `watch_states` is an append-only transition log the
+  // Lane-A cron has been writing since migration 157 — every step, its measured
+  // closeness and the metric behind it — and nothing in the app had ever read it
+  // back. Canvas board 19 draws a conditions panel; this is the honest version
+  // of that panel for the data we actually keep: not three invented checkboxes,
+  // but the real sequence the machine walked, in order, with its own numbers.
+  let timeline: {
+    state: string;
+    entered_at: string;
+    detail: { progress?: number; metric?: string | null };
+  }[] = [];
+  // How many times this exact watch has fired before. A count of the member's
+  // own events — never a hit rate, never a follow-through claim.
+  let firedCount = 0;
   if (event.rule_id) {
-    const { data: r } = await supabase.from("alert_rules").select("*").eq("id", event.rule_id).maybeSingle();
+    const [{ data: r }, { data: ts }, { count }] = await Promise.all([
+      supabase.from("alert_rules").select("*").eq("id", event.rule_id).maybeSingle(),
+      supabase
+        .from("watch_states")
+        .select("state, entered_at, detail")
+        .eq("rule_id", event.rule_id)
+        .order("entered_at", { ascending: false })
+        .limit(8),
+      supabase
+        .from("alert_events")
+        .select("id", { count: "exact", head: true })
+        .eq("rule_id", event.rule_id)
+        .eq("kind", "rule"),
+    ]);
     rule = (r as AlertRule | null) ?? null;
+    timeline = (ts || []) as typeof timeline;
+    firedCount = count ?? 0;
   }
 
   // Current price (perf-since context) — reuse nightly screener metrics, no API.
@@ -123,7 +138,6 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
         ? SETUP_STATE_META[stateStr as SetupState]?.tone
         : WATCH_STATE_META[stateStr as WatchState]?.tone) ?? "quiet"
     : "quiet";
-  const ft = fieldTone(tone);
   const isLive = stateStr
     ? (isSetupUpdate
         ? SETUP_STATE_META[stateStr as SetupState]?.live
@@ -166,160 +180,200 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-[72ch] px-4 pb-16 pt-5 sm:px-6">
-      <Link
-        href="/alerts"
-        className="inline-flex items-center gap-1.5 font-mono text-eyebrow font-semibold uppercase text-soft transition hover:text-ink"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Kai Watch
-      </Link>
+    <div className="mx-auto w-full max-w-[68ch] px-4 pb-28 pt-5 sm:px-6">
+      {/* ── the board's header row: back · name · sub · state ───────────── */}
+      <div className="flex items-start gap-3">
+        <Link
+          href="/alerts"
+          aria-label="Back to Kai Watch"
+          className="f0-focus mt-0.5 shrink-0 text-soft transition hover:text-ink"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-[17px] font-extrabold leading-snug tracking-tight text-ink">
+            {whatChanged}
+          </h1>
+          <p className="mt-1 text-[10.5px] text-soft/85">
+            {headline} · {freshnessLabel(event.fired_at).toLowerCase()}
+          </p>
+        </div>
+        {stateLabel && (
+          <span className="shrink-0">
+            <StatePill tone={tone} label={stateLabel} live={isLive} />
+          </span>
+        )}
+      </div>
 
-      {/* ── The one dark object: Kai's own field ──────────────────────────── */}
-      <header className="f0-hero-field f0-grain mt-4 px-5 py-7 sm:px-7">
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 opacity-90 dark:opacity-100"
-          style={KAI_TINT}
-        />
-
-        {/* attribution — Kai is the author of this page */}
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span aria-hidden className="relative flex h-2.5 w-2.5 items-center justify-center">
-            {isLive && (
-              <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-kai-400/50 motion-safe:animate-ping" />
-            )}
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-kai-400" />
-          </span>
-          <span className="font-mono text-eyebrow font-semibold uppercase text-kai-300">
-            {headline}
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
-            {freshnessLabel(event.fired_at)}
-          </span>
-          {stateLabel && (
-            <span
-              className={`inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] ${ft.text}`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${ft.dot}`} />
-              {stateLabel}
+      {/* ── THE MOVE SINCE KAI FLAGGED IT (board 19's chart card) ────────
+          The board draws entry and invalidation bands on the chart. A fired
+          personal watch has no graded entry zone — what it HAS is the price it
+          was flagged at and what has happened since, so those are the two
+          numbers the card carries, as chips beside the series. Nothing is drawn
+          that we did not measure. */}
+      <Card className="mt-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <BoardEyebrow>The move since Kai flagged it</BoardEyebrow>
+          {current != null && (
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-ink">
+              {current.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+              {perfPct != null && (
+                <span className={perfPct >= 0 ? " text-price-up" : " text-price-down"}>
+                  {" "}
+                  {perfPct >= 0 ? "▲" : "▼"}
+                  {Math.abs(perfPct).toFixed(1)}%
+                </span>
+              )}
             </span>
           )}
         </div>
 
-        {/* the display headline IS the thing that changed */}
-        <h1 className="mt-3.5 max-w-[46ch] font-display text-display-2 font-extrabold leading-tight tracking-tight">
-          {whatChanged}
-        </h1>
+        <div className="mt-2.5 flex items-center gap-3">
+          <CompanyLogo symbol={ticker} name={companyName} size={34} rounded="rounded-[10px]" />
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[14px] font-extrabold tracking-tight text-ink">
+              ${ticker}
+            </p>
+            <p className="truncate text-[11px] text-soft/85">{companyName}</p>
+          </div>
+        </div>
 
-        {/* the instrument line: which company, at what price */}
-        <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
-          <span className="flex items-center gap-2.5">
-            <CompanyLogo symbol={ticker} name={companyName} size={34} rounded="rounded-lg" />
-            <span className="min-w-0">
-              <span className="block font-display text-[15px] font-extrabold tracking-tight">
-                ${ticker}
-              </span>
-              <span className="block truncate text-[11.5px] opacity-60">{companyName}</span>
-            </span>
-          </span>
+        <div className="mt-3">
+          <Sparkline symbol={ticker} height={104} />
+        </div>
 
-          {current != null && (
-            <span>
-              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
-                Now
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {snap != null && (
+            <MetricChip>
+              <span className="uppercase tracking-[0.1em]">Flagged at</span>
+              <span className="text-ink">
+                {snap.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </span>
-              <span className="mt-0.5 block font-mono text-[19px] font-semibold tabular-nums">
-                {current.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </span>
+            </MetricChip>
           )}
-
           {perfPct != null && (
-            <span>
-              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] opacity-55">
-                Since Kai flagged it
-              </span>
-              <span
-                className={`mt-0.5 block font-mono text-[19px] font-semibold tabular-nums ${
-                  perfPct >= 0 ? "text-price-up" : "text-price-down"
-                }`}
-              >
+            <MetricChip>
+              <span className="uppercase tracking-[0.1em]">Since</span>
+              <span className={perfPct >= 0 ? "text-price-up" : "text-price-down"}>
                 {perfPct >= 0 ? "+" : ""}
                 {perfPct.toFixed(1)}%
               </span>
-            </span>
+            </MetricChip>
           )}
+          {event.payload?.delayed && <MetricChip>delayed ~15m</MetricChip>}
         </div>
-      </header>
+      </Card>
 
-      {/* ── Why Kai alerted you ───────────────────────────────────────────── */}
-      <section className="mt-9">
-        <div className="f0-section-rule">
-          <span className="flex items-center gap-1.5 font-display text-eyebrow font-bold uppercase text-ink">
-            {isLive && <Zap className="h-3.5 w-3.5 text-gold-700" />}
-            Why Kai alerted you
-          </span>
-        </div>
-        <p className="mt-3 max-w-[65ch] text-[15px] leading-relaxed text-ink">{whatChanged}</p>
+      {/* ── WHY KAI ALERTED YOU ──────────────────────────────────────────── */}
+      <Card className="mt-3">
+        <BoardEyebrow accent>
+          {isLive ? "Why Kai alerted you · live" : "Why Kai alerted you"}
+        </BoardEyebrow>
+        <p className="mt-2.5 text-[14px] leading-relaxed text-ink">{whatChanged}</p>
 
         {conditionLabel && (
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft/70">
-              Your condition
-            </span>
-            <span className="font-mono text-[12.5px] text-ink">{conditionLabel}</span>
-            {snap != null && (
-              <span className="font-mono text-[11.5px] tabular-nums text-soft/80">
-                flagged near{" "}
-                {snap.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            )}
+          <div className="mt-3 border-t border-sand pt-3">
+            <CondRow
+              met
+              tone={tone}
+              label={conditionLabel}
+              value={
+                snap != null
+                  ? snap.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })
+                  : null
+              }
+            />
+          </div>
+        )}
+
+        {firedCount > 1 && (
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-soft/70">
+            This watch has fired {firedCount} times
           </p>
         )}
-      </section>
+      </Card>
 
-      {/* ── Kai's read — only when computable without an LLM ───────────────── */}
+      {/* ── CONDITIONS · how it got here (board 19's checklist card) ────── */}
+      {timeline.length > 1 && (
+        <Card className="mt-3">
+          <BoardEyebrow accent>
+            Conditions · {timeline.length} steps recorded
+          </BoardEyebrow>
+          <ol className="mt-3 space-y-3">
+            {timeline.map((t, i) => {
+              const m =
+                WATCH_STATE_META[t.state as WatchState] ??
+                SETUP_STATE_META[t.state as SetupState];
+              const isNow = i === 0;
+              return (
+                <li key={`${t.entered_at}-${i}`}>
+                  <div className="flex items-start gap-2.5">
+                    <span className="min-w-0 flex-1">
+                      <CondRow
+                        met={!isNow}
+                        tone={m?.tone ?? "quiet"}
+                        label={m?.label ?? t.state}
+                        value={new Date(t.entered_at).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      />
+                      <ProximityMeter
+                        className="ml-7 mt-1.5"
+                        progress={t.detail?.progress}
+                        tone={m?.tone ?? "quiet"}
+                        label="Closeness then"
+                        metric={typeof t.detail?.metric === "string" ? t.detail.metric : null}
+                      />
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+          <p className="mt-3 border-t border-sand pt-3 text-[11px] leading-relaxed text-soft/70">
+            Every step Kai recorded on this watch, newest first. Closeness is how
+            far the condition had come at that moment — a measurement, never a
+            likelihood.
+          </p>
+        </Card>
+      )}
+
+      {/* ── KAI'S READ — only when computable without an LLM ─────────────── */}
       {kaiRead && (
-        <section className="f0-rule-top mt-8 pt-5">
+        <Card className="mt-3">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kai-500 text-white">
+            <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-[9px] bg-kai-500 text-white">
               <Sparkles className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className={`font-mono text-eyebrow font-semibold uppercase ${KAI_INK}`}>
-                Kai&apos;s read
-              </p>
-              <p className="mt-2 max-w-[65ch] text-[15px] leading-relaxed text-ink">{kaiRead}</p>
-              <p className="mt-2.5 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-soft/60">
+              <BoardEyebrow>Kai&apos;s read</BoardEyebrow>
+              <p className="mt-2 text-[14px] leading-relaxed text-ink">{kaiRead}</p>
+              <p className="mt-2 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.14em] text-soft/60">
                 An interpretation of what already happened — never a forecast.
               </p>
             </div>
           </div>
-        </section>
+        </Card>
       )}
 
-      {/* ── Recent price ──────────────────────────────────────────────────── */}
-      <section className="mt-9">
-        <div className="f0-section-rule">
-          <span className="font-display text-eyebrow font-bold uppercase text-ink">
-            Recent price
-          </span>
-        </div>
-        <div className="mt-3">
-          <Sparkline symbol={ticker} height={90} />
-        </div>
-      </section>
-
-      {/* ── The Club ──────────────────────────────────────────────────────── */}
+      {/* ── THE CLUB ─────────────────────────────────────────────────────── */}
       {intel && (
-        <section className="mt-9">
-          <div className="f0-section-rule">
-            <span className="font-display text-eyebrow font-bold uppercase text-ink">
-              The club on ${ticker}
-            </span>
-          </div>
+        <Card className="mt-3">
+          <BoardEyebrow>The club on ${ticker}</BoardEyebrow>
 
-          <dl className="mt-4 flex flex-wrap items-end gap-x-9 gap-y-4">
+          <dl className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-4">
             <ClubStat
               label="Club score"
               value={intel.club_score != null ? String(Math.round(Number(intel.club_score))) : "—"}
@@ -337,34 +391,32 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
           )}
 
           {intel.unusual_activity && (
-            <p className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-gold-700">
+            <p className="mt-4 inline-flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-gold-700">
               <Activity className="h-3.5 w-3.5" /> Unusual activity
             </p>
           )}
 
           <Link
             href={`/research/${encodeURIComponent(ticker)}`}
-            className="mt-4 block text-[13px] font-semibold text-gold-700 transition hover:text-gold-600"
+            className="mt-4 block text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
           >
             See the full club view →
           </Link>
 
-          <p className="mt-3 max-w-[65ch] text-[11px] leading-relaxed text-soft/70">
+          <p className="mt-3 text-[11px] leading-relaxed text-soft/70">
             Club figures reflect member attention and sentiment — a measure of what the community is
             watching, not a recommendation.
           </p>
-        </section>
+        </Card>
       )}
 
-      {/* ── Actions ───────────────────────────────────────────────────────── */}
-      <section className="f0-rule-top mt-9 pt-6">
-        <DetailActions ruleId={event.rule_id} ticker={ticker} />
-      </section>
-
-      <p className="mt-10 max-w-[65ch] border-t border-sand pt-4 text-[11px] leading-relaxed text-soft/70">
+      <p className="mt-6 text-[11px] leading-relaxed text-soft/70">
         This is educational market analysis, not financial advice or a recommendation to buy or sell.
         Prices may be delayed. Past performance never guarantees future results.
       </p>
+
+      {/* ── the board's pinned action bar ────────────────────────────────── */}
+      <DetailActions ruleId={event.rule_id} ticker={ticker} />
     </div>
   );
 }
@@ -434,12 +486,15 @@ function SentimentSplit({ bull, neutral, bear }: { bull: number; neutral: number
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-soft/70">
         Club sentiment
       </p>
+      {/* Through the canonical sentiment tokens — the hand-written
+          `dark:text-lime-400` pair was the same per-surface divergence the
+          price tokens were introduced to end. */}
       <div className="mt-2 flex h-[3px] overflow-hidden rounded-full bg-sand">
-        <span className="h-full bg-lime-500" style={{ width: `${pb}%` }} />
-        <span className="h-full bg-lime-500/35" style={{ width: `${pn}%` }} />
+        <span className="h-full bg-sentiment-fill" style={{ width: `${pb}%` }} />
+        <span className="h-full bg-sentiment-fill/35" style={{ width: `${pn}%` }} />
       </div>
       <p className="mt-2 flex flex-wrap gap-x-3 font-mono text-[10.5px] uppercase tracking-[0.1em] tabular-nums">
-        <span className="text-lime-700 dark:text-lime-400">{pb}% bullish</span>
+        <span className="text-sentiment">{pb}% bullish</span>
         <span className="text-soft/70">{pn}% neutral</span>
         <span className="text-soft/70">{pbear}% bearish</span>
       </p>
