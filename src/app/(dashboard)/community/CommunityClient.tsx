@@ -9,6 +9,9 @@ import {
   Award, Eye, CheckCircle2, Target, Calendar,
   Tag,
   ChevronDown,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, countXpToday } from "@/lib/xp";
@@ -301,6 +304,31 @@ export default function CommunityClient({
     });
   }
 
+  /* ── "edited" marks, asked for separately ───────────────────────────────
+     feed_posts.edited_at arrives with migration 201. Folding it into the feed's
+     main select would mean a database that has not run 201 yet answers the
+     WHOLE query with 42703 and the club sees an empty room — a schema rollout
+     is not allowed to take the feed down. So the mark is a second, tiny read
+     (only rows that were actually edited), and an error simply means no marks.  */
+  const hydrateEdited = useCallback(
+    async (ids: string[]) => {
+      if (!ids.length) return;
+      const { data, error } = await supabase
+        .from("feed_posts")
+        .select("id, edited_at")
+        .in("id", ids)
+        .not("edited_at", "is", null);
+      if (error || !data?.length) return;
+      const marks = new Map(
+        (data as { id: string; edited_at: string | null }[]).map((r) => [r.id, r.edited_at])
+      );
+      setPosts((prev) =>
+        prev.map((p) => (marks.has(p.id) ? { ...p, edited_at: marks.get(p.id) ?? null } : p))
+      );
+    },
+    [supabase]
+  );
+
   // ── Load feed (posts + likes + comment counts) ──
   const loadFeed = useCallback(
     async (uid: string | null) => {
@@ -321,6 +349,7 @@ export default function CommunityClient({
       await loadTiers(norm.map((p) => p.author?.family_id));
       loadXp([me?.id, ...norm.map((p) => p.author?.id)]);
       resolveMentions(norm.map((p) => p.body));
+      hydrateEdited(norm.map((p) => p.id));
 
       const ids = norm.map((p) => p.id);
       if (ids.length) {
@@ -345,7 +374,7 @@ export default function CommunityClient({
         setCommentCount({});
       }
     },
-    [supabase, loadTiers, resolveMentions]
+    [supabase, loadTiers, resolveMentions, hydrateEdited]
   );
 
   // Initial load
@@ -356,6 +385,9 @@ export default function CommunityClient({
     // post-paint badge evaluation that the original load did.
     if (seeded) {
       if (initialData?.me?.id) evaluateBadges(supabase, initialData.me.id);
+      // The seed's select cannot ask for edited_at (see hydrateEdited) — the
+      // marks come in after paint, or not at all.
+      hydrateEdited((initialData?.posts ?? []).map((p) => p.id));
       return () => {
         mounted = false;
       };
@@ -560,6 +592,79 @@ export default function CommunityClient({
     }
     setPosting(false);
   }
+
+  /* ── Your own entry: rewrite it, or withdraw it ──────────────────────────
+     Both are REAL writes against feed_posts, authorized by the author's own
+     policies (034, guarded by migration 201). Neither pretends: a refusal from
+     the database is handed back as a sentence for the card to print, and the
+     local state only moves after the write actually lands.
+
+     The edit deliberately sends edited_at too. On a database with 201 the
+     trigger overrides it anyway (the disclosure is the trigger's, never the
+     client's); on one WITHOUT 201 the column does not exist, PostgREST answers
+     42703, and we retry the body alone — the words are saved, the "edited" mark
+     just isn't available yet. What we never do is claim an edit that failed. */
+  const savePostEdit = useCallback(
+    async (postId: string, nextBody: string): Promise<{ ok: boolean; error?: string }> => {
+      const body = nextBody.trim();
+      if (!body) return { ok: false, error: "An entry still needs something in it." };
+      if (!checkClean(body).ok) return { ok: false, error: PROFANITY_MESSAGE };
+
+      const stamp = new Date().toISOString();
+      // .select() is the honesty check: a row refused by RLS comes back as an
+      // EMPTY result with no error at all, so "no error" is not proof of a write.
+      let { data, error } = await supabase
+        .from("feed_posts")
+        .update({ body, edited_at: stamp })
+        .eq("id", postId)
+        .select("id");
+
+      let marked = true;
+      // 42703 = column does not exist → migration 201 hasn't run here yet.
+      if (error && error.code === "42703") {
+        marked = false;
+        ({ data, error } = await supabase
+          .from("feed_posts")
+          .update({ body })
+          .eq("id", postId)
+          .select("id"));
+      }
+      if (error || !data?.length) {
+        return {
+          ok: false,
+          error: "That edit wasn't allowed — you can only change your own entry.",
+        };
+      }
+
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, body, edited_at: marked ? stamp : p.edited_at ?? null } : p))
+      );
+      resolveMentions([body]);
+      return { ok: true };
+    },
+    [supabase, resolveMentions]
+  );
+
+  const deletePost = useCallback(
+    async (postId: string): Promise<{ ok: boolean; error?: string }> => {
+      // Same honesty check as the edit: a delete refused by RLS returns no
+      // error and deletes nothing, so the returned rows are the proof.
+      const { data, error } = await supabase
+        .from("feed_posts")
+        .delete()
+        .eq("id", postId)
+        .select("id");
+      if (error || !data?.length) {
+        return {
+          ok: false,
+          error: "That entry couldn't be deleted — you can only delete your own.",
+        };
+      }
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      return { ok: true };
+    },
+    [supabase]
+  );
 
   // ── Likes ──
   async function toggleLike(postId: string) {
@@ -1203,6 +1308,8 @@ export default function CommunityClient({
                           likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
                           commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
                           comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
+                          canManage={!!me && !!p.author_id && p.author_id === me.id && !feedReadOnlyKid}
+                          onEditPost={savePostEdit} onDeletePost={deletePost}
                         />
                       </m.div>
                     ))}
@@ -1359,6 +1466,10 @@ interface EngagementProps {
   onAddComment: (postId: string, body: string) => Promise<boolean>;
   tierOf: (a: FeedAuthor | null) => FamilyTier;
   xpOf?: (userId: string | null | undefined) => number;
+  /** Your own entry — the overflow menu is offered only when this is true. */
+  canManage?: boolean;
+  onEditPost?: (postId: string, body: string) => Promise<{ ok: boolean; error?: string }>;
+  onDeletePost?: (postId: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 /**
@@ -1493,10 +1604,54 @@ function TickerRow({
  * credibility, and it was the loudest thing in the row.
  */
 function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
-  const { post, tier } = props;
+  const { post, tier, canManage, onEditPost, onDeletePost } = props;
   const role = post.author?.role || "parent";
   const xp = props.xpOf?.(post.author?.id);
   const { headline, rest } = splitEntry(post.body);
+
+  /* YOUR OWN ENTRY — the club could Like and Reply to a post and its author
+     could do neither of the two things only they should be able to do. The menu
+     is offered on own entries only; both actions are real writes and a refusal
+     is printed on the card rather than swallowed. */
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(post.body);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  function closeMenu() {
+    setMenuOpen(false);
+    setConfirmingDelete(false);
+  }
+
+  async function commitEdit() {
+    if (!onEditPost || busy) return;
+    setBusy(true);
+    setErr(null);
+    const res = await onEditPost(post.id, draft);
+    setBusy(false);
+    if (!res.ok) {
+      setErr(res.error ?? "That edit didn't go through.");
+      return;
+    }
+    setEditing(false);
+  }
+
+  async function commitDelete() {
+    if (!onDeletePost || busy) return;
+    setBusy(true);
+    setErr(null);
+    const res = await onDeletePost(post.id);
+    // On success this component unmounts with the row, so there is nothing to
+    // reset — only a refusal needs to survive and be read.
+    if (!res.ok) {
+      setBusy(false);
+      setErr(res.error ?? "That entry couldn't be deleted.");
+      closeMenu();
+    }
+  }
+
   return (
     <div className="rounded-[14px] border border-sand bg-card p-3.5 transition-colors">
       <div className="flex items-start gap-3">
@@ -1510,13 +1665,158 @@ function PostEntry(props: EngagementProps & { tier: FamilyTier }) {
             </ProfileLink>
             <CredibilityTag role={role} xp={xp} />
             <AgeBadge role={post.author?.role} ageGroup={post.author?.age_group} />
-            <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+            <span className="ml-auto flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
               {timeAgo(post.created_at)}
+              {/* An edit that isn't disclosed is a rewrite of the record. */}
+              {post.edited_at && (
+                <>
+                  <span aria-hidden className="text-soft/60">·</span>
+                  <span title="The author edited this entry">edited</span>
+                </>
+              )}
             </span>
+            {canManage && (
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
+                  aria-label="Entry options"
+                  aria-expanded={menuOpen}
+                  className="f0-focus -mr-1 flex h-6 w-6 items-center justify-center rounded-full text-soft transition-colors hover:text-ink"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+                {menuOpen && (
+                  <>
+                    {/* Dismiss layer — a menu that only closes by re-tapping the
+                        glyph is a menu members get stuck in. */}
+                    <button
+                      type="button"
+                      aria-hidden
+                      tabIndex={-1}
+                      onClick={closeMenu}
+                      className="fixed inset-0 z-30 cursor-default"
+                    />
+                    <div
+                      role="menu"
+                      onKeyDown={(e) => e.key === "Escape" && closeMenu()}
+                      className="absolute right-0 top-7 z-40 min-w-[11.5rem] overflow-hidden rounded-xl border border-sand bg-card py-1 shadow-[var(--shadow-lift)]"
+                    >
+                      {confirmingDelete ? (
+                        <div className="px-3 py-2">
+                          <p className="font-body text-[12.5px] leading-snug text-ink">
+                            Delete this entry? Replies go with it.
+                          </p>
+                          <div className="mt-2 flex items-center gap-4">
+                            <button
+                              type="button"
+                              onClick={commitDelete}
+                              disabled={busy}
+                              /* Deliberately NOT red: under the colour law red
+                                 is price, and a red word beside a $CASHTAG
+                                 entry reads as a down move first. The sentence
+                                 above it carries the weight. */
+                              className="f0-focus font-display text-[11.5px] font-extrabold uppercase tracking-[0.1em] text-ink underline decoration-sand underline-offset-4 disabled:opacity-50"
+                            >
+                              {busy ? "Deleting…" : "Delete"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={closeMenu}
+                              className="f0-focus font-display text-[11.5px] font-semibold text-soft transition-colors hover:text-ink"
+                            >
+                              Keep it
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setDraft(post.body);
+                              setErr(null);
+                              setEditing(true);
+                              closeMenu();
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left font-body text-[13px] text-ink transition-colors hover:bg-paper"
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-soft" />
+                            Edit entry
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => setConfirmingDelete(true)}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left font-body text-[13px] text-ink transition-colors hover:bg-paper"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-soft" />
+                            Delete entry
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {headline && <EntryHeadline text={headline} />}
-          {rest && <PostBody body={rest} />}
+          {editing ? (
+            <div className="mt-2.5">
+              <label htmlFor={`edit-${post.id}`} className="sr-only">
+                Edit your entry
+              </label>
+              <textarea
+                id={`edit-${post.id}`}
+                value={draft}
+                autoFocus
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  setErr(null);
+                }}
+                rows={Math.min(14, Math.max(4, draft.split("\n").length + 1))}
+                className="f0-focus w-full resize-none rounded-[10px] border border-sand bg-paper p-3 font-body text-[14px] leading-[1.55] text-ink focus:outline-none"
+              />
+              <div className="mt-2 flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={commitEdit}
+                  disabled={busy || !draft.trim() || draft === post.body}
+                  className="f0-focus font-display text-[11.5px] font-extrabold uppercase tracking-[0.1em] text-gold-700 transition-colors hover:text-gold-600 disabled:opacity-40"
+                >
+                  {busy ? "Saving…" : "Save changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(false);
+                    setDraft(post.body);
+                    setErr(null);
+                  }}
+                  className="f0-focus font-display text-[11.5px] font-semibold text-soft transition-colors hover:text-ink"
+                >
+                  Cancel
+                </button>
+                <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+                  Saves marked edited
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {headline && <EntryHeadline text={headline} />}
+              {rest && <PostBody body={rest} />}
+            </>
+          )}
+
+          {/* The database's answer, printed. Never a silent no-op. */}
+          {err && (
+            <p role="alert" className="mt-2 font-body text-[12.5px] font-semibold leading-snug text-ink">
+              {err}
+            </p>
+          )}
 
           <TickerRow tags={post.ticker_tags} position={post.position} timeHorizon={post.time_horizon} contentType={post.content_type} />
           {isWatchlistShare(post.activity_payload) && (

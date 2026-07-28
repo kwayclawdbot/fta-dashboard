@@ -102,6 +102,13 @@ export interface FeedPost {
   anchor_week_id: string | null;
   pinned: boolean;
   created_at: string;
+  /**
+   * Migration 201 — when the author last rewrote the body. NULL / absent means
+   * never edited. OPTIONAL on the type on purpose: the feed's main select does
+   * not ask for it (a missing column would fail the whole query on a database
+   * that has not run 201 yet), so it is hydrated by a separate, skippable read.
+   */
+  edited_at?: string | null;
   author: FeedAuthor | null;
   // kind='announcement' (migration 090): admin-authored gold megaphone card.
   title?: string | null;
