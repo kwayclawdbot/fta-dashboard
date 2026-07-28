@@ -243,7 +243,7 @@ export default function ReferralsPage() {
             {canNativeShare && (
               <button
                 onClick={nativeShare}
-                className="club-b-card f0-focus f0-press inline-flex items-center gap-2 rounded-full px-4 py-2.5 font-display text-[13px] font-bold text-ink"
+                className="f0-focus f0-press inline-flex items-center gap-2 rounded-full border border-sand bg-card px-4 py-2.5 font-display text-[13px] font-bold text-ink transition-colors hover:text-accent"
               >
                 <Share2 className="h-4 w-4" /> Share
               </button>
@@ -343,7 +343,7 @@ function ShareLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="club-b-card f0-focus f0-press inline-flex items-center gap-2 rounded-full px-4 py-2.5 font-display text-[13px] font-bold text-ink"
+      className="f0-focus f0-press inline-flex items-center gap-2 rounded-full border border-sand bg-card px-4 py-2.5 font-display text-[13px] font-bold text-ink transition-colors hover:text-accent"
     >
       {children}
       {label}

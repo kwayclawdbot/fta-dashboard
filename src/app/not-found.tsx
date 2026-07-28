@@ -29,7 +29,7 @@ export default function NotFound() {
         </Link>
         <Link
           href="/discover"
-          className="club-b-card f0-press f0-focus inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+          className="club-b-card f0-press f0-focus inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-ink transition-colors hover:text-accent"
         >
           <Compass className="h-4 w-4" />
           Explore stocks

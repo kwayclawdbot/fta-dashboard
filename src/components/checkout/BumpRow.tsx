@@ -27,7 +27,7 @@ export default function BumpRow({
       disabled={disabled}
       onClick={onToggle}
       className={
-        "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors " +
+        "f0-focus flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors " +
         (selected
           ? "bg-chip-amber ring-1 ring-gold-500"
           : "ring-1 ring-sand hover:bg-paper/50") +
@@ -38,7 +38,7 @@ export default function BumpRow({
         className={
           "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors " +
           (selected
-            ? "border-gold-500 bg-gold-500 text-night-950"
+            ? "border-gold-500 bg-gold-500 text-[color:var(--accent-on)]"
             : "border-sand bg-card text-transparent")
         }
       >

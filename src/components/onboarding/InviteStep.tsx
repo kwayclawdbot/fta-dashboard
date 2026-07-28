@@ -152,7 +152,7 @@ function Share({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="club-b-card f0-press f0-focus inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-accent"
+      className="club-b-card f0-press f0-focus inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:text-accent"
     >
       {children}
       {label}

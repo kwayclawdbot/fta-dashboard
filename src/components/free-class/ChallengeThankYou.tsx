@@ -674,7 +674,7 @@ function ActivationLink({
   return (
     <a
       href={href}
-      className="f0-press f0-focus club-b-card inline-flex items-center justify-center gap-2 px-4 py-2.5 font-display text-[13.5px] font-bold text-ink transition-colors hover:border-[color:var(--accent-solid)]"
+      className="f0-press f0-focus club-b-card inline-flex items-center justify-center gap-2 px-4 py-2.5 font-display text-[13.5px] font-bold text-ink transition-colors hover:text-accent"
     >
       <Icon className="h-4 w-4 text-accent" />
       {children}

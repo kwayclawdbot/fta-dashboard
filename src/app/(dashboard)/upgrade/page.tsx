@@ -402,7 +402,7 @@ export default function UpgradePage() {
           </Link>
           <Link
             href="/live-sessions"
-            className="club-b-card f0-focus f0-press inline-flex items-center gap-2 px-5 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:border-accent"
+            className="club-b-card f0-focus f0-press inline-flex items-center gap-2 px-5 py-2.5 font-display text-sm font-semibold text-ink transition-colors hover:text-accent"
           >
             <Video className="h-4 w-4" />
             Live classes

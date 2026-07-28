@@ -10,15 +10,20 @@ import type { Decision } from "@/lib/simulator/scenarios";
  *
  * Canvas v2 "21 Micro Lesson" (App Light L1662-1679) is the model: the question
  * sits above a STACK of full-width answer rows, each carrying a lettered chip on
- * the left, and the chosen row lights in brand orange with a soft tint. The old
- * three-across button row is replaced by that stack — the labels no longer have
- * to survive being squeezed to a third of a narrow rail, and the letter chip
- * gives each call an identity beyond its fill.
+ * the left. The old three-across button row is replaced by that stack — the
+ * labels no longer have to survive being squeezed to a third of a narrow rail,
+ * and the letter chip gives each call an identity beyond its fill.
+ *
+ * The rows are board cards (`.club-b-card`) and the chosen one takes the
+ * board's own lead edge (`.club-b-card-lead`: accent border + soft bloom).
+ * That pairing rather than a Tailwind `border-*` override is deliberate —
+ * globals.css is unlayered, so `.club-b-card`'s `border` shorthand outranks
+ * every Tailwind border utility and a `border-gold-400` here would never paint.
  *
  * COLOUR LAW: the three calls are not price readings, so none of them is green
- * or red. Selection is an ACTION, so the chosen row is brand orange via the
- * gold ramp (which flips per theme; `text-volt-*` does not). The volt rule down
- * the left is what marks this as the live moment.
+ * or red. Selection is an ACTION, so the chosen row is carried by the brand
+ * accent and the gold ramp (which flips per theme; `text-volt-*` does not). The
+ * accent rule down the left is what marks this as the live moment.
  *
  * NO VERDICT: these are the MEMBER's calls on a synthetic teaching pattern —
  * the app is not telling anyone what to do with anything.
@@ -96,14 +101,14 @@ export default function ScenarioDecisionPanel({
               type="button"
               onClick={() => choose(c.id)}
               disabled={!!chosen && !on}
-              className={`f0-focus f0-press flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors disabled:opacity-40 ${
-                on ? "border-gold-400 bg-chip-amber" : "border-sand hover:border-gold-400"
+              className={`club-b-card f0-focus f0-press flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors disabled:opacity-40 ${
+                on ? "club-b-card-lead" : ""
               }`}
             >
               <span
                 aria-hidden
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg font-mono text-[11px] font-bold ${
-                  on ? "bg-accent text-night-950" : "bg-sand text-soft"
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg font-mono text-[11px] font-bold tabular-nums ${
+                  on ? "bg-accent text-[color:var(--accent-on)]" : "bg-sand text-soft"
                 }`}
               >
                 {c.letter}
@@ -111,7 +116,7 @@ export default function ScenarioDecisionPanel({
               <span className="min-w-0 flex-1">
                 <span
                   className={`flex items-center gap-1.5 font-display text-[14px] font-bold ${
-                    on ? "text-gold-700" : "text-ink"
+                    on ? "text-gold-800" : "text-ink"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
