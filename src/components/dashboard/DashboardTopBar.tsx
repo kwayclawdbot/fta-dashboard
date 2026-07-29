@@ -136,7 +136,22 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
   // global bar duplicated both, consuming 56px of the 844px reference frame.
   // Desktop keeps the universal command/bell/account strip beside the sidebar.
   const surfaceOwnsMobileHeader =
-    pathname === "/community" || pathname.startsWith("/community/");
+    !!user.isSolo &&
+    [
+      "/dashboard",
+      "/discover",
+      "/community",
+      "/research",
+      "/watchlist",
+      "/courses",
+      "/alerts",
+      "/circles",
+      "/belts",
+      "/screener",
+      "/pricing",
+      "/vip-room",
+      "/u",
+    ].some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

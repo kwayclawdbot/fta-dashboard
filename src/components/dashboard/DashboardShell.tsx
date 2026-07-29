@@ -125,6 +125,23 @@ export default function DashboardShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const mockupOwnsCanvas =
+    !!user.isSolo &&
+    [
+      "/dashboard",
+      "/discover",
+      "/community",
+      "/research",
+      "/watchlist",
+      "/courses",
+      "/alerts",
+      "/circles",
+      "/belts",
+      "/screener",
+      "/pricing",
+      "/vip-room",
+      "/u",
+    ].some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
 
   // Lifetime XP for the belt chip — fetched once here and shared with the TopBar
   // (desktop/tablet) and MobileTabBar More-sheet header so both belt chips read
@@ -233,7 +250,11 @@ export default function DashboardShell({
               "--kai-fab-reserve-desktop": reserve.desktop,
             } as React.CSSProperties
           }
-          className="px-4 pt-6 pb-[var(--kai-fab-reserve)] md:pb-[var(--kai-fab-reserve-desktop)] lg:px-8"
+          className={`${
+            mockupOwnsCanvas
+              ? "px-0 pt-0 md:px-4 md:pt-5 lg:px-8 lg:pt-6"
+              : "px-4 pt-6 lg:px-8"
+          } pb-[var(--kai-fab-reserve)] md:pb-[var(--kai-fab-reserve-desktop)]`}
         >
           {challengeDaysLeft !== null && !freeLocked && (
             <Link

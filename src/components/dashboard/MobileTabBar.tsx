@@ -50,7 +50,7 @@ const T = {
   Club: { label: "Club", href: "/community", icon: MessageCircle } as Tab,
   Discover: { label: "Discover", href: "/discover", icon: Compass } as Tab,
   Learn: { label: "Learn", href: "/courses", icon: BookOpen } as Tab,
-  Watchlist: { label: "Watchlist", href: "/watchlist/community", icon: Eye } as Tab,
+  Watchlist: { label: "Watch", href: "/alerts", icon: Eye } as Tab,
   Missions: { label: "Missions", href: "/missions", icon: Target } as Tab,
   Family: { label: "Family", href: "/family", icon: Users } as Tab,
 };

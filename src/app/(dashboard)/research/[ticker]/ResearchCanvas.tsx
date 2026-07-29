@@ -233,7 +233,14 @@ export default function ResearchCanvas({
   userId,
   onAskKai,
   clubRank,
+  clubScore,
   watchers,
+  bull,
+  neutral,
+  bear,
+  positioned,
+  discussions,
+  sentimentShift24h,
   faces,
 }: {
   ticker: string;
@@ -258,8 +265,16 @@ export default function ResearchCanvas({
   onAskKai: () => void;
   /** ticker_intel_snapshots.rank — the board's "#1 in the Club ›" pill. */
   clubRank: number | null;
+  /** Bounded Club attention score from ticker_intel_snapshots. */
+  clubScore: number | null;
   /** distinct members watching (floor-gated upstream); 0 → the row is dropped */
   watchers: number;
+  bull: number;
+  neutral: number;
+  bear: number;
+  positioned: number;
+  discussions: number;
+  sentimentShift24h: number | null;
   /** the positioned members whose posts the marks stand for */
   faces: Portrait[];
 }) {
@@ -609,8 +624,12 @@ export default function ResearchCanvas({
 
   return (
     <div>
+      <div className="mb-3">
+        <p className="cc-app-signal text-[9px] font-semibold uppercase tracking-[.18em] text-[#FF7A1A]">Ticker research</p>
+        <p className="mt-1 text-[11px] text-[#8F8894]">Deep dives with Club sentiment</p>
+      </div>
       {/* ── TOP ROW — back · watch · share (board 03's ← ★ ↗) ─────────────── */}
-      <div className="flex items-center justify-between pt-3">
+      <div className="flex items-center justify-between">
         <Link
           href={back.href}
           className="f0-focus inline-flex items-center gap-1.5 rounded-full font-mono text-[10px] uppercase tracking-[0.16em] text-soft transition-colors hover:text-ink"
@@ -673,9 +692,10 @@ export default function ResearchCanvas({
       <div className="mt-3.5 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <CompanyLogo symbol={ticker} name={companyName} size={40} rounded="rounded-[11px]" />
-          <h1 className="min-w-0 truncate font-display text-[21px] font-extrabold leading-tight tracking-tight text-ink">
-            {companyName}
-          </h1>
+          <div className="min-w-0">
+            <h1 className="truncate text-[18px] font-extrabold leading-tight text-ink">{companyName}</h1>
+            <p className="cc-app-signal mt-1 truncate text-[9px] font-semibold text-[#8F8894]">{ticker} · {research?.company.name || companyName}</p>
+          </div>
         </div>
         {clubRank != null && (
           <Link
@@ -716,6 +736,31 @@ export default function ResearchCanvas({
         {exchange ? ` · ${exchange}` : ""}
         {research?.company.sector ? ` · ${research.company.sector}` : ""}
       </p>
+
+      <div className="cc-app-card mt-3 grid grid-cols-4 divide-x divide-[#2A2530] px-1 py-3 text-center">
+        <div className="px-1">
+          <p className="cc-app-signal text-[13px] font-semibold text-[#F4F0EC]">{clubScore == null ? "—" : Math.round(clubScore)}</p>
+          <p className="cc-app-signal mt-1 text-[6.5px] tracking-[.1em] text-[#6E6774]">CLUB SCORE</p>
+        </div>
+        <div className="px-1">
+          <p className="cc-app-signal text-[13px] font-semibold text-[#F4F0EC]">{watchers > 0 ? watchers.toLocaleString() : "—"}</p>
+          <p className="cc-app-signal mt-1 text-[6.5px] tracking-[.1em] text-[#6E6774]">WATCHING</p>
+        </div>
+        <div className="px-1">
+          <p className={`cc-app-signal text-[13px] font-semibold ${positioned >= 4 && bull > bear ? "text-price-up" : positioned >= 4 && bear > bull ? "text-price-down" : "text-[#C8C2CE]"}`}>
+            {positioned >= 4 ? `${Math.round((bull / Math.max(1, bull + neutral + bear)) * 100)}%` : "—"}
+          </p>
+          <p className="cc-app-signal mt-1 text-[6.5px] tracking-[.1em] text-[#6E6774]">BULLISH</p>
+        </div>
+        <div className="px-1">
+          <p className="cc-app-signal text-[13px] font-semibold text-[#F4F0EC]">{discussions > 0 ? discussions.toLocaleString() : "—"}</p>
+          <p className="cc-app-signal mt-1 text-[6.5px] tracking-[.1em] text-[#6E6774]">POSTS · 7D</p>
+        </div>
+      </div>
+
+      {sentimentShift24h != null && (
+        <p className="cc-app-signal mt-1.5 text-right text-[8px] text-[#8F8894]">Sentiment {sentimentShift24h >= 0 ? "+" : ""}{sentimentShift24h.toFixed(1)} pts today</p>
+      )}
 
       {/* who else is here — board 03's avatar stack + count */}
       {watchers >= 3 && (
@@ -783,20 +828,20 @@ export default function ResearchCanvas({
       <button
         type="button"
         onClick={onAskKai}
-        className="f0-grain relative mt-5 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[18px] bg-gradient-to-r from-kai-500 to-kai-700 px-5 py-4 text-left transition-transform active:scale-[0.995]"
+        className="relative mt-5 flex w-full items-center justify-between gap-4 overflow-hidden rounded-[16px] border border-[#1E3050] bg-[rgba(91,196,240,.06)] px-4 py-3.5 text-left transition-transform active:scale-[0.995]"
       >
         <span className="min-w-0">
-          <span className="flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-white/75">
+          <span className="flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-[#5BC4F0]">
             <Sparkles className="h-3 w-3" aria-hidden /> Kai
           </span>
-          <span className="mt-1.5 block font-display text-[17px] font-bold leading-tight text-white">
+          <span className="mt-1.5 block text-[15px] font-bold leading-tight text-[#F4F0EC]">
             Ask Kai about ${ticker}
           </span>
-          <span className="mt-1 block text-[12px] leading-snug text-white/70">
+          <span className="mt-1 block text-[11px] leading-snug text-[#8F8894]">
             What&apos;s moving it, what the numbers say, what to watch next.
           </span>
         </span>
-        <ArrowUpRight className="h-5 w-5 shrink-0 text-white" aria-hidden />
+        <ArrowUpRight className="h-5 w-5 shrink-0 text-[#5BC4F0]" aria-hidden />
       </button>
     </div>
   );

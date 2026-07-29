@@ -20,7 +20,6 @@ import {
 import { EmptyLine, TextAction } from "@/components/f0/parts";
 import {
   BoardCard,
-  BoardMasthead,
   PresenceLine,
   SectionLabel,
 } from "@/app/(dashboard)/community/board";
@@ -295,19 +294,24 @@ export default function CirclesSurface() {
   const closed = rows.filter((r) => timeLeft(r.expires_at, now) === null);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-16">
+    <div className="cc-app-screen mx-auto max-w-[760px] space-y-6 px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
       <div>
-        <BoardMasthead
-          title="Circles"
-          presence={
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">club</h1>
             <PresenceLine>
               {rows.length > 0
-                ? `${rows.length} ${rows.length === 1 ? "room" : "rooms"} on the clock`
+                ? `${rows.length} ${rows.length === 1 ? "Circle" : "Circles"} on the clock`
                 : "Breakout rooms, 30 days each"}
             </PresenceLine>
-          }
-        />
-        <p className="mt-3.5 max-w-[52ch] text-[14px] leading-relaxed text-soft">
+          </div>
+          {!isKid && (
+            <button type="button" onClick={() => setComposing((value) => !value)} className="rounded-full bg-[#FF7A1A] px-3 py-2 text-[10px] font-bold text-[#0D0B0E]">
+              + Start a Circle
+            </button>
+          )}
+        </div>
+        <p className="mt-3.5 max-w-[52ch] text-[12.5px] leading-relaxed text-soft">
           Breakout rooms around one event or one thesis. Every Circle runs a
           30-day clock — when it ends the room closes and the thread stands as
           the record.

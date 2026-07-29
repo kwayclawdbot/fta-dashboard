@@ -40,6 +40,7 @@ import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
 import type { DiscoverExtras } from "@/lib/discover";
 import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { KaiAnnotation } from "@/components/collective";
+import StandaloneDiscover from "@/components/discover/StandaloneDiscover";
 
 /**
  * DISCOVER — rebuilt screen-for-screen to the owner's mockup.
@@ -134,6 +135,18 @@ export default function DiscoverClient({
       ),
     [showScreener]
   );
+
+  if ((tab as string) === "foryou") {
+    return (
+      <StandaloneDiscover
+        rows={rows}
+        loading={loading}
+        news={initialNews}
+        extras={extras}
+        showScreener={showScreener}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">

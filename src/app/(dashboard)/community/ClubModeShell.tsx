@@ -3,9 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Pencil, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { deriveRegister } from "@/lib/register";
-import { openCommandSearch } from "@/components/search/CommandSearch";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEventsState, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
@@ -14,7 +13,7 @@ import ClubRooms from "./ClubRooms";
 import ClubDiscussions from "./ClubDiscussions";
 import ClubLiveTab from "./ClubLiveTab";
 import { FIC_ROOM_ID, FREE_LOUNGE_ROOM_ID } from "./rooms";
-import { BoardMasthead, BoardTabs, PresenceLine, type BoardTab } from "./board";
+import { BoardTabs, type BoardTab } from "./board";
 import { useClubPresence } from "./parts";
 
 /**
@@ -102,11 +101,22 @@ export default function ClubModeShell({
 
   const tabs: BoardTab[] = [
     { id: "feed", label: "Feed" },
-    { id: "discussions", label: "Discussions" },
-    ...(isKid ? [] : [{ id: "cmm", label: "Changed my mind", href: "/community/changed-my-mind" }]),
-    { id: "lounge", label: "Lounge" },
+    { id: "circles", label: "Circles", href: "/circles" },
     ...(showLive ? [{ id: "live", label: "Live", onAir: liveCount > 0 }] : []),
   ];
+
+  const happening = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const post of initialData?.posts ?? []) {
+      for (const ticker of post.ticker_tags ?? []) {
+        const symbol = ticker.toUpperCase();
+        counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+  }, [initialData?.posts]);
 
   function selectMode(next: Mode) {
     setMode(next);
@@ -140,35 +150,20 @@ export default function ClubModeShell({
   }, [presence, mode]);
 
   return (
-    <div className="mx-auto max-w-2xl px-0">
-      <BoardMasthead
-        title={mode === "lounge" ? "The Lounge" : mode === "live" ? "Live" : "The Club"}
-        presence={<PresenceLine>{presenceLine}</PresenceLine>}
-        actions={
-          <>
-            {/* The masthead glyph raises the universal ⌘K palette — the one
-                surface that actually searches members, theses, debates and
-                names. It used to link /research, which is not a route. */}
-            <button
-              type="button"
-              onClick={openCommandSearch}
-              aria-label="Search the Club"
-              className="f0-focus text-ink transition-colors hover:text-gold-700"
-            >
-              <Search className="h-[21px] w-[21px]" strokeWidth={2} />
-            </button>
-            {!isKid && (
-              <Link
-                href="/community/compose"
-                aria-label="Share your call"
-                className="f0-focus text-ink transition-colors hover:text-gold-700"
-              >
-                <Pencil className="h-[21px] w-[21px]" strokeWidth={2} />
-              </Link>
-            )}
-          </>
-        }
-      />
+    <div className="cc-app-screen mx-auto max-w-[760px] px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">
+            {mode === "lounge" ? "lounge" : mode === "live" ? "live" : "club"}
+          </h1>
+          <p className="mt-1 text-[10.5px] text-[#8F8894]">{presenceLine}</p>
+        </div>
+        {!isKid && (
+          <Link href="/community/compose" aria-label="Share your take" className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[#FF7A1A] text-[#0D0B0E]">
+            <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
+          </Link>
+        )}
+      </header>
 
       <div className="mt-4">
         <BoardTabs
@@ -178,6 +173,28 @@ export default function ClubModeShell({
           ariaLabel="The Club"
         />
       </div>
+
+      {mode === "feed" && happening.length > 0 && (
+        <section className="mt-4">
+          <div className="flex items-center justify-between">
+            <h2 className="cc-app-signal text-[9.5px] font-semibold uppercase tracking-[.16em] text-[#F4F0EC]">Happening now</h2>
+            <button type="button" onClick={() => selectMode("discussions")} className="text-[10.5px] font-bold text-[#FF9A4D]">See all</button>
+          </div>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {happening.map(([ticker, count]) => (
+              <Link key={ticker} href={`/research/${encodeURIComponent(ticker)}`} className="cc-app-card min-w-[132px] p-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#101408] font-bold text-[#76B900]">{ticker.slice(0, 1)}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[11px] font-bold text-[#F4F0EC]">{ticker} discussion</p>
+                    <p className="cc-app-signal mt-1 text-[8px] text-[#8F8894]">{count} {count === 1 ? "take" : "takes"}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Amendment #2 — the on-air rule stays, now as the board's own object: a
           near-black strip directly under the tabs that hands the member into the
@@ -204,7 +221,7 @@ export default function ClubModeShell({
         </button>
       )}
 
-      <div className="mt-5">
+      <div className="mt-4">
         {mode === "feed" && (
           <CommunityClient
             initialData={initialData}

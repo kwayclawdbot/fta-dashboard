@@ -196,11 +196,11 @@ export default async function PublicProfilePage({
   const who = profile.display_name || "this member";
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 pb-14">
+    <div className="cc-app-screen mx-auto max-w-[760px] space-y-4 px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
       {/* ── HEAD ────────────────────────────────────────────────────────── */}
       <header className="flex items-end justify-between gap-4">
-        <h1 className="min-w-0 truncate font-display text-[36px] font-extrabold uppercase leading-[0.9] tracking-[-0.04em] text-ink">
-          Profile
+        <h1 className="script-mark min-w-0 truncate text-[34px] leading-none text-ink">
+          you
         </h1>
         {isOwn && (
           <Link

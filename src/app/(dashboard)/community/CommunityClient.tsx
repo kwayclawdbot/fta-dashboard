@@ -984,7 +984,7 @@ export default function CommunityClient({
                 tier={(me?.family_id && tiers[me.family_id]) || myTier}
                 size="sm"
               />
-              <span className="text-[13px] text-soft">What&apos;s on your mind?</span>
+              <span className="text-[13px] text-soft">What&apos;s your take?</span>
             </button>
           ) : (
           <div className="rounded-[14px] border border-sand bg-card p-3.5">
@@ -1168,7 +1168,7 @@ export default function CommunityClient({
           {/* ── WHO'S AROUND (board 01's story rail) ───────────────────────
               Real distinct voices from the feed, newest first. Never a
               manufactured crowd — these are members who actually posted. */}
-          {voices.length > 0 && (
+          {!embedded && voices.length > 0 && (
             <ScrollRow className="-mx-1 flex gap-2 px-1">
               {voices.map((a, i) => (
                 <ProfileLink key={a.id} username={a.username} variant="avatar">
@@ -1190,7 +1190,7 @@ export default function CommunityClient({
           {/* ── TOP IN THE CLUB (board 01) ────────────────────────────────
               The names the club is actually tagging, most-tagged first, with
               live deltas. A tile with no quote prints the honest dash. */}
-          {topTickers.length > 0 && (
+          {!embedded && topTickers.length > 0 && (
             <section>
               <SectionLabel glyph="🔥">Top in the Club</SectionLabel>
               <TickerTileStrip>
@@ -1257,7 +1257,7 @@ export default function CommunityClient({
           )}
 
           {/* ── HOT DISCUSSIONS (board 01) ────────────────────────────────── */}
-          {hotThreads.length > 0 && (
+          {!embedded && hotThreads.length > 0 && (
             <section>
               <SectionLabel
                 action="See all"
@@ -1428,7 +1428,7 @@ function splitEntry(raw: string | null | undefined): {
 /** The entry's promoted opening line — display-3 weight, the loudest type in the row. */
 function EntryHeadline({ text }: { text: string }) {
   return (
-    <h3 className="mt-1.5 font-display text-[20px] font-extrabold leading-[1.18] tracking-[-0.015em] text-ink">
+    <h3 className="mt-1.5 font-body text-[13px] font-semibold leading-[1.5] text-ink">
       <RichBody body={text} />
     </h3>
   );
@@ -1438,7 +1438,7 @@ function PostBody({ body }: { body: string }) {
   if (!body) return null;
   // Prose under the headline: quieter, so the headline carries the row.
   return (
-    <p className="mt-2 whitespace-pre-wrap break-words font-body text-[15px] leading-relaxed text-soft">
+    <p className="mt-1 whitespace-pre-wrap break-words font-body text-[13px] leading-[1.5] text-[#E8E2E4]">
       <RichBody body={body} />
     </p>
   );

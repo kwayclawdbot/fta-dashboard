@@ -97,7 +97,7 @@ export function BoardMast({
             </Link>
           )}
           <h1
-            className={`min-w-0 font-display text-[34px] font-extrabold leading-none tracking-[-0.035em] text-ink ${
+            className={`script-mark min-w-0 text-[34px] leading-none text-ink ${
               caps === "lower" ? "truncate lowercase" : "text-balance"
             }`}
           >
