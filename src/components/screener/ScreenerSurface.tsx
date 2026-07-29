@@ -243,7 +243,16 @@ export default function ScreenerSurface({
   const [meta, setMeta] = useState<Meta | null>(null);
   const [usingStarterUniverse, setUsingStarterUniverse] = useState(false);
 
-  const [custom, setCustom] = useState<CustomFilters>({ q: initialQuery || null });
+  const [custom, setCustom] = useState<CustomFilters>(() =>
+    embedded
+      ? {
+          q: initialQuery || null,
+          sector: "Technology",
+          subsector: "Semiconductors",
+          minMcap: 10_000_000_000,
+        }
+      : { q: initialQuery || null }
+  );
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   // CLUB HEAT is the default sort of the surface: the screener opens on the
   // names the club is actually engaging with, not on the biggest companies in
@@ -264,6 +273,7 @@ export default function ScreenerSurface({
   // for everyone else (Lane 7A).
   const howToHint = useNewMemberHints("screener-howto");
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (howToHint.show) setExplainerOpen(true);
   }, [howToHint.show]);
 
@@ -402,6 +412,10 @@ export default function ScreenerSurface({
         })
       );
       setUsingStarterUniverse(true);
+      // The starter universe intentionally carries no manufactured market-cap
+      // or subsector metrics. Drop the mockup's opening scan so the live quote
+      // rows remain visible when the nightly universe has not populated yet.
+      if (embedded) setCustom({ q: initialQuery || null });
       setSortKey("chg_1d");
       setSortDir("desc");
     }
@@ -419,9 +433,10 @@ export default function ScreenerSurface({
         return all;
       });
     }
-  }, [supabase]);
+  }, [supabase, embedded, initialQuery]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
@@ -541,6 +556,7 @@ export default function ScreenerSurface({
   }, [rows, custom, sortKey, sortDir]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(0);
   }, [custom, sortKey, sortDir]);
 
@@ -651,6 +667,39 @@ export default function ScreenerSurface({
     meta?.mcap_count != null && meta?.common_count
       ? Math.round((meta.mcap_count / meta.common_count) * 100)
       : null;
+
+  if (embedded) {
+    return (
+      <StandaloneScreenerBoard
+        results={results}
+        custom={custom}
+        filtersOpen={filtersOpen}
+        usingStarterUniverse={usingStarterUniverse}
+        sortKey={sortKey}
+        isKid={isKid}
+        canAct={!!familyId}
+        busy={busy}
+        added={added}
+        screenName={screenName}
+        savingScreen={savingScreen}
+        savedError={savedError}
+        savedCount={saved?.length ?? 0}
+        saveLocked={isFree}
+        canSave={!!userId && !filtersEmpty(custom)}
+        onQuery={(q) => setCustom((current) => ({ ...current, q: q || null }))}
+        onPatch={patchFilter}
+        onToggleFilters={() => setFiltersOpen((value) => !value)}
+        onSort={(key) => {
+          setSortKey(key);
+          setSortDir(key === "ticker" ? "asc" : "desc");
+        }}
+        onScreenName={setScreenName}
+        onSave={saveScreen}
+        onOpen={(ticker) => openResearch(ticker)}
+        onAdd={(row) => addToFamily(row, false)}
+      />
+    );
+  }
 
   return (
     <div
@@ -1113,6 +1162,273 @@ export default function ScreenerSurface({
   );
 }
 
+function StandaloneScreenerBoard({
+  results,
+  custom,
+  filtersOpen,
+  usingStarterUniverse,
+  sortKey,
+  isKid,
+  canAct,
+  busy,
+  added,
+  screenName,
+  savingScreen,
+  savedError,
+  savedCount,
+  saveLocked,
+  canSave,
+  onQuery,
+  onPatch,
+  onToggleFilters,
+  onSort,
+  onScreenName,
+  onSave,
+  onOpen,
+  onAdd,
+}: {
+  results: ScreenerRow[];
+  custom: CustomFilters;
+  filtersOpen: boolean;
+  usingStarterUniverse: boolean;
+  sortKey: SortKey;
+  isKid: boolean;
+  canAct: boolean;
+  busy: string | null;
+  added: Record<string, "family" | "community">;
+  screenName: string;
+  savingScreen: boolean;
+  savedError: string | null;
+  savedCount: number;
+  saveLocked: boolean;
+  canSave: boolean;
+  onQuery: (value: string) => void;
+  onPatch: (patch: Partial<CustomFilters>) => void;
+  onToggleFilters: () => void;
+  onSort: (key: SortKey) => void;
+  onScreenName: (value: string) => void;
+  onSave: () => void;
+  onOpen: (ticker: string) => void;
+  onAdd: (row: ScreenerRow) => void;
+}) {
+  const [signalFloor, setSignalFloor] = useState(70);
+  const [risingOnly, setRisingOnly] = useState(true);
+  const maxHeat = Math.max(0, ...results.map((row) => row.like_count ?? 0));
+  const signalPct = (row: ScreenerRow) =>
+    maxHeat > 0 ? Math.round(((row.like_count ?? 0) / maxHeat) * 100) : null;
+  const displayed = results.filter((row) => {
+    const signal = signalPct(row);
+    if (signal != null && signal < signalFloor) return false;
+    if (risingOnly && row.chg_5d != null && row.chg_5d <= 0) return false;
+    return true;
+  });
+  const filterCount = activeChips(custom).length;
+  const mcap = custom.minMcap ?? 0;
+  const sectorOptions: Array<{ label: string; sector: Sector; subsector?: string }> = [
+    { label: "Tech", sector: "Technology" },
+    { label: "Semis", sector: "Technology", subsector: "Semiconductors" },
+    { label: "Fintech", sector: "Financials", subsector: "Consumer Finance" },
+    { label: "Health", sector: "Healthcare" },
+    { label: "Energy", sector: "Energy" },
+  ];
+
+  return (
+    <div>
+      <header className="flex items-center gap-2.5">
+        <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">discover</h1>
+        <span className="cc-app-signal ml-auto text-[9px] text-[#6E6774]">
+          {displayed.length.toLocaleString()} MATCHES
+        </span>
+      </header>
+
+      <nav className="mt-3 flex items-center gap-4" aria-label="Discover views">
+        <Link href="/discover" className="text-[11px] font-semibold uppercase tracking-[.04em] text-[#8F8894]">For you</Link>
+        <span className="rounded-full bg-[#FF7A1A] px-[13px] py-[5px] text-[10.5px] font-extrabold uppercase tracking-[.06em] text-[#0D0B0E]">Screener</span>
+        <Link href="/discover?tab=trending" className="text-[11px] font-semibold uppercase tracking-[.04em] text-[#8F8894]">Trending</Link>
+      </nav>
+
+      <div className="mt-[13px] flex gap-2">
+        <label className="cc-app-card flex min-w-0 flex-1 items-center gap-2 px-3 py-[9px]">
+          <Search className="h-[13px] w-[13px] shrink-0 text-[#6E6774]" />
+          <input
+            value={custom.q ?? ""}
+            onChange={(event) => onQuery(event.target.value)}
+            placeholder="Search ticker or theme…"
+            className="min-w-0 flex-1 !border-0 !bg-transparent p-0 text-[11.5px] text-[#F4F0EC] outline-none placeholder:text-[#6E6774]"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={onToggleFilters}
+          className="flex items-center gap-[7px] rounded-[14px] border-[1.5px] border-[#FF7A1A] bg-[rgba(255,122,26,.12)] px-[13px] py-[9px] shadow-[0_0_10px_rgba(255,122,26,.14)]"
+          aria-expanded={filtersOpen}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5 text-[#FF9A4D]" />
+          <span className="text-[11px] font-extrabold text-[#FF9A4D]">Filters</span>
+          <span className="cc-app-signal rounded-full bg-[#FF7A1A] px-1.5 py-px text-[8.5px] font-bold text-[#0D0B0E]">{filterCount}</span>
+        </button>
+      </div>
+
+      {filtersOpen && (
+        <section className="mt-[9px] rounded-[18px] border-[1.5px] border-[#FF7A1A] bg-[#141118] px-[14px] py-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_8px_22px_rgba(0,0,0,.55)]">
+          <div className="flex items-center gap-2">
+            <span className="cc-app-signal text-[9px] font-semibold uppercase tracking-[.16em] text-[#FF9A4D]">Screen settings</span>
+            <button type="button" onClick={() => onPatch({ sector: null, subsector: null, minMcap: null })} className="ml-auto text-[10px] font-semibold text-[#8F8894]">Reset all</button>
+            <button type="button" onClick={onToggleFilters} className="text-[12px] text-[#6E6774]" aria-label="Collapse filters">⌃</button>
+          </div>
+
+          <p className="mt-[11px] text-[9px] font-semibold uppercase tracking-[.1em] text-[#8F8894]">Sector</p>
+          <div className="mt-[7px] flex flex-wrap gap-1.5">
+            {sectorOptions.map((option) => {
+              const active = option.subsector
+                ? custom.subsector === option.subsector
+                : custom.sector === option.sector;
+              return (
+                <button
+                  key={option.label}
+                  type="button"
+                  onClick={() =>
+                    active
+                      ? onPatch({ sector: null, subsector: null })
+                      : onPatch({ sector: option.sector, subsector: option.subsector ?? null })
+                  }
+                  className={`rounded-full border px-[11px] py-[5px] text-[10px] font-bold ${active ? "border-[#FF7A1A] bg-[rgba(255,122,26,.12)] text-[#FF9A4D]" : "border-[#2A2530] bg-[#0D0B0E] text-[#8F8894]"}`}
+                >
+                  {option.label}{active ? " ✓" : ""}
+                </button>
+              );
+            })}
+            <button type="button" className="rounded-full border border-[#2A2530] bg-[#0D0B0E] px-[11px] py-[5px] text-[10px] font-semibold text-[#8F8894]">+6</button>
+          </div>
+
+          <div className="mt-3 flex gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-semibold uppercase tracking-[.1em] text-[#8F8894]">Market cap</p>
+              <div className="mt-[7px] flex rounded-[11px] border border-[#2A2530] bg-[#0D0B0E] p-0.5">
+                {[
+                  { label: "Any", value: 0 },
+                  { label: "2B", value: 2_000_000_000 },
+                  { label: "10B+", value: 10_000_000_000 },
+                  { label: "200B", value: 200_000_000_000 },
+                ].map((option) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    onClick={() => onPatch({ minMcap: option.value || null })}
+                    className={`cc-app-signal flex-1 rounded-[9px] py-[5px] text-[8.5px] ${mcap === option.value ? "bg-[#FF7A1A] font-bold text-[#0D0B0E]" : "text-[#8F8894]"}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="min-w-0 flex-1">
+              <span className="block text-[9px] font-semibold uppercase tracking-[.1em] text-[#8F8894]">Sort by</span>
+              <span className="mt-[7px] flex items-center rounded-[11px] border border-[#2A2530] bg-[#0D0B0E] px-[11px] py-[7px]">
+                <select value={sortKey} onChange={(event) => onSort(event.target.value as SortKey)} className="min-w-0 flex-1 !border-0 !bg-transparent p-0 text-[10.5px] font-bold text-[#F4F0EC] outline-none">
+                  {SORT_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                </select>
+              </span>
+            </label>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex items-baseline">
+              <span className="text-[9px] font-semibold uppercase tracking-[.1em] text-[#8F8894]">Club signal</span>
+              <span className="cc-app-signal ml-auto text-[10px] font-semibold text-[#FF9A4D]">≥ {signalFloor}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={signalFloor}
+              onChange={(event) => setSignalFloor(Number(event.target.value))}
+              className="mt-2 h-1.5 w-full cursor-pointer accent-[#FF7A1A]"
+              aria-label="Minimum normalized Club signal"
+            />
+            <div className="cc-app-signal mt-1 flex justify-between text-[8px] text-[#6E6774]"><span>0</span><span>100</span></div>
+          </div>
+
+          <button type="button" onClick={() => setRisingOnly((value) => !value)} className="mt-2 flex w-full items-center gap-2.5 border-t border-[#221E28] pt-2.5 text-left">
+            <span aria-hidden>📈</span>
+            <span className="flex-1 text-[11px] font-semibold text-[#F4F0EC]">Only rising conviction (7d)</span>
+            <span className={`relative h-5 w-[34px] rounded-full ${risingOnly ? "bg-[#FF7A1A]" : "bg-[#2A2530]"}`}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-[#0D0B0E] transition-[left] ${risingOnly ? "left-4" : "left-0.5"}`} />
+            </span>
+          </button>
+
+          <div className="mt-[11px] flex gap-2">
+            <span className="flex-1 rounded-[14px] border border-[#2A2530] bg-[#0D0B0E] px-2 py-[9px] text-center">
+              {canSave ? (
+                <SaveScreenControl name={screenName} onName={onScreenName} onSave={onSave} saving={savingScreen} error={savedError} count={savedCount} locked={saveLocked} />
+              ) : (
+                <span className="text-[11px] font-bold text-[#C8C2CE]">Save screen</span>
+              )}
+            </span>
+            <button type="button" onClick={onToggleFilters} className="flex-[1.4] rounded-[14px] bg-[#FF7A1A] px-2 py-[9px] text-[11px] font-extrabold text-[#0D0B0E] shadow-[0_0_12px_rgba(255,122,26,.22)]">
+              Show {displayed.length.toLocaleString()} matches
+            </button>
+          </div>
+        </section>
+      )}
+
+      <div className="mt-[13px] flex items-baseline justify-between">
+        <span className="cc-app-signal text-[9px] tracking-[.14em] text-[#6E6774]">RESULTS · SORTED BY {(SORT_OPTIONS.find((option) => option.key === sortKey)?.label ?? "").toUpperCase()}</span>
+        <span className="text-[10px] font-bold text-[#FF9A4D]">See all {displayed.length.toLocaleString()} ›</span>
+      </div>
+
+      {usingStarterUniverse && (
+        <p className="cc-app-signal mt-1 text-[8px] uppercase tracking-[.1em] text-[#6E6774]">Live quotes · full metrics refresh pending</p>
+      )}
+
+      <div className="mt-[9px] flex flex-col gap-[7px]">
+        {displayed.length === 0 ? (
+          <div className="cc-app-card px-4 py-8 text-center text-[11px] text-[#8F8894]">No live tickers match this screen. Reset a filter to widen it.</div>
+        ) : displayed.slice(0, 3).map((row) => {
+          const signal = signalPct(row);
+          return (
+            <div key={row.ticker} className="cc-app-card flex items-center gap-[9px] px-[11px] py-[9px]">
+              <CompanyLogo symbol={row.ticker} name={row.name} size={28} rounded="rounded-[9px]" />
+              <button type="button" onClick={() => onOpen(row.ticker)} className="min-w-0 flex-1 text-left">
+                <span className="block text-[12px] font-extrabold text-[#F4F0EC]">{row.ticker}</span>
+                <span className="cc-app-signal mt-0.5 block whitespace-nowrap text-[9px] text-[#8F8894]">
+                  {fmtPrice(row.price)} <span className={pctTone(row.chg_1d)}>{fmtPct(row.chg_1d)}</span>
+                </span>
+              </button>
+              <span className="w-10 shrink-0">
+                <Spark points={seriesFor(row)} width={40} height={18} strokeWidth={1.6} className="block w-full" />
+              </span>
+              <span className={`cc-app-signal rounded-[8px] border px-[7px] py-[3px] text-[9px] font-semibold ${signal == null ? "border-[#2A2530] text-[#6E6774]" : "border-[rgba(74,227,131,.35)] bg-[rgba(74,227,131,.12)] text-[#4AE383]"}`}>
+                {signal == null ? "—" : `${signal}%`}
+              </span>
+              {!isKid && (
+                <SetAlertButton ticker={row.ticker} surface="screener" seedPrice={row.price} variant="icon" className="!h-7 !w-7 !rounded-[9px] !border-0 !bg-[#FF7A1A] !p-0 !text-[#0D0B0E]" />
+              )}
+              <button
+                type="button"
+                onClick={() => onAdd(row)}
+                disabled={!canAct || busy === row.ticker}
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-[9px] border border-[#2A2530] bg-[#0D0B0E] text-[13px] ${added[row.ticker] ? "text-[#FFC24B]" : "text-[#6E6774]"}`}
+                aria-label={`Add ${row.ticker} to watchlist`}
+              >
+                <Bookmark className={`h-3.5 w-3.5 ${added[row.ticker] ? "fill-current" : ""}`} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-[10px] flex items-center gap-[9px] rounded-[14px] border border-dashed border-[#3A3240] bg-[#17141A] px-[13px] py-[9px]">
+        <span aria-hidden>🔔</span>
+        <span className="flex-1 text-[10.5px] text-[#8F8894]">Alert every new match this screen finds</span>
+        {!isKid && (
+          <SetAlertButton ticker={null} surface="screener" defaultKind="preset_match" presetId="standalone-current" presetLabel="Current screen" variant="chip" className="!rounded-[11px] !border-[#2A2530] !bg-[#221E28] !px-[11px] !py-[5px] !text-[10px] !font-bold !text-[#C8C2CE]" />
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ============================================================================
  * BOARD 15 TAIL — "Club's most bullish / most bearish" + "Trending in the Club"
  *
@@ -1230,6 +1546,48 @@ function ConvictionCard({
  * the identical thing and navigation does not shift.
  * ==========================================================================*/
 export function ScreenerSkeleton({ embedded = false }: { embedded?: boolean }) {
+  if (embedded) {
+    return (
+      <div aria-busy="true">
+        <header className="flex items-center gap-2.5">
+          <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">discover</h1>
+          <Bone w={62} h={8} className="ml-auto" />
+        </header>
+        <div className="mt-3 flex items-center gap-4">
+          <span className="text-[11px] font-semibold uppercase text-[#8F8894]">For you</span>
+          <span className="rounded-full bg-[#FF7A1A] px-[13px] py-[5px] text-[10.5px] font-extrabold uppercase text-[#0D0B0E]">Screener</span>
+          <span className="text-[11px] font-semibold uppercase text-[#8F8894]">Trending</span>
+        </div>
+        <div className="mt-[13px] flex gap-2">
+          <div className="cc-app-card flex-1 px-3 py-[11px]"><Bone w="65%" h={9} /></div>
+          <div className="rounded-[14px] border-[1.5px] border-[#FF7A1A] bg-[rgba(255,122,26,.12)] px-[13px] py-[10px]"><Bone w={72} h={9} /></div>
+        </div>
+        <div className="mt-[9px] rounded-[18px] border-[1.5px] border-[#FF7A1A] bg-[#141118] px-[14px] py-[13px]">
+          <Bone w={120} h={8} />
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {[54, 62, 58, 56, 58].map((width, index) => <Bone key={index} w={width} h={25} className="!rounded-full" />)}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3"><Bone w="100%" h={42} /><Bone w="100%" h={42} /></div>
+          <Bone w="100%" h={38} className="mt-3" />
+          <Bone w="100%" h={34} className="mt-3 !rounded-[14px]" />
+        </div>
+        <Bone w={190} h={8} className="mt-[13px]" />
+        <div className="mt-[9px] flex flex-col gap-[7px]">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="cc-app-card flex items-center gap-[9px] px-[11px] py-[9px]">
+              <Bone w={28} h={28} className="!rounded-[9px]" />
+              <Bone w={52} h={18} />
+              <Bone w={40} h={16} className="ml-auto" />
+              <Bone w={34} h={20} />
+              <Bone w={28} h={28} className="!rounded-[9px]" />
+            </div>
+          ))}
+        </div>
+        <span className="sr-only">Loading the market universe</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className={

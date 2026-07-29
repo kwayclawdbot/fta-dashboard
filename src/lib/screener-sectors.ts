@@ -151,10 +151,30 @@ const RULES: Rule[] = [
   { re: /WHOLESALE/, sector: "Industrials", subsector: "Commercial Services" },
 ];
 
+// The nightly table carries raw SIC descriptions; the live fallback carries
+// provider-level sector names. This alias map lets the same filters serve both.
+const PROVIDER_SECTOR_ALIASES: Record<string, Sector> = {
+  TECHNOLOGY: "Technology",
+  "COMMUNICATION SERVICES": "Communication Services",
+  "CONSUMER CYCLICAL": "Consumer Discretionary",
+  "CONSUMER DEFENSIVE": "Consumer Staples",
+  "FINANCIAL SERVICES": "Financials",
+  HEALTHCARE: "Healthcare",
+  INDUSTRIALS: "Industrials",
+  ENERGY: "Energy",
+  MATERIALS: "Materials",
+  "REAL ESTATE": "Real Estate",
+  UTILITIES: "Utilities",
+};
+
 /** Classify a raw SIC string into {sector, subsector}, or null if unmatched. */
 export function classifySector(raw: string | null | undefined): SectorClass | null {
   if (!raw) return null;
   const s = raw.toUpperCase();
+  const providerSector = PROVIDER_SECTOR_ALIASES[s];
+  if (providerSector) {
+    return { sector: providerSector, subsector: `Other ${providerSector}` };
+  }
   for (const rule of RULES) {
     if (rule.re.test(s)) return { sector: rule.sector, subsector: rule.subsector };
   }

@@ -95,8 +95,16 @@ export default function StandaloneDiscover({
     });
   }
 
+  if (tab === "screener" && showScreener) {
+    return (
+      <div className="cc-app-screen mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-[390px] px-[18px] pb-20 pt-[18px] sm:rounded-[34px] sm:border sm:border-[#2A2530]">
+        <ScreenerSurface embedded initialQuery={initialQuery} />
+      </div>
+    );
+  }
+
   return (
-    <div className="cc-app-screen mx-auto max-w-[760px] px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
+    <div className="cc-app-screen mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-[390px] px-[18px] pb-20 pt-[18px] sm:rounded-[34px] sm:border sm:border-[#2A2530]">
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">discover</h1>
@@ -149,12 +157,6 @@ export default function StandaloneDiscover({
           </button>
         ))}
       </nav>
-
-      {tab === "screener" && showScreener && (
-        <div className="mt-4">
-          <ScreenerSurface embedded initialQuery={initialQuery} />
-        </div>
-      )}
 
       {tab === "trending" && (
         <section className="mt-5">

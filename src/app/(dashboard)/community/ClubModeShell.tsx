@@ -1,28 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { deriveRegister } from "@/lib/register";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEventsState, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
-import CommunityClient from "./CommunityClient";
+import StandaloneClubFeed from "./StandaloneClubFeed";
 import ClubRooms from "./ClubRooms";
 import ClubDiscussions from "./ClubDiscussions";
 import ClubLiveTab from "./ClubLiveTab";
 import { FIC_ROOM_ID, FREE_LOUNGE_ROOM_ID } from "./rooms";
-import { BoardTabs, type BoardTab } from "./board";
-import { useClubPresence } from "./parts";
+import type { TrendingRow } from "@/lib/clubhome/contract";
 
 /**
  * THE CLUB — Club Screens 01/02/06/07, built as drawn.
  *
- * Every one of those boards opens the same way and this shell IS that opening: a
- * black uppercase THE CLUB set at the top-left, the live presence line under it,
- * search + compose on the right, and the FEED · DISCUSSIONS · CHANGED MY MIND
- * tab strip with the orange rule under the active label.
+ * The standalone Club Feed board is the source of truth: script masthead,
+ * circular utilities, orange active pill, 96px happening-now rings, then the
+ * compact card feed. Real post and market data are kept underneath that frame.
  *
  * The boards reach the Lounge and the Live rooms from the phone's bottom bar. On
  * this surface there is no bottom bar to reach them from, so LOUNGE and LIVE ride
@@ -30,20 +28,9 @@ import { useClubPresence } from "./parts";
  * control competing with it. CHANGED MY MIND is a route (it is server-seeded), so
  * it is a link wearing a tab.
  *
- * PRESENCE is real (GET /api/club/collective) and floored: above the floor the
- * line states the count, below it (the founding club) it states what the room is.
- * No branch prints "0 online".
  */
 
 type Mode = "feed" | "discussions" | "lounge" | "live";
-
-/** The presence line per mode — below-floor copy, shown to everyone. */
-const MODE_PRESENCE: Record<Mode, string> = {
-  feed: "The founding floor — small on purpose",
-  discussions: "Every name the club is arguing about",
-  lounge: "Always on — the founding members are here",
-  live: "Rooms open with the challenge",
-};
 
 export default function ClubModeShell({
   initialData,
@@ -81,8 +68,6 @@ export default function ClubModeShell({
       }
     : null;
 
-  const presence = useClubPresence();
-
   // The room the member is standing in. Lifted here so the coloured grid on
   // Discussions and the pill rail in the Lounge stay one selection, not two.
   const [roomId, setRoomId] = useState<string>(
@@ -99,11 +84,15 @@ export default function ClubModeShell({
     ? events.filter((e) => e.status === "live" || e.status === "starting_soon").length
     : 0;
 
-  const tabs: BoardTab[] = [
-    { id: "feed", label: "Feed" },
-    { id: "circles", label: "Circles", href: "/circles" },
-    ...(showLive ? [{ id: "live", label: "Live", onAir: liveCount > 0 }] : []),
-  ];
+  const [marketRows, setMarketRows] = useState<TrendingRow[]>([]);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch("/api/club/trending", { signal: ctrl.signal, headers: { accept: "application/json" } })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => setMarketRows(payload?.rows ?? []))
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, []);
 
   const happening = useMemo(() => {
     const counts = new Map<string, number>();
@@ -113,10 +102,22 @@ export default function ClubModeShell({
         counts.set(symbol, (counts.get(symbol) ?? 0) + 1);
       }
     }
-    return Array.from(counts.entries())
+    const fromPosts = Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-  }, [initialData?.posts]);
+      .map(([ticker, count]) => ({ ticker, label: `${ticker} discussion`, detail: `${count} ${count === 1 ? "take" : "takes"}` }));
+    const seen = new Set(fromPosts.map((item) => item.ticker));
+    for (const row of marketRows) {
+      if (seen.has(row.ticker)) continue;
+      fromPosts.push({
+        ticker: row.ticker,
+        label: row.company || `${row.ticker} discussion`,
+        detail: (row.watchers ?? 0) > 0 ? `${row.watchers!.toLocaleString()} watching` : "Live market",
+      });
+      seen.add(row.ticker);
+      if (fromPosts.length >= 3) break;
+    }
+    return fromPosts.slice(0, 3);
+  }, [initialData?.posts, marketRows]);
 
   function selectMode(next: Mode) {
     setMode(next);
@@ -130,49 +131,34 @@ export default function ClubModeShell({
     }
   }
 
-  /** Board 01's presence line: real counts above the floor, founding copy below. */
-  const presenceLine = useMemo(() => {
-    if (presence?.floorMet) {
-      return (
-        <>
-          <span className="font-bold tabular-nums text-ink">{presence.connectedMinds}</span> members
-          {presence.actionsToday > 0 && (
-            <>
-              {" · "}
-              <span className="font-bold tabular-nums text-ink">{presence.actionsToday}</span> moves
-              today
-            </>
-          )}
-        </>
-      );
-    }
-    return MODE_PRESENCE[mode];
-  }, [presence, mode]);
-
   return (
-    <div className="cc-app-screen mx-auto max-w-[760px] px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
+    <div className="cc-app-screen mx-auto min-h-[calc(100dvh-4rem)] w-full max-w-[390px] px-[18px] pb-20 pt-[18px] sm:rounded-[34px] sm:border sm:border-[#2A2530]">
       <header className="flex items-center justify-between">
-        <div>
-          <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">
-            {mode === "lounge" ? "lounge" : mode === "live" ? "live" : "club"}
-          </h1>
-          <p className="mt-1 text-[10.5px] text-[#8F8894]">{presenceLine}</p>
-        </div>
-        {!isKid && (
-          <Link href="/community/compose" aria-label="Share your take" className="grid h-[34px] w-[34px] place-items-center rounded-full bg-[#FF7A1A] text-[#0D0B0E]">
-            <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
+        <h1 className="script-mark text-[34px] leading-none text-[#F4F0EC]">
+          {mode === "lounge" ? "lounge" : mode === "live" ? "live" : "club"}
+        </h1>
+        <div className="flex gap-[9px]">
+          {!isKid && (
+            <Link href="/community/compose" aria-label="Share your take" className="cc-app-card grid h-[34px] w-[34px] place-items-center rounded-full text-[#C8C2CE]">
+              <Plus className="h-4 w-4" strokeWidth={1.8} />
+            </Link>
+          )}
+          <Link href="/discover" aria-label="Search" className="cc-app-card grid h-[34px] w-[34px] place-items-center rounded-full text-[#C8C2CE]">
+            <Search className="h-[15px] w-[15px]" strokeWidth={2} />
           </Link>
-        )}
+        </div>
       </header>
 
-      <div className="mt-4">
-        <BoardTabs
-          tabs={tabs}
-          active={mode}
-          onSelect={(id) => selectMode(id as Mode)}
-          ariaLabel="The Club"
-        />
-      </div>
+      <nav className="mt-[14px] flex items-center gap-[18px]" aria-label="The Club">
+        <button type="button" onClick={() => selectMode("feed")} className={`rounded-full px-[14px] py-[5px] text-[11px] font-extrabold uppercase tracking-[.06em] ${mode === "feed" ? "bg-[#FF7A1A] text-[#0D0B0E]" : "px-0 text-[#8F8894]"}`}>Feed</button>
+        <Link href="/circles" className="text-[12px] font-semibold uppercase tracking-[.04em] text-[#8F8894]">Circles</Link>
+        {showLive && (
+          <button type="button" onClick={() => selectMode("live")} className={`flex items-center gap-1.5 rounded-full text-[12px] font-semibold uppercase tracking-[.04em] ${mode === "live" ? "bg-[#FF7A1A] px-[13px] py-[5px] font-extrabold text-[#0D0B0E]" : "text-[#8F8894]"}`}>
+            {liveCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#FF4D6D]" />}
+            Live
+          </button>
+        )}
+      </nav>
 
       {mode === "feed" && happening.length > 0 && (
         <section className="mt-4">
@@ -180,16 +166,14 @@ export default function ClubModeShell({
             <h2 className="cc-app-signal text-[9.5px] font-semibold uppercase tracking-[.16em] text-[#F4F0EC]">Happening now</h2>
             <button type="button" onClick={() => selectMode("discussions")} className="text-[10.5px] font-bold text-[#FF9A4D]">See all</button>
           </div>
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {happening.map(([ticker, count]) => (
-              <Link key={ticker} href={`/research/${encodeURIComponent(ticker)}`} className="cc-app-card min-w-[132px] p-3">
-                <div className="flex items-center gap-2">
-                  <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#101408] font-bold text-[#76B900]">{ticker.slice(0, 1)}</span>
-                  <div className="min-w-0">
-                    <p className="truncate text-[11px] font-bold text-[#F4F0EC]">{ticker} discussion</p>
-                    <p className="cc-app-signal mt-1 text-[8px] text-[#8F8894]">{count} {count === 1 ? "take" : "takes"}</p>
-                  </div>
-                </div>
+          <div className="mt-3 flex justify-between gap-4 px-1">
+            {happening.map((item, index) => (
+              <Link key={item.ticker} href={`/research/${encodeURIComponent(item.ticker)}`} className="w-[104px] shrink-0 text-center">
+                <span className={`mx-auto grid h-24 w-24 place-items-center rounded-full border-[3px] bg-[#101408] text-[26px] font-extrabold ${index === 0 ? "border-[#4AE383] text-[#76B900] shadow-[0_0_14px_rgba(74,227,131,.15)]" : index === 1 ? "border-[#A66BFF] text-[#C9B5FF]" : "border-[#FF7A1A] text-[#FF4D6D] shadow-[0_0_14px_rgba(255,122,26,.15)]"}`}>
+                  {item.ticker.slice(0, 1)}
+                </span>
+                <span className="mt-2 block truncate text-[11px] font-bold text-[#F4F0EC]">{item.label}</span>
+                <span className="mt-0.5 block truncate text-[9px] text-[#8F8894]">{item.detail}</span>
               </Link>
             ))}
           </div>
@@ -223,11 +207,7 @@ export default function ClubModeShell({
 
       <div className="mt-4">
         {mode === "feed" && (
-          <CommunityClient
-            initialData={initialData}
-            embedded
-            onOpenDiscussions={() => selectMode("discussions")}
-          />
+          <StandaloneClubFeed initialData={initialData} />
         )}
 
         {mode === "discussions" && (
