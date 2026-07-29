@@ -6,14 +6,14 @@ import type { CircleState, KaiWatchState, Opinion, Reputation, Stance, TickerRan
 
 const stanceLabel: Record<Stance, string> = { bullish: "Bullish", neutral: "Neutral", bearish: "Bearish" };
 
-export function TickerRankItem({ item }: { item: TickerRank }) {
+export function TickerRankItem({ item, onSelect }: { item: TickerRank; onSelect?: (item: TickerRank) => void }) {
   const body = <><span className="font-mono text-xs text-soft">{item.rank.toString().padStart(2, "0")}</span><span className="grid size-9 place-items-center rounded-xl bg-ink font-display font-bold text-paper">{item.ticker[0]}</span><span className="min-w-0 flex-1"><strong className="block font-display text-sm text-ink">{item.ticker}</strong><span className="block truncate text-xs text-soft">{item.statistic}</span></span><span className="font-mono text-xs text-ink" aria-label={`${Math.abs(item.movement)} ranks ${item.movement >= 0 ? "up" : "down"}`}>{item.movement === 0 ? "—" : `${item.movement > 0 ? "↑" : "↓"}${Math.abs(item.movement)}`}</span></>;
   const cls = "flex min-w-56 items-center gap-3 border-b border-border py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action";
-  return item.href ? <Link className={cls} href={item.href}>{body}</Link> : <div className={cls}>{body}</div>;
+  return onSelect ? <button type="button" className={cls} onClick={() => onSelect(item)}>{body}</button> : item.href ? <Link className={cls} href={item.href}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
-export function ClubRankRail({ items, label = "Top in the Club" }: { items: TickerRank[]; label?: string }) {
-  return <section aria-labelledby="club-rank-title"><div className="mb-2 flex items-baseline justify-between"><h2 id="club-rank-title" className="font-display text-2xl font-bold text-ink">{label}</h2><span className="font-mono text-[10px] uppercase tracking-widest text-soft">Live attention</span></div><div className="flex snap-x gap-6 overflow-x-auto pb-2">{items.map(item => <div className="snap-start" key={item.ticker}><TickerRankItem item={item} /></div>)}</div></section>;
+export function ClubRankRail({ items, label = "Top in the Club", onSelect }: { items: TickerRank[]; label?: string; onSelect?: (item: TickerRank) => void }) {
+  return <section aria-labelledby="club-rank-title"><div className="mb-2 flex items-baseline justify-between"><h2 id="club-rank-title" className="font-display text-2xl font-bold text-ink">{label}</h2><span className="font-mono text-[10px] uppercase tracking-widest text-soft">Live attention</span></div><div className="flex snap-x gap-6 overflow-x-auto pb-2">{items.map(item => <div className="snap-start" key={item.ticker}><TickerRankItem item={item} onSelect={onSelect} /></div>)}</div></section>;
 }
 
 export function CollectiveSignal({ raw, weighted, opinions }: { raw: number; weighted: number; opinions: number }) {

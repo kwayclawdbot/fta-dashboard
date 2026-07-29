@@ -39,6 +39,7 @@ import type { NewsCardData } from "@/lib/news/types";
 import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
 import type { DiscoverExtras } from "@/lib/discover";
 import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
+import { KaiAnnotation } from "@/components/collective";
 
 /**
  * DISCOVER — rebuilt screen-for-screen to the owner's mockup.
@@ -294,6 +295,16 @@ function ForYouPanel({
       <MostDivisive row={divisive} loading={loading} />
       <BlackBeltsWatching names={beltWatch} blackBelts={blackBelts} />
       <QuietToLoud rows={risers.slice(3, 8)} loading={loading} />
+
+      {!loading && risers[0] && (
+        <div className="mt-7">
+          <KaiAnnotation>
+            ${risers[0].ticker} has the sharpest verified attention increase in this Club window
+            {risers[0].watchers ? `, with ${risers[0].watchers.toLocaleString()} members watching` : ""}.
+            This reflects member activity, not a recommendation.
+          </KaiAnnotation>
+        </div>
+      )}
 
       {/* The newsroom keeps its place at the foot of the surface — it is the
           one section Discover carries that board 02 does not draw, and it now
