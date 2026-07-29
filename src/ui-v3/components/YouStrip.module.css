@@ -1,0 +1,70 @@
+/* The YOU strip — diamond mark, belt + XP + progress bar, ring on the right. */
+
+.section {
+  margin-top: var(--space-14);
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+/* 34px accent square with the same rotated-diamond knockout as the brand mark. */
+.mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-10);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.markGlyph {
+  width: 11px;
+  height: 11px;
+  background: var(--bg);
+  transform: rotate(45deg);
+  border-radius: var(--radius-2);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-11);
+  color: var(--panel-sub);
+  font-weight: var(--fw-600);
+  --panel-sub: #b8aeb0;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .label {
+  --panel-sub: #7a6a5e;
+}
+
+.belt {
+  color: var(--text);
+  font-weight: var(--fw-700);
+}
+
+.xp {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+  margin-top: var(--space-3);
+}
+
+.track {
+  height: 5px;
+  background: var(--border);
+  border-radius: var(--radius-3);
+  margin-top: var(--space-6);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ffb25e);
+  border-radius: var(--radius-3);
+  width: var(--fill-pct);
+}

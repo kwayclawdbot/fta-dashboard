@@ -1,0 +1,58 @@
+/* YOUR SIGNALS — a stack of flat rows, each ending in one affordance. */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-10) var(--space-12);
+  text-decoration: none;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.text {
+  flex: 1;
+  font-size: var(--fs-12);
+  color: var(--text-dim);
+}
+
+/* The three trailing affordances the artboard draws, and no others. */
+.add {
+  color: var(--positive);
+  font-weight: var(--fw-800);
+  font-size: var(--fs-13);
+}
+
+.count {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-9);
+  font-weight: var(--fw-800);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-6);
+}
+
+.go {
+  color: var(--text-faint);
+  font-weight: var(--fw-800);
+  font-size: var(--fs-12);
+}

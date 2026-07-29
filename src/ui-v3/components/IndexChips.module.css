@@ -1,0 +1,30 @@
+/* The three index chips along the bottom of the TODAY IN 30 SECONDS panel. */
+
+.row {
+  display: flex;
+  gap: var(--space-7);
+  margin-top: var(--space-12);
+}
+
+.chip {
+  background: var(--chip-bg);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius-6);
+  padding: var(--space-3) var(--space-8);
+  font-family: var(--font-mono);
+  font-size: var(--fs-9-5);
+  color: var(--text-muted);
+  --chip-bg: rgba(0, 0, 0, 0.35);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .chip {
+  --chip-bg: rgba(255, 255, 255, 0.55);
+}
+
+.up {
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}

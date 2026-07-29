@@ -1,0 +1,15 @@
+/* Home — the greeting block. Every other region lives in its own component. */
+
+.greeting {
+  font-size: var(--fs-26);
+  font-weight: var(--fw-700);
+  color: var(--text);
+  margin: var(--space-18) 0 0;
+  letter-spacing: var(--ls-n-02em);
+}
+
+.subtitle {
+  margin: var(--space-5) 0 0;
+  font-size: var(--fs-13);
+  color: var(--text-dim);
+}

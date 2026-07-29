@@ -1,0 +1,76 @@
+/* "TOP IN THE CLUB" — the horizontal strip of 74px ranked ticker cards. */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.strip {
+  display: flex;
+  gap: var(--space-9);
+  /*
+   * The artboard puts the strip 11px below the caption and clips with
+   * overflow:hidden — which also shears the top off every rank pip, since the
+   * pip hangs 7px above its card. A real strip has to scroll horizontally, and
+   * overflow-x:auto forces the same vertical clip, so 7px of padding restores
+   * the whole pip. margin-top absorbs that padding (4 + 7 = 11) so the CARDS
+   * still start exactly where the artboard puts them.
+   */
+  margin-top: var(--space-4);
+  padding-top: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Bleed to the screen edge so the strip scrolls past the 18px gutter. */
+  margin-inline: -18px;
+  padding-inline: 18px;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.card {
+  flex: 0 0 auto;
+  width: 74px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-9) 0;
+  text-align: center;
+  position: relative;
+  text-decoration: none;
+}
+
+/* Rank 1 only: accent border + the halo. Accent is rationed. */
+.lead {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255, 122, 26, 0.18);
+}
+
+.tile {
+  margin: var(--space-2) auto 0;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  margin-top: var(--space-6);
+}
+
+.metric {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.delta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  color: var(--positive);
+  margin-top: var(--space-1);
+}
+
+.deltaDown {
+  color: var(--negative);
+}
