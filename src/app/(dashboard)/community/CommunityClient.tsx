@@ -1243,7 +1243,7 @@ export default function CommunityClient({
                   <p className="mt-1.5 text-[13px] leading-[1.5] text-ink">
                     {latestFlip.note ||
                       (latestFlip.reason
-                        ? REASON_BY_KEY[latestFlip.reason].label
+                        ? REASON_BY_KEY[latestFlip.reason]?.label || "Position updated."
                         : "Position updated.")}
                   </p>
                   {latestFlip.respect_count > 0 && (
@@ -1606,9 +1606,9 @@ function TickerRow({
       {position && <StanceLabel position={position} />}
       {(contentType || timeHorizon) && (
         <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
-          {contentType ? CONTENT_TYPE_META[contentType].label : null}
+          {contentType ? CONTENT_TYPE_META[contentType]?.label || "Post" : null}
           {contentType && timeHorizon ? " · " : null}
-          {timeHorizon ? TIME_HORIZON_META[timeHorizon].label : null}
+          {timeHorizon ? TIME_HORIZON_META[timeHorizon]?.label || timeHorizon : null}
         </span>
       )}
     </div>
