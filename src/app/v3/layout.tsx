@@ -12,8 +12,6 @@ import {
 import "@/ui-v3/tokens.css";
 import "@/ui-v3/base.css";
 
-import V3ThemeToggle from "./V3ThemeToggle";
-
 /*
  * The four faces the mockups declare, self-hosted by next/font and exposed as
  * --font-v3-* (src/ui-v3/base.css binds them to --font-display/body/mono/script).
@@ -68,6 +66,10 @@ export const metadata = {
  * The wrapper deliberately does NOT read the old app's `fta-theme` preference —
  * v3 theming is its own axis and will be wired to member settings when the
  * first real screens land.
+ *
+ * It also renders no chrome of its own. The theme toggle lives on the token
+ * proof sheet (/v3/tokens) rather than here, because a floating control over
+ * every screen is not in any artboard.
  */
 export default function V3Layout({ children }: { children: ReactNode }) {
   return (
@@ -76,7 +78,6 @@ export default function V3Layout({ children }: { children: ReactNode }) {
       data-theme="dark"
       className={`${display.variable} ${body.variable} ${mono.variable} ${script.variable}`}
     >
-      <V3ThemeToggle />
       {children}
     </div>
   );

@@ -1,4 +1,5 @@
 import tokensJson from "@/ui-v3/tokens.json";
+import V3ThemeToggle from "./V3ThemeToggle";
 import styles from "./v3.module.css";
 
 /**
@@ -59,6 +60,7 @@ export default function V3TokenSpecimen() {
 
   return (
     <main className={styles.page}>
+      <V3ThemeToggle />
       <header className={styles.header}>
         <p className={styles.eyebrow}>ui-v3 · generated tokens</p>
         <h1 className={styles.title}>
