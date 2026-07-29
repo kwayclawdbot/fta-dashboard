@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 /*
@@ -152,8 +153,24 @@
                       sizes, never body copy.
        --font-marker  the MARGIN NOTE. A felt-tip hand for an annotation
                       written ON the page (a callout, a count, an aside). */
-  --font-script: var(--font-kaushan), "Brush Script MT", cursive;
-  --font-marker: var(--font-caveat), "Segoe Print", "Bradley Hand", cursive;
+  /* Campaign-only handwritten faces were removed from the core application.
+     Standard product surfaces use Sora; campaign assets may self-contain art. */
+  --font-script: var(--font-sora), sans-serif;
+  --font-marker: var(--font-sora), sans-serif;
+
+  /* Canonical semantic vocabulary for all new convergence work. */
+  --color-action: var(--accent-solid);
+  --color-surface: var(--paper);
+  --color-surface-raised: var(--card);
+  --color-border: var(--sand);
+  --color-price-up: #15803D;
+  --color-price-down: #B91C1C;
+  --color-stance-bullish: #00A878;
+  --color-stance-neutral: #7B7369;
+  --color-stance-bearish: #D14D64;
+  --color-rank: var(--accent-solid);
+  --color-fta-metal: var(--fg500);
+  --color-family-progress: #D97706;
 
   /* ---------------------------------------------------------------- */
   /* DISPLAY SCALE (F0)                                                */
@@ -200,6 +217,9 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
+  --font-sora: "Sora";
+  --font-inter: "Inter";
+  --font-plex-mono: "IBM Plex Mono";
 
   /* Gold ramp — FAMILY base (constant across themes, as before). Club mode
      remaps these to volt orange; FTA keeps them (gold). */
