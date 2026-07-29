@@ -178,7 +178,7 @@ export default function CommandSearch() {
         return;
       }
       if (item.kind === "screener") {
-        router.push(`/screener?q=${encodeURIComponent(q.trim())}`);
+        router.push(`/discover?tab=screener&q=${encodeURIComponent(q.trim())}`);
         close();
         return;
       }

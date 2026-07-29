@@ -85,7 +85,7 @@ type BackTarget = { href: string; label: string };
 const BACK_MAP: Record<string, BackTarget> = {
   dashboard: { href: "/dashboard", label: "Home" },
   home: { href: "/dashboard", label: "Home" },
-  screener: { href: "/screener", label: "Stock Finder" },
+  screener: { href: "/discover?tab=screener", label: "Stock Finder" },
   community: { href: "/watchlist/community", label: "Community Watchlist" },
   watchlist: { href: "/watchlist", label: "My Watchlist" },
   discover: { href: "/discover", label: "Discover" },

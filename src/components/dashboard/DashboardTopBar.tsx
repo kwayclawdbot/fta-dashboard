@@ -136,7 +136,6 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
   // global bar duplicated both, consuming 56px of the 844px reference frame.
   // Desktop keeps the universal command/bell/account strip beside the sidebar.
   const surfaceOwnsMobileHeader =
-    !!user.isSolo &&
     [
       "/dashboard",
       "/discover",
@@ -170,7 +169,7 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
   }
 
   return (
-    <header className={`sticky top-0 z-20 bg-midnight-950/90 backdrop-blur-md border-b border-midnight-700/50 ${surfaceOwnsMobileHeader ? "hidden lg:block" : ""}`}>
+    <header className={`cc-global-topbar sticky top-0 z-20 bg-midnight-950/90 backdrop-blur-md border-b border-midnight-700/50 ${surfaceOwnsMobileHeader ? "hidden lg:block" : ""}`}>
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         {/* Left: hamburger + title */}
         <div className="flex items-center gap-3">

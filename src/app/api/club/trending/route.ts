@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FLOORS, TRENDING_DISCLAIMER, floorMet } from "@/lib/club/score";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 import { getQuotes, isConfigured } from "@/lib/market/polygon";
+import { STARTER_MARKET_UNIVERSE } from "@/lib/market/starter-universe";
 
 /** Free tier sees the top N of the attention ledger; Club/FTA see the full list. */
 const FREE_TRENDING_ROWS = 5;
@@ -36,6 +37,53 @@ export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
   // Top of the canonical snapshot ledger (shared with pulse) — take the same 12
   // the previous dedicated `.limit(12)` read returned.
   const data = (await ctx.getSnapshots()).slice(0, 12);
+
+  // A new deployment can legitimately have no refreshed snapshot rows yet.
+  // Empty is not useful to a member, but inventing Club activity would be
+  // worse. In that state, ship a real live-market starter board: company
+  // identities are stable reference data and every price/move comes from the
+  // same Polygon quote backend used by populated Club rows. Community-only
+  // fields stay zero/null so the UI never mistakes this for member conviction.
+  if (data.length === 0) {
+    const names = STARTER_MARKET_UNIVERSE.slice(0, isFree ? FREE_TRENDING_ROWS : 12);
+    const tickers = names.map((name) => name.ticker);
+    let quotes: Record<string, { price: number | null; changePercent: number | null }> = {};
+    if (isConfigured()) {
+      try {
+        quotes = await getQuotes(tickers);
+      } catch (err) {
+        console.error("[club/trending] starter quote join failed:", err);
+      }
+    }
+
+    return {
+      body: {
+        rows: names.map((name, index) => {
+          const quote = quotes[name.ticker];
+          return {
+            rank: index + 1,
+            ticker: name.ticker,
+            company: name.name,
+            score: 0,
+            change: 0,
+            participants: 0,
+            price: quote?.price ?? null,
+            changePct: quote?.changePercent ?? null,
+            watchers: 0,
+            sentiment: { bull: 0, neutral: 0, bear: 0, bullPct: null },
+            heat: null,
+            floorMet: false,
+          };
+        }),
+        locked: isFree,
+        lockedFeature: isFree ? "trending_full" : undefined,
+        totalCount: STARTER_MARKET_UNIVERSE.length,
+        freeCap: FREE_TRENDING_ROWS,
+        updatedAt: new Date().toISOString(),
+        disclaimer: `${TRENDING_DISCLAIMER} Live market names appear while the Club snapshot builds.`,
+      },
+    };
+  }
 
   // UI-contract reconcile (§6 TrendingRow.company): attach the company name from
   // screener_metrics so the row can render "Nvidia" alongside the ticker logo.

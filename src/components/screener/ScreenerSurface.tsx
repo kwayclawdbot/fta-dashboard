@@ -34,7 +34,8 @@ import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { createClient } from "@/lib/supabase/client";
 import { parseScreenerQuery } from "@/lib/screener-nl";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
-import { fetchQuote } from "@/lib/market/client";
+import { fetchQuote, fetchQuotes } from "@/lib/market/client";
+import { STARTER_MARKET_TICKERS, STARTER_MARKET_UNIVERSE } from "@/lib/market/starter-universe";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import UnlockLine from "@/components/entitlements/UnlockLine";
@@ -221,7 +222,13 @@ interface SavedScreen {
  * carries all three. The data, filters, full-universe load, saved screens and
  * free-tier gating are identical in both placements.
  */
-export default function ScreenerSurface({ embedded = false }: { embedded?: boolean }) {
+export default function ScreenerSurface({
+  embedded = false,
+  initialQuery = "",
+}: {
+  embedded?: boolean;
+  initialQuery?: string;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
@@ -234,8 +241,9 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
   const [rows, setRows] = useState<ScreenerRow[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [usingStarterUniverse, setUsingStarterUniverse] = useState(false);
 
-  const [custom, setCustom] = useState<CustomFilters>({});
+  const [custom, setCustom] = useState<CustomFilters>({ q: initialQuery || null });
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   // CLUB HEAT is the default sort of the surface: the screener opens on the
   // names the club is actually engaging with, not on the biggest companies in
@@ -359,12 +367,49 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     ]);
 
     setMeta((metaRes.data as Meta) ?? null);
-    setRows((firstRes.data as ScreenerRow[]) ?? []);
+    const firstRows = (firstRes.data as ScreenerRow[] | null) ?? [];
+    if (firstRows.length > 0) {
+      setRows(firstRows);
+      setUsingStarterUniverse(false);
+    } else {
+      const quotes = await fetchQuotes(STARTER_MARKET_TICKERS);
+      setRows(
+        STARTER_MARKET_UNIVERSE.map((name) => {
+          const quote = quotes[name.ticker];
+          return {
+            ticker: name.ticker,
+            name: name.name,
+            sector: name.sector,
+            exchange: name.exchange,
+            type: name.type,
+            mcap: null,
+            price: quote?.price ?? null,
+            chg_1d: quote?.changePercent ?? null,
+            chg_5d: null,
+            chg_1m: null,
+            chg_3m: null,
+            vol: null,
+            avg_vol_20: null,
+            vol_ratio: null,
+            dist_52w_high: null,
+            dist_52w_low: null,
+            rsi14: null,
+            ema20_state: null,
+            ema50_state: null,
+            gap_pct: null,
+            like_count: 0,
+          } satisfies ScreenerRow;
+        })
+      );
+      setUsingStarterUniverse(true);
+      setSortKey("chg_1d");
+      setSortDir("desc");
+    }
     setLoading(false); // paint the top-of-universe page now
 
     const total = countRes.count ?? 0;
     const pages = Math.max(1, Math.ceil(total / 1000));
-    if (pages > 1) {
+    if (firstRows.length > 0 && pages > 1) {
       const rest = await Promise.all(
         Array.from({ length: pages - 1 }, (_, i) => pageQuery(i + 1))
       );
@@ -650,6 +695,16 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         aria-labelledby={embedded ? undefined : "screener-tab-screener"}
         className="space-y-4"
       >
+        {usingStarterUniverse && (
+          <div className="cc-app-card border-[#3A2418] bg-[linear-gradient(120deg,#241009,#17141A_72%)] px-3.5 py-3">
+            <p className="cc-app-signal text-[8.5px] font-semibold uppercase tracking-[0.14em] text-[#FF9A4D]">
+              Live starter universe
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-[#8F8894]">
+              Live prices and day moves are on. Full-universe technical filters will appear after the nightly screener refresh completes.
+            </p>
+          </div>
+        )}
         {/* Search — the board's card, not a naked rule */}
         <BoardCard radius={14} className="flex items-center gap-2.5 px-3.5 py-2.5">
           <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />

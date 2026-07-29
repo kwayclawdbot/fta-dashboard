@@ -93,7 +93,7 @@ function Movers({ rows }: { rows: TrendingRow[] }) {
           <div className={`cc-app-signal mt-0.5 text-[8.5px] font-semibold ${toneFor(row.changePct)}`}>
             {signedPct(row.changePct)}
           </div>
-          {row.watchers != null && (
+          {(row.watchers ?? 0) > 0 && (
             <div className="cc-app-signal mt-1 text-[7.5px] text-[#6E6774]">{compact(row.watchers)} watching</div>
           )}
         </Link>
@@ -102,7 +102,15 @@ function Movers({ rows }: { rows: TrendingRow[] }) {
   );
 }
 
-function LeadTicker({ row, movers }: { row: TrendingRow; movers: TrendingRow[] }) {
+function LeadTicker({
+  row,
+  movers,
+  marketStarter,
+}: {
+  row: TrendingRow;
+  movers: TrendingRow[];
+  marketStarter: boolean;
+}) {
   const sentiment = row.sentiment?.bullPct;
   const sentimentLabel = sentiment == null ? "BUILDING" : sentiment >= 58 ? "BULLISH" : sentiment <= 42 ? "BEARISH" : "MIXED";
   return (
@@ -115,10 +123,10 @@ function LeadTicker({ row, movers }: { row: TrendingRow; movers: TrendingRow[] }
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-[17px] font-extrabold leading-none text-[#F4F0EC]">{row.company || row.ticker}</h3>
           <p className="cc-app-signal mt-1 truncate text-[9px] font-semibold text-[#76B900]">
-            {row.ticker} <span className="text-[#8F8894]">· live Club ranking</span>
+            {row.ticker} <span className="text-[#8F8894]">· {marketStarter ? "live market radar" : "live Club ranking"}</span>
           </p>
         </div>
-        <span className="cc-app-signal rounded bg-[#C6FF4D] px-1.5 py-1 text-[7.5px] font-bold text-[#0D0B0E]">#1 IN ATTENTION</span>
+        <span className="cc-app-signal rounded bg-[#C6FF4D] px-1.5 py-1 text-[7.5px] font-bold text-[#0D0B0E]">{marketStarter ? "LIVE MARKET" : "#1 IN ATTENTION"}</span>
       </div>
 
       <div className="relative z-[1] mt-3 flex items-end justify-between gap-3">
@@ -128,11 +136,11 @@ function LeadTicker({ row, movers }: { row: TrendingRow; movers: TrendingRow[] }
         </div>
         <div className="grid grid-cols-3 gap-3 text-right">
           <div>
-            <div className="cc-app-signal text-[14px] font-semibold text-[#F4F0EC]">{row.heat == null ? "—" : row.heat}</div>
+            <div className="cc-app-signal text-[14px] font-semibold text-[#F4F0EC]">{marketStarter || row.heat == null ? "—" : row.heat}</div>
             <div className="cc-app-signal mt-0.5 text-[6.5px] tracking-[.12em] text-[#6E6774]">CLUB SCORE</div>
           </div>
           <div>
-            <div className="cc-app-signal text-[14px] font-semibold text-[#F4F0EC]">{compact(row.watchers)}</div>
+            <div className="cc-app-signal text-[14px] font-semibold text-[#F4F0EC]">{marketStarter ? "—" : compact(row.watchers)}</div>
             <div className="cc-app-signal mt-0.5 text-[6.5px] tracking-[.12em] text-[#6E6774]">WATCHING</div>
           </div>
           <div>
@@ -216,6 +224,7 @@ export default function StandaloneHome({
   const initials = name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "CC";
   const rows = trending?.rows ?? [];
   const lead = rows[0] ?? null;
+  const marketStarter = rows.length > 0 && rows.every((row) => row.score === 0 && row.participants === 0);
   const personal = (signals ?? []).filter((item) => !(isKid && item.kind === "sentiment")).slice(0, 3);
 
   return (
@@ -226,7 +235,7 @@ export default function StandaloneHome({
 
       <div className="mt-[15px] flex items-baseline justify-between gap-3">
         <h2 className="cc-app-signal text-[9.5px] font-semibold uppercase tracking-[.16em] text-[#F4F0EC]">
-          What the club <span className="text-[#FF7A1A]">is seeing</span>
+          {marketStarter ? <>Live market <span className="text-[#FF7A1A]">radar</span></> : <>What the club <span className="text-[#FF7A1A]">is seeing</span></>}
         </h2>
         <Link href="/discover" className="text-[10.5px] font-bold text-[#FF9A4D]">View all ›</Link>
       </div>
@@ -234,7 +243,7 @@ export default function StandaloneHome({
       {loading && !lead ? (
         <div className="cc-app-hero mt-2 h-[238px] animate-pulse" aria-label="Loading Club market activity" />
       ) : lead ? (
-        <LeadTicker row={lead} movers={rows.slice(1, 4)} />
+        <LeadTicker row={lead} movers={rows.slice(1, 4)} marketStarter={marketStarter} />
       ) : (
         <div className="cc-app-card mt-2 px-4 py-6 text-center">
           <p className="font-semibold text-[#F4F0EC]">The live board is filling in</p>
