@@ -6,10 +6,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   Card,
+  Donut,
+  DotTally,
   SectionMark,
   StatCard,
 } from "@/components/research/board";
-import { CollectiveSignal } from "@/components/collective";
 
 /**
  * WHERE THE CLUB STANDS — board 03's sentiment block, built as drawn.
@@ -357,6 +358,8 @@ export default function ClubRead({
 
   const bullPct = hasSplit ? Math.round((bull / positioned) * 100) : 0;
   const neutralPct = hasSplit ? Math.round((neutral / positioned) * 100) : 0;
+  const bearPct = hasSplit ? Math.max(0, 100 - bullPct - neutralPct) : 0;
+
   const score = data.clubScore != null ? Math.round(data.clubScore) : null;
   const shift = data.sentimentShift24h;
   const opinions = positioned || data.participants || 0;
@@ -369,8 +372,48 @@ export default function ClubRead({
 
       {hasSplit ? (
         <>
-          <div className="mt-4">
-            <CollectiveSignal raw={bullPct} weighted={score ?? bullPct} opinions={opinions} />
+          <div className="mt-3 flex items-center gap-3.5">
+            <div className="min-w-0 flex-1 text-center">
+              <p className="font-display text-[24px] font-extrabold leading-none tracking-tight text-price-up">
+                {bullPct}%
+              </p>
+              <p className="mt-1 font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em] text-price-up">
+                Bullish
+              </p>
+              <DotTally pct={bullPct} tone="up" ariaLabel={`${bullPct}% bullish`} />
+            </div>
+
+            <Donut
+              pct={score}
+              size={116}
+              thickness={9}
+              glow
+              label={
+                score != null
+                  ? `Club signal ${score} out of 100`
+                  : "Club signal not yet scored"
+              }
+            >
+              <span className="block font-display text-[26px] font-extrabold leading-none tracking-tight text-ink">
+                {score ?? "—"}
+                {score != null && <span className="text-[14px] text-soft">%</span>}
+              </span>
+              <span className="mt-1 block font-mono text-[7px] font-semibold uppercase leading-[1.25] tracking-[0.12em] text-gold-700">
+                Club
+                <br />
+                signal
+              </span>
+            </Donut>
+
+            <div className="min-w-0 flex-1 text-center">
+              <p className="font-display text-[24px] font-extrabold leading-none tracking-tight text-price-down">
+                {bearPct}%
+              </p>
+              <p className="mt-1 font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em] text-price-down">
+                Bearish
+              </p>
+              <DotTally pct={bearPct} tone="down" ariaLabel={`${bearPct}% bearish`} />
+            </div>
           </div>
 
           <p className="mt-3 text-center text-[11px] leading-relaxed text-soft">
