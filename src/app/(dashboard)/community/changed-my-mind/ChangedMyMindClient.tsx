@@ -24,6 +24,8 @@ import {
   type ChangedMindEntry,
   type ChangedMindsFeed,
 } from "@/lib/social/stance";
+import { designV2Enabled } from "@/lib/design-flag";
+import ChangedMyMindV2 from "./ChangedMyMindV2";
 
 /* ══════════════════════════════════════════════════════════════════════════
    CHANGED MY MIND — Club Screens 03, built as drawn.
@@ -73,6 +75,12 @@ export default function ChangedMyMindClient({
   /** Kids read the moments but never react (mirrors the flow's own kid wall). */
   isKid: boolean;
 }) {
+  // ── design v2 flag dispatch ──────────────────────────────────────────────
+  // Flag OFF (default / production) → v1 body below runs unchanged. Flag ON →
+  // the cc-canvas re-skin, same props, same backend calls. Build-constant, so
+  // the early return is stable across renders.
+  if (designV2Enabled()) return <ChangedMyMindV2 seed={seed} userId={userId} isKid={isKid} />;
+
   const supabase = useMemo(() => createClient(), []);
   const [items, setItems] = useState<ChangedMindEntry[]>(seed.items ?? []);
   const [busy, setBusy] = useState<Set<string>>(new Set());

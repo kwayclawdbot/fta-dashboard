@@ -68,6 +68,8 @@ import {
   type AlertSetup,
 } from "@/lib/alerts/types";
 import ScrollRow from "@/components/canvas2/ScrollRow";
+import { designV2Enabled } from "@/lib/design-flag";
+import AlertsClientV2 from "./AlertsClientV2";
 import SegmentedRail, {
   type SegmentedOption,
 } from "@/components/canvas2/Segmented";
@@ -109,7 +111,7 @@ type Tab = "overview" | "daily" | "watch" | "history" | "track";
 /** What the cron recorded alongside a watch's current state (migration 157). */
 type WatchDetail = WatchCurrentState["detail"];
 
-interface Props {
+export interface Props {
   userId: string;
   isSolo: boolean;
   /** Events + broadcasts that landed since this member last opened the hub. */
@@ -163,6 +165,34 @@ export default function AlertsClient({
   setups: initialSetups,
   observational,
 }: Props) {
+  // DESIGN v2 (design-project-v2, board 18/19) — flag-gated re-skin. The v1 body
+  // below is byte-identical when the flag is off; on, the whole surface renders
+  // through AlertsClientV2. The env var is inlined at build time, so this branch
+  // is a constant for the life of the bundle and the hook order below is stable.
+  if (designV2Enabled()) {
+    return (
+      <AlertsClientV2
+        userId={userId}
+        isSolo={isSolo}
+        newSinceSeen={newSinceSeen}
+        hubSeenAt={hubSeenAt}
+        broadcasts={broadcasts}
+        events={events}
+        rules={initialRules}
+        strategy={initialStrategy}
+        prefs={initialPrefs}
+        priceMap={priceMap}
+        marketEvents={marketEvents}
+        sampleAlert={sampleAlert}
+        trackRecord={trackRecord}
+        watchlistTickers={watchlistTickers}
+        watchStates={watchStates}
+        setups={initialSetups}
+        observational={observational}
+      />
+    );
+  }
+
   const [tab, setTab] = useState<Tab>("overview");
   const [rules, setRules] = useState(initialRules);
   const [setups, setSetups] = useState(initialSetups);

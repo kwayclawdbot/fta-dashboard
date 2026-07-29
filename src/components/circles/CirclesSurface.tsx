@@ -7,6 +7,8 @@ import { RotateCcw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { deriveRegister } from "@/lib/register";
+import { designV2Enabled } from "@/lib/design-flag";
+import CirclesSurfaceV2 from "./CirclesSurfaceV2";
 import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import { TickerTile } from "@/components/canvas2";
 import {
@@ -251,6 +253,10 @@ function OpenForm({ onOpened }: { onOpened: (slug: string) => void }) {
 /* ── surface ─────────────────────────────────────────────────────────────── */
 
 export default function CirclesSurface() {
+  // v2 canvas (Cheat Code App board 16). Flag OFF ⇒ the original body below runs
+  // unchanged; the check is a build constant so this early return is stable.
+  if (designV2Enabled()) return <CirclesSurfaceV2 />;
+
   const router = useRouter();
   const [rows, setRows] = useState<CircleListRow[]>([]);
   const [loading, setLoading] = useState(true);

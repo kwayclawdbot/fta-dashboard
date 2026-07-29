@@ -5,6 +5,8 @@ import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import PricingMatrix from "@/components/entitlements/PricingMatrix";
 import { TextAction } from "@/components/f0/parts";
 import { BoardSection } from "@/components/clubhome/board";
+import { designV2Enabled } from "@/lib/design-flag";
+import PricingV2 from "@/components/dashboard/v2/PricingV2";
 
 /**
  * /pricing — the canonical three-tier pricing surface (MONETIZATION-GATES.md).
@@ -83,6 +85,10 @@ function Tier({
 }
 
 export default function PricingPage() {
+  // v2 conversion (design-project-v2) — board 11, real PRICING_MATRIX tiers.
+  // Off ⇒ the v1 pricing surface below renders byte-identically.
+  if (designV2Enabled()) return <PricingV2 />;
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 pb-16">
       {/* Hand-composed masthead (not DisplayHead) for ONE reason: the canvas's

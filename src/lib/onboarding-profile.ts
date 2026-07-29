@@ -301,7 +301,8 @@ export function deriveRecommendations(
       key: "parent-corner",
       title: "Parent Corner",
       sub: "This week's dinner-table money questions",
-      href: "/parent-corner",
+      // Link straight to the live board; /parent-corner only redirects here now.
+      href: "/family/corner",
       icon: "Users",
     });
   }

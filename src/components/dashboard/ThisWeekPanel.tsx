@@ -251,7 +251,7 @@ export default function ThisWeekPanel({
                 </p>
                 {!isSolo && (
                   <Link
-                    href="/parent-corner"
+                    href="/family/corner"
                     className="f0-focus mt-2.5 inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
                   >
                     More in Parent Corner

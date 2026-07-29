@@ -1,0 +1,883 @@
+{
+  "missingPaths": 0,
+  "pairs": [
+    {
+      "dark": "#2A2530",
+      "light": [
+        {
+          "hex": "#E5DFD5",
+          "n": 757
+        }
+      ],
+      "total": 757
+    },
+    {
+      "dark": "#F4F0EC",
+      "light": [
+        {
+          "hex": "#1A1614",
+          "n": 245
+        }
+      ],
+      "total": 245
+    },
+    {
+      "dark": "#17141A",
+      "light": [
+        {
+          "hex": "#FFFFFF",
+          "n": 219
+        }
+      ],
+      "total": 219
+    },
+    {
+      "dark": "#6E6774",
+      "light": [
+        {
+          "hex": "#9B9289",
+          "n": 199
+        }
+      ],
+      "total": 199
+    },
+    {
+      "dark": "#FF7A1A",
+      "light": [
+        {
+          "hex": "#FF7A1A",
+          "n": 170
+        }
+      ],
+      "total": 170
+    },
+    {
+      "dark": "#0D0B0E",
+      "light": [
+        {
+          "hex": "#F7F4EF",
+          "n": 135
+        },
+        {
+          "hex": "#1A1614",
+          "n": 31
+        },
+        {
+          "hex": "#FFFFFF",
+          "n": 4
+        }
+      ],
+      "total": 170
+    },
+    {
+      "dark": "#8F8894",
+      "light": [
+        {
+          "hex": "#7B7369",
+          "n": 169
+        }
+      ],
+      "total": 169
+    },
+    {
+      "dark": "#4AE383",
+      "light": [
+        {
+          "hex": "#0BA05A",
+          "n": 103
+        }
+      ],
+      "total": 103
+    },
+    {
+      "dark": "#FF9A4D",
+      "light": [
+        {
+          "hex": "#D95E00",
+          "n": 58
+        }
+      ],
+      "total": 58
+    },
+    {
+      "dark": "#3A3240",
+      "light": [
+        {
+          "hex": "#D8D0C4",
+          "n": 53
+        }
+      ],
+      "total": 53
+    },
+    {
+      "dark": "#C8C2CE",
+      "light": [
+        {
+          "hex": "#4E463E",
+          "n": 51
+        }
+      ],
+      "total": 51
+    },
+    {
+      "dark": "#3A2418",
+      "light": [
+        {
+          "hex": "#F2DCC2",
+          "n": 47
+        }
+      ],
+      "total": 47
+    },
+    {
+      "dark": "#000000",
+      "light": [
+        {
+          "hex": "#000000",
+          "n": 33
+        }
+      ],
+      "total": 33
+    },
+    {
+      "dark": "#FF4D6D",
+      "light": [
+        {
+          "hex": "#D92652",
+          "n": 28
+        }
+      ],
+      "total": 28
+    },
+    {
+      "dark": "#FFC24B",
+      "light": [
+        {
+          "hex": "#D99A00",
+          "n": 25
+        }
+      ],
+      "total": 25
+    },
+    {
+      "dark": "#E8E2E4",
+      "light": [
+        {
+          "hex": "#2E2925",
+          "n": 21
+        }
+      ],
+      "total": 21
+    },
+    {
+      "dark": "#3D8BFF",
+      "light": [
+        {
+          "hex": "#3D8BFF",
+          "n": 18
+        }
+      ],
+      "total": 18
+    },
+    {
+      "dark": "#76B900",
+      "light": [
+        {
+          "hex": "#76B900",
+          "n": 13
+        }
+      ],
+      "total": 13
+    },
+    {
+      "dark": "#101408",
+      "light": [
+        {
+          "hex": "#101408",
+          "n": 12
+        }
+      ],
+      "total": 12
+    },
+    {
+      "dark": "#1E3050",
+      "light": [
+        {
+          "hex": "#B7D3E6",
+          "n": 12
+        }
+      ],
+      "total": 12
+    },
+    {
+      "dark": "#A66BFF",
+      "light": [
+        {
+          "hex": "#A66BFF",
+          "n": 10
+        }
+      ],
+      "total": 10
+    },
+    {
+      "dark": "#FF7A1A/0.5",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.5",
+          "n": 8
+        }
+      ],
+      "total": 8
+    },
+    {
+      "dark": "#B8B2BC",
+      "light": [
+        {
+          "hex": "#5A534C",
+          "n": 8
+        }
+      ],
+      "total": 8
+    },
+    {
+      "dark": "#2E3A18",
+      "light": [
+        {
+          "hex": "#C9DCA8",
+          "n": 8
+        }
+      ],
+      "total": 8
+    },
+    {
+      "dark": "#2E5578",
+      "light": [
+        {
+          "hex": "#7FA8C4",
+          "n": 8
+        }
+      ],
+      "total": 8
+    },
+    {
+      "dark": "#173A26",
+      "light": [
+        {
+          "hex": "#D4F0E0",
+          "n": 7
+        }
+      ],
+      "total": 7
+    },
+    {
+      "dark": "#20503A",
+      "light": [
+        {
+          "hex": "#96D4B4",
+          "n": 7
+        }
+      ],
+      "total": 7
+    },
+    {
+      "dark": "#5A2A38",
+      "light": [
+        {
+          "hex": "#F0BFCB",
+          "n": 7
+        }
+      ],
+      "total": 7
+    },
+    {
+      "dark": "#1A0E10",
+      "light": [
+        {
+          "hex": "#1A0E10",
+          "n": 6
+        }
+      ],
+      "total": 6
+    },
+    {
+      "dark": "#4A4250",
+      "light": [
+        {
+          "hex": "#C4BBAD",
+          "n": 6
+        }
+      ],
+      "total": 6
+    },
+    {
+      "dark": "#5BC4F0",
+      "light": [
+        {
+          "hex": "#0E86BE",
+          "n": 6
+        }
+      ],
+      "total": 6
+    },
+    {
+      "dark": "#111014",
+      "light": [
+        {
+          "hex": "#FBF8F2",
+          "n": 6
+        }
+      ],
+      "total": 6
+    },
+    {
+      "dark": "#E82127",
+      "light": [
+        {
+          "hex": "#E82127",
+          "n": 5
+        }
+      ],
+      "total": 5
+    },
+    {
+      "dark": "#0E1216",
+      "light": [
+        {
+          "hex": "#0E1216",
+          "n": 5
+        }
+      ],
+      "total": 5
+    },
+    {
+      "dark": "#B8AEB0",
+      "light": [
+        {
+          "hex": "#7A6A5E",
+          "n": 5
+        }
+      ],
+      "total": 5
+    },
+    {
+      "dark": "#FF7A1A/0.18",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.18",
+          "n": 5
+        }
+      ],
+      "total": 5
+    },
+    {
+      "dark": "#000000/0",
+      "light": [
+        {
+          "hex": "#000000/0",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#2E7A4E",
+      "light": [
+        {
+          "hex": "#6FCB9B",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#322347",
+      "light": [
+        {
+          "hex": "#D6C4EC",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#1E3247",
+      "light": [
+        {
+          "hex": "#B9D6EA",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#FF7A1A/0.35",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.35",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#FF7A1A/0.15",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.15",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#FF7A1A/0.4",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.4",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#4A2A12",
+      "light": [
+        {
+          "hex": "#F2CFA6",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#FFFFFF/0.2",
+      "light": [
+        {
+          "hex": "#FFFFFF/0.2",
+          "n": 4
+        }
+      ],
+      "total": 4
+    },
+    {
+      "dark": "#000000/0.35",
+      "light": [
+        {
+          "hex": "#FFFFFF/0.55",
+          "n": 3
+        }
+      ],
+      "total": 3
+    },
+    {
+      "dark": "#0E1B2E",
+      "light": [
+        {
+          "hex": "#E4F1FA",
+          "n": 3
+        }
+      ],
+      "total": 3
+    },
+    {
+      "dark": "#3A2530",
+      "light": [
+        {
+          "hex": "#3A2530",
+          "n": 3
+        }
+      ],
+      "total": 3
+    },
+    {
+      "dark": "#7A4A22",
+      "light": [
+        {
+          "hex": "#F0B375",
+          "n": 3
+        }
+      ],
+      "total": 3
+    },
+    {
+      "dark": "#4AE383/0.12",
+      "light": [
+        {
+          "hex": "#4AE383/0.12",
+          "n": 3
+        }
+      ],
+      "total": 3
+    },
+    {
+      "dark": "#4AE383/0.14",
+      "light": [
+        {
+          "hex": "#4AE383/0.14",
+          "n": 3
+        }
+      ],
+      "total": 3
+    },
+    {
+      "dark": "#140E14",
+      "light": [
+        {
+          "hex": "#140E14",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#ED1C24",
+      "light": [
+        {
+          "hex": "#ED1C24",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#141208",
+      "light": [
+        {
+          "hex": "#141208",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#FF9900",
+      "light": [
+        {
+          "hex": "#FF9900",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#FF7A1A/0.12",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.12",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#8A3446",
+      "light": [
+        {
+          "hex": "#EBA7B6",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#4A2530",
+      "light": [
+        {
+          "hex": "#F3D2DA",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#FFFFFF",
+      "light": [
+        {
+          "hex": "#FFFFFF",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#4E4854",
+      "light": [
+        {
+          "hex": "#8A8178",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#A9BED0",
+      "light": [
+        {
+          "hex": "#43607A",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#0D0B0E/0.8",
+      "light": [
+        {
+          "hex": "#FFFFFF/0.85",
+          "n": 2
+        }
+      ],
+      "total": 2
+    },
+    {
+      "dark": "#E50914",
+      "light": [
+        {
+          "hex": "#E50914",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#00A4EF",
+      "light": [
+        {
+          "hex": "#00A4EF",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FF4D3D",
+      "light": [
+        {
+          "hex": "#FF4D3D",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#171226",
+      "light": [
+        {
+          "hex": "#171226",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#C9B5FF",
+      "light": [
+        {
+          "hex": "#C9B5FF",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#3D5AFE",
+      "light": [
+        {
+          "hex": "#3D5AFE",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#000000/0.55",
+      "light": [
+        {
+          "hex": "#FFFFFF/0.7",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#B8B8A0",
+      "light": [
+        {
+          "hex": "#B8B8A0",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#A3E635",
+      "light": [
+        {
+          "hex": "#A3E635",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#B0A6C0",
+      "light": [
+        {
+          "hex": "#B0A6C0",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#9BB4C4",
+      "light": [
+        {
+          "hex": "#9BB4C4",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#4285F4",
+      "light": [
+        {
+          "hex": "#4285F4",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#101A28",
+      "light": [
+        {
+          "hex": "#EDF5FB",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#5B7A94",
+      "light": [
+        {
+          "hex": "#5B7A94",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FF4D6D/0.14",
+      "light": [
+        {
+          "hex": "#FF4D6D/0.14",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FFC24B/0.14",
+      "light": [
+        {
+          "hex": "#FFC24B/0.14",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FFFFFF/0.1",
+      "light": [
+        {
+          "hex": "#FFFFFF/0.1",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FF7A1A/0.9",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.9",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FF7A1A/0.08",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.08",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FF7A1A/0.07",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.07",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FF7A1A/0.14",
+      "light": [
+        {
+          "hex": "#FF7A1A/0.14",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#7FB3FF",
+      "light": [
+        {
+          "hex": "#7FB3FF",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#7FE3A8",
+      "light": [
+        {
+          "hex": "#7FE3A8",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#5BC4F0/0.06",
+      "light": [
+        {
+          "hex": "#5BC4F0/0.06",
+          "n": 1
+        }
+      ],
+      "total": 1
+    },
+    {
+      "dark": "#FFD98A",
+      "light": [
+        {
+          "hex": "#B07A00",
+          "n": 1
+        }
+      ],
+      "total": 1
+    }
+  ]
+}

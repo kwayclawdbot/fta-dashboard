@@ -22,8 +22,10 @@ import { modeFromSolo, modeBrand } from "@/lib/mode";
 import { ClubWordmark } from "@/components/brand/ClubMark";
 import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
 import BeltChip from "./BeltChip";
+import { designV2Enabled } from "@/lib/design-flag";
+import MobileTabBarV2 from "./v2/MobileTabBarV2";
 
-interface Tab {
+export interface Tab {
   label: string;
   href: string;
   icon: React.ElementType;
@@ -45,7 +47,7 @@ interface Tab {
  * The 5th slot ("You"/"Me") opens the full-nav bottom sheet — every non-primary
  * destination stays reachable there (it mirrors the sidebar), so nothing orphans.
  */
-const T = {
+export const T = {
   Home: { label: "Home", href: "/dashboard", icon: Home } as Tab,
   Club: { label: "Club", href: "/community", icon: MessageCircle } as Tab,
   Discover: { label: "Discover", href: "/discover", icon: Compass } as Tab,
@@ -56,7 +58,7 @@ const T = {
 };
 
 /** The four navigable tabs (Home · slot2 · Club · slot4) + the "You"/"Me" label. */
-function tabsFor(
+export function tabsFor(
   role?: string,
   ageGroup?: string,
   tier?: FamilyTier,
@@ -169,6 +171,13 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
 
   function onSheetDragEnd(_: unknown, info: PanInfo) {
     if (info.offset.y > 90 || info.velocity.y > 600) setMoreOpen(false);
+  }
+
+  // v2 conversion (design-project-v2). After all hooks; the v2 sibling reuses
+  // tabsFor + getNavItems so the persona slot arrangement is preserved. Off ⇒
+  // v1 tab bar renders byte-identically below.
+  if (designV2Enabled()) {
+    return <MobileTabBarV2 user={user} xp={xp} />;
   }
 
   return (

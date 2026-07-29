@@ -32,6 +32,8 @@ import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
 import { DisplayHead, TextAction } from "@/components/f0/parts";
 import { BoardSection } from "@/components/clubhome/board";
+import { designV2Enabled } from "@/lib/design-flag";
+import UpgradeV2 from "@/components/dashboard/v2/UpgradeV2";
 
 /**
  * /upgrade — the commercial surface. Three viewers: an FTA family (status), a
@@ -327,6 +329,11 @@ export default function UpgradePage() {
   const mode = modeFromSolo(isSolo);
   const clubName = "Cheat Code Club";
   const clubChip = "Club";
+
+  // v2 conversion (design-project-v2) — board-11 paywall. Placed after every
+  // hook above so hook order is identical on both paths. UpgradeV2 runs its own
+  // tier detection + billing; real prices/URLs preserved. Off ⇒ v1 below.
+  if (designV2Enabled()) return <UpgradeV2 />;
 
   if (tier === null) {
     return (

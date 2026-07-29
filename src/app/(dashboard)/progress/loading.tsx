@@ -4,7 +4,13 @@
  * warm streak card — not any of the surface's founding states, which are
  * designed copy inside ProfileSurface and only render once a read has answered.
  */
+import V2Skeleton from "@/components/cc/V2Skeleton";
+import { designV2Enabled } from "@/lib/design-flag";
+
 export default function Loading() {
+  // Flag on ⇒ the v2 shimmer skeleton on the same profile footprint; flag off ⇒
+  // the existing v1 warm-paper skeleton below, byte-identical to prod.
+  if (designV2Enabled()) return <V2Skeleton variant="profile" />;
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-16" aria-busy="true">
       <div className="h-9 w-24 rounded bg-sand/60 motion-safe:animate-pulse" />

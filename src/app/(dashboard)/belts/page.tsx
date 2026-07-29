@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import BeltLadder from "@/components/belts/BeltLadder";
+import BeltLadderV2 from "@/components/belts/BeltLadderV2";
+import { designV2Enabled as isDesignV2 } from "@/lib/design-flag";
 
 export const metadata: Metadata = {
   title: "Belts",
@@ -20,5 +22,6 @@ export const metadata: Metadata = {
  * `xp_events` and the XP leaderboard RPC. See BeltLadder for the data contract.
  */
 export default function BeltsPage() {
+  if (isDesignV2()) return <BeltLadderV2 />;
   return <BeltLadder />;
 }

@@ -3,7 +3,13 @@
  * the five rung cards. The founding states (an empty ladder, an unreadable
  * distribution) are designed copy inside BeltLadder.
  */
+import V2Skeleton from "@/components/cc/V2Skeleton";
+import { designV2Enabled } from "@/lib/design-flag";
+
 export default function Loading() {
+  // Flag on ⇒ the v2 shimmer skeleton on the same ladder footprint; flag off ⇒
+  // the existing v1 warm-paper skeleton below, byte-identical to prod.
+  if (designV2Enabled()) return <V2Skeleton variant="ladder" />;
   return (
     <div className="mx-auto max-w-2xl space-y-4" aria-busy="true">
       <div className="h-9 w-28 rounded bg-sand/60 motion-safe:animate-pulse" />

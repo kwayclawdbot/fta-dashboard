@@ -27,7 +27,11 @@ const DARK_META = "#17120B";
 export function getThemePref(): ThemePref {
   if (typeof window === "undefined") return "light";
   const v = window.localStorage.getItem(THEME_KEY);
-  return v === "dark" || v === "system" ? v : "light";
+  if (v === "dark" || v === "system" || v === "light") return v;
+  // No saved preference: under the v2 design the primary canvas is DARK —
+  // the light "paper twin" is the alternate, not the default. v1 keeps light.
+  if (process.env.NEXT_PUBLIC_DESIGN_V2 === "1") return "dark";
+  return "light";
 }
 
 export function systemPrefersDark(): boolean {

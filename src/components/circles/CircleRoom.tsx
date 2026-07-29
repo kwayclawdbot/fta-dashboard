@@ -6,6 +6,8 @@ import { ArrowLeft, RotateCcw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { deriveRegister } from "@/lib/register";
+import { designV2Enabled } from "@/lib/design-flag";
+import CircleRoomV2 from "./CircleRoomV2";
 import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import { beltForXp } from "@/lib/belts";
 import Avatar from "@/components/Avatar";
@@ -83,6 +85,10 @@ const STANCE_WORD: Record<CircleStance, string> = {
 };
 
 export default function CircleRoomSurface({ slug }: { slug: string }) {
+  // v2 canvas (Cheat Code App board 23). Flag OFF ⇒ the original body below runs
+  // unchanged; the check is a build constant so this early return is stable.
+  if (designV2Enabled()) return <CircleRoomV2 slug={slug} />;
+
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [missingSchema, setMissingSchema] = useState(false);

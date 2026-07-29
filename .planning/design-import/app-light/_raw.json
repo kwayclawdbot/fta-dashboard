@@ -1,0 +1,5351 @@
+{
+  "key": "app-light",
+  "file": "/Users/kwaysclawd/Desktop/Cheat Code App Light (Standalone).html",
+  "header": "CHEAT CODE · LIGHT THEME · SAME SYSTEM\nCHEAT CODE CLUB\nThe reference UX rebuilt screen-for-screen: warm paper ground, same signal-orange system, green/pink for market truth, belts and rings for status, script section marks. Dark theme lives in Cheat Code App.dc.html; every token has a 1:1 light twin.",
+  "canvasBg": "#E9E5DC",
+  "boards": [
+    {
+      "slug": "01-home",
+      "label": "01 HOME",
+      "num": "01",
+      "title": "HOME",
+      "texts": [
+        "Cheat Code",
+        "Club",
+        "12",
+        "MH",
+        "GM, Marcus 👋",
+        "Here's what the Club is seeing",
+        "Top in",
+        "the club",
+        "Live ranking by member attention & conviction",
+        "1",
+        "N",
+        "NVDA",
+        "78%",
+        "▲ 6",
+        "2",
+        "T",
+        "TSLA",
+        "64%",
+        "▲ 3",
+        "3",
+        "A",
+        "AMD",
+        "61%",
+        "▲ 12",
+        "4",
+        "A",
+        "AAPL",
+        "56%",
+        "▲ 2",
+        "5",
+        "P",
+        "PLTR",
+        "53%",
+        "▲ 9",
+        "TODAY IN 30 SECONDS",
+        "Tech leads as AI optimism pushes semis higher.",
+        "SPY",
+        "▲1.02%",
+        "QQQ",
+        "▲1.35%",
+        "VIX",
+        "▼4.21%",
+        "Your signals",
+        "See all",
+        "N",
+        "NVDA",
+        "Kai Watch: Getting Close",
+        "＋",
+        "T",
+        "TSLA",
+        "Earnings in 3 days",
+        "2",
+        "S",
+        "SMCI",
+        "24 new opinions",
+        "→",
+        "YOU ·",
+        "Black Belt",
+        "XP 12,840 / 15,000",
+        "87",
+        "SCORE",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "02-discover",
+      "label": "02 DISCOVER",
+      "num": "02",
+      "title": "DISCOVER",
+      "texts": [
+        "discover",
+        "Find what the Club is paying attention to",
+        "≋",
+        "Rising fast",
+        "See all",
+        "Attention over the last 24h",
+        "SMCI",
+        "▲ 324%",
+        "1.2K watching",
+        "PLTR",
+        "▲ 210%",
+        "2.3K watching",
+        "SOFI",
+        "▲ 167%",
+        "889 watching",
+        "Most divisive",
+        "→",
+        "Biggest split in opinions",
+        "32%",
+        "BULLISH",
+        "N",
+        "NFLX",
+        "68%",
+        "BEARISH",
+        "2.4K opinions",
+        "Black belts are watching",
+        "See all",
+        "N",
+        "NVDA",
+        "A",
+        "AAPL",
+        "M",
+        "MSFT",
+        "C",
+        "CRWD",
+        "A",
+        "AMZN",
+        "From quiet to loud",
+        "Names the Club just woke up on",
+        "IONQ",
+        "APP",
+        "RIVN",
+        "LCID",
+        "OKLO",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "03-ticker-nvda",
+      "label": "03 TICKER · NVDA",
+      "num": "03",
+      "title": "TICKER · NVDA",
+      "texts": [
+        "←",
+        "★",
+        "↗",
+        "N",
+        "NVIDIA",
+        "#1 in the Club ›",
+        "$173.42",
+        "▲ 4.72% today",
+        "826 watching now",
+        "TR",
+        "KD",
+        "OG",
+        "9:30 AM",
+        "12:00 PM",
+        "2:30 PM",
+        "4:00 PM",
+        "1D",
+        "1W",
+        "1M",
+        "3M",
+        "1Y",
+        "ALL",
+        "Where the club stands",
+        "· Raw sentiment",
+        "71%",
+        "BULLISH",
+        "78",
+        "%",
+        "WEIGHTED",
+        "SIGNAL",
+        "21%",
+        "BEARISH",
+        "4,312",
+        "Total opinions",
+        "+14 ›",
+        "Shift today",
+        "88%",
+        "Black Belts",
+        "#1 ›",
+        "Club Rank",
+        "Active circle",
+        "···",
+        "N",
+        "NVDA Earnings",
+        "· 7 days left",
+        "1.8K members",
+        "Join Circle",
+        "Top voices",
+        "See all",
+        "Highest reputation takes",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "04-club-feed",
+      "label": "04 CLUB · FEED",
+      "num": "04",
+      "title": "CLUB · FEED",
+      "texts": [
+        "club",
+        "+",
+        "FEED",
+        "CIRCLES",
+        "LIVE",
+        "Happening now",
+        "See all",
+        "N",
+        "NVDA Earnings",
+        "⏳ 6d 14h",
+        "· 1.8K joined",
+        "🏛",
+        "Fed Decision",
+        "⏳ 1d 20h",
+        "· 862 joined",
+        "T",
+        "Tesla Robotaxi",
+        "⏳ 10d 3h",
+        "· 1.2K joined",
+        "MH",
+        "What's your take?",
+        "Share an opinion, chart, or question",
+        "📈 🖼",
+        "MH",
+        "Marcus Hill",
+        "Black Belt",
+        "$NVDA",
+        "2m ···",
+        "Blackwell demand is even stronger than the Street expects.",
+        "👍 42",
+        "💬 17",
+        "💡 8",
+        "🔖",
+        "Changed my mind",
+        "TR",
+        "Tiffany R.",
+        "Blue Belt",
+        "$TSLA",
+        "Bearish",
+        "→",
+        "Neutral",
+        "The Robotaxi event changed my view short term. Let's see execution.",
+        "🔥 31",
+        "💬 12",
+        "🔖",
+        "🐋",
+        "Kai Insight",
+        "Unusual options flow detected",
+        "$AMD ›",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "05-live-the-club-room",
+      "label": "05 LIVE · THE CLUB ROOM",
+      "num": "05",
+      "title": "LIVE · THE CLUB ROOM",
+      "texts": [
+        "live",
+        "LIVE NOW",
+        "Market Open · The Club Room",
+        "Hosted by Maya & JC · 2.3K in room",
+        "Join",
+        "Photo · hosts on stage",
+        "Maya",
+        "JC 🎙",
+        "Room sentiment",
+        "$NVDA",
+        "72%",
+        "BULLISH",
+        "▲ 8% since open",
+        "34",
+        "Changed Bullish",
+        "12",
+        "Changed Bearish",
+        "🔥 128",
+        "❤️ 89",
+        "⚡ 64",
+        "👀 52 ›",
+        "💬",
+        "DK",
+        "DeShawn K.",
+        "asked about semis exposure",
+        "now",
+        "AL",
+        "Aisha L.",
+        "shared a chart ·",
+        "$SMCI",
+        "1m",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "06-watch",
+      "label": "06 WATCH",
+      "num": "06",
+      "title": "WATCH",
+      "texts": [
+        "watch",
+        "✕",
+        "OVERVIEW",
+        "WATCHLIST",
+        "KAI WATCH",
+        "ALERTS",
+        "📈",
+        "My Watchlist",
+        "28 symbols",
+        "›",
+        "🐋",
+        "Kai Watch",
+        "6 active setups",
+        "2",
+        "🗓",
+        "Earnings Calendar",
+        "This week: 17 companies",
+        "›",
+        "🔁",
+        "Opinion Changes",
+        "4 tickers shifted today",
+        "›",
+        "Getting close",
+        "NVDA Bullish Break",
+        "2/3",
+        "✓",
+        "Price above 176",
+        "✓",
+        "Volume expansion",
+        "●",
+        "Call flow increase",
+        "Est. Trigger:",
+        "Today",
+        "T",
+        "TSLA earnings setup",
+        "· 1/3 conditions",
+        "3 days",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "07-you-profile",
+      "label": "07 YOU · PROFILE",
+      "num": "07",
+      "title": "YOU · PROFILE",
+      "texts": [
+        "you",
+        "⚙",
+        "MH",
+        "Marcus Hill",
+        "Black Belt",
+        "★",
+        "Top 2% of 25,842 members",
+        "87",
+        "OPINION",
+        "SCORE",
+        "Influence",
+        "1.8x",
+        "Your opinions carry 1.8x more weight",
+        "Strongest areas",
+        "Semiconductors",
+        "Top 4%",
+        "AI & Tech",
+        "Top 7%",
+        "Options",
+        "Top 18%",
+        "142",
+        "Opinions",
+        "71%",
+        "Accuracy",
+        "382",
+        "People Influenced",
+        "47",
+        "Changed Minds",
+        "6",
+        "Circles Hosted",
+        "🔥",
+        "Your streak",
+        "16",
+        "days in a row",
+        "Recent calls",
+        "See all",
+        "NVDA",
+        "Bullish · called the bounce",
+        "✓ +6.4%",
+        "TSLA",
+        "Bearish · early on the fade",
+        "✗ −2.1%",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "08-learn",
+      "label": "08 LEARN",
+      "num": "08",
+      "title": "LEARN",
+      "texts": [
+        "learn",
+        "Your paths",
+        "📊",
+        "Markets 101",
+        "Level 6",
+        "76%",
+        "📈",
+        "Technical Analysis",
+        "Level 4",
+        "58%",
+        "🎯",
+        "Options Basics",
+        "Level 3",
+        "42%",
+        "🧱",
+        "Fundamentals",
+        "Level 2",
+        "31%",
+        "Continue",
+        "Reading",
+        "Earnings Reports",
+        "Lesson 5 of 8",
+        "Continue",
+        "Your streak",
+        "🔥",
+        "16",
+        "Days in a row",
+        "Up next",
+        "🎧",
+        "Why conviction beats prediction · 12 min",
+        "›",
+        "📖",
+        "Reading options flow like a Black Belt · 8 min",
+        "›",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "09-splash",
+      "label": "09 SPLASH",
+      "num": "09",
+      "title": "SPLASH",
+      "texts": [
+        "Cheat Code",
+        "Club",
+        "trade with your people",
+        "Reading the room…"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "10-login",
+      "label": "10 LOGIN",
+      "num": "10",
+      "title": "LOGIN",
+      "texts": [
+        "Cheat Code",
+        "Club",
+        "GM. 👋",
+        "25,842 members are already reading the room. Sign in to see what the Club is seeing.",
+        "Continue with Apple",
+        "G",
+        "Continue with Google",
+        "OR",
+        "Email address",
+        "Sign in",
+        "New here?",
+        "Join the Club →",
+        "By continuing you agree to the Terms & Privacy Policy.",
+        "Not investment advice. Opinions are the Club's, not brokers'."
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "11-pricing",
+      "label": "11 PRICING",
+      "num": "11",
+      "title": "PRICING",
+      "texts": [
+        "✕",
+        "Restore",
+        "go pro",
+        "Unlock the full signal. Keep your edge.",
+        "Annual −33%",
+        "Monthly",
+        "BEST VALUE",
+        "Club Pro",
+        "Everything. Every signal.",
+        "$99",
+        "/yr",
+        "$8.25/mo",
+        "✓",
+        "Weighted signal + full sentiment history",
+        "✓",
+        "Kai Watch — unlimited setups & alerts",
+        "✓",
+        "Every live room + room replays",
+        "✓",
+        "Black Belt analytics on your calls",
+        "✓",
+        "Host your own Circles",
+        "Member",
+        "Run with the Club",
+        "Free",
+        "✓",
+        "Feed, opinions & raw sentiment",
+        "✓",
+        "1 Circle + open live rooms",
+        "✓",
+        "3 Kai Watch setups",
+        "★★★★★",
+        "4.8 · 12K ratings",
+        "25,842",
+        "members in the Club",
+        "↩",
+        "Cancel anytime",
+        "DK",
+        "\"Kai Watch alone pays for the year. Caught the NVDA break a day early.\"",
+        "Start 7-day free trial",
+        "Cancel anytime · Billed $99 after trial"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "12-ticker-technicals",
+      "label": "12 TICKER · TECHNICALS",
+      "num": "12",
+      "title": "TICKER · TECHNICALS",
+      "texts": [
+        "←",
+        "N",
+        "NVDA",
+        "$173.42",
+        "▲4.72%",
+        "Overview",
+        "Technicals",
+        "Fundamentals",
+        "Kai",
+        "SELL",
+        "BUY",
+        "Technical signal",
+        "BUY",
+        "8 of 12",
+        "indicators bullish",
+        "RSI · 14D",
+        "62",
+        "30",
+        "70",
+        "MACD",
+        "CROSS ▲",
+        "Key levels",
+        "R2 196",
+        "R1 184",
+        "173.42",
+        "S1 166",
+        "S2 158",
+        "Pattern detected",
+        "Ascending Triangle",
+        "Breakout zone 176–178 · 72% historical follow-through",
+        "▲ 20D",
+        "Above MA20",
+        "▲ 50D",
+        "Above MA50",
+        "▲ 200D",
+        "Above MA200",
+        "1.4x",
+        "Rel. volume",
+        "Technicals refresh every 15 min · Not investment advice"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "13-ticker-fundamentals",
+      "label": "13 TICKER · FUNDAMENTALS",
+      "num": "13",
+      "title": "TICKER · FUNDAMENTALS",
+      "texts": [
+        "←",
+        "N",
+        "NVDA",
+        "$173.42",
+        "▲4.72%",
+        "Overview",
+        "Technicals",
+        "Fundamentals",
+        "Kai",
+        "A−",
+        "Financial health",
+        "Elite grower",
+        "Top 3% margins · fortress balance sheet",
+        "Revenue",
+        "+114% YoY",
+        "$27B",
+        "FY23",
+        "$61B",
+        "FY24",
+        "$130B",
+        "FY25",
+        "$184B",
+        "FY26E",
+        "75%",
+        "Gross margin",
+        "62%",
+        "Op. margin",
+        "49%",
+        "FCF margin",
+        "Valuation vs peers · Fwd P/E",
+        "NVDA",
+        "34x",
+        "AMD",
+        "41x",
+        "AVGO",
+        "31x",
+        "Cheaper than AMD on forward earnings despite 2x the growth rate.",
+        "Fundamentals from latest 10-Q · FY26 = consensus est."
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "14-ticker-kai-report",
+      "label": "14 TICKER · KAI REPORT",
+      "num": "14",
+      "title": "TICKER · KAI REPORT",
+      "texts": [
+        "←",
+        "N",
+        "NVDA",
+        "$173.42",
+        "▲4.72%",
+        "Overview",
+        "Technicals",
+        "Fundamentals",
+        "Kai",
+        "🐋",
+        "Kai's verdict · updated 6:02 AM",
+        "Accumulate",
+        "82%",
+        "CONF",
+        "Demand signals continue outrunning supply. Flow, sentiment and fundamentals all point the same direction into earnings — with one caveat below.",
+        "Call flow surged 3.1x average",
+        "Institutional sweeps concentrated at the 180–185 strikes for August.",
+        "Sentiment diverging from price",
+        "Club conviction rising while short interest quietly unwinds — historically bullish.",
+        "34%",
+        "Watch: concentration risk",
+        "Top 3 customers = 34% of revenue. A single order delay moves the quarter.",
+        "What would change Kai's mind",
+        "Close below S1 (166) on above-average volume",
+        "Data-center guidance under $45B for Q3",
+        "Club weighted signal falling under 60%",
+        "Set Kai Watch",
+        "Share report"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "15-discover-screener",
+      "label": "15 DISCOVER · SCREENER",
+      "num": "15",
+      "title": "DISCOVER · SCREENER",
+      "texts": [
+        "discover",
+        "FOR YOU",
+        "SCREENER",
+        "TRENDING",
+        "Tech ✕",
+        "Mkt cap > $10B ✕",
+        "Signal > 70% ✕",
+        "+ Filter",
+        "14 MATCHES · SORTED BY CLUB SIGNAL",
+        "Save screen",
+        "N",
+        "NVDA",
+        "$173.42",
+        "▲4.7%",
+        "78%",
+        "P",
+        "PLTR",
+        "$156.90",
+        "▲2.1%",
+        "74%",
+        "A",
+        "AMD",
+        "$182.10",
+        "▲1.9%",
+        "71%",
+        "Club's most bullish",
+        "NVDA",
+        "78%",
+        "PLTR",
+        "74%",
+        "AMD",
+        "71%",
+        "Club's most bearish",
+        "NFLX",
+        "68%",
+        "RIVN",
+        "61%",
+        "LCID",
+        "57%",
+        "Trending in the club",
+        "🔥 SMCI",
+        "+324%",
+        "🔥 IONQ",
+        "+188%",
+        "SOFI",
+        "+167%",
+        "OKLO",
+        "+140%",
+        "APP",
+        "−12%",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "16-club-circles",
+      "label": "16 CLUB · CIRCLES",
+      "num": "16",
+      "title": "CLUB · CIRCLES",
+      "texts": [
+        "club",
+        "+ Start a Circle",
+        "FEED",
+        "CIRCLES",
+        "LIVE",
+        "Breakout rooms around one event or thesis. Every Circle expires — 30 days max, then the receipts get graded.",
+        "N",
+        "NVDA Earnings",
+        "Semis ·",
+        "6d 14h",
+        "· 1.8K",
+        "🏛",
+        "Fed Decision",
+        "Macro ·",
+        "1d 20h",
+        "· 862",
+        "T",
+        "Tesla Robotaxi",
+        "EV ·",
+        "10d 3h",
+        "· 1.2K",
+        "🤖",
+        "AI Capex Cycle",
+        "Thesis ·",
+        "16d",
+        "· 940",
+        "⚡",
+        "Nuclear Trade",
+        "Energy ·",
+        "21d",
+        "· 612",
+        "💊",
+        "GLP-1 Winners",
+        "Health ·",
+        "14d",
+        "· 505",
+        "🪙",
+        "BTC Halving+1yr",
+        "Crypto ·",
+        "24d",
+        "· 488",
+        "✈️",
+        "Defense Budget",
+        "Macro ·",
+        "27d",
+        "· 390",
+        "+",
+        "Start yours",
+        "30 days on the clock",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "17-watchlist-club-picks",
+      "label": "17 WATCHLIST · CLUB PICKS",
+      "num": "17",
+      "title": "WATCHLIST · CLUB PICKS",
+      "texts": [
+        "watch",
+        "OVERVIEW",
+        "WATCHLIST",
+        "KAI WATCH",
+        "ALERTS",
+        "Official club picks",
+        "JULY",
+        "Voted by Black Belts · graded at month end",
+        "N",
+        "NVDA",
+        "$173.42",
+        "▲4.7%",
+        "Pick #1 · entered $158.20 ·",
+        "+9.6% since",
+        "78%",
+        "OG",
+        "\"Data-center backlog covers the whole year. Dips are gifts until 200.\"",
+        "Black Belt",
+        "P",
+        "PLTR",
+        "$156.90",
+        "▲2.1%",
+        "Pick #2 · entered $149.00 ·",
+        "+5.3% since",
+        "74%",
+        "VH",
+        "\"Gov contracts re-rate the multiple. Commercial is the free option.\"",
+        "Black Belt",
+        "A",
+        "AMZN",
+        "$228.15",
+        "▼0.8%",
+        "Pick #3 · entered $224.40 ·",
+        "+1.7% since",
+        "66%",
+        "DD",
+        "\"AWS re-acceleration + ads. The quiet compounder of the three.\"",
+        "Black Belt",
+        "📊",
+        "June picks graded:",
+        "3W",
+        "·",
+        "1L",
+        "· avg",
+        "+7.2%",
+        "›",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "18-watch-kai-alerts",
+      "label": "18 WATCH · KAI ALERTS",
+      "num": "18",
+      "title": "WATCH · KAI ALERTS",
+      "texts": [
+        "watch",
+        "OVERVIEW",
+        "WATCHLIST",
+        "KAI WATCH",
+        "ALERTS",
+        "🐋",
+        "Kai's daily alerts for you",
+        "Generated from your watchlist & positions · 6:02 AM",
+        "3 NEW",
+        "Today",
+        "BUY SIGNAL",
+        "NVDA",
+        "6:02 AM",
+        "Bullish break setup completed 3 of 3 conditions. Entry zone",
+        "173–176",
+        ", invalidation below",
+        "166",
+        ".",
+        "RSI reset ✓",
+        "Call flow 3.1x ✓",
+        "Club shift +14 ✓",
+        "View setup",
+        "Share to Club",
+        "SELL SIGNAL",
+        "RIVN",
+        "6:02 AM",
+        "Distribution pattern confirmed — declining volume on every bounce. Kai flags exit into strength above",
+        "14.80",
+        ".",
+        "Lower highs ✗",
+        "Club 61% bearish",
+        "Put flow rising",
+        "View setup",
+        "Dismiss",
+        "HEADS UP",
+        "TSLA",
+        "6:02 AM",
+        "Earnings in 3 days. Implied move",
+        "±8.4%",
+        "— the Club flipped 24 opinions this week. Consider sizing down.",
+        "Yesterday",
+        "BUY",
+        "SMCI",
+        "Triggered ·",
+        "+6.1% since",
+        "›",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "19-alert-view-setup",
+      "label": "19 ALERT · VIEW SETUP",
+      "num": "19",
+      "title": "ALERT · VIEW SETUP",
+      "texts": [
+        "←",
+        "NVDA Bullish Break",
+        "Kai Watch setup · created 4 days ago",
+        "3/3 LIVE",
+        "The setup on the chart",
+        "$173.42",
+        "▲4.7%",
+        "ENTRY 173–176",
+        "INVALID < 166",
+        "Conditions · all met",
+        "✓",
+        "Price above 176 resistance",
+        "176.20 ✓",
+        "✓",
+        "Volume expansion > 1.3x avg",
+        "1.4x ✓",
+        "✓",
+        "Call flow increase > 2x",
+        "3.1x ✓",
+        "Notify me",
+        "Push when all conditions hold",
+        "Invalidation warning (close < 166)",
+        "Club sentiment shift ±10 pts",
+        "📜",
+        "This setup historically:",
+        "72% follow-through",
+        "· 41 triggers",
+        "›",
+        "Alert armed ✓",
+        "Share"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "20-learn-path",
+      "label": "20 LEARN · PATH",
+      "num": "20",
+      "title": "LEARN · PATH",
+      "texts": [
+        "learn",
+        "🔥 16",
+        "⚡ 1,240 XP",
+        "Unit 2 · Markets 101",
+        "Reading Earnings Reports",
+        "Guide",
+        "✓",
+        "What moves price",
+        "✓",
+        "EPS & revenue",
+        "★",
+        "Guidance > results",
+        "🔒",
+        "Implied move",
+        "🏆",
+        "Unit test · 40 XP",
+        "🎁",
+        "XP chest",
+        "🎬",
+        "Motion recap",
+        "🔒",
+        "Up next · Unit 3",
+        "Options Basics · 6 lessons",
+        "80 XP",
+        "⌂",
+        "Home",
+        "◎",
+        "Discover",
+        "✦",
+        "Club",
+        "▣",
+        "Watch",
+        "◉",
+        "You"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "21-learn-micro-lesson",
+      "label": "21 LEARN · MICRO LESSON",
+      "num": "21",
+      "title": "LEARN · MICRO LESSON",
+      "texts": [
+        "✕",
+        "3/5",
+        "The company beat earnings but the stock dropped 8%. Why?",
+        "Animated scene · 12s",
+        "EPS BEAT ✓",
+        "−8%",
+        "A",
+        "The beat was priced in already",
+        "B",
+        "Guidance came in below expectations",
+        "C",
+        "Short sellers attacked the print",
+        "D",
+        "The market was closed",
+        "+10 XP",
+        "Check"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "22-belts-rank-system",
+      "label": "22 BELTS · RANK SYSTEM",
+      "num": "22",
+      "title": "BELTS · RANK SYSTEM",
+      "texts": [
+        "←",
+        "belts",
+        "Rank is earned from graded calls, not follower counts. Your belt travels with you everywhere in the Club.",
+        "White Belt",
+        "Joined · first opinion posted",
+        "62% OF CLUB",
+        "Yellow Belt",
+        "10 graded calls · 50%+ accuracy",
+        "21%",
+        "Green Belt",
+        "40 calls · 58%+ · 1 sector top-25%",
+        "10%",
+        "Blue Belt",
+        "100 calls · 62%+ · influence 1.2x",
+        "5%",
+        "Purple Belt",
+        "250 calls · 66%+ · hosted a Circle",
+        "1.6%",
+        "★",
+        "Black Belt",
+        "— YOU ARE HERE",
+        "500+ calls · 70%+ · weighted signal voter",
+        "0.4%",
+        "How belts show up",
+        "TR",
+        "Tiffany R.",
+        "Blue Belt",
+        "Avatar ring = belt color, everywhere",
+        "OG",
+        "OptionsOG",
+        "Black Belt",
+        "🔥×7",
+        "Black Belts get the orange live-node dot",
+        "DK",
+        "DeShawn K.",
+        "Yellow Belt",
+        "Belt chip sits beside the name on every post",
+        "🎯",
+        "Next: Red-stripe Black Belt",
+        "Keep 70%+ accuracy for 2 more months"
+      ],
+      "w": 392,
+      "h": 846
+    },
+    {
+      "slug": "23-inside-a-circle",
+      "label": "23 INSIDE A CIRCLE",
+      "num": "23",
+      "title": "INSIDE A CIRCLE",
+      "texts": [
+        "←",
+        "N",
+        "NVDA Earnings",
+        "⏳ 6d 14h",
+        "· 1,804 members ·",
+        "312 online",
+        "📌",
+        "👥",
+        "# takes",
+        "# charts",
+        "# receipts",
+        "🔊 live",
+        "📌",
+        "Circle thesis:",
+        "Blackwell demand > guidance. Graded at close on ER day.",
+        "›",
+        "TODAY",
+        "OG",
+        "OptionsOG",
+        "BB",
+        "9:41 AM",
+        "Checks from Taiwan overnight — CoWoS capacity fully booked through Q2. The",
+        "$NVDA",
+        "supply story is intact.",
+        "🔥 24",
+        "🐂 18",
+        "💡 7",
+        "TR",
+        "Tiffany R.",
+        "9:44 AM",
+        "Counter: implied move is only ±7.8%. Market's already paying for the beat.",
+        "↩ 6 replies",
+        "last 2m ago",
+        "DD",
+        "DataDive",
+        "9:52 AM",
+        "Posted the hyperscaler capex chart 👇",
+        "HYPERSCALER CAPEX · $B/QTR",
+        "📈 31",
+        "🔥 12",
+        "🐋",
+        "Kai",
+        "· Circle sentiment moved",
+        "+6 pts bullish",
+        "in the last hour",
+        "AUTO",
+        "DK",
+        "DeShawn K.",
+        "10:02 AM",
+        "@OptionsOG what strikes are you playing into the print?",
+        "OptionsOG",
+        "is typing…",
+        "+",
+        "Message # takes",
+        "📈",
+        "➤"
+      ],
+      "w": 392,
+      "h": 846
+    }
+  ],
+  "tokens": {
+    "colors": [
+      {
+        "token": "orange-100",
+        "hex": "#E5DFD5",
+        "count": 276,
+        "roles": [
+          "border",
+          "bg",
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-900",
+        "hex": "#1A1614",
+        "count": 241,
+        "roles": [
+          "text",
+          "bg",
+          "border"
+        ]
+      },
+      {
+        "token": "orange-400",
+        "hex": "#9B9289",
+        "count": 199,
+        "roles": [
+          "text",
+          "bg"
+        ]
+      },
+      {
+        "token": "neutral-0",
+        "hex": "#FFFFFF",
+        "count": 198,
+        "roles": [
+          "bg",
+          "gradient",
+          "border",
+          "text"
+        ]
+      },
+      {
+        "token": "neutral-500",
+        "hex": "#7B7369",
+        "count": 172,
+        "roles": [
+          "text",
+          "border",
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-400-b",
+        "hex": "#FF7A1A",
+        "count": 146,
+        "roles": [
+          "bg",
+          "text",
+          "border",
+          "gradient"
+        ]
+      },
+      {
+        "token": "neutral-950",
+        "hex": "#000000",
+        "count": 119,
+        "roles": [
+          "border",
+          "text"
+        ]
+      },
+      {
+        "token": "teal-600",
+        "hex": "#0BA05A",
+        "count": 113,
+        "roles": [
+          "text",
+          "gradient",
+          "border",
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-50",
+        "hex": "#F7F4EF",
+        "count": 86,
+        "roles": [
+          "bg",
+          "border",
+          "text",
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-500",
+        "hex": "#D95E00",
+        "count": 58,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "orange-700",
+        "hex": "#4E463E",
+        "count": 51,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "orange-100-b",
+        "hex": "#D8D0C4",
+        "count": 47,
+        "roles": [
+          "bg",
+          "border"
+        ]
+      },
+      {
+        "token": "red-400",
+        "hex": "#D92652",
+        "count": 36,
+        "roles": [
+          "text",
+          "gradient",
+          "bg",
+          "border"
+        ]
+      },
+      {
+        "token": "amber-500",
+        "hex": "#D99A00",
+        "count": 23,
+        "roles": [
+          "text",
+          "gradient",
+          "border",
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-800",
+        "hex": "#2E2925",
+        "count": 21,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "neutral-950a00",
+        "hex": "#000000/0",
+        "count": 19,
+        "roles": [
+          "border",
+          "gradient"
+        ]
+      },
+      {
+        "token": "lime-600",
+        "hex": "#76B900",
+        "count": 14,
+        "roles": [
+          "text",
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-100-c",
+        "hex": "#F2DCC2",
+        "count": 14,
+        "roles": [
+          "border",
+          "bg"
+        ]
+      },
+      {
+        "token": "lime-900",
+        "hex": "#101408",
+        "count": 13,
+        "roles": [
+          "bg",
+          "gradient"
+        ]
+      },
+      {
+        "token": "blue-500",
+        "hex": "#0E86BE",
+        "count": 10,
+        "roles": [
+          "text",
+          "gradient",
+          "bg"
+        ]
+      },
+      {
+        "token": "blue-300",
+        "hex": "#3D8BFF",
+        "count": 9,
+        "roles": [
+          "text",
+          "border",
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-50-b",
+        "hex": "#FFEEDD",
+        "count": 8,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-600",
+        "hex": "#5A534C",
+        "count": 8,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "red-100",
+        "hex": "#F0BFCB",
+        "count": 8,
+        "roles": [
+          "gradient",
+          "border"
+        ]
+      },
+      {
+        "token": "green-200",
+        "hex": "#96D4B4",
+        "count": 8,
+        "roles": [
+          "gradient",
+          "border"
+        ]
+      },
+      {
+        "token": "orange-400a18",
+        "hex": "#FF7A1A/0.18",
+        "count": 7,
+        "roles": [
+          "shadow",
+          "bg"
+        ]
+      },
+      {
+        "token": "red-900",
+        "hex": "#1A0E10",
+        "count": 7,
+        "roles": [
+          "bg",
+          "gradient"
+        ]
+      },
+      {
+        "token": "green-100",
+        "hex": "#D4F0E0",
+        "count": 7,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-200",
+        "hex": "#C4BBAD",
+        "count": 6,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "violet-200",
+        "hex": "#A66BFF",
+        "count": 6,
+        "roles": [
+          "border",
+          "gradient",
+          "text",
+          "bg"
+        ]
+      },
+      {
+        "token": "red-400-b",
+        "hex": "#E82127",
+        "count": 5,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-900",
+        "hex": "#0E1216",
+        "count": 5,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-500-b",
+        "hex": "#7A6A5E",
+        "count": 5,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-100",
+        "hex": "#B7D3E6",
+        "count": 5,
+        "roles": [
+          "border",
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-400-c",
+        "hex": "#E08A3C",
+        "count": 5,
+        "roles": [
+          "gradient",
+          "shadow"
+        ]
+      },
+      {
+        "token": "green-300",
+        "hex": "#6FCB9B",
+        "count": 4,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "blue-50",
+        "hex": "#E4F1FA",
+        "count": 4,
+        "roles": [
+          "bg",
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-50-c",
+        "hex": "#FFE9D6",
+        "count": 3,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-400a25",
+        "hex": "#FF7A1A/0.25",
+        "count": 3,
+        "roles": [
+          "shadow"
+        ]
+      },
+      {
+        "token": "neutral-0a55",
+        "hex": "#FFFFFF/0.55",
+        "count": 3,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-300",
+        "hex": "#FFB25E",
+        "count": 3,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-400a12",
+        "hex": "#FF7A1A/0.12",
+        "count": 3,
+        "roles": [
+          "bg",
+          "shadow"
+        ]
+      },
+      {
+        "token": "orange-400a20",
+        "hex": "#FF7A1A/0.2",
+        "count": 3,
+        "roles": [
+          "shadow"
+        ]
+      },
+      {
+        "token": "orange-400a15",
+        "hex": "#FF7A1A/0.15",
+        "count": 3,
+        "roles": [
+          "shadow",
+          "border"
+        ]
+      },
+      {
+        "token": "orange-400a22",
+        "hex": "#FF7A1A/0.22",
+        "count": 3,
+        "roles": [
+          "gradient",
+          "shadow"
+        ]
+      },
+      {
+        "token": "orange-400a35",
+        "hex": "#FF7A1A/0.35",
+        "count": 3,
+        "roles": [
+          "border",
+          "shadow"
+        ]
+      },
+      {
+        "token": "pink-800",
+        "hex": "#3A2530",
+        "count": 3,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-200-b",
+        "hex": "#F0B375",
+        "count": 3,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "green-400a12",
+        "hex": "#4AE383/0.12",
+        "count": 3,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "green-400a14",
+        "hex": "#4AE383/0.14",
+        "count": 3,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "amber-0",
+        "hex": "#FBF8F2",
+        "count": 3,
+        "roles": [
+          "bg",
+          "border"
+        ]
+      },
+      {
+        "token": "magenta-900",
+        "hex": "#140E14",
+        "count": 2,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "red-400-c",
+        "hex": "#ED1C24",
+        "count": 2,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "amber-900",
+        "hex": "#141208",
+        "count": 2,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-400-d",
+        "hex": "#FF9900",
+        "count": 2,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "orange-400a50",
+        "hex": "#FF7A1A/0.5",
+        "count": 2,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "red-200",
+        "hex": "#EBA7B6",
+        "count": 2,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "red-100-b",
+        "hex": "#F3D2DA",
+        "count": 2,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "indigo-850",
+        "hex": "#171226",
+        "count": 2,
+        "roles": [
+          "bg",
+          "gradient"
+        ]
+      },
+      {
+        "token": "violet-850",
+        "hex": "#221A26",
+        "count": 2,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "violet-850-b",
+        "hex": "#1B1520",
+        "count": 2,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-100-d",
+        "hex": "#FFDFC2",
+        "count": 2,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "lime-200",
+        "hex": "#C9DCA8",
+        "count": 2,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "blue-50-b",
+        "hex": "#DDEDF8",
+        "count": 2,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "neutral-400",
+        "hex": "#8A8178",
+        "count": 2,
+        "roles": [
+          "text",
+          "bg"
+        ]
+      },
+      {
+        "token": "blue-300-b",
+        "hex": "#7FA8C4",
+        "count": 2,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "blue-50-c",
+        "hex": "#EDF5FB",
+        "count": 2,
+        "roles": [
+          "bg",
+          "gradient"
+        ]
+      },
+      {
+        "token": "blue-600",
+        "hex": "#43607A",
+        "count": 2,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "lime-50",
+        "hex": "#EAF3DC",
+        "count": 2,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-100-e",
+        "hex": "#D9D3C8",
+        "count": 2,
+        "roles": [
+          "shadow"
+        ]
+      },
+      {
+        "token": "neutral-0a85",
+        "hex": "#FFFFFF/0.85",
+        "count": 2,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-400a14",
+        "hex": "#FF7A1A/0.14",
+        "count": 2,
+        "roles": [
+          "shadow",
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-50-d",
+        "hex": "#FFF1E4",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "red-500",
+        "hex": "#E50914",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-500-b",
+        "hex": "#00A4EF",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "red-300",
+        "hex": "#FF4D3D",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "green-400a06",
+        "hex": "#4AE383/0.06",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "green-400a15",
+        "hex": "#4AE383/0.15",
+        "count": 1,
+        "roles": [
+          "shadow"
+        ]
+      },
+      {
+        "token": "indigo-400",
+        "hex": "#6C3DF4",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "indigo-100",
+        "hex": "#C9B5FF",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-300-c",
+        "hex": "#3D5AFE",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "violet-900a90",
+        "hex": "#0D0B0E/0.9",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "neutral-0a70",
+        "hex": "#FFFFFF/0.7",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "lime-100",
+        "hex": "#E3F0CE",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "lime-400a16",
+        "hex": "#A3E635/0.16",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "yellow-300",
+        "hex": "#B8B8A0",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "lime-400",
+        "hex": "#A3E635",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "violet-100",
+        "hex": "#D6C4EC",
+        "count": 1,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "violet-50",
+        "hex": "#EEE4F8",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "violet-200a16",
+        "hex": "#A66BFF/0.16",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "violet-200-b",
+        "hex": "#B0A6C0",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-100-b",
+        "hex": "#B9D6EA",
+        "count": 1,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "blue-300a14",
+        "hex": "#5BC4F0/0.14",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "blue-300-d",
+        "hex": "#9BB4C4",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "orange-100-f",
+        "hex": "#FFE3C8",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-400a30",
+        "hex": "#FF7A1A/0.3",
+        "count": 1,
+        "roles": [
+          "shadow"
+        ]
+      },
+      {
+        "token": "blue-300-e",
+        "hex": "#4285F4",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-500-c",
+        "hex": "#5B7A94",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "lime-100-b",
+        "hex": "#D4E4B4",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "indigo-800",
+        "hex": "#2A2240",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "red-850",
+        "hex": "#3A1418",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "lime-100-c",
+        "hex": "#E7EFD1",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "lime-100-d",
+        "hex": "#DDE7C2",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "magenta-50",
+        "hex": "#F2DFF2",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "magenta-100",
+        "hex": "#E8DCE8",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "amber-100",
+        "hex": "#F5EBC8",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "amber-100-b",
+        "hex": "#EFE7C9",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "blue-50-d",
+        "hex": "#DCEBF7",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "blue-50-e",
+        "hex": "#E6F0F8",
+        "count": 1,
+        "roles": [
+          "gradient"
+        ]
+      },
+      {
+        "token": "orange-400a40",
+        "hex": "#FF7A1A/0.4",
+        "count": 1,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "red-300a14",
+        "hex": "#FF4D6D/0.14",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-300a14",
+        "hex": "#FFC24B/0.14",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-100-g",
+        "hex": "#F2CFA6",
+        "count": 1,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "neutral-0a10",
+        "hex": "#FFFFFF/0.1",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "neutral-0a20",
+        "hex": "#FFFFFF/0.2",
+        "count": 1,
+        "roles": [
+          "border"
+        ]
+      },
+      {
+        "token": "orange-400a90",
+        "hex": "#FF7A1A/0.9",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-400a08",
+        "hex": "#FF7A1A/0.08",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "orange-400a07",
+        "hex": "#FF7A1A/0.07",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "blue-200",
+        "hex": "#7FB3FF",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "green-300-b",
+        "hex": "#7FE3A8",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      },
+      {
+        "token": "blue-300a06",
+        "hex": "#5BC4F0/0.06",
+        "count": 1,
+        "roles": [
+          "bg"
+        ]
+      },
+      {
+        "token": "amber-600",
+        "hex": "#B07A00",
+        "count": 1,
+        "roles": [
+          "text"
+        ]
+      }
+    ],
+    "types": [
+      {
+        "token": "ty1",
+        "fontFamily": "Barlow Condensed",
+        "fontSize": "44px",
+        "fontWeight": "800",
+        "fontStyle": "italic",
+        "letterSpacing": "0.88px",
+        "lineHeight": "44px",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Cheat Code"
+        ]
+      },
+      {
+        "token": "ty2",
+        "fontFamily": "Kaushan Script",
+        "fontSize": "34px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "34px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 11,
+        "samples": [
+          "discover",
+          "club",
+          "live"
+        ]
+      },
+      {
+        "token": "ty3",
+        "fontFamily": "Kaushan Script",
+        "fontSize": "32px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "32px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "go pro"
+        ]
+      },
+      {
+        "token": "ty4",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "30px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.6px",
+        "lineHeight": "30px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "16"
+        ]
+      },
+      {
+        "token": "ty5",
+        "fontFamily": "Barlow Condensed",
+        "fontSize": "30px",
+        "fontWeight": "800",
+        "fontStyle": "italic",
+        "letterSpacing": "normal",
+        "lineHeight": "30px",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Cheat Code"
+        ]
+      },
+      {
+        "token": "ty6",
+        "fontFamily": "Kaushan Script",
+        "fontSize": "30px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "30px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "belts"
+        ]
+      },
+      {
+        "token": "ty7",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "28px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "$173.42"
+        ]
+      },
+      {
+        "token": "ty8",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "28px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "MH"
+        ]
+      },
+      {
+        "token": "ty9",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "26px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#000000",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 9,
+        "samples": [
+          "🔥",
+          "🔥",
+          "🏛"
+        ]
+      },
+      {
+        "token": "ty10",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "26px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "N",
+          "T"
+        ]
+      },
+      {
+        "token": "ty11",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "26px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.52px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "GM, Marcus 👋"
+        ]
+      },
+      {
+        "token": "ty12",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "26px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.52px",
+        "lineHeight": "26px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "78"
+        ]
+      },
+      {
+        "token": "ty13",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "26px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.52px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "1.8x"
+        ]
+      },
+      {
+        "token": "ty14",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "24px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.48px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "71%",
+          "21%"
+        ]
+      },
+      {
+        "token": "ty15",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "24px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "N",
+          "T"
+        ]
+      },
+      {
+        "token": "ty16",
+        "fontFamily": "Kaushan Script",
+        "fontSize": "24px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "26.4px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Marcus Hill"
+        ]
+      },
+      {
+        "token": "ty17",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "24px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.48px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "GM. 👋"
+        ]
+      },
+      {
+        "token": "ty18",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "24px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "+"
+        ]
+      },
+      {
+        "token": "ty19",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "22px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.44px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "32%",
+          "68%",
+          "72%"
+        ]
+      },
+      {
+        "token": "ty20",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "22px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#000000",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "✓",
+          "✓"
+        ]
+      },
+      {
+        "token": "ty21",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "22px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "A−"
+        ]
+      },
+      {
+        "token": "ty22",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "21px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.21px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "token": "ty23",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "20px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#C9B5FF",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "🏛",
+          "Accumulate"
+        ]
+      },
+      {
+        "token": "ty24",
+        "fontFamily": "Kaushan Script",
+        "fontSize": "20px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "trade with your people"
+        ]
+      },
+      {
+        "token": "ty25",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "20px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "right",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "$99"
+        ]
+      },
+      {
+        "token": "ty26",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "20px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#000000",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "🐋"
+        ]
+      },
+      {
+        "token": "ty27",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "19px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "N",
+          "16"
+        ]
+      },
+      {
+        "token": "ty28",
+        "fontFamily": "Barlow Condensed",
+        "fontSize": "19px",
+        "fontWeight": "800",
+        "fontStyle": "italic",
+        "letterSpacing": "0.38px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Cheat Code"
+        ]
+      },
+      {
+        "token": "ty29",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "18px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "🔒",
+          "🏆",
+          "🎁"
+        ]
+      },
+      {
+        "token": "ty30",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "18px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 3,
+        "samples": [
+          "N",
+          "P",
+          "A"
+        ]
+      },
+      {
+        "token": "ty31",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Free"
+        ]
+      },
+      {
+        "token": "ty32",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "18px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.18px",
+        "lineHeight": "23.4px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "The company beat earnings but the "
+        ]
+      },
+      {
+        "token": "ty33",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "17px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#E50914",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "N",
+          "Club Pro"
+        ]
+      },
+      {
+        "token": "ty34",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "17px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Market Open · The Club Room"
+        ]
+      },
+      {
+        "token": "ty35",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "17px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "2/3"
+        ]
+      },
+      {
+        "token": "ty36",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#4E463E",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 18,
+        "samples": [
+          "←",
+          "→",
+          "✕"
+        ]
+      },
+      {
+        "token": "ty37",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "16px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "N",
+          "A",
+          "M"
+        ]
+      },
+      {
+        "token": "ty38",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "16px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "34",
+          "12"
+        ]
+      },
+      {
+        "token": "ty39",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "16px",
+        "fontWeight": "300",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#4E463E",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "+"
+        ]
+      },
+      {
+        "token": "ty40",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "16px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "NVDA Bullish Break"
+        ]
+      },
+      {
+        "token": "ty41",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "16px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "16px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "87"
+        ]
+      },
+      {
+        "token": "ty42",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "15px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#FF7A1A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 74,
+        "samples": [
+          "⌂",
+          "◎",
+          "✦"
+        ]
+      },
+      {
+        "token": "ty43",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "15px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 15,
+        "samples": [
+          "N",
+          "T",
+          "A"
+        ]
+      },
+      {
+        "token": "ty44",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 5,
+        "samples": [
+          "142",
+          "71%",
+          "382"
+        ]
+      },
+      {
+        "token": "ty45",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "15px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "18.75px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Earnings Reports"
+        ]
+      },
+      {
+        "token": "ty46",
+        "fontFamily": "Barlow Condensed",
+        "fontSize": "15px",
+        "fontWeight": "800",
+        "fontStyle": "italic",
+        "letterSpacing": "normal",
+        "lineHeight": "15px",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Club"
+        ]
+      },
+      {
+        "token": "ty47",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "15px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Member"
+        ]
+      },
+      {
+        "token": "ty48",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "14.5px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "Start 7-day free trial",
+          "NVDA Earnings"
+        ]
+      },
+      {
+        "token": "ty49",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "14.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "18.85px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "TODAY IN 30 SECONDS"
+        ]
+      },
+      {
+        "token": "ty50",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#4E463E",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 9,
+        "samples": [
+          "↗",
+          "🐋",
+          "📊"
+        ]
+      },
+      {
+        "token": "ty51",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "14px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "Sign in",
+          "Check"
+        ]
+      },
+      {
+        "token": "ty52",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "14px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "-0.52px",
+        "lineHeight": "14px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "%"
+        ]
+      },
+      {
+        "token": "ty53",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "14px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Ascending Triangle"
+        ]
+      },
+      {
+        "token": "ty54",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "20.25px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "25,842 members are already reading"
+        ]
+      },
+      {
+        "token": "ty55",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#F7F4EF",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Continue with Apple"
+        ]
+      },
+      {
+        "token": "ty56",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Continue with Google"
+        ]
+      },
+      {
+        "token": "ty57",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13.5px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#4285F4",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "G"
+        ]
+      },
+      {
+        "token": "ty58",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 19,
+        "samples": [
+          "NVDA Earnings",
+          "My Watchlist",
+          "Kai Watch"
+        ]
+      },
+      {
+        "token": "ty59",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 16,
+        "samples": [
+          "Here's what the Club is seeing",
+          "📈 🖼",
+          "💬"
+        ]
+      },
+      {
+        "token": "ty60",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 14,
+        "samples": [
+          "4,312",
+          "+14 ›",
+          "88%"
+        ]
+      },
+      {
+        "token": "ty61",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "＋",
+          "N",
+          "N"
+        ]
+      },
+      {
+        "token": "ty62",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "19.5px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#2E2925",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "Blackwell demand is even stronger ",
+          "Unlock the full signal. Keep your ",
+          "Checks from Taiwan overnight — CoW"
+        ]
+      },
+      {
+        "token": "ty63",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "13px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "87"
+        ]
+      },
+      {
+        "token": "ty64",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Guidance came in below expectation"
+        ]
+      },
+      {
+        "token": "ty65",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 10,
+        "samples": [
+          "Marcus Hill",
+          "Tiffany R.",
+          "Kai Insight"
+        ]
+      },
+      {
+        "token": "ty66",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "18.75px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#5A534C",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "The Robotaxi event changed my view",
+          "Bullish break setup completed 3 of",
+          "Distribution pattern confirmed — d"
+        ]
+      },
+      {
+        "token": "ty67",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "18.75px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "173–176",
+          "166",
+          "14.80"
+        ]
+      },
+      {
+        "token": "ty68",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#4E463E",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "What's your take?"
+        ]
+      },
+      {
+        "token": "ty69",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12.5px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#FFFFFF",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Set Kai Watch"
+        ]
+      },
+      {
+        "token": "ty70",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Message # takes"
+        ]
+      },
+      {
+        "token": "ty71",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 28,
+        "samples": [
+          "Kai Watch: Getting Close",
+          "Earnings in 3 days",
+          "24 new opinions"
+        ]
+      },
+      {
+        "token": "ty72",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 17,
+        "samples": [
+          "MH",
+          "MH",
+          "TR"
+        ]
+      },
+      {
+        "token": "ty73",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 7,
+        "samples": [
+          "SMCI",
+          "PLTR",
+          "SOFI"
+        ]
+      },
+      {
+        "token": "ty74",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "$173.42",
+          "$173.42",
+          "$173.42"
+        ]
+      },
+      {
+        "token": "ty75",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "0.48px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "CIRCLES",
+          "LIVE",
+          "FEED"
+        ]
+      },
+      {
+        "token": "ty76",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "→",
+          "➤"
+        ]
+      },
+      {
+        "token": "ty77",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "500",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15.6px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7A6A5E",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Tech leads as AI optimism pushes s"
+        ]
+      },
+      {
+        "token": "ty78",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "days in a row"
+        ]
+      },
+      {
+        "token": "ty79",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "12px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "12px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "82%"
+        ]
+      },
+      {
+        "token": "ty80",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "18.6px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#43607A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Demand signals continue outrunning"
+        ]
+      },
+      {
+        "token": "ty81",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 15,
+        "samples": [
+          "Hosted by Maya & JC · 2.3K in room",
+          "🔥 128",
+          "❤️ 89"
+        ]
+      },
+      {
+        "token": "ty82",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 5,
+        "samples": [
+          "Continue",
+          "3W",
+          "1L"
+        ]
+      },
+      {
+        "token": "ty83",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11.5px",
+        "fontWeight": "400",
+        "fontStyle": "italic",
+        "letterSpacing": "normal",
+        "lineHeight": "17.25px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#5A534C",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "\"Kai Watch alone pays for the year",
+          "Rank is earned from graded calls, "
+        ]
+      },
+      {
+        "token": "ty84",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "11.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "+7.2%"
+        ]
+      },
+      {
+        "token": "ty85",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "11.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "17.25px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "$NVDA"
+        ]
+      },
+      {
+        "token": "ty86",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 27,
+        "samples": [
+          "MH",
+          "78%",
+          "64%"
+        ]
+      },
+      {
+        "token": "ty87",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "11px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 27,
+        "samples": [
+          "NVDA",
+          "TSLA",
+          "SMCI"
+        ]
+      },
+      {
+        "token": "ty88",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 21,
+        "samples": [
+          "See all",
+          "See all",
+          "See all"
+        ]
+      },
+      {
+        "token": "ty89",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "11px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 19,
+        "samples": [
+          "▲ 324%",
+          "▲ 210%",
+          "▲ 167%"
+        ]
+      },
+      {
+        "token": "ty90",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "0.44px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 11,
+        "samples": [
+          "WATCHLIST",
+          "KAI WATCH",
+          "ALERTS"
+        ]
+      },
+      {
+        "token": "ty91",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#76B900",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 9,
+        "samples": [
+          "N",
+          "T",
+          "S"
+        ]
+      },
+      {
+        "token": "ty92",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#FF7A1A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 5,
+        "samples": [
+          "See all",
+          "YOU ·",
+          "Monthly"
+        ]
+      },
+      {
+        "token": "ty93",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "16.5px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "Breakout rooms around one event or",
+          "\"Data-center backlog covers the wh",
+          "\"Gov contracts re-rate the multipl"
+        ]
+      },
+      {
+        "token": "ty94",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "0.66px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "FEED",
+          "CIRCLES"
+        ]
+      },
+      {
+        "token": "ty95",
+        "fontFamily": "Barlow Condensed",
+        "fontSize": "11px",
+        "fontWeight": "800",
+        "fontStyle": "italic",
+        "letterSpacing": "2.2px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#FF7A1A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Club"
+        ]
+      },
+      {
+        "token": "ty96",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "B"
+        ]
+      },
+      {
+        "token": "ty97",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15.95px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#43607A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "· Circle sentiment moved in the la"
+        ]
+      },
+      {
+        "token": "ty98",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "11px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15.95px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0E86BE",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Kai"
+        ]
+      },
+      {
+        "token": "ty99",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "11px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15.95px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "+6 pts bullish"
+        ]
+      },
+      {
+        "token": "ty100",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 22,
+        "samples": [
+          "Live ranking by member attention &",
+          "Attention over the last 24h",
+          "Biggest split in opinions"
+        ]
+      },
+      {
+        "token": "ty101",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 17,
+        "samples": [
+          "Maya",
+          "Overview",
+          "Fundamentals"
+        ]
+      },
+      {
+        "token": "ty102",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "10.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 14,
+        "samples": [
+          "$TSLA",
+          "$AMD ›",
+          "▲4.72%"
+        ]
+      },
+      {
+        "token": "ty103",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 5,
+        "samples": [
+          "#1 in the Club ›",
+          "JC 🎙",
+          "Guide"
+        ]
+      },
+      {
+        "token": "ty104",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "0.63px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "OVERVIEW",
+          "SCREENER",
+          "WATCHLIST"
+        ]
+      },
+      {
+        "token": "ty105",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "Technicals",
+          "Fundamentals",
+          "Kai"
+        ]
+      },
+      {
+        "token": "ty106",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15.75px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 3,
+        "samples": [
+          "Institutional sweeps concentrated ",
+          "Club conviction rising while short",
+          "Top 3 customers = 34% of revenue. "
+        ]
+      },
+      {
+        "token": "ty107",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10.5px",
+        "fontWeight": "500",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "· 7 days left"
+        ]
+      },
+      {
+        "token": "ty108",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "10px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 37,
+        "samples": [
+          "XP 12,840 / 15,000",
+          "NFLX",
+          "IONQ"
+        ]
+      },
+      {
+        "token": "ty109",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 26,
+        "samples": [
+          "2.4K opinions",
+          "1.8K members",
+          "Share an opinion, chart, or questi"
+        ]
+      },
+      {
+        "token": "ty110",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "10px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 13,
+        "samples": [
+          "NVDA",
+          "TSLA",
+          "AMD"
+        ]
+      },
+      {
+        "token": "ty111",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#F7F4EF",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "Black Belt",
+          "Blue Belt",
+          "DK"
+        ]
+      },
+      {
+        "token": "ty112",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "10px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "1D",
+          "173.42"
+        ]
+      },
+      {
+        "token": "ty113",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "14.5px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Your opinions carry 1.8x more weig"
+        ]
+      },
+      {
+        "token": "ty114",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "10px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "4.2px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Club"
+        ]
+      },
+      {
+        "token": "ty115",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15px",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Cheaper than AMD on forward earnin"
+        ]
+      },
+      {
+        "token": "ty116",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "10px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Save screen"
+        ]
+      },
+      {
+        "token": "ty117",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 25,
+        "samples": [
+          "1.2K watching",
+          "2.3K watching",
+          "889 watching"
+        ]
+      },
+      {
+        "token": "ty118",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "1.52px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 17,
+        "samples": [
+          "Top in",
+          "the club",
+          "Your signals"
+        ]
+      },
+      {
+        "token": "ty119",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#4E463E",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 8,
+        "samples": [
+          "SPY",
+          "▲1.02%",
+          "QQQ"
+        ]
+      },
+      {
+        "token": "ty120",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "What moves price",
+          "EPS & revenue",
+          "Implied move"
+        ]
+      },
+      {
+        "token": "ty121",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 3,
+        "samples": [
+          "OG",
+          "VH",
+          "DD"
+        ]
+      },
+      {
+        "token": "ty122",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "0.95px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 3,
+        "samples": [
+          "BUY SIGNAL",
+          "SELL SIGNAL",
+          "HEADS UP"
+        ]
+      },
+      {
+        "token": "ty123",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "· Raw sentiment"
+        ]
+      },
+      {
+        "token": "ty124",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "15.2px",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#8A8178",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "By continuing you agree to the Ter"
+        ]
+      },
+      {
+        "token": "ty125",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "0.76px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "3/3 LIVE"
+        ]
+      },
+      {
+        "token": "ty126",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 53,
+        "samples": [
+          "Discover",
+          "Club",
+          "Watch"
+        ]
+      },
+      {
+        "token": "ty127",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 47,
+        "samples": [
+          "▲ 6",
+          "▲ 3",
+          "▲ 12"
+        ]
+      },
+      {
+        "token": "ty128",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 28,
+        "samples": [
+          "Changed Bullish",
+          "Changed Bearish",
+          "✓"
+        ]
+      },
+      {
+        "token": "ty129",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#FF7A1A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 20,
+        "samples": [
+          "Home",
+          "Discover",
+          "Discover"
+        ]
+      },
+      {
+        "token": "ty130",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "9px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 7,
+        "samples": [
+          "1",
+          "2",
+          "3"
+        ]
+      },
+      {
+        "token": "ty131",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "1.44px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 3,
+        "samples": [
+          "Getting close",
+          "Today",
+          "Yesterday"
+        ]
+      },
+      {
+        "token": "ty132",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.08px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "RSI · 14D",
+          "MACD"
+        ]
+      },
+      {
+        "token": "ty133",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "0.9px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "LIVE NOW"
+        ]
+      },
+      {
+        "token": "ty134",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.26px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Photo · hosts on stage"
+        ]
+      },
+      {
+        "token": "ty135",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.62px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Reading the room…"
+        ]
+      },
+      {
+        "token": "ty136",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.44px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "OR"
+        ]
+      },
+      {
+        "token": "ty137",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.44px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Restore"
+        ]
+      },
+      {
+        "token": "ty138",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "BUY"
+        ]
+      },
+      {
+        "token": "ty139",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "9px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.26px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "TODAY"
+        ]
+      },
+      {
+        "token": "ty140",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "1.19px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#D92652",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 21,
+        "samples": [
+          "Changed my mind",
+          "Room sentiment",
+          "Influence"
+        ]
+      },
+      {
+        "token": "ty141",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "8.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 10,
+        "samples": [
+          "Total opinions",
+          "Shift today",
+          "Black Belts"
+        ]
+      },
+      {
+        "token": "ty142",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 8,
+        "samples": [
+          "$27B",
+          "$61B",
+          "$130B"
+        ]
+      },
+      {
+        "token": "ty143",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.19px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#0BA05A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 4,
+        "samples": [
+          "BULLISH",
+          "BEARISH",
+          "BULLISH"
+        ]
+      },
+      {
+        "token": "ty144",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "1.02px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "BEST VALUE"
+        ]
+      },
+      {
+        "token": "ty145",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "600",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "JULY"
+        ]
+      },
+      {
+        "token": "ty146",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.19px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Animated scene · 12s"
+        ]
+      },
+      {
+        "token": "ty147",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.02px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "HYPERSCALER CAPEX · $B/QTR"
+        ]
+      },
+      {
+        "token": "ty148",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "8px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#FF7A1A",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "●",
+          "Opinions",
+          "Accuracy"
+        ]
+      },
+      {
+        "token": "ty149",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 6,
+        "samples": [
+          "30",
+          "70",
+          "FY23"
+        ]
+      },
+      {
+        "token": "ty150",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "8px",
+        "fontWeight": "700",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 3,
+        "samples": [
+          "TR",
+          "KD",
+          "OG"
+        ]
+      },
+      {
+        "token": "ty151",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "8px",
+        "fontWeight": "800",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "12"
+        ]
+      },
+      {
+        "token": "ty152",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "8px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "1.12px",
+        "lineHeight": "normal",
+        "textTransform": "uppercase",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "Up next · Unit 3"
+        ]
+      },
+      {
+        "token": "ty153",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "7.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "0.6px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#9B9289",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "SELL",
+          "BUY"
+        ]
+      },
+      {
+        "token": "ty154",
+        "fontFamily": "IBM Plex Mono",
+        "fontSize": "7px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "0.84px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#D95E00",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "WEIGHTEDSIGNAL"
+        ]
+      },
+      {
+        "token": "ty155",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "7px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "normal",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "start",
+        "color": "#1A1614",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "★"
+        ]
+      },
+      {
+        "token": "ty156",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "6.5px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "0.52px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#7B7369",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 2,
+        "samples": [
+          "SCORE",
+          "OPINIONSCORE"
+        ]
+      },
+      {
+        "token": "ty157",
+        "fontFamily": "Instrument Sans",
+        "fontSize": "6px",
+        "fontWeight": "400",
+        "fontStyle": "normal",
+        "letterSpacing": "0.48px",
+        "lineHeight": "normal",
+        "textTransform": "none",
+        "textAlign": "center",
+        "color": "#5B7A94",
+        "textDecorationLine": "none",
+        "whiteSpace": "normal",
+        "count": 1,
+        "samples": [
+          "CONF"
+        ]
+      }
+    ],
+    "radii": [
+      {
+        "token": "r1",
+        "v": "0px",
+        "count": 22
+      },
+      {
+        "token": "r2",
+        "v": "1.5px",
+        "count": 1
+      },
+      {
+        "token": "r3",
+        "v": "2px",
+        "count": 22
+      },
+      {
+        "token": "r4",
+        "v": "3px",
+        "count": 18
+      },
+      {
+        "token": "r5",
+        "v": "4px",
+        "count": 20
+      },
+      {
+        "token": "r6",
+        "v": "5px",
+        "count": 11
+      },
+      {
+        "token": "r7",
+        "v": "6px",
+        "count": 11
+      },
+      {
+        "token": "r8",
+        "v": "7px",
+        "count": 1
+      },
+      {
+        "token": "r9",
+        "v": "8px",
+        "count": 29
+      },
+      {
+        "token": "r10",
+        "v": "9px",
+        "count": 1
+      },
+      {
+        "token": "r11",
+        "v": "10px",
+        "count": 27
+      },
+      {
+        "token": "r12",
+        "v": "11px",
+        "count": 4
+      },
+      {
+        "token": "r13",
+        "v": "12px",
+        "count": 27
+      },
+      {
+        "token": "r14",
+        "v": "13px",
+        "count": 15
+      },
+      {
+        "token": "r15",
+        "v": "14px",
+        "count": 50
+      },
+      {
+        "token": "r16",
+        "v": "16px",
+        "count": 55
+      },
+      {
+        "token": "r17",
+        "v": "18px",
+        "count": 16
+      },
+      {
+        "token": "r18",
+        "v": "20px",
+        "count": 10
+      },
+      {
+        "token": "r19",
+        "v": "24px",
+        "count": 4
+      },
+      {
+        "token": "r20",
+        "v": "34px",
+        "count": 23
+      },
+      {
+        "token": "r21",
+        "v": "50%",
+        "count": 180
+      }
+    ]
+  }
+}

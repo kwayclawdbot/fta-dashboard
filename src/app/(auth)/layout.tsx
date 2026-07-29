@@ -1,6 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { ClubMark } from "@/components/brand/ClubMark";
+import { designV2Enabled } from "@/lib/design-flag";
+import { CcMark } from "@/components/cc/ui";
+import DesignManager from "@/components/dashboard/v2/DesignManager";
 
 /**
  * PRE-AUTH CHROME (lane L6, canvas boards 09–11).
@@ -27,6 +30,58 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // v2 conversion (design-project-v2) — boards 09–11 pre-auth chrome. A
+  // theme-aware --cc-* board frame (dark primary canvas, light twin follows the
+  // user's theme) with the board's warm brand wash + CcMark header. Off ⇒ the
+  // v1 light-club chrome below renders byte-identically.
+  if (designV2Enabled()) {
+    return (
+      <div
+        className="relative min-h-dvh"
+        style={{ background: "var(--cc-bg, #141216)", color: "var(--cc-ink, #f4f0ec)" }}
+      >
+        <DesignManager />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[280px]"
+          style={{
+            background:
+              "radial-gradient(130% 100% at 50% 0%, color-mix(in srgb, var(--cc-orange, #ff7a1a) 18%, var(--cc-bg, #141216)) 0%, var(--cc-bg, #141216) 72%)",
+          }}
+        />
+        <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-12 sm:pt-16">
+          <header className="flex flex-col items-center text-center">
+            <CcMark size={46} />
+            <p
+              className="cc-display mt-4 text-[22px]"
+              style={{ color: "var(--cc-ink, #f4f0ec)" }}
+            >
+              Cheat Code{" "}
+              <span style={{ color: "var(--cc-orange-ink, #ff7a1a)" }}>Club</span>
+            </p>
+            <p className="mt-2 text-[13px]" style={{ color: "var(--cc-soft, #8d8794)" }}>
+              trade with your people
+            </p>
+          </header>
+
+          <main className="mt-11 flex-1">{children}</main>
+
+          <footer
+            className="mt-12 pt-5 text-center text-[10px] leading-relaxed"
+            style={{
+              borderTop: "1px solid var(--cc-line, #2b2731)",
+              color: "var(--cc-dim, #5d5865)",
+            }}
+          >
+            Not investment advice. Opinions are the Club&apos;s, not brokers&apos;.
+            <br />
+            &copy; {new Date().getFullYear()} Cheat Code Club. All rights reserved.
+          </footer>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-mode="club"

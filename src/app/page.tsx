@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ClubMark } from "@/components/brand/ClubMark";
+import { designV2Enabled } from "@/lib/design-flag";
+import SplashV2 from "@/components/dashboard/v2/SplashV2";
 
 /**
  * SPLASH / ENTRY — canvas board 09.
@@ -33,6 +35,10 @@ export default async function Home() {
   } = await supabase.auth.getUser();
 
   if (user) redirect("/dashboard");
+
+  // v2 conversion (design-project-v2) — board 09. Signed-in redirect above is
+  // unchanged; only the signed-out splash re-skins. Off ⇒ v1 splash below.
+  if (designV2Enabled()) return <SplashV2 />;
 
   return (
     <div

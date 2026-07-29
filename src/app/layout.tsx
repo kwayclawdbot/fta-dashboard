@@ -5,6 +5,8 @@ import {
   IBM_Plex_Mono,
   Kaushan_Script,
   Caveat,
+  Barlow_Condensed,
+  Instrument_Sans,
 } from "next/font/google";
 import "./globals.css";
 import ThemeManager from "@/components/ThemeManager";
@@ -12,7 +14,7 @@ import { MotionProvider } from "@/lib/motion";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Applied before first paint to avoid a light→dark flash on reload.
-const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'light';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#F7F4EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
+const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||${process.env.NEXT_PUBLIC_DESIGN_V2 === "1" ? "'dark'" : "'light'"};var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#F7F4EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
 
 // Sora — geometric display face (Bold/ExtraBold headlines) for the Club system.
 // Mapped to --font-display at the token level so every existing headline flips
@@ -65,6 +67,33 @@ const caveat = Caveat({
   display: "swap",
 });
 
+// ── Cheat Code App v2 (design-project-v2) type voices ─────────────────────────
+// Loaded ADDITIVELY alongside the faces above — nothing here is removed or
+// re-assigned, and these variables are consumed ONLY inside the [data-design="v2"]
+// block in globals.css, so v1 surfaces are byte-identical (the extra <link>s are
+// inert until a subtree opts into v2). Script + mono reuse the already-loaded
+// Kaushan (--font-kaushan) and IBM Plex Mono (--font-plex-mono); only the two
+// v2-exclusive faces are added here.
+//
+// Display — Barlow Condensed, italic 600/700/800: uppercase headlines, wordmark,
+// hero-number labels, section breaks (never body).
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-cc-display",
+  subsets: ["latin"],
+  style: ["italic"],
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+
+// Body/UI — Instrument Sans 400-700: everything conversational (posts, buttons,
+// forms, descriptions).
+const instrumentSans = Instrument_Sans({
+  variable: "--font-cc-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   // Umbrella-neutral (Cheat Code Club architecture): static metadata can't be
   // per-member mode-aware, so the base title/PWA name is the umbrella that
@@ -107,7 +136,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={`${sora.variable} ${inter.variable} ${plexMono.variable} ${kaushan.variable} ${caveat.variable} antialiased`}>
+      <body className={`${sora.variable} ${inter.variable} ${plexMono.variable} ${kaushan.variable} ${caveat.variable} ${barlowCondensed.variable} ${instrumentSans.variable} antialiased`}>
         <ThemeManager />
         <MotionProvider>{children}</MotionProvider>
         <SpeedInsights />

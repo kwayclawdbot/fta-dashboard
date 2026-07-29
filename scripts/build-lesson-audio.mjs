@@ -42,6 +42,30 @@ const ROOT = join(HERE, "..");
 
 /* ── config ───────────────────────────────────────────────────────────── */
 
+/* ── Voicebox (LOCAL) — the owner's chosen provider, 2026-07-28 ─────────
+   A local MLX/Metal server at http://localhost:17493 holding a 1.7B voice
+   model and a set of cloned profiles. It is the shipped voice because it costs
+   nothing per lesson, runs offline, and the Kway profile already IS the house
+   voice — the same one the reels use. The OpenAI path below is retained as the
+   fallback for a machine without the server.
+
+   Contract, discovered from ~/voicebox/backend (there is no /api prefix):
+     POST /generate  { profile_id, text, language, seed, instruct } → { id, duration }
+     GET  /audio/{id}                                               → audio/wav
+   The wav is transcoded to mp3 here; the browser wants one small file. */
+const VOICEBOX_URL = process.env.VOICEBOX_URL || "http://localhost:17493";
+/** Kai's voice. `Kway` is the house profile; the server also holds kyle, aiden,
+ *  vivian and ryan — see --sample for the owner's ear check. */
+const VOICEBOX_PROFILE = "2cd42fda-3482-4eb4-a79a-6abc64802e24";
+const VOICEBOX_ALT_PROFILE = "a0d76292-5bd1-46fd-8649-67672360890d"; // ryan
+/** Fixed, so a re-render of an unchanged line is the same performance. */
+const VOICEBOX_SEED = 7;
+/** The model takes a short style note, not a paragraph (500 char cap). */
+const VOICEBOX_INSTRUCT =
+  "Calm, warm investing coach talking one-to-one with an adult beginner. " +
+  "Plain and unhurried, like a knowledgeable friend at a kitchen table. " +
+  "Land the full stops. Never a hype narrator.";
+
 const MODEL = "gpt-4o-mini-tts";
 /** KAI'S REGISTER. `ash` is the warm, level, unhurried coach — an adult talking
  *  to an adult. The curriculum's voice note is "never the excitable narrator,
@@ -74,6 +98,10 @@ const LESSON_KEY = opt("lesson", "adult-d03");
 /**
  * PROVIDER. `openai` is the real one and the only one whose output ships.
  *
+ * `voicebox` is the shipped provider (owner's call, 2026-07-28) — a local
+ * server, so the curriculum's voice costs nothing and needs no vendor account.
+ * `openai` is retained as the fallback for a machine without it.
+ *
  * `local` exists because on 2026-07-28 the OpenAI account hit
  * `insufficient_quota` mid-build and the whole audio-first rebuild would
  * otherwise have been unverifiable. It renders the SAME script, to the SAME
@@ -83,7 +111,7 @@ const LESSON_KEY = opt("lesson", "adult-d03");
  * the files are git-ignored, and re-running with credits restored replaces
  * every one of them (`--provider openai --force`).
  */
-const PROVIDER = opt("provider", "openai");
+const PROVIDER = opt("provider", "voicebox");
 const FORCE = flag("force");
 const SAMPLE = flag("sample");
 const DRY = flag("dry");
@@ -162,10 +190,40 @@ const prior = existsSync(MANIFEST_PATH)
   : { segments: {} };
 
 function hashOf(text, voice) {
-  return createHash("sha256")
-    .update([MODEL, voice, INSTRUCTIONS, text].join("|"))
-    .digest("hex")
-    .slice(0, 16);
+  const recipe =
+    PROVIDER === "voicebox"
+      ? ["voicebox", VOICEBOX_PROFILE, VOICEBOX_SEED, VOICEBOX_INSTRUCT, text]
+      : [MODEL, voice, INSTRUCTIONS, text];
+  return createHash("sha256").update(recipe.join("|")).digest("hex").slice(0, 16);
+}
+
+/** Voicebox: synthesise, fetch the wav, transcode to mp3. */
+async function speakVoicebox(text, outFile, profileId = VOICEBOX_PROFILE) {
+  const res = await fetch(`${VOICEBOX_URL}/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      profile_id: profileId,
+      text,
+      language: "en",
+      seed: VOICEBOX_SEED,
+      instruct: VOICEBOX_INSTRUCT,
+    }),
+  });
+  if (!res.ok)
+    throw new Error(`voicebox ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const gen = await res.json();
+  const wavRes = await fetch(`${VOICEBOX_URL}/audio/${gen.id}`);
+  if (!wavRes.ok) throw new Error(`voicebox audio ${wavRes.status}`);
+  const wav = outFile.replace(/\.mp3$/, "") + ".wav";
+  writeFileSync(wav, Buffer.from(await wavRes.arrayBuffer()));
+  execFileSync("ffmpeg", [
+    "-y", "-loglevel", "error", "-i", wav,
+    "-codec:a", "libmp3lame", "-b:a", "64k", "-ar", "24000", "-ac", "1",
+    outFile,
+  ]);
+  execFileSync("rm", ["-f", wav]);
+  return gen;
 }
 
 /** macOS speech synthesis → mp3. Placeholder only; see PROVIDER. */
@@ -216,8 +274,14 @@ function durationMs(file) {
 
 const manifest = {
   lesson: entry.slug,
-  model: MODEL,
-  voice: PROVIDER === "local" ? "os-placeholder" : VOICE,
+  voice:
+    PROVIDER === "voicebox"
+      ? "voicebox:Kway"
+      : PROVIDER === "local"
+        ? "os-placeholder"
+        : VOICE,
+  model: PROVIDER === "voicebox" ? "voicebox-1.7B (mlx)" : MODEL,
+  profileId: PROVIDER === "voicebox" ? VOICEBOX_PROFILE : undefined,
   provider: PROVIDER,
   instructions: INSTRUCTIONS,
   generatedAt: new Date().toISOString(),
@@ -249,7 +313,9 @@ for (const seg of segments) {
   }
 
   process.stdout.write(`  ${seg.file} … `);
-  if (PROVIDER === "local") {
+  if (PROVIDER === "voicebox") {
+    await speakVoicebox(seg.say, abs);
+  } else if (PROVIDER === "local") {
     speakLocal(seg.say, abs);
   } else {
     writeFileSync(abs, await speak(seg.say, VOICE));
@@ -263,11 +329,28 @@ for (const seg of segments) {
   };
   made++;
   console.log(`${(ms / 1000).toFixed(1)}s`);
+  // Written after EVERY segment, not at the end. Local synthesis is ~50s a
+  // line, so a 50-segment lesson is a forty-minute job — one that must survive
+  // being interrupted. With the manifest on disk the content hashes let a
+  // re-run pick up exactly where it stopped instead of paying for it twice.
+  if (!DRY) writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2) + "\n");
 }
 
 /* ── the voice sample the owner has to sign off ───────────────────────── */
 
-if (SAMPLE && !DRY && PROVIDER === "openai") {
+if (SAMPLE && !DRY && PROVIDER === "voicebox") {
+  const line = lesson.guide?.intro ?? segments[0].say;
+  for (const [profile, name] of [
+    [VOICEBOX_PROFILE, "sample-kway.mp3"],
+    [VOICEBOX_ALT_PROFILE, "sample-ryan.mp3"],
+  ]) {
+    const abs = join(OUT_DIR, name);
+    if (FORCE || !existsSync(abs)) {
+      await speakVoicebox(line, abs, profile);
+      console.log(`  sample ${name} → ${abs}`);
+    }
+  }
+} else if (SAMPLE && !DRY && PROVIDER === "openai") {
   const line = lesson.guide?.intro ?? segments[0].say;
   for (const [voice, name] of [
     [VOICE, `sample-${VOICE}.mp3`],

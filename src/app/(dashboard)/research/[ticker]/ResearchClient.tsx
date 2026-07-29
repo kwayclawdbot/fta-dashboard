@@ -68,6 +68,8 @@ import ClubTickerStrip from "./ClubTickerStrip";
 import KaiReportPanel from "./KaiReportPanel";
 import TickerDiscussion from "./TickerDiscussion";
 import FtaDoor from "@/components/entitlements/FtaDoor";
+import { designV2Enabled as isDesignV2 } from "@/lib/design-flag";
+import ResearchClientV2 from "./ResearchClientV2";
 
 const COMMENT_SELECT =
   "id, ticker, user_id, body, contribution_type, created_at, author:profiles(display_name, avatar_url, age_group, username)";
@@ -174,11 +176,7 @@ function researchLevels(
   return out;
 }
 
-export default function ResearchClient({
-  initialResearch = null,
-  initialReport = null,
-  reportSeeded = false,
-}: {
+export interface ResearchClientProps {
   /** Server-fetched aggregate for instant first paint (Lane 12C). May be null
    *  when the server couldn't compose it; the client then fetches/refreshes. */
   initialResearch?: ResearchPayload | null;
@@ -189,7 +187,27 @@ export default function ResearchClient({
    *  Kai tab may show its founding state; a failed read is not, and the tab
    *  stays on its skeleton until the client retry lands. */
   reportSeeded?: boolean;
-}) {
+}
+
+/**
+ * DESIGN v2 BRANCH (Phase 1 Lane B · Ticker Research surface).
+ *
+ * A thin wrapper — no hooks of its own — so the v1 render is byte-identical when
+ * the flag is OFF (it just forwards props to the untouched ResearchClientV1) and
+ * the v2 canvas takes over cleanly when ON. The server page.tsx is unchanged and
+ * feeds BOTH paths the same props, so the aggregate/Kai seed/read-meter all keep
+ * working exactly as before regardless of which surface renders.
+ */
+export default function ResearchClient(props: ResearchClientProps) {
+  if (isDesignV2()) return <ResearchClientV2 {...props} />;
+  return <ResearchClientV1 {...props} />;
+}
+
+function ResearchClientV1({
+  initialResearch = null,
+  initialReport = null,
+  reportSeeded = false,
+}: ResearchClientProps) {
   const supabase = createClient();
   const router = useRouter();
   const { openKai } = useKaiSheet();

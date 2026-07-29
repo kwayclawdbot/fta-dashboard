@@ -3,7 +3,9 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { deriveRegister } from "@/lib/register";
+import { designV2Enabled } from "@/lib/design-flag";
 import ScreenerSurface from "@/components/screener/ScreenerSurface";
+import ScreenerSurfaceV2 from "@/components/screener/ScreenerSurfaceV2";
 
 /**
  * /screener — the standalone Stock Screener route. The screener itself now lives
@@ -34,5 +36,5 @@ export default async function ScreenerPage() {
 
   if (deriveRegister(profile) === "kid") redirect("/dashboard");
 
-  return <ScreenerSurface />;
+  return designV2Enabled() ? <ScreenerSurfaceV2 /> : <ScreenerSurface />;
 }

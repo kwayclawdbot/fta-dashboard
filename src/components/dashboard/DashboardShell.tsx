@@ -20,6 +20,8 @@ import FirstRun from "@/components/first-run/FirstRun";
 import FirstWin from "@/components/first-run/FirstWin";
 import { Toaster } from "@/components/ui/Toast";
 import { Suspense } from "react";
+import { designV2Enabled } from "@/lib/design-flag";
+import DesignManager from "./v2/DesignManager";
 
 import type { FamilyTier } from "@/lib/tier";
 
@@ -184,8 +186,34 @@ export default function DashboardShell({
       ? "club"
       : "family";
 
+  // v2 conversion (design-project-v2) — flag-gated. When on, DesignManager
+  // stamps data-design="v2" on <html> (co-located with data-theme) so the v2
+  // token block resolves for the whole document; the shell ground swaps to the
+  // warm-black/paper --cc-bg. Off ⇒ everything below renders exactly as today.
+  const v2 = designV2Enabled();
+
+  // The two upgrade banners (Challenge days-left, Club-lapsed FTA) keep their
+  // logic + /upgrade link untouched; only their chrome flips under the flag from
+  // the v1 gold/midnight register to the canvas orange-signal register. Off ⇒
+  // the exact v1 classes below, byte-identical to prod.
+  const bannerCls = v2
+    ? "mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border px-4 py-3 transition border-[color-mix(in_srgb,var(--cc-orange)_32%,transparent)] bg-[color-mix(in_srgb,var(--cc-orange)_8%,transparent)] hover:border-[color-mix(in_srgb,var(--cc-orange)_60%,transparent)]"
+    : "mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold-400/40 bg-gold-400/[0.08] px-4 py-3 transition hover:border-gold-400/70";
+  const bannerBadgeCls = v2
+    ? "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-display font-bold uppercase tracking-wide bg-[color-mix(in_srgb,var(--cc-orange)_18%,transparent)] text-[var(--cc-orange-ink)]"
+    : "inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2 py-0.5 text-[11px] font-display font-bold uppercase tracking-wide text-gold-700";
+  const bannerTitleCls = v2
+    ? "text-sm font-semibold text-[var(--cc-ink)]"
+    : "text-sm font-semibold text-midnight-100";
+  const bannerSubCls = v2 ? "text-[13px] text-[var(--cc-soft)]" : "text-[13px] text-midnight-400";
+
   return (
-    <div data-mode={mode} className="min-h-screen bg-midnight-950">
+    <div
+      data-mode={mode}
+      className={v2 ? "min-h-screen" : "min-h-screen bg-midnight-950"}
+      style={v2 ? { background: "var(--cc-bg, #141216)" } : undefined}
+    >
+      {v2 && <DesignManager />}
       <ModeManager mode={mode} />
       <KaiSheetProvider
         tier={user.tier}
@@ -236,20 +264,17 @@ export default function DashboardShell({
           className="px-4 pt-6 pb-[var(--kai-fab-reserve)] md:pb-[var(--kai-fab-reserve-desktop)] lg:px-8"
         >
           {challengeDaysLeft !== null && !freeLocked && (
-            <Link
-              href="/upgrade"
-              className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold-400/40 bg-gold-400/[0.08] px-4 py-3 transition hover:border-gold-400/70"
-            >
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2 py-0.5 text-[11px] font-display font-bold uppercase tracking-wide text-gold-700">
+            <Link href="/upgrade" className={bannerCls}>
+              <span className={bannerBadgeCls}>
                 <Flame className="h-3 w-3" />
                 Challenge
               </span>
-              <span className="text-sm font-semibold text-midnight-100">
+              <span className={bannerTitleCls}>
                 {challengeDaysLeft <= 0
                   ? "Your full Club access ends today"
                   : `${challengeDaysLeft} day${challengeDaysLeft === 1 ? "" : "s"} of full Club access left`}
               </span>
-              <span className="text-[13px] text-midnight-400">
+              <span className={bannerSubCls}>
                 — keep it for $99/mo, or drop to free (your progress stays) →
               </span>
             </Link>
@@ -257,18 +282,15 @@ export default function DashboardShell({
           {clubLapsed &&
             !pathname.startsWith("/upgrade") &&
             !pathname.startsWith("/fta") && (
-              <Link
-                href="/upgrade"
-                className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-gold-400/40 bg-gold-400/[0.08] px-4 py-3 transition hover:border-gold-400/70"
-              >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-400/20 px-2 py-0.5 text-[11px] font-display font-bold uppercase tracking-wide text-gold-700">
+              <Link href="/upgrade" className={bannerCls}>
+                <span className={bannerBadgeCls}>
                   <GraduationCap className="h-3 w-3" />
                   FTA
                 </span>
-                <span className="text-sm font-semibold text-midnight-100">
+                <span className={bannerTitleCls}>
                   Your Academy access stays for life
                 </span>
-                <span className="text-[13px] text-midnight-400">
+                <span className={bannerSubCls}>
                   — keep the Club (community, Kai, watchlist &amp; alerts) for
                   $99/mo →
                 </span>

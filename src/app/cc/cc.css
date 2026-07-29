@@ -1,0 +1,9 @@
+/* Cheat Code App — v2 tokens have moved to the single source of truth.
+   ───────────────────────────────────────────────────────────────────────────
+   This block's contents (--cc-* tokens, .cc-display / .cc-script / .cc-mono type
+   voices, .cc-halo glow law, cc-ping keyframes) were migrated into
+   `src/app/globals.css` under the `[data-design="v2"]` scope so there is ONE
+   place they live. The /cc app opts in by putting data-design="v2" on its shell
+   wrapper (see ./layout.tsx). This file is intentionally an empty stub — kept
+   only so the existing `import "./cc.css"` in layout.tsx resolves; delete both
+   together if that import is ever removed. Do not re-add tokens here. */

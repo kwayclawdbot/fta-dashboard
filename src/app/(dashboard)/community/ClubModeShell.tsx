@@ -9,6 +9,8 @@ import { openCommandSearch } from "@/components/search/CommandSearch";
 import type { CommunityFeedSeed } from "@/lib/feed-seed";
 import type { ChatMe } from "@/lib/useChatRoom";
 import { useLiveEventsState, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
+import { designV2Enabled } from "@/lib/design-flag";
+import ClubModeShellV2 from "./ClubModeShellV2";
 import CommunityClient from "./CommunityClient";
 import ClubRooms from "./ClubRooms";
 import ClubDiscussions from "./ClubDiscussions";
@@ -46,15 +48,24 @@ const MODE_PRESENCE: Record<Mode, string> = {
   live: "Rooms open with the challenge",
 };
 
-export default function ClubModeShell({
-  initialData,
-  demoEvents = false,
-}: {
+interface ClubModeShellProps {
   initialData: CommunityFeedSeed | null;
   /** preview/dev only — surface fixture live_events so the Live mode + on-air
    *  rule are reviewable before the S2.5 backend lands. */
   demoEvents?: boolean;
-}) {
+}
+
+/**
+ * v2 dispatch — pure branch, NO hooks (so the early return can't trip
+ * rules-of-hooks; the same split /discover uses). OFF (default) runs the
+ * original v1 body below, byte-identical to production.
+ */
+export default function ClubModeShell(props: ClubModeShellProps) {
+  if (designV2Enabled()) return <ClubModeShellV2 initialData={props.initialData} demoEvents={props.demoEvents} />;
+  return <ClubModeShellV1 {...props} />;
+}
+
+function ClubModeShellV1({ initialData, demoEvents = false }: ClubModeShellProps) {
   const searchParams = useSearchParams();
   // Go-live deep-link (/club?live={id} → /community?mode=live&live={id}): the
   // push lands here and opens the Live tab focused on that room.

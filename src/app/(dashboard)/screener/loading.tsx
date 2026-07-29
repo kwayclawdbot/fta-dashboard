@@ -7,8 +7,11 @@
  * (It used to be DashboardSkeleton's rounded-card list, a shape that appears
  * nowhere on the finished screener.)
  */
+import { designV2Enabled } from "@/lib/design-flag";
 import { ScreenerSkeleton } from "@/components/screener/ScreenerSurface";
+import { ScreenerSkeletonV2 } from "@/components/screener/ScreenerSurfaceV2";
 
 export default function Loading() {
+  if (designV2Enabled()) return <ScreenerSkeletonV2 />;
   return <ScreenerSkeleton />;
 }

@@ -13,6 +13,8 @@ import { modeFromSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import BeltChip from "@/components/dashboard/BeltChip";
+import { designV2Enabled } from "@/lib/design-flag";
+import TopBarV2 from "./v2/TopBarV2";
 
 /**
  * Route → page title, derived so EVERY dashboard route has a real header (the
@@ -147,6 +149,26 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  // v2 conversion (design-project-v2). After all hooks; reuses the resolved
+  // page title + mode above. Off ⇒ v1 header renders byte-identically below.
+  if (designV2Enabled()) {
+    const initials = (user.display_name || user.email || "U")
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+    return (
+      <TopBarV2
+        user={user}
+        xp={xp}
+        pageTitle={pageTitle}
+        initials={initials}
+        onMenuClick={onMenuClick}
+      />
+    );
   }
 
   return (

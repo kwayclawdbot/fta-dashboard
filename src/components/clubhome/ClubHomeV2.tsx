@@ -20,6 +20,8 @@ import TodayIn30 from "./TodayIn30";
 import YourSignals from "./YourSignals";
 import YouStrip from "./YouStrip";
 import { LiveNowStrip } from "@/components/live";
+import { designV2Enabled as isDesignV2 } from "@/lib/design-flag";
+import ClubHomeBoard from "./v2/ClubHomeBoard";
 
 /**
  * CLUB HOME — board 01, rebuilt screen-for-screen.
@@ -214,6 +216,24 @@ export default function ClubHomeV2({
         ` locked=${data.trending?.locked ?? false}`
     );
   }, [loading, trendingRows, data.trending?.totalCount, data.trending?.locked]);
+
+  // DESIGN v2 (Phase 1 Lane B) — the SOLO-CLUB ADULT home converts to the Cheat
+  // Code App canvas (board 01). Kid/teen registers keep the v1 board; free and
+  // family personas never reach this component. Flag OFF ⇒ the v1 path below is
+  // byte-identical. The branch sits AFTER every hook, so hook order is stable.
+  if (isDesignV2() && register === "adult") {
+    return (
+      <ClubHomeBoard
+        firstName={firstName}
+        learning={learning}
+        challengeExpiresAt={challengeExpiresAt}
+        xp={xp}
+        today={today}
+        liveNow={liveNow}
+        data={data}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-16 lg:max-w-3xl">

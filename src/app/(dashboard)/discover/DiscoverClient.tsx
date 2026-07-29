@@ -25,6 +25,8 @@ import {
   SectionMark,
   TickerSpark,
 } from "@/components/discover/board";
+import { designV2Enabled as isDesignV2 } from "@/lib/design-flag";
+import DiscoverClientV2 from "./DiscoverClientV2";
 import { timeAgoAt, useNowHour } from "@/components/discover/clock";
 import { FLOORS } from "@/lib/club/score";
 import { contributionMeta } from "@/lib/research/social";
@@ -100,12 +102,21 @@ const PANEL_ID = "discover-panel";
  * the ratified wall body (`wallFor("trending_full").body`) rather than retyped,
  * so what the ledger promises can never drift from the pricing promise.
  */
-const TRENDING_WALL = wallFor("trending_full");
-const TRENDING_WALL_DETAIL =
+export const TRENDING_WALL = wallFor("trending_full");
+export const TRENDING_WALL_DETAIL =
   TRENDING_WALL.body.split("Club members get ")[1] ?? TRENDING_WALL.body;
 
-/* ── the surface ─────────────────────────────────────────────────────────── */
-export default function DiscoverClient({
+/* ── flag dispatcher ─────────────────────────────────────────────────────────
+ * OFF (default) → the v1 surface below, byte-identical. ON → the cc-canvas v2
+ * surface, same props. The check is build-constant (NEXT_PUBLIC_* is inlined),
+ * so this early return is stable across renders — no conditional-hook hazard. */
+export default function DiscoverClient(props: DiscoverClientProps) {
+  if (isDesignV2()) return <DiscoverClientV2 {...props} />;
+  return <DiscoverClientV1 {...props} />;
+}
+
+/* ── the surface (v1) ────────────────────────────────────────────────────── */
+function DiscoverClientV1({
   initialNews,
   board,
   extras,
@@ -500,10 +511,10 @@ function RisingFast({ rows, loading }: { rows: TrendingRow[]; loading: boolean }
  * band, and the denominator always ships with the percentages — so a four-vote
  * split can never masquerade as consensus.
  */
-const DIVISIVE_MIN_POSITIONED = 4;
+export const DIVISIVE_MIN_POSITIONED = 4;
 const DIVISIVE_MAX_GAP = 20; // bullPct within 30–70
 
-function pickDivisive(rows: TrendingRow[]): TrendingRow | null {
+export function pickDivisive(rows: TrendingRow[]): TrendingRow | null {
   let best: TrendingRow | null = null;
   let bestGap = Infinity;
   for (const r of rows) {
@@ -1259,7 +1270,7 @@ function ResearchCards({
  * LOADING IS NOT EMPTY: the flag is what keeps a slow ledger from painting
  * "the Club hasn't formed a read yet".
  */
-function useClubLedger() {
+export function useClubLedger() {
   const [trending, setTrending] = useState<TrendingResponse | null>(null);
   const [loading, setLoading] = useState(true);
 

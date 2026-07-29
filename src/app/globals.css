@@ -2157,3 +2157,162 @@ body {
   background: var(--dial-hole, var(--card));
   text-align: center;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHEAT CODE APP — v2 DESIGN FOUNDATION  ·  Phase 0  ·  design-project-v2
+   ───────────────────────────────────────────────────────────────────────────
+   APPEND-ONLY, FULLY SELF-CONTAINED, OPT-IN. Nothing below leaks to v1:
+
+     • Every selector is prefixed with [data-design="v2"]. The token names
+       (--cc-*) live in NO other block, and the v1 system (--paper/--ink/--sand/
+       --m50… + @theme inline) is untouched. A page is v1 unless it opts in.
+
+   HOW A ROUTE OPTS IN
+   ───────────────────
+   Put data-design="v2" on a wrapper element (or on <html>):
+
+     (a) SUBTREE opt-in  — <div data-design="v2"> … </div>
+         Base tokens = DARK (the primary canvas). This subtree is dark
+         regardless of the app's data-theme. To make a v2 subtree light, add
+         data-theme="light" to the SAME element (or a v2 ancestor):
+           <div data-design="v2" data-theme="light"> … light twin … </div>
+         (the standalone /cc app uses the plain dark form; the gallery toggles
+          data-theme on its own v2 root to preview both twins.)
+
+     (b) WHOLE-APP opt-in — add data-design="v2" to <html> alongside the
+         existing data-theme that ThemeManager already flips. Then the light
+         twin follows the user's theme automatically, because the light override
+         keys on [data-design="v2"][data-theme="light"] and both attributes sit
+         on <html>. v1 routes never set data-design, so they never match.
+
+   THEME MECHANISM (mirrors the v1 data-theme flip)
+   ────────────────────────────────────────────────
+     [data-design="v2"]                       → DARK values (primary canvas)
+     [data-design="v2"][data-theme="light"]   → LIGHT twin overrides
+   Both attributes must resolve on the SAME element for the light twin to win,
+   so keep data-design and data-theme co-located (wrapper or <html>).
+
+   DARK values are the DESIGN-UX-SPEC §2 table verbatim. LIGHT values are
+   EXTRACTED from `Cheat Code App Light.dc.html` inline styles (not invented):
+     bg #F7F4EF · card #FFFFFF · card2/line #E5DFD5 (the canvas uses one warm
+     paper-gray for both nested fills and hairlines) · ink #1A1614 · soft
+     #7B7369 · dim #9B9289 · ink-on-orange #1A1614 · up #0BA05A · down #D92652
+     · blue #3D8BFF · purple #A66BFF · yellow #D99A00 · orange-ink (AA text)
+     #D95E00 · halo softened to .18 alpha. Orange FILL (#FF7A1A) is identical
+     on both grounds (law #2). Belt hexes are intrinsic (BELT_COLORS in
+     components/cc/ui.tsx) — NOT themed here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── DARK — primary canvas (DESIGN-UX-SPEC §2, dark table verbatim) ────────── */
+[data-design="v2"] {
+  --cc-bg: #141216;          /* canvas — warm black, never pure #000 */
+  --cc-card: #1c1920;        /* raised card */
+  --cc-card2: #232028;       /* nested surface / chips */
+  --cc-line: #2b2731;        /* hairlines only */
+  --cc-ink: #f4f0ec;         /* warm off-white text */
+  --cc-soft: #8d8794;        /* secondary text */
+  --cc-dim: #5d5865;         /* tertiary / inactive */
+  --cc-orange: #ff7a1a;      /* signal — brand · live · single CTA (law #2) */
+  --cc-orange-ink: #ff7a1a;  /* orange as TEXT (dark ground needs no shift) */
+  --cc-orange-deep: #0d0b0e; /* ink ON orange */
+  --cc-up: #4ade80;          /* market truth up (law #3) */
+  --cc-down: #f472b6;        /* market truth down — pink, never red */
+  --cc-blue: #38bdf8;        /* Kai surfaces + blue belt accent */
+  --cc-purple: #a78bfa;      /* purple belt accent */
+  --cc-yellow: #facc15;      /* yellow belt + HEADS-UP alerts */
+  --cc-halo: 0 0 16px rgba(255, 122, 26, 0.3);      /* 40% glow law */
+  --cc-halo-soft: 0 0 12px rgba(255, 122, 26, 0.18);
+
+  background: var(--cc-bg);
+  color: var(--cc-ink);
+  font-family: var(--font-cc-body), system-ui, sans-serif;
+}
+
+/* ── LIGHT twin — App Light canvas values (extracted, not invented) ───────── */
+[data-design="v2"][data-theme="light"] {
+  --cc-bg: #f7f4ef;          /* warm paper canvas (screen ground) */
+  --cc-card: #ffffff;        /* raised card */
+  --cc-card2: #e5dfd5;       /* nested surface / chips (warm paper-gray) */
+  --cc-line: #e5dfd5;        /* hairlines (same warm gray, as the canvas uses) */
+  --cc-ink: #1a1614;         /* near-black warm ink */
+  --cc-soft: #7b7369;        /* secondary text */
+  --cc-dim: #9b9289;         /* tertiary / inactive */
+  --cc-orange: #ff7a1a;      /* signal FILL — identical on both grounds */
+  --cc-orange-ink: #d95e00;  /* orange as TEXT on paper — AA-safe deep orange */
+  --cc-orange-deep: #1a1614; /* ink ON orange (dark ink on light) */
+  --cc-up: #0ba05a;          /* market up — AA green on paper */
+  --cc-down: #d92652;        /* market down — AA pink on paper */
+  --cc-blue: #3d8bff;        /* Kai + blue belt accent on paper */
+  --cc-purple: #a66bff;      /* purple accent on paper */
+  --cc-yellow: #d99a00;      /* yellow + HEADS-UP on paper (gold, AA) */
+  --cc-halo: 0 0 16px rgba(255, 122, 26, 0.18);     /* softened ~50% */
+  --cc-halo-soft: 0 0 12px rgba(255, 122, 26, 0.12);
+}
+
+/* ── Base appearance + selection (namespaced) ─────────────────────────────── */
+[data-design="v2"] ::selection { background: rgba(255, 122, 26, 0.3); }
+[data-design="v2"] .no-scrollbar::-webkit-scrollbar { display: none; }
+[data-design="v2"] .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Type voices — four faces, strict jobs (DESIGN-UX-SPEC §3) ─────────────── */
+/* Display — Barlow Condensed italic 700-800 uppercase; headlines / hero labels. */
+[data-design="v2"] .cc-display {
+  font-family: var(--font-cc-display), "Barlow Condensed", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+/* Script — Kaushan (reuses --font-kaushan); section identity marks only. */
+[data-design="v2"] .cc-script {
+  font-family: var(--font-kaushan), cursive;
+  font-weight: 400;
+}
+/* Mono — IBM Plex Mono (reuses --font-plex-mono); the data voice + kicker. */
+[data-design="v2"] .cc-mono {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ── Glow law — halos on EXACTLY key rings + the primary CTA (§2) ──────────── */
+[data-design="v2"] .cc-halo { box-shadow: var(--cc-halo); }
+[data-design="v2"] .cc-halo-soft { box-shadow: var(--cc-halo-soft); }
+
+/* ── cc-ping — reserved for live states (live dots, LIVE NOW, active circles) ─ */
+@keyframes cc-ping {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+[data-design="v2"] .cc-ping {
+  animation: cc-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* prefers-reduced-motion — collapse v2 motion to final-state (§5, §7) */
+@media (prefers-reduced-motion: reduce) {
+  [data-design="v2"] .cc-ping { animation: none; }
+  [data-design="v2"] .cc-anim-rise,
+  [data-design="v2"] .cc-anim-sweep { animation: none !important; }
+}
+/* ═══════════════════ END CHEAT CODE APP v2 FOUNDATION ═════════════════════ */
+
+/* ── v2 FIDELITY: type-voice takeover ─────────────────────────────────
+   Under the v2 flag the canvas type voices REPLACE v1's at the variable
+   level: every component resolving font-display (Sora) or font-body
+   (Inter) — cards, sidebar, topbar, composer, all of it — flips to the
+   mockup faces with zero component edits. Barlow Condensed is loaded
+   italic-only, which IS the canvas display voice. Mono already matches. */
+/* Scope note: the --font-cc-* variables are declared on <body> (next/font
+   classNames), while data-design lands on <html>. A custom property substitutes
+   its var() references ON THE ELEMENT WHERE IT IS DECLARED — declaring this on
+   [data-design="v2"] (html) made --font-display guaranteed-invalid and the
+   whole app fell back to the UA serif. Declare on body, where --font-cc-*
+   actually exist. */
+[data-design="v2"] body {
+  --font-display: var(--font-cc-display), sans-serif;
+  --font-body: var(--font-cc-body), sans-serif;
+  font-family: var(--font-cc-body), sans-serif;
+}

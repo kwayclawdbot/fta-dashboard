@@ -17,6 +17,8 @@ import {
   Eyebrow as BoardEyebrow,
 } from "@/components/alerts/board";
 import DetailActions from "./DetailActions";
+import { designV2Enabled } from "@/lib/design-flag";
+import AlertDetailV2 from "./AlertDetailV2";
 import { formatMove, moveToneClass } from "@/lib/format-move";
 import type { AlertEvent, AlertRule } from "@/lib/alerts/types";
 import type { WatchState } from "@/lib/alerts/watch-state";
@@ -179,6 +181,49 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
       ? SETUP_STATE_META[stateStr as SetupState]?.label
       : WATCH_STATE_META[stateStr as WatchState]?.label
     : null;
+
+  // DESIGN v2 (design-project-v2, board 19) — flag-gated re-skin. Same reads,
+  // same gating (already applied above); only the presentation forks. The v1
+  // markup below stays byte-identical when the flag is off.
+  if (designV2Enabled()) {
+    return (
+      <AlertDetailV2
+        ticker={ticker}
+        companyName={companyName}
+        whatChanged={whatChanged}
+        headline={headline}
+        firedAt={event.fired_at}
+        stateLabel={stateLabel ?? null}
+        tone={tone}
+        isLive={isLive}
+        snap={snap}
+        perfPct={perfPct}
+        current={current}
+        conditionLabel={conditionLabel ?? null}
+        firedCount={firedCount}
+        kaiRead={kaiRead}
+        rule={
+          rule
+            ? { id: rule.id, active: rule.active, digest: rule.digest, kind: rule.kind, price: rule.params?.price ?? null }
+            : null
+        }
+        timeline={timeline}
+        intel={
+          intel
+            ? {
+                club_score: (intel.club_score as number | null) ?? null,
+                rank: (intel.rank as number | null) ?? null,
+                watchers: (intel.watchers as number | null) ?? null,
+                sentiment_bullish: (intel.sentiment_bullish as number | null) ?? null,
+                sentiment_neutral: (intel.sentiment_neutral as number | null) ?? null,
+                sentiment_bearish: (intel.sentiment_bearish as number | null) ?? null,
+                unusual_activity: (intel.unusual_activity as boolean | null) ?? null,
+              }
+            : null
+        }
+      />
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[68ch] px-4 pb-28 pt-5 sm:px-6">

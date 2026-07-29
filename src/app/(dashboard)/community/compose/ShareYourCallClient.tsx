@@ -31,6 +31,8 @@ import {
   type Stance,
   type StanceSummary,
 } from "@/lib/social/stance";
+import { designV2Enabled } from "@/lib/design-flag";
+import ShareYourCallV2 from "./ShareYourCallV2";
 
 /* ══════════════════════════════════════════════════════════════════════════
    SHARE YOUR CALL — the structured composer. Canvas v2, Club Screens 05.
@@ -119,6 +121,21 @@ export default function ShareYourCallClient({
   initialTicker: string | null;
   initialType: string | null;
 }) {
+  // ── design v2 flag dispatch ──────────────────────────────────────────────
+  // Flag OFF (default / production) → the v1 body below runs unchanged. Flag ON
+  // → the cc-canvas re-skin, same props in, same backend calls. Build-constant
+  // (NEXT_PUBLIC_* is inlined) so this early return is stable across renders.
+  if (designV2Enabled())
+    return (
+      <ShareYourCallV2
+        userId={userId}
+        familyId={familyId}
+        isKid={isKid}
+        initialTicker={initialTicker}
+        initialType={initialType}
+      />
+    );
+
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 

@@ -6,7 +6,13 @@
  * dark hero island, then board cards. Never the founding state's copy — this
  * promises content is arriving, which is the opposite claim.
  */
+import V2Skeleton from "@/components/cc/V2Skeleton";
+import { designV2Enabled } from "@/lib/design-flag";
+
 export default function Loading() {
+  // Flag on ⇒ the v2 shimmer skeleton on the same board footprint; flag off ⇒
+  // the existing v1 warm-paper skeleton below, byte-identical to prod.
+  if (designV2Enabled()) return <V2Skeleton variant="sessions" />;
   return (
     <div
       className="mx-auto w-full max-w-2xl px-4 pt-6 sm:px-6 lg:max-w-3xl"

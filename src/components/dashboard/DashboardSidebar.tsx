@@ -36,11 +36,14 @@ import {
   Compass,
   Gift,
   Award,
+  Layers,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
 import { modeFromSolo, modeBrand } from "@/lib/mode";
 import { ClubMark, ClubWordmark } from "@/components/brand/ClubMark";
+import { designV2Enabled } from "@/lib/design-flag";
+import SidebarV2 from "./v2/SidebarV2";
 
 export interface SubNavItem {
   label: string;
@@ -93,6 +96,8 @@ const CLUB_WATCHLIST: NavItem = {
   ],
 };
 const CLUB_SCREENER: NavItem = { label: "Screener", href: "/screener", icon: Telescope };
+// Ownership Cards — the Collection shelf (Cheat Code Ownership Cards, Phase 0).
+const CLUB_COLLECTION: NavItem = { label: "Collection", href: "/collection", icon: Layers };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
 // Community is now a plain row — the club Feed. (Lane 12A: the Club Newsroom
 // was promoted OUT to its own top-level "News" row below. On mobile Community
@@ -400,6 +405,7 @@ export function getNavItems(
       // five-item regroup dropped it from the primary nav; it lives here (also
       // the Discover hub's "Screener" tab) so the active state + app tour resolve.
       CLUB_MARKETS_HEADER,
+      CLUB_COLLECTION,
       CLUB_SCREENER,
       CLUB_NEWS,
       CLUB_ALERTS,
@@ -845,6 +851,21 @@ export default function DashboardSidebar({
       </div>
     </div>
   );
+
+  // v2 conversion (design-project-v2). Placed AFTER every hook above so hook
+  // order is identical on both paths; the flag is a build-time constant so this
+  // branch is stable across renders. Off ⇒ v1 renders byte-identically below.
+  if (designV2Enabled()) {
+    return (
+      <SidebarV2
+        user={user}
+        collapsed={collapsed}
+        onToggleCollapse={onToggleCollapse}
+        mobileOpen={mobileOpen}
+        onMobileClose={onMobileClose}
+      />
+    );
+  }
 
   return (
     <>
