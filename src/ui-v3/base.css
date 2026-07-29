@@ -1,0 +1,105 @@
+/*
+ * ui-v3 base — the ISOLATION LAYER. Hand-written (tokens.css is generated).
+ *
+ * Every v3 page renders inside the app's root layout, which imports
+ * src/app/globals.css. That file styles `html` and `body` (background, color,
+ * font-family, font-variant-numeric, a color transition) and ships the whole
+ * old design system as Tailwind theme tokens + hand-written classes. None of
+ * those class rules can reach a v3 subtree unless v3 markup names them — but
+ * the INHERITED properties off `body` reach everything.
+ *
+ * So this file re-establishes, on the v3 root, every inheritable property the
+ * old body sets. `[data-ui="v3"]` (specificity 0,1,0) beats `body` (0,0,1), so
+ * this wins regardless of stylesheet order and no old file has to change.
+ *
+ * Load order in src/app/v3/layout.tsx: tokens.css, then base.css.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Font binding.
+ *
+ * tokens.css records the family names as the MOCKUPS declare them
+ * ('Barlow Condensed', 'Instrument Sans', ...). Those faces are self-hosted by
+ * next/font in src/app/v3/layout.tsx, which exposes them as --font-v3-*. This
+ * is the one place a generated token is deliberately re-pointed: same faces,
+ * local files instead of a Google Fonts CDN name. Do not add other overrides
+ * here — regenerate tokens.css instead.
+ * ------------------------------------------------------------------------ */
+[data-ui="v3"] {
+  --font-display: var(--font-v3-display), "Barlow Condensed", sans-serif;
+  --font-body: var(--font-v3-body), "Instrument Sans", sans-serif;
+  --font-mono: var(--font-v3-mono), "IBM Plex Mono", monospace;
+  --font-script: var(--font-v3-script), "Kaushan Script", cursive;
+}
+
+/* ---------------------------------------------------------------------------
+ * Inherited-property reset. One rule, every property `body` can hand down.
+ * ------------------------------------------------------------------------ */
+[data-ui="v3"] {
+  background-color: var(--bg);
+  color: var(--text);
+
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-400, 400);
+  font-style: normal;
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
+  line-height: 1.45;
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
+  text-indent: 0;
+  white-space: normal;
+  word-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* globals.css transitions body background/color; v3 opts out. */
+  transition: none;
+
+  min-height: 100dvh;
+  isolation: isolate;
+}
+
+[data-ui="v3"] *,
+[data-ui="v3"] *::before,
+[data-ui="v3"] *::after {
+  box-sizing: border-box;
+}
+
+/* Numeric UI (prices, counts) opts IN explicitly rather than inheriting it. */
+[data-ui="v3"] [data-numeric] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+ * Page chrome. globals.css paints `body` in the OLD paper/charcoal color, which
+ * shows through on overscroll and behind a short v3 page. `:has()` scopes the
+ * fix to documents that actually contain a v3 root, so old routes are untouched.
+ * ------------------------------------------------------------------------ */
+html:has([data-ui="v3"]) body {
+  background-color: var(--bg);
+}
+
+[data-ui="v3"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-ui="v3"] ::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+[data-ui="v3"] ::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: var(--radius-4);
+}
+
+[data-ui="v3"] ::selection {
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+[data-ui="v3"] :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

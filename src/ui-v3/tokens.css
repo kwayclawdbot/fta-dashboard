@@ -1,0 +1,245 @@
+/*
+ * ui-v3 design tokens — GENERATED FILE, DO NOT EDIT BY HAND.
+ *
+ * Source of truth:
+ *   dark  ->  .planning/design-project-v2/mockups/Cheat Code App.dc.html
+ *   light ->  .planning/design-project-v2/mockups/Cheat Code App Light.dc.html
+ *
+ * Regenerate with:  node scripts/extract-mockup-tokens.mjs
+ * Every value below was counted out of the mockup CSS; see src/ui-v3/tokens.json
+ * for raw counts and the derivation reason behind each semantic role.
+ *
+ * Dark is the DEFAULT (matches the canonical artboards). Light overrides apply
+ * on [data-ui="v3"][data-theme="light"].
+ */
+
+[data-ui="v3"],
+html:has([data-ui="v3"]) {
+  color-scheme: dark;
+
+  /* --- semantic roles (derived: see tokens.json .roles[].why) --- */
+  --bg: #0D0B0E;
+  --accent: #FF7A1A;
+  --text: #F4F0EC;
+  --text-muted: #C8C2CE;
+  --text-dim: #8F8894;
+  --text-faint: #6E6774;
+  --surface: #17141A;
+  --surface-2: #3A3240;
+  --border: #2A2530;
+  --positive: #4AE383;
+  --negative: #FF4D6D;
+  --info: #3D8BFF;
+  --violet: #A66BFF;
+  --accent-strong: #FF9A4D;
+  --accent-soft: #3A2418;
+  --gold: #FFC24B;
+  --accent-on: #0D0B0E;
+
+  /* --- type families --- */
+  --font-display: 'Barlow Condensed',sans-serif;
+  --font-body: 'Instrument Sans',sans-serif;
+  --font-mono: 'IBM Plex Mono',monospace;
+  --font-script: 'Kaushan Script',cursive;
+
+  /* --- font sizes actually used in the mockups (count >= 3) --- */
+  --fs-8: 8px;
+  --fs-8-5: 8.5px;
+  --fs-9: 9px;
+  --fs-9-5: 9.5px;
+  --fs-10: 10px;
+  --fs-10-5: 10.5px;
+  --fs-11: 11px;
+  --fs-11-5: 11.5px;
+  --fs-12: 12px;
+  --fs-12-5: 12.5px;
+  --fs-13: 13px;
+  --fs-13-5: 13.5px;
+  --fs-14: 14px;
+  --fs-14-5: 14.5px;
+  --fs-15: 15px;
+  --fs-16: 16px;
+  --fs-17: 17px;
+  --fs-18: 18px;
+  --fs-19: 19px;
+  --fs-20: 20px;
+  --fs-22: 22px;
+  --fs-24: 24px;
+  --fs-26: 26px;
+  --fs-30: 30px;
+  --fs-34: 34px;
+
+  /* --- font weights --- */
+  --fw-300: 300;
+  --fw-500: 500;
+  --fw-600: 600;
+  --fw-700: 700;
+  --fw-800: 800;
+
+  /* --- line heights --- */
+  --lh-1: 1;
+  --lh-1-5: 1.5;
+
+  /* --- letter spacing --- */
+  --ls-04em: .04em;
+  --ls-14em: .14em;
+  --ls-16em: .16em;
+  --ls-n-02em: -.02em;
+  --ls-06em: .06em;
+  --ls-08em: .08em;
+  --ls-12em: .12em;
+  --ls-1em: .1em;
+
+  /* --- radii --- */
+  --radius-2: 2px;
+  --radius-3: 3px;
+  --radius-4: 4px;
+  --radius-5: 5px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-11: 11px;
+  --radius-12: 12px;
+  --radius-13: 13px;
+  --radius-14: 14px;
+  --radius-16: 16px;
+  --radius-18: 18px;
+  --radius-20: 20px;
+  --radius-24: 24px;
+  --radius-34: 34px;
+  --radius-full: 999px;
+
+  /* --- spacing values in heavy rotation (count >= 8) --- */
+  --space-1: 1px;
+  --space-2: 2px;
+  --space-3: 3px;
+  --space-4: 4px;
+  --space-5: 5px;
+  --space-6: 6px;
+  --space-7: 7px;
+  --space-8: 8px;
+  --space-9: 9px;
+  --space-10: 10px;
+  --space-11: 11px;
+  --space-12: 12px;
+  --space-13: 13px;
+  --space-14: 14px;
+  --space-15: 15px;
+  --space-16: 16px;
+  --space-18: 18px;
+
+  /* --- shadows (count >= 2) --- */
+  --shadow-1: 0 0 12px rgba(255,122,26,.2);
+  --shadow-2: 0 0 12px rgba(255,122,26,.25);
+  --shadow-3: 0 0 14px rgba(255,122,26,.22);
+  --shadow-4: 0 4px 0 #1A171E;
+  --shadow-5: 0 4px 0 #B85812;
+
+  /* --- raw palette (49 colors used >= 3x). THEME-LITERAL: exact hexes of one mockup, they do NOT flip between themes — prefer the semantic roles above. --- */
+  --p-2a2530: #2A2530; /* 252 */
+  --p-f4f0ec: #F4F0EC; /* 236 */
+  --p-6e6774: #6E6774; /* 194 */
+  --p-17141a: #17141A; /* 192 */
+  --p-8f8894: #8F8894; /* 165 */
+  --p-ff7a1a: #FF7A1A; /* 162 */
+  --p-0d0b0e: #0D0B0E; /* 122 */
+  --p-4ae383: #4AE383; /* 122 */
+  --p-ff9a4d: #FF9A4D; /* 60 */
+  --p-c8c2ce: #C8C2CE; /* 55 */
+  --p-3a3240: #3A3240; /* 47 */
+  --p-ff4d6d: #FF4D6D; /* 37 */
+  --p-ffc24b: #FFC24B; /* 22 */
+  --p-e8e2e4: #E8E2E4; /* 21 */
+  --p-3a2418: #3A2418; /* 14 */
+  --p-76b900: #76B900; /* 14 */
+  --p-101408: #101408; /* 13 */
+  --p-3d8bff: #3D8BFF; /* 9 */
+  --p-241009: #241009; /* 8 */
+  --p-5bc4f0: #5BC4F0; /* 8 */
+  --p-b8b2bc: #B8B2BC; /* 8 */
+  --p-173a26: #173A26; /* 7 */
+  --p-1a0e10: #1A0E10; /* 7 */
+  --p-rgba25512226018: rgba(255, 122, 26, 0.18); /* 7 */
+  --p-4a4250: #4A4250; /* 6 */
+  --p-a66bff: #A66BFF; /* 6 */
+  --p-0e1216: #0E1216; /* 5 */
+  --p-b8aeb0: #B8AEB0; /* 5 */
+  --p-e82127: #E82127; /* 5 */
+  --p-0e1b2e: #0E1B2E; /* 4 */
+  --p-1e3050: #1E3050; /* 4 */
+  --p-20503a: #20503A; /* 4 */
+  --p-2e7a4e: #2E7A4E; /* 4 */
+  --p-5a2a38: #5A2A38; /* 4 */
+  --p-b85812: #B85812; /* 4 */
+  --p-111014: #111014; /* 3 */
+  --p-2a1208: #2A1208; /* 3 */
+  --p-3a2530: #3A2530; /* 3 */
+  --p-7a4a22: #7A4A22; /* 3 */
+  --p-ffb25e: #FFB25E; /* 3 */
+  --p-rgba000035: rgba(0, 0, 0, 0.35); /* 3 */
+  --p-rgba25512226012: rgba(255, 122, 26, 0.12); /* 3 */
+  --p-rgba25512226015: rgba(255, 122, 26, 0.15); /* 3 */
+  --p-rgba2551222602: rgba(255, 122, 26, 0.2); /* 3 */
+  --p-rgba25512226022: rgba(255, 122, 26, 0.22); /* 3 */
+  --p-rgba25512226025: rgba(255, 122, 26, 0.25); /* 3 */
+  --p-rgba25512226035: rgba(255, 122, 26, 0.35); /* 3 */
+  --p-rgba74227131012: rgba(74, 227, 131, 0.12); /* 3 */
+  --p-rgba74227131014: rgba(74, 227, 131, 0.14); /* 3 */
+}
+
+[data-ui="v3"][data-theme="light"],
+html:has([data-ui="v3"][data-theme="light"]) {
+  color-scheme: light;
+
+  /* --- semantic roles (derived: see tokens.json .roles[].why) --- */
+  --bg: #F7F4EF;
+  --text: #1A1614;
+  --text-muted: #4E463E;
+  --text-dim: #7B7369;
+  --text-faint: #9B9289;
+  --surface: #FFFFFF;
+  --surface-2: #D8D0C4;
+  --border: #E5DFD5;
+  --positive: #0BA05A;
+  --negative: #D92652;
+  --accent-strong: #D95E00;
+  --accent-soft: #F2DCC2;
+  --gold: #D99A00;
+  --accent-on: #1A1614;
+
+  /* --- shadows (count >= 2) --- */
+  --shadow-4: 0 4px 0 #D9D3C8;
+  --shadow-5: 0 4px 0 #E08A3C;
+
+  /* --- raw palette (49 colors used >= 3x). THEME-LITERAL: exact hexes of one mockup, they do NOT flip between themes — prefer the semantic roles above. --- */
+  --p-1a1614: #1A1614; /* 267 */
+  --p-e5dfd5: #E5DFD5; /* 252 */
+  --p-ffffff: #FFFFFF; /* 198 */
+  --p-9b9289: #9B9289; /* 194 */
+  --p-7b7369: #7B7369; /* 165 */
+  --p-0ba05a: #0BA05A; /* 122 */
+  --p-f7f4ef: #F7F4EF; /* 87 */
+  --p-d95e00: #D95E00; /* 60 */
+  --p-4e463e: #4E463E; /* 55 */
+  --p-d8d0c4: #D8D0C4; /* 47 */
+  --p-d92652: #D92652; /* 37 */
+  --p-d99a00: #D99A00; /* 22 */
+  --p-2e2925: #2E2925; /* 21 */
+  --p-f2dcc2: #F2DCC2; /* 14 */
+  --p-0e86be: #0E86BE; /* 8 */
+  --p-5a534c: #5A534C; /* 8 */
+  --p-ffeedd: #FFEEDD; /* 8 */
+  --p-d4f0e0: #D4F0E0; /* 7 */
+  --p-c4bbad: #C4BBAD; /* 6 */
+  --p-7a6a5e: #7A6A5E; /* 5 */
+  --p-6fcb9b: #6FCB9B; /* 4 */
+  --p-96d4b4: #96D4B4; /* 4 */
+  --p-b7d3e6: #B7D3E6; /* 4 */
+  --p-e08a3c: #E08A3C; /* 4 */
+  --p-e4f1fa: #E4F1FA; /* 4 */
+  --p-f0bfcb: #F0BFCB; /* 4 */
+  --p-f0b375: #F0B375; /* 3 */
+  --p-fbf8f2: #FBF8F2; /* 3 */
+  --p-ffe9d6: #FFE9D6; /* 3 */
+  --p-rgba255255255055: rgba(255, 255, 255, 0.55); /* 3 */
+}
