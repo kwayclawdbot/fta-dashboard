@@ -1,0 +1,38 @@
+/*
+ * Section eyebrow — the mono, wide-tracked, uppercase label that opens every
+ * section on the artboards, optionally with a trailing action on the same
+ * baseline and a caption underneath.
+ */
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9-5);
+  letter-spacing: var(--ls-16em);
+  text-transform: uppercase;
+  color: var(--text);
+  font-weight: var(--fw-600);
+}
+
+/* The one accent-tinted run inside an eyebrow (e.g. "TOP IN <the club>"). */
+.accent {
+  color: var(--accent);
+}
+
+.action {
+  font-size: var(--fs-11);
+  color: var(--accent);
+  font-weight: var(--fw-600);
+  text-decoration: none;
+}
+
+.caption {
+  font-size: var(--fs-10-5);
+  color: var(--text-faint);
+  margin-top: var(--space-3);
+}

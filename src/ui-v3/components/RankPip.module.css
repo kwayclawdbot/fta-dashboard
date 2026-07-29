@@ -1,0 +1,25 @@
+/*
+ * Rank pip — the 15px disc that straddles the top-left corner of a ranked card.
+ * It sits half outside its parent (top:-7px), so the parent must be positioned.
+ * Rank 1 is the ONLY one painted in accent; the rest are surface-2.
+ */
+
+.pip {
+  position: absolute;
+  top: -7px;
+  left: var(--space-8);
+  width: 15px;
+  height: 15px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: var(--fs-9);
+  font-weight: var(--fw-800);
+  display: grid;
+  place-items: center;
+}
+
+.lead {
+  background: var(--accent);
+  color: var(--accent-on);
+}

@@ -1,0 +1,41 @@
+/*
+ * Signal ring — a 48px conic-gradient dial with an inner disc carrying a value
+ * and a tiny caption. The fill percentage is the conic hard stop.
+ */
+
+.ring {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: conic-gradient(
+    var(--accent) 0 var(--ring-pct),
+    var(--border) var(--ring-pct) 100%
+  );
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.disc {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.label {
+  font-size: 6.5px;
+  color: var(--text-dim);
+  letter-spacing: var(--ls-08em);
+}

@@ -1,0 +1,36 @@
+/*
+ * The warm gradient panel. Two tones exist on the artboards and no others:
+ *   "brief" — 120deg, three stops, used by TODAY IN 30 SECONDS
+ *   "you"   — 110deg, two stops, used by the YOU strip
+ * Both share the accent-soft hairline and the 16px radius.
+ *
+ * The gradient stops have no semantic token (they are one-off warm washes), so
+ * each tone declares its own pair of theme-scoped values here rather than
+ * scattering hexes through the section components.
+ */
+
+.panel {
+  border-radius: var(--radius-16);
+  border: 1px solid var(--accent-soft);
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-gradient);
+}
+
+.brief {
+  --panel-gradient: linear-gradient(120deg, #2a1208 0%, #1a0e12 55%, #17141a 100%);
+  padding: var(--space-14) var(--space-15);
+}
+
+.you {
+  --panel-gradient: linear-gradient(110deg, #241009 0%, #17141a 70%);
+  padding: var(--space-13) var(--space-15);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .brief {
+  --panel-gradient: linear-gradient(120deg, #ffe9d6 0%, #fff1e4 55%, #ffffff 100%);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .you {
+  --panel-gradient: linear-gradient(110deg, #ffeedd 0%, #ffffff 70%);
+}

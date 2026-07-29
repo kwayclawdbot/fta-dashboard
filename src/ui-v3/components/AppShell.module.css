@@ -1,0 +1,30 @@
+/*
+ * The app column.
+ *
+ * The artboards are a fixed 390x844 phone card. That frame is how the MOCKUP
+ * BOARD presents a screen, not app chrome, so it is not reproduced: the screen
+ * is the viewport. On wide viewports the column is simply centred at 430px
+ * against --bg — no desktop layout is invented, because no mockup shows one.
+ */
+
+.viewport {
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+}
+
+.screen {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* The artboard's content well: 18px sides, 18px top, nav supplies the bottom. */
+.body {
+  padding: var(--space-18) var(--space-18) 0;
+  flex: 1;
+}

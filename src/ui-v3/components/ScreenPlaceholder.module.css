@@ -1,0 +1,33 @@
+/*
+ * Placeholder for a screen that has not been translated yet.
+ *
+ * Deliberately unstyled beyond the eyebrow treatment: there is no artboard for
+ * "empty screen", so inventing one here would be exactly the kind of drift the
+ * v3 rebuild exists to prevent.
+ */
+
+.wrap {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--fs-26);
+  font-weight: var(--fw-800);
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-04em);
+}
+
+.note {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9-5);
+  letter-spacing: var(--ls-16em);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-top: var(--space-8);
+}

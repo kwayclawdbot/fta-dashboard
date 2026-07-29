@@ -1,0 +1,28 @@
+/*
+ * The ticker tile — a rounded square carrying the issuer's initial in its brand
+ * pair. The artboards draw it at two sizes: 34px inside a Top-in-the-Club card,
+ * 26px inside a signal row. Both are here; nothing else varies.
+ */
+
+.tile {
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-800);
+  flex: 0 0 auto;
+  background: var(--tile-bg);
+  color: var(--tile-fg);
+}
+
+.lg {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-10);
+  font-size: var(--fs-15);
+}
+
+.sm {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-8);
+  font-size: var(--fs-11);
+}

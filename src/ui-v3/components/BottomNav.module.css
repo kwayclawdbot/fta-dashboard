@@ -1,0 +1,37 @@
+/* Bottom nav — five equal slots, glyph over a 9px label, accent marks active. */
+
+.nav {
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: var(--space-10) var(--space-8) var(--space-16);
+  flex: 0 0 auto;
+}
+
+.slot {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+}
+
+.glyph {
+  font-size: var(--fs-15);
+  color: var(--text-faint);
+  line-height: var(--lh-1-5);
+}
+
+.label {
+  font-size: var(--fs-9);
+  color: var(--text-faint);
+  font-weight: var(--fw-600);
+  margin-top: var(--space-2);
+}
+
+.active .glyph,
+.active .label {
+  color: var(--accent);
+}
+
+.active .label {
+  font-weight: var(--fw-700);
+}
