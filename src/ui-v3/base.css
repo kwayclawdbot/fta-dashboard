@@ -41,11 +41,13 @@
 
   font-family: var(--font-body);
   font-size: var(--fs-14);
-  font-weight: var(--fw-400, 400);
+  /* 400 is the mockups' implicit body weight: never declared, so the extractor
+     has no --fw-400 to emit. Same for the container line-height. */
+  font-weight: 400;
   font-style: normal;
   font-variant-numeric: normal;
   font-feature-settings: normal;
-  line-height: 1.45;
+  line-height: normal;
   letter-spacing: normal;
   text-align: start;
   text-transform: none;
