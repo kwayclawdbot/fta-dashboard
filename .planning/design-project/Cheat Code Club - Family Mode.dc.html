@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; }
+a { color: #B45309; text-decoration: none; }
+a:hover { color: #F59E0B; }
+@keyframes fmpulse { 0%,100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.22); } }
+</style>
+</helmet>
+
+<div style="{{ stageStyle }}">
+
+<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:36px;max-width:1720px">
+  <div>
+    <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--goldText,#B45309);margin-bottom:10px">Family Trading Academy · Mobile</div>
+    <div style="font:800 40px/1.05 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#101828)">Family mode</div>
+    <div style="font:400 15px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:8px;max-width:58ch">The warm-paper register from globals.css — gold accent, household framing, kid-safe language. Same components as Club mode, re-skinned.</div>
+  </div>
+  <div style="display:flex;gap:8px;padding:6px;border-radius:14px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+    <div onClick="{{ setLight }}" style="{{ lightBtn }}">Light</div>
+    <div onClick="{{ setDark }}" style="{{ darkBtn }}">Dark</div>
+  </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:40px 32px;max-width:1720px">
+
+<!-- ===== 1. FAMILY HOME (PARENT) ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">01 · Family home — parent</div>
+  <div data-screen-label="Family home" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 0">
+      <div style="display:flex;align-items:center;gap:9px">
+        <img src="public/icons/club-infinity-192.png" alt="FTA" style="width:30px;height:30px;border-radius:8px;display:block">
+        <div style="font:800 11px/1.2 Sora,sans-serif;letter-spacing:.04em;color:var(--goldText,#B45309)">FAMILY TRADING<br>ACADEMY</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:13px;color:var(--ink,#101828)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"></path><path d="M10 20a2.2 2.2 0 0 0 4 0"></path></svg>
+        <div style="width:32px;height:32px;border-radius:16px;background-image:url(public/avatars/adults/a01.png);background-size:cover;background-position:center;border:1.5px solid var(--gold,#F59E0B)"></div>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:13px;padding:16px 18px 0">
+      <div>
+        <div style="font:800 26px/1.15 Sora,sans-serif;color:var(--ink,#101828)">Good morning, Alicia</div>
+        <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:3px">The Boateng household · week 12 of the journey</div>
+      </div>
+
+      <div style="flex:none;border-radius:18px;overflow:hidden;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);box-shadow:var(--soft-shadow,0 4px 16px rgba(16,24,40,.06))">
+        <img src="public/art/kitchen-story.jpg" alt="Family at the kitchen table" style="width:100%;height:94px;object-fit:cover;object-position:50% 42%;display:block">
+        <div style="padding:13px 14px 15px">
+          <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;color:var(--goldText,#B45309)">THIS WEEK'S TABLE TALK</div>
+          <div style="font:700 18px/1.3 Sora,sans-serif;color:var(--ink,#101828);margin-top:7px">What makes a company worth owning?</div>
+          <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:5px">One 15-minute conversation. Three questions to ask at dinner.</div>
+          <div style="display:inline-block;margin-top:12px;padding:9px 17px;border-radius:20px;background:var(--gold,#F59E0B);color:#101828;font:700 12px/1 Inter,sans-serif">Open the guide</div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">HOUSEHOLD PROGRESS</div>
+          <div style="font:600 12px/1 Inter,sans-serif;color:var(--goldText,#B45309)">Details →</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-top:11px">
+          <div style="font:600 30px/1.1 IBM Plex Mono,monospace;color:var(--ink,#101828)">68%</div>
+          <div style="font:400 12px/1.9 Inter,sans-serif;color:var(--soft,#5B6472)">of Level 2 complete</div>
+        </div>
+        <div style="height:8px;border-radius:4px;background:var(--card2,#F3EDE1);margin-top:10px"><div style="width:68%;height:8px;border-radius:4px;background:linear-gradient(90deg,#FBBF24,#F59E0B)"></div></div>
+        <div style="display:flex;gap:10px;margin-top:13px">
+          <div style="flex:1;text-align:center;padding:10px 4px;border-radius:12px;background:var(--card2,#F3EDE1)">
+            <div style="font:600 17px/1.3 IBM Plex Mono,monospace;color:var(--ink,#101828)">14</div>
+            <div style="font:400 11px/1.3 Inter,sans-serif;color:var(--soft,#5B6472)">lessons done</div>
+          </div>
+          <div style="flex:1;text-align:center;padding:10px 4px;border-radius:12px;background:var(--card2,#F3EDE1)">
+            <div style="font:600 17px/1.3 IBM Plex Mono,monospace;color:var(--ink,#101828)">6</div>
+            <div style="font:400 11px/1.3 Inter,sans-serif;color:var(--soft,#5B6472)">week streak</div>
+          </div>
+          <div style="flex:1;text-align:center;padding:10px 4px;border-radius:12px;background:var(--card2,#F3EDE1)">
+            <div style="font:600 17px/1.3 IBM Plex Mono,monospace;color:var(--ink,#101828)">3</div>
+            <div style="font:400 11px/1.3 Inter,sans-serif;color:var(--soft,#5B6472)">members</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);overflow:hidden">
+        <div style="padding:12px 14px 4px;font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">WHO'S ACTIVE</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 14px">
+          <div style="width:34px;height:34px;border-radius:17px;background-image:url(public/avatars/teens/t02.png);background-size:cover;background-position:center"></div>
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Kojo · 14</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Finished "Reading a candle" · 2h ago</div></div>
+          <div style="font:600 12px/1 IBM Plex Mono,monospace;color:var(--goldText,#B45309)">+80 XP</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--sand,#EAE2D0)">
+          <div style="width:34px;height:34px;border-radius:17px;background-image:url(public/avatars/kids/k03.png);background-size:cover;background-position:center"></div>
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Ama · 9</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Playing Snack Stock · now</div></div>
+          <span style="width:8px;height:8px;border-radius:4px;background:var(--green,#16A34A);animation:fmpulse 2s ease-in-out infinite"></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 2. KID HOME ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">02 · Kid home</div>
+  <div data-screen-label="Kid home" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px 0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:19px;background-image:url(public/avatars/teens/t02.png);background-size:cover;background-position:center;border:2px solid var(--gold,#F59E0B)"></div>
+        <div>
+          <div style="font:700 15px/1.2 Sora,sans-serif;color:var(--ink,#101828)">Hey Kojo</div>
+          <div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Blue Belt II · Level 4 Zone Hunter</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);font:700 12px/1 IBM Plex Mono,monospace;color:var(--goldText,#B45309)">1,240 XP</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:13px;padding:16px 18px 0">
+      <div style="flex:none;border-radius:18px;background:var(--card,#FFFFFF);border:1px solid var(--gold,#F59E0B);padding:15px">
+        <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;color:var(--goldText,#B45309)">TODAY'S QUEST</div>
+        <div style="font:700 20px/1.28 Sora,sans-serif;color:var(--ink,#101828);margin-top:8px">Spot three brands you used this week</div>
+        <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:5px">Then find out who owns them. Takes about 6 minutes.</div>
+        <div style="display:flex;align-items:center;gap:11px;margin-top:13px">
+          <div style="flex:1;height:8px;border-radius:4px;background:var(--card2,#F3EDE1)"><div style="width:33%;height:8px;border-radius:4px;background:linear-gradient(90deg,#FBBF24,#F59E0B)"></div></div>
+          <div style="font:600 12px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">1/3</div>
+        </div>
+        <div style="display:inline-block;margin-top:13px;padding:10px 20px;border-radius:22px;background:var(--gold,#F59E0B);color:#101828;font:700 13px/1 Inter,sans-serif">Keep going</div>
+      </div>
+
+      <div style="display:flex;gap:11px">
+        <div style="flex:1;flex:none;width:calc(50% - 6px);border-radius:16px;overflow:hidden;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+          <img src="public/missions/snack-stock.webp" alt="Snack Stock" style="width:100%;height:82px;object-fit:cover;display:block">
+          <div style="padding:11px 12px 13px">
+            <div style="font:700 13px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Snack Stock</div>
+            <div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">Mission · +40 XP</div>
+          </div>
+        </div>
+        <div style="flex:1;flex:none;width:calc(50% - 6px);border-radius:16px;overflow:hidden;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+          <img src="public/missions/family-ceo.webp" alt="Family CEO" style="width:100%;height:82px;object-fit:cover;display:block">
+          <div style="padding:11px 12px 13px">
+            <div style="font:700 13px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Family CEO</div>
+            <div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">Mission · +60 XP</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px">
+        <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">BELT PROGRESS</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+          <div style="width:46px;height:46px;border-radius:12px;background:#3B82F6;border:1px solid #2563EB"></div>
+          <div style="flex:1">
+            <div style="font:700 14px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Blue Belt II</div>
+            <div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Level 5 Sweep Spotter unlocks Purple Belt</div>
+            <div style="height:6px;border-radius:3px;background:var(--card2,#F3EDE1);margin-top:7px"><div style="width:74%;height:6px;border-radius:3px;background:#3B82F6"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:none;display:flex;align-items:center;gap:12px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:13px 14px">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--card2,#F3EDE1);display:flex;align-items:center;justify-content:center;font:700 15px/1 Sora,sans-serif;color:var(--goldText,#B45309)">7</div>
+        <div style="flex:1"><div style="font:700 13px/1.25 Sora,sans-serif;color:var(--ink,#101828)">7-day streak</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Come back tomorrow to keep it</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 3. FAMILY MEMBERS ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">03 · Family members</div>
+  <div data-screen-label="Family members" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="padding:14px 18px 0">
+      <div style="font:800 26px/1.1 Sora,sans-serif;color:var(--ink,#101828)">The Boatengs</div>
+      <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">3 members · joined January 2026</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:11px;padding:16px 18px 0">
+      <div style="flex:none;display:flex;align-items:center;gap:13px;padding:14px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <div style="width:50px;height:50px;border-radius:25px;background-image:url(public/avatars/adults/a01.png);background-size:cover;background-position:center;border:2px solid var(--gold,#F59E0B)"></div>
+        <div style="flex:1">
+          <div style="font:700 15px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Alicia <span style="font:600 10px/1 Inter,sans-serif;letter-spacing:.08em;color:var(--goldText,#B45309);padding:3px 7px;border-radius:6px;background:var(--chip,#FEF3C7)">PARENT</span></div>
+          <div style="font:400 11px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:3px">Purple Belt II · 2,140 XP · 6-week streak</div>
+        </div>
+        <div style="color:var(--faint,#98A2B3)">›</div>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;gap:13px;padding:14px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <div style="width:50px;height:50px;border-radius:25px;background-image:url(public/avatars/teens/t02.png);background-size:cover;background-position:center"></div>
+        <div style="flex:1">
+          <div style="font:700 15px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Kojo <span style="font:600 10px/1 Inter,sans-serif;letter-spacing:.08em;color:var(--soft,#5B6472);padding:3px 7px;border-radius:6px;background:var(--card2,#F3EDE1)">TEEN · 14</span></div>
+          <div style="font:400 11px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:3px">Blue Belt II · 1,240 XP · 7-day streak</div>
+        </div>
+        <div style="color:var(--faint,#98A2B3)">›</div>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;gap:13px;padding:14px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <div style="width:50px;height:50px;border-radius:25px;background-image:url(public/avatars/kids/k03.png);background-size:cover;background-position:center"></div>
+        <div style="flex:1">
+          <div style="font:700 15px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Ama <span style="font:600 10px/1 Inter,sans-serif;letter-spacing:.08em;color:var(--soft,#5B6472);padding:3px 7px;border-radius:6px;background:var(--card2,#F3EDE1)">KID · 9</span></div>
+          <div style="font:400 11px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:3px">White Belt · 380 XP · playing now</div>
+        </div>
+        <div style="color:var(--faint,#98A2B3)">›</div>
+      </div>
+
+      <div style="flex:none;display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1.5px dashed var(--sand,#EAE2D0);background:transparent">
+        <div style="width:40px;height:40px;border-radius:20px;background:var(--card2,#F3EDE1);display:flex;align-items:center;justify-content:center;font:600 19px/1 Inter,sans-serif;color:var(--goldText,#B45309)">+</div>
+        <div style="flex:1"><div style="font:700 14px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Invite a family member</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">2 seats left on your plan</div></div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px;margin-top:2px">
+        <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">PARENT CONTROLS</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:13px">
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Kid-safe community</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--faint,#98A2B3)">Moderated posts only</div></div>
+          <div style="width:42px;height:24px;border-radius:12px;background:var(--gold,#F59E0B);display:flex;align-items:center;justify-content:flex-end;padding:2px"><div style="width:20px;height:20px;border-radius:10px;background:#fff"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:13px;padding-top:13px;border-top:1px solid var(--sand,#EAE2D0)">
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Weekly report email</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--faint,#98A2B3)">Sundays, 6 PM</div></div>
+          <div style="width:42px;height:24px;border-radius:12px;background:var(--gold,#F59E0B);display:flex;align-items:center;justify-content:flex-end;padding:2px"><div style="width:20px;height:20px;border-radius:10px;background:#fff"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 4. FAMILY LEADERBOARD ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">04 · Family leaderboard</div>
+  <div data-screen-label="Family leaderboard" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="padding:14px 18px 0">
+      <div style="font:800 26px/1.1 Sora,sans-serif;color:var(--ink,#101828)">Leaderboard</div>
+      <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">Families learning together this month</div>
+    </div>
+    <div style="display:flex;gap:7px;padding:14px 18px 0">
+      <div style="padding:7px 13px;border-radius:16px;background:var(--gold,#F59E0B);color:#101828;font:700 12px/1 Inter,sans-serif">Households</div>
+      <div style="padding:7px 13px;border-radius:16px;border:1px solid var(--sand,#EAE2D0);color:var(--soft,#5B6472);font:600 12px/1 Inter,sans-serif">Kids</div>
+      <div style="padding:7px 13px;border-radius:16px;border:1px solid var(--sand,#EAE2D0);color:var(--soft,#5B6472);font:600 12px/1 Inter,sans-serif">Parents</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:16px 18px 0">
+      <div style="flex:none;border-radius:18px;overflow:hidden;background:var(--card,#FFFFFF);border:1px solid var(--gold,#F59E0B)">
+        <img src="public/art/levelup-story.jpg" alt="Level up" style="width:100%;height:104px;object-fit:cover;object-position:50% 40%;display:block">
+        <div style="padding:12px 14px 14px">
+          <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;color:var(--goldText,#B45309)">YOUR HOUSEHOLD</div>
+          <div style="display:flex;align-items:baseline;gap:9px;margin-top:6px">
+            <div style="font:700 20px/1.2 Sora,sans-serif;color:var(--ink,#101828)">#12 of 340</div>
+            <div style="font:600 12px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">▲ 5 this week</div>
+          </div>
+          <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:4px">3,760 family XP · 240 XP from the top ten</div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sand,#EAE2D0)">
+          <div style="width:22px;font:700 13px/1 IBM Plex Mono,monospace;color:var(--goldText,#B45309)">1</div>
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(140deg,#F7E7B8,#D8B24C)"></div>
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">The Mensahs</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">5 members · 21-week streak</div></div>
+          <div style="font:600 13px/1 IBM Plex Mono,monospace;color:var(--ink,#101828)">9,120</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sand,#EAE2D0)">
+          <div style="width:22px;font:600 13px/1 IBM Plex Mono,monospace;color:var(--faint,#98A2B3)">2</div>
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(140deg,#DCE7F7,#8FA9CF)"></div>
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">The Okaforss</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">4 members · 17-week streak</div></div>
+          <div style="font:600 13px/1 IBM Plex Mono,monospace;color:var(--ink,#101828)">8,640</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sand,#EAE2D0)">
+          <div style="width:22px;font:600 13px/1 IBM Plex Mono,monospace;color:var(--faint,#98A2B3)">3</div>
+          <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(140deg,#E2F0DC,#8FBF7C)"></div>
+          <div style="flex:1"><div style="font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">The Williams</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">3 members · 15-week streak</div></div>
+          <div style="font:600 13px/1 IBM Plex Mono,monospace;color:var(--ink,#101828)">7,980</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--chip,#FEF3C7)">
+          <div style="width:22px;font:700 13px/1 IBM Plex Mono,monospace;color:var(--goldText,#B45309)">12</div>
+          <div style="width:32px;height:32px;border-radius:10px;background-image:url(public/avatars/adults/a01.png);background-size:cover;background-position:center;border:1.5px solid var(--gold,#F59E0B)"></div>
+          <div style="flex:1"><div style="font:700 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">The Boatengs</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--soft,#5B6472)">3 members · 6-week streak</div></div>
+          <div style="font:700 13px/1 IBM Plex Mono,monospace;color:var(--ink,#101828)">3,760</div>
+        </div>
+      </div>
+
+      <div style="flex:none;padding:14px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">HOW HOUSEHOLDS SCORE</div>
+        <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:7px;text-wrap:pretty">Family XP is the average across members, not the total — so a household of three isn't outrun by a household of six.</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 5. GAMES ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">05 · Games</div>
+  <div data-screen-label="Games" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="padding:14px 18px 0">
+      <div style="font:800 26px/1.1 Sora,sans-serif;color:var(--ink,#101828)">Games</div>
+      <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">Practice the eye. No real money, ever.</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:16px 18px 0">
+      <div style="flex:none;border-radius:18px;overflow:hidden;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <img src="public/art/couch-story.jpg" alt="Family playing" style="width:100%;height:112px;object-fit:cover;object-position:50% 45%;display:block">
+        <div style="padding:13px 14px 15px">
+          <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;color:var(--goldText,#B45309)">FAMILY GAME NIGHT</div>
+          <div style="font:700 18px/1.3 Sora,sans-serif;color:var(--ink,#101828);margin-top:7px">Trend or Trap · head to head</div>
+          <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:4px">Everyone calls the chart. Best of nine wins the week.</div>
+          <div style="display:inline-block;margin-top:12px;padding:9px 17px;border-radius:20px;background:var(--gold,#F59E0B);color:#101828;font:700 12px/1 Inter,sans-serif">Start a round</div>
+        </div>
+      </div>
+
+      <div style="flex:none;display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(140deg,#FDF0CB,#EFC14E)"></div>
+        <div style="flex:1"><div style="font:700 14px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Candle Battle</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Read the next candle · best 1,240 pts</div></div>
+        <div style="color:var(--faint,#98A2B3)">›</div>
+      </div>
+      <div style="flex:none;display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0)">
+        <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(140deg,#DCEBD4,#7FB069)"></div>
+        <div style="flex:1"><div style="font:700 14px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Trend or Trap</div><div style="font:400 11px/1.4 Inter,sans-serif;color:var(--soft,#5B6472)">Spot the fake breakout · best 980 pts</div></div>
+        <div style="color:var(--faint,#98A2B3)">›</div>
+      </div>
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">THIS WEEK AT HOME</div>
+          <div style="font:600 12px/1 Inter,sans-serif;color:var(--goldText,#B45309)">History →</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+          <div style="width:30px;height:30px;border-radius:15px;background-image:url(public/avatars/teens/t02.png);background-size:cover;background-position:center"></div>
+          <div style="flex:1;font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Kojo</div>
+          <div style="font:600 13px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">7 wins</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:11px">
+          <div style="width:30px;height:30px;border-radius:15px;background-image:url(public/avatars/adults/a01.png);background-size:cover;background-position:center"></div>
+          <div style="flex:1;font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Alicia</div>
+          <div style="font:600 13px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">5 wins</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:11px">
+          <div style="width:30px;height:30px;border-radius:15px;background-image:url(public/avatars/kids/k03.png);background-size:cover;background-position:center"></div>
+          <div style="flex:1;font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Ama</div>
+          <div style="font:600 13px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">3 wins</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 6. LEARN JOURNEY ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">06 · Learn journey</div>
+  <div data-screen-label="Learn journey" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="padding:14px 18px 0">
+      <div style="font:800 26px/1.1 Sora,sans-serif;color:var(--ink,#101828)">Your journey</div>
+      <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">Level 2 · Understanding businesses</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:16px 18px 0">
+      <div style="flex:none;border-radius:18px;background:var(--card,#FFFFFF);border:1px solid var(--gold,#F59E0B);padding:15px">
+        <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;color:var(--green,#16A34A)">UP NEXT</div>
+        <div style="font:700 19px/1.3 Sora,sans-serif;color:var(--ink,#101828);margin-top:8px">Lesson 9 · What a business actually sells</div>
+        <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:5px">12 minutes · video, then a 4-question check</div>
+        <div style="display:inline-block;margin-top:13px;padding:10px 19px;border-radius:22px;background:var(--gold,#F59E0B);color:#101828;font:700 13px/1 Inter,sans-serif">Start lesson</div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sand,#EAE2D0)">
+          <div style="width:26px;height:26px;border-radius:13px;background:var(--green,#16A34A);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 Inter,sans-serif">✓</div>
+          <div style="flex:1"><div style="font:600 13px/1.25 Inter,sans-serif;color:var(--ink,#101828)">Lesson 7 · Owning a slice</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">Completed Monday</div></div>
+          <div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">+80 XP</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sand,#EAE2D0)">
+          <div style="width:26px;height:26px;border-radius:13px;background:var(--green,#16A34A);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 Inter,sans-serif">✓</div>
+          <div style="flex:1"><div style="font:600 13px/1.25 Inter,sans-serif;color:var(--ink,#101828)">Lesson 8 · Reading a candle</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">Completed yesterday</div></div>
+          <div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">+80 XP</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sand,#EAE2D0);opacity:.55">
+          <div style="width:26px;height:26px;border-radius:13px;border:1.5px solid var(--sand,#EAE2D0)"></div>
+          <div style="flex:1"><div style="font:600 13px/1.25 Inter,sans-serif;color:var(--ink,#101828)">Lesson 10 · Profit in plain English</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">Locked until lesson 9</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;opacity:.55">
+          <div style="width:26px;height:26px;border-radius:13px;border:1.5px solid var(--sand,#EAE2D0)"></div>
+          <div style="flex:1"><div style="font:600 13px/1.25 Inter,sans-serif;color:var(--ink,#101828)">Lesson 11 · Good news vs good business</div><div style="font:400 11px/1.3 Inter,sans-serif;color:var(--faint,#98A2B3)">Locked</div></div>
+        </div>
+      </div>
+
+      <div style="flex:none;display:flex;align-items:center;gap:13px;padding:14px;border-radius:16px;background:var(--chip,#FEF3C7);border:1px solid var(--gold,#F59E0B)">
+        <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(140deg,#FFF3C4,#E6B84D)"></div>
+        <div style="flex:1"><div style="font:700 14px/1.25 Sora,sans-serif;color:var(--ink,#101828)">Flashcards are due</div><div style="font:400 12px/1.4 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">12 cards · about 4 minutes</div></div>
+        <div style="color:var(--goldText,#B45309);font:700 15px/1 Inter,sans-serif">›</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 7. PARENT CORNER ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">07 · Parent corner</div>
+  <div data-screen-label="Parent corner" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="padding:14px 18px 0">
+      <div style="font:800 26px/1.1 Sora,sans-serif;color:var(--ink,#101828)">Parent corner</div>
+      <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">What to say, and when to say it</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:16px 18px 0">
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:15px">
+        <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.14em;color:var(--goldText,#B45309)">WEEKLY REPORT · READY</div>
+        <div style="font:700 18px/1.3 Sora,sans-serif;color:var(--ink,#101828);margin-top:7px">Kojo is ahead on charts, behind on patience</div>
+        <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:5px">He nails pattern questions but skips the "why" step. Try asking him to explain one call out loud this week.</div>
+        <div style="display:flex;gap:9px;margin-top:13px">
+          <div style="padding:9px 16px;border-radius:20px;background:var(--gold,#F59E0B);color:#101828;font:700 12px/1 Inter,sans-serif">Read report</div>
+          <div style="padding:9px 16px;border-radius:20px;border:1px solid var(--sand,#EAE2D0);color:var(--ink,#101828);font:700 12px/1 Inter,sans-serif">Email me</div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px">
+        <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">CONVERSATION STARTERS</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+          <div style="padding:11px 12px;border-radius:12px;background:var(--card2,#F3EDE1);font:400 13px/1.45 Inter,sans-serif;color:var(--ink,#101828)">"Name a company you'd never sell. Why not?"</div>
+          <div style="padding:11px 12px;border-radius:12px;background:var(--card2,#F3EDE1);font:400 13px/1.45 Inter,sans-serif;color:var(--ink,#101828)">"What would make you change your mind about it?"</div>
+          <div style="padding:11px 12px;border-radius:12px;background:var(--card2,#F3EDE1);font:400 13px/1.45 Inter,sans-serif;color:var(--ink,#101828)">"Where does the money actually come from?"</div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);overflow:hidden">
+        <div style="padding:12px 14px 2px;font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">FOR YOU</div>
+        <div style="display:flex;justify-content:space-between;padding:12px 14px;font:500 13px/1 Inter,sans-serif;color:var(--ink,#101828)">Parent &amp; teacher guide <span style="color:var(--faint,#98A2B3)">›</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 14px;border-top:1px solid var(--sand,#EAE2D0);font:500 13px/1 Inter,sans-serif;color:var(--ink,#101828)">Lesson plans pack <span style="color:var(--faint,#98A2B3)">›</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 14px;border-top:1px solid var(--sand,#EAE2D0);font:500 13px/1 Inter,sans-serif;color:var(--ink,#101828)">Ask a coach <span style="color:var(--faint,#98A2B3)">›</span></div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 8. PROGRESS ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#98A2B3)">08 · Progress</div>
+  <div data-screen-label="Progress" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FBF7EF);border:1px solid var(--sand,#EAE2D0);box-shadow:0 24px 60px rgba(16,24,40,.14);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#101828)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5B6472)">LTE ▮▮▮ 100%</span></div>
+    <div style="padding:14px 18px 0">
+      <div style="font:800 26px/1.1 Sora,sans-serif;color:var(--ink,#101828)">Kojo's progress</div>
+      <div style="font:400 13px/1.5 Inter,sans-serif;color:var(--soft,#5B6472);margin-top:2px">Last 8 weeks</div>
+    </div>
+
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:16px 18px 0">
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:15px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between">
+          <div>
+            <div style="font:400 12px/1 Inter,sans-serif;color:var(--soft,#5B6472)">XP earned</div>
+            <div style="font:600 30px/1.25 IBM Plex Mono,monospace;color:var(--ink,#101828)">1,240</div>
+          </div>
+          <div style="font:600 12px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">▲ 22% vs last month</div>
+        </div>
+        <svg width="322" height="86" viewBox="0 0 322 86" fill="none" style="margin-top:12px">
+          <rect x="4" y="56" width="28" height="30" rx="5" fill="#EAE2D0"></rect>
+          <rect x="44" y="44" width="28" height="42" rx="5" fill="#EAE2D0"></rect>
+          <rect x="84" y="50" width="28" height="36" rx="5" fill="#EAE2D0"></rect>
+          <rect x="124" y="30" width="28" height="56" rx="5" fill="#FBBF24"></rect>
+          <rect x="164" y="38" width="28" height="48" rx="5" fill="#FBBF24"></rect>
+          <rect x="204" y="18" width="28" height="68" rx="5" fill="#F59E0B"></rect>
+          <rect x="244" y="26" width="28" height="60" rx="5" fill="#F59E0B"></rect>
+          <rect x="284" y="8" width="28" height="78" rx="5" fill="#B45309"></rect>
+        </svg>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px">
+        <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">STRENGTHS</div>
+        <div style="display:flex;flex-direction:column;gap:11px;margin-top:12px">
+          <div style="display:flex;align-items:center;gap:11px">
+            <div style="flex:1;font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Chart reading</div>
+            <div style="width:120px;height:6px;border-radius:3px;background:var(--card2,#F3EDE1)"><div style="width:88%;height:6px;border-radius:3px;background:var(--green,#16A34A)"></div></div>
+            <div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">88%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px">
+            <div style="flex:1;font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Business basics</div>
+            <div style="width:120px;height:6px;border-radius:3px;background:var(--card2,#F3EDE1)"><div style="width:71%;height:6px;border-radius:3px;background:var(--green,#16A34A)"></div></div>
+            <div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">71%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px">
+            <div style="flex:1;font:600 13px/1.2 Inter,sans-serif;color:var(--ink,#101828)">Patience &amp; risk</div>
+            <div style="width:120px;height:6px;border-radius:3px;background:var(--card2,#F3EDE1)"><div style="width:44%;height:6px;border-radius:3px;background:var(--gold,#F59E0B)"></div></div>
+            <div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--soft,#5B6472)">44%</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#EAE2D0);padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font:700 11px/1 Sora,sans-serif;letter-spacing:.12em;color:var(--ink,#101828)">BADGES EARNED</div>
+          <div style="font:600 12px/1 Inter,sans-serif;color:var(--goldText,#B45309)">View all →</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <div style="flex:1;aspect-ratio:1;border-radius:12px;background:linear-gradient(140deg,#FFF3C4,#E6B84D)"></div>
+          <div style="flex:1;aspect-ratio:1;border-radius:12px;background:linear-gradient(140deg,#DCEBD4,#7FB069)"></div>
+          <div style="flex:1;aspect-ratio:1;border-radius:12px;background:linear-gradient(140deg,#DCE7F7,#8FA9CF)"></div>
+          <div style="flex:1;aspect-ratio:1;border-radius:12px;background:var(--card2,#F3EDE1);border:1px dashed var(--sand,#EAE2D0)"></div>
+          <div style="flex:1;aspect-ratio:1;border-radius:12px;background:var(--card2,#F3EDE1);border:1px dashed var(--sand,#EAE2D0)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;padding:10px 22px 24px;border-top:1px solid var(--sand,#EAE2D0);background:var(--card,#FFFFFF);margin-top:12px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20H4z"></path></svg>Home</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h7v15H4z"></path><path d="M13 5h7v15h-7z"></path></svg>Learn</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="18" height="11" rx="4"></rect><path d="M8 12.5h3M9.5 11v3"></path></svg>Games</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint,#98A2B3);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="9" r="3"></circle><circle cx="16" cy="10" r="2.4"></circle><path d="M3.5 18.5a5 5 0 0 1 10 0M14 18.5a4 4 0 0 1 6.5-2"></path></svg>Family</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--goldText,#B45309);font:600 10px/1 Inter,sans-serif"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="10" r="2.6"></circle><path d="M7 18.5a5.4 5.4 0 0 1 10 0"></path></svg>You</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#F59E0B&quot;,&quot;#C9971E&quot;,&quot;#16A34A&quot;,&quot;#B45309&quot;],&quot;default&quot;:&quot;#F59E0B&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  state = { theme: null };
+
+  get t() { return this.state.theme || this.props.theme || "light"; }
+
+  renderVals() {
+    const accent = this.props.accent || "#F59E0B";
+    const light = {
+      "--stage": "#F0E9DA", "--paper": "#FBF7EF", "--card": "#FFFFFF", "--card2": "#F3EDE1",
+      "--sand": "#EAE2D0", "--ink": "#101828", "--soft": "#5B6472", "--faint": "#98A2B3",
+      "--gold": accent, "--goldText": "#B45309", "--chip": "#FEF3C7",
+      "--green": "#16A34A", "--red": "#DC2626",
+      "--soft-shadow": "0 4px 16px rgba(16,24,40,.06)"
+    };
+    const dark = {
+      "--stage": "#100C06", "--paper": "#17120B", "--card": "#221C14", "--card2": "#2C251B",
+      "--sand": "#38322A", "--ink": "#F7F2E6", "--soft": "#968D7B", "--faint": "#6A6456",
+      "--gold": accent, "--goldText": "#FBBF24", "--chip": "rgba(251,191,36,.14)",
+      "--green": "#34D399", "--red": "#F87171",
+      "--soft-shadow": "0 6px 18px rgba(0,0,0,.5)"
+    };
+    const isLight = this.t === "light";
+    const tk = isLight ? light : dark;
+    const btn = (on) => ({
+      padding: "9px 20px", borderRadius: "10px", cursor: "pointer",
+      font: "700 13px/1 Inter, sans-serif",
+      background: on ? tk["--gold"] : "transparent",
+      color: on ? "#101828" : tk["--soft"]
+    });
+    return {
+      stageStyle: Object.assign({}, tk, {
+        minHeight: "100vh", padding: "48px 40px 80px",
+        background: tk["--stage"], color: tk["--ink"],
+        fontFamily: "Inter, sans-serif"
+      }),
+      lightBtn: btn(isLight),
+      darkBtn: btn(!isLight),
+      setLight: () => this.setState({ theme: "light" }),
+      setDark: () => this.setState({ theme: "dark" })
+    };
+  }
+}
+</script>
+</body>
+</html>

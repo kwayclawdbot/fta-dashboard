@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #DED5C3; }
+  a { color: #F05A28; text-decoration: none; }
+  a:hover { color: #C24400; }
+  @keyframes cping { 0% { transform: scale(1); opacity: .6 } 100% { transform: scale(2.4); opacity: 0 } }
+</style>
+</helmet>
+
+<div style="font-family:Inter,sans-serif;background:#DED5C3;padding:52px 52px 92px;box-sizing:border-box;min-height:100%">
+
+  <div style="max-width:2200px;margin:0 auto 42px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#F05A28;font-weight:600">Cheat Code Club — fta-dashboard</div>
+    <h1 style="font-family:Archivo,sans-serif;font-size:62px;font-weight:900;letter-spacing:-.04em;line-height:.92;color:#14110F;margin:10px 0 0;text-transform:uppercase">The Club<br />screens</h1>
+    <p style="margin:14px 0 0;max-width:620px;font-size:15px;line-height:1.55;color:#7C746A;text-wrap:pretty">Every Club surface, drawn in the app's visual system — black ticker tiles, green deltas, sentiment bars, XP rails and marker annotations.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:46px 32px;max-width:2200px;margin:0 auto">
+
+    <!-- 01 FEED -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">01</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Club · Feed</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:8px 18px 0;display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <svg width="22" height="22" viewBox="0 0 24 24"><path d="M5 18.5h14M7.5 18.5V9.5a4.5 4.5 0 0 1 9 0v9" fill="none" stroke="#14110F" strokeWidth="2" strokeLinecap="round"></path></svg>
+            <h2 style="font-family:Archivo,sans-serif;font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:.9;color:#14110F;margin:9px 0 0;text-transform:uppercase">The Club</h2>
+            <p style="margin:9px 0 0;display:flex;align-items:center;gap:7px;font-size:11.5px;color:#8A8279;font-weight:500"><span style="position:relative;display:inline-flex;width:7px;height:7px"><span style="position:absolute;inset:0;border-radius:50%;background:#1BA94C;animation:cping 2s ease-out infinite"></span><span style="position:relative;width:7px;height:7px;border-radius:50%;background:#1BA94C"></span></span>12,480 members online</p>
+          </div>
+          <div style="display:flex;gap:15px;align-items:center;padding-top:4px">
+            <svg width="21" height="21" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="#14110F" strokeWidth="2"></circle><path d="M16.2 16.2 21 21" stroke="#14110F" strokeWidth="2" strokeLinecap="round"></path></svg>
+            <svg width="21" height="21" viewBox="0 0 24 24"><path d="M4.5 19.5h15M6.5 16 16.5 6l2 2-10 10H6.5Z" fill="none" stroke="#14110F" strokeWidth="2" strokeLinejoin="round"></path></svg>
+          </div>
+        </div>
+
+        <div style="display:flex;border-bottom:1.5px solid #E4DCCC;margin:15px 18px 0">
+          <div style="padding:8px 0;margin-right:24px;border-bottom:3px solid #F05A28;margin-bottom:-1.5px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#F05A28">Feed</div>
+          <div style="padding:8px 0;margin-right:24px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A39A8E">Discussions</div>
+          <div style="padding:8px 0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A39A8E">Changed my mind</div>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:14px 18px 0;display:flex;flex-direction:column;gap:10px">
+          <div style="flex-shrink:0;display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:11px 13px">
+            <div style="width:32px;height:32px;border-radius:50%;background:#14110F;color:#F05A28;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:13px;font-weight:800;flex-shrink:0">A</div>
+            <span style="flex:1;font-size:13px;color:#A39A8E">What's on your mind?</span>
+          </div>
+
+          <div style="flex-shrink:0;display:flex;gap:13px">
+            <div style="text-align:center;width:58px;flex-shrink:0">
+              <div style="width:54px;height:54px;border-radius:50%;padding:2.5px;background:#F05A28;margin:0 auto"><div style="width:100%;height:100%;border-radius:50%;background:#14110F;border:2px solid #F5F1E8;display:grid;place-items:center;color:#F05A28;font-family:Archivo,sans-serif;font-weight:800;font-size:14px">OG</div></div>
+              <div style="margin-top:-8px;position:relative"><span style="background:#F05A28;color:#fff;font-size:8px;font-weight:800;letter-spacing:.1em;border-radius:3px;padding:1.5px 5px">LIVE</span></div>
+              <div style="font-size:9.5px;color:#14110F;font-weight:600;margin-top:5px">OptionsOG</div>
+            </div>
+            <div style="text-align:center;width:58px;flex-shrink:0"><div style="width:54px;height:54px;border-radius:50%;background:#E7DFD2;border:2px solid #fff;display:grid;place-items:center;color:#8A8279;font-family:Archivo,sans-serif;font-weight:800;font-size:14px;margin:0 auto">VH</div><div style="font-size:9.5px;color:#14110F;font-weight:600;margin-top:9px">ValueHawk</div></div>
+            <div style="text-align:center;width:58px;flex-shrink:0"><div style="width:54px;height:54px;border-radius:50%;background:#E7DFD2;border:2px solid #fff;display:grid;place-items:center;color:#8A8279;font-family:Archivo,sans-serif;font-weight:800;font-size:14px;margin:0 auto">TT</div><div style="font-size:9.5px;color:#14110F;font-weight:600;margin-top:9px">TechTactic</div></div>
+            <div style="text-align:center;width:58px;flex-shrink:0"><div style="width:54px;height:54px;border-radius:50%;background:#E7DFD2;border:2px solid #fff;display:grid;place-items:center;color:#8A8279;font-family:Archivo,sans-serif;font-weight:800;font-size:14px;margin:0 auto">DD</div><div style="font-size:9.5px;color:#14110F;font-weight:600;margin-top:9px">DataDive</div></div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:9px"><span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F">Top in the Club</span><span style="font-size:11px">🔥</span></div>
+            <div style="display:flex;gap:9px">
+              <div style="width:58px;flex-shrink:0"><div style="height:58px;border-radius:12px;background:#14110F;display:grid;place-items:center;color:#1BA94C;font-family:Archivo,sans-serif;font-size:20px;font-weight:900">N</div><div style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#1BA94C;margin-top:5px">+6.43%</div></div>
+              <div style="width:58px;flex-shrink:0"><div style="height:58px;border-radius:12px;background:#14110F;display:grid;place-items:center;color:#fff;font-family:Archivo,sans-serif;font-size:20px;font-weight:900">H</div><div style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#1BA94C;margin-top:5px">+8.21%</div></div>
+              <div style="width:58px;flex-shrink:0"><div style="height:58px;border-radius:12px;background:#E0392B;display:grid;place-items:center;color:#fff;font-family:Archivo,sans-serif;font-size:20px;font-weight:900">T</div><div style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#1BA94C;margin-top:5px">+3.19%</div></div>
+              <div style="width:58px;flex-shrink:0"><div style="height:58px;border-radius:12px;background:#EFEAE0;display:grid;place-items:center;color:#14110F;font-family:Archivo,sans-serif;font-size:20px;font-weight:900">A</div><div style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#1BA94C;margin-top:5px">+1.42%</div></div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F">Changed my mind</span><span style="font-size:11px;font-weight:700;color:#F05A28">See all</span></div>
+            <div style="background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:13px">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <div style="width:30px;height:30px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">ST</div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#14110F">SwingTraderSam</div><div style="font-size:12px;color:#8A8279;margin-top:1px">I was wrong about TSLA.</div></div>
+                <span style="color:#A39A8E;font-weight:800;letter-spacing:1px;font-size:12px">···</span>
+              </div>
+              <div style="padding-left:40px;margin-top:10px">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#F05A28">Changed my mind</div>
+                <p style="margin:5px 0 0;font-size:13px;line-height:1.5;color:#14110F">After re-watching the earnings call, I see the FSD progress differently. Might be turning a corner.</p>
+                <div style="display:flex;gap:15px;margin-top:9px;font-size:12px;color:#8A8279"><span>♡ 92</span><span>💬 41</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F">Hot discussions</span><span style="font-size:11px;font-weight:700;color:#F05A28">See all</span></div>
+            <div style="display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:11px">
+              <span style="width:30px;height:30px;border-radius:9px;background:#14110F;color:#1BA94C;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:13px;font-weight:900;flex-shrink:0">N</span>
+              <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#14110F">NVDA earnings thread 💚</div><div style="font-size:11px;color:#8A8279;margin-top:2px">152 new replies</div></div>
+              <span style="width:30px;height:30px;border-radius:9px;background:#14110F;color:#fff;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:13px;font-weight:900;flex-shrink:0">H</span>
+              <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#14110F">HOOD to the moon? 🚀</div><div style="font-size:11px;color:#8A8279;margin-top:2px">89 new replies</div></div>
+              <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M9 5.5 15.5 12 9 18.5" fill="none" stroke="#A39A8E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 8px 22px;border-top:1px solid #E4DCCC">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M15 9 13 13l-4 2 2-4Z" fill="#A39A8E"></path></svg><span style="font-size:9px;color:#A39A8E">Discover</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7v9h-17Z" fill="#F05A28"></path></svg><span style="font-size:9px;color:#F05A28;font-weight:700">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="#A39A8E"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Live</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="#A39A8E" strokeWidth="1.9"></rect><path d="M12 5v14" stroke="#A39A8E" strokeWidth="1.9"></path></svg><span style="font-size:9px;color:#A39A8E">Learn</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.6" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M5.5 19.4c1.5-3.4 11.5-3.4 13 0" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Profile</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 DISCUSSIONS -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">02</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Club · Discussions</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:flex-end;justify-content:space-between">
+          <h2 style="font-family:Archivo,sans-serif;font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:.9;color:#14110F;margin:0;text-transform:uppercase">The Club</h2>
+          <div style="display:flex;gap:15px"><svg width="21" height="21" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="#14110F" strokeWidth="2"></circle><path d="M16.2 16.2 21 21" stroke="#14110F" strokeWidth="2" strokeLinecap="round"></path></svg><svg width="21" height="21" viewBox="0 0 24 24"><path d="M4.5 19.5h15M6.5 16 16.5 6l2 2-10 10H6.5Z" fill="none" stroke="#14110F" strokeWidth="2" strokeLinejoin="round"></path></svg></div>
+        </div>
+
+        <div style="display:flex;border-bottom:1.5px solid #E4DCCC;margin:15px 18px 0">
+          <div style="padding:8px 0;margin-right:24px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A39A8E">Feed</div>
+          <div style="padding:8px 0;margin-right:24px;border-bottom:3px solid #F05A28;margin-bottom:-1.5px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#F05A28">Discussions</div>
+          <div style="padding:8px 0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A39A8E">Changed my mind</div>
+        </div>
+
+        <div style="display:flex;gap:7px;padding:14px 18px 0">
+          <span style="background:#F05A28;color:#fff;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">Hot</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">New</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Tickers</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Mine</span>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:14px 18px 0;display:flex;flex-direction:column;gap:15px">
+          <div style="flex-shrink:0;border-radius:16px;overflow:hidden;background:#14110F;position:relative">
+            <div style="height:104px;background:linear-gradient(150deg,#332B23,#14110F);position:relative;overflow:hidden">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(118deg,rgba(255,255,255,.05) 0 11px,transparent 11px 22px)"></div>
+              <div style="position:absolute;left:14px;top:12px;display:inline-flex;align-items:center;gap:6px"><span style="width:26px;height:26px;border-radius:7px;background:#fff;color:#1BA94C;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:12px;font-weight:900">N</span><span style="background:#F05A28;border-radius:4px;padding:2px 7px;font-size:9px;font-weight:800;letter-spacing:.08em;color:#fff">PINNED</span></div>
+              <div style="position:absolute;left:14px;bottom:12px;font-family:Archivo,sans-serif;font-size:23px;font-weight:900;letter-spacing:-.03em;color:#fff;text-transform:uppercase;line-height:1">NVDA earnings<br />thread</div>
+              <div style="position:absolute;right:16px;bottom:14px;width:56px;height:56px;border:3px solid #F05A28;border-radius:50%;transform:rotate(-14deg)"></div>
+            </div>
+            <div style="padding:13px 14px;display:flex;align-items:center;gap:10px">
+              <div style="flex:1"><div style="font-size:12px;color:rgba(255,255,255,.62)">152 new replies · 41 in thread now</div><div style="display:flex;margin-top:8px"><span style="width:22px;height:22px;border-radius:50%;background:#E7DFD2;color:#14110F;border:2px solid #14110F;display:grid;place-items:center;font-size:8px;font-weight:800">CN</span><span style="width:22px;height:22px;border-radius:50%;background:#F05A28;color:#fff;border:2px solid #14110F;margin-left:-7px;display:grid;place-items:center;font-size:8px;font-weight:800">LL</span><span style="width:22px;height:22px;border-radius:50%;background:#1BA94C;color:#fff;border:2px solid #14110F;margin-left:-7px;display:grid;place-items:center;font-size:8px;font-weight:800">PN</span></div></div>
+              <span style="background:#F05A28;color:#fff;border-radius:8px;padding:11px 18px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Jump in</span>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F;margin-bottom:9px">Rooms by topic</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+              <div style="background:#1BA94C;border-radius:13px;padding:12px;color:#fff;height:74px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between"><div style="font-family:Archivo,sans-serif;font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.05">Semis &amp;<br />AI infra</div><div style="font-size:10px;opacity:.82">418 talking</div></div>
+              <div style="background:#7C4DFF;border-radius:13px;padding:12px;color:#fff;height:74px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between"><div style="font-family:Archivo,sans-serif;font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.05">Options<br />desk</div><div style="font-size:10px;opacity:.82">262 talking</div></div>
+              <div style="background:#F05A28;border-radius:13px;padding:12px;color:#fff;height:74px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between"><div style="font-family:Archivo,sans-serif;font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.05">Macro<br />&amp; rates</div><div style="font-size:10px;opacity:.82">193 talking</div></div>
+              <div style="background:#2F6BFF;border-radius:13px;padding:12px;color:#fff;height:74px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between"><div style="font-family:Archivo,sans-serif;font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.05">First<br />100 days</div><div style="font-size:10px;opacity:.82">877 talking</div></div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F;margin-bottom:9px">Trending threads</div>
+            <div style="background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:0 13px">
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #F0EBE1">
+                <span style="width:30px;height:30px;border-radius:9px;background:#14110F;color:#fff;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:13px;font-weight:900">H</span>
+                <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#14110F">HOOD to the moon? 🚀</div><div style="font-size:11px;color:#8A8279;margin-top:1px">89 replies · ♡ 214</div></div>
+                <svg width="60" height="24" viewBox="0 0 100 40"><polyline points="2,34 16,30 30,32 44,23 58,25 72,15 86,10 98,4" fill="none" stroke="#1BA94C" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"></polyline></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 0">
+                <span style="width:30px;height:30px;border-radius:9px;background:#E0392B;color:#fff;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:13px;font-weight:900">T</span>
+                <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#14110F">Is Tesla still a growth stock?</div><div style="font-size:11px;color:#8A8279;margin-top:1px">127 replies · live poll</div></div>
+                <svg width="60" height="24" viewBox="0 0 100 40"><polyline points="2,10 16,14 30,12 44,19 58,17 72,24 86,22 98,29" fill="none" stroke="#E0392B" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"></polyline></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 8px 22px;border-top:1px solid #E4DCCC">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M15 9 13 13l-4 2 2-4Z" fill="#A39A8E"></path></svg><span style="font-size:9px;color:#A39A8E">Discover</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7v9h-17Z" fill="#F05A28"></path></svg><span style="font-size:9px;color:#F05A28;font-weight:700">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="#A39A8E"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Live</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="#A39A8E" strokeWidth="1.9"></rect><path d="M12 5v14" stroke="#A39A8E" strokeWidth="1.9"></path></svg><span style="font-size:9px;color:#A39A8E">Learn</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.6" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M5.5 19.4c1.5-3.4 11.5-3.4 13 0" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Profile</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 CHANGED MY MIND -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">03</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Club · Changed my mind</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:flex-end;justify-content:space-between">
+          <h2 style="font-family:Archivo,sans-serif;font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:.9;color:#14110F;margin:0;text-transform:uppercase">The Club</h2>
+          <div style="display:flex;gap:15px"><svg width="21" height="21" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="#14110F" strokeWidth="2"></circle><path d="M16.2 16.2 21 21" stroke="#14110F" strokeWidth="2" strokeLinecap="round"></path></svg><svg width="21" height="21" viewBox="0 0 24 24"><path d="M4.5 19.5h15M6.5 16 16.5 6l2 2-10 10H6.5Z" fill="none" stroke="#14110F" strokeWidth="2" strokeLinejoin="round"></path></svg></div>
+        </div>
+
+        <div style="display:flex;border-bottom:1.5px solid #E4DCCC;margin:15px 18px 0">
+          <div style="padding:8px 0;margin-right:24px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A39A8E">Feed</div>
+          <div style="padding:8px 0;margin-right:24px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#A39A8E">Discussions</div>
+          <div style="padding:8px 0;border-bottom:3px solid #F05A28;margin-bottom:-1.5px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#F05A28">Changed my mind</div>
+        </div>
+
+        <div style="padding:18px 18px 0;position:relative">
+          <h3 style="font-family:Archivo,sans-serif;font-size:27px;font-weight:900;letter-spacing:-.035em;line-height:1.02;color:#14110F;margin:0;max-width:250px;text-transform:none">Where the Club <span style="position:relative;display:inline-block">updated<span style="position:absolute;left:-6px;right:-6px;top:-3px;bottom:-2px;border:2.5px solid #F05A28;border-radius:50%;transform:rotate(-2deg)"></span></span> its thinking.</h3>
+          <div style="position:absolute;right:16px;top:14px;transform:rotate(-9deg);font-family:Caveat,cursive;font-size:20px;font-weight:700;color:#F05A28;text-align:center;line-height:1">strong opinions,<br />loosely held</div>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:16px 18px 0;display:flex;flex-direction:column;gap:12px">
+          <div style="flex-shrink:0;background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:13px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:32px;height:32px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">ST</div>
+              <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#14110F">SwingTraderSam</div><div style="font-size:11px;color:#A39A8E">6h · TSLA</div></div>
+              <div style="display:flex;align-items:center;gap:5px;flex-shrink:0"><span style="background:#F3EFE6;color:#8A8279;border-radius:5px;padding:3px 7px;font-size:9.5px;font-weight:800;letter-spacing:.04em">BEAR</span><span style="color:#F05A28;font-weight:800;font-size:11px">→</span><span style="background:#1BA94C;color:#fff;border-radius:5px;padding:3px 7px;font-size:9.5px;font-weight:800;letter-spacing:.04em">BULL</span></div>
+            </div>
+            <p style="margin:11px 0 0;font-size:13.5px;line-height:1.5;color:#14110F">After re-watching the earnings call, I see the FSD progress differently. Might be turning a corner.</p>
+            <div style="margin-top:11px;border-left:3px solid #E4DCCC;padding:2px 0 2px 11px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;color:#A39A8E">WHAT I SAID BEFORE</div>
+              <p style="margin:4px 0 0;font-size:12px;line-height:1.45;color:#8A8279">"Margins are compressing and there's no growth story left here."</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:11px;border-top:1px solid #F0EBE1;font-size:12px;color:#8A8279"><span>♡ 92</span><span>💬 41</span><span style="margin-left:auto;background:#FFF1EA;color:#C24400;border-radius:6px;padding:6px 11px;font-size:11px;font-weight:800;letter-spacing:.04em">RESPECT</span></div>
+          </div>
+
+          <div style="flex-shrink:0;background:#14110F;border-radius:16px;padding:15px;color:#fff">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#F05A28">Your turn</div>
+            <p style="margin:8px 0 0;font-family:Archivo,sans-serif;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.15">The Club rewards the update, not the ego.</p>
+            <div style="margin-top:13px;background:#F05A28;border-radius:8px;padding:13px;text-align:center;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase">Post a change of mind</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 8px 22px;border-top:1px solid #E4DCCC">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M15 9 13 13l-4 2 2-4Z" fill="#A39A8E"></path></svg><span style="font-size:9px;color:#A39A8E">Discover</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7v9h-17Z" fill="#F05A28"></path></svg><span style="font-size:9px;color:#F05A28;font-weight:700">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="#A39A8E"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Live</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="#A39A8E" strokeWidth="1.9"></rect><path d="M12 5v14" stroke="#A39A8E" strokeWidth="1.9"></path></svg><span style="font-size:9px;color:#A39A8E">Learn</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.6" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M5.5 19.4c1.5-3.4 11.5-3.4 13 0" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Profile</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 THREAD -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">04</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Ticker thread</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:10px 18px 0;display:flex;align-items:center;justify-content:space-between">
+          <svg width="22" height="22" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="#14110F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+          <div style="display:flex;gap:16px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5Z" fill="none" stroke="#14110F" strokeWidth="1.9" strokeLinejoin="round"></path></svg><svg width="20" height="20" viewBox="0 0 24 24"><path d="m12 4 2.4 5 5.6.7-4 3.9 1 5.4-5-2.7-5 2.7 1-5.4-4-3.9 5.6-.7Z" fill="none" stroke="#14110F" strokeWidth="1.8" strokeLinejoin="round"></path></svg><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 4v11M8 8l4-4 4 4M5 19h14" fill="none" stroke="#14110F" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"></path></svg></div>
+        </div>
+
+        <div style="padding:14px 18px 0;display:flex;align-items:center;gap:11px">
+          <span style="width:44px;height:44px;border-radius:12px;background:#14110F;color:#1BA94C;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:20px;font-weight:900">N</span>
+          <div><div style="font-family:Archivo,sans-serif;font-size:26px;font-weight:900;letter-spacing:-.035em;color:#14110F;line-height:1">NVDA</div><div style="font-size:12px;color:#8A8279;margin-top:2px">NVIDIA Corporation</div></div>
+        </div>
+        <div style="display:flex;gap:7px;padding:11px 18px 0"><span style="border:1px solid #E4DCCC;border-radius:999px;padding:4px 11px;font-size:10.5px;font-weight:600;color:#8A8279">Semiconductors</span><span style="border:1px solid #E4DCCC;border-radius:999px;padding:4px 11px;font-size:10.5px;font-weight:600;color:#8A8279">Large Cap</span></div>
+
+        <div style="padding:14px 18px 0;display:flex;gap:14px">
+          <div style="flex:1;min-width:0">
+            <div style="font-family:Archivo,sans-serif;font-size:30px;font-weight:900;letter-spacing:-.035em;color:#14110F;line-height:1">$1,024.31</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;color:#1BA94C;margin-top:4px">+62.06 (+6.43%) Today</div>
+            <svg width="100%" height="62" viewBox="0 0 200 62" preserveAspectRatio="none" style="margin-top:8px;display:block"><polyline points="2,56 20,52 38,54 56,44 74,46 92,36 110,38 128,26 146,22 164,24 182,10 198,4" fill="none" stroke="#1BA94C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></polyline></svg>
+            <div style="display:flex;gap:5px;margin-top:8px"><span style="background:#14110F;color:#fff;border-radius:5px;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600">1D</span><span style="color:#8A8279;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px">1W</span><span style="color:#8A8279;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px">1M</span><span style="color:#8A8279;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px">3M</span><span style="color:#8A8279;padding:4px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px">1Y</span></div>
+          </div>
+          <div style="width:118px;flex-shrink:0">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#14110F">Club sentiment</div>
+            <div style="margin-top:9px"><div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:#1BA94C"><span>Bullish</span><span style="color:#14110F">78%</span></div><div style="height:5px;border-radius:3px;background:#EDE7DB;margin-top:3px"><div style="width:78%;height:100%;border-radius:3px;background:#1BA94C"></div></div></div>
+            <div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:#E0392B"><span>Bearish</span><span style="color:#14110F">15%</span></div><div style="height:5px;border-radius:3px;background:#EDE7DB;margin-top:3px"><div style="width:15%;height:100%;border-radius:3px;background:#E0392B"></div></div></div>
+            <div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:#8A8279"><span>Watching</span><span style="color:#14110F">7%</span></div><div style="height:5px;border-radius:3px;background:#EDE7DB;margin-top:3px"><div style="width:7%;height:100%;border-radius:3px;background:#A39A8E"></div></div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;border-bottom:1.5px solid #E4DCCC;margin:16px 18px 0">
+          <div style="padding:8px 0;margin-right:22px;border-bottom:3px solid #F05A28;margin-bottom:-1.5px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#F05A28">Club discussion</div>
+          <div style="padding:8px 0;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#A39A8E">Kai insight</div>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:13px 18px 0;display:flex;flex-direction:column;gap:13px">
+          <div style="flex-shrink:0;display:flex;gap:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">CN</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12.5px;font-weight:700;color:#14110F">ChartNerd33</span><span style="font-size:11px;color:#A39A8E">6h</span></div>
+              <p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:#14110F">NVDA holding the 1K level like a boss. Next stop 1.1K? 👀</p>
+              <div style="display:flex;align-items:center;gap:14px;margin-top:7px;font-size:11.5px;color:#8A8279"><span>♡ 124</span><span>💬 34</span><span style="margin-left:auto;display:flex"><span style="width:19px;height:19px;border-radius:50%;background:#E7DFD2;border:1.5px solid #F5F1E8"></span><span style="width:19px;height:19px;border-radius:50%;background:#D8CFC0;border:1.5px solid #F5F1E8;margin-left:-6px"></span><span style="width:19px;height:19px;border-radius:50%;background:#C9BFAE;border:1.5px solid #F5F1E8;margin-left:-6px"></span></span></div>
+            </div>
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">LL</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px"><span style="font-size:12.5px;font-weight:700;color:#14110F">LongTermLarry</span><span style="font-size:11px;color:#A39A8E">7h</span></div>
+              <p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:#14110F">Datacenter backlog looks insane. I care more about gross margin than the print.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:12px 18px 22px;display:flex;gap:10px">
+          <span style="flex:1;background:#F05A28;color:#fff;border-radius:9px;padding:14px;text-align:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase">+ Add to watchlist</span>
+          <span style="flex:1;background:#14110F;color:#fff;border-radius:9px;padding:14px;text-align:center;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Trade</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 05 COMPOSE -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">05</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Share your call</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:600;color:#8A8279">Cancel</span>
+          <div style="display:flex;align-items:center;gap:5px"><span style="width:26px;height:3px;border-radius:2px;background:#F05A28"></span><span style="width:26px;height:3px;border-radius:2px;background:#F05A28"></span><span style="width:26px;height:3px;border-radius:2px;background:#E4DCCC"></span></div>
+          <span style="font-size:13px;font-weight:800;color:#F05A28">Post</span>
+        </div>
+
+        <div style="padding:22px 18px 0;position:relative">
+          <div style="position:absolute;right:20px;top:12px;transform:rotate(7deg);font-family:Caveat,cursive;font-size:21px;font-weight:700;color:#F05A28">be specific!</div>
+          <h2 style="font-family:Archivo,sans-serif;font-size:30px;font-weight:900;letter-spacing:-.035em;line-height:1.02;color:#14110F;margin:0;max-width:250px">What's <span style="position:relative;display:inline-block">your call<span style="position:absolute;left:0;right:0;bottom:-3px;height:3px;background:#F05A28;border-radius:2px"></span></span> on NVDA?</h2>
+          <p style="margin:11px 0 0;font-size:13px;line-height:1.5;color:#8A8279;max-width:270px">Your take helps power better signals for the whole Club.</p>
+        </div>
+
+        <div style="padding:20px 18px 0">
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E4DCCC;border-radius:13px;padding:11px 13px">
+            <span style="width:34px;height:34px;border-radius:10px;background:#14110F;color:#1BA94C;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:15px;font-weight:900">N</span>
+            <div style="flex:1"><div style="font-family:Archivo,sans-serif;font-size:14px;font-weight:800;color:#14110F">NVDA</div><div style="font-size:11px;color:#8A8279">NVIDIA</div></div>
+            <div style="display:flex;gap:6px">
+              <span style="border:1px solid #E4DCCC;border-radius:8px;padding:8px 11px;font-size:11px;font-weight:700;color:#8A8279">Bearish</span>
+              <span style="border:1px solid #E4DCCC;border-radius:8px;padding:8px 11px;font-size:11px;font-weight:700;color:#8A8279">Neutral</span>
+              <span style="background:#1BA94C;border-radius:8px;padding:8px 11px;font-size:11px;font-weight:800;color:#fff">Bullish</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:16px 18px 0">
+          <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F;margin-bottom:9px">Post type</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            <span style="background:#14110F;color:#fff;border-radius:7px;padding:8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">Thesis</span>
+            <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:8px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Risk</span>
+            <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:8px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Chart</span>
+            <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:8px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Changed my mind</span>
+          </div>
+        </div>
+
+        <div style="flex:1;padding:16px 18px 0;display:flex;flex-direction:column;min-height:0">
+          <div style="flex:1;background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:14px;display:flex;flex-direction:column;min-height:0">
+            <div style="font-family:Archivo,sans-serif;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:#14110F">Blackwell inflection: why the next leg is just beginning</div>
+            <p style="margin:9px 0 0;font-size:13px;line-height:1.55;color:#4A443D">Data-center demand plus enterprise adoption means the ramp isn't a one-quarter story. Here's the math I ran on the order book…</p>
+            <div style="margin-top:auto;padding-top:12px;border-top:1px solid #F0EBE1;display:flex;align-items:center;gap:15px">
+              <svg width="19" height="19" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="#8A8279" strokeWidth="1.9"></rect><path d="m5 16 4-4 3 3 3.5-4L21 16" fill="none" stroke="#8A8279" strokeWidth="1.9" strokeLinejoin="round"></path></svg>
+              <svg width="19" height="19" viewBox="0 0 24 24"><path d="M4 18 10 8l4 6 3-4 3 8Z" fill="none" stroke="#8A8279" strokeWidth="1.9" strokeLinejoin="round"></path></svg>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A8279">$NVDA</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A39A8E">184 / 2,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:14px 18px 24px">
+          <div style="background:#F05A28;border-radius:9px;padding:15px;text-align:center;color:#fff;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase">Publish to the Club</div>
+          <div style="text-align:center;margin-top:11px;font-size:12px;font-weight:600;color:#F05A28">Save as draft</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 06 LOUNGE -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">06</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">The Lounge</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <h2 style="font-family:Archivo,sans-serif;font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:.9;color:#14110F;margin:0;text-transform:uppercase">The Lounge</h2>
+            <p style="margin:9px 0 0;display:flex;align-items:center;gap:7px;font-size:11.5px;color:#8A8279;font-weight:500"><span style="position:relative;display:inline-flex;width:7px;height:7px"><span style="position:absolute;inset:0;border-radius:50%;background:#1BA94C;animation:cping 2s ease-out infinite"></span><span style="position:relative;width:7px;height:7px;border-radius:50%;background:#1BA94C"></span></span>42 in Main Circle right now</p>
+          </div>
+          <div style="display:flex;padding-top:8px">
+            <span style="width:27px;height:27px;border-radius:50%;background:#E7DFD2;color:#8A8279;border:2px solid #F5F1E8;display:grid;place-items:center;font-size:9px;font-weight:800">MB</span>
+            <span style="width:27px;height:27px;border-radius:50%;background:#E7DFD2;color:#8A8279;border:2px solid #F5F1E8;margin-left:-8px;display:grid;place-items:center;font-size:9px;font-weight:800">PN</span>
+            <span style="width:27px;height:27px;border-radius:50%;background:#14110F;color:#fff;border:2px solid #F5F1E8;margin-left:-8px;display:grid;place-items:center;font-size:8.5px;font-weight:800">+9</span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:7px;padding:15px 18px 12px">
+          <span style="background:#F05A28;color:#fff;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">Main circle</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Semis</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Beginners</span>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:4px 18px 0;display:flex;flex-direction:column;gap:15px">
+          <div style="flex-shrink:0;display:flex;gap:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">MB</div>
+            <div style="min-width:0"><div style="font-size:11px;color:#A39A8E;margin-bottom:4px">Marcus Bell · 9:12</div><div style="background:#fff;border:1px solid #E4DCCC;border-radius:3px 15px 15px 15px;padding:10px 13px;font-size:13px;line-height:1.5;color:#14110F">Anyone else watching that NVDA gap fill? Volume is thin under 124.</div></div>
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">PN</div>
+            <div style="min-width:0">
+              <div style="font-size:11px;color:#A39A8E;margin-bottom:4px">Priya Nair · 9:14</div>
+              <div style="background:#fff;border:1px solid #E4DCCC;border-radius:3px 15px 15px 15px;padding:10px 13px;font-size:13px;line-height:1.5;color:#14110F">Kai flagged the same setup as May '23 — notes are in the feed.</div>
+              <div style="margin-top:8px;background:#fff;border:1px solid #E4DCCC;border-radius:13px;padding:11px;display:flex;align-items:center;gap:10px">
+                <span style="width:32px;height:32px;border-radius:9px;background:#14110F;color:#F05A28;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:14px;font-weight:900;flex-shrink:0">A</span>
+                <div style="min-width:0"><div style="font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#F05A28">Shared research</div><div style="font-size:12.5px;font-weight:700;color:#14110F;margin-top:2px">MI300 adoption curve</div></div>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#1BA94C;flex-shrink:0">+1.16%</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:10px;flex-direction:row-reverse">
+            <div style="width:30px;height:30px;border-radius:50%;background:#F05A28;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">A</div>
+            <div style="min-width:0"><div style="font-size:11px;color:#A39A8E;margin-bottom:4px;text-align:right">You · 9:16</div><div style="background:#14110F;border-radius:15px 3px 15px 15px;padding:10px 13px;font-size:13px;line-height:1.5;color:#fff">Reading it now. The Blackwell ramp math is what changed my mind.</div></div>
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:#E7DFD2;color:#8A8279;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0">SO</div>
+            <div style="min-width:0"><div style="font-size:11px;color:#A39A8E;margin-bottom:4px">Sana Okafor · 9:18</div><div style="background:#fff;border:1px solid #E4DCCC;border-radius:3px 15px 15px 15px;padding:10px 13px;font-size:13px;line-height:1.5;color:#14110F">Market Open Room starts in 12 — bringing this in there.</div></div>
+          </div>
+          <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;padding-left:40px"><span style="font-size:11px;color:#A39A8E">TechTactician is typing</span><span style="display:flex;gap:3px"><span style="width:4px;height:4px;border-radius:50%;background:#A39A8E"></span><span style="width:4px;height:4px;border-radius:50%;background:#C9C0B2"></span><span style="width:4px;height:4px;border-radius:50%;background:#E4DCCC"></span></span></div>
+        </div>
+
+        <div style="padding:11px 18px 12px;display:flex;align-items:center;gap:10px;border-top:1px solid #E4DCCC">
+          <div style="flex:1;background:#fff;border:1px solid #E4DCCC;border-radius:999px;padding:12px 16px;font-size:13px;color:#A39A8E">Say something…</div>
+          <span style="width:42px;height:42px;border-radius:50%;background:#F05A28;display:grid;place-items:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 20 20"><path d="M3 10h13M11 5l5 5-5 5" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"></path></svg></span>
+        </div>
+
+        <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 8px 22px;border-top:1px solid #E4DCCC">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M15 9 13 13l-4 2 2-4Z" fill="#A39A8E"></path></svg><span style="font-size:9px;color:#A39A8E">Discover</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7v9h-17Z" fill="#F05A28"></path></svg><span style="font-size:9px;color:#F05A28;font-weight:700">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="#A39A8E"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Live</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="#A39A8E" strokeWidth="1.9"></rect><path d="M12 5v14" stroke="#A39A8E" strokeWidth="1.9"></path></svg><span style="font-size:9px;color:#A39A8E">Learn</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.6" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M5.5 19.4c1.5-3.4 11.5-3.4 13 0" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Profile</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 07 LIVE -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">07</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Live rooms</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:center;gap:10px">
+          <svg width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.8" fill="#14110F"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#14110F" strokeWidth="2" strokeLinecap="round"></path></svg>
+          <h2 style="font-family:Archivo,sans-serif;font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:.9;color:#14110F;margin:0;text-transform:uppercase">Live</h2>
+        </div>
+
+        <div style="display:flex;gap:7px;padding:15px 18px 0">
+          <span style="background:#F05A28;color:#fff;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">Now live</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Upcoming</span>
+          <span style="background:#fff;border:1px solid #E4DCCC;color:#8A8279;border-radius:7px;padding:7px 14px;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Replays</span>
+        </div>
+
+        <div style="flex:1;overflow:hidden;padding:15px 18px 0;display:flex;flex-direction:column;gap:17px">
+          <div style="flex-shrink:0;border-radius:16px;overflow:hidden;border:1px solid #E4DCCC;background:#fff">
+            <div style="height:172px;background:linear-gradient(155deg,#3A3128,#14110F);position:relative;overflow:hidden">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(118deg,rgba(255,255,255,.055) 0 12px,transparent 12px 24px)"></div>
+              <div style="position:absolute;left:15px;top:14px;font-family:Archivo,sans-serif;font-size:23px;font-weight:900;letter-spacing:-.03em;color:#fff;text-transform:uppercase;line-height:1">Market open<br />room</div>
+              <div style="position:absolute;left:15px;top:78px;font-size:11.5px;color:rgba(255,255,255,.62)">Live now · 2,341 in room</div>
+              <div style="position:absolute;left:15px;top:98px;font-size:13px;color:#fff;font-weight:600;max-width:200px;line-height:1.35">Let's break down today's moves</div>
+              <div style="position:absolute;right:20px;top:52px;width:76px;height:76px;border:3px solid #F05A28;border-radius:50%;transform:rotate(-14deg)"></div>
+              <div style="position:absolute;right:34px;top:78px;font-family:Caveat,cursive;font-size:22px;font-weight:700;color:#F05A28;transform:rotate(-8deg)">live!</div>
+              <div style="position:absolute;left:15px;bottom:14px;background:#F05A28;border-radius:6px;padding:9px 18px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff">Join room</div>
+              <div style="position:absolute;right:15px;bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,.5)">[ room photo ]</div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F;margin-bottom:10px">Upcoming sessions</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:11px;display:flex;align-items:center;gap:11px">
+                <div style="width:44px;height:44px;border-radius:11px;background:#E7DFD2;flex-shrink:0;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#A39A8E">photo</div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#14110F">Earnings Game Plan</div><div style="font-size:11px;color:#8A8279;margin-top:2px">Today · 1:00 PM ET</div><div style="font-size:11px;color:#A39A8E">w/ OptionsOG</div></div>
+                <span style="border:1px solid #E4DCCC;border-radius:8px;padding:9px 12px;font-size:11px;font-weight:700;color:#14110F;white-space:nowrap">Set Reminder</span>
+              </div>
+              <div style="background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:11px;display:flex;align-items:center;gap:11px">
+                <div style="width:44px;height:44px;border-radius:11px;background:#E7DFD2;flex-shrink:0;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#A39A8E">photo</div>
+                <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#14110F">Macro Monday</div><div style="font-size:11px;color:#8A8279;margin-top:2px">Tomorrow · 10:00 AM ET</div><div style="font-size:11px;color:#A39A8E">w/ MacroMike</div></div>
+                <span style="border:1px solid #E4DCCC;border-radius:8px;padding:9px 12px;font-size:11px;font-weight:700;color:#14110F;white-space:nowrap">Set Reminder</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex-shrink:0">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F;margin-bottom:10px">Recent replay</div>
+            <div style="background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:11px;display:flex;align-items:center;gap:11px">
+              <div style="width:44px;height:44px;border-radius:11px;background:#14110F;display:grid;place-items:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 20 20"><path d="M6 4.5 15.5 10 6 15.5Z" fill="#F05A28"></path></svg></div>
+              <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#14110F">Fed Day Debrief</div><div style="font-size:11px;color:#8A8279;margin-top:2px">58 min · NVDA, TSLA, SOFI</div></div>
+              <span style="font-size:11px;font-weight:800;color:#F05A28;letter-spacing:.04em">WATCH</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 8px 22px;border-top:1px solid #E4DCCC">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M15 9 13 13l-4 2 2-4Z" fill="#A39A8E"></path></svg><span style="font-size:9px;color:#A39A8E">Discover</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7v9h-17Z" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinejoin="round"></path></svg><span style="font-size:9px;color:#A39A8E">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="#F05A28"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#F05A28" strokeWidth="2" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#F05A28;font-weight:700">Live</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="#A39A8E" strokeWidth="1.9"></rect><path d="M12 5v14" stroke="#A39A8E" strokeWidth="1.9"></path></svg><span style="font-size:9px;color:#A39A8E">Learn</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.6" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M5.5 19.4c1.5-3.4 11.5-3.4 13 0" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Profile</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 08 IN ROOM -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">08</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">In the room</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#14110F;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#fff"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #fff;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#fff;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:center;justify-content:space-between">
+          <svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 9.5 12 15.5 18 9.5" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:#F05A28;border-radius:5px;padding:4px 10px;font-size:9.5px;font-weight:800;letter-spacing:.1em;color:#fff">● LIVE · 41:26</div>
+          <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.6" fill="#fff"></circle><circle cx="12" cy="12" r="1.6" fill="#fff"></circle><circle cx="12" cy="18.5" r="1.6" fill="#fff"></circle></svg>
+        </div>
+
+        <div style="padding:18px 18px 0">
+          <h2 style="font-family:Archivo,sans-serif;font-size:32px;font-weight:900;letter-spacing:-.04em;line-height:.94;color:#fff;margin:0;text-transform:uppercase">Market open<br />room</h2>
+          <p style="margin:10px 0 0;font-size:12px;color:rgba(255,255,255,.55)">2,341 listening · hosted by OptionsOG</p>
+        </div>
+
+        <div style="padding:22px 18px 0">
+          <div style="font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#F05A28;margin-bottom:15px">On stage</div>
+          <div style="display:flex;gap:24px">
+            <div style="text-align:center"><div style="width:62px;height:62px;border-radius:50%;padding:3px;background:#F05A28"><div style="width:100%;height:100%;border-radius:50%;background:#2A2219;color:#F05A28;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:16px;font-weight:900">OG</div></div><div style="font-size:10.5px;color:#fff;font-weight:600;margin-top:8px">OptionsOG</div><div style="font-size:9px;color:#F05A28;font-weight:800;letter-spacing:.08em">HOST</div></div>
+            <div style="text-align:center"><div style="width:62px;height:62px;border-radius:50%;background:#2A2219;color:#8A8279;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:16px;font-weight:900">MM</div><div style="font-size:10.5px;color:#fff;font-weight:600;margin-top:8px">MacroMike</div><div style="font-size:9px;color:rgba(255,255,255,.36)">Speaker</div></div>
+            <div style="text-align:center"><div style="width:62px;height:62px;border-radius:50%;background:#2A2219;color:#8A8279;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:16px;font-weight:900">CN</div><div style="font-size:10.5px;color:#fff;font-weight:600;margin-top:8px">ChartNerd</div><div style="font-size:9px;color:rgba(255,255,255,.36)">Speaker</div></div>
+          </div>
+        </div>
+
+        <div style="padding:24px 18px 0">
+          <div style="font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:12px">Covering now</div>
+          <div style="background:#1E1912;border-radius:14px;padding:13px;display:flex;align-items:center;gap:12px">
+            <span style="width:38px;height:38px;border-radius:10px;background:#fff;color:#1BA94C;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:17px;font-weight:900">N</span>
+            <div style="flex:1"><div style="font-family:Archivo,sans-serif;font-size:15px;font-weight:800;color:#fff">NVDA</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#1BA94C;margin-top:2px">$1,024.31 · +6.43%</div></div>
+            <svg width="86" height="34" viewBox="0 0 100 40"><polyline points="2,34 14,31 26,32 38,25 50,21 62,23 74,14 86,8 98,3" fill="none" stroke="#1BA94C" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"></polyline></svg>
+          </div>
+        </div>
+
+        <div style="flex:1;padding:22px 18px 0;overflow:hidden">
+          <div style="font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:13px">Room chat</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:12.5px;color:rgba(255,255,255,.8);line-height:1.4"><span style="font-weight:800;color:#F05A28">ChartNerd33</span> that 1K level held again 👀</div>
+            <div style="font-size:12.5px;color:rgba(255,255,255,.8);line-height:1.4"><span style="font-weight:800;color:#F05A28">LongTermLarry</span> margin guide is the real story</div>
+            <div style="font-size:12.5px;color:rgba(255,255,255,.8);line-height:1.4"><span style="font-weight:800;color:#F05A28">ValueHawk</span> raising my hand for the SOFI question</div>
+          </div>
+        </div>
+
+        <div style="padding:14px 18px 24px;display:flex;align-items:center;gap:9px;border-top:1px solid #2A2219">
+          <div style="flex:1;background:#1E1912;border-radius:999px;padding:12px 16px;font-size:12.5px;color:rgba(255,255,255,.4)">Say something…</div>
+          <span style="width:42px;height:42px;border-radius:50%;background:#1E1912;display:grid;place-items:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="#fff" strokeWidth="2"></rect><path d="M5 12a7 7 0 0 0 14 0M12 19v2" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"></path></svg></span>
+          <span style="background:#F05A28;color:#fff;border-radius:999px;padding:13px 18px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">Leave</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 09 PROFILE -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#F05A28">09</span><span style="font-family:Archivo,sans-serif;font-size:13px;font-weight:800;color:#14110F;text-transform:uppercase;letter-spacing:.06em">Member profile</span></div>
+      <div style="width:390px;height:844px;border:8px solid #14110F;border-radius:46px;background:#F5F1E8;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 66px rgba(20,17,15,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110F"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span style="width:17px;height:9px;border:1.5px solid #14110F;border-radius:2px;display:inline-block"></span><span style="width:4px;height:9px;background:#14110F;border-radius:1px;display:inline-block"></span></span></div>
+
+        <div style="padding:12px 18px 0;display:flex;align-items:flex-end;justify-content:space-between">
+          <h2 style="font-family:Archivo,sans-serif;font-size:36px;font-weight:900;letter-spacing:-.04em;line-height:.9;color:#14110F;margin:0;text-transform:uppercase">Profile</h2>
+          <div style="display:flex;gap:15px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="#14110F" strokeWidth="1.9"></circle><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.5 6.5 8 8M16 16l1.5 1.5M17.5 6.5 16 8M8 16l-1.5 1.5" stroke="#14110F" strokeWidth="1.9" strokeLinecap="round"></path></svg><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 4v11M8 8l4-4 4 4M5 19h14" fill="none" stroke="#14110F" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"></path></svg></div>
+        </div>
+
+        <div style="padding:16px 18px 0;display:flex;align-items:center;gap:14px">
+          <div style="width:78px;height:78px;border-radius:50%;padding:3px;background:#F05A28;flex-shrink:0"><div style="width:100%;height:100%;border-radius:50%;background:#14110F;color:#F05A28;display:grid;place-items:center;font-family:Archivo,sans-serif;font-size:22px;font-weight:900">IS</div></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px"><span style="font-family:Archivo,sans-serif;font-size:23px;font-weight:900;letter-spacing:-.035em;color:#14110F">InsightSeeker</span><svg width="15" height="15" viewBox="0 0 20 20" style="flex-shrink:0"><circle cx="10" cy="10" r="8" fill="#1BA94C"></circle><path d="M6.5 10.2 9 12.6 13.6 7.6" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"></path></svg></div>
+            <div style="font-size:11.5px;color:#8A8279;margin-top:3px">Level 9 · Signal Sharer</div>
+            <div style="margin-top:8px;height:6px;border-radius:4px;background:#E7DFD2"><div style="width:62%;height:100%;border-radius:4px;background:linear-gradient(90deg,#F05A28,#FFA200)"></div></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8A8279;margin-top:5px">1,240 / 2,000 XP</div>
+          </div>
+        </div>
+
+        <div style="padding:18px 18px 0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F">Badges</span><span style="font-size:11px;font-weight:700;color:#F05A28">See all</span></div>
+          <div style="display:flex;gap:9px">
+            <div style="flex:1;background:#fff;border:1px solid #E4DCCC;border-radius:13px;padding:11px 6px;text-align:center"><div style="width:34px;height:34px;border-radius:50%;background:#14110F;margin:0 auto;display:grid;place-items:center;color:#FFA200;font-size:15px">★</div><div style="font-size:9.5px;font-weight:700;color:#14110F;margin-top:7px;line-height:1.2">Signal<br />Sharer</div></div>
+            <div style="flex:1;background:#fff;border:1px solid #E4DCCC;border-radius:13px;padding:11px 6px;text-align:center"><div style="width:34px;height:34px;border-radius:50%;background:#14110F;margin:0 auto;display:grid;place-items:center;color:#fff;font-size:15px">◆</div><div style="font-size:9.5px;font-weight:700;color:#14110F;margin-top:7px;line-height:1.2">Top<br />Contributor</div></div>
+            <div style="flex:1;background:#fff;border:1px solid #E4DCCC;border-radius:13px;padding:11px 6px;text-align:center"><div style="width:34px;height:34px;border-radius:50%;background:#F05A28;margin:0 auto;display:grid;place-items:center;color:#fff;font-size:15px">▲</div><div style="font-size:9.5px;font-weight:700;color:#14110F;margin-top:7px;line-height:1.2">Streak<br />Master</div></div>
+            <div style="flex:1;background:#fff;border:1px solid #E4DCCC;border-radius:13px;padding:11px 6px;text-align:center"><div style="width:34px;height:34px;border-radius:50%;background:#14110F;margin:0 auto;display:grid;place-items:center;color:#fff;font-size:15px">✦</div><div style="font-size:9.5px;font-weight:700;color:#14110F;margin-top:7px;line-height:1.2">Early<br />Spotter</div></div>
+          </div>
+        </div>
+
+        <div style="padding:18px 18px 0">
+          <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F;margin-bottom:10px">Your stats</div>
+          <div style="background:#fff;border:1px solid #E4DCCC;border-radius:14px;padding:0 13px">
+            <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F0EBE1"><span style="font-size:12.5px;color:#8A8279">Signals Shared</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110F">142</span><span style="font-size:12.5px;color:#8A8279">Upvotes</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110F">1,387</span></div>
+            <div style="display:flex;justify-content:space-between;padding:11px 0"><span style="font-size:12.5px;color:#8A8279">Comments</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110F">328</span><span style="font-size:12.5px;color:#8A8279">Accuracy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#1BA94C">74%</span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;padding:18px 18px 0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#14110F">Watchlist</span><span style="font-size:11px;font-weight:700;color:#F05A28">See all</span></div>
+          <div style="display:flex;gap:9px">
+            <div style="flex:1"><div style="height:54px;border-radius:13px;background:#14110F;display:grid;place-items:center;color:#1BA94C;font-family:Archivo,sans-serif;font-size:18px;font-weight:900">N</div><div style="text-align:center;font-size:9.5px;font-weight:700;color:#14110F;margin-top:6px">NVDA</div></div>
+            <div style="flex:1"><div style="height:54px;border-radius:13px;background:#EFEAE0;display:grid;place-items:center;color:#14110F;font-family:Archivo,sans-serif;font-size:18px;font-weight:900">A</div><div style="text-align:center;font-size:9.5px;font-weight:700;color:#14110F;margin-top:6px">AAPL</div></div>
+            <div style="flex:1"><div style="height:54px;border-radius:13px;background:#E0392B;display:grid;place-items:center;color:#fff;font-family:Archivo,sans-serif;font-size:18px;font-weight:900">T</div><div style="text-align:center;font-size:9.5px;font-weight:700;color:#14110F;margin-top:6px">TSLA</div></div>
+            <div style="flex:1"><div style="height:54px;border-radius:13px;background:#14110F;display:grid;place-items:center;color:#FFA200;font-family:Archivo,sans-serif;font-size:18px;font-weight:900">a</div><div style="text-align:center;font-size:9.5px;font-weight:700;color:#14110F;margin-top:6px">AMZN</div></div>
+            <div style="flex:1"><div style="height:54px;border-radius:13px;background:#2F6BFF;display:grid;place-items:center;color:#fff;font-family:Archivo,sans-serif;font-size:18px;font-weight:900">C</div><div style="text-align:center;font-size:9.5px;font-weight:700;color:#14110F;margin-top:6px">COIN</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-around;align-items:center;padding:10px 8px 22px;border-top:1px solid #E4DCCC">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#A39A8E" strokeWidth="1.9"></circle><path d="M15 9 13 13l-4 2 2-4Z" fill="#A39A8E"></path></svg><span style="font-size:9px;color:#A39A8E">Discover</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7v9h-17Z" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinejoin="round"></path></svg><span style="font-size:9px;color:#A39A8E">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="#A39A8E"></circle><path d="M6.5 6.6a7.6 7.6 0 0 0 0 10.8M17.5 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#A39A8E" strokeWidth="1.9" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#A39A8E">Live</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="#A39A8E" strokeWidth="1.9"></rect><path d="M12 5v14" stroke="#A39A8E" strokeWidth="1.9"></path></svg><span style="font-size:9px;color:#A39A8E">Learn</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="3.6" fill="#F05A28"></circle><path d="M5.5 19.4c1.5-3.4 11.5-3.4 13 0" fill="none" stroke="#F05A28" strokeWidth="2" strokeLinecap="round"></path></svg><span style="font-size:9px;color:#F05A28;font-weight:700">Profile</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2280,&quot;height&quot;:1400}}"></script>
+</body>
+</html>

@@ -638,11 +638,14 @@ Two syncs are worth copying to other lessons:
 
 | | |
 |---|---|
-| Model | OpenAI `gpt-4o-mini-tts` (standing default) |
-| Voice | `ash` — warm, level, unhurried adult coach (Kai register) |
-| Direction | `instructions` prompt in `scripts/build-lesson-audio.mjs`, one constant for the whole curriculum |
-| Assets | `public/lessons/audio/<lesson-slug>/<step-id>[-variant].mp3` |
-| Manifest | `public/lessons/audio/<lesson-slug>/manifest.json` — url, measured `durationMs` (ffprobe), the exact script, and a content hash |
+| Provider | **Voicebox — local** (owner's call, 07-28). `http://localhost:17493`, MLX/Metal, 1.7B model |
+| Voice | Profile **`Kway`** — `2cd42fda-3482-4eb4-a79a-6abc64802e24`. The house voice; the same one the reels use |
+| Other profiles on the box | `kyle` `c0f8d6e4-…` · `aiden` `b57345f6-…` · `vivian` `fd72dba9-…` · `ryan` `a0d76292-…` |
+| Endpoint | `POST /generate {profile_id, text, language, seed, instruct}` → `{id, duration}`, then `GET /audio/{id}` → `audio/wav`. **No `/api` prefix.** wav → mp3 via ffmpeg (64k, 24 kHz, mono) |
+| Direction | `VOICEBOX_INSTRUCT` — a short style note, 500-char cap, one constant for the whole curriculum. Fixed `seed: 7`, so an unchanged line re-renders as the same performance |
+| Fallback | OpenAI `gpt-4o-mini-tts`, voice `ash` — `--provider openai`. Kept for a machine without the server |
+| Assets | `public/lessons/audio/<lesson-slug>/<step-id>[-variant].mp3` — **committed**, they are static lesson assets |
+| Manifest | `public/lessons/audio/<lesson-slug>/manifest.json` — url, measured `durationMs` (ffprobe), the exact script, and a content hash. Written after **every** segment, so a forty-minute job survives being interrupted |
 | Runtime TTS | **Never.** Static files only |
 
 **Pre-generated, always.** Cost is paid once for 180 lessons rather than once per
@@ -651,12 +654,28 @@ mid-sentence; the lesson sounds identical for every member forever, which is the
 same promise the hand-written prices make; and nothing a member hears was
 invented at runtime — there is no LLM anywhere in this path.
 
-**Cost.** The Day 3 pilot is **50 segments, ~7.6 minutes, 7,590 characters of
-script** → about **$0.001** of input text at $0.60/1M tokens (OpenAI's own
-per-minute guide of ~$0.015/min puts the same lesson near $0.11). At 180 lessons
-that is **single-digit dollars for the entire curriculum's voice**, one time. The
-generator is content-hashed and idempotent, so an edit re-renders only the lines
-that actually changed.
+**Cost is zero, and time is the real budget.** Voicebox runs on the machine, so
+the curriculum's voice needs no vendor account and no per-replay billing. What it
+costs instead is **wall-clock: roughly 50 seconds per segment**, so the Day 3
+pilot (50 segments, ~7.6 min of audio, 7,590 characters of script) is about a
+**forty-minute** job. Budget that per lesson and run it unattended — the manifest
+is written after every segment and the generator is content-hashed, so an
+interrupted run resumes and an edit re-renders only the lines that actually
+changed. (For reference, the OpenAI fallback would put the same lesson at ~$0.001
+of input text, or ~$0.11 by OpenAI's per-minute guide — single-digit dollars for
+all 180 lessons. Cost was never the deciding factor; owning the voice was.)
+
+**Regenerating a lesson's audio, end to end:**
+
+```
+node scripts/build-lesson-audio.mjs --lesson adult-d03 --sample   # resumable
+node scripts/build-pilot-lesson.mjs --audio-migration             # folds in durations
+```
+
+Add `--force` to re-render lines whose text has not changed, and
+`--provider openai` to fall back off the local box. `--sample` writes
+`sample-kway.mp3` plus one alternate profile for an ear check before committing
+180 lessons to one voice.
 
 ### What every line that reaches the ear is called
 

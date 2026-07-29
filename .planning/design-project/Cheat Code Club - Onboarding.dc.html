@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+body { margin: 0; }
+a { color: #FF5A00; text-decoration: none; }
+a:hover { color: #FF8C33; }
+@keyframes obpulse { 0%,100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+</style>
+</helmet>
+
+<div style="{{ stageStyle }}">
+
+<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:36px;max-width:1720px">
+  <div>
+    <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--volt,#FF5A00);margin-bottom:10px">Cheat Code Club · Onboarding</div>
+    <div style="font:800 40px/1.05 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#12100E)">Splash &amp; walkthrough</div>
+    <div style="font:400 15px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:8px;max-width:56ch">Five-card carousel: cream ground, black headline with one orange phrase, floating product cards, one orange action per screen.</div>
+  </div>
+  <div style="display:flex;gap:8px;padding:6px;border-radius:14px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#E7E2D9)">
+    <div onClick="{{ setLight }}" style="{{ lightBtn }}">Light</div>
+    <div onClick="{{ setDark }}" style="{{ darkBtn }}">Dark</div>
+  </div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:40px 32px;max-width:1720px">
+
+<!-- ===== 1. COLLECTIVE SIGNAL ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#9A958D)">01 · Splash</div>
+  <div data-screen-label="Splash" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FAF7F2);border:1px solid var(--sand,#E7E2D9);box-shadow:0 24px 60px rgba(18,16,14,.16);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#12100E)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5F5B55)">LTE ▮▮▮ 100%</span></div>
+
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;padding:18px 0 0">
+      <div style="font:800 27px/1 Sora,sans-serif;font-style:italic;letter-spacing:-.01em;color:var(--volt,#FF5A00)">CHEAT CODE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+        <div style="font:700 15px/1 Sora,sans-serif;letter-spacing:.34em;color:var(--ink,#12100E)">CLUB</div>
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:24px 26px 0;text-align:center">
+      <div style="font:800 33px/1.12 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#12100E)">1 million investors.<br>One collective signal<span style="color:var(--volt,#FF5A00)">.</span></div>
+      <div style="font:400 14px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:12px">The Club turns shared research and real-time conviction into one readable signal.</div>
+    </div>
+
+    <div style="flex:1;min-height:0;position:relative;margin:18px 16px 0">
+      <div style="position:absolute;left:0;top:6px;display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:8px"><img src="public/avatars/adults/a01.png" alt="" style="width:36px;height:36px;border-radius:18px;object-fit:cover;box-shadow:0 2px 8px rgba(18,16,14,.14)"><div style="display:flex;align-items:center;justify-content:center;width:58px;height:26px;border-radius:7px;background:var(--card,#FFFFFF);box-shadow:0 2px 8px rgba(18,16,14,.1)"><svg width="40" height="14" viewBox="0 0 40 14" fill="none"><polyline points="0,12 10,8 20,10 30,4 40,2" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg></div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><img src="public/avatars/adults/a04.png" alt="" style="width:36px;height:36px;border-radius:18px;object-fit:cover;box-shadow:0 2px 8px rgba(18,16,14,.14)"><div style="display:flex;align-items:center;justify-content:center;width:58px;height:26px;border-radius:7px;background:var(--card,#FFFFFF);box-shadow:0 2px 8px rgba(18,16,14,.1)"><svg width="40" height="14" viewBox="0 0 40 14" fill="none"><polyline points="0,12 10,8 20,10 30,4 40,2" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><img src="public/avatars/teens/t02.png" alt="" style="width:36px;height:36px;border-radius:18px;object-fit:cover;box-shadow:0 2px 8px rgba(18,16,14,.14)"><div style="display:flex;align-items:center;justify-content:center;width:58px;height:26px;border-radius:7px;background:var(--card,#FFFFFF);box-shadow:0 2px 8px rgba(18,16,14,.1)"><svg width="40" height="14" viewBox="0 0 40 14" fill="none"><polyline points="0,12 10,8 20,10 30,4 40,2" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg></div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><img src="public/avatars/adults/a07.png" alt="" style="width:36px;height:36px;border-radius:18px;object-fit:cover;box-shadow:0 2px 8px rgba(18,16,14,.14)"><div style="display:flex;align-items:center;justify-content:center;width:58px;height:26px;border-radius:7px;background:var(--card,#FFFFFF);box-shadow:0 2px 8px rgba(18,16,14,.1)"><svg width="40" height="14" viewBox="0 0 40 14" fill="none"><polyline points="0,12 10,8 20,10 30,4 40,2" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><img src="public/avatars/teens/t05.png" alt="" style="width:36px;height:36px;border-radius:18px;object-fit:cover;box-shadow:0 2px 8px rgba(18,16,14,.14)"><div style="display:flex;align-items:center;justify-content:center;width:58px;height:26px;border-radius:7px;background:var(--card,#FFFFFF);box-shadow:0 2px 8px rgba(18,16,14,.1)"><svg width="40" height="14" viewBox="0 0 40 14" fill="none"><polyline points="0,12 10,8 20,10 30,4 40,2" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg></div></div>
+      </div>
+
+      <div style="position:absolute;left:126px;top:74px;z-index:2;width:96px;height:96px;border-radius:48px;background:radial-gradient(circle,rgba(255,90,0,.16) 0%,rgba(255,90,0,0) 70%);display:flex;align-items:center;justify-content:center">
+        <div style="width:58px;height:58px;border-radius:29px;background:var(--volt,#FF5A00);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(255,90,0,.4)">
+          <img src="public/icons/club-infinity-192.png" alt="Cheat Code Club" style="width:34px;height:34px;border-radius:9px;display:block">
+        </div>
+      </div>
+
+      <div style="position:absolute;right:0;top:0;box-sizing:border-box;width:142px;padding:11px 12px;border-radius:14px;background:var(--card,#FFFFFF);box-shadow:0 6px 20px rgba(18,16,14,.12)">
+        <div style="font:700 9px/1 Inter,sans-serif;letter-spacing:.12em;color:var(--faint,#9A958D)">COLLECTIVE SIGNAL</div>
+        <div style="display:inline-block;margin-top:7px;padding:4px 8px;border-radius:6px;background:rgba(22,163,74,.14);font:700 9px/1 Inter,sans-serif;letter-spacing:.06em;color:var(--green,#16A34A)">STRONG BULLISH</div>
+        <svg width="118" height="52" viewBox="0 0 126 52" fill="none" style="margin-top:8px">
+          <polyline points="0,46 14,40 28,43 42,32 56,36 70,24 84,27 98,16 112,19 126,5" stroke="var(--green,#16A34A)" stroke-width="2"></polyline>
+          <polygon points="0,46 14,40 28,43 42,32 56,36 70,24 84,27 98,16 112,19 126,5 126,52 0,52" fill="rgba(22,163,74,.1)"></polygon>
+        </svg>
+        <div style="font:600 19px/1.2 Sora,sans-serif;color:var(--green,#16A34A);margin-top:6px">+2.74%</div>
+        <div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">Signal strength</div>
+      </div>
+
+      <div style="position:absolute;right:8px;bottom:56px;display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:12px;background:var(--card,#FFFFFF);box-shadow:0 6px 18px rgba(18,16,14,.1)">
+        <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,90,0,.14)"></div>
+        <div><div style="font:700 12px/1.2 Inter,sans-serif;color:var(--ink,#12100E)">Community insight</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">Real-time conviction</div></div>
+      </div>
+      <div style="position:absolute;left:4px;bottom:10px;display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:12px;background:var(--card,#FFFFFF);box-shadow:0 6px 18px rgba(18,16,14,.1)">
+        <div style="width:22px;height:22px;border-radius:7px;background:rgba(255,90,0,.14)"></div>
+        <div><div style="font:700 12px/1.2 Inter,sans-serif;color:var(--ink,#12100E)">Research</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">Deeper. Smarter. Together.</div></div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:14px 22px 26px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border-radius:28px;background:var(--volt,#FF5A00);color:#fff;font:700 17px/1 Inter,sans-serif;box-shadow:0 10px 26px rgba(255,90,0,.32)">Get started <span style="font-size:18px">→</span></div>
+      <div style="text-align:center;font:500 13px/1 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:15px">Already a member? <span style="color:var(--volt,#FF5A00);font-weight:700">Log in</span></div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--volt,#FF5A00)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+      </div>
+      <div style="text-align:center;font:700 15px/1 Sora,sans-serif;color:var(--ink,#12100E);margin-top:18px">We're better together.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 2. DISCOVER ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#9A958D)">02 · Discover</div>
+  <div data-screen-label="Onboarding discover" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FAF7F2);border:1px solid var(--sand,#E7E2D9);box-shadow:0 24px 60px rgba(18,16,14,.16);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#12100E)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5F5B55)">LTE ▮▮▮ 100%</span></div>
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;padding:18px 0 0">
+      <div style="font:800 27px/1 Sora,sans-serif;font-style:italic;letter-spacing:-.01em;color:var(--volt,#FF5A00)">CHEAT CODE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+        <div style="font:700 15px/1 Sora,sans-serif;letter-spacing:.34em;color:var(--ink,#12100E)">CLUB</div>
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:24px 26px 0;text-align:center">
+      <div style="font:800 33px/1.12 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#12100E)">Discover what<br>the <span style="color:var(--volt,#FF5A00)">Club is watching.</span></div>
+      <div style="font:400 14px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:12px">Club Rank surfaces the tickers gaining the most attention and conviction right now.</div>
+    </div>
+
+    <div style="flex:1;min-height:0;padding:18px 18px 0;display:flex;flex-direction:column;gap:12px">
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);box-shadow:0 8px 24px rgba(18,16,14,.1);padding:13px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font:700 14px/1 Sora,sans-serif;color:var(--ink,#12100E)">Top in the Club</div>
+          <div style="font:600 12px/1 Inter,sans-serif;color:var(--volt,#FF5A00)">See all</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:11px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:14px;font:600 12px/1 IBM Plex Mono,monospace;color:var(--faint,#9A958D)">1</div>
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card2,#F4F1EC);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">NV</div>
+            <div style="flex:1"><div style="font:700 13px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">NVDA</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">12.4K watchers</div></div>
+            <div style="text-align:right"><div style="font:600 12px/1.2 IBM Plex Mono,monospace;color:var(--ink,#12100E)">$173.42</div><div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+4.23%</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:14px;font:600 12px/1 IBM Plex Mono,monospace;color:var(--faint,#9A958D)">2</div>
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card2,#F4F1EC);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">HD</div>
+            <div style="flex:1"><div style="font:700 13px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">HOOD</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">8.7K watchers</div></div>
+            <div style="text-align:right"><div style="font:600 12px/1.2 IBM Plex Mono,monospace;color:var(--ink,#12100E)">$24.81</div><div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+6.18%</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:14px;font:600 12px/1 IBM Plex Mono,monospace;color:var(--faint,#9A958D)">3</div>
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card2,#F4F1EC);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">TS</div>
+            <div style="flex:1"><div style="font:700 13px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">TSLA</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">7.9K watchers</div></div>
+            <div style="text-align:right"><div style="font:600 12px/1.2 IBM Plex Mono,monospace;color:var(--ink,#12100E)">$248.31</div><div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+3.02%</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:14px;font:600 12px/1 IBM Plex Mono,monospace;color:var(--faint,#9A958D)">4</div>
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card2,#F4F1EC);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">PL</div>
+            <div style="flex:1"><div style="font:700 13px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">PLTR</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">5.3K watchers</div></div>
+            <div style="text-align:right"><div style="font:600 12px/1.2 IBM Plex Mono,monospace;color:var(--ink,#12100E)">$22.16</div><div style="font:600 11px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+5.11%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:none;border-radius:16px;background:var(--card,#FFFFFF);box-shadow:0 8px 24px rgba(18,16,14,.1);padding:13px 14px">
+        <div style="font:700 13px/1 Sora,sans-serif;color:var(--ink,#12100E)">What's moving <span style="font:400 11px/1 Inter,sans-serif;color:var(--faint,#9A958D)">Rising sectors</span></div>
+        <div style="display:flex;gap:10px;margin-top:11px">
+          <div style="flex:1">
+            <div style="font:500 11px/1.3 Inter,sans-serif;color:var(--soft,#5F5B55)">AI &amp; automation</div>
+            <div style="font:600 13px/1.4 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+3.82%</div>
+            <svg width="88" height="26" viewBox="0 0 88 26" fill="none"><polyline points="0,22 18,17 36,19 54,11 70,13 88,3" stroke="var(--green,#16A34A)" stroke-width="1.7"></polyline></svg>
+          </div>
+          <div style="flex:1">
+            <div style="font:500 11px/1.3 Inter,sans-serif;color:var(--soft,#5F5B55)">Fintech</div>
+            <div style="font:600 13px/1.4 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+2.71%</div>
+            <svg width="88" height="26" viewBox="0 0 88 26" fill="none"><polyline points="0,20 18,19 36,14 54,15 70,9 88,6" stroke="var(--green,#16A34A)" stroke-width="1.7"></polyline></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:14px 22px 26px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border-radius:28px;background:var(--volt,#FF5A00);color:#fff;font:700 17px/1 Inter,sans-serif;box-shadow:0 10px 26px rgba(255,90,0,.32)">Next <span style="font-size:18px">→</span></div>
+      <div style="text-align:center;font:700 13px/1 Inter,sans-serif;color:var(--volt,#FF5A00);margin-top:15px">Skip</div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--volt,#FF5A00)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+      </div>
+      <div style="text-align:center;font:700 15px/1 Sora,sans-serif;color:var(--ink,#12100E);margin-top:18px">Find the signal before the crowd.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 3. CONVICTION ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#9A958D)">03 · Conviction</div>
+  <div data-screen-label="Onboarding conviction" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FAF7F2);border:1px solid var(--sand,#E7E2D9);box-shadow:0 24px 60px rgba(18,16,14,.16);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#12100E)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5F5B55)">LTE ▮▮▮ 100%</span></div>
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;padding:18px 0 0">
+      <div style="font:800 27px/1 Sora,sans-serif;font-style:italic;letter-spacing:-.01em;color:var(--volt,#FF5A00)">CHEAT CODE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+        <div style="font:700 15px/1 Sora,sans-serif;letter-spacing:.34em;color:var(--ink,#12100E)">CLUB</div>
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:24px 26px 0;text-align:center">
+      <div style="font:800 33px/1.12 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#12100E)">Shared <span style="color:var(--volt,#FF5A00)">conviction</span> becomes the <span style="color:var(--volt,#FF5A00)">signal.</span></div>
+      <div style="font:400 14px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:12px">See how members are leaning, and who changed their mind this week.</div>
+    </div>
+
+    <div style="flex:1;min-height:0;padding:16px 18px 0;display:flex;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="58" fill="none" stroke="var(--card2,#F4F1EC)" stroke-width="18"></circle>
+          <circle cx="75" cy="75" r="58" fill="none" stroke="var(--green,#16A34A)" stroke-width="18" stroke-dasharray="248 365" transform="rotate(-90 75 75)"></circle>
+          <circle cx="75" cy="75" r="58" fill="none" stroke="var(--volt,#FF5A00)" stroke-width="18" stroke-dasharray="44 365" stroke-dashoffset="-321" transform="rotate(-90 75 75)"></circle>
+        </svg>
+        <div style="margin-top:-96px;text-align:center">
+          <div style="font:700 11px/1 Inter,sans-serif;letter-spacing:.1em;color:var(--green,#16A34A)">BULLISH</div>
+          <div style="font:800 34px/1.2 Sora,sans-serif;color:var(--green,#16A34A)">68%</div>
+        </div>
+        <div style="margin-top:52px;display:flex;flex-direction:column;gap:8px;width:100%">
+          <div style="display:flex;align-items:center;gap:9px;font:500 12px/1 Inter,sans-serif;color:var(--soft,#5F5B55)"><span style="width:9px;height:9px;border-radius:5px;background:var(--green,#16A34A)"></span>Bullish <span style="margin-left:auto;font:600 12px/1 IBM Plex Mono,monospace;color:var(--ink,#12100E)">68%</span></div>
+          <div style="display:flex;align-items:center;gap:9px;font:500 12px/1 Inter,sans-serif;color:var(--soft,#5F5B55)"><span style="width:9px;height:9px;border-radius:5px;background:var(--faint,#9A958D)"></span>Neutral <span style="margin-left:auto;font:600 12px/1 IBM Plex Mono,monospace;color:var(--ink,#12100E)">20%</span></div>
+          <div style="display:flex;align-items:center;gap:9px;font:500 12px/1 Inter,sans-serif;color:var(--soft,#5F5B55)"><span style="width:9px;height:9px;border-radius:5px;background:var(--volt,#FF5A00)"></span>Bearish <span style="margin-left:auto;font:600 12px/1 IBM Plex Mono,monospace;color:var(--ink,#12100E)">12%</span></div>
+        </div>
+      </div>
+
+      <div style="width:168px;flex:none;display:flex;flex-direction:column;gap:11px">
+        <div style="border-radius:14px;background:var(--card,#FFFFFF);box-shadow:0 8px 22px rgba(18,16,14,.1);padding:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font:700 12px/1 Sora,sans-serif;color:var(--ink,#12100E)">Live discussion</div>
+            <div style="display:flex;align-items:center;gap:5px;font:700 9px/1 Inter,sans-serif;color:var(--green,#16A34A)"><span style="width:6px;height:6px;border-radius:3px;background:var(--green,#16A34A);animation:obpulse 2s ease-in-out infinite"></span>LIVE</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:11px">
+            <img src="public/avatars/adults/a04.png" alt="" style="width:24px;height:24px;border-radius:12px;object-fit:cover">
+            <div><div style="font:700 11px/1.2 Inter,sans-serif;color:var(--ink,#12100E)">Alex</div><div style="font:400 11px/1.35 Inter,sans-serif;color:var(--soft,#5F5B55)">NVDA setup looks strong.</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <img src="public/avatars/adults/a01.png" alt="" style="width:24px;height:24px;border-radius:12px;object-fit:cover">
+            <div><div style="font:700 11px/1.2 Inter,sans-serif;color:var(--ink,#12100E)">Jordan</div><div style="font:400 11px/1.35 Inter,sans-serif;color:var(--soft,#5F5B55)">Watching margins this quarter.</div></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <img src="public/avatars/teens/t05.png" alt="" style="width:24px;height:24px;border-radius:12px;object-fit:cover">
+            <div><div style="font:700 11px/1.2 Inter,sans-serif;color:var(--ink,#12100E)">Taylor</div><div style="font:400 11px/1.35 Inter,sans-serif;color:var(--soft,#5F5B55)">AI demand is just starting.</div></div>
+          </div>
+        </div>
+        <div style="border-radius:14px;background:var(--card,#FFFFFF);box-shadow:0 8px 22px rgba(18,16,14,.1);padding:11px 12px">
+          <div style="font:700 12px/1.2 Inter,sans-serif;color:var(--volt,#FF5A00)">Changed my mind</div>
+          <div style="font:400 11px/1.35 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:3px">Now leaning bullish</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:14px 22px 26px">
+      <div style="display:flex;gap:11px">
+        <div style="flex:none;width:112px;display:flex;align-items:center;justify-content:center;gap:9px;height:56px;border-radius:28px;background:var(--card,#FFFFFF);border:1px solid var(--sand,#E7E2D9);color:var(--ink,#12100E);font:700 15px/1 Inter,sans-serif">← Back</div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border-radius:28px;background:var(--volt,#FF5A00);color:#fff;font:700 17px/1 Inter,sans-serif;box-shadow:0 10px 26px rgba(255,90,0,.32)">Next <span style="font-size:18px">→</span></div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:18px">
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--volt,#FF5A00)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+      </div>
+      <div style="text-align:center;font:700 15px/1 Sora,sans-serif;color:var(--ink,#12100E);margin-top:18px">We're better together.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 4. KAI WATCH ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#9A958D)">04 · Kai Watch</div>
+  <div data-screen-label="Onboarding Kai Watch" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FAF7F2);border:1px solid var(--sand,#E7E2D9);box-shadow:0 24px 60px rgba(18,16,14,.16);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#12100E)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5F5B55)">LTE ▮▮▮ 100%</span></div>
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;padding:18px 0 0">
+      <div style="font:800 27px/1 Sora,sans-serif;font-style:italic;letter-spacing:-.01em;color:var(--volt,#FF5A00)">CHEAT CODE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+        <div style="font:700 15px/1 Sora,sans-serif;letter-spacing:.34em;color:var(--ink,#12100E)">CLUB</div>
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:24px 26px 0;text-align:center">
+      <div style="font:800 33px/1.12 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#12100E)">Kai Watch catches setups early<span style="color:var(--volt,#FF5A00)">.</span></div>
+      <div style="font:400 14px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:12px">Triggered, Getting Close, Building and Cooled keep your alerts organized.</div>
+    </div>
+
+    <div style="flex:1;min-height:0;padding:18px 18px 0;display:flex;gap:11px">
+      <div style="flex:1;border-radius:16px;background:var(--card,#FFFFFF);box-shadow:0 8px 24px rgba(18,16,14,.1);padding:13px 12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <img src="public/assets/kai/avatar.webp" alt="Kai" style="width:22px;height:22px;border-radius:7px;object-fit:cover">
+          <div style="font:700 14px/1 Sora,sans-serif;color:var(--ink,#12100E)">Kai Watch</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px">
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;background:var(--card2,#F4F1EC)">
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card,#FFFFFF);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">NV</div>
+            <div style="flex:1"><div style="font:700 12px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">NVDA</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">NVIDIA Corporation</div></div>
+            <div style="padding:4px 7px;border-radius:6px;background:rgba(22,163,74,.14);font:700 8px/1 Inter,sans-serif;letter-spacing:.05em;color:var(--green,#16A34A)">TRIGGERED</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;background:var(--card2,#F4F1EC)">
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card,#FFFFFF);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">TS</div>
+            <div style="flex:1"><div style="font:700 12px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">TSLA</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">Tesla, Inc.</div></div>
+            <div style="padding:4px 7px;border-radius:6px;background:rgba(255,90,0,.14);font:700 8px/1 Inter,sans-serif;letter-spacing:.05em;color:var(--volt,#FF5A00)">CLOSE</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;background:var(--card2,#F4F1EC)">
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card,#FFFFFF);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">AA</div>
+            <div style="flex:1"><div style="font:700 12px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">AAPL</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">Apple Inc.</div></div>
+            <div style="padding:4px 7px;border-radius:6px;background:rgba(59,130,246,.16);font:700 8px/1 Inter,sans-serif;letter-spacing:.05em;color:#2563EB">BUILDING</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:11px;background:var(--card2,#F4F1EC)">
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card,#FFFFFF);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">HD</div>
+            <div style="flex:1"><div style="font:700 12px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">HOOD</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--faint,#9A958D)">Robinhood Markets</div></div>
+            <div style="padding:4px 7px;border-radius:6px;background:var(--card,#FFFFFF);font:700 8px/1 Inter,sans-serif;letter-spacing:.05em;color:var(--faint,#9A958D)">COOLED</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:132px;flex:none;display:flex;flex-direction:column;gap:11px">
+        <div style="border-radius:16px;background:var(--card,#FFFFFF);box-shadow:0 8px 22px rgba(18,16,14,.1);padding:14px 12px;text-align:center">
+          <div style="font:700 13px/1 Sora,sans-serif;color:var(--ink,#12100E)">Alerts</div>
+          <div style="position:relative;width:58px;height:58px;margin:12px auto 0;border-radius:29px;background:rgba(255,90,0,.1);display:flex;align-items:center;justify-content:center;color:var(--volt,#FF5A00)">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"></path><path d="M10 20a2.2 2.2 0 0 0 4 0"></path></svg>
+            <div style="position:absolute;top:-2px;right:-2px;width:20px;height:20px;border-radius:10px;background:var(--volt,#FF5A00);color:#fff;font:700 11px/20px Inter,sans-serif">3</div>
+          </div>
+          <div style="font:400 11px/1.45 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:11px">Real-time updates that matter.</div>
+        </div>
+        <div style="border-radius:14px;background:var(--card,#FFFFFF);box-shadow:0 8px 22px rgba(18,16,14,.1);padding:11px 12px;font:700 12px/1.35 Inter,sans-serif;color:var(--ink,#12100E)">AI-powered signals</div>
+        <div style="border-radius:14px;background:var(--card,#FFFFFF);box-shadow:0 8px 22px rgba(18,16,14,.1);padding:11px 12px;font:700 12px/1.35 Inter,sans-serif;color:var(--ink,#12100E)">Instant alerts</div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:14px 22px 26px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border-radius:28px;background:var(--volt,#FF5A00);color:#fff;font:700 17px/1 Inter,sans-serif;box-shadow:0 10px 26px rgba(255,90,0,.32)">Next <span style="font-size:18px">→</span></div>
+      <div style="text-align:center;font:700 13px/1 Inter,sans-serif;color:var(--volt,#FF5A00);margin-top:15px">Back</div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--volt,#FF5A00)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+      </div>
+      <div style="text-align:center;font:700 15px/1 Sora,sans-serif;color:var(--ink,#12100E);margin-top:18px">Don't miss what matters.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 5. ENTER THE CLUB ===== -->
+<div style="display:flex;flex-direction:column;gap:12px">
+  <div style="font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--faint,#9A958D)">05 · Enter the Club</div>
+  <div data-screen-label="Onboarding finish" style="width:390px;height:844px;border-radius:42px;overflow:hidden;background:var(--paper,#FAF7F2);border:1px solid var(--sand,#E7E2D9);box-shadow:0 24px 60px rgba(18,16,14,.16);display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 4px;font:600 14px/1 Inter,sans-serif;color:var(--ink,#12100E)"><span>9:41</span><span style="font:600 11px/1 IBM Plex Mono,monospace;letter-spacing:.1em;color:var(--soft,#5F5B55)">LTE ▮▮▮ 100%</span></div>
+    <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:5px;padding:18px 0 0">
+      <div style="font:800 27px/1 Sora,sans-serif;font-style:italic;letter-spacing:-.01em;color:var(--volt,#FF5A00)">CHEAT CODE</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+        <div style="font:700 15px/1 Sora,sans-serif;letter-spacing:.34em;color:var(--ink,#12100E)">CLUB</div>
+        <div style="width:34px;height:2px;background:var(--volt,#FF5A00)"></div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:22px 26px 0;text-align:center">
+      <div style="font:800 32px/1.12 Sora,sans-serif;letter-spacing:-.02em;color:var(--ink,#12100E)">Open the app.<br><span style="color:var(--volt,#FF5A00)">Know what matters.</span></div>
+      <div style="font:400 14px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:11px">Club Rank, today's signals and Kai alerts in one home screen.</div>
+    </div>
+
+    <div style="flex:1;min-height:0;padding:16px 18px 0">
+      <div style="border-radius:18px;background:var(--card,#FFFFFF);box-shadow:0 10px 28px rgba(18,16,14,.12);padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font:600 14px/1 Inter,sans-serif;color:var(--ink,#12100E)">Good morning, Alex.</div>
+          <div style="color:var(--volt,#FF5A00)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"></path><path d="M10 20a2.2 2.2 0 0 0 4 0"></path></svg></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:13px;padding-top:12px;border-top:1px solid var(--sand,#E7E2D9)">
+          <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.12em;color:var(--faint,#9A958D)">TOP IN THE CLUB</div>
+          <div style="font:600 11px/1 Inter,sans-serif;color:var(--volt,#FF5A00)">View all</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:11px">
+          <div style="text-align:center"><img src="public/avatars/adults/a01.png" alt="" style="width:44px;height:44px;border-radius:22px;object-fit:cover;border:2px solid #F59E0B"><div style="font:600 10px/1.6 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+12.4%</div></div>
+          <div style="text-align:center"><img src="public/avatars/adults/a04.png" alt="" style="width:44px;height:44px;border-radius:22px;object-fit:cover"><div style="font:600 10px/1.6 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+10.1%</div></div>
+          <div style="text-align:center"><img src="public/avatars/teens/t02.png" alt="" style="width:44px;height:44px;border-radius:22px;object-fit:cover"><div style="font:600 10px/1.6 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+8.7%</div></div>
+          <div style="text-align:center"><img src="public/avatars/adults/a07.png" alt="" style="width:44px;height:44px;border-radius:22px;object-fit:cover"><div style="font:600 10px/1.6 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+7.3%</div></div>
+          <div style="text-align:center"><img src="public/avatars/teens/t05.png" alt="" style="width:44px;height:44px;border-radius:22px;object-fit:cover"><div style="font:600 10px/1.6 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+6.9%</div></div>
+        </div>
+        <div style="margin-top:13px;padding:11px 12px;border-radius:12px;background:var(--card2,#F4F1EC)">
+          <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.12em;color:var(--volt,#FF5A00)">TODAY IN 30 SECONDS</div>
+          <div style="font:400 12px/1.5 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:6px">Tech earnings strong, AI momentum builds. Markets favor quality and efficient growth.</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:13px">
+          <div style="font:700 10px/1 Inter,sans-serif;letter-spacing:.12em;color:var(--faint,#9A958D)">YOUR SIGNALS</div>
+          <div style="font:600 11px/1 Inter,sans-serif;color:var(--volt,#FF5A00)">View all</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card2,#F4F1EC);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">AA</div>
+            <div style="flex:1"><div style="font:700 12px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">AAPL</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--green,#16A34A)">Bullish</div></div>
+            <svg width="52" height="20" viewBox="0 0 52 20" fill="none"><polyline points="0,17 12,13 24,15 36,8 52,3" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg>
+            <div style="font:600 12px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+2.31%</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:26px;height:26px;border-radius:8px;background:var(--card2,#F4F1EC);display:flex;align-items:center;justify-content:center;font:700 9px/1 IBM Plex Mono,monospace;color:var(--soft,#5F5B55)">NV</div>
+            <div style="flex:1"><div style="font:700 12px/1.2 Sora,sans-serif;color:var(--ink,#12100E)">NVDA</div><div style="font:400 10px/1.3 Inter,sans-serif;color:var(--green,#16A34A)">Bullish</div></div>
+            <svg width="52" height="20" viewBox="0 0 52 20" fill="none"><polyline points="0,18 12,14 24,15 36,7 52,2" stroke="var(--green,#16A34A)" stroke-width="1.6"></polyline></svg>
+            <div style="font:600 12px/1 IBM Plex Mono,monospace;color:var(--green,#16A34A)">+3.08%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:none;padding:14px 22px 26px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border-radius:28px;background:var(--volt,#FF5A00);color:#fff;font:700 17px/1 Inter,sans-serif;box-shadow:0 10px 26px rgba(255,90,0,.32)">Enter the Club <span style="font-size:18px">→</span></div>
+      <div style="text-align:center;font:500 13px/1 Inter,sans-serif;color:var(--soft,#5F5B55);margin-top:15px">Already a member? <span style="color:var(--volt,#FF5A00);font-weight:700">Log in</span></div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--sand,#E7E2D9)"></div>
+        <div style="width:9px;height:9px;border-radius:5px;background:var(--volt,#FF5A00)"></div>
+      </div>
+      <div style="text-align:center;font:700 15px/1 Sora,sans-serif;color:var(--ink,#12100E);margin-top:18px">Research becomes the signal.</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#FF5A00&quot;,&quot;#FF6A00&quot;,&quot;#F59E0B&quot;,&quot;#E85400&quot;],&quot;default&quot;:&quot;#FF5A00&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  state = { theme: null };
+
+  get t() { return this.state.theme || this.props.theme || "light"; }
+
+  renderVals() {
+    const accent = this.props.accent || "#FF5A00";
+    const light = {
+      "--stage": "#EDE9E2", "--paper": "#FAF7F2", "--card": "#FFFFFF", "--card2": "#F4F1EC",
+      "--sand": "#E7E2D9", "--ink": "#12100E", "--soft": "#5F5B55", "--faint": "#9A958D",
+      "--volt": accent, "--green": "#16A34A", "--red": "#DC2626"
+    };
+    const dark = {
+      "--stage": "#0A0A0B", "--paper": "#0F1115", "--card": "#191C22", "--card2": "#21242C",
+      "--sand": "#2A2E37", "--ink": "#F2F4F8", "--soft": "#9AA0AD", "--faint": "#666C78",
+      "--volt": accent, "--green": "#22C55E", "--red": "#EF4444"
+    };
+    const isLight = this.t === "light";
+    const tk = isLight ? light : dark;
+    const btn = (on) => ({
+      padding: "9px 20px", borderRadius: "10px", cursor: "pointer",
+      font: "700 13px/1 Inter, sans-serif",
+      background: on ? tk["--volt"] : "transparent",
+      color: on ? "#fff" : tk["--soft"]
+    });
+    return {
+      stageStyle: Object.assign({}, tk, {
+        minHeight: "100vh", padding: "48px 40px 80px",
+        background: tk["--stage"], color: tk["--ink"],
+        fontFamily: "Inter, sans-serif"
+      }),
+      lightBtn: btn(isLight),
+      darkBtn: btn(!isLight),
+      setLight: () => this.setState({ theme: "light" }),
+      setDark: () => this.setState({ theme: "dark" })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,600;1,700;1,800&family=Kaushan+Script&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  body { margin:0; background:#141216 }
+  a { color:#FF7A1A; text-decoration:none }
+  a:hover { color:#F4F0EC }
+  @keyframes cping { 0% { transform: scale(1); opacity:.5 } 100% { transform: scale(2.4); opacity:0 } }
+</style>
+</helmet>
+
+<div style="font-family:'Instrument Sans',sans-serif;background:#141216;padding:56px 56px 100px;box-sizing:border-box;min-height:100%">
+
+  <div style="max-width:2300px;margin:0 auto 44px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#E8C36A;font-weight:600">FTA hub · gold lane · + the shop</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-top:14px">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center;box-shadow:0 0 16px rgba(232,195,106,.25)"><div style="width:13px;height:13px;background:#0D0B0E;transform:rotate(45deg);border-radius:2px"></div></div>
+      <h1 style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:56px;font-weight:800;letter-spacing:.01em;line-height:1;color:#F4F0EC;margin:0;text-transform:uppercase">FTA <span style="color:#E8C36A">Hub</span> + Shop</h1>
+    </div>
+    <p style="margin:16px 0 0;max-width:720px;font-size:15px;line-height:1.6;color:#8F8894;text-wrap:pretty">Same layout system as the Club, different accent lane: FTA runs metallic gold on true-dark — never club orange. The Shop is premium merch energy: physical books and kits with real photography slots, not SaaS pricing tables.</p>
+  </div>
+
+  <div style="max-width:2300px;margin:0 auto;display:flex;flex-wrap:wrap;gap:48px 36px">
+
+    <!-- ============ F1 FTA TRADERS CHAT ============ -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#E8C36A">F1</span><span style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:16px;font-weight:700;color:#F4F0EC;text-transform:uppercase;letter-spacing:.04em">FTA · traders chat</span></div>
+      <div data-screen-label="F1 FTA Chat" style="width:390px;height:844px;border-radius:34px;background:#0A090C;border:1px solid #2A2530;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:16px 16px 12px;border-bottom:1px solid #26212C;background:#0E0C10">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:#C8C2CE;font-size:16px">←</span>
+            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center;font-family:'Barlow Condensed',sans-serif;font-style:italic;font-weight:800;font-size:14px;color:#0A090C;flex:0 0 auto">FTA</div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:800;color:#F4F0EC">Traders Floor</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:9.5px;color:#8F8894;margin-top:1px"><span style="position:relative;display:inline-flex;width:6px;height:6px"><span style="position:absolute;inset:0;border-radius:50%;background:#4AE383;animation:cping 2s ease-out infinite"></span><span style="position:relative;width:6px;height:6px;border-radius:50%;background:#4AE383"></span></span>486 traders on the floor</div>
+            </div>
+            <span style="background:rgba(232,195,106,.12);border:1px solid rgba(232,195,106,.4);color:#E8C36A;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;letter-spacing:.1em;padding:4px 9px;border-radius:12px">FTA MEMBERS</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:12px">
+            <span style="background:linear-gradient(140deg,#E8C36A,#B8913C);color:#0A090C;font-size:10px;font-weight:800;padding:5px 12px;border-radius:14px"># floor</span>
+            <span style="background:#17141A;border:1px solid #26212C;color:#8F8894;font-size:10px;font-weight:600;padding:5px 12px;border-radius:14px"># setups</span>
+            <span style="background:#17141A;border:1px solid #26212C;color:#8F8894;font-size:10px;font-weight:600;padding:5px 12px;border-radius:14px"># wins</span>
+            <span style="background:#17141A;border:1px solid #26212C;color:#8F8894;font-size:10px;font-weight:600;padding:5px 12px;border-radius:14px"># help</span>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:14px 16px;display:flex;flex-direction:column;gap:13px">
+          <div style="text-align:center"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.14em;color:#6E6774;background:#17141A;padding:3px 12px;border-radius:10px">TODAY · 9:47 AM</span></div>
+          <div style="display:flex;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:#3A3240;border:2px solid #F4F0EC;display:grid;place-items:center;font-size:10px;font-weight:800;color:#F4F0EC;flex:0 0 auto;position:relative">RW<span style="position:absolute;right:-3px;bottom:-3px;width:11px;height:11px;border-radius:50%;background:#E8C36A;border:2px solid #0A090C"></span></div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:12.5px;font-weight:800;color:#F4F0EC">Coach Rell</span><span style="font-size:8.5px;color:#0A090C;background:linear-gradient(140deg,#E8C36A,#B8913C);border-radius:4px;padding:1px 6px;font-weight:800">STAFF</span><span style="font-size:9px;color:#6E6774">9:47</span></div>
+              <div style="margin-top:5px;background:#17141A;border:1px solid #26212C;border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:12.5px;color:#D8D2D6;line-height:1.55">Morning floor. Watching <span style="color:#FF9A4D;font-family:'IBM Plex Mono',monospace;font-size:11.5px">$NVDA</span> 173.40 — if it holds through 10:00 the license pop is real. Plan posted in <span style="color:#E8C36A;font-weight:700"># setups</span>.</div>
+              <div style="display:flex;gap:6px;margin-top:6px"><span style="background:#17141A;border:1px solid #26212C;border-radius:10px;padding:2px 8px;font-size:9.5px;color:#C8C2CE">🔥 34</span><span style="background:#17141A;border:1px solid #26212C;border-radius:10px;padding:2px 8px;font-size:9.5px;color:#C8C2CE">📌 12</span></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:#3A3240;border:2px solid #4AE383;display:grid;place-items:center;font-size:10px;font-weight:800;color:#F4F0EC;flex:0 0 auto">MB</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:12.5px;font-weight:800;color:#4AE383">MarcusB</span><span style="font-size:9px;color:#6E6774">9:51</span></div>
+              <div style="margin-top:5px;background:#17141A;border:1px solid #26212C;border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:12.5px;color:#D8D2D6;line-height:1.55">In at 173.60, stop under yesterday's high. First green week if this holds 😤</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:#3A3240;border:2px solid #A66BFF;display:grid;place-items:center;font-size:10px;font-weight:800;color:#F4F0EC;flex:0 0 auto">KP</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:12.5px;font-weight:800;color:#A66BFF">KeishaP</span><span style="font-size:9px;color:#6E6774">9:52</span></div>
+              <div style="margin-top:5px;background:#17141A;border:1px solid #26212C;border-radius:4px 14px 14px 14px;padding:10px 13px;font-size:12.5px;color:#D8D2D6;line-height:1.55">@MarcusB size it like Tuesday's lesson — half now, half over 174. Don't hero it.</div>
+              <div style="display:flex;gap:6px;margin-top:6px"><span style="background:rgba(232,195,106,.1);border:1px solid rgba(232,195,106,.35);border-radius:10px;padding:2px 8px;font-size:9.5px;color:#E8C36A">💯 Coach Rell +18</span></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:#3A3240;border:2px solid #FFC24B;display:grid;place-items:center;font-size:10px;font-weight:800;color:#F4F0EC;flex:0 0 auto">DJ</div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:12.5px;font-weight:800;color:#FFC24B">DevonJ</span><span style="font-size:9px;color:#6E6774">9:54</span></div>
+              <div style="margin-top:5px;background:#17141A;border:1px solid #26212C;border-radius:4px 14px 14px 14px;padding:10px 13px">
+                <div style="font-size:12.5px;color:#D8D2D6;line-height:1.55">chart from the replay — that's the level 👇</div>
+                <div style="margin-top:8px;height:74px;border-radius:10px;background:repeating-linear-gradient(135deg,#221A26 0 12px,#1B1520 12px 24px);position:relative;overflow:hidden">
+                  <svg width="100%" height="100%" viewBox="0 0 280 74" preserveAspectRatio="none"><path d="M0 56 L40 50 L74 58 L110 40 L146 46 L188 26 L226 32 L280 14" fill="none" stroke="#4AE383" stroke-width="2"></path><path d="M0 38 L280 38" stroke="#E8C36A" stroke-width="1.5" stroke-dasharray="5 4"></path></svg>
+                  <span style="position:absolute;right:8px;top:6px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#E8C36A">173.40</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:10px 16px 22px;border-top:1px solid #26212C;background:#0E0C10">
+          <div style="display:flex;align-items:center;gap:10px;background:#17141A;border:1px solid #26212C;border-radius:20px;padding:11px 15px">
+            <span style="flex:1;font-size:12px;color:#6E6774">Message the floor…</span>
+            <span style="font-size:13px;color:#8F8894">📈</span>
+            <span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center;color:#0A090C;font-size:12px;font-weight:800">↑</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ F2 FTA COURSES ============ -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#E8C36A">F2</span><span style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:16px;font-weight:700;color:#F4F0EC;text-transform:uppercase;letter-spacing:.04em">FTA · course library</span></div>
+      <div data-screen-label="F2 FTA Courses" style="width:390px;height:844px;border-radius:34px;background:#0A090C;border:1px solid #2A2530;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:18px 18px 0;flex:1;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center;font-family:'Barlow Condensed',sans-serif;font-style:italic;font-weight:800;font-size:14px;color:#0A090C">FTA</div>
+            <div style="font-family:'Kaushan Script',cursive;font-size:30px;color:#F4F0EC;line-height:1">the curriculum</div>
+          </div>
+          <div style="font-size:11px;color:#8F8894;margin-top:8px;line-height:1.5">Your cohort: <strong style="color:#E8C36A">Summer '26 · Week 5 of 12</strong> — stay with the floor, the courses unlock in order.</div>
+
+          <div style="margin-top:14px;background:linear-gradient(140deg,#1E1708 0%,#141118 62%);border:1.5px solid #E8C36A;border-radius:20px;padding:16px;box-shadow:0 0 14px rgba(232,195,106,.1)">
+            <div style="display:flex;align-items:center;gap:7px">
+              <span style="background:linear-gradient(140deg,#E8C36A,#B8913C);color:#0A090C;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:800;letter-spacing:.1em;padding:3px 9px;border-radius:12px">CONTINUE · MODULE 5</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8F8894">LESSON 3 OF 8</span>
+            </div>
+            <div style="font-size:17px;font-weight:800;color:#F4F0EC;margin-top:9px;line-height:1.3">Risk First: sizing every trade before you love it</div>
+            <div style="height:7px;background:#26212C;border-radius:4px;margin-top:11px;overflow:hidden"><div style="width:34%;height:100%;background:linear-gradient(90deg,#E8C36A,#B8913C)"></div></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:11px">
+              <span style="display:flex;align-items:center;gap:7px;background:linear-gradient(140deg,#E8C36A,#B8913C);color:#0A090C;font-size:12px;font-weight:800;padding:8px 15px;border-radius:16px"><span style="width:0;height:0;border-left:8px solid #0A090C;border-top:5px solid transparent;border-bottom:5px solid transparent;display:inline-block"></span>Resume · 14 min left</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8F8894">✎ workbook p.22</span>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#E8C36A;font-weight:600;margin-top:18px">The 12-week path</div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;background:#141118;border:1px solid #26212C;border-radius:14px;padding:11px 13px;opacity:.8">
+              <span style="width:30px;height:30px;border-radius:50%;background:rgba(74,227,131,.12);border:1.5px solid #4AE383;color:#4AE383;display:grid;place-items:center;font-size:12px;flex:0 0 auto">✓</span>
+              <div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#F4F0EC">Foundations · how markets actually move</div><div style="font-size:9.5px;color:#8F8894;margin-top:1px">Modules 1–2 · completed Jun 12</div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4AE383">100%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#141118;border:1px solid #26212C;border-radius:14px;padding:11px 13px;opacity:.8">
+              <span style="width:30px;height:30px;border-radius:50%;background:rgba(74,227,131,.12);border:1.5px solid #4AE383;color:#4AE383;display:grid;place-items:center;font-size:12px;flex:0 0 auto">✓</span>
+              <div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#F4F0EC">Charts that matter · levels &amp; volume</div><div style="font-size:9.5px;color:#8F8894;margin-top:1px">Modules 3–4 · completed Jul 10</div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4AE383">100%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#141118;border:1.5px solid #E8C36A;border-radius:14px;padding:11px 13px;box-shadow:0 0 10px rgba(232,195,106,.08)">
+              <span style="width:30px;height:30px;border-radius:50%;background:rgba(232,195,106,.12);border:1.5px solid #E8C36A;color:#E8C36A;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;flex:0 0 auto">5</span>
+              <div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#F4F0EC">Risk first · sizing, stops, survival</div><div style="font-size:9.5px;color:#B8AEB0;margin-top:1px">Module 5 · in progress · live review Thu 7 PM</div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#E8C36A">34%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#141118;border:1px solid #26212C;border-radius:14px;padding:11px 13px;opacity:.55">
+              <span style="width:30px;height:30px;border-radius:50%;background:#17141A;border:1.5px solid #26212C;color:#6E6774;display:grid;place-items:center;font-size:11px;flex:0 0 auto">🔒</span>
+              <div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#C8C2CE">Entries &amp; exits · the FTA playbook</div><div style="font-size:9.5px;color:#6E6774;margin-top:1px">Modules 6–8 · unlocks with week 6</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;background:#141118;border:1px solid #26212C;border-radius:14px;padding:11px 13px;opacity:.55">
+              <span style="width:30px;height:30px;border-radius:50%;background:#17141A;border:1.5px solid #26212C;color:#6E6774;display:grid;place-items:center;font-size:11px;flex:0 0 auto">🔒</span>
+              <div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:#C8C2CE">Live capstone · trade the plan for 10 days</div><div style="font-size:9.5px;color:#6E6774;margin-top:1px">Modules 9–12 · graded by coaches</div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;background:#141118;border:1px solid #26212C;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:14px">🎓</span>
+            <span style="flex:1;font-size:10.5px;color:#8F8894;line-height:1.5">Finish all 12 weeks → <strong style="color:#E8C36A">FTA Certified</strong> plate on your Club profile, forever.</span>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #26212C;background:#0A090C;padding:10px 8px 16px">
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">💬</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Floor</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#E8C36A">▣</div><div style="font-size:9px;color:#E8C36A;font-weight:700;margin-top:2px">Courses</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">▶</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Recordings</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">◉</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">You</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ F3 FTA RECORDINGS ============ -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#E8C36A">F3</span><span style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:16px;font-weight:700;color:#F4F0EC;text-transform:uppercase;letter-spacing:.04em">FTA · recordings</span></div>
+      <div data-screen-label="F3 FTA Recordings" style="width:390px;height:844px;border-radius:34px;background:#0A090C;border:1px solid #2A2530;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:18px 18px 0;flex:1;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-family:'Kaushan Script',cursive;font-size:30px;color:#F4F0EC;line-height:1">recordings</div>
+            <span style="margin-left:auto;background:#17141A;border:1px solid #26212C;color:#C8C2CE;font-size:10px;font-weight:600;padding:6px 11px;border-radius:16px">Week 5 ▾</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:13px">
+            <span style="background:linear-gradient(140deg,#E8C36A,#B8913C);color:#0A090C;font-size:10.5px;font-weight:800;padding:6px 13px;border-radius:16px">All</span>
+            <span style="background:#17141A;border:1px solid #26212C;color:#8F8894;font-size:10.5px;font-weight:600;padding:6px 13px;border-radius:16px">Live reviews</span>
+            <span style="background:#17141A;border:1px solid #26212C;color:#8F8894;font-size:10.5px;font-weight:600;padding:6px 13px;border-radius:16px">Lessons</span>
+            <span style="background:#17141A;border:1px solid #26212C;color:#8F8894;font-size:10.5px;font-weight:600;padding:6px 13px;border-radius:16px">Q&amp;A</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px">
+            <div style="background:#141118;border:1px solid #26212C;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:90px;background:repeating-linear-gradient(135deg,#1E1820 0 12px,#161218 12px 24px)">
+                <span style="position:absolute;left:8px;top:8px;background:rgba(232,195,106,.15);border:1px solid rgba(232,195,106,.4);color:#E8C36A;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;padding:2px 6px;border-radius:6px">LIVE REVIEW</span>
+                <span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.7);color:#F4F0EC;font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:2px 6px;border-radius:6px">1:04:12</span>
+                <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center"><div style="width:0;height:0;border-left:9px solid #0A090C;border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px"></div></div>
+                <div style="position:absolute;left:0;bottom:0;height:3px;width:38%;background:#E8C36A"></div>
+              </div>
+              <div style="padding:10px 11px 12px">
+                <div style="font-size:11.5px;font-weight:700;color:#F4F0EC;line-height:1.35">Thu review · grading week-5 risk plans</div>
+                <div style="font-size:9px;color:#8F8894;margin-top:4px">Jul 23 · Coach Rell · <span style="color:#E8C36A">resume 24:18</span></div>
+              </div>
+            </div>
+            <div style="background:#141118;border:1px solid #26212C;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:90px;background:repeating-linear-gradient(135deg,#1E1820 0 12px,#161218 12px 24px)">
+                <span style="position:absolute;left:8px;top:8px;background:rgba(74,227,131,.15);border:1px solid rgba(74,227,131,.4);color:#4AE383;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;padding:2px 6px;border-radius:6px">✓ WATCHED</span>
+                <span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.7);color:#F4F0EC;font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:2px 6px;border-radius:6px">38:46</span>
+                <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center"><div style="width:0;height:0;border-left:9px solid #0A090C;border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px"></div></div>
+              </div>
+              <div style="padding:10px 11px 12px">
+                <div style="font-size:11.5px;font-weight:700;color:#F4F0EC;line-height:1.35">Lesson 5.2 · stops that don't get hunted</div>
+                <div style="font-size:9px;color:#8F8894;margin-top:4px">Jul 21 · Coach Rell</div>
+              </div>
+            </div>
+            <div style="background:#141118;border:1px solid #26212C;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:90px;background:repeating-linear-gradient(135deg,#1E1820 0 12px,#161218 12px 24px)">
+                <span style="position:absolute;left:8px;top:8px;background:rgba(166,107,255,.15);border:1px solid rgba(166,107,255,.4);color:#A66BFF;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;padding:2px 6px;border-radius:6px">Q&amp;A</span>
+                <span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.7);color:#F4F0EC;font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:2px 6px;border-radius:6px">52:30</span>
+                <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center"><div style="width:0;height:0;border-left:9px solid #0A090C;border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px"></div></div>
+              </div>
+              <div style="padding:10px 11px 12px">
+                <div style="font-size:11.5px;font-weight:700;color:#F4F0EC;line-height:1.35">Office hours · "when do I go full size?"</div>
+                <div style="font-size:9px;color:#8F8894;margin-top:4px">Jul 20 · Keisha + coaches</div>
+              </div>
+            </div>
+            <div style="background:#141118;border:1px solid #26212C;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:90px;background:repeating-linear-gradient(135deg,#1E1820 0 12px,#161218 12px 24px)">
+                <span style="position:absolute;left:8px;top:8px;background:rgba(232,195,106,.15);border:1px solid rgba(232,195,106,.4);color:#E8C36A;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:600;padding:2px 6px;border-radius:6px">LIVE REVIEW</span>
+                <span style="position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.7);color:#F4F0EC;font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:2px 6px;border-radius:6px">58:55</span>
+                <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:linear-gradient(140deg,#E8C36A,#B8913C);display:grid;place-items:center"><div style="width:0;height:0;border-left:9px solid #0A090C;border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px"></div></div>
+              </div>
+              <div style="padding:10px 11px 12px">
+                <div style="font-size:11.5px;font-weight:700;color:#F4F0EC;line-height:1.35">Thu review · week-4 charts, no mercy</div>
+                <div style="font-size:9px;color:#8F8894;margin-top:4px">Jul 16 · Coach Rell</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;background:#141118;border:1px solid #26212C;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:14px">⬇</span>
+            <span style="flex:1;font-size:10.5px;color:#8F8894;line-height:1.5">Recordings stay in your library for life — cohort access never expires.</span>
+            <span style="font-size:10.5px;color:#E8C36A;font-weight:700">Download all</span>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #26212C;background:#0A090C;padding:10px 8px 16px">
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">💬</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Floor</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">▣</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Courses</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#E8C36A">▶</div><div style="font-size:9px;color:#E8C36A;font-weight:700;margin-top:2px">Recordings</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">◉</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">You</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SH1 STOREFRONT ============ -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#FF7A1A">SH1</span><span style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:16px;font-weight:700;color:#F4F0EC;text-transform:uppercase;letter-spacing:.04em">Shop · storefront</span></div>
+      <div data-screen-label="SH1 Storefront" style="width:390px;height:844px;border-radius:34px;background:#0D0B0E;border:1px solid #2A2530;overflow:hidden;display:flex;flex-direction:column">
+        <div style="padding:18px 18px 0;flex:1;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-family:'Kaushan Script',cursive;font-size:34px;color:#F4F0EC;line-height:1">the shop</div>
+            <span style="margin-left:auto;position:relative"><span style="font-size:16px;color:#C8C2CE">🛍</span><span style="position:absolute;right:-6px;top:-4px;width:15px;height:15px;border-radius:50%;background:#FF7A1A;color:#0D0B0E;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;display:grid;place-items:center">1</span></span>
+          </div>
+          <div style="font-size:11px;color:#8F8894;margin-top:6px">Physical goods. Real paper, real ink, shipped to your door.</div>
+
+          <div style="margin-top:14px;background:#17141A;border:1px solid #2A2530;border-radius:20px;overflow:hidden">
+            <div style="position:relative;height:170px;background:repeating-linear-gradient(135deg,#241C16 0 14px,#1C1510 14px 28px)">
+              <div style="position:absolute;top:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8F8894">Photo · book on desk, hard light</div>
+              <span style="position:absolute;right:12px;top:10px;background:#FF7A1A;color:#0D0B0E;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:10px">BESTSELLER</span>
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(13,11,14,.85) 100%)"></div>
+              <div style="position:absolute;left:14px;bottom:12px"><div style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:22px;font-weight:800;color:#F4F0EC;text-transform:uppercase">The Cheat Code Book</div><div style="font-size:10px;color:#B8AEB0;margin-top:1px">Hardcover · 284 pages · signed first print</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+              <div style="flex:1"><span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#F4F0EC">$39</span> <span style="font-size:10px;color:#8F8894">· ★ 4.9 (1,240)</span></div>
+              <span style="background:#FF7A1A;color:#0D0B0E;font-size:11.5px;font-weight:800;padding:8px 16px;border-radius:16px">Add to bag</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:12px">
+            <div style="background:#17141A;border:1px solid #2A2530;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:104px;background:repeating-linear-gradient(135deg,#221A26 0 12px,#1B1520 12px 24px)">
+                <div style="position:absolute;top:8px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#8F8894">Photo · journal flat-lay</div>
+              </div>
+              <div style="padding:10px 12px 12px">
+                <div style="font-size:12px;font-weight:700;color:#F4F0EC;line-height:1.3">Trade Journal · 90 days</div>
+                <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#F4F0EC">$24</span><span style="font-size:9px;color:#8F8894">★ 4.8</span></div>
+              </div>
+            </div>
+            <div style="background:#17141A;border:1px solid #2A2530;border-radius:16px;overflow:hidden;position:relative">
+              <span style="position:absolute;right:9px;top:9px;z-index:1;background:#FFC24B;color:#0D0B0E;font-family:'IBM Plex Mono',monospace;font-size:7.5px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:9px">BUNDLE −20%</span>
+              <div style="position:relative;height:104px;background:repeating-linear-gradient(135deg,#241C16 0 12px,#1C1510 12px 24px)">
+                <div style="position:absolute;top:8px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#8F8894">Photo · full kit unboxed</div>
+              </div>
+              <div style="padding:10px 12px 12px">
+                <div style="font-size:12px;font-weight:700;color:#F4F0EC;line-height:1.3">Starter Kit · book + journal + deck</div>
+                <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#F4F0EC">$59</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8F8894;text-decoration:line-through">$74</span></div>
+              </div>
+            </div>
+            <div style="background:#17141A;border:1px solid #2A2530;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:104px;background:repeating-linear-gradient(135deg,#221A26 0 12px,#1B1520 12px 24px)">
+                <div style="position:absolute;top:8px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#8F8894">Photo · cards fanned out</div>
+              </div>
+              <div style="padding:10px 12px 12px">
+                <div style="font-size:12px;font-weight:700;color:#F4F0EC;line-height:1.3">Pattern Deck · 52 chart cards</div>
+                <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#F4F0EC">$19</span><span style="font-size:9px;color:#8F8894">★ 4.7</span></div>
+              </div>
+            </div>
+            <div style="background:#17141A;border:1px solid #2A2530;border-radius:16px;overflow:hidden">
+              <div style="position:relative;height:104px;background:repeating-linear-gradient(135deg,#221A26 0 12px,#1B1520 12px 24px)">
+                <div style="position:absolute;top:8px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#8F8894">Photo · hoodie on hanger</div>
+              </div>
+              <div style="padding:10px 12px 12px">
+                <div style="font-size:12px;font-weight:700;color:#F4F0EC;line-height:1.3">Club Hoodie · heavyweight</div>
+                <div style="display:flex;align-items:baseline;gap:5px;margin-top:5px"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#F4F0EC">$64</span><span style="font-size:9px;color:#8F8894">★ 4.9</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;background:#17141A;border:1px solid #2A2530;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px">
+            <span style="font-size:14px">📦</span>
+            <span style="flex:1;font-size:10.5px;color:#8F8894">Free US shipping over $50 · members get 10% off everything</span>
+          </div>
+        </div>
+        <div style="display:flex;border-top:1px solid #2A2530;background:#0D0B0E;padding:10px 8px 16px">
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">⌂</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Home</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#FF7A1A">◎</div><div style="font-size:9px;color:#FF7A1A;font-weight:700;margin-top:2px">Discover</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">✦</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Club</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">▣</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">Watch</div></div>
+          <div style="flex:1;text-align:center"><div style="font-size:15px;color:#6E6774">◉</div><div style="font-size:9px;color:#6E6774;font-weight:600;margin-top:2px">You</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SH2 PRODUCT DETAIL ============ -->
+    <div style="width:390px">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:13px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#FF7A1A">SH2</span><span style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:16px;font-weight:700;color:#F4F0EC;text-transform:uppercase;letter-spacing:.04em">Shop · product detail</span></div>
+      <div data-screen-label="SH2 Product Detail" style="width:390px;height:844px;border-radius:34px;background:#0D0B0E;border:1px solid #2A2530;overflow:hidden;display:flex;flex-direction:column">
+        <div style="flex:1;overflow:hidden">
+          <div style="position:relative;height:300px;background:repeating-linear-gradient(135deg,#241C16 0 16px,#1C1510 16px 32px)">
+            <div style="position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center">
+              <span style="width:32px;height:32px;border-radius:50%;background:rgba(13,11,14,.6);display:grid;place-items:center;color:#F4F0EC;font-size:14px">←</span>
+              <span style="width:32px;height:32px;border-radius:50%;background:rgba(13,11,14,.6);display:grid;place-items:center;color:#F4F0EC;font-size:13px">↗</span>
+            </div>
+            <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#8F8894;text-align:center">Photo · hero<br />hardcover, spine detail</div>
+            <div style="position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:5px">
+              <span style="width:16px;height:4px;border-radius:2px;background:#FF7A1A"></span><span style="width:4px;height:4px;border-radius:2px;background:#3A3240"></span><span style="width:4px;height:4px;border-radius:2px;background:#3A3240"></span><span style="width:4px;height:4px;border-radius:2px;background:#3A3240"></span>
+            </div>
+          </div>
+          <div style="padding:16px 20px 0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+              <div>
+                <div style="font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:27px;font-weight:800;color:#F4F0EC;text-transform:uppercase;line-height:1">The Cheat Code Book</div>
+                <div style="font-size:11px;color:#8F8894;margin-top:4px">Hardcover · 284 pages · signed first print run</div>
+              </div>
+              <div style="text-align:right;flex:0 0 auto">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:#F4F0EC">$39</div>
+                <div style="font-size:9px;color:#4AE383;margin-top:2px">✓ In stock</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+              <span style="color:#FFC24B;font-size:12px">★★★★★</span>
+              <span style="font-size:10.5px;color:#8F8894">4.9 · 1,240 reviews · <a href="#">read them</a></span>
+            </div>
+
+            <div style="margin-top:14px;font-size:13px;line-height:1.65;color:#C8C2CE">The playbook behind the Club, on paper. Ten chapters from first trade to first system — the belts, the rules, the psychology, and the 40 charts every member should be able to read cold.</div>
+
+            <div style="display:flex;gap:8px;margin-top:14px">
+              <span style="flex:1;background:#17141A;border:1px solid #2A2530;border-radius:12px;padding:9px 6px;text-align:center"><span style="display:block;font-size:13px">✍️</span><span style="display:block;font-size:8.5px;color:#8F8894;margin-top:3px">Signed by OG</span></span>
+              <span style="flex:1;background:#17141A;border:1px solid #2A2530;border-radius:12px;padding:9px 6px;text-align:center"><span style="display:block;font-size:13px">📖</span><span style="display:block;font-size:8.5px;color:#8F8894;margin-top:3px">284 pages</span></span>
+              <span style="flex:1;background:#17141A;border:1px solid #2A2530;border-radius:12px;padding:9px 6px;text-align:center"><span style="display:block;font-size:13px">🚚</span><span style="display:block;font-size:8.5px;color:#8F8894;margin-top:3px">Ships in 2 days</span></span>
+              <span style="flex:1;background:#17141A;border:1px solid #2A2530;border-radius:12px;padding:9px 6px;text-align:center"><span style="display:block;font-size:13px">↩️</span><span style="display:block;font-size:8.5px;color:#8F8894;margin-top:3px">30-day returns</span></span>
+            </div>
+
+            <div style="margin-top:14px;background:linear-gradient(140deg,#241009 0%,#17141A 62%);border:1.5px solid #FF7A1A;border-radius:16px;padding:13px 15px;display:flex;align-items:center;gap:12px;box-shadow:0 0 12px rgba(255,122,26,.1)">
+              <span style="font-size:18px;flex:0 0 auto">🎁</span>
+              <div style="flex:1"><div style="font-size:12px;font-weight:800;color:#F4F0EC">Make it the Starter Kit · save $15</div><div style="font-size:10px;color:#B8AEB0;margin-top:2px">+ 90-day journal + pattern deck · $59 total</div></div>
+              <span style="width:22px;height:22px;border-radius:7px;border:1.5px solid #FF7A1A;display:grid;place-items:center;color:#FF7A1A;font-size:12px;flex:0 0 auto">+</span>
+            </div>
+
+            <div style="margin-top:12px;background:#17141A;border:1px solid #2A2530;border-radius:14px;padding:11px 14px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:28px;height:28px;border-radius:50%;background:#3A3240;border:2px solid #FFC24B;display:grid;place-items:center;font-size:9px;font-weight:800;color:#F4F0EC;flex:0 0 auto">DK</div>
+                <div style="flex:1;font-size:11px;color:#C8C2CE;line-height:1.5">"Read it in a weekend, re-read chapter 6 monthly. The sizing chapter paid for the book 100x." <span style="color:#8F8894">— DeShawn K., Yellow Belt</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:12px 18px 24px;border-top:1px solid #2A2530">
+          <div style="display:flex;gap:10px;align-items:center">
+            <span style="width:46px;height:46px;border-radius:16px;background:#17141A;border:1px solid #2A2530;display:grid;place-items:center;font-size:16px;flex:0 0 auto">♡</span>
+            <div style="flex:1;background:#FF7A1A;border-radius:20px;padding:14px 0;text-align:center;font-size:14px;font-weight:800;color:#0D0B0E;box-shadow:0 0 12px rgba(255,122,26,.2)">Add to bag · $39</div>
+          </div>
+          <div style="text-align:center;font-size:9.5px;color:#6E6774;margin-top:9px">Members save 10% at checkout · applied automatically</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>
