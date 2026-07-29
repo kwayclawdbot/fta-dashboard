@@ -1,0 +1,278 @@
+/*
+ * Styles for the /v3 token specimen. CSS Modules: class names are hashed, so
+ * there is no shared class namespace with the old app and no way for an old
+ * global class rule to match this markup. Every value below is a v3 token.
+ */
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+}
+
+.header {
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  letter-spacing: var(--ls-16em);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.title {
+  margin: var(--space-14) 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: var(--fw-800);
+  font-size: var(--fs-34);
+  line-height: var(--lh-1);
+  letter-spacing: var(--ls-04em);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.titleAccent {
+  color: var(--accent);
+}
+
+.lede {
+  margin: var(--space-16) 0 0;
+  max-width: 62ch;
+  font-size: var(--fs-15);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--accent-strong);
+}
+
+.sourceList {
+  margin: var(--space-12) 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text-faint);
+}
+
+.section {
+  padding-top: 40px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: var(--fw-700);
+  font-size: var(--fs-22);
+  letter-spacing: var(--ls-04em);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.sectionNote {
+  margin: var(--space-8) 0 0;
+  font-size: var(--fs-13);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+.roleGrid {
+  margin-top: var(--space-16);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-14);
+}
+
+.role {
+  display: flex;
+  gap: var(--space-12);
+  align-items: flex-start;
+}
+
+.swatch {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-10);
+  border: 1px solid var(--border);
+}
+
+.roleBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.roleName {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.roleValues {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+}
+
+.roleWhy {
+  font-size: var(--fs-11);
+  line-height: var(--lh-1-5);
+  color: var(--text-faint);
+}
+
+.typeList {
+  margin-top: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.typeRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.typeMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.typeSample {
+  margin: 0;
+  font-size: var(--fs-30);
+  color: var(--text);
+}
+
+.scaleRows {
+  margin-top: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.scaleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+}
+
+.scaleLabel {
+  flex: none;
+  width: 120px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+}
+
+.scaleSample {
+  color: var(--text-muted);
+}
+
+.radiusRow,
+.shadowRow {
+  margin-top: var(--space-16);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-10);
+}
+
+.radiusChip {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+}
+
+.shadowChip {
+  display: grid;
+  place-items: center;
+  min-width: 150px;
+  height: 66px;
+  padding: 0 var(--space-14);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+}
+
+.spacingList {
+  margin-top: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.spacingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.spacingBar {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.footer {
+  margin-top: 56px;
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--border);
+}
+
+/* Theme control ------------------------------------------------------------ */
+
+.themeToggle {
+  position: fixed;
+  top: var(--space-16);
+  right: var(--space-16);
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-14);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  letter-spacing: var(--ls-08em);
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.themeToggle:hover {
+  border-color: var(--accent);
+}
+
+.themeToggleDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
+}
