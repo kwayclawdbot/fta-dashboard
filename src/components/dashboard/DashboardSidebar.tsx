@@ -30,7 +30,6 @@ import {
   Radio,
   Film,
   Bot,
-  Telescope,
   Newspaper,
   Bell,
   Compass,
@@ -92,7 +91,6 @@ const CLUB_WATCHLIST: NavItem = {
     { label: "My Family", href: "/watchlist" },
   ],
 };
-const CLUB_SCREENER: NavItem = { label: "Screener", href: "/screener", icon: Telescope };
 const CLUB_MISSIONS: NavItem = { label: "Kid Missions", href: "/missions", icon: Target };
 // Community is now a plain row — the club Feed. (Lane 12A: the Club Newsroom
 // was promoted OUT to its own top-level "News" row below. On mobile Community
@@ -400,7 +398,6 @@ export function getNavItems(
       // five-item regroup dropped it from the primary nav; it lives here (also
       // the Discover hub's "Screener" tab) so the active state + app tour resolve.
       CLUB_MARKETS_HEADER,
-      CLUB_SCREENER,
       CLUB_NEWS,
       CLUB_ALERTS,
       // ACCOUNT: your standing + growth. Individual members can add a family
@@ -465,7 +462,6 @@ export function getNavItems(
       CLUB_WATCHLIST,
       CLUB_NEWS,
       KAI_ASK,
-      CLUB_SCREENER,
       CLUB_MISSIONS,
       learnGroup(false),
       practiceGroup(true),
@@ -491,7 +487,6 @@ export function getNavItems(
     CLUB_DISCOVER,
     CLUB_NEWS,
     KAI_ASK,
-    CLUB_SCREENER,
     CLUB_MISSIONS,
     practiceGroup(true),
     { label: "My Progress", href: "/progress", icon: Trophy },
@@ -850,7 +845,7 @@ export default function DashboardSidebar({
     <>
       {/* Desktop sidebar */}
       <aside
-        className={`
+        className={`cc-global-sidebar
           hidden lg:flex flex-col fixed top-0 left-0 h-screen bg-midnight-900 border-r border-midnight-700/50 z-30 transition-all duration-300
           ${collapsed ? "w-[72px]" : "w-60"}
         `}
@@ -874,7 +869,7 @@ export default function DashboardSidebar({
               animate={{ x: 0 }}
               exit={{ x: -260 }}
               transition={{ type: "tween", duration: 0.2 }}
-              className="fixed top-0 left-0 h-screen w-60 bg-midnight-900 border-r border-midnight-700/50 z-50 lg:hidden"
+              className="cc-global-sidebar fixed top-0 left-0 h-screen w-60 bg-midnight-900 border-r border-midnight-700/50 z-50 lg:hidden"
             >
               {sidebarContent}
             </m.aside>

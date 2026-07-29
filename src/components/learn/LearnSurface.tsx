@@ -430,7 +430,7 @@ export default function LearnSurface() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-16">
+    <div className="cc-app-screen mx-auto max-w-[760px] space-y-6 px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
       {/* Board 08 head: the script wordmark alone, with board 20's stat rail
           carrying the streak and the lifetime XP. */}
       <div className="flex items-center justify-between gap-4">
@@ -438,14 +438,16 @@ export default function LearnSurface() {
           <LearnWordmark>learn</LearnWordmark>
           <span className="sr-only">Learn</span>
         </h1>
-        <StatRail streak={state.streak} xp={state.xp} />
       </div>
-
-      <TabRail tabs={TABS} value={tab} onChange={setTab} ariaLabel="Learn sections" />
 
       {tab === "journey" && <JourneyTab state={state} />}
       {tab === "classes" && <ClassesTab />}
       {tab === "missions" && <MissionsTab isKid={state.isKid} />}
+
+      <div className="pt-2">
+        <TabRail tabs={TABS} value={tab} onChange={setTab} ariaLabel="More learning sections" />
+        <StatRail streak={state.streak} xp={state.xp} className="mt-4 justify-center" />
+      </div>
     </div>
   );
 }

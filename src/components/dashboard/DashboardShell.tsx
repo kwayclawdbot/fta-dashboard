@@ -125,6 +125,22 @@ export default function DashboardShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const mockupOwnsCanvas =
+    [
+      "/dashboard",
+      "/discover",
+      "/community",
+      "/research",
+      "/watchlist",
+      "/courses",
+      "/alerts",
+      "/circles",
+      "/belts",
+      "/screener",
+      "/pricing",
+      "/vip-room",
+      "/u",
+    ].some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
 
   // Lifetime XP for the belt chip — fetched once here and shared with the TopBar
   // (desktop/tablet) and MobileTabBar More-sheet header so both belt chips read
@@ -178,11 +194,11 @@ export default function DashboardShell({
   // gets the Club skin (sand + volt orange), a household keeps Family (warm gold,
   // unchanged). Stamped on the wrapper for the SSR subtree; ModeManager mirrors
   // it onto <html> for body chrome + the tab favicon.
-  const mode: "club" | "family" | "fta" = pathname.startsWith("/fta")
-    ? "fta"
-    : user.isSolo
-      ? "club"
-      : "family";
+  // The supplied standalone file is the product-wide visual source of truth.
+  // Register-specific content and permissions remain intact, but every member
+  // route now shares the same Club canvas instead of switching the entire app
+  // back to the legacy family/FTA palette.
+  const mode = "club" as const;
 
   return (
     <div data-mode={mode} className="min-h-screen bg-midnight-950">
@@ -233,7 +249,11 @@ export default function DashboardShell({
               "--kai-fab-reserve-desktop": reserve.desktop,
             } as React.CSSProperties
           }
-          className="px-4 pt-6 pb-[var(--kai-fab-reserve)] md:pb-[var(--kai-fab-reserve-desktop)] lg:px-8"
+          className={`cc-global-main ${
+            mockupOwnsCanvas
+              ? "px-0 pt-0 md:px-4 md:pt-5 lg:px-8 lg:pt-6"
+              : "px-4 pt-6 lg:px-8"
+          } pb-[var(--kai-fab-reserve)] md:pb-[var(--kai-fab-reserve-desktop)]`}
         >
           {challengeDaysLeft !== null && !freeLocked && (
             <Link

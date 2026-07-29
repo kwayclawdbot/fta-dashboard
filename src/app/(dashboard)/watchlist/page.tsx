@@ -726,7 +726,7 @@ export default function WatchlistPage() {
   const isSolo = Object.keys(members).length <= 1;
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-6 sm:px-6">
+    <div className="cc-app-screen mx-auto w-full max-w-[760px] px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
       <Celebrate
         opts={queue[0] ?? null}
         onDone={() => setQueue((q) => q.slice(1))}

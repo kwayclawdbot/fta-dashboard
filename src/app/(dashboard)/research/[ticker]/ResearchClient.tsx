@@ -85,7 +85,7 @@ type BackTarget = { href: string; label: string };
 const BACK_MAP: Record<string, BackTarget> = {
   dashboard: { href: "/dashboard", label: "Home" },
   home: { href: "/dashboard", label: "Home" },
-  screener: { href: "/screener", label: "Stock Finder" },
+  screener: { href: "/discover?tab=screener", label: "Stock Finder" },
   community: { href: "/watchlist/community", label: "Community Watchlist" },
   watchlist: { href: "/watchlist", label: "My Watchlist" },
   discover: { href: "/discover", label: "Discover" },
@@ -621,7 +621,7 @@ export default function ResearchClient({
        but the shell now widens past the phone column and the body splits: the
        analysis holds the reading measure on the left, the club rail takes the
        space that was doing nothing on the right. */
-    <div className="mx-auto w-full max-w-3xl px-4 pb-20 sm:px-6 lg:max-w-[1160px]">
+    <div className="cc-app-screen mx-auto w-full max-w-3xl px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530] lg:max-w-[1160px]">
       {/* ── BOARD 03 — the ticker head, rebuilt to the mockup ────────────────
           Back / watch / share row, logo + name + club-rank pill, the mark, the
           watching stack, the chart CARD with its member marks and filled range
@@ -638,7 +638,14 @@ export default function ResearchClient({
         familyId={familyId}
         userId={userId}
         clubRank={club.rank}
+        clubScore={club.clubScore}
         watchers={club.watchers}
+        bull={club.bull}
+        neutral={club.neutral}
+        bear={club.bear}
+        positioned={club.positioned}
+        discussions={club.discussions}
+        sentimentShift24h={club.sentimentShift24h}
         faces={club.faces}
         onAskKai={() =>
           openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })

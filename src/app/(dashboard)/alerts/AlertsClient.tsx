@@ -286,7 +286,7 @@ export default function AlertsClient({
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6">
+    <div className="cc-app-screen mx-auto w-full max-w-[760px] px-[18px] pb-20 pt-[18px] sm:rounded-[26px] sm:border sm:border-[#2A2530]">
       <WatchHead
         newSinceSeen={newSinceSeen}
         watchingCount={watchingCount}

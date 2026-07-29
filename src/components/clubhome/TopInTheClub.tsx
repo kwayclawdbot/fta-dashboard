@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import type { TrendingResponse } from "@/lib/clubhome/contract";
+import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
+import { TickerQuickSheet } from "@/components/collective";
 import {
   BoardSection,
   BrandTile,
@@ -68,6 +69,7 @@ function Card({
   small,
   smallTone,
   lead,
+  onSelect,
 }: {
   rank: number;
   ticker: string;
@@ -76,6 +78,7 @@ function Card({
   small?: string;
   smallTone?: string;
   lead: boolean;
+  onSelect: () => void;
 }) {
   return (
     <div className="relative shrink-0" style={{ width: CARD_W }}>
@@ -87,8 +90,9 @@ function Card({
       >
         {rank}
       </span>
-      <Link
-        href={`/research/${encodeURIComponent(ticker)}`}
+      <button
+        type="button"
+        onClick={onSelect}
         className={`club-b-card f0-focus f0-press block py-[9px] text-center ${
           lead ? "club-b-card-lead" : ""
         }`}
@@ -109,7 +113,7 @@ function Card({
             {small}
           </span>
         )}
-      </Link>
+      </button>
     </div>
   );
 }
@@ -165,6 +169,7 @@ export default function TopInTheClub({
 
   const trackRef = useRef<HTMLDivElement>(null);
   const [atEnd, setAtEnd] = useState(true);
+  const [selected, setSelected] = useState<TrendingRow | null>(null);
 
   useEffect(() => {
     const el = trackRef.current;
@@ -185,6 +190,7 @@ export default function TopInTheClub({
   }, [rows.length, loading]);
 
   return (
+    <>
     <BoardSection
       id="club-top"
       label="Top in"
@@ -254,6 +260,7 @@ export default function TopInTheClub({
                   small={small}
                   smallTone={smallTone}
                   lead={i === 0}
+                  onSelect={() => setSelected(r)}
                 />
               );
             })}
@@ -292,5 +299,50 @@ export default function TopInTheClub({
         </p>
       )}
     </BoardSection>
+    {selected && (
+      <div
+        className="fixed inset-0 z-50 flex items-end bg-ink/40 backdrop-blur-[2px]"
+        role="presentation"
+        onMouseDown={() => setSelected(null)}
+      >
+        <div
+          className="mx-auto w-full max-w-xl"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${selected.ticker} quick view`}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <TickerQuickSheet>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+                  #{selected.rank} in the Club
+                </span>
+                <div className="mt-2 flex items-center gap-3">
+                  <BrandTile ticker={selected.ticker} />
+                  <div>
+                    <h3 className="font-display text-2xl font-extrabold text-ink">
+                      {selected.company || selected.ticker}
+                    </h3>
+                    <p className="font-mono text-xs text-soft">${selected.ticker}</p>
+                  </div>
+                </div>
+              </div>
+              <button type="button" onClick={() => setSelected(null)} className="f0-focus rounded-full border border-sand px-3 py-1 text-sm text-ink" aria-label="Close quick view">×</button>
+            </div>
+            <div className="mt-5 grid grid-cols-3 border-y border-sand py-3 text-center">
+              <div><strong className="block font-mono text-sm text-ink">{selected.heat != null ? `${selected.heat}%` : "—"}</strong><span className="text-[10px] text-soft">Club signal</span></div>
+              <div className="border-x border-sand"><strong className="block font-mono text-sm text-ink">{selected.watchers?.toLocaleString() || "—"}</strong><span className="text-[10px] text-soft">Watching</span></div>
+              <div><strong className="block font-mono text-sm text-ink">{signedCount(selected.change)}</strong><span className="text-[10px] text-soft">Attention</span></div>
+            </div>
+            <div className="mt-5 flex gap-2">
+              <Link href={`/research/${encodeURIComponent(selected.ticker)}?from=dashboard`} className="f0-focus f0-press rounded-xl bg-accent px-4 py-3 text-sm font-bold text-[var(--accent-on)]">Open ticker</Link>
+              <Link href={`/watchlist?add=${encodeURIComponent(selected.ticker)}`} className="f0-focus f0-press rounded-xl border border-sand px-4 py-3 text-sm font-bold text-ink">Watch</Link>
+            </div>
+          </TickerQuickSheet>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

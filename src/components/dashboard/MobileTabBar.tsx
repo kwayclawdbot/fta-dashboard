@@ -50,7 +50,7 @@ const T = {
   Club: { label: "Club", href: "/community", icon: MessageCircle } as Tab,
   Discover: { label: "Discover", href: "/discover", icon: Compass } as Tab,
   Learn: { label: "Learn", href: "/courses", icon: BookOpen } as Tab,
-  Watchlist: { label: "Watchlist", href: "/watchlist/community", icon: Eye } as Tab,
+  Watchlist: { label: "Watch", href: "/alerts", icon: Eye } as Tab,
   Missions: { label: "Missions", href: "/missions", icon: Target } as Tab,
   Family: { label: "Family", href: "/family", icon: Users } as Tab,
 };
@@ -175,7 +175,7 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
     <>
       {/* ── Bottom tab bar (phones only, below md) ── */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-midnight-900 border-t border-midnight-800 shadow-[0_-2px_16px_rgba(16,24,40,0.06)]"
+        className="cc-mobile-tabs md:hidden fixed bottom-0 inset-x-0 z-40 bg-midnight-900 border-t border-midnight-800 shadow-[0_-2px_16px_rgba(16,24,40,0.06)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary"
       >

@@ -5,7 +5,7 @@ import { MotionProvider } from "@/lib/motion";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Applied before first paint to avoid a light→dark flash on reload.
-const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'light';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#F7F4EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
+const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'dark';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c='#0D0B0E';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
 
 export const metadata: Metadata = {
   // Umbrella-neutral (Cheat Code Club architecture): static metadata can't be
@@ -31,8 +31,8 @@ export const viewport: Viewport = {
   // Baseline follows the OS; the inline script + ThemeManager override to match
   // the user's chosen preference (light / dark / system).
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F4EF" },
-    { media: "(prefers-color-scheme: dark)", color: "#17120B" },
+    { media: "(prefers-color-scheme: light)", color: "#0D0B0E" },
+    { media: "(prefers-color-scheme: dark)", color: "#0D0B0E" },
   ],
   // Let content + fixed bars extend into the notch/home-indicator areas so
   // env(safe-area-inset-*) is honored for the PWA bottom tab bar on iPhone.
@@ -49,7 +49,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className="antialiased">
+      <body data-mode="club" className="antialiased">
         <ThemeManager />
         <MotionProvider>{children}</MotionProvider>
         <SpeedInsights />

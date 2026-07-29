@@ -560,7 +560,7 @@ export function BoardLead({
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="font-display text-display-1 font-extrabold lowercase leading-none tracking-tight text-ink">
+        <h1 className="script-mark text-[34px] lowercase leading-none text-ink">
           {word}
         </h1>
         {sub && (

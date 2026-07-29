@@ -25,7 +25,6 @@ import { authCallbackUrl } from "@/lib/site-url";
  * The line states the owner without dating it.
  */
 export default function AuthCodeErrorPage() {
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -35,6 +34,7 @@ export default function AuthCodeErrorPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const supabase = createClient();
     // A magic link (OTP) works for every account that can reach this page — a
     // never-confirmed signup AND an admin-invited user who has no password yet
     // (for whom `resend({type:"signup"})` would fail as "already confirmed").

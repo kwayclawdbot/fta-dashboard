@@ -132,6 +132,25 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
   const isKid = user.role === "child" && user.age_group === "kids";
   const pageTitle = resolveTitle(pathname, isKid, !!user.isSolo);
   const mode = modeFromSolo(user.isSolo);
+  // Canvas-owned routes draw their own masthead and actions. On phones the
+  // global bar duplicated both, consuming 56px of the 844px reference frame.
+  // Desktop keeps the universal command/bell/account strip beside the sidebar.
+  const surfaceOwnsMobileHeader =
+    [
+      "/dashboard",
+      "/discover",
+      "/community",
+      "/research",
+      "/watchlist",
+      "/courses",
+      "/alerts",
+      "/circles",
+      "/belts",
+      "/screener",
+      "/pricing",
+      "/vip-room",
+      "/u",
+    ].some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -150,7 +169,7 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
   }
 
   return (
-    <header className="sticky top-0 z-20 bg-midnight-950/90 backdrop-blur-md border-b border-midnight-700/50">
+    <header className={`cc-global-topbar sticky top-0 z-20 bg-midnight-950/90 backdrop-blur-md border-b border-midnight-700/50 ${surfaceOwnsMobileHeader ? "hidden lg:block" : ""}`}>
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         {/* Left: hamburger + title */}
         <div className="flex items-center gap-3">

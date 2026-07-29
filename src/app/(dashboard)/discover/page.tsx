@@ -26,7 +26,11 @@ import DiscoverClient from "./DiscoverClient";
  */
 export const dynamic = "force-dynamic";
 
-export default async function DiscoverPage() {
+export default async function DiscoverPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; q?: string }>;
+}) {
   // SPEED: the auth call and the profile read that used to open this page were
   // the THIRD copy of each on the same request (the shell and both seed
   // builders below made their own). They are now the request-scoped shared
@@ -47,12 +51,21 @@ export default async function DiscoverPage() {
   // actually known — the client never guesses.
   const isKid = deriveRegister(profile) === "kid";
 
+  const requested = await searchParams;
+  const requestedTab = requested.tab;
+  const initialTab =
+    requestedTab === "screener" || requestedTab === "trending"
+      ? requestedTab
+      : "foryou";
+
   return (
     <DiscoverClient
       initialNews={initialNews}
       board={board}
       extras={extras}
       showScreener={!isKid}
+      initialTab={isKid && initialTab === "screener" ? "foryou" : initialTab}
+      initialQuery={requested.q ?? ""}
     />
   );
 }

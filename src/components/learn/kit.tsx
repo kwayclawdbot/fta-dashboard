@@ -34,7 +34,7 @@ export function LearnWordmark({
 }) {
   return (
     <span
-      className={`block font-display text-[34px] font-bold leading-none tracking-tight text-ink sm:text-[38px] ${className}`}
+      className={`script-mark block text-[34px] leading-none text-ink sm:text-[38px] ${className}`}
     >
       {children}
     </span>

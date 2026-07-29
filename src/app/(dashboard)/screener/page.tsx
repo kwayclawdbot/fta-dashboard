@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { deriveRegister } from "@/lib/register";
-import ScreenerSurface from "@/components/screener/ScreenerSurface";
 
 /**
  * /screener — the standalone Stock Screener route. The screener itself now lives
@@ -19,7 +18,11 @@ import ScreenerSurface from "@/components/screener/ScreenerSurface";
  * adults keep full access. The data door is closed to match by RLS
  * (migration 137, viewer_is_kid).
  */
-export default async function ScreenerPage() {
+export default async function ScreenerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,5 +37,6 @@ export default async function ScreenerPage() {
 
   if (deriveRegister(profile) === "kid") redirect("/dashboard");
 
-  return <ScreenerSurface />;
+  const q = (await searchParams).q?.trim();
+  redirect(q ? `/discover?tab=screener&q=${encodeURIComponent(q)}` : "/discover?tab=screener");
 }

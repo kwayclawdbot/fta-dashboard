@@ -173,7 +173,7 @@ export default function Day4Do({
                 <span className="text-[13px] text-soft">
                   {matches.length - 12} more clear these filters
                 </span>
-                <Link href="/screener" className="font-display text-[13px] font-bold text-gold-700">
+                <Link href="/discover?tab=screener" className="font-display text-[13px] font-bold text-gold-700">
                   Open the screener
                 </Link>
               </div>

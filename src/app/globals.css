@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,600;1,700;1,800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&family=Kaushan+Script&display=swap");
 @import "tailwindcss";
 
 /*
@@ -140,8 +140,8 @@
   /* Sora (Bold/ExtraBold) headlines · Inter UI · IBM Plex Mono market data.
      `font-display` flips to Sora at the token level so every existing headline
      picks it up with no component edits. */
-  --font-display: var(--font-sora), var(--font-inter), sans-serif;
-  --font-body: var(--font-inter), sans-serif;
+  --font-display: var(--font-barlow), var(--font-instrument), sans-serif;
+  --font-body: var(--font-instrument), sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
   /* Two HAND faces, two different jobs — both loaded in layout.tsx. Prefer the
      `.script-mark` / `.marker-note` classes further down: they set the family
@@ -155,8 +155,8 @@
                       written ON the page (a callout, a count, an aside). */
   /* Campaign-only handwritten faces were removed from the core application.
      Standard product surfaces use Sora; campaign assets may self-contain art. */
-  --font-script: var(--font-sora), sans-serif;
-  --font-marker: var(--font-sora), sans-serif;
+  --font-script: var(--font-kaushan), cursive;
+  --font-marker: var(--font-kaushan), cursive;
 
   /* Canonical semantic vocabulary for all new convergence work. */
   --color-action: var(--accent-solid);
@@ -217,9 +217,15 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
-  --font-sora: "Sora";
-  --font-inter: "Inter";
+  --font-barlow: "Barlow Condensed";
+  --font-instrument: "Instrument Sans";
   --font-plex-mono: "IBM Plex Mono";
+  --font-kaushan: "Kaushan Script";
+  /* Compatibility aliases for legacy components while the mockup-native
+     surfaces migrate; both resolve to the supplied standalone type system. */
+  --font-sora: var(--font-barlow);
+  --font-inter: var(--font-instrument);
+  --font-caveat: var(--font-kaushan);
 
   /* Gold ramp — FAMILY base (constant across themes, as before). Club mode
      remaps these to volt orange; FTA keeps them (gold). */
@@ -388,36 +394,36 @@
      reference board and read tan next to it, which is the first thing the
      owner sees on every screen. Ink and soft are the board's warm-charcoal
      pair, not the cool slate they used to be. */
-  --m50: #1A1614;   /* ink heading */
-  --m100: #241F1C;
-  --m200: #2E2925;
-  --m300: #4E463E;  /* gray */
-  --m400: #6A6259;
-  --m500: #7B7369;
-  --m600: #9B9289;  /* faint */
-  --m700: #E5DFD5;  /* sand border-strong */
-  --m800: #EFEAE1;  /* light sand */
-  --m900: #FFFFFF;  /* card / white */
-  --m950: #F7F4EF;  /* page bg / warm paper */
+  --m50: #F4F0EC;
+  --m100: #E8E2E4;
+  --m200: #C8C2CE;
+  --m300: #B8B2BC;
+  --m400: #8F8894;
+  --m500: #6E6774;
+  --m600: #4E4854;
+  --m700: #2A2530;
+  --m800: #221E28;
+  --m900: #17141A;
+  --m950: #0D0B0E;
 
-  --paper: #F7F4EF;
-  --ink: #1A1614;
-  --soft: #7B7369;
-  --sand: #E5DFD5;
-  --card: #FFFFFF;
-  --chip-amber: #FFE9C7;
-  --chip-sky: #E0F2FE;
-  --chip-green: #DCFCE7;
+  --paper: #0D0B0E;
+  --ink: #F4F0EC;
+  --soft: #8F8894;
+  --sand: #2A2530;
+  --card: #17141A;
+  --chip-amber: rgba(255, 122, 26, 0.14);
+  --chip-sky: rgba(91, 196, 240, 0.12);
+  --chip-green: rgba(74, 227, 131, 0.12);
 
-  --sh-soft: 0 1px 2px rgba(26, 22, 20, 0.04), 0 4px 16px rgba(26, 22, 20, 0.06);
-  --sh-lift: 0 2px 4px rgba(26, 22, 20, 0.06), 0 12px 32px rgba(26, 22, 20, 0.11);
+  --sh-soft: inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45);
+  --sh-lift: 0 16px 38px rgba(0,0,0,.5);
 
-  --sb-track: #EFEAE1;
-  --sb-thumb: #D8D0C4;
+  --sb-track: #0D0B0E;
+  --sb-thumb: #2A2530;
   --sb-thumb-hover: #FF7A1A;
 
-  --urgency-bg: #FFE9C7;
-  --urgency-border: #FFC79A;
+  --urgency-bg: rgba(255, 122, 26, 0.10);
+  --urgency-border: rgba(255, 122, 26, 0.28);
 
   /* Gold ramp → VOLT ORANGE, board-tuned to #FF7A1A at the 500 step.
      Light-oriented (700 = dark burnt orange text). */
@@ -438,7 +444,10 @@
   --accent-b: #FF9A45;
   --accent-solid: #FF7A1A;
   --accent-strong: #FF9A45;
-  --accent-on: #FFFFFF;
+  --accent-on: #0D0B0E;
+  --font-barlow: "Barlow Condensed";
+  --font-instrument: "Instrument Sans";
+  --font-kaushan: "Kaushan Script";
   /* --accent-gradient / --grad-* inherit their :root definitions (they read
      the accent-a/b vars we just re-set, so the CTA gradient is now orange). */
 }
@@ -493,32 +502,32 @@
      Body copy (ink, m300, m400, soft) stays far above AA; the faintest
      label step m600 IMPROVES past 3:1; and every hairline gains a little
      definition rather than losing it. Nothing regressed. */
-  --m50: #F4F0EC;   /* off-white heading */
-  --m100: #EDE7DF;
-  --m200: #DED7CB;
-  --m300: #C9C2B4;
-  --m400: #A79F90;
-  --m500: #908879;
-  --m600: #746D60;
-  --m700: #2E2A21;  /* border-strong */
-  --m800: #232019;
-  --m900: #191510;  /* card — lifted warm charcoal */
-  --m950: #0E0C09;  /* page bg — warm near-black */
+  --m50: #F4F0EC;
+  --m100: #E8E2E4;
+  --m200: #C8C2CE;
+  --m300: #B8B2BC;
+  --m400: #8F8894;
+  --m500: #6E6774;
+  --m600: #4E4854;
+  --m700: #2A2530;
+  --m800: #221E28;
+  --m900: #17141A;
+  --m950: #0D0B0E;
 
-  --paper: #0E0C09;
+  --paper: #0D0B0E;
   --ink: #F4F0EC;
-  --soft: #908879;
-  --sand: #2E2A21;
-  --card: #191510;
-  --chip-amber: rgba(255, 138, 0, 0.16);
-  --chip-sky: rgba(56, 189, 248, 0.15);
-  --chip-green: rgba(52, 211, 153, 0.15);
+  --soft: #8F8894;
+  --sand: #2A2530;
+  --card: #17141A;
+  --chip-amber: rgba(255, 122, 26, 0.14);
+  --chip-sky: rgba(91, 196, 240, 0.12);
+  --chip-green: rgba(74, 227, 131, 0.12);
 
   --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.55);
   --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.66);
 
-  --sb-track: #0E0C09;
-  --sb-thumb: #2E2A21;
+  --sb-track: #0D0B0E;
+  --sb-thumb: #2A2530;
   --sb-thumb-hover: #FF7A1A;
 
   --urgency-bg: rgba(255, 138, 0, 0.12);
@@ -526,8 +535,8 @@
 
   /* Off, on the warm-black club card. Same luminance as the plum pair it
      replaces (edge-on-bg 1.20 → 1.21), rotated warm with the ramp. */
-  --off-bg: #262118;
-  --off-edge: #352F25;
+  --off-bg: #221E28;
+  --off-edge: #2A2530;
 
   /* Lift the text-end of the orange ramp so active-nav text reads on dark. */
   --g600: #FF8A47;
@@ -1337,9 +1346,9 @@ body {
    forest hue pushed a few degrees greener, and the board's magenta-
    leaning pink for the downside. Hue holds across BOTH themes; only the
    ramp step moves. */
-[data-mode="club"] { --price-up: #097F46; --price-down: #C41F48; }
+[data-mode="club"] { --price-up: #4AE383; --price-down: #FF4D6D; }
 :root[data-theme="dark"][data-mode="club"],
-:root[data-theme="dark"] [data-mode="club"] { --price-up: #2FBC66; --price-down: #FF4D6D; }
+:root[data-theme="dark"] [data-mode="club"] { --price-up: #4AE383; --price-down: #FF4D6D; }
 
 /* --- Hero field, dark ---------------------------------------------- */
 /* f0-hero-field was cool obsidian (#0B0D11) in BOTH themes — on the warm
@@ -2071,6 +2080,170 @@ body {
   color: var(--tile-fg, #F4F0EC);
   font-weight: 800;
   line-height: 1;
+}
+
+/* Cheat Code standalone mockup primitives. These values are transcribed from
+   the supplied 390 × 844 screens and intentionally stay inside Club mode. */
+[data-mode="club"] .cc-app-screen {
+  background: #0D0B0E;
+  color: #F4F0EC;
+  font-family: "Instrument Sans", sans-serif;
+}
+[data-mode="club"] .cc-app-card {
+  border: 1px solid #2A2530;
+  background: #17141A;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45);
+}
+[data-mode="club"] .cc-app-display {
+  font-family: "Barlow Condensed", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+[data-mode="club"] .cc-app-signal {
+  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+[data-mode="club"] .cc-app-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #2E3A18;
+  border-radius: 20px;
+  background: linear-gradient(125deg,#131A0A 0%,#17141A 58%,#141216 100%);
+}
+[data-mode="club"] .cc-app-hero::after {
+  content: "";
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  right: -42px;
+  top: -72px;
+  pointer-events: none;
+  background: radial-gradient(circle,rgba(118,185,0,.24),transparent 62%);
+}
+
+/* =====================================================================
+   STANDALONE APP — GLOBAL MEMBER SHELL
+   =====================================================================
+   The supplied HTML is a whole-app system, not a handful of isolated dark
+   cards. Every solo-member route inherits the same canvas, type, navigation,
+   form, table, and interaction language while its page component continues to
+   own the information architecture. */
+[data-mode="club"] {
+  color-scheme: dark;
+}
+
+[data-mode="club"] .cc-global-main {
+  min-height: calc(100dvh - 3.5rem);
+  background:
+    radial-gradient(72rem 28rem at 58% -12%, rgba(255, 122, 26, 0.055), transparent 56%),
+    #0D0B0E;
+  color: #F4F0EC;
+  font-family: "Instrument Sans", sans-serif;
+}
+
+[data-mode="club"] .cc-global-main :where(h1, h2, h3, h4) {
+  text-wrap: balance;
+}
+
+[data-mode="club"] .cc-global-main :where(code, kbd, samp, table, [class*="tabular-nums"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-mode="club"] .cc-global-main :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  border-color: #2A2530;
+  background-color: #17141A;
+  color: #F4F0EC;
+  caret-color: #FF7A1A;
+}
+
+[data-mode="club"] .cc-global-main :where(input, textarea)::placeholder {
+  color: #6E6774;
+  opacity: 1;
+}
+
+[data-mode="club"] .cc-global-main option {
+  background: #17141A;
+  color: #F4F0EC;
+}
+
+[data-mode="club"] .cc-global-main :where(button, a) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-mode="club"] .cc-global-main :where(button, a):active {
+  transform: translateY(1px);
+}
+
+[data-mode="club"] .cc-global-main :where(button, a):focus-visible {
+  outline: 2px solid #FF7A1A;
+  outline-offset: 2px;
+}
+
+[data-mode="club"] .cc-global-main :where(table) {
+  border-color: #2A2530;
+}
+
+[data-mode="club"] .cc-global-main :where(th) {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8F8894;
+}
+
+[data-mode="club"] .cc-global-topbar {
+  border-color: rgba(42, 37, 48, 0.92);
+  background: rgba(13, 11, 14, 0.91);
+  box-shadow: 0 1px 0 rgba(255,255,255,.025);
+}
+
+[data-mode="club"] .cc-global-sidebar {
+  border-color: #2A2530;
+  background:
+    radial-gradient(22rem 16rem at 12% 0%, rgba(255,122,26,.07), transparent 62%),
+    #17141A;
+  box-shadow: 12px 0 40px rgba(0,0,0,.24);
+}
+
+[data-mode="club"] .cc-mobile-tabs {
+  border-color: #2A2530;
+  background: rgba(13, 11, 14, 0.96);
+  box-shadow: 0 -12px 28px rgba(0,0,0,.42);
+  backdrop-filter: blur(18px);
+}
+
+[data-mode="club"] .cc-mobile-tabs a,
+[data-mode="club"] .cc-mobile-tabs button {
+  font-family: "IBM Plex Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+/* Normalize older one-off utilities only inside the Club app. This keeps
+   deeper routes (Help, Settings, Games, Progress, lesson/detail views) from
+   flashing white/slate while the mockup-mapped screens use semantic cards. */
+[data-mode="club"] .cc-global-main :where(.bg-white, .bg-gray-50, .bg-slate-50) {
+  background-color: #17141A !important;
+}
+
+[data-mode="club"] .cc-global-main :where(.text-black, .text-gray-900, .text-slate-900, .text-zinc-900) {
+  color: #F4F0EC !important;
+}
+
+[data-mode="club"] .cc-global-main :where(.text-gray-500, .text-gray-600, .text-slate-500, .text-slate-600, .text-zinc-500) {
+  color: #8F8894 !important;
+}
+
+[data-mode="club"] .cc-global-main :where(.border-gray-100, .border-gray-200, .border-slate-100, .border-slate-200, .border-zinc-200) {
+  border-color: #2A2530 !important;
+}
+
+@media (min-width: 768px) {
+  [data-mode="club"] .cc-global-main {
+    padding-bottom: 4rem;
+  }
 }
 
 /* --- Ledger row, promoted to a board card ---------------------------- */
