@@ -53,6 +53,19 @@ export const LEADERBOARD_DENYLIST: readonly string[] = [
 /** Auto-generated fixtures whose names carry a timestamp (`fic-probe-…`). */
 export const LEADERBOARD_DENY_PREFIXES: readonly string[] = ["fic-probe-"];
 
+/**
+ * Matched against the USERNAME ONLY, never the display name.
+ *
+ * Kai is the platform's own system author — the identity /api/cron/kai-feed-seed
+ * publishes under. It is not a member and cannot compete, so it belongs off the
+ * board. But "Kai" is an ordinary human first name, and the denylist above is
+ * matched against display names too: putting it there would silently delete a
+ * real member called Kai from a board they earned a place on, which is the exact
+ * failure this file opens by refusing to accept. `profiles.username` is unique
+ * (migration 095), so the handle identifies the one account and nothing else.
+ */
+export const LEADERBOARD_DENY_USERNAMES: readonly string[] = ["kai"];
+
 /** Roles that never appear on the public board. */
 export const LEADERBOARD_DENY_ROLES: readonly string[] = ["admin"];
 
@@ -77,5 +90,6 @@ export interface LeaderboardIdentity {
 /** True when this identity is staff or a fixture and belongs off the board. */
 export function isOffBoardIdentity(row: LeaderboardIdentity): boolean {
   if (row.role && LEADERBOARD_DENY_ROLES.includes(row.role)) return true;
+  if (LEADERBOARD_DENY_USERNAMES.includes(normalize(row.username))) return true;
   return nameIsFixture(row.username) || nameIsFixture(row.display_name);
 }

@@ -10,10 +10,16 @@
   display: flex;
   gap: var(--space-10);
   --post-body: #e8e2e4;
+  --kai-bg: #0e1b2e;
+  --kai-border: #1e3050;
+  --kai-fg: #5bc4f0;
 }
 
 :global([data-ui="v3"][data-theme="light"]) .row {
   --post-body: #2e2925;
+  --kai-bg: #e4f1fa;
+  --kai-border: #b7d3e6;
+  --kai-fg: #0e86be;
 }
 
 .column {
@@ -31,6 +37,33 @@
   font-size: var(--fs-12-5);
   font-weight: var(--fw-700);
   color: var(--name);
+}
+
+/*
+ * KAI's note. The --kai-* values on .row above are the SAME cool blue
+ * KaiInsightRow declares — repeated rather than shared for the same reason
+ * --post-body is repeated: neither module reaches into the other's, and no
+ * semantic token exists for the assistant's identity colour.
+ *
+ * The mark matches MemberDisc's `lg` footprint (40px incl. its 2px ring) so a
+ * Kai note sits on exactly the thread's own left edge.
+ */
+.kaiMark {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--kai-bg);
+  border: 1px solid var(--kai-border);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-14);
+  flex: 0 0 auto;
+}
+
+.kaiName {
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-700);
+  color: var(--kai-fg);
 }
 
 .time {
