@@ -1,0 +1,29 @@
+/* The Discover tab switch. Uppercase is a text-transform, not the source text. */
+
+.row {
+  display: flex;
+  gap: var(--space-16);
+  margin-top: var(--space-14);
+  align-items: center;
+}
+
+.tab {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text-dim);
+  letter-spacing: var(--ls-04em);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.active {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-06em);
+  text-transform: uppercase;
+  padding: var(--space-5) var(--space-13);
+  border-radius: var(--radius-16);
+  text-decoration: none;
+}

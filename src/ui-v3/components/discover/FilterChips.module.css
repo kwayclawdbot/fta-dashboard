@@ -1,0 +1,32 @@
+/* Screener filter rail — active chips are outlined in accent, "+ Filter" is not. */
+
+.rail {
+  display: flex;
+  gap: var(--space-7);
+  margin-top: var(--space-14);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -18px;
+  padding-inline: 18px;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  color: var(--accent-strong);
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-600);
+  padding: var(--space-6) var(--space-11);
+  border-radius: var(--radius-16);
+  white-space: nowrap;
+}
+
+.add {
+  border-color: var(--border);
+  color: var(--text-dim);
+}
