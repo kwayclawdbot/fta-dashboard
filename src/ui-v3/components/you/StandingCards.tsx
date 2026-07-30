@@ -6,8 +6,12 @@ import styles from "./StandingCards.module.css";
  * The card pair from board "07 You Profile": a headline figure beside a set of
  * ranked bars.
  *
- * Either half can be absent. When both are, the whole row is omitted — a card
- * is never shown holding a fabricated number.
+ * BOTH CARDS ALWAYS RENDER. Omitting them is what made a new member's profile
+ * two thirds empty black — the identity block, five zeroes, and then nothing
+ * where the design has a card pair and a call list. A card holding an honest
+ * "here is what fills this" is still the artboard's object; a missing card is a
+ * hole in the layout. No number is fabricated either way: the empty card prints
+ * copy, never a zero dressed as a metric.
  */
 export default function StandingCards({
   figure,
@@ -16,8 +20,6 @@ export default function StandingCards({
   figure: FigureCardVM | null;
   strengths: { eyebrow: string; bars: StrengthBarVM[] } | null;
 }) {
-  if (!figure && !strengths) return null;
-
   return (
     <div className={styles.row}>
       {figure ? (
@@ -28,7 +30,15 @@ export default function StandingCards({
           </div>
           {figure.note ? <div className={styles.figureNote}>{figure.note}</div> : null}
         </div>
-      ) : null}
+      ) : (
+        <div className={`${styles.card} ${styles.figureCard}`}>
+          <div className={styles.eyebrow}>Conviction</div>
+          <div className={styles.empty}>
+            Your first posted take starts this card — it reads the bull share of your open
+            positions.
+          </div>
+        </div>
+      )}
 
       {strengths ? (
         <div className={`${styles.card} ${styles.barsCard}`}>
@@ -50,7 +60,15 @@ export default function StandingCards({
             ))}
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className={`${styles.card} ${styles.barsCard}`}>
+          <div className={styles.eyebrow}>Where your reps come from</div>
+          <div className={styles.empty}>
+            Earn XP from lessons, quizzes, games and Club reps and this ranks where yours
+            actually came from.
+          </div>
+        </div>
+      )}
     </div>
   );
 }

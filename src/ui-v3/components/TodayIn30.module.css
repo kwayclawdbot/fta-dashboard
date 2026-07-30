@@ -30,6 +30,15 @@
   --panel-sub: #7a6a5e;
 }
 
+/*
+ * Same slot, same type — one ramp down and un-bolded, so a brief that has not
+ * landed yet reads as a state of the panel rather than as its content.
+ */
+.lineWaiting {
+  font-weight: var(--fw-400);
+  opacity: 0.75;
+}
+
 /* 36px accent disc holding a CSS-triangle play glyph. */
 .play {
   width: 36px;

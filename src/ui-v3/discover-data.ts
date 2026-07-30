@@ -4,6 +4,8 @@ import { getRequestClient, getRequestUser } from "@/lib/supabase/rsc";
 import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
 import { getCachedBeltWatch } from "@/lib/club/club-cache";
 import { sectorOf } from "@/lib/screener-sectors";
+import { TRENDING_DISCLAIMER } from "@/lib/club/score";
+import { MIN_POSITIONED_OPINIONS } from "@/ui-v3/club-floors";
 import type { SparkTone } from "@/ui-v3/components/discover/Sparkline";
 
 /**
@@ -45,6 +47,8 @@ export interface RisingTileVM {
   /** False when `change` is that unbounded point delta, which must NOT wear a %. */
   isPct: boolean;
   series: number[] | null;
+  /** The stroke tone, from the SERIES' OWN direction — see `toneFor`. */
+  tone: SparkTone;
   /** Real: trending core `watchers` (distinct members ever watching). */
   watchersLabel: string | null;
 }
@@ -73,6 +77,8 @@ export interface DiscoverViewModel {
   divisive: DivisiveVM | null;
   beltWatch: BeltWatchVM[];
   quietToLoud: QuietToLoudVM[];
+  /** `TRENDING_DISCLAIMER`, verbatim — the contract's MUST-render line. */
+  disclaimer: string;
 }
 
 export interface FilterChipVM {
@@ -82,6 +88,8 @@ export interface FilterChipVM {
 export interface ScreenerRowVM {
   ticker: string;
   series: number[] | null;
+  /** The stroke tone, from the SERIES' OWN direction — see `toneFor`. */
+  tone: SparkTone;
   /** Real: screener_metrics.price. */
   priceLabel: string | null;
   /** Real: screener_metrics.chg_1d. */
@@ -92,7 +100,24 @@ export interface ScreenerRowVM {
 
 export interface StanceRowVM {
   ticker: string;
-  pct: number;
+  /**
+   * The stance share. NULL when the ticker has too few positioned members for a
+   * percentage to mean anything (MIN_POSITIONED_OPINIONS) — the row still ranks,
+   * it just does not print a number it cannot support.
+   */
+  pct: number | null;
+}
+
+export interface StanceCardVM {
+  rows: StanceRowVM[];
+  /**
+   * What the card is ordered by, when it is NOT the percentage. Rendered as the
+   * card's own caption so a list with no visible numbers still says what ranked
+   * it. Null when every row carries a real percentage.
+   */
+  orderLabel: string | null;
+  /** Shown in place of the list when nothing qualifies. */
+  emptyCopy: string | null;
 }
 
 export interface TrendingChipVM {
@@ -110,9 +135,11 @@ export interface ScreenerViewModel {
   chips: FilterChipVM[];
   summary: string;
   rows: ScreenerRowVM[];
-  mostBullish: StanceRowVM[];
-  mostBearish: StanceRowVM[];
+  mostBullish: StanceCardVM;
+  mostBearish: StanceCardVM;
   trendingChips: TrendingChipVM[];
+  /** `TRENDING_DISCLAIMER`, verbatim — the contract's MUST-render line. */
+  disclaimer: string;
 }
 
 // ── narrow reads of the seed (sections cross the RSC boundary as `unknown`) ───
@@ -192,6 +219,23 @@ function seriesFor(m: MetricRow | undefined): number[] | null {
   return pts.length >= 3 ? pts : null;
 }
 
+/**
+ * The stroke tone for a sparkline, read off THE LINE ITSELF.
+ *
+ * This used to be assigned from a neighbouring number — the card's attention
+ * delta on "Rising fast", the 1-day change on a screener row — which meant a
+ * path that visibly fell could be stroked green because attention was up, or a
+ * quarter-long climb stroked red because today was down. The only tone that
+ * cannot contradict the drawing is the drawing's own first-to-last direction.
+ *
+ * A flat series reads positive, matching the artboards, where every drawn path
+ * rises and none is flat.
+ */
+function toneFor(series: number[] | null): SparkTone {
+  if (!series || series.length < 2) return "positive";
+  return series[series.length - 1] < series[0] ? "negative" : "positive";
+}
+
 function bearPctOf(row: RawTrendingRow): number | null {
   const s = row.sentiment;
   if (!s) return null;
@@ -211,8 +255,25 @@ function positionedOf(row: RawTrendingRow): number {
  * of those with enough positioned members to mean anything. Mirrors the rule
  * the current Discover surface already applies to the same ledger.
  */
-const DIVISIVE_MIN_POSITIONED = 5;
+/**
+ * ONE floor, shared with Home's trending strip and the Screener's stance cards
+ * (src/ui-v3/club-floors.ts) — the point below which a bull/bear share is one
+ * person's click rather than a split worth naming.
+ */
+const DIVISIVE_MIN_POSITIONED = MIN_POSITIONED_OPINIONS;
 const DIVISIVE_MAX_GAP = 20;
+
+/** The empty copy for each region that can legitimately have nothing to show. */
+export const DISCOVER_EMPTY = {
+  divisive: `Not enough positioned opinions yet — a split takes ${MIN_POSITIONED_OPINIONS}+ members on one name.`,
+  beltWatch: "No black belts yet — the first member to get there leads this row.",
+  rising: "No names are climbing yet. This fills as the Club reads and takes sides.",
+  quietToLoud: "Nothing has woken up yet — this row needs two weeks of attention history.",
+  screenerRows: "Nothing clears this screen right now. Loosen a filter and the matches come back.",
+  bullish: "No bullish consensus yet.",
+  bearish: "No bearish positions on the board yet.",
+  trendingChips: "The attention ledger is still filling.",
+} as const;
 
 function pickDivisive(rows: RawTrendingRow[]): DivisiveVM | null {
   let best: { row: RawTrendingRow; gap: number } | null = null;
@@ -293,11 +354,13 @@ export async function getDiscoverViewModel(): Promise<DiscoverViewModel> {
     source: "live",
     rising: rising.map((r) => {
       const ticker = (r.ticker as string).toUpperCase();
+      const series = seriesFor(metrics.get(ticker));
       return {
         ticker,
         change: r.change ?? null,
         isPct: false,
-        series: seriesFor(metrics.get(ticker)),
+        series,
+        tone: toneFor(series),
         watchersLabel:
           typeof r.watchers === "number" && r.watchers > 0
             ? `${compact(r.watchers)} watching`
@@ -310,15 +373,16 @@ export async function getDiscoverViewModel(): Promise<DiscoverViewModel> {
       .map((b) => ({ ticker: b.ticker.toUpperCase() })),
     quietToLoud: quiet.map((r) => {
       const ticker = (r.ticker as string).toUpperCase();
-      const m = metrics.get(ticker);
+      const series = seriesFor(metrics.get(ticker));
       return {
         ticker,
-        series: seriesFor(m),
+        series,
         // The artboard strokes these five in four decorative colours while every
-        // path rises. The one honest tone axis is the name's own direction.
-        tone: (m?.chg_1d ?? 0) < 0 ? "negative" : "positive",
+        // path rises. The one honest tone axis is the line's own direction.
+        tone: toneFor(series),
       };
     }),
+    disclaimer: TRENDING_DISCLAIMER,
   };
 }
 
@@ -337,11 +401,61 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
     const m = metrics.get((r.ticker as string).toUpperCase());
     const signal = r.sentiment?.bullPct;
     if (typeof signal !== "number" || signal <= SCREEN.minSignal) return false;
+    // The "Signal > 70%" chip is a claim about club conviction, so it has to
+    // clear the same floor the number itself does. Without this the screen
+    // matched names whose 100% was a single member's click — the live board
+    // listed two of them under a chip that read like a consensus filter.
+    if (positionedOf(r) < MIN_POSITIONED_OPINIONS) return false;
     if (!m || m.mcap == null || m.mcap <= SCREEN.minMcap) return false;
     return sectorOf(m.sector) === SCREEN.sector;
   });
 
   const stance = ledger.filter((r) => typeof r.sentiment?.bullPct === "number");
+
+  // ── MOST BULLISH ──────────────────────────────────────────────────────────
+  // Ranked by bull share either way, but the share is only PRINTED once enough
+  // members are positioned. Below the floor the card ranks by club score and
+  // says so, rather than printing "100%" off one member's click.
+  const bullishRanked = [...stance].sort(
+    (a, b) => (b.sentiment?.bullPct ?? 0) - (a.sentiment?.bullPct ?? 0),
+  );
+  const bullishShown = bullishRanked.slice(0, STANCE_LIMIT);
+  const bullishHasFloor =
+    bullishShown.length > 0 &&
+    bullishShown.every((r) => positionedOf(r) >= MIN_POSITIONED_OPINIONS);
+  const mostBullish: StanceCardVM = {
+    rows: (bullishHasFloor
+      ? bullishShown
+      : // No printable share → rank by the ledger's own score instead, so the
+        // ordering is still something real.
+        [...stance].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, STANCE_LIMIT)
+    ).map((r) => ({
+      ticker: (r.ticker as string).toUpperCase(),
+      pct: bullishHasFloor ? (r.sentiment?.bullPct as number) : null,
+    })),
+    orderLabel: bullishHasFloor ? null : "By club score",
+    emptyCopy: stance.length === 0 ? DISCOVER_EMPTY.bullish : null,
+  };
+
+  // ── MOST BEARISH ──────────────────────────────────────────────────────────
+  // A 0% bear share is not a bearish name. Keeping those rows made this card a
+  // verbatim copy of the bullish one — same three tickers, all reading "0%".
+  const bearishRanked = stance
+    .map((r) => ({ row: r, bear: bearPctOf(r) }))
+    .filter((x): x is { row: RawTrendingRow; bear: number } => x.bear !== null && x.bear > 0)
+    .sort((a, b) => b.bear - a.bear);
+  const bearishShown = bearishRanked.slice(0, STANCE_LIMIT);
+  const bearishHasFloor =
+    bearishShown.length > 0 &&
+    bearishShown.every((x) => positionedOf(x.row) >= MIN_POSITIONED_OPINIONS);
+  const mostBearish: StanceCardVM = {
+    rows: bearishShown.map((x) => ({
+      ticker: (x.row.ticker as string).toUpperCase(),
+      pct: bearishHasFloor ? x.bear : null,
+    })),
+    orderLabel: bearishShown.length > 0 && !bearishHasFloor ? "By bear share" : null,
+    emptyCopy: bearishShown.length === 0 ? DISCOVER_EMPTY.bearish : null,
+  };
 
   return {
     source: "live",
@@ -350,34 +464,32 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
       { label: "Mkt cap > $10B" },
       { label: `Signal > ${SCREEN.minSignal}%` },
     ],
-    summary: `${matches.length} ${matches.length === 1 ? "match" : "matches"} · sorted by club signal`,
+    // "0 matches · sorted by club signal" claims an ordering over nothing.
+    summary:
+      matches.length === 0
+        ? "0 matches"
+        : `${matches.length} ${matches.length === 1 ? "match" : "matches"} · sorted by club signal`,
     rows: matches
       .sort((a, b) => (b.sentiment?.bullPct ?? 0) - (a.sentiment?.bullPct ?? 0))
       .slice(0, SCREENER_ROW_LIMIT)
       .map((r) => {
         const ticker = (r.ticker as string).toUpperCase();
         const m = metrics.get(ticker);
+        const series = seriesFor(m);
         return {
           ticker,
-          series: seriesFor(m),
+          series,
+          tone: toneFor(series),
           priceLabel: m?.price != null ? `$${m.price.toFixed(2)}` : null,
           changePct: m?.chg_1d ?? null,
-          signalPct: r.sentiment?.bullPct ?? null,
+          // The club-signal pill is a share too, and it obeys the same floor as
+          // the stance cards it is repeated on.
+          signalPct:
+            positionedOf(r) >= MIN_POSITIONED_OPINIONS ? (r.sentiment?.bullPct ?? null) : null,
         };
       }),
-    mostBullish: stance
-      .sort((a, b) => (b.sentiment?.bullPct ?? 0) - (a.sentiment?.bullPct ?? 0))
-      .slice(0, STANCE_LIMIT)
-      .map((r) => ({
-        ticker: (r.ticker as string).toUpperCase(),
-        pct: r.sentiment?.bullPct as number,
-      })),
-    mostBearish: stance
-      .map((r) => ({ row: r, bear: bearPctOf(r) }))
-      .filter((x): x is { row: RawTrendingRow; bear: number } => x.bear !== null)
-      .sort((a, b) => b.bear - a.bear)
-      .slice(0, STANCE_LIMIT)
-      .map((x) => ({ ticker: (x.row.ticker as string).toUpperCase(), pct: x.bear })),
+    mostBullish,
+    mostBearish,
     trendingChips: ledger
       .filter((r) => typeof r.change === "number")
       .sort((a, b) => (b.change ?? 0) - (a.change ?? 0))
@@ -389,6 +501,7 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
         // The artboard flames its two leaders; here that is literally the top two.
         hot: i < 2,
       })),
+    disclaimer: TRENDING_DISCLAIMER,
   };
 }
 
@@ -427,9 +540,9 @@ function discoverFixtures(): DiscoverViewModel {
   return {
     source: "fixtures",
     rising: [
-      { ticker: "SMCI", change: 324, isPct: true, series: [...ART_SERIES.SMCI], watchersLabel: "1.2K watching" },
-      { ticker: "PLTR", change: 210, isPct: true, series: [...ART_SERIES.PLTR], watchersLabel: "2.3K watching" },
-      { ticker: "SOFI", change: 167, isPct: true, series: [...ART_SERIES.SOFI], watchersLabel: "889 watching" },
+      { ticker: "SMCI", change: 324, isPct: true, series: [...ART_SERIES.SMCI], tone: toneFor([...ART_SERIES.SMCI]), watchersLabel: "1.2K watching" },
+      { ticker: "PLTR", change: 210, isPct: true, series: [...ART_SERIES.PLTR], tone: toneFor([...ART_SERIES.PLTR]), watchersLabel: "2.3K watching" },
+      { ticker: "SOFI", change: 167, isPct: true, series: [...ART_SERIES.SOFI], tone: toneFor([...ART_SERIES.SOFI]), watchersLabel: "889 watching" },
     ],
     divisive: {
       ticker: "NFLX",
@@ -438,6 +551,8 @@ function discoverFixtures(): DiscoverViewModel {
       opinionsLabel: "2.4K opinions",
     },
     beltWatch: ["NVDA", "AAPL", "MSFT", "CRWD", "AMZN"].map((ticker) => ({ ticker })),
+    // The artboard's four decorative stroke colours, kept for the design proof.
+    // Every fixture path rises, so none of them contradicts its own direction.
     quietToLoud: [
       { ticker: "IONQ", series: [...ART_SERIES.IONQ], tone: "negative" },
       { ticker: "APP", series: [...ART_SERIES.APP], tone: "accent" },
@@ -445,6 +560,7 @@ function discoverFixtures(): DiscoverViewModel {
       { ticker: "LCID", series: [...ART_SERIES.LCID], tone: "positive" },
       { ticker: "OKLO", series: [...ART_SERIES.OKLO], tone: "positive" },
     ],
+    disclaimer: TRENDING_DISCLAIMER,
   };
 }
 
@@ -457,6 +573,7 @@ function screenerFixtures(): ScreenerViewModel {
       {
         ticker: "NVDA",
         series: [...ART_SERIES.NVDA],
+        tone: toneFor([...ART_SERIES.NVDA]),
         priceLabel: "$173.42",
         changePct: 4.7,
         signalPct: 78,
@@ -464,6 +581,7 @@ function screenerFixtures(): ScreenerViewModel {
       {
         ticker: "PLTR",
         series: [...ART_SERIES.PLTR],
+        tone: toneFor([...ART_SERIES.PLTR]),
         priceLabel: "$156.90",
         changePct: 2.1,
         signalPct: 74,
@@ -471,21 +589,30 @@ function screenerFixtures(): ScreenerViewModel {
       {
         ticker: "AMD",
         series: [...ART_SERIES.AMD],
+        tone: toneFor([...ART_SERIES.AMD]),
         priceLabel: "$182.10",
         changePct: 1.9,
         signalPct: 71,
       },
     ],
-    mostBullish: [
-      { ticker: "NVDA", pct: 78 },
-      { ticker: "PLTR", pct: 74 },
-      { ticker: "AMD", pct: 71 },
-    ],
-    mostBearish: [
-      { ticker: "NFLX", pct: 68 },
-      { ticker: "RIVN", pct: 61 },
-      { ticker: "LCID", pct: 57 },
-    ],
+    mostBullish: {
+      rows: [
+        { ticker: "NVDA", pct: 78 },
+        { ticker: "PLTR", pct: 74 },
+        { ticker: "AMD", pct: 71 },
+      ],
+      orderLabel: null,
+      emptyCopy: null,
+    },
+    mostBearish: {
+      rows: [
+        { ticker: "NFLX", pct: 68 },
+        { ticker: "RIVN", pct: 61 },
+        { ticker: "LCID", pct: 57 },
+      ],
+      orderLabel: null,
+      emptyCopy: null,
+    },
     trendingChips: [
       { ticker: "SMCI", change: 324, isPct: true, hot: true },
       { ticker: "IONQ", change: 188, isPct: true, hot: true },
@@ -493,5 +620,6 @@ function screenerFixtures(): ScreenerViewModel {
       { ticker: "OKLO", change: 140, isPct: true, hot: false },
       { ticker: "APP", change: -12, isPct: true, hot: false },
     ],
+    disclaimer: TRENDING_DISCLAIMER,
   };
 }

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { DivisiveVM } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY, type DivisiveVM } from "@/ui-v3/discover-data";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
 import { tickerPaint } from "@/ui-v3/ticker-palette";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./MostDivisive.module.css";
@@ -11,9 +12,24 @@ import styles from "./MostDivisive.module.css";
  * The three discs under each percentage are the artboard's anonymous member
  * stack. They carry no identity in the design (flat surface fills, no image, no
  * initial), so they are reproduced as-is and are not wired to real members.
+ *
+ * The section frame is ALWAYS drawn. Returning null here removed a whole band
+ * from the middle of Discover, which is what left the live screen mostly black
+ * and read as a broken page rather than a young club.
  */
 export default function MostDivisive({ divisive }: { divisive: DivisiveVM | null }) {
-  if (!divisive) return null;
+  if (!divisive) {
+    return (
+      <section className={styles.section}>
+        <SectionEyebrow labelTone="accent" caption="Biggest split in opinions" captionGap={2}>
+          Most divisive
+        </SectionEyebrow>
+        <EmptyNote tall center>
+          {DISCOVER_EMPTY.divisive}
+        </EmptyNote>
+      </section>
+    );
+  }
 
   const paint = tickerPaint(divisive.ticker);
 

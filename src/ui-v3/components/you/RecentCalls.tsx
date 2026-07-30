@@ -1,11 +1,16 @@
 import type { RecentCallVM } from "@/ui-v3/you-data";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./RecentCalls.module.css";
 
 /**
- * The member's last graded calls. Omitted entirely when there are none — an
- * empty state for this region is not drawn on any artboard, and inventing one
- * would be design by improvisation.
+ * The member's last stance changes.
+ *
+ * The section keeps its eyebrow and its container when there are none. No
+ * artboard draws an empty state here — every board is shot on a member with a
+ * history — so this reuses the boards' own flat-card container rather than
+ * inventing a pattern for absence. Dropping the region entirely, which is what
+ * it used to do, ended the profile in a screen of black.
  */
 export default function RecentCalls({
   rows,
@@ -14,7 +19,16 @@ export default function RecentCalls({
   rows: RecentCallVM[];
   seeAllHref: string | null;
 }) {
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return (
+      <div className={styles.section}>
+        <SectionEyebrow labelTone="accent">Recent calls</SectionEyebrow>
+        <EmptyNote>
+          No stance changes yet. Post a take, change your mind, and the receipts land here.
+        </EmptyNote>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.section}>

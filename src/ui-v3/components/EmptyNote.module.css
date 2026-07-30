@@ -1,0 +1,30 @@
+/*
+ * The artboards' flat-card container, carrying one muted line.
+ *
+ * Values are the ones every flat card on the boards already uses — --surface on
+ * a 1px --border at radius-14, 14/15px padding — so an empty region reads as the
+ * same object as a full one, just without content yet.
+ */
+
+.note {
+  margin-top: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-14) var(--space-15);
+  font-size: var(--fs-12);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+/* Stands in for a panel with real height, so the page does not reflow later. */
+.tall {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+}
+
+.center {
+  text-align: center;
+  justify-content: center;
+}

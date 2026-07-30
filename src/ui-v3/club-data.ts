@@ -109,6 +109,19 @@ export interface ChangedMindVM {
   respect: number | null;
 }
 
+/**
+ * Seeded demo content carries a provenance marker in the body — `[seed:v2demo]`
+ * and friends — so an operator can tell fixture rows from member rows in the
+ * database. It is bookkeeping, not something a member wrote, and it was printing
+ * verbatim at the end of every seeded post in the live feed.
+ *
+ * Stripped at READ time, deliberately: the marker stays in the row so the seed
+ * remains identifiable, and no migration is needed to make the feed read right.
+ */
+function cleanBody(body: string): string {
+  return body.replace(/\[seed:[^\]]*\]/g, "").trim();
+}
+
 /** The artboard's "Kai Insight" row. Nearest real source: a club pulse signal. */
 export interface KaiInsightVM {
   headline: string;
@@ -474,7 +487,9 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
   const displayName = profile?.display_name?.trim() ?? "";
 
   const posts: FeedPostVM[] = (seed?.posts ?? [])
-    .filter((p) => p.kind === "post" && p.body.trim().length > 0)
+    // Emptiness is judged AFTER the marker comes off, so a row whose only
+    // content was a marker never reaches the feed.
+    .filter((p) => p.kind === "post" && cleanBody(p.body).length > 0)
     .slice(0, FEED_POST_LIMIT)
     .map((p) => {
       const name = p.author?.display_name?.trim() || "Member";
@@ -487,7 +502,7 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
         beltKey: belt?.key ?? null,
         ticker: p.ticker_tags?.[0] ?? null,
         time: timeAgo(p.created_at),
-        body: p.body,
+        body: cleanBody(p.body),
         likes: seed?.likeCount[p.id] ?? 0,
         comments: seed?.commentCount[p.id] ?? 0,
       };
@@ -507,7 +522,7 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
         fromLabel: flip.from_stance ? STANCE_WORD[flip.from_stance] : null,
         fromStance: flip.from_stance ?? null,
         toLabel: STANCE_WORD[flip.to_stance],
-        note: flip.note ?? null,
+        note: flip.note ? cleanBody(flip.note) || null : null,
         respect: flip.respect_count ?? null,
       }
     : null;
@@ -577,7 +592,7 @@ export async function getCircleRoomViewModel(
       beltKey: belt?.key ?? null,
       beltShort: belt?.name ?? null,
       time: clockTime(n.created_at),
-      body: n.body,
+      body: cleanBody(n.body),
       stance: n.stance,
       isOpener: n.author?.id === circle.created_by,
     };

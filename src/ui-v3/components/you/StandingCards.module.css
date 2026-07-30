@@ -50,6 +50,19 @@
   margin-top: var(--space-6);
 }
 
+/*
+ * The card's content when the member has nothing in it yet. Sits at the note
+ * ramp the figure card already uses for its own caption, so the empty card is
+ * visibly the same object as the full one — just without the number.
+ */
+.empty {
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin-top: var(--space-8);
+  min-height: 52px;
+}
+
 .bars {
   margin-top: var(--space-10);
 }
