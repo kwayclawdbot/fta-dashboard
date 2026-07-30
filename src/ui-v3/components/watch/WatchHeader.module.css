@@ -1,0 +1,58 @@
+/*
+ * The Watch section head — translated from "06 Watch" / "18 Kai Alerts".
+ *
+ * This is the first artboard to use the SCRIPT voice: a 34px Kaushan "watch"
+ * that names the section. It is the section's whole title — no display-italic
+ * heading sits beside it.
+ */
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mark {
+  font-family: var(--font-script);
+  font-size: var(--fs-34);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+/* The dismiss glyph, drawn on 06 only. */
+.close {
+  color: var(--text-dim);
+  font-size: var(--fs-16);
+  text-decoration: none;
+  line-height: var(--lh-1);
+}
+
+/*
+ * The tab rail. 06 sets gap:16px and 18 sets gap:14px — the artboards differ,
+ * so the gap is a per-screen custom property rather than one invented average.
+ */
+.tabs {
+  display: flex;
+  gap: var(--tabs-gap, var(--space-16));
+  margin-top: var(--space-14);
+  align-items: center;
+}
+
+.tab {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text-dim);
+  letter-spacing: var(--ls-04em);
+  text-decoration: none;
+}
+
+.tabActive {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-06em);
+  padding: var(--space-5) var(--space-13);
+  border-radius: var(--radius-16);
+  text-decoration: none;
+}
