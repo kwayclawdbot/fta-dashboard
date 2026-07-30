@@ -204,12 +204,17 @@ export async function deriveKaiPosts(
   //    already compliance-screened copy from the newsroom cron. Kai's own words
   //    are only the framing around them.
   const wrap = (wrapRes.data ?? [])[0] as
-    | { slug: string; title: string; dek: string | null; tickers: string[] }
+    | { slug: string; title: string; dek: string | null; tickers: string[]; created_at: string }
     | undefined;
   if (wrap) {
+    // "Today's" is a claim about the wrap's date, so it is only made when the
+    // wrap really is from today. On the cron's own schedule it always is; under
+    // a widened `lookback` it may not be, and the sentence says so instead.
+    const lede =
+      wrap.created_at.slice(0, 10) === stamp ? "Today's market wrap" : "The latest market wrap";
     const body = wrap.dek
-      ? `Today's market wrap is up in the Newsroom — "${wrap.title}." ${wrap.dek}`
-      : `Today's market wrap is up in the Newsroom — "${wrap.title}."`;
+      ? `${lede} is up in the Newsroom — "${wrap.title}." ${wrap.dek}`
+      : `${lede} is up in the Newsroom — "${wrap.title}."`;
     push(posts, usedTickers, {
       key: `market_wrap:${wrap.slug}:${stamp}`,
       type: "market_wrap",
@@ -231,6 +236,7 @@ export async function deriveKaiPosts(
     slug: string;
     title: string;
     tickers: string[];
+    created_at: string;
   }[];
   const hit = events
     .map((e) => ({ e, ticker: (e.tickers ?? [])[0]?.toUpperCase() ?? "" }))
@@ -239,10 +245,19 @@ export async function deriveKaiPosts(
   if (hit) {
     const { data: metric } = await db
       .from("screener_metrics")
-      .select("ticker, chg_1d")
+      .select("ticker, chg_1d, updated_at")
       .eq("ticker", hit.ticker)
       .maybeSingle();
-    const chg = (metric as { chg_1d: number | null } | null)?.chg_1d ?? null;
+    const row = metric as { chg_1d: number | null; updated_at: string } | null;
+    // The headline and the move come from two independently-refreshed tables.
+    // Printing them in one sentence asserts they describe the SAME session, so
+    // that has to be true: a screener row that has moved on since the newsroom
+    // wrote the story would put "-2.1%" next to "jumps to a 52-week high".
+    // More than a day apart and the post is simply not made.
+    const sameSession =
+      row != null &&
+      Math.abs(new Date(row.updated_at).getTime() - new Date(hit.e.created_at).getTime()) <= 864e5;
+    const chg = sameSession ? row.chg_1d : null;
     const rank = clubRank.get(hit.ticker) ?? null;
     if (chg != null && rank != null) {
       const move = signedPct(chg);
@@ -370,7 +385,11 @@ export async function deriveKaiCircleNotes(
   opts: DeriveNotesOptions = {}
 ): Promise<KaiSeedNote[]> {
   const now = opts.now ?? new Date();
-  const joinSince = daysAgo(opts.joinWindowDays ?? 1, now);
+  const windowDays = opts.joinWindowDays ?? 1;
+  const joinSince = daysAgo(windowDays, now);
+  // The sentence names the window it actually counted over — under a widened
+  // `joinwindow` "since yesterday" would be a week's worth of joins mislabelled.
+  const windowPhrase = windowDays === 1 ? "since yesterday" : `in the last ${windowDays} days`;
 
   const { data: circleData, error } = await db
     .from("club_circles")
@@ -429,7 +448,7 @@ export async function deriveKaiCircleNotes(
 
     const joined = joinsByCircle.get(c.id) ?? 0;
     if (joined >= CIRCLE_JOIN_MIN) {
-      clauses.push(`${joined} members joined this Circle since yesterday.`);
+      clauses.push(`${joined} members joined this Circle ${windowPhrase}.`);
       locked.push(String(joined));
       source.joined = joined;
     }
