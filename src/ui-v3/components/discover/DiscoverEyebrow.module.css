@@ -1,0 +1,33 @@
+/* Discover's section head — accent label, muted action, faint caption. */
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9-5);
+  letter-spacing: var(--ls-16em);
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: var(--fw-600);
+}
+
+.action {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+/* The bare "→" the artboard sets one step larger than a worded action. */
+.glyph {
+  font-size: var(--fs-12);
+}
+
+.caption {
+  font-size: var(--fs-10-5);
+  color: var(--text-faint);
+  margin-top: var(--space-2);
+}
