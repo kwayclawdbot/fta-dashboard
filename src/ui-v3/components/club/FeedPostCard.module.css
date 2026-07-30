@@ -1,0 +1,69 @@
+/*
+ * Post card — flat card, radius 14, padding 13.
+ *
+ * `--post-body` is the artboards' post-copy colour (#E8E2E4 dark / #2E2925
+ * light). It is a real step of its own between --text and --text-muted, has no
+ * semantic token, and flips between the themes — so it is declared here exactly
+ * as GradientPanel declares its washes, and nowhere else.
+ */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-13);
+  margin-top: var(--space-10);
+  --post-body: #e8e2e4;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .card {
+  --post-body: #2e2925;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+}
+
+.identity {
+  flex: 1;
+}
+
+.name {
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--accent-strong);
+  margin-top: var(--space-1);
+}
+
+.time {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.body {
+  font-size: var(--fs-13);
+  color: var(--post-body);
+  line-height: var(--lh-1-5);
+  margin: var(--space-9) 0 0;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-16);
+  margin-top: var(--space-10);
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+}
+
+.save {
+  margin-left: auto;
+}

@@ -1,0 +1,33 @@
+/* Initials disc. --surface-2 ground, --text initials, 12px/700 at both sizes. */
+
+.disc {
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-700);
+  font-size: var(--fs-12);
+  flex: 0 0 auto;
+}
+
+.md {
+  width: 32px;
+  height: 32px;
+}
+
+/*
+ * "23 Inside Circle" declares width:36 + border:2 with no box-sizing reset, so
+ * the artboard renders 40. Converted to border-box; the transparent border keeps
+ * the face identical whether or not a belt ring is painted.
+ */
+.lg {
+  width: 40px;
+  height: 40px;
+  border: 2px solid transparent;
+}
+
+/* "23 Inside Circle": a 2px ring in the author's belt colour. */
+.ringed {
+  border-color: var(--ring);
+}

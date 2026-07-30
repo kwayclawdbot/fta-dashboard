@@ -1,0 +1,24 @@
+/*
+ * Belt chip. Two sizes, both straight off the artboards:
+ *   md — "04 Club Feed": 10px / 700 / radius 4 / padding 1px 5px
+ *   sm — "23 Inside Circle": 9px / 700 / radius 3 / padding 0 4px
+ */
+
+.chip {
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-weight: var(--fw-700);
+  white-space: nowrap;
+}
+
+.md {
+  font-size: var(--fs-10);
+  border-radius: var(--radius-4);
+  padding: var(--space-1) var(--space-5);
+}
+
+.sm {
+  font-size: var(--fs-9);
+  border-radius: var(--radius-3);
+  padding: 0 var(--space-4);
+}

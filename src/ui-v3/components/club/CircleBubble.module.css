@@ -1,0 +1,158 @@
+/*
+ * The Circle bubble. 96px ring over a centred column.
+ *
+ * The ring is one conic arc (the clock) with the disc punched out of it by a
+ * 3px --bg border, exactly as the artboards build it. The two variants differ
+ * only in column width, ring thickness and meta size.
+ */
+
+.cell {
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.feed {
+  width: 104px;
+}
+
+.grid {
+  width: 110px;
+}
+
+/*
+ * SIZES ARE CONVERTED, NOT COPIED. The mockup ships no box-sizing reset, so an
+ * artboard element that declares width + padding is CONTENT-box and renders
+ * larger than its declared number. v3 is border-box, so every such size is
+ * converted to the artboard's real rendered box (verified by measuring both):
+ *
+ *   "04 Club Feed"     width:96 + padding:3  → renders 102, disc 96
+ *   "16 Club Circles"  width:96, inner inset:4 (no padding) → renders 96, disc 88
+ *
+ * That is why the two variants carry different ring widths for the same 96 in
+ * the source markup.
+ */
+.ring {
+  border-radius: var(--radius-full);
+  margin: 0 auto;
+  background: conic-gradient(var(--arc) 0 var(--pct), var(--border) var(--pct) 100%);
+}
+
+.feed .ring {
+  width: 102px;
+  height: 102px;
+  padding: var(--space-3);
+}
+
+.grid .ring {
+  width: 96px;
+  height: 96px;
+  padding: var(--space-4);
+}
+
+.disc {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  border: 3px solid var(--bg);
+  display: grid;
+  place-items: center;
+  color: var(--disc-fg);
+  font-weight: var(--fw-800);
+  /*
+   * The artboards light the disc from 35%/30% — a lift of the disc's OWN glyph
+   * colour over its ground, so no new colour is introduced. "04 Club Feed"
+   * paints it flat; the lift is the "16 Club Circles" treatment and is used on
+   * both here so one component serves both screens.
+   */
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--disc-fg) 14%, var(--disc-bg)),
+    var(--disc-bg) 70%
+  );
+}
+
+.feed .disc {
+  font-size: var(--fs-26);
+}
+
+.grid .disc {
+  font-size: var(--fs-24);
+}
+
+/* The opener bubble's dashed, empty disc. */
+.discOpen {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 3px dashed var(--surface-2);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-24);
+  color: var(--text-dim);
+}
+
+.title {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.titleIdle {
+  font-size: var(--fs-11);
+  font-weight: var(--fw-700);
+  color: var(--text-dim);
+  margin-top: var(--space-7);
+}
+
+.feed .title {
+  margin-top: var(--space-8);
+}
+
+.grid .title {
+  margin-top: var(--space-7);
+}
+
+.meta {
+  color: var(--text-dim);
+  margin-top: var(--space-2);
+}
+
+.feed .meta {
+  font-size: var(--fs-9-5);
+}
+
+.grid .meta {
+  font-size: var(--fs-9);
+}
+
+.metaFaint {
+  font-size: var(--fs-9);
+  color: var(--text-faint);
+  margin-top: var(--space-2);
+}
+
+.clock,
+.clockUrgent,
+.closed {
+  font-family: var(--font-mono);
+}
+
+.feed .clock,
+.feed .clockUrgent,
+.feed .closed {
+  font-size: var(--fs-9);
+}
+
+.clock {
+  color: var(--accent-strong);
+}
+
+.clockUrgent {
+  color: var(--negative);
+}
+
+.closed {
+  color: var(--text-faint);
+}
