@@ -6,6 +6,15 @@
  * between runs with the same middot the teaser row uses.
  */
 
+/*
+ * The step a section opening with an eyebrow takes (§2). The tab rail above is
+ * the previous section; without this the eyebrow sits on the rail's baseline
+ * instead of opening a region.
+ */
+.section {
+  margin-top: var(--space-16);
+}
+
 .list {
   display: flex;
   flex-direction: column;

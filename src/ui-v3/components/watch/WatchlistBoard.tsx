@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import EmptyNote from "@/ui-v3/components/EmptyNote";
@@ -52,6 +53,8 @@ export default function WatchlistBoard({
   interactive: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [items, setItems] = useState(rows);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
@@ -135,8 +138,9 @@ export default function WatchlistBoard({
           id: (data as { id: string }).id,
           ticker,
           name: hit.name,
-          // This screen has read no quote for a symbol it just added. The
-          // numbers arrive on the next server render rather than as zeroes.
+          // This screen has read no quote for a symbol it just added, so the
+          // row goes up without one rather than with a zero. The refresh below
+          // re-runs getWatchlist() and the numbers land a beat later.
           priceLabel: null,
           changePct: null,
           watchers: null,
@@ -148,8 +152,9 @@ export default function WatchlistBoard({
       setAdding(false);
       setQuery("");
       setHits([]);
+      startTransition(() => router.refresh());
     },
-    [supabase, interactive, familyId, viewerId, busy, owned]
+    [supabase, router, interactive, familyId, viewerId, busy, owned]
   );
 
   const remove = useCallback(
@@ -165,9 +170,11 @@ export default function WatchlistBoard({
         // The write failed, so the list must go back to the truth.
         setItems(before);
         setFailed(`Couldn't remove ${row.ticker}. It is still on your board.`);
+        return;
       }
+      startTransition(() => router.refresh());
     },
-    [supabase, interactive, busy, items]
+    [supabase, router, interactive, busy, items]
   );
 
   const caption =
@@ -177,7 +184,9 @@ export default function WatchlistBoard({
 
   return (
     <>
-      <SectionEyebrow caption={caption}>Your board</SectionEyebrow>
+      <div className={styles.section}>
+        <SectionEyebrow caption={caption}>Your board</SectionEyebrow>
+      </div>
 
       {interactive ? (
         <div className={styles.addRegion}>
@@ -227,6 +236,11 @@ export default function WatchlistBoard({
                   className={styles.hit}
                   onClick={() => void add(hit)}
                   disabled={busy}
+                  aria-label={
+                    owned.has(hit.ticker.toUpperCase())
+                      ? `${hit.ticker} is already on your watchlist`
+                      : `Add ${hit.ticker} to your watchlist`
+                  }
                 >
                   <TickerTile ticker={hit.ticker} size="sm" />
                   <span className={styles.hitCopy}>

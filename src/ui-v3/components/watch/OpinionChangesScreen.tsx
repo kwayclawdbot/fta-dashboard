@@ -28,11 +28,13 @@ export default function OpinionChangesScreen({ model }: { model: OpinionChangesV
     <AppShell>
       <WatchHeader active="none" closeHref="/v3/watch" tabGap="16px" />
 
-      <SectionEyebrow
-        caption={`Members who changed their stance in the last ${model.hours} hours`}
-      >
-        Opinion changes
-      </SectionEyebrow>
+      <div className={styles.section}>
+        <SectionEyebrow
+          caption={`Members who changed their stance in the last ${model.hours} hours`}
+        >
+          Opinion changes
+        </SectionEyebrow>
+      </div>
 
       {model.rows.length === 0 ? (
         <EmptyNote>

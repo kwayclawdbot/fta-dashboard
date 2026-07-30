@@ -6,6 +6,11 @@
  * does — never accent, which is reserved for the roles in §4.
  */
 
+/* The step a section opening with an eyebrow takes (§2). */
+.section {
+  margin-top: var(--space-16);
+}
+
 .list {
   display: flex;
   flex-direction: column;

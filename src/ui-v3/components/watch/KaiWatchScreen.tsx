@@ -31,15 +31,17 @@ export default function KaiWatchScreen({ model }: { model: KaiWatchVM }) {
     <AppShell>
       <WatchHeader active="kai-watch" tabGap="16px" />
 
-      <SectionEyebrow
-        caption={
-          model.rules.length > 0
-            ? `${model.rules.length} armed · Kai checks each one every cycle`
-            : undefined
-        }
-      >
-        Armed watches
-      </SectionEyebrow>
+      <div className={styles.section}>
+        <SectionEyebrow
+          caption={
+            model.rules.length > 0
+              ? `${model.rules.length} armed · Kai checks each one every cycle`
+              : undefined
+          }
+        >
+          Armed watches
+        </SectionEyebrow>
+      </div>
 
       {model.rules.length === 0 ? (
         <EmptyNote>

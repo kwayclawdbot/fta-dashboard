@@ -33,15 +33,17 @@ export default function EarningsScreen({ model }: { model: EarningsVM }) {
     <AppShell>
       <WatchHeader active="none" closeHref="/v3/watch" tabGap="16px" />
 
-      <SectionEyebrow
-        caption={
-          model.symbols === null
-            ? undefined
-            : `Scoped to your ${model.symbols} watchlist symbol${model.symbols === 1 ? "" : "s"}`
-        }
-      >
-        Earnings calendar
-      </SectionEyebrow>
+      <div className={styles.section}>
+        <SectionEyebrow
+          caption={
+            model.symbols === null
+              ? undefined
+              : `Scoped to your ${model.symbols} watchlist symbol${model.symbols === 1 ? "" : "s"}`
+          }
+        >
+          Earnings calendar
+        </SectionEyebrow>
+      </div>
 
       {model.days.length === 0 ? (
         <EmptyNote>

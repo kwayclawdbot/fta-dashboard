@@ -9,6 +9,15 @@
  * drawn from existing containers rather than as new objects.
  */
 
+/*
+ * The step a section that opens with an eyebrow takes (§2). The tab rail above
+ * is the previous section, so without this the eyebrow sits on the rail's
+ * baseline instead of opening a region.
+ */
+.section {
+  margin-top: var(--space-16);
+}
+
 /* ── add region ───────────────────────────────────────────────────────────── */
 
 .addRegion {

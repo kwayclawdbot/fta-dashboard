@@ -6,6 +6,11 @@
  * stream's group step and the screener row's flat card — no new object.
  */
 
+/* The step a section opening with an eyebrow takes (§2). */
+.section {
+  margin-top: var(--space-16);
+}
+
 .day {
   margin-top: var(--space-14);
 }
