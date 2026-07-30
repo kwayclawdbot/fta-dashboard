@@ -16,7 +16,7 @@ export default function ScreenerScreen({ model }: { model: ScreenerViewModel }) 
       <FilterChips chips={model.chips} />
       <ScreenerResults rows={model.rows} summary={model.summary} />
       <StanceCards bullish={model.mostBullish} bearish={model.mostBearish} />
-      <TrendingChips chips={model.trendingChips} />
+      <TrendingChips chips={model.trendingChips} disclaimer={model.disclaimer} />
     </AppShell>
   );
 }

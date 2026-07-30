@@ -1,0 +1,12 @@
+/* "02 Discover" — the screen itself only places its closing compliance line. */
+
+/*
+ * `TRENDING_DISCLAIMER`, in the boards' caption voice. The whole screen ranks
+ * the attention ledger, so the line sits once at the foot of it rather than
+ * being repeated per band.
+ */
+.disclaimer {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  margin-top: var(--space-18);
+}

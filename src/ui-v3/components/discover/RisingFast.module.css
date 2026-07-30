@@ -43,8 +43,19 @@
   margin-top: var(--space-6);
 }
 
+/* Holds the sparkline's 22px so a card without a series keeps the row square. */
+.sparkGap {
+  height: 22px;
+}
+
+/*
+ * The watcher line always occupies its box — see RisingFast.tsx. min-height is
+ * the line box of this size, so an absent count leaves the three cards the same
+ * height instead of one of them ending short.
+ */
 .watchers {
   font-size: var(--fs-9-5);
   color: var(--text-faint);
   margin-top: var(--space-5);
+  min-height: 1.2em;
 }

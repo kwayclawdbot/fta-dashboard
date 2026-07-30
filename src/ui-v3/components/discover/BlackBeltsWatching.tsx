@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import type { BeltWatchVM } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY, type BeltWatchVM } from "@/ui-v3/discover-data";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
 import { discoverPaint } from "./discover-palette";
 import DiscoverEyebrow from "./DiscoverEyebrow";
 import styles from "./BlackBeltsWatching.module.css";
@@ -10,9 +11,20 @@ import styles from "./BlackBeltsWatching.module.css";
  * beneath. Same brand pair as the square tile; the artboards just draw this one
  * as a circle with a 1.5px border, so it is a local shape rather than a
  * TickerTile size.
+ *
+ * A club with no black belts yet is a real, temporary state — and on a founding
+ * club it is the NORMAL one. The section keeps its frame and says so, instead of
+ * disappearing and leaving a gap where a band of the design should be.
  */
 export default function BlackBeltsWatching({ tickers }: { tickers: BeltWatchVM[] }) {
-  if (tickers.length === 0) return null;
+  if (tickers.length === 0) {
+    return (
+      <section className={styles.section}>
+        <DiscoverEyebrow>Black belts are watching</DiscoverEyebrow>
+        <EmptyNote>{DISCOVER_EMPTY.beltWatch}</EmptyNote>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.section}>

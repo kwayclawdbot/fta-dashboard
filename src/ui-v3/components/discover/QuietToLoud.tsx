@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { QuietToLoudVM } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY, type QuietToLoudVM } from "@/ui-v3/discover-data";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
 import DiscoverEyebrow from "./DiscoverEyebrow";
 import Sparkline from "./Sparkline";
 import styles from "./QuietToLoud.module.css";
@@ -14,7 +15,16 @@ import styles from "./QuietToLoud.module.css";
  * view model is derived from that and only ever resolves to positive/negative.
  */
 export default function QuietToLoud({ tiles }: { tiles: QuietToLoudVM[] }) {
-  if (tiles.length === 0) return null;
+  if (tiles.length === 0) {
+    return (
+      <section className={styles.section}>
+        <DiscoverEyebrow caption="Names the Club just woke up on">
+          From quiet to loud
+        </DiscoverEyebrow>
+        <EmptyNote>{DISCOVER_EMPTY.quietToLoud}</EmptyNote>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.section}>

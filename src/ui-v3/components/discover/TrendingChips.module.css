@@ -29,3 +29,13 @@
 .down {
   color: var(--negative);
 }
+
+/*
+ * The trending contract's compliance line, in the boards' caption voice — a
+ * footnote under the rail, not a banner.
+ */
+.disclaimer {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  margin-top: var(--space-10);
+}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import TickerTile from "@/ui-v3/components/TickerTile";
-import type { ScreenerRowVM } from "@/ui-v3/discover-data";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
+import { DISCOVER_EMPTY, type ScreenerRowVM } from "@/ui-v3/discover-data";
 import Sparkline from "./Sparkline";
 import styles from "./ScreenerResults.module.css";
 
@@ -27,6 +28,8 @@ export default function ScreenerResults({
         <span className={styles.save}>Save screen</span>
       </div>
 
+      {rows.length === 0 ? <EmptyNote>{DISCOVER_EMPTY.screenerRows}</EmptyNote> : null}
+
       <div className={styles.list}>
         {rows.map((row) => (
           <Link key={row.ticker} href="/v3/discover/screener" className={styles.row}>
@@ -40,7 +43,7 @@ export default function ScreenerResults({
                 viewWidth={52}
                 viewHeight={18}
                 strokeWidth={1.6}
-                tone={row.changePct !== null && row.changePct < 0 ? "negative" : "positive"}
+                tone={row.tone}
               />
             ) : (
               <span className={styles.sparkGap} aria-hidden="true" />

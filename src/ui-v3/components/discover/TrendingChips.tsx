@@ -1,5 +1,6 @@
 import Link from "next/link";
-import type { TrendingChipVM } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY, type TrendingChipVM } from "@/ui-v3/discover-data";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
 import DiscoverEyebrow from "./DiscoverEyebrow";
 import styles from "./TrendingChips.module.css";
 
@@ -9,9 +10,26 @@ import styles from "./TrendingChips.module.css";
  *
  * `isPct` is false on live data because the delta is the ledger's score-point
  * change, not a percentage; the chip omits the sign rather than implying one.
+ *
+ * This is the Screener's trending region, so it carries the trending contract's
+ * compliance disclaimer.
  */
-export default function TrendingChips({ chips }: { chips: TrendingChipVM[] }) {
-  if (chips.length === 0) return null;
+export default function TrendingChips({
+  chips,
+  disclaimer,
+}: {
+  chips: TrendingChipVM[];
+  disclaimer: string;
+}) {
+  if (chips.length === 0) {
+    return (
+      <section className={styles.section}>
+        <DiscoverEyebrow>Trending in the club</DiscoverEyebrow>
+        <EmptyNote>{DISCOVER_EMPTY.trendingChips}</EmptyNote>
+        <p className={styles.disclaimer}>{disclaimer}</p>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.section}>
@@ -33,6 +51,8 @@ export default function TrendingChips({ chips }: { chips: TrendingChipVM[] }) {
           </Link>
         ))}
       </div>
+
+      <p className={styles.disclaimer}>{disclaimer}</p>
     </section>
   );
 }

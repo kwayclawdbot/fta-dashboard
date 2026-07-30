@@ -82,3 +82,27 @@
   font-family: var(--font-mono);
   font-size: var(--fs-10-5);
 }
+
+/*
+ * Inside the card, not instead of it: the tinted frame and its mono title stay,
+ * and only the list is replaced. min-height holds roughly the three rows the
+ * card would carry, so the pair stays level when one side has data and the other
+ * does not.
+ */
+.empty {
+  font-size: var(--fs-10-5);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+  margin-top: var(--space-10);
+  min-height: 54px;
+}
+
+/* Names what ranked the list when no percentage is printed beside the rows. */
+.order {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-top: var(--space-6);
+}
