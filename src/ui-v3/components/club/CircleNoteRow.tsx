@@ -22,10 +22,35 @@ import styles from "./CircleNoteRow.module.css";
  * chips (🔥 24 / 🐂 18 / 💡 7), the "↩ 6 replies" thread block, and the posted
  * chart card. Each is a capability, not a value — inventing counts for them is
  * exactly what DESIGN-GRAMMAR §9.5 forbids.
+ *
+ * KAI's daily note is the one row that is not a person. It keeps the artboard's
+ * thread geometry — same disc, same column — but takes the assistant's own cool
+ * blue and its 🐋 mark, the identity KaiInsightRow already carries on the feed,
+ * so the two surfaces name Kai the same way. A belt would be meaningless on it
+ * and is dropped.
  */
 export default function CircleNoteRow({ note }: { note: CircleNoteVM }) {
   const ring = note.beltKey ? beltPaint(note.beltKey).ring : "var(--text-muted)";
   const nameColor = note.isOpener ? "var(--accent-strong)" : ring;
+
+  if (note.isKai) {
+    return (
+      <div className={styles.row}>
+        <div className={styles.kaiMark} aria-hidden="true">
+          🐋
+        </div>
+        <div className={styles.column}>
+          <div className={styles.head}>
+            <span className={styles.kaiName}>{note.authorName}</span>
+            <span className={styles.time}>{note.time}</span>
+          </div>
+          <p className={styles.body}>
+            <Cashtags text={note.body} />
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.row}>

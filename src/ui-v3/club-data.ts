@@ -14,6 +14,7 @@ import { fetchChangedMinds } from "@/lib/social/stance";
 import { buildClubHomePayload } from "@/lib/club/home-payload";
 import { resolveClubCtx } from "@/lib/club/home-context";
 import { beltForXp, type BeltKey } from "@/lib/belts";
+import { KAI_USERNAME } from "@/lib/kai/system-author";
 import { timeAgo } from "@/lib/feed";
 
 /**
@@ -122,7 +123,17 @@ function cleanBody(body: string): string {
   return body.replace(/\[seed:[^\]]*\]/g, "").trim();
 }
 
-/** The artboard's "Kai Insight" row. Nearest real source: a club pulse signal. */
+/**
+ * The artboard's "Kai Insight" row.
+ *
+ * PREFERRED SOURCE: a `feed_posts` row authored by the Kai system identity —
+ * the weekday /api/cron/kai-feed-seed writes one to three of them, each derived
+ * from the newsroom + the club-attention ledger. Those are real, dated, Kai-
+ * authored sentences, which is exactly what this row draws.
+ *
+ * FALLBACK: a club `pulse` signal, as before — the `pattern` kind IS the Kai
+ * one. It stands in on a day the seed had nothing to say.
+ */
 export interface KaiInsightVM {
   headline: string;
   ticker: string | null;
@@ -158,6 +169,13 @@ export interface CircleNoteVM {
   stance: CircleStance | null;
   /** `club_circles.created_by === author_id`. The artboard tints the opener accent. */
   isOpener: boolean;
+  /**
+   * `profiles.username === 'kai'` — the daily system note from
+   * /api/cron/kai-feed-seed. Takes Kai's own identity colour rather than a belt
+   * ring, so a member can see at a glance which line in the thread is the room
+   * reporting on itself and which is a person talking.
+   */
+  isKai: boolean;
 }
 
 /** Notes under one date divider ("TODAY" on the artboard). */
@@ -297,6 +315,17 @@ interface RawPulseSignal {
  * club `pulse` signal — and its `pattern` kind IS the Kai one ("Kai spotted a
  * pattern"), so that kind is preferred and any other signal is the fallback.
  */
+/**
+ * Kai's own rows, told apart from a member's by the ONE distinguishing field
+ * the schema carries: `profiles.username`. There is no `is_system` column and
+ * adding one would be a migration; the handle is unique (lower-cased unique
+ * index, migration 095), already selected by every read path here, and is
+ * therefore the identity check.
+ */
+function isKaiAuthor(author: { username?: string | null } | null | undefined): boolean {
+  return (author?.username ?? "").toLowerCase() === KAI_USERNAME;
+}
+
 function mapKai(pulse: unknown): KaiInsightVM | null {
   if (!pulse || typeof pulse !== "object") return null;
   const signals = (pulse as { signals?: unknown }).signals;
@@ -416,6 +445,7 @@ function fixtureRoomModel(slug: string): CircleRoomViewModel {
             body: "Checks from Taiwan overnight — CoWoS capacity fully booked through Q2. The $NVDA supply story is intact.",
             stance: "bull",
             isOpener: true,
+            isKai: false,
           },
           {
             id: "fx-note-2",
@@ -427,6 +457,7 @@ function fixtureRoomModel(slug: string): CircleRoomViewModel {
             body: "Counter: implied move is only ±7.8%. Market's already paying for the beat.",
             stance: "neutral",
             isOpener: false,
+            isKai: false,
           },
           {
             id: "fx-note-3",
@@ -438,6 +469,7 @@ function fixtureRoomModel(slug: string): CircleRoomViewModel {
             body: "Posted the hyperscaler capex read — six straight quarters of acceleration.",
             stance: "bull",
             isOpener: false,
+            isKai: false,
           },
           {
             id: "fx-note-4",
@@ -449,6 +481,7 @@ function fixtureRoomModel(slug: string): CircleRoomViewModel {
             body: "@OptionsOG what strikes are you playing into the print?",
             stance: null,
             isOpener: false,
+            isKai: false,
           },
         ],
       },
@@ -486,10 +519,20 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
 
   const displayName = profile?.display_name?.trim() ?? "";
 
-  const posts: FeedPostVM[] = (seed?.posts ?? [])
+  const readable = (seed?.posts ?? []).filter(
     // Emptiness is judged AFTER the marker comes off, so a row whose only
     // content was a marker never reaches the feed.
-    .filter((p) => p.kind === "post" && cleanBody(p.body).length > 0)
+    (p) => p.kind === "post" && cleanBody(p.body).length > 0
+  );
+
+  // Kai's posts are lifted OUT of the member stream. Drawn as a FeedPostCard
+  // they would read as a member with no belt; the artboard already gives the
+  // assistant its own row treatment, so the newest Kai post takes it and the
+  // pulse signal falls back to being the stand-in it always was.
+  const kaiPost = readable.find((p) => isKaiAuthor(p.author));
+
+  const posts: FeedPostVM[] = readable
+    .filter((p) => !isKaiAuthor(p.author))
     .slice(0, FEED_POST_LIMIT)
     .map((p) => {
       const name = p.author?.display_name?.trim() || "Member";
@@ -533,7 +576,9 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
     circles: circlesRes.rows.slice(0, FEED_CIRCLE_LIMIT).map((r) => mapCircle(r, now)),
     posts,
     changedMind,
-    kai: mapKai(pulse),
+    kai: kaiPost
+      ? { headline: cleanBody(kaiPost.body), ticker: kaiPost.ticker_tags?.[0] ?? null }
+      : mapKai(pulse),
   };
 }
 
@@ -595,6 +640,7 @@ export async function getCircleRoomViewModel(
       body: cleanBody(n.body),
       stance: n.stance,
       isOpener: n.author?.id === circle.created_by,
+      isKai: isKaiAuthor(n.author),
     };
     const last = groups[groups.length - 1];
     if (last && last.label === label) last.notes.push(vm);
