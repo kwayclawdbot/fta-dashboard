@@ -1,0 +1,84 @@
+/*
+ * The two stance cards. Their tinted borders are the mockups' own one-offs:
+ *   bull  #20503A dark / #96D4B4 light
+ *   bear  #5A2A38 dark / #F0BFCB light
+ * No semantic role covers "a border tinted toward positive/negative", so they
+ * stay here, theme-scoped, rather than being promoted to a token.
+ */
+
+.row {
+  display: flex;
+  gap: var(--space-10);
+  margin-top: var(--space-16);
+}
+
+.card {
+  --stance-border: var(--border);
+
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--stance-border);
+  border-radius: var(--radius-16);
+  padding: var(--space-13) var(--space-14);
+}
+
+.bull {
+  --stance-border: #20503a;
+}
+
+.bear {
+  --stance-border: #5a2a38;
+}
+
+/* Scoped to the v3 root: the old app also writes data-theme onto <html>. */
+[data-ui="v3"][data-theme="light"] .bull {
+  --stance-border: #96d4b4;
+}
+
+[data-ui="v3"][data-theme="light"] .bear {
+  --stance-border: #f0bfcb;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  font-weight: var(--fw-600);
+}
+
+.bull .title,
+.bull .pct {
+  color: var(--positive);
+}
+
+.bear .title,
+.bear .pct {
+  color: var(--negative);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-10);
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.pct {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10-5);
+}

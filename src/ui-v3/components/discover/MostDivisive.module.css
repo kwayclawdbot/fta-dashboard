@@ -1,0 +1,140 @@
+/*
+ * MOST DIVISIVE — the split panel.
+ *
+ * The second disc in each member stack is a one-off surface step the token set
+ * has no role for (#4A4250 dark / #C4BBAD light). It is declared here, scoped
+ * to this module and to the theme, the same way GradientPanel keeps its washes.
+ */
+
+.section {
+  margin-top: var(--space-18);
+}
+
+.panel {
+  --stack-disc-alt: #4a4250;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-16);
+  margin-top: var(--space-10);
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+/*
+ * Scoped to the v3 root, NOT to a bare [data-theme="light"]: the old app also
+ * writes data-theme onto <html>, so an unscoped attribute selector matches the
+ * light branch even while v3 is in dark.
+ */
+[data-ui="v3"][data-theme="light"] .panel {
+  --stack-disc-alt: #c4bbad;
+}
+
+.side {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.pct {
+  font-size: var(--fs-22);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-n-02em);
+}
+
+.stance {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  margin-top: var(--space-2);
+}
+
+.bull {
+  color: var(--positive);
+}
+
+.bear {
+  color: var(--negative);
+}
+
+/* --- the anonymous member stack --- */
+
+.stack {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-8);
+}
+
+/* 24px: the artboard's 20px disc plus its 2px surface-coloured ring, which
+   base.css's border-box would otherwise eat into the disc itself. */
+.disc {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 2px solid var(--surface);
+}
+
+.disc + .disc {
+  margin-left: -7px;
+}
+
+.discAlt {
+  background: var(--stack-disc-alt);
+}
+
+/* --- the donut --- */
+
+.donut {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  flex: 0 0 auto;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: conic-gradient(var(--positive) 0 var(--bull), var(--negative) var(--bull) 100%);
+}
+
+.hub {
+  position: absolute;
+  inset: 7px;
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--tile-bg);
+  color: var(--tile-fg);
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  font-weight: var(--fw-800);
+  font-size: var(--fs-17);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text);
+  margin-top: var(--space-4);
+}
+
+.opinions {
+  text-align: center;
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  margin-top: var(--space-6);
+}

@@ -1,0 +1,31 @@
+/* TRENDING IN THE CLUB — a wrapping chip rail. */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.rail {
+  display: flex;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-7) var(--space-12);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.up {
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}

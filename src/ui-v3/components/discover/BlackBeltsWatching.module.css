@@ -1,0 +1,48 @@
+/* BLACK BELTS ARE WATCHING — a row of round brand discs. */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-13);
+  margin-top: var(--space-11);
+  /* Scroll past the gutter rather than clip, as with the Home strip. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -18px;
+  padding-inline: 18px;
+}
+
+.row::-webkit-scrollbar {
+  display: none;
+}
+
+.item {
+  text-align: center;
+  text-decoration: none;
+  flex: 0 0 auto;
+}
+
+/* 48px because base.css is border-box and the artboard's 46px disc adds a
+   1.5px border outside it. Painted size and the 61px pitch both match. */
+.disc {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--tile-bg);
+  color: var(--tile-fg);
+  border: 1.5px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-800);
+  font-size: var(--fs-16);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  color: var(--text-muted);
+  margin-top: var(--space-5);
+}

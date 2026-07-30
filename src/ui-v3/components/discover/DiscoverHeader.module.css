@@ -1,0 +1,45 @@
+/* Discover's screen identity: the script wordmark, its subtitle, two actions. */
+
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wordmark {
+  font-family: var(--font-script);
+  font-size: var(--fs-34);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.subtitle {
+  font-size: var(--fs-12);
+  color: var(--text-dim);
+  margin-top: var(--space-5);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-9);
+}
+
+/*
+ * 36px, not 34px: the artboard's disc is a 34px box PLUS its 1px border, and
+ * base.css puts everything in border-box. Same painted size, same rhythm.
+ */
+.action {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.glyphAction {
+  font-size: var(--fs-12);
+}

@@ -1,0 +1,50 @@
+/* RISING FAST — three equal flat cards side by side. */
+
+.section {
+  margin-top: var(--space-18);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-9);
+  margin-top: var(--space-10);
+}
+
+.card {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-11) var(--space-12);
+  text-decoration: none;
+  display: block;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.delta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--positive);
+  margin-top: var(--space-3);
+}
+
+.deltaDown {
+  color: var(--negative);
+}
+
+.spark {
+  margin-top: var(--space-6);
+}
+
+.watchers {
+  font-size: var(--fs-9-5);
+  color: var(--text-faint);
+  margin-top: var(--space-5);
+}
