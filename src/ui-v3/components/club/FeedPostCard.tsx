@@ -10,6 +10,11 @@ import styles from "./FeedPostCard.module.css";
  * source (`post_likes`, `post_comments`); the 💡 count does not exist for a feed
  * post, so it is omitted rather than shown at zero. 🔖 has no count in the
  * artboard either and stays a bare mark.
+ *
+ * A count of zero is printed as NOTHING. "👍 0 · 💬 0" under every post is the
+ * artboard's engagement row filled in with the absence of engagement, and it made
+ * a real feed look abandoned. The artboard only ever draws these counts with
+ * numbers in them; zero is the state where the count has not started.
  */
 export default function FeedPostCard({ post }: { post: FeedPostVM }) {
   return (
@@ -29,10 +34,10 @@ export default function FeedPostCard({ post }: { post: FeedPostVM }) {
       <p className={styles.body}>{post.body}</p>
 
       <div className={styles.actions}>
-        {post.likes !== null ? (
+        {post.likes !== null && post.likes > 0 ? (
           <span data-numeric>👍 {post.likes}</span>
         ) : null}
-        {post.comments !== null ? (
+        {post.comments !== null && post.comments > 0 ? (
           <span data-numeric>💬 {post.comments}</span>
         ) : null}
         <span className={styles.save} aria-hidden="true">

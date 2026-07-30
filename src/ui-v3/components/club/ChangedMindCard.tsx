@@ -47,7 +47,9 @@ export default function ChangedMindCard({ flip }: { flip: ChangedMindVM }) {
       {flip.note ? <p className={styles.note}>{flip.note}</p> : null}
 
       <div className={styles.actions}>
-        {flip.respect !== null ? (
+        {/* Zero respect is not a count worth printing — same rule as the post
+            card's 👍/💬 row. */}
+        {flip.respect !== null && flip.respect > 0 ? (
           <span data-numeric>🔥 {flip.respect}</span>
         ) : null}
         <span className={styles.save} aria-hidden="true">
