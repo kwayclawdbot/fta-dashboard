@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { BeltsViewModel } from "@/ui-v3/you-data";
+import AppShell from "@/ui-v3/components/AppShell";
 import BeltLadder from "./BeltLadder";
 import BeltShowcase from "./BeltShowcase";
 import styles from "./BeltsScreen.module.css";
@@ -17,45 +18,42 @@ import styles from "./BeltsScreen.module.css";
  */
 export default function BeltsScreen({ model }: { model: BeltsViewModel }) {
   return (
-    <div className={styles.viewport}>
-      <div className={styles.screen}>
-        <div className={styles.body}>
-          <div className={styles.titleRow}>
-            <Link href="/v3/you" className={styles.back} aria-label="Back to profile">
-              ←
-            </Link>
-            <div className={styles.title}>belts</div>
-          </div>
-
-          <p className={styles.blurb}>
-            Rank is earned from the work you put in, not follower counts. Your belt travels
-            with you everywhere in the Club.
-          </p>
-
-          <BeltLadder rungs={model.rungs} />
-          <BeltShowcase />
-        </div>
-
-        {model.next ? (
-          <div className={styles.footer}>
-            <div className={styles.nextCard}>
-              <span className={styles.nextGlyph}>🎯</span>
-              <div className={styles.nextBody}>
-                <div className={styles.nextTitle}>{model.next.title}</div>
-                {model.next.detail ? (
-                  <div className={styles.nextDetail}>{model.next.detail}</div>
-                ) : null}
-              </div>
-              <div className={styles.track}>
-                <div
-                  className={styles.fill}
-                  style={{ "--fill-pct": `${model.next.pct}%` } as CSSProperties}
-                />
-              </div>
+    <AppShell
+      nav={false}
+      bar={
+        model.next ? (
+          <div className={styles.nextCard}>
+            <span className={styles.nextGlyph}>🎯</span>
+            <div className={styles.nextBody}>
+              <div className={styles.nextTitle}>{model.next.title}</div>
+              {model.next.detail ? (
+                <div className={styles.nextDetail}>{model.next.detail}</div>
+              ) : null}
+            </div>
+            <div className={styles.track}>
+              <div
+                className={styles.fill}
+                style={{ "--fill-pct": `${model.next.pct}%` } as CSSProperties}
+              />
             </div>
           </div>
-        ) : null}
+        ) : null
+      }
+    >
+      <div className={styles.titleRow}>
+        <Link href="/v3/you" className={styles.back} aria-label="Back to profile">
+          ←
+        </Link>
+        <div className={styles.title}>belts</div>
       </div>
-    </div>
+
+      <p className={styles.blurb}>
+        Rank is earned from the work you put in, not follower counts. Your belt travels with
+        you everywhere in the Club.
+      </p>
+
+      <BeltLadder rungs={model.rungs} />
+      <BeltShowcase />
+    </AppShell>
   );
 }

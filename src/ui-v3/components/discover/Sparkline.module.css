@@ -4,16 +4,12 @@
  */
 
 /*
- * The svg is left INLINE, as the artboards author it. That matters: an inline
- * svg sits on the text baseline, so its line box is ~4px taller than the svg,
- * and both 02 Discover call sites space the label beneath it off that line box.
- * Forcing display:block collapses those 4px and shortens the whole screen.
+ * The svg is left INLINE, as the artboards author it: an inline svg sits on the
+ * text baseline, so its line box is ~4px taller than the graphic, and both
+ * "02 Discover" call sites space the label beneath it off that line box.
+ * base.css restores inline for every v3 svg, so nothing is declared here.
  */
 .spark {
-  /* Tailwind's preflight blockifies every svg; the artboards' are inline, so
-     this puts it back. Flex call sites (the screener row) blockify anyway. */
-  display: inline;
-  vertical-align: baseline;
   flex: 0 0 auto;
 }
 

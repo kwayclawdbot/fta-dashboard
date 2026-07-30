@@ -4,18 +4,10 @@
  * Circles strip.
  */
 
+/* SectionEyebrow owns the head row itself (label + dim "See all"); this only
+   places it. */
 .eyebrowRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
   margin-top: var(--space-16);
-}
-
-/* The artboard's feed "See all" is --text-dim — quieter than Home's accent one. */
-.seeAll {
-  font-size: var(--fs-11);
-  color: var(--text-dim);
-  text-decoration: none;
 }
 
 .strip {

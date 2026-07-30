@@ -2,8 +2,8 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { ProfileHeaderVM } from "@/ui-v3/you-data";
+import SignalRing from "@/ui-v3/components/SignalRing";
 import { beltToneVar } from "./belt-tone";
-import ScoreRing from "./ScoreRing";
 import styles from "./ProfileHeader.module.css";
 
 /**
@@ -51,7 +51,13 @@ export default function ProfileHeader({ vm }: { vm: ProfileHeaderVM }) {
         </div>
 
         {vm.ring ? (
-          <ScoreRing pct={vm.ring.pct} value={vm.ring.value} label={vm.ring.label} />
+          <SignalRing
+            pct={vm.ring.pct}
+            value={vm.ring.value}
+            caption={vm.ring.label}
+            size="md"
+            discTone="bg"
+          />
         ) : null}
       </div>
     </>

@@ -1,27 +1,16 @@
 /*
  * Board "07 You Profile" — the streak panel.
  *
- * This is a THIRD gradient wash: 120deg with a single 65% stop, and 14px/16px
- * padding. The shared <GradientPanel> ships only "brief" (120deg, three stops)
- * and "you" (110deg, 70%), and is read-only in this lane — so the tone is
- * declared here on the same theme-scoped pattern that component uses. Board
- * "22 Belts" reuses the identical wash for its active row.
- * See the report's shared-primitive requests.
+ * The wash, hairline, radius and padding are <GradientPanel tone="streak">
+ * (board "22 Belts" paints the same wash on its lifted rung). Only the placement
+ * and the row layout are local.
  */
 
 .panel {
   margin-top: var(--space-14);
-  background: linear-gradient(120deg, #241009 0%, #17141a 65%);
-  border: 1px solid var(--accent-soft);
-  border-radius: var(--radius-16);
-  padding: var(--space-14) var(--space-16);
   display: flex;
   align-items: center;
   gap: var(--space-14);
-}
-
-:global([data-ui="v3"][data-theme="light"]) .panel {
-  background: linear-gradient(120deg, #ffeedd 0%, #ffffff 65%);
 }
 
 .flame {

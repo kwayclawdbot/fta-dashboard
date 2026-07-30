@@ -1,11 +1,20 @@
 /*
- * Signal ring — a 48px conic-gradient dial with an inner disc carrying a value
- * and a tiny caption. The fill percentage is the conic hard stop.
+ * Signal ring — a conic-gradient dial with an inner disc carrying a value and,
+ * on two of the three boards, a tiny caption. The fill percentage is the conic
+ * hard stop.
+ *
+ * Three size classes, one per artboard, and nothing between them:
+ *   sm  48/38  mono 13  caption at 0px   --surface disc   01 Home (YOU strip)
+ *   md  64/52  mono 16  caption at 1px   --bg disc        07 You Profile
+ *   lg  88/74  mono 17  no caption       --surface disc   06 Watch
+ *
+ * The disc is a centred child rather than an inset overlay, so each size states
+ * only its two diameters; the ring width falls out of the difference.
  */
 
 .ring {
-  width: 48px;
-  height: 48px;
+  width: var(--ring-size);
+  height: var(--ring-size);
   border-radius: var(--radius-full);
   background: conic-gradient(
     var(--accent) 0 var(--ring-pct),
@@ -17,10 +26,10 @@
 }
 
 .disc {
-  width: 38px;
-  height: 38px;
+  width: var(--ring-disc);
+  height: var(--ring-disc);
   border-radius: var(--radius-full);
-  background: var(--surface);
+  background: var(--ring-disc-bg);
   display: grid;
   place-items: center;
   text-align: center;
@@ -28,14 +37,51 @@
 
 .value {
   font-family: var(--font-mono);
-  font-size: var(--fs-13);
+  font-size: var(--ring-value-fs);
   font-weight: var(--fw-600);
   color: var(--text);
   line-height: var(--lh-1);
 }
 
 .label {
+  /* 6.5px is a one-off on the artboards — below the extractor's count floor. */
   font-size: 6.5px;
   color: var(--text-dim);
   letter-spacing: var(--ls-08em);
+  margin-top: var(--ring-label-gap);
+}
+
+/* ── size classes ─────────────────────────────────────────────────────────── */
+
+.sm {
+  --ring-size: 48px;
+  --ring-disc: 38px;
+  --ring-value-fs: var(--fs-13);
+  --ring-label-gap: 0px;
+}
+
+.md {
+  --ring-size: 64px;
+  --ring-disc: 52px;
+  --ring-value-fs: var(--fs-16);
+  --ring-label-gap: var(--space-1);
+}
+
+.lg {
+  --ring-size: 88px;
+  --ring-disc: 74px;
+  --ring-value-fs: var(--fs-17);
+  --ring-label-gap: 0px;
+}
+
+/* ── inner-disc tone ──────────────────────────────────────────────────────── */
+
+/* Sits on a surface: the disc reads as a hole in the card. */
+.discSurface {
+  --ring-disc-bg: var(--surface);
+}
+
+/* Sits on the page: the disc reads as a hole punched through it. */
+.discBg {
+  --ring-disc-bg: var(--bg);
 }

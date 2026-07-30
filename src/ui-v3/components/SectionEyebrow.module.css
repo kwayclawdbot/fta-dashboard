@@ -2,6 +2,11 @@
  * Section eyebrow — the mono, wide-tracked, uppercase label that opens every
  * section on the artboards, optionally with a trailing action on the same
  * baseline and a caption underneath.
+ *
+ * The tone variants below are the artboards' own two colour assignments, not
+ * options: Home draws a --text label with a 600-weight accent action, while
+ * Discover / You / the Club feed draw an --accent label with a plain-weight
+ * --text-dim action. Both are verbatim; see SectionEyebrow.tsx for the table.
  */
 
 .row {
@@ -19,7 +24,12 @@
   font-weight: var(--fw-600);
 }
 
-/* The one accent-tinted run inside an eyebrow (e.g. "TOP IN <the club>"). */
+/* Whole-label accent (Discover, You Profile, Belts). */
+.labelAccent {
+  color: var(--accent);
+}
+
+/* The one accent-tinted run inside a --text label (e.g. "TOP IN <the club>"). */
 .accent {
   color: var(--accent);
 }
@@ -31,8 +41,24 @@
   text-decoration: none;
 }
 
+/* The quieter action: --text-dim at the mockups' implicit body weight. */
+.actionDim {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+/* The bare "→" the artboards set one step larger than a worded action. */
+.glyph {
+  font-size: var(--fs-12);
+}
+
 .caption {
   font-size: var(--fs-10-5);
   color: var(--text-faint);
   margin-top: var(--space-3);
+}
+
+/* Every Discover caption sits 2px under its eyebrow; Home's sits at 3px. */
+.captionGap2 {
+  margin-top: var(--space-2);
 }

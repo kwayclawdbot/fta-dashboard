@@ -14,10 +14,23 @@
   text-decoration: none;
 }
 
+/*
+ * PER-GLYPH LINE BOX, deliberately.
+ *
+ * The five marks (⌂ ◎ ✦ ▣ ◉) are text, and none of them exists in Instrument
+ * Sans, so each resolves to a different fallback face with different metrics.
+ * The artboard declares no line-height on this div, so at 15px each glyph gets
+ * its own line box — measured off the "01 Home" nav: 19 / 23 / 19 / 20 / 23px —
+ * and every label sits directly under its own glyph.
+ *
+ * Pinning one line-height here (it was 1.5 = 22.5px) makes the boxes uniform and
+ * pushes three of the five labels off the artboard by up to 3.5px, and the nav
+ * itself half a pixel short. So the line-height is left to inherit `normal` from
+ * base.css. Do not "fix" this to a single value.
+ */
 .glyph {
   font-size: var(--fs-15);
   color: var(--text-faint);
-  line-height: var(--lh-1-5);
 }
 
 .label {

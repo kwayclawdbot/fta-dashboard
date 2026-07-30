@@ -26,9 +26,10 @@
 /*
  * Scoped to the v3 root, NOT to a bare [data-theme="light"]: the old app also
  * writes data-theme onto <html>, so an unscoped attribute selector matches the
- * light branch even while v3 is in dark.
+ * light branch even while v3 is in dark. Every light override in v3 is written
+ * this way — :global() around the root — so the pattern reads the same everywhere.
  */
-[data-ui="v3"][data-theme="light"] .panel {
+:global([data-ui="v3"][data-theme="light"]) .panel {
   --stack-disc-alt: #c4bbad;
 }
 

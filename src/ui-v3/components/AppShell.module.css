@@ -28,3 +28,17 @@
   padding: var(--space-18) var(--space-18) 0;
   flex: 1;
 }
+
+/*
+ * The pinned action bar the detail boards carry instead of the nav ("19 Alert
+ * Setup", "22 Belts"): the same hairline the nav has, 12px above / 18px sides /
+ * 24px of home-indicator clearance, laid out as a row so a single child fills
+ * the width with `flex: 1` and two children can share it.
+ */
+.bar {
+  padding: var(--space-12) var(--space-18) 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-10);
+  flex: 0 0 auto;
+}

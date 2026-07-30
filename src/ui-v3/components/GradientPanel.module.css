@@ -1,12 +1,14 @@
 /*
- * The warm gradient panel. Two tones exist on the artboards and no others:
- *   "brief" — 120deg, three stops, used by TODAY IN 30 SECONDS
- *   "you"   — 110deg, two stops, used by the YOU strip
- * Both share the accent-soft hairline and the 16px radius.
+ * The warm gradient panel. Four tones exist on the artboards and no others:
+ *   "brief"  — 120deg, three stops, radius 16, 14/15 padding  (01 Home, TODAY IN 30)
+ *   "you"    — 110deg, two stops,   radius 16, 13/15 padding  (01 Home, YOU strip)
+ *   "streak" — 120deg, 65% stop,    radius 16, 14/16 padding  (07 You Profile)
+ *   "close"  — 135deg, 60% stop,    radius 18, 16 padding     (06 Watch)
+ * All four share the accent-soft hairline.
  *
- * The gradient stops have no semantic token (they are one-off warm washes), so
- * each tone declares its own pair of theme-scoped values here rather than
- * scattering hexes through the section components.
+ * The gradient stops themselves live in base.css as --wash-*: the streak wash is
+ * also painted by the lifted rung on "22 Belts", and one declaration per wash
+ * means one light override per wash instead of one per component.
  */
 
 .panel {
@@ -18,19 +20,28 @@
 }
 
 .brief {
-  --panel-gradient: linear-gradient(120deg, #2a1208 0%, #1a0e12 55%, #17141a 100%);
+  --panel-gradient: var(--wash-brief);
   padding: var(--space-14) var(--space-15);
 }
 
 .you {
-  --panel-gradient: linear-gradient(110deg, #241009 0%, #17141a 70%);
+  --panel-gradient: var(--wash-you);
   padding: var(--space-13) var(--space-15);
 }
 
-:global([data-ui="v3"][data-theme="light"]) .brief {
-  --panel-gradient: linear-gradient(120deg, #ffe9d6 0%, #fff1e4 55%, #ffffff 100%);
+.streak {
+  --panel-gradient: var(--wash-streak);
+  padding: var(--space-14) var(--space-16);
 }
 
-:global([data-ui="v3"][data-theme="light"]) .you {
-  --panel-gradient: linear-gradient(110deg, #ffeedd 0%, #ffffff 70%);
+.close {
+  --panel-gradient: var(--wash-close);
+  border-radius: var(--radius-18);
+  padding: var(--space-16);
+}
+
+/* The same box when the whole panel is its own tap target. */
+.link {
+  display: block;
+  text-decoration: none;
 }

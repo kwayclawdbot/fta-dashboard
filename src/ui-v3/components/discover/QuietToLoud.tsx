@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { QuietToLoudVM } from "@/ui-v3/discover-data";
-import DiscoverEyebrow from "./DiscoverEyebrow";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import Sparkline from "./Sparkline";
 import styles from "./QuietToLoud.module.css";
 
@@ -18,7 +18,9 @@ export default function QuietToLoud({ tiles }: { tiles: QuietToLoudVM[] }) {
 
   return (
     <section className={styles.section}>
-      <DiscoverEyebrow caption="Names the Club just woke up on">From quiet to loud</DiscoverEyebrow>
+      <SectionEyebrow labelTone="accent" caption="Names the Club just woke up on" captionGap={2}>
+        From quiet to loud
+      </SectionEyebrow>
 
       <div className={styles.row}>
         {tiles.map((tile) => (

@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { BeltWatchVM } from "@/ui-v3/discover-data";
-import { discoverPaint } from "./discover-palette";
-import DiscoverEyebrow from "./DiscoverEyebrow";
+import { tickerPaint } from "@/ui-v3/ticker-palette";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./BlackBeltsWatching.module.css";
 
 /**
@@ -16,13 +16,18 @@ export default function BlackBeltsWatching({ tickers }: { tickers: BeltWatchVM[]
 
   return (
     <section className={styles.section}>
-      <DiscoverEyebrow actionLabel="See all" actionHref="/v3/discover/screener">
+      <SectionEyebrow
+        labelTone="accent"
+        actionLabel="See all"
+        actionHref="/v3/discover/screener"
+        actionTone="dim"
+      >
         Black belts are watching
-      </DiscoverEyebrow>
+      </SectionEyebrow>
 
       <div className={styles.row}>
         {tickers.map((item) => {
-          const paint = discoverPaint(item.ticker);
+          const paint = tickerPaint(item.ticker);
           return (
             <Link key={item.ticker} href="/v3/discover/screener" className={styles.item}>
               <div

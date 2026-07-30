@@ -7,20 +7,9 @@
  * inherited by both — the same technique GradientPanel uses for its washes.
  */
 
-.viewport {
-  min-height: 100dvh;
-  background: var(--bg);
-  display: flex;
-  justify-content: center;
-}
-
+/* The column is AppShell's (padding="bleed", nav={false}); this only hangs the
+   chrome ground on it, for the header and composer to inherit. */
 .screen {
-  width: 100%;
-  max-width: 430px;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
   --chrome: #111014;
 }
 

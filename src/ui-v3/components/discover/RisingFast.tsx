@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { RisingTileVM } from "@/ui-v3/discover-data";
-import DiscoverEyebrow from "./DiscoverEyebrow";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import Sparkline from "./Sparkline";
 import styles from "./RisingFast.module.css";
 
@@ -17,13 +17,16 @@ export default function RisingFast({ tiles }: { tiles: RisingTileVM[] }) {
 
   return (
     <section className={styles.section}>
-      <DiscoverEyebrow
+      <SectionEyebrow
+        labelTone="accent"
         caption="Attention over the last 24h"
+        captionGap={2}
         actionLabel="See all"
         actionHref="/v3/discover/screener"
+        actionTone="dim"
       >
         Rising fast
-      </DiscoverEyebrow>
+      </SectionEyebrow>
 
       <div className={styles.row}>
         {tiles.map((tile) => (

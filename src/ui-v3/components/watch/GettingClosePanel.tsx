@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { SetupProgressVM } from "@/ui-v3/watch-data";
+import GradientPanel from "@/ui-v3/components/GradientPanel";
 import ConditionDial from "./ConditionDial";
 import ConditionMark from "./ConditionMark";
 import styles from "./GettingClosePanel.module.css";
@@ -15,8 +15,8 @@ import styles from "./GettingClosePanel.module.css";
  * claim is. If the setup has never been evaluated the footer is omitted.
  */
 export default function GettingClosePanel({ setup }: { setup: SetupProgressVM }) {
-  const panel = (
-    <>
+  return (
+    <GradientPanel tone="close" href={setup.href ?? undefined} className={styles.panel}>
       <div className={styles.eyebrow}>Getting close</div>
       <div className={styles.title}>{setup.title}</div>
 
@@ -40,14 +40,6 @@ export default function GettingClosePanel({ setup }: { setup: SetupProgressVM })
           Last checked: <span className={styles.footerValue}>{setup.evaluatedLabel}</span>
         </div>
       ) : null}
-    </>
-  );
-
-  return setup.href ? (
-    <Link href={setup.href} className={`${styles.panel} ${styles.panelLink}`}>
-      {panel}
-    </Link>
-  ) : (
-    <div className={styles.panel}>{panel}</div>
+    </GradientPanel>
   );
 }

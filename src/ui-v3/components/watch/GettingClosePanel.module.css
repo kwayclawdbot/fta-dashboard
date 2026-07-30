@@ -1,29 +1,13 @@
 /*
  * "06 Watch" — the setup closest to triggering.
  *
- * A third gradient-panel tone: 135deg, two stops, radius-18. GradientPanel
- * ships exactly the two tones Home needed ("brief" 120deg, "you" 110deg) and is
- * shared with the other lanes, so this wash is declared locally rather than by
- * editing that primitive. See the report's shared-primitive requests.
+ * The box is <GradientPanel tone="close"> (135deg wash, radius-18, 16px
+ * padding), rendered as a link when the setup has a destination. Only the
+ * placement and the panel's own contents are local.
  */
 
 .panel {
-  --panel-gradient: linear-gradient(135deg, #241009 0%, #17141a 60%);
   margin-top: var(--space-16);
-  background: var(--panel-gradient);
-  border: 1px solid var(--accent-soft);
-  border-radius: var(--radius-18);
-  padding: var(--space-16);
-}
-
-:global([data-ui="v3"][data-theme="light"]) .panel {
-  --panel-gradient: linear-gradient(135deg, #ffeedd 0%, #ffffff 60%);
-}
-
-/* Same box when the panel is the tap target for its setup. */
-.panelLink {
-  display: block;
-  text-decoration: none;
 }
 
 .eyebrow {
