@@ -4,6 +4,7 @@ import WatchHeader from "./WatchHeader";
 import KaiDigestHeader, { DayRule } from "./KaiDigestHeader";
 import AlertCard from "./AlertCard";
 import AlertDigestRow from "./AlertDigestRow";
+import EmptyNote from "@/ui-v3/components/EmptyNote";
 import styles from "./AlertsScreen.module.css";
 
 /**
@@ -11,6 +12,11 @@ import styles from "./AlertsScreen.module.css";
  *
  * The artboard's 18 has no dismiss glyph beside the script mark and spaces its
  * tab rail at 14px rather than 16px; both are honoured here.
+ *
+ * An empty stream keeps the group frame — the mono day rule and the card
+ * container the artboard puts every alert inside — so the screen reads as a
+ * stream waiting for its first entry rather than a page that stopped rendering
+ * after the header.
  */
 export default function AlertsScreen({ model }: { model: AlertsVM }) {
   return (
@@ -19,9 +25,13 @@ export default function AlertsScreen({ model }: { model: AlertsVM }) {
       <KaiDigestHeader caption={model.generatedLabel} newCount={model.newCount} />
 
       {model.groups.length === 0 ? (
-        <p className={styles.empty}>
-          No alerts yet. Kai writes here the moment one of your watches has something to say.
-        </p>
+        <section className={styles.group}>
+          <DayRule>TODAY</DayRule>
+          <EmptyNote>
+            Your Kai alerts land here each morning. Nothing has fired yet — arm a watch and the
+            first one shows up in this stream.
+          </EmptyNote>
+        </section>
       ) : (
         model.groups.map((group, i) => (
           <section

@@ -4,30 +4,22 @@ import WatchHeader from "./WatchHeader";
 import WatchDestinations from "./WatchDestinations";
 import GettingClosePanel from "./GettingClosePanel";
 import SetupTeaserRow from "./SetupTeaserRow";
-import styles from "./WatchScreen.module.css";
 
 /**
  * "06 Watch", translated from the artboard.
  *
- * Pure presentation. When no setup is close to firing the panel and the teaser
- * are simply absent — an empty watch list is a real state, and it says so
- * rather than showing a hollow dial.
+ * Pure presentation. The "Getting close" panel always draws its frame — it owns
+ * both its live and its empty state (see GettingClosePanel) — so the screen has
+ * the artboard's shape whether or not a setup is near trigger. The teaser row
+ * below it is a SECOND setup, so with nothing armed there is genuinely nothing
+ * for it to tease and it stays absent.
  */
 export default function WatchScreen({ model }: { model: WatchOverviewVM }) {
   return (
     <AppShell>
       <WatchHeader active="overview" closeHref="/v3" tabGap="16px" />
       <WatchDestinations rows={model.destinations} />
-
-      {model.closest ? (
-        <GettingClosePanel setup={model.closest} />
-      ) : (
-        <p className={styles.empty}>
-          Nothing is close to triggering right now. Kai is watching — you&rsquo;ll hear the moment
-          that changes.
-        </p>
-      )}
-
+      <GettingClosePanel setup={model.closest} />
       {model.next ? <SetupTeaserRow setup={model.next} /> : null}
     </AppShell>
   );

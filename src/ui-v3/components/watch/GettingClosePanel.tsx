@@ -13,8 +13,27 @@ import styles from "./GettingClosePanel.module.css";
  * evaluated, not predicted — so that slot carries the real fact it sits next
  * to: when the setup was last evaluated. The typography is unchanged; only the
  * claim is. If the setup has never been evaluated the footer is omitted.
+ *
+ * `setup` is null when nothing is near a trigger — the normal state on a member
+ * with no armed setups. The panel keeps its eyebrow and its box and says so,
+ * rather than the screen ending after the destination rows: an empty region that
+ * still holds its shape reads as "nothing yet", an absent one reads as broken.
+ * The gradient wash and accent border belong to a LIVE setup, so the empty box
+ * wears the neutral flat-card treatment instead.
  */
-export default function GettingClosePanel({ setup }: { setup: SetupProgressVM }) {
+export default function GettingClosePanel({ setup }: { setup: SetupProgressVM | null }) {
+  if (!setup) {
+    return (
+      <div className={`${styles.panel} ${styles.panelEmpty}`}>
+        <div className={styles.eyebrow}>Getting close</div>
+        <p className={styles.emptyLine}>
+          No setups near trigger right now. Kai is watching — you&rsquo;ll hear the moment that
+          changes.
+        </p>
+      </div>
+    );
+  }
+
   const panel = (
     <>
       <div className={styles.eyebrow}>Getting close</div>
