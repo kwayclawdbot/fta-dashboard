@@ -1,0 +1,220 @@
+/*
+ * /v3/watch/list — the member's board.
+ *
+ * Every value here already exists in the grammar. The row is the flat card
+ * (§5) at radius-12 with the screener row's 9/11 padding; the caption is the
+ * destination row's 10.5px --text-faint line; price and change are the
+ * screener's mono columns. Nothing new is introduced except the two regions
+ * flagged in WatchlistBoard.tsx (the input, the remove glyph), and both are
+ * drawn from existing containers rather than as new objects.
+ */
+
+/*
+ * The step a section that opens with an eyebrow takes (§2). The tab rail above
+ * is the previous section, so without this the eyebrow sits on the rail's
+ * baseline instead of opening a region.
+ */
+.section {
+  margin-top: var(--space-16);
+}
+
+/* ── add region ───────────────────────────────────────────────────────────── */
+
+.addRegion {
+  margin-top: var(--space-10);
+}
+
+/* The screener's "+ Filter" chip, doing the same job on a different rail. */
+.addChip {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-600);
+  padding: var(--space-6) var(--space-11);
+  border-radius: var(--radius-16);
+  white-space: nowrap;
+}
+
+/*
+ * FLAGGED: no artboard draws a text field. This is the feed composer's flat
+ * card (radius-14, 11/13 padding) with the input carrying no chrome of its own,
+ * so the field reads as the same object as every other container on the screen.
+ */
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-11) var(--space-13);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-family: inherit;
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+  font-weight: var(--fw-500);
+}
+
+.dismiss,
+.remove {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--text-faint);
+  font-family: inherit;
+  font-size: var(--fs-11);
+  line-height: var(--lh-1);
+}
+
+.remove {
+  flex: 0 0 auto;
+  padding: var(--space-6);
+  margin-inline-end: calc(-1 * var(--space-4));
+}
+
+.remove:disabled,
+.hit:disabled {
+  opacity: 0.5;
+}
+
+/* Suggestions — the same flat rows the list below uses, one step tighter. */
+.hits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.hit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  width: 100%;
+  text-align: start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-8) var(--space-11);
+  font-family: inherit;
+}
+
+.hitCopy {
+  flex: 1;
+  min-width: 0;
+}
+
+.hitName {
+  display: block;
+  font-size: var(--fs-10-5);
+  color: var(--text-faint);
+  margin-top: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The one accent role this region gets (§4.4): the primary action's mark. */
+.hitMark {
+  color: var(--accent);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-700);
+}
+
+/* A failed write is reported, never swallowed into a list that lies. */
+.failed {
+  margin-top: var(--space-10);
+  font-size: var(--fs-11);
+  color: var(--negative);
+}
+
+/* ── the board ────────────────────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-9) var(--space-11);
+}
+
+/*
+ * The row's tap target. It is a sibling of the remove button rather than its
+ * parent, because a button inside an anchor is not a thing a browser can
+ * resolve — the whole row still reads as one card, which is the artboards'
+ * shape.
+ */
+.face {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.symbol {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.caption {
+  display: block;
+  font-size: var(--fs-10-5);
+  color: var(--text-faint);
+  margin-top: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10-5);
+  color: var(--text);
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.change {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--positive);
+  width: 46px;
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.changeDown {
+  color: var(--negative);
+}

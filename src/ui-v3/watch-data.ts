@@ -1,6 +1,12 @@
 import "server-only";
 
-import { getRequestClient, getRequestProfile, getRequestUser } from "@/lib/supabase/rsc";
+import {
+  getRequestClient,
+  getRequestProfile,
+  getRequestTierState,
+  getRequestUser,
+} from "@/lib/supabase/rsc";
+import { effectiveClubTier } from "@/lib/tier";
 import { getCachedStanceShifts } from "@/lib/club/club-cache";
 import { WATCH_STATE_META, SETUP_STATE_META, readSetupLevels } from "@/lib/alerts/watch-ui";
 import { SETUP_LIFECYCLE_THRESHOLDS } from "@/lib/alerts/setup-lifecycle";
@@ -95,6 +101,121 @@ export interface WatchOverviewVM {
   destinations: WatchDestinationVM[];
   closest: SetupProgressVM | null;
   next: SetupTeaserVM | null;
+}
+
+/* ── view models: the four destinations behind "06 Watch" ─────────────────────
+ *
+ * NO ARTBOARD EXISTS for any of these four screens. They are composed strictly
+ * from the grammar's existing primitives (GRAMMAR §9) — SectionEyebrow, the flat
+ * list row, TickerTile, EmptyNote, SetupTeaserRow — and every field below is a
+ * real column, view or RPC. Where a source genuinely does not exist (the
+ * earnings feed) the model says so instead of carrying a shape it cannot fill.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** One symbol on the member's own board (`family_watchlist`). */
+export interface WatchlistRowVM {
+  /** `family_watchlist.id` — the row the remove affordance deletes. */
+  id: string;
+  ticker: string;
+  name: string | null;
+  /** Last stored close from `screener_metrics`; null when the symbol has none. */
+  priceLabel: string | null;
+  changePct: number | null;
+  /**
+   * Distinct members watching, all-time (`ticker_intel_snapshots.watchers`).
+   * Null when there is no snapshot row OR when the effective Club tier is free —
+   * club intel is a Club entitlement, and this screen honours the same wall the
+   * /api/club reads do rather than routing around it.
+   */
+  watchers: number | null;
+  /**
+   * False = the row is PRESERVED but no longer monitored, which is what the
+   * free-tier active cap does (migration 144). It is a real state of the row,
+   * so the screen shows it rather than implying everything is being watched.
+   */
+  monitored: boolean;
+  href: string;
+}
+
+export interface WatchlistVM {
+  source: "live" | "fixtures";
+  /**
+   * The family the rows belong to. The add/remove affordance writes under RLS
+   * as the member, so it needs the id it is allowed to write; null means the
+   * screen renders read-only (no family, or the fixtures path).
+   */
+  familyId: string | null;
+  /** Who is adding. Stored as the row's champion, the way the old board does. */
+  viewerId: string | null;
+  rows: WatchlistRowVM[];
+}
+
+/** One armed `alert_rules` row and its evaluated `watch_current_state`. */
+export interface KaiWatchRuleVM {
+  id: string;
+  ticker: string | null;
+  /** The rule's own stored human summary, computed at create time. */
+  label: string;
+  /** The rule's condition family ("PRICE", "VOLUME", "52W"…). */
+  kindLabel: string;
+  /** WATCH_STATE_META label — null when the crons have never recorded a state. */
+  stateLabel: string | null;
+  /** near_trigger / triggered: the "look now" states. */
+  stateLive: boolean;
+  /** Real `last_checked_at` freshness; null when never evaluated. */
+  checkedLabel: string | null;
+  href: string | null;
+}
+
+export interface KaiWatchVM {
+  source: "live" | "fixtures";
+  rules: KaiWatchRuleVM[];
+  /** Live `alert_setups`, reusing the overview's teaser shape. */
+  setups: SetupTeaserVM[];
+}
+
+export interface EarningsRowVM {
+  ticker: string;
+  name: string | null;
+  /** "Before open" / "After close" — never guessed. */
+  session: string | null;
+  href: string;
+}
+
+export interface EarningsDayVM {
+  day: string;
+  rows: EarningsRowVM[];
+}
+
+export interface EarningsVM {
+  source: "live" | "fixtures";
+  /** How many of the member's symbols the calendar would be scoped to. */
+  symbols: number | null;
+  /**
+   * ALWAYS EMPTY TODAY. There is no earnings-date source in this application:
+   * no earnings table or column in any migration, no earnings call on the
+   * Polygon client, and no ingest route in this repo. The shape is declared so
+   * the screen is ready for a feed, and `getWatchEarnings()` refuses to
+   * manufacture dates in the meantime.
+   */
+  days: EarningsDayVM[];
+}
+
+/** A ticker the club changed its mind about, from `get_stance_shifts`. */
+export interface OpinionChangeVM {
+  ticker: string;
+  /** Members who moved their stance inside the window. */
+  shifts: number;
+  /** Net stance NOW: positive = more bulls than bears. Zero = evenly split. */
+  net: number;
+  href: string;
+}
+
+export interface OpinionChangesVM {
+  source: "live" | "fixtures";
+  /** The window the RPC was asked for, so the screen can name it honestly. */
+  hours: number;
+  rows: OpinionChangeVM[];
 }
 
 /* ── view model: 18 Kai Alerts ────────────────────────────────────────────── */
@@ -502,19 +623,53 @@ function buildChart(
 
 const FIXTURE_SETUP_ID = "fixture-nvda-bullish-break";
 
+/**
+ * Where the four destination rows go. Declared once because the fixtures path
+ * and the live path must send a visitor to the SAME screen — a row that is a
+ * link for an anonymous visitor and inert for a member would be the exact
+ * "collapses once you log in" failure these screens exist to fix.
+ */
+const WATCH_DEST_HREF = {
+  watchlist: "/v3/watch/list",
+  kaiWatch: "/v3/watch/setups",
+  earnings: "/v3/watch/earnings",
+  changes: "/v3/watch/changes",
+} as const;
+
+/** A ticker's own screen. Owned by another lane; the link resolves at merge. */
+const tickerHref = (ticker: string) => `/v3/ticker/${ticker.toUpperCase()}`;
+
 function fixtureOverview(): WatchOverviewVM {
   return {
     source: "fixtures",
     destinations: [
-      { glyph: "📈", title: "My Watchlist", caption: "28 symbols", badge: null, href: null },
-      { glyph: "🐋", title: "Kai Watch", caption: "6 active watches", badge: 2, href: null },
-      { glyph: "🗓", title: "Earnings Calendar", caption: null, badge: null, href: null },
+      {
+        glyph: "📈",
+        title: "My Watchlist",
+        caption: "28 symbols",
+        badge: null,
+        href: WATCH_DEST_HREF.watchlist,
+      },
+      {
+        glyph: "🐋",
+        title: "Kai Watch",
+        caption: "6 active watches",
+        badge: 2,
+        href: WATCH_DEST_HREF.kaiWatch,
+      },
+      {
+        glyph: "🗓",
+        title: "Earnings Calendar",
+        caption: null,
+        badge: null,
+        href: WATCH_DEST_HREF.earnings,
+      },
       {
         glyph: "🔁",
         title: "Opinion Changes",
         caption: "4 tickers shifted today",
         badge: null,
-        href: null,
+        href: WATCH_DEST_HREF.changes,
       },
     ],
     closest: {
@@ -714,23 +869,26 @@ export async function getWatchOverview(): Promise<WatchOverviewVM> {
       title: "My Watchlist",
       caption: watchlistCount === null ? null : `${watchlistCount} symbols`,
       badge: null,
-      href: null,
+      href: WATCH_DEST_HREF.watchlist,
     },
     {
       glyph: "🐋",
       title: "Kai Watch",
       caption: rules.length > 0 ? `${rules.length} active watches` : null,
       badge: liveWatches > 0 ? liveWatches : null,
-      href: null,
+      href: WATCH_DEST_HREF.kaiWatch,
     },
     {
-      // No earnings-date source exists anywhere in the app (the plan records it
-      // as sourceless), so this row carries no count rather than a fake one.
+      // The artboard's caption here is "This week: 17 companies". No earnings
+      // source exists in this application — no table, no column, no Polygon
+      // call, no ingest route (see EarningsVM) — so the row keeps its
+      // destination and drops the count. A fabricated "this week" would be the
+      // one lie on the screen, and it would be the lie a member acts on.
       glyph: "🗓",
       title: "Earnings Calendar",
       caption: null,
       badge: null,
-      href: null,
+      href: WATCH_DEST_HREF.earnings,
     },
     {
       glyph: "🔁",
@@ -740,7 +898,7 @@ export async function getWatchOverview(): Promise<WatchOverviewVM> {
           ? `${shifts.length} ticker${shifts.length === 1 ? "" : "s"} shifted today`
           : null,
       badge: null,
-      href: null,
+      href: WATCH_DEST_HREF.changes,
     },
   ];
 
@@ -1120,5 +1278,432 @@ export async function getWatchSetup(id: string): Promise<SetupDetailVM | null> {
             100
           ).toFixed(1)}%`
         : null,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * THE FOUR DESTINATIONS BEHIND "06 Watch"
+ *
+ * Unmocked screens (GRAMMAR §9). The rule governing every adapter below is the
+ * one the mocked screens already follow: a field with no real source returns
+ * null and the component omits the element. Nothing here derives a number the
+ * database cannot show its working for.
+ * ═════════════════════════════════════════════════════════════════════════════ */
+
+interface WatchlistItemRow {
+  id: string;
+  ticker: string;
+  company_name: string | null;
+  wl_active: boolean | null;
+  created_at: string;
+}
+
+interface QuoteRow {
+  ticker: string;
+  name: string | null;
+  price: number | null;
+  chg_1d: number | null;
+}
+
+/** Latest stored close + day change for a set of symbols. */
+async function readQuotes(supabase: DB, tickers: string[]): Promise<Map<string, QuoteRow>> {
+  const out = new Map<string, QuoteRow>();
+  const unique = [...new Set(tickers.map((t) => t.toUpperCase()))].filter(Boolean);
+  if (unique.length === 0) return out;
+  const rows = await soft(
+    async () =>
+      ((
+        await supabase
+          .from("screener_metrics")
+          .select("ticker, name, price, chg_1d")
+          .in("ticker", unique)
+      ).data ?? []) as unknown as QuoteRow[],
+    [] as QuoteRow[]
+  );
+  for (const row of rows) out.set(row.ticker.toUpperCase(), row);
+  return out;
+}
+
+/**
+ * Distinct members watching each ticker, all-time.
+ *
+ * `ticker_intel_snapshots.watchers` (migration 141) is the ONE stored watcher
+ * tally in the application — there is no per-request count to compute — and
+ * club intel is a Club entitlement, so a free/lapsed family gets nulls rather
+ * than the number. That is the wall /api/club/intel already enforces; this
+ * screen honours it instead of reading around it.
+ */
+async function readWatchers(
+  supabase: DB,
+  tickers: string[],
+  familyId: string | null
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const unique = [...new Set(tickers.map((t) => t.toUpperCase()))].filter(Boolean);
+  if (unique.length === 0) return out;
+
+  const { tier, clubLapsed } = await getRequestTierState(familyId);
+  if (effectiveClubTier(tier, clubLapsed) === "free") return out;
+
+  const rows = await soft(
+    async () =>
+      ((
+        await supabase
+          .from("ticker_intel_snapshots")
+          .select("ticker, watchers")
+          .in("ticker", unique)
+      ).data ?? []) as unknown as { ticker: string; watchers: number | null }[],
+    [] as { ticker: string; watchers: number | null }[]
+  );
+  for (const row of rows) {
+    const n = num(row.watchers);
+    if (n !== null && n > 0) out.set(row.ticker.toUpperCase(), n);
+  }
+  return out;
+}
+
+/* ── /v3/watch/list — the WATCHLIST tab ───────────────────────────────────── */
+
+function fixtureWatchlist(): WatchlistVM {
+  // Reachable only with no session, exactly like fixtureOverview() — never a
+  // fallback for a member whose read came back empty.
+  return {
+    source: "fixtures",
+    familyId: null,
+    viewerId: null,
+    rows: [
+      {
+        id: "fx-wl-1",
+        ticker: "NVDA",
+        name: "NVIDIA Corporation",
+        priceLabel: "173.42",
+        changePct: 4.7,
+        watchers: 214,
+        monitored: true,
+        href: tickerHref("NVDA"),
+      },
+      {
+        id: "fx-wl-2",
+        ticker: "TSLA",
+        name: "Tesla, Inc.",
+        priceLabel: "241.05",
+        changePct: -1.2,
+        watchers: 186,
+        monitored: true,
+        href: tickerHref("TSLA"),
+      },
+      {
+        id: "fx-wl-3",
+        ticker: "AAPL",
+        name: "Apple Inc.",
+        priceLabel: "227.63",
+        changePct: 0.4,
+        watchers: 173,
+        monitored: true,
+        href: tickerHref("AAPL"),
+      },
+    ],
+  };
+}
+
+/**
+ * The member's own board.
+ *
+ * `family_watchlist` is FAMILY-scoped, which is what "my watchlist" means in
+ * this product — the same rows the Watch hub already counts, the /watchlist
+ * board renders and the alert crons monitor. Newest first, because the add
+ * affordance on this screen puts a symbol at the top and it has to be visible.
+ */
+export async function getWatchlist(): Promise<WatchlistVM> {
+  const user = await getRequestUser();
+  if (!user) return fixtureWatchlist();
+
+  const [supabase, profile] = await Promise.all([getRequestClient(), getRequestProfile()]);
+  const familyId = (profile?.family_id as string | null) ?? null;
+  if (!familyId) return { source: "live", familyId: null, viewerId: user.id, rows: [] };
+
+  const items = await soft(
+    async () =>
+      ((
+        await supabase
+          .from("family_watchlist")
+          .select("id, ticker, company_name, wl_active, created_at")
+          .eq("family_id", familyId)
+          .order("created_at", { ascending: false })
+          .limit(120)
+      ).data ?? []) as unknown as WatchlistItemRow[],
+    [] as WatchlistItemRow[]
+  );
+
+  const tickers = items.map((i) => (i.ticker ?? "").toUpperCase()).filter(Boolean);
+  const [quotes, watchers] = await Promise.all([
+    readQuotes(supabase, tickers),
+    readWatchers(supabase, tickers, familyId),
+  ]);
+
+  return {
+    source: "live",
+    familyId,
+    viewerId: user.id,
+    rows: items
+      .filter((item) => Boolean(item.ticker))
+      .map((item) => {
+        const ticker = item.ticker.toUpperCase();
+        const quote = quotes.get(ticker) ?? null;
+        const price = num(quote?.price);
+        return {
+          id: item.id,
+          ticker,
+          // The stored company name is what the member picked when they added
+          // it; the screener's name is the reference. Prefer the stored one.
+          name: (item.company_name ?? "").trim() || quote?.name || null,
+          priceLabel: price === null ? null : money(price),
+          changePct: num(quote?.chg_1d),
+          watchers: watchers.get(ticker) ?? null,
+          monitored: item.wl_active !== false,
+          href: tickerHref(ticker),
+        };
+      }),
+  };
+}
+
+/* ── /v3/watch/setups — the KAI WATCH tab ─────────────────────────────────── */
+
+/** The condition family an `alert_rules` row belongs to. */
+const RULE_KIND_LABEL: Record<string, string> = {
+  price_cross: "PRICE",
+  pct_move: "MOVE",
+  vol_surge: "VOLUME",
+  rsi_cross: "RSI",
+  ema_cross: "EMA",
+  w52_break: "52W",
+  preset_match: "SCREEN",
+};
+
+function fixtureKaiWatch(): KaiWatchVM {
+  return {
+    source: "fixtures",
+    rules: [
+      {
+        id: "fx-rule-1",
+        ticker: "NVDA",
+        label: "NVDA crosses above 176",
+        kindLabel: RULE_KIND_LABEL.price_cross,
+        stateLabel: WATCH_STATE_META.near_trigger.label,
+        stateLive: true,
+        checkedLabel: "12m ago",
+        href: tickerHref("NVDA"),
+      },
+      {
+        id: "fx-rule-2",
+        ticker: "SMCI",
+        label: "SMCI volume surge above 1.5x average",
+        kindLabel: RULE_KIND_LABEL.vol_surge,
+        stateLabel: WATCH_STATE_META.building.label,
+        stateLive: false,
+        checkedLabel: "12m ago",
+        href: tickerHref("SMCI"),
+      },
+      {
+        id: "fx-rule-3",
+        ticker: "TSLA",
+        label: "TSLA holding above 230",
+        kindLabel: RULE_KIND_LABEL.price_cross,
+        stateLabel: WATCH_STATE_META.watching.label,
+        stateLive: false,
+        checkedLabel: "12m ago",
+        href: tickerHref("TSLA"),
+      },
+    ],
+    setups: [
+      {
+        ticker: "TSLA",
+        title: "TSLA earnings setup",
+        met: 1,
+        total: 3,
+        horizonLabel: "3 days",
+        href: null,
+      },
+    ],
+  };
+}
+
+/**
+ * Everything Kai is currently watching FOR this member, plus the live setups
+ * Kai has published to the club.
+ *
+ * Two genuinely different objects, so two sections rather than one merged list:
+ * an `alert_rules` row is the member's OWN armed condition (RLS: `user_id =
+ * auth.uid()`), while an `alert_setups` row is a club-wide published setup every
+ * member can read. Collapsing them would claim the member armed things they
+ * never armed.
+ *
+ * The pipeline is dry in this environment — no cron has written `watch_states` —
+ * so `stateLabel` comes back null on most rows and the screen says "not checked
+ * yet" rather than defaulting every watch to a flattering "Building".
+ */
+export async function getKaiWatch(): Promise<KaiWatchVM> {
+  const user = await getRequestUser();
+  if (!user) return fixtureKaiWatch();
+
+  const supabase = await getRequestClient();
+
+  const [rules, setups] = await Promise.all([
+    readActiveRules(supabase, null),
+    soft(
+      async () =>
+        ((
+          await supabase
+            .from("alert_setups")
+            .select(
+              "id, ticker, direction, thesis, entry, levels, snapshot_price, state, state_entered_at, expires_at, created_at"
+            )
+            .in("state", ["waiting", "confirmed"])
+            .order("created_at", { ascending: false })
+            .limit(20)
+        ).data ?? []) as unknown as SetupRow[],
+      [] as SetupRow[]
+    ),
+  ]);
+
+  const [states, metrics] = await Promise.all([
+    readRuleStates(
+      supabase,
+      rules.map((r) => r.id)
+    ),
+    readMetrics(
+      supabase,
+      setups.map((s) => s.ticker)
+    ),
+  ]);
+
+  return {
+    source: "live",
+    rules: rules.map((rule) => {
+      const state = states.get(rule.id) ?? null;
+      const meta = state ? (WATCH_STATE_META[state.state as WatchState] ?? null) : null;
+      const ticker = (rule.ticker ?? "").toUpperCase() || null;
+      return {
+        id: rule.id,
+        ticker,
+        // A rule always stores a human summary at create time; one that somehow
+        // has none falls back to its condition family, never to blank.
+        label: (rule.label ?? "").trim() || rule.kind.replace(/_/g, " "),
+        kindLabel: RULE_KIND_LABEL[rule.kind] ?? rule.kind.replace(/_/g, " ").toUpperCase(),
+        stateLabel: meta?.label ?? null,
+        stateLive: meta?.live ?? false,
+        checkedLabel: relAge(rule.last_checked_at),
+        // preset_match spans the whole universe and carries no ticker, so it
+        // has nowhere to link.
+        href: ticker ? tickerHref(ticker) : null,
+      };
+    }),
+    setups: setups.map((setup) => {
+      const conditions = setupConditions(setup, metrics.get(setup.ticker.toUpperCase()) ?? null);
+      return {
+        ticker: setup.ticker.toUpperCase(),
+        title: setupTitle(setup),
+        met: conditions.filter((c) => c.met).length,
+        total: conditions.length,
+        horizonLabel: relHorizon(setup.expires_at),
+        href: `/v3/watch/alerts/${setup.id}`,
+      };
+    }),
+  };
+}
+
+/* ── /v3/watch/earnings — the Earnings Calendar ───────────────────────────── */
+
+/**
+ * THE EARNINGS SOURCE DOES NOT EXIST. This was investigated before the screen
+ * was built and the verdict is recorded here so the next lane does not repeat
+ * the search:
+ *
+ *   • No migration declares an earnings table, view or column. `screener_metrics`
+ *     carries price / volume / technical columns only — there is no report date
+ *     anywhere in the schema.
+ *   • `src/lib/market/polygon.ts` exposes bars, snapshots, ticker details and
+ *     news. It has no earnings, financials or calendar call.
+ *   • The `cron-earnings-ingest` Railway service has no route or worker in this
+ *     repository — nothing here reads or writes what it would produce.
+ *   • The news/ticker-event cron classifies headlines; it carries no scheduled
+ *     report date.
+ *
+ * So this adapter returns the symbols the calendar WOULD be scoped to, and no
+ * days. It will not derive a date from a last-reported quarter and it will not
+ * borrow "earnings in 3 days" from an alert's prose: a wrong earnings date is
+ * the most expensive number on this screen, because it is the one a member
+ * sizes a position against.
+ */
+export async function getWatchEarnings(): Promise<EarningsVM> {
+  const user = await getRequestUser();
+  if (!user) return { source: "fixtures", symbols: 28, days: [] };
+
+  const [supabase, profile] = await Promise.all([getRequestClient(), getRequestProfile()]);
+  const familyId = (profile?.family_id as string | null) ?? null;
+
+  const symbols = familyId
+    ? await soft(
+        async () =>
+          (
+            await supabase
+              .from("family_watchlist")
+              .select("id", { count: "exact", head: true })
+              .eq("family_id", familyId)
+          ).count ?? null,
+        null as number | null
+      )
+    : null;
+
+  return { source: "live", symbols, days: [] };
+}
+
+/* ── /v3/watch/changes — Opinion Changes ──────────────────────────────────── */
+
+const STANCE_WINDOW_HOURS = 24;
+
+function fixtureOpinionChanges(): OpinionChangesVM {
+  return {
+    source: "fixtures",
+    hours: STANCE_WINDOW_HOURS,
+    rows: [
+      { ticker: "NVDA", shifts: 14, net: 9, href: tickerHref("NVDA") },
+      { ticker: "TSLA", shifts: 11, net: -6, href: tickerHref("TSLA") },
+      { ticker: "RIVN", shifts: 7, net: -7, href: tickerHref("RIVN") },
+      { ticker: "PLTR", shifts: 4, net: 0, href: tickerHref("PLTR") },
+    ],
+  };
+}
+
+/**
+ * Tickers the club changed its mind about in the last 24 hours.
+ *
+ * `get_stance_shifts` (migration 195) is aggregate-only by construction: it
+ * counts `ticker_sentiment` rows UPDATED after they were created, and sums the
+ * current votes. So a row here says how many members moved and which way the
+ * club leans NOW — and it can never say who moved. The direction shown is the
+ * club's present stance, not a per-member flip, and the screen words it that
+ * way.
+ */
+export async function getOpinionChanges(): Promise<OpinionChangesVM> {
+  const user = await getRequestUser();
+  if (!user) return fixtureOpinionChanges();
+
+  const shifts = await soft(
+    () => getCachedStanceShifts(STANCE_WINDOW_HOURS),
+    [] as { ticker: string; shifts: number; net_now: number }[]
+  );
+
+  return {
+    source: "live",
+    hours: STANCE_WINDOW_HOURS,
+    rows: shifts
+      .filter((s) => Boolean(s.ticker))
+      .map((s) => ({
+        ticker: s.ticker.toUpperCase(),
+        shifts: num(Number(s.shifts)) ?? 0,
+        net: num(Number(s.net_now)) ?? 0,
+        href: tickerHref(s.ticker),
+      })),
   };
 }

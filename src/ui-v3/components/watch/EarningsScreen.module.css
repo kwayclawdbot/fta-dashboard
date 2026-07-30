@@ -1,0 +1,58 @@
+/*
+ * /v3/watch/earnings.
+ *
+ * The day/row shape is declared even though nothing fills it today, so the
+ * screen needs no new CSS the moment a feed lands. Values are the alert
+ * stream's group step and the screener row's flat card — no new object.
+ */
+
+/* The step a section opening with an eyebrow takes (§2). */
+.section {
+  margin-top: var(--space-16);
+}
+
+.day {
+  margin-top: var(--space-14);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  margin-top: var(--space-8);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-9) var(--space-11);
+  text-decoration: none;
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.symbol {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.caption {
+  display: block;
+  font-size: var(--fs-10-5);
+  color: var(--text-faint);
+  margin-top: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+}
