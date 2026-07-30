@@ -1,0 +1,51 @@
+/*
+ * Translated from "10 Login" (the two pills in the form) and "11 Pricing"
+ * (the pinned CTA). Both boards draw `padding: 13px 0` / `14px 0` on a
+ * radius-24 pill with an 800-weight label.
+ */
+
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-9);
+  width: 100%;
+  border-radius: var(--radius-24);
+  padding: var(--space-13) 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-800);
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.pill:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Board 11's pinned CTA sits 0.5px larger and a pixel taller in its bar. */
+.bar {
+  padding: var(--space-14) 0;
+  font-size: var(--fs-14-5);
+}
+
+.accent {
+  background: var(--accent);
+  color: var(--accent-on);
+  box-shadow: var(--shadow-3);
+}
+
+/*
+ * The provider button. Board 10 sets it a weight lighter than the primary —
+ * the difference between the action and an alternative route to it.
+ */
+.surface {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  font-size: var(--fs-13-5);
+  font-weight: var(--fw-600);
+  box-shadow: none;
+}

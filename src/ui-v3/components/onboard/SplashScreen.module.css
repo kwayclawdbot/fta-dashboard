@@ -1,0 +1,118 @@
+/*
+ * Translated from [data-screen-label="09 Splash"].
+ *
+ * The board paints the whole screen with a radial wash and centres the lockup,
+ * so this is one of the two v3 screens that owns its own background (the wash
+ * lives in base.css as --wash-splash, like every other one-off wash).
+ */
+
+.screen {
+  position: relative;
+  flex: 1;
+  min-height: 100dvh;
+  background: var(--wash-splash);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/*
+ * 44px display. There is no --fs-44: the extractor only emits a size the mockups
+ * use more than once, and this is the only 44px type in all 23 boards. Same
+ * reason .02em is written out here and in TopBarV3 — a single-use value stays a
+ * literal rather than inventing a token the generator would drop on the next
+ * regeneration.
+ */
+.wordmark {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 44px;
+  font-weight: var(--fw-800);
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: var(--lh-1);
+  margin-top: 34px;
+}
+
+/*
+ * "Club" as a wide-tracked mono eyebrow. The .42em of trailing space after the
+ * last letter is what the artboard's `padding-left:.42em` cancels, so the word
+ * stays optically centred under the wordmark.
+ */
+.club {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-600);
+  color: var(--accent-strong);
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  padding-left: 0.42em;
+  margin-top: var(--space-8);
+}
+
+/* The script voice's first outing on a v3 screen. */
+.tagline {
+  font-family: var(--font-script);
+  font-size: var(--fs-20);
+  color: var(--text-dim);
+  margin-top: 22px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 56px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-14);
+}
+
+.track {
+  width: 120px;
+  height: 3px;
+  border-radius: var(--radius-2);
+  background: var(--border);
+  overflow: hidden;
+}
+
+/*
+ * The bar runs for exactly the hold in SplashScreen.tsx, so it is showing the
+ * real wait rather than a fixed 60%. `forwards` holds it full at the moment the
+ * route changes, which is what stops it snapping back mid-navigation.
+ */
+.fill {
+  height: 100%;
+  border-radius: var(--radius-2);
+  background: var(--accent);
+  transform-origin: left;
+  animation: splashFill 1400ms ease-out forwards;
+}
+
+@keyframes splashFill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    animation: none;
+    width: 100%;
+  }
+}
+
+.status {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}

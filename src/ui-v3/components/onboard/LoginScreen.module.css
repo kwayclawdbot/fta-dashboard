@@ -1,0 +1,142 @@
+/*
+ * Translated from [data-screen-label="10 Login"].
+ *
+ * The board is three bands: a 230px washed header, the form well at 26px sides,
+ * and the legal footer. It runs its own padding rather than the shell's 18px
+ * well, so the route renders it with AppShell padding="bleed".
+ */
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.head {
+  height: 230px;
+  flex: 0 0 auto;
+  background: var(--wash-authhead);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--fs-30);
+  font-weight: var(--fw-800);
+  color: var(--text);
+  text-transform: uppercase;
+  line-height: var(--lh-1);
+  margin-top: var(--space-16);
+}
+
+/* "Club" rides the wordmark at half its size, in the strong accent. */
+.wordmarkClub {
+  font-size: var(--fs-15);
+  color: var(--accent-strong);
+}
+
+.body {
+  flex: 1;
+  padding: var(--space-8) 26px 0;
+}
+
+.greeting {
+  font-size: var(--fs-24);
+  font-weight: var(--fw-700);
+  color: var(--text);
+  letter-spacing: var(--ls-n-02em);
+}
+
+.subtitle {
+  font-size: var(--fs-13-5);
+  color: var(--text-dim);
+  margin-top: var(--space-5);
+  line-height: var(--lh-1-5);
+}
+
+.providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  margin-top: 24px;
+}
+
+/*
+ * Google's own blue, on the provider button. THEME-LITERAL by definition: it is
+ * another company's brand colour, so it does not flip with our themes and has no
+ * business being a semantic role.
+ */
+.googleG {
+  font-weight: var(--fw-800);
+  color: #4285f4;
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  margin: 20px 0;
+}
+
+.ruleLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.ruleLabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: var(--ls-16em);
+  color: var(--text-faint);
+}
+
+/*
+ * The board draws one field and a 12px gap to the button. Two fields share that
+ * same 12px, so the form is one evenly-spaced stack rather than a field, a gap,
+ * and a differently-sized gap.
+ */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.error {
+  font-size: var(--fs-12);
+  color: var(--negative);
+  line-height: var(--lh-1-5);
+}
+
+.join {
+  text-align: center;
+  font-size: var(--fs-12);
+  color: var(--text-dim);
+  margin-top: 18px;
+}
+
+.joinLink {
+  color: var(--accent-strong);
+  font-weight: var(--fw-700);
+  text-decoration: none;
+}
+
+/*
+ * The legal footer. The board sets this a step BELOW --text-faint (#4E4854 dark
+ * / #8A8178 light) and no token exists at that level — it is the only sub-faint
+ * text in all 23 boards. Rather than mint a role for one usage, it renders at
+ * --text-faint, which is the nearest real step. Recorded as a gap in
+ * DESIGN-GRAMMAR §10.
+ */
+.legal {
+  padding: 0 26px 28px;
+  text-align: center;
+  font-size: var(--fs-9-5);
+  color: var(--text-faint);
+  line-height: 1.6;
+}
