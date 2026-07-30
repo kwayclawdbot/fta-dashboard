@@ -1,0 +1,23 @@
+/*
+ * Circles grid.
+ *
+ * The artboard writes three rows of `justify-content: space-between` at 18px
+ * apart. One wrapping grid produces the identical result for any count and does
+ * not assume the list divides by three: three 110px columns, 18px row gap,
+ * space-between so a short last row still hugs the gutters.
+ */
+
+.rule {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  margin: var(--space-12) 0 0;
+  line-height: var(--lh-1-5);
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: var(--space-18);
+  margin-top: var(--space-16);
+}

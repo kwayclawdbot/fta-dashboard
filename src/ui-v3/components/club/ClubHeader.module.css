@@ -1,0 +1,73 @@
+/* Club section head — script mark, right slot, tab row. */
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* The script voice's first appearance: 34px, no tracking, line-height 1. */
+.wordmark {
+  font-family: var(--font-script);
+  font-size: var(--fs-34);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-9);
+}
+
+/* Artboard: width:34 + border:1 content-box → renders 36. */
+.circleBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.plus {
+  font-size: var(--fs-16);
+  font-weight: var(--fw-300);
+  line-height: var(--lh-1);
+}
+
+.cta {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-700);
+  padding: var(--space-7) var(--space-14);
+  border-radius: var(--radius-18);
+  white-space: nowrap;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-18);
+  margin-top: var(--space-14);
+  align-items: center;
+}
+
+.tabActive {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-06em);
+  padding: var(--space-5) var(--space-14);
+  border-radius: var(--radius-16);
+}
+
+.tabIdle {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--text-dim);
+  letter-spacing: var(--ls-04em);
+  text-decoration: none;
+}

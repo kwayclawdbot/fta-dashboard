@@ -1,0 +1,27 @@
+/*
+ * Club Feed layout. Every card supplies its own top margin (10px between cards,
+ * 16px before the composer), so this file only holds the head row and the
+ * Circles strip.
+ */
+
+.eyebrowRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: var(--space-16);
+}
+
+/* The artboard's feed "See all" is --text-dim — quieter than Home's accent one. */
+.seeAll {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.strip {
+  display: flex;
+  gap: var(--space-16);
+  margin-top: var(--space-12);
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+}

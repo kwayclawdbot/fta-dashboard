@@ -1,0 +1,334 @@
+/*
+ * Inside a Circle.
+ *
+ * Four bands: header, pinned thesis, thread, composer. The header and composer
+ * share a "chrome" ground (#111014 dark / #FBF8F2 light) that is one step off
+ * --bg and has no semantic token, so it is declared once on the column and
+ * inherited by both — the same technique GradientPanel uses for its washes.
+ */
+
+.viewport {
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+}
+
+.screen {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  --chrome: #111014;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .screen {
+  --chrome: #fbf8f2;
+}
+
+/* ── header ───────────────────────────────────────────────────────────────── */
+
+.header {
+  padding: var(--space-16) var(--space-16) var(--space-12);
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+  flex: 0 0 auto;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-11);
+}
+
+.back {
+  color: var(--text-muted);
+  font-size: var(--fs-16);
+  text-decoration: none;
+  line-height: var(--lh-1);
+}
+
+/*
+ * The header twin of the Circle bubble: same clock arc, thinner ring.
+ * Artboard: width:38 + padding:2 content-box → renders 42, disc 38.
+ */
+.crest {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  padding: var(--space-2);
+  background: conic-gradient(var(--arc) 0 var(--pct), var(--border) var(--pct) 100%);
+  flex: 0 0 auto;
+}
+
+.crestDisc {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  /* Punched out against the header's chrome, not the page --bg. */
+  border: 2px solid var(--chrome);
+  display: grid;
+  place-items: center;
+  color: var(--disc-fg);
+  font-weight: var(--fw-800);
+  font-size: var(--fs-15);
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--disc-fg) 14%, var(--disc-bg)),
+    var(--disc-bg) 70%
+  );
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-14-5);
+  font-weight: var(--fw-800);
+  color: var(--text);
+}
+
+.meta {
+  font-size: var(--fs-9-5);
+  color: var(--text-dim);
+  margin-top: var(--space-1);
+}
+
+.clock,
+.clockUrgent,
+.clockClosed {
+  font-family: var(--font-mono);
+}
+
+.clock {
+  color: var(--accent-strong);
+}
+
+.clockUrgent {
+  color: var(--negative);
+}
+
+.clockClosed {
+  color: var(--text-faint);
+}
+
+.headTools {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+  color: var(--text-dim);
+  font-size: var(--fs-14);
+}
+
+/* ── channel chips ────────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  gap: var(--space-7);
+  margin-top: var(--space-12);
+}
+
+.chipActive {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-800);
+  padding: var(--space-5) var(--space-12);
+  border-radius: var(--radius-14);
+  white-space: nowrap;
+}
+
+/* No channel exists behind these — they are stated, not offered. */
+.chipIdle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-600);
+  padding: var(--space-5) var(--space-12);
+  border-radius: var(--radius-14);
+  white-space: nowrap;
+}
+
+/* ── pinned thesis ────────────────────────────────────────────────────────── */
+
+.thesis {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  /* Theme-literal in the artboards: the same wash in both twins. */
+  background: rgba(255, 122, 26, 0.07);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-8) var(--space-16);
+  flex: 0 0 auto;
+}
+
+.pin {
+  font-size: var(--fs-11);
+}
+
+.thesisCopy {
+  flex: 1;
+  font-size: var(--fs-10-5);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thesisLabel {
+  color: var(--accent-strong);
+}
+
+.thesisChevron {
+  color: var(--text-faint);
+  font-size: var(--fs-11);
+}
+
+/* ── thread ───────────────────────────────────────────────────────────────── */
+
+.thread {
+  flex: 1;
+  padding: var(--space-14) var(--space-16) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+}
+
+.dayRow {
+  text-align: center;
+}
+
+.dayPill {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: var(--ls-14em);
+  color: var(--text-faint);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: var(--space-3) var(--space-11);
+  border-radius: var(--radius-10);
+}
+
+/* ── Kai row ──────────────────────────────────────────────────────────────── */
+
+.kai {
+  display: flex;
+  gap: var(--space-10);
+  align-items: center;
+  /* Theme-literal wash; the hairline and copy flip. */
+  background: rgba(91, 196, 240, 0.06);
+  border: 1px solid var(--kai-border);
+  border-radius: var(--radius-12);
+  padding: var(--space-9) var(--space-12);
+
+  --kai-border: #1e3050;
+  --kai-fg: #5bc4f0;
+  --kai-copy: #a9bed0;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .kai {
+  --kai-border: #b7d3e6;
+  --kai-fg: #0e86be;
+  --kai-copy: #43607a;
+}
+
+.kaiMark {
+  font-size: var(--fs-15);
+}
+
+.kaiCopy {
+  flex: 1;
+  font-size: var(--fs-11);
+  color: var(--kai-copy);
+  line-height: var(--lh-1-5);
+}
+
+.kaiName {
+  color: var(--kai-fg);
+}
+
+.kaiBull {
+  font-family: var(--font-mono);
+  color: var(--positive);
+}
+
+.kaiBear {
+  font-family: var(--font-mono);
+  color: var(--negative);
+}
+
+.kaiAuto {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  color: var(--text-faint);
+}
+
+/* ── composer ─────────────────────────────────────────────────────────────── */
+
+.composer {
+  /* 22px of home-indicator clearance, straight off the artboard. */
+  padding: var(--space-10) var(--space-14) 22px;
+  border-top: 1px solid var(--border);
+  background: var(--chrome);
+  flex: 0 0 auto;
+}
+
+.composerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+}
+
+/* Artboard: width:30 + border:1 content-box → renders 32 (the send button,
+ * which has no border, stays 30). */
+.composerBtn,
+.composerBtnAccent {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-13);
+  flex: 0 0 auto;
+}
+
+.composerBtnAccent {
+  color: var(--accent-strong);
+  font-size: var(--fs-15);
+}
+
+.composerField {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-20);
+  padding: var(--space-9) var(--space-14);
+  font-size: var(--fs-12-5);
+  color: var(--text-faint);
+}
+
+.composerSend {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-12);
+  flex: 0 0 auto;
+  color: var(--accent-on);
+  font-weight: var(--fw-800);
+}

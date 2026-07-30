@@ -1,0 +1,65 @@
+/*
+ * Kai's row. A flat card whose mark and name carry Kai's own cool blue — the one
+ * place on these screens that is neither accent nor the neutral ramp, because
+ * the artboards give the assistant its own identity colour.
+ *
+ * All three values flip between the themes and none has a semantic token, so
+ * they are declared here exactly as GradientPanel declares its washes.
+ */
+
+.row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-13);
+  margin-top: var(--space-10);
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+
+  --kai-bg: #0e1b2e;
+  --kai-border: #1e3050;
+  --kai-fg: #5bc4f0;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .row {
+  --kai-bg: #e4f1fa;
+  --kai-border: #b7d3e6;
+  --kai-fg: #0e86be;
+}
+
+/* Artboard: width:32 + border:1 content-box → renders 34. */
+.mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  background: var(--kai-bg);
+  border: 1px solid var(--kai-border);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-14);
+  flex: 0 0 auto;
+}
+
+.copy {
+  flex: 1;
+}
+
+.name {
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-700);
+  color: var(--kai-fg);
+}
+
+.detail {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  margin-top: var(--space-2);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10-5);
+  color: var(--accent-strong);
+  white-space: nowrap;
+}

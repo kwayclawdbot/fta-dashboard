@@ -1,0 +1,33 @@
+/* Composer prompt — a flat card (GRAMMAR §5) at radius 14, padding 11px 13px. */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-11);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-11) var(--space-13);
+  margin-top: var(--space-16);
+}
+
+.copy {
+  flex: 1;
+}
+
+.prompt {
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-600);
+  color: var(--text-muted);
+}
+
+.hint {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  margin-top: var(--space-1);
+}
+
+.tools {
+  color: var(--text-faint);
+  font-size: var(--fs-13);
+}
