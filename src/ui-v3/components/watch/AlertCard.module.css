@@ -1,0 +1,170 @@
+/*
+ * "18 Kai Alerts" — one alert.
+ *
+ * Three kinds are drawn and no others. Each is the same flat card with a 3px
+ * left rule and a tinted hairline in its own signal color:
+ *
+ *   buy      --positive   border #20503A dark / #96D4B4 light
+ *   sell     --negative   border #5A2A38 dark / #F0BFCB light
+ *   headsup  --gold       border --border   (the neutral hairline, both themes)
+ *
+ * The tinted borders are one-off mixes of the signal color with the surface, so
+ * they are declared here as theme-scoped properties rather than as tokens.
+ */
+
+.card {
+  --signal: var(--text-dim);
+  --signal-edge: var(--border);
+  --signal-wash: rgba(143, 136, 148, 0.14);
+  /* Text sitting ON a filled signal button: the artboard knocks it out in the
+     page ground (dark) and in the card ground (light). */
+  --signal-on: var(--bg);
+  /* The alert's own body copy is a notch brighter than --text-muted and a notch
+     softer than --text; the mockups use one dedicated value per theme. */
+  --alert-copy: #e8e2e4;
+
+  margin-top: var(--space-9);
+  background: var(--surface);
+  border: 1px solid var(--signal-edge);
+  border-left: 3px solid var(--signal);
+  border-radius: var(--radius-14);
+  padding: var(--space-13) var(--space-14);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .card {
+  --signal-on: var(--surface);
+  --alert-copy: #2e2925;
+}
+
+.buy {
+  --signal: var(--positive);
+  --signal-edge: #20503a;
+  --signal-wash: rgba(74, 227, 131, 0.14);
+}
+:global([data-ui="v3"][data-theme="light"]) .buy {
+  --signal-edge: #96d4b4;
+}
+
+.sell {
+  --signal: var(--negative);
+  --signal-edge: #5a2a38;
+  --signal-wash: rgba(255, 77, 109, 0.14);
+}
+:global([data-ui="v3"][data-theme="light"]) .sell {
+  --signal-edge: #f0bfcb;
+}
+
+.headsup {
+  --signal: var(--gold);
+  --signal-edge: var(--border);
+  --signal-wash: rgba(255, 194, 75, 0.14);
+}
+
+/* ── head ─────────────────────────────────────────────────────────────────── */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+}
+
+.kind {
+  background: var(--signal-wash);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: var(--fs-9-5);
+  font-weight: var(--fw-700);
+  letter-spacing: var(--ls-1em);
+  padding: var(--space-3) var(--space-9);
+  border-radius: var(--radius-8);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.time {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  color: var(--text-faint);
+}
+
+/* ── body ─────────────────────────────────────────────────────────────────── */
+
+.copy {
+  font-size: var(--fs-12-5);
+  color: var(--alert-copy);
+  line-height: var(--lh-1-5);
+  margin-top: var(--space-9);
+}
+
+/* The levels the artboard sets in mono inside the sentence. */
+.entry {
+  font-family: var(--font-mono);
+  color: var(--positive);
+}
+
+.invalid {
+  font-family: var(--font-mono);
+  color: var(--negative);
+}
+
+.figure {
+  font-family: var(--font-mono);
+  color: var(--signal);
+}
+
+/* ── evidence chips ───────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: var(--fs-9-5);
+  padding: var(--space-3) var(--space-8);
+  border-radius: var(--radius-10);
+}
+
+/* ── actions ──────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}
+
+.primary {
+  flex: 1;
+  background: var(--signal);
+  color: var(--signal-on);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-800);
+  padding: var(--space-8) 0;
+  border-radius: var(--radius-16);
+  text-align: center;
+  text-decoration: none;
+}
+
+.secondary {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  padding: var(--space-8) 0;
+  border-radius: var(--radius-16);
+  text-align: center;
+  text-decoration: none;
+}

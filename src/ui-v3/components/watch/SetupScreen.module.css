@@ -1,0 +1,129 @@
+/*
+ * "19 Alert Setup".
+ *
+ * This is the first artboard whose bottom slot is an ACTION BAR rather than the
+ * five-slot nav, so it cannot sit in AppShell (which always pins BottomNav).
+ * The column geometry below is copied from AppShell rather than imported,
+ * because AppShell is shared with three other lanes and is read-only here.
+ */
+
+.viewport {
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+}
+
+.screen {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.body {
+  padding: var(--space-18) var(--space-18) 0;
+  flex: 1;
+}
+
+/* ── header ───────────────────────────────────────────────────────────────── */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.back {
+  color: var(--text-muted);
+  font-size: var(--fs-16);
+  text-decoration: none;
+  line-height: var(--lh-1);
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-15);
+  font-weight: var(--fw-800);
+  color: var(--text);
+}
+
+.subtitle {
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+  margin-top: var(--space-1);
+}
+
+/*
+ * The status pill. It states the real met/total plus the setup's own lifecycle
+ * label, and takes the live tint only when the lifecycle state is actually live
+ * (confirmed / triggered) — a waiting setup is not painted as though it fired.
+ */
+.status {
+  background: rgba(143, 136, 148, 0.14);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-9-5);
+  font-weight: var(--fw-700);
+  letter-spacing: var(--ls-08em);
+  padding: var(--space-4) var(--space-10);
+  border-radius: var(--radius-10);
+  flex: 0 0 auto;
+}
+
+.statusLive {
+  background: rgba(74, 227, 131, 0.14);
+  color: var(--positive);
+}
+
+/* ── action bar ───────────────────────────────────────────────────────────── */
+
+.bar {
+  padding: var(--space-12) var(--space-18) 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: var(--space-10);
+}
+
+.arm {
+  flex: 1.4;
+  background: var(--accent);
+  /* Transparent rather than none, so the armed and idle states are the same
+     height — .armIdle adds a real hairline. */
+  border: 1px solid transparent;
+  border-radius: var(--radius-20);
+  padding: var(--space-12) 0;
+  text-align: center;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-800);
+  color: var(--accent-on);
+  box-shadow: var(--shadow-1);
+}
+
+.armIdle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.armBusy {
+  opacity: 0.6;
+}
+
+.empty {
+  margin-top: var(--space-14);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-14) var(--space-15);
+  font-size: var(--fs-12);
+  color: var(--text-dim);
+}

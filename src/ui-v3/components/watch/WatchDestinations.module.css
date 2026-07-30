@@ -1,0 +1,65 @@
+/*
+ * "06 Watch" — the four destination rows.
+ *
+ * Flat card (§5 of the grammar) at radius-13, which is the size class between a
+ * signal row (12) and a Top-in-the-Club card (14). The leading glyph is the
+ * artboard's own emoji, kept as text for the same reason the nav glyphs are.
+ */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-11);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-13);
+  padding: var(--space-12) var(--space-13);
+  text-decoration: none;
+  width: 100%;
+  text-align: start;
+}
+
+.glyph {
+  font-size: var(--fs-15);
+  line-height: var(--lh-1);
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  display: block;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.caption {
+  display: block;
+  font-size: var(--fs-10-5);
+  color: var(--text-faint);
+  margin-top: var(--space-1);
+}
+
+.chevron {
+  color: var(--text-faint);
+}
+
+/* A live count, one of the accent roles the grammar permits (§4.5). */
+.badge {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-9);
+  font-weight: var(--fw-800);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-6);
+}

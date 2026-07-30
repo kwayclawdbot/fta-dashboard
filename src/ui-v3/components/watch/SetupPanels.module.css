@@ -1,0 +1,131 @@
+/*
+ * "19 Alert Setup" — the three stacked panels below the chart.
+ *
+ * All three are the same flat card at radius-16 with a mono 8.5px/.14em eyebrow;
+ * only the eyebrow's color changes (accent-strong when the conditions panel is
+ * reporting on the setup itself, --text-dim for the settings panel).
+ */
+
+.card {
+  /* Same dedicated reading value the alert cards use: one notch off --text. */
+  --panel-copy: #e8e2e4;
+  margin-top: var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-13) var(--space-14);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .card {
+  --panel-copy: #2e2925;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: var(--fw-600);
+}
+
+.eyebrowLive {
+  color: var(--accent-strong);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  margin-top: var(--space-11);
+}
+
+/* The Notify panel breathes one px more between rows than the Conditions panel. */
+.listWide {
+  gap: var(--space-11);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.label {
+  flex: 1;
+  font-size: var(--fs-12);
+  color: var(--panel-copy);
+  min-width: 0;
+}
+
+.labelOff {
+  color: var(--text-dim);
+}
+
+.reading {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--positive);
+}
+
+.readingPending {
+  color: var(--text-dim);
+}
+
+/* ── the switch ───────────────────────────────────────────────────────────── */
+/*
+ * Read-only. It reports the member's real notification state; changing it is a
+ * mutation this screen has no endpoint for (see the lane report), so it is
+ * exposed to assistive tech as a status, not a control.
+ */
+.switch {
+  width: 34px;
+  height: 19px;
+  border-radius: var(--radius-10);
+  background: var(--border);
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.switchOn {
+  background: var(--accent);
+}
+
+.knob {
+  position: absolute;
+  left: 2.5px;
+  top: 2.5px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--text-faint);
+}
+
+.knobOn {
+  left: auto;
+  right: 2.5px;
+  background: var(--bg);
+}
+
+/* ── the "since Kai flagged it" row ───────────────────────────────────────── */
+
+.since {
+  margin-top: var(--space-12);
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-10) var(--space-13);
+}
+
+.sinceGlyph {
+  font-size: var(--fs-13);
+}
+
+.sinceText {
+  flex: 1;
+  font-size: var(--fs-11-5);
+  color: var(--text-muted);
+}

@@ -1,0 +1,54 @@
+/*
+ * The state disc in front of a setup condition.
+ *
+ * Two states are drawn across the Watch artboards and no others:
+ *   met     — filled green ground, ✓            (06 @16px, 19 @18px)
+ *   pending — neutral ground, accent hairline, ● (06 @16px)
+ *
+ * The met ground (#173A26 dark / #D4F0E0 light) has no semantic token — it is a
+ * one-off tint of --positive — so it lives here as a theme-scoped property,
+ * the same way GradientPanel holds its washes.
+ */
+
+.mark {
+  --met-ground: #173a26;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .mark {
+  --met-ground: #d4f0e0;
+}
+
+.sm {
+  width: 16px;
+  height: 16px;
+}
+
+.md {
+  width: 18px;
+  height: 18px;
+}
+
+.met {
+  background: var(--met-ground);
+  color: var(--positive);
+  font-size: var(--fs-9);
+}
+
+/*
+ * The pending disc keeps the SAME box as the met disc.
+ *
+ * In the mockup it does not: the file has no box-sizing reset, so its declared
+ * 16px plus a 1px hairline renders 18px — 2px wider than the met disc directly
+ * above it in the same list. That is an artifact of the missing reset, not a
+ * design that sizes a disc by its state, so it is not reproduced.
+ */
+.pending {
+  background: var(--border);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: var(--fs-8);
+}

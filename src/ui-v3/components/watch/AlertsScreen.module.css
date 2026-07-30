@@ -1,0 +1,24 @@
+/*
+ * "18 Kai Alerts" — the stream. Each day group opens with the mono day rule;
+ * the first group is set as full cards and the rest as compressed rows, which
+ * is exactly how the artboard separates today from everything before it.
+ */
+
+.group {
+  margin-top: var(--space-16);
+}
+
+/* The artboard tightens the gap for the groups after the first. */
+.groupLater {
+  margin-top: var(--space-14);
+}
+
+.empty {
+  margin-top: var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-14) var(--space-15);
+  font-size: var(--fs-12);
+  color: var(--text-dim);
+}
