@@ -1,0 +1,26 @@
+/* FROM QUIET TO LOUD — five bare sparkline columns. */
+
+.section {
+  margin-top: var(--space-18);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-9);
+  margin-top: var(--space-10);
+}
+
+.item {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text);
+  margin-top: var(--space-4);
+}
