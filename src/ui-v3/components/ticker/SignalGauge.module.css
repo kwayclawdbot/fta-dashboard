@@ -1,0 +1,119 @@
+/* "12 Ticker Technicals" — the half-dial. */
+
+.card {
+  margin-top: var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-18);
+  padding: var(--space-16);
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+/*
+ * The dial is a full 110px conic disc with its bottom half clipped away, which
+ * is how the artboard builds it: a 110-tall ring inside a 64-tall window.
+ */
+.dial {
+  position: relative;
+  width: 110px;
+  height: 64px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.arc {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 110px;
+  border-radius: var(--radius-full);
+  background: conic-gradient(
+    from 270deg,
+    var(--negative) 0 60deg,
+    var(--gold) 60deg 90deg,
+    var(--positive) 90deg 180deg,
+    transparent 180deg
+  );
+}
+
+.hole {
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  top: 13px;
+  height: 84px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+}
+
+.needle {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 2.5px;
+  height: 44px;
+  background: var(--text);
+  transform-origin: bottom;
+  transform: rotate(var(--needle));
+  border-radius: var(--radius-2);
+}
+
+.ends {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  letter-spacing: var(--ls-08em);
+  color: var(--text-faint);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: var(--fw-600);
+}
+
+.word {
+  font-size: var(--fs-22);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-n-02em);
+  margin-top: var(--space-4);
+}
+
+.up {
+  color: var(--positive);
+}
+
+.mid {
+  color: var(--gold);
+}
+
+.down {
+  color: var(--negative);
+}
+
+.sub {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  margin-top: var(--space-3);
+}
+
+.count {
+  color: var(--text);
+  font-weight: var(--fw-700);
+}

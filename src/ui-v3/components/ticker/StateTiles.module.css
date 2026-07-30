@@ -1,0 +1,42 @@
+/* "12 Ticker Technicals" — the trend-state tiles. */
+
+.row {
+  margin-top: var(--space-12);
+  display: flex;
+  gap: var(--space-8);
+}
+
+.tile {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-10) var(--space-8);
+  text-align: center;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+}
+
+.up {
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}
+
+/* Volume carries no direction — see StateTiles.tsx. */
+.flat {
+  color: var(--gold);
+}
+
+.label {
+  font-size: var(--fs-8-5);
+  color: var(--text-faint);
+  margin-top: var(--space-3);
+}

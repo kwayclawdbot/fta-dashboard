@@ -1,0 +1,116 @@
+/* "12 Ticker Technicals" — the RSI and MACD pair. */
+
+.row {
+  display: flex;
+  gap: var(--space-10);
+  margin-top: var(--space-12);
+}
+
+.card {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-12) var(--space-13);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-6);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: var(--ls-12em);
+  color: var(--text-dim);
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.state {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+}
+
+.up {
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}
+
+.flat {
+  color: var(--text-dim);
+}
+
+/* The RSI track: the artboard's oversold-to-overbought ramp, left to right. */
+.track {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-4);
+  background: linear-gradient(90deg, var(--positive) 0%, var(--gold) 55%, var(--negative) 100%);
+  margin-top: var(--space-10);
+}
+
+.marker {
+  position: absolute;
+  left: var(--at);
+  top: -3px;
+  width: 3px;
+  height: 14px;
+  background: var(--text);
+  border-radius: var(--radius-2);
+}
+
+.scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--fs-8);
+  color: var(--text-faint);
+  margin-top: var(--space-5);
+}
+
+/*
+ * The MACD histogram. Each bar hangs off a shared zero line at the vertical
+ * centre so a signed value reads as its sign, not just its colour.
+ */
+.hist {
+  display: flex;
+  align-items: stretch;
+  gap: 2.5px;
+  height: 26px;
+  margin-top: var(--space-9);
+}
+
+.slot {
+  flex: 1;
+  position: relative;
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--h);
+}
+
+.barUp {
+  bottom: 50%;
+  background: var(--positive);
+}
+
+.barDown {
+  top: 50%;
+  background: var(--negative);
+}
