@@ -464,7 +464,11 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
       { label: "Mkt cap > $10B" },
       { label: `Signal > ${SCREEN.minSignal}%` },
     ],
-    summary: `${matches.length} ${matches.length === 1 ? "match" : "matches"} · sorted by club signal`,
+    // "0 matches · sorted by club signal" claims an ordering over nothing.
+    summary:
+      matches.length === 0
+        ? "0 matches"
+        : `${matches.length} ${matches.length === 1 ? "match" : "matches"} · sorted by club signal`,
     rows: matches
       .sort((a, b) => (b.sentiment?.bullPct ?? 0) - (a.sentiment?.bullPct ?? 0))
       .slice(0, SCREENER_ROW_LIMIT)
