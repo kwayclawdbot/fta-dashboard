@@ -38,7 +38,7 @@ export default function YourSignals({ rows }: { rows: SignalRowVM[] }) {
 
       <div className={styles.list}>
         {rows.map((row) => (
-          <Link key={row.ticker} href="/v3/watch" className={styles.row}>
+          <Link key={row.ticker} href={`/v3/ticker/${row.ticker}`} className={styles.row}>
             <TickerTile ticker={row.ticker} size="sm" />
             <span className={styles.ticker}>{row.ticker}</span>
             <span className={styles.text}>{row.text}</span>

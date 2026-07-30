@@ -51,6 +51,7 @@
   font-family: var(--font-mono);
   font-size: var(--fs-10-5);
   color: var(--accent-strong);
+  text-decoration: none;
 }
 
 .flip {

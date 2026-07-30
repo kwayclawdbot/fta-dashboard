@@ -41,7 +41,7 @@ export default function BlackBeltsWatching({ tickers }: { tickers: BeltWatchVM[]
         {tickers.map((item) => {
           const paint = tickerPaint(item.ticker);
           return (
-            <Link key={item.ticker} href="/v3/discover/screener" className={styles.item}>
+            <Link key={item.ticker} href={`/v3/ticker/${item.ticker}`} className={styles.item}>
               <div
                 className={styles.disc}
                 style={{ "--tile-bg": paint.bg, "--tile-fg": paint.fg } as CSSProperties}

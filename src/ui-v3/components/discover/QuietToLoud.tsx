@@ -34,7 +34,7 @@ export default function QuietToLoud({ tiles }: { tiles: QuietToLoudVM[] }) {
 
       <div className={styles.row}>
         {tiles.map((tile) => (
-          <Link key={tile.ticker} href="/v3/discover/screener" className={styles.item}>
+          <Link key={tile.ticker} href={`/v3/ticker/${tile.ticker}`} className={styles.item}>
             {tile.series ? (
               <Sparkline
                 series={tile.series}

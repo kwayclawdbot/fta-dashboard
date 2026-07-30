@@ -37,7 +37,7 @@ export default function TopInTheClub({ strip }: { strip: TrendingStripVM }) {
         {strip.tiles.map((row) => (
           <Link
             key={row.ticker}
-            href={`/v3/discover`}
+            href={`/v3/ticker/${row.ticker}`}
             className={`${styles.card} ${row.rank === 1 ? styles.lead : ""}`}
           >
             <RankPip rank={row.rank} lead={row.rank === 1} />
