@@ -412,16 +412,67 @@ async function readSeries(symbol: string, range: RangeKey): Promise<Point[] | nu
     return use.map((b) => ({ t: b.t, c: b.c }));
   };
 
+  /**
+   * 1D is ONE SESSION, not the last 24 hours, and not a half-hour of
+   * pre-market.
+   *
+   * Two things go wrong with the obvious implementations. A rolling window
+   * walked back from the final print reaches into the PREVIOUS evening, because
+   * Polygon serves extended-hours bars — the axis came back reading "7:20 PM ·
+   * 6:05 AM · 8:45 AM · 11:20 AM", a day and a half of trading under a chip
+   * labelled 1D. But grouping strictly by the last bar's calendar date is worse
+   * before the bell: at 8:55 AM the newest day holds only pre-market, so a
+   * member opening a ticker over breakfast gets a thin squiggle instead of
+   * yesterday's actual session.
+   *
+   * So: group by New York calendar day and take the last day that looks like a
+   * real session, falling back to the newest day when none does (a freshly
+   * listed name, a half day). The chart is then always the last session there
+   * was, which is what a member means by "today".
+   */
+  const SESSION_MIN_BARS = 40;
+
+  const session = async (): Promise<Point[] | null> => {
+    const bars = await soft(() => getOHLCBars(symbol, "5m"), null as OHLCBar[] | null);
+    if (!bars || bars.length < 2) return null;
+
+    const dayOf = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const byDay = new Map<string, OHLCBar[]>();
+    for (const b of bars) {
+      const key = dayOf.format(new Date(b.t));
+      const list = byDay.get(key);
+      if (list) list.push(b);
+      else byDay.set(key, [b]);
+    }
+
+    const days = [...byDay.keys()].sort();
+    const full = [...days].reverse().find((d) => (byDay.get(d)?.length ?? 0) >= SESSION_MIN_BARS);
+    const use = byDay.get(full ?? days[days.length - 1]) ?? [];
+    return use.length >= 2 ? use.map((b) => ({ t: b.t, c: b.c })) : null;
+  };
+
   const DAY = 24 * 60 * 60 * 1000;
   switch (range) {
     case "1D":
-      // The most recent session's own 5-minute bars. Polygon's last bar is the
-      // last print, so the window walks BACK from it rather than from "now" —
-      // over a weekend that is Friday's session, which is what a member is
-      // actually looking at.
-      return intraday("5m", 16 * 60 * 60 * 1000);
+      return session();
     case "1W":
-      return intraday("1h", 7 * DAY);
+      /*
+       * 30-MINUTE, NOT HOURLY, and this is a data fact rather than a taste
+       * call: on this Polygon account the 1-hour aggregate is STALE. Probed
+       * 2026-07-30 for AAPL, every other timeframe answered through that
+       * morning and `1/hour` stopped at 2026-05-11 — so a 1W chart built on
+       * hourly bars rendered a week in May under a chip that says 1W, with a
+       * correct-looking axis and eleven-week-old prices. 5m / 15m / 30m / 1d
+       * are all current; 30m is the coarsest of those that still covers seven
+       * days inside the 800-bar cap.
+       */
+      return intraday("30m", 7 * DAY);
     case "1M":
       return daily(31);
     case "3M":
@@ -465,30 +516,34 @@ function buildChart(points: Point[], range: RangeKey): TickerChartVM | null {
 }
 
 /**
- * The artboard's four axis ticks ("9:30 AM … 4:00 PM"), read off the series'
- * OWN timestamps at four evenly spaced positions. An intraday range prints
- * clock times, a multi-day range prints dates — the label follows the data, so
- * a 1-year chart never claims to be a trading session.
+ * The artboard's four axis ticks ("9:30 AM … 4:00 PM"), read off the series' OWN
+ * timestamps at four evenly spaced positions.
+ *
+ * THE UNIT FOLLOWS THE RANGE, and each of these was a real misreading before it
+ * was fixed:
+ *
+ *   1D      clock time. One session, so the day is implied.
+ *   1W      date. Bare clock times across a week gave "8:00 AM · 7:00 PM ·
+ *           1:00 PM" — three times with no way to tell which day each was on.
+ *   1M/3M   date.
+ *   1Y/ALL  month and FULL year. A two-digit year rendered as "Aug 16", which
+ *           reads as the sixteenth of August, not August 2016.
  */
 function axisFor(points: Point[], range: RangeKey): string[] {
-  const intraday = range === "1D" || range === "1W";
-  const fmt = new Intl.DateTimeFormat("en-US",
-    intraday
-      ? { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }
-      : { month: "short", year: range === "1Y" || range === "ALL" ? "2-digit" : undefined, day: range === "1Y" || range === "ALL" ? undefined : "numeric", timeZone: "America/New_York" },
+  const TZ = "America/New_York";
+  const fmt = new Intl.DateTimeFormat(
+    "en-US",
+    range === "1D"
+      ? { hour: "numeric", minute: "2-digit", timeZone: TZ }
+      : range === "1Y" || range === "ALL"
+        ? { month: "short", year: "numeric", timeZone: TZ }
+        : { month: "short", day: "numeric", timeZone: TZ },
   );
-  const at = [0, 1 / 3, 2 / 3, 1].map((f) =>
-    points[Math.min(points.length - 1, Math.round(f * (points.length - 1)))],
+  return [0, 1 / 3, 2 / 3, 1].map((f) =>
+    fmt.format(
+      new Date(points[Math.min(points.length - 1, Math.round(f * (points.length - 1)))].t),
+    ),
   );
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const p of at) {
-    const label = fmt.format(new Date(p.t));
-    // Four identical labels is noise, not an axis.
-    out.push(seen.has(label) ? "" : label);
-    seen.add(label);
-  }
-  return out;
 }
 
 function rangeChips(symbol: string, active: RangeKey): RangeChipVM[] {
