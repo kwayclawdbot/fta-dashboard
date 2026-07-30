@@ -21,7 +21,7 @@ Four families. Each has a job, and the jobs do not overlap.
 | **Display** | `--font-display` Barlow Condensed, **italic**, 700–800, uppercase | Brand and screen identity only. Never body copy, never data. | Wordmark 19px/800/`.02em`; `ScreenPlaceholder` name 26px/800/`.04em` |
 | **Body** | `--font-body` Instrument Sans, 400–800 | Human sentences, headings, and any number a person *reads* rather than *scans*. | Greeting 26px/700/`-.02em`; subtitle 13px `--text-dim`; panel headline 14.5px/700/lh 1.3; brief line 12px/500; signal text 12px `--text-dim`; caption 10.5px `--text-faint`; conviction 11px/700; "See all" 11px/600 |
 | **Mono** | `--font-mono` IBM Plex Mono, 400–600 | Machine truth: tickers, deltas, quotes, XP, and every section eyebrow. | Eyebrow 9.5px/600/`.16em`/uppercase; strip ticker 10px/600; row ticker 11px/600; delta 9px; index chip 9.5px; XP line 10px; ring value 13px/600 |
-| **Script** | `--font-script` Kaushan | Section marks on other artboards. **Unused on Home** — do not introduce it here. | — |
+| **Script** | `--font-script` Kaushan | **Screen titles and brand taglines only** — the name of the place you are, or the brand speaking in its own voice. Never a section head, never data. **Unused on Home** — do not introduce it here. | Pricing title 32px; Screener title 34px; Splash tagline 20px `--text-dim` |
 
 Numerals that sit in a column or want to line up carry `data-numeric`, which opts
 into `tabular-nums` (base.css). Prose numbers do not.
@@ -109,9 +109,25 @@ ever. Used by the strip card and the signal row.
 | `you` | `110deg #241009, #17141A 70%` → `#FFEEDD, #FFFFFF 70%` | 16 | 13 / 15 | 01 Home |
 | `streak` | `120deg #241009, #17141A 65%` → `#FFEEDD, #FFFFFF 65%` | 16 | 14 / 16 | 07 You Profile |
 | `close` | `135deg #241009, #17141A 60%` → `#FFEEDD, #FFFFFF 60%` | 18 | 16 | 06 Watch |
+| `pro` | `150deg #2A1208, #17141A 65%` → `#FFE9D6, #FFFFFF 65%` | 20 | 16 | 11 Pricing |
+
+`pro` is the only tone that also changes the hairline: the paid plan card is
+drawn with a **full-accent 1.5px border and an accent halo** instead of the
+shared `--accent-soft`. That is the board marking the selected plan, so it is a
+tone rather than a second component — but it is also the one place `--accent`
+is allowed to outline a container, and it stays that way.
+
+Two further washes are **screen** backgrounds rather than panels, and both are
+radial — they light the top of a whole page instead of a card sitting on one:
+
+| wash | value (dark → light) | board |
+| --- | --- | --- |
+| `splash` | `radial 120% 80% at 50% 20%, #221109, #0D0B0E 55%` → `#FFE3C8, #F7F4EF 55%` | 09 Splash (whole screen) |
+| `authhead` | `radial 140% 100% at 50% 0%, #2A1208, #0D0B0E 75%` → `#FFE9D6, #F7F4EF 75%` | 10 Login (230px header band) |
 
 The stops have no semantic token — they are one-off washes — so they live as
-theme-scoped custom properties `--wash-brief/you/streak/close` in `base.css`.
+theme-scoped custom properties `--wash-brief/you/streak/close/pro/splash/authhead`
+in `base.css`.
 They are declared there rather than in the component because the `streak` wash is
 also painted by the lifted rung on "22 Belts", and one declaration per wash means
 one light override per wash. A panel takes `href` when the artboard makes the
@@ -247,8 +263,30 @@ Recorded so the next screen does not have to rediscover them.
 - **Index chips have no seed.** They are fetched client-side from
   `/api/market/quote`, and the artboard's VIX is substituted with IWM because
   Polygon index snapshots are not entitled on this account.
-- **Script voice is unexercised.** `--font-script` has no Home usage; its rules
-  must be written from whichever artboard first uses it.
+- **Two display sizes have no token.** The splash wordmark is 44px and the
+  pricing / seeding titles are 32px. Neither appears twice across the 23 boards,
+  and the extractor only emits repeated values — so both are written as literals
+  with a comment, the same way `.02em` already is in `TopBarV3`. Do not mint
+  `--fs-44` / `--fs-32` by hand: the next regeneration would drop them.
+
+- **There is no sub-faint text ramp.** Board 10's legal footer sits a step below
+  `--text-faint` (`#4E4854` dark / `#8A8178` light) and is the only text in all
+  23 boards at that level. It renders at `--text-faint`, the nearest real step.
+
+- **The onboarding boards describe a product that does not exist.** Board 11
+  prices the Club at "$99/yr" with an Annual/Monthly toggle and a 7-day trial;
+  the real product is **$99/mo, one interval, no trial**. It also carries
+  "25,842 members", "4.8 · 12K ratings", a testimonial and a "Restore" action
+  with no source or mechanism anywhere in the app, and board 10 offers an Apple
+  provider that is not configured. Every one of those is omitted or replaced
+  with the real value in `src/ui-v3/onboard-data.ts`, which lists them. **If a
+  future board reprints any of them, it is fiction again — check the source
+  before translating it.**
+
+- **Pricing copy has a real source.** `PRICING_MATRIX`
+  (`src/lib/entitlements/features.ts`) is the same table the server-side `can()`
+  gate reads. Any plan card takes its bullets from there, so the offer and the
+  paywall cannot drift.
 
 ---
 
