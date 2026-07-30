@@ -49,7 +49,12 @@
   margin-top: var(--space-10);
 }
 
-.svg {
+/*
+ * The one svg on the boards that IS a block: it fills its card, and no caption is
+ * spaced off its baseline. Scoped to the v3 root so it outranks base.css's
+ * `[data-ui="v3"] svg { display: inline }` — a bare class would lose to it.
+ */
+:global([data-ui="v3"]) .svg {
   display: block;
   width: 100%;
   height: 120px;

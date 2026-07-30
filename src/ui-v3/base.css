@@ -97,6 +97,28 @@
   box-sizing: border-box;
 }
 
+/*
+ * SVG stays INLINE and ON THE BASELINE, as the artboards author it.
+ *
+ * Tailwind's preflight sets `svg { display: block; vertical-align: middle }`. The
+ * mockups declare neither: their sparklines sit on the text baseline, so the line
+ * box is ~4px taller than the graphic and the caption beneath is spaced off that
+ * box. Blockifying collapsed those 4px and shortened a whole screen by 8px, which
+ * one lane chased down and patched per-component. Both halves of the preflight
+ * rule have to be undone — restoring `display` alone leaves the graphic hanging
+ * from `vertical-align: middle` and moves every Discover sparkline.
+ *
+ * This is the artboards' default, restored once. An svg that genuinely wants to
+ * be a block (a chart that fills its card) opts out at higher specificity —
+ * `:global([data-ui="v3"]) .svg { display: block }`, see watch/SetupChart — and
+ * an svg inside a flex or grid parent is blockified by layout anyway, which is
+ * every icon in the headers.
+ */
+[data-ui="v3"] svg {
+  display: inline;
+  vertical-align: baseline;
+}
+
 /* Numeric UI (prices, counts) opts IN explicitly rather than inheriting it. */
 [data-ui="v3"] [data-numeric] {
   font-variant-numeric: tabular-nums;
