@@ -72,15 +72,22 @@ function Tab({
   );
 }
 
-/** The two 34px round buttons on the feed head. Display-only: no route exists. */
+/**
+ * The two 34px round buttons on the feed head.
+ *
+ * "+" is the composer — the same destination the "What's your take?" row leads
+ * to, which is what the board's plus means on a feed. The magnifier stays inert:
+ * v3 has no search route, and a button that navigates nowhere is worse than one
+ * that is visibly not a button yet.
+ */
 export function ClubHeadActions() {
   return (
     <div className={styles.actions}>
-      <div className={styles.circleBtn}>
+      <Link href="/v3/club/compose" className={styles.circleBtn} aria-label="Post your take">
         <span className={styles.plus}>+</span>
-      </div>
-      <div className={styles.circleBtn}>
-        <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+      </Link>
+      <div className={styles.circleBtn} aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
           <path d="M16.2 16.2 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
@@ -89,7 +96,11 @@ export function ClubHeadActions() {
   );
 }
 
-/** The accent CTA on the Circles head. */
+/** The accent CTA on the Circles head — opens a Circle (`club_circles`). */
 export function StartCircleCta() {
-  return <span className={styles.cta}>+ Start a Circle</span>;
+  return (
+    <Link href="/v3/club/circles/new" className={styles.cta}>
+      + Start a Circle
+    </Link>
+  );
 }

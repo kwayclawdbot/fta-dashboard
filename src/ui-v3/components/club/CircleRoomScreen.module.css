@@ -263,61 +263,9 @@
   color: var(--text-faint);
 }
 
-/* ── composer ─────────────────────────────────────────────────────────────── */
-
-.composer {
-  /* 22px of home-indicator clearance, straight off the artboard. */
-  padding: var(--space-10) var(--space-14) 22px;
-  border-top: 1px solid var(--border);
-  background: var(--chrome);
-  flex: 0 0 auto;
-}
-
-.composerRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-9);
-}
-
-/* Artboard: width:30 + border:1 content-box → renders 32 (the send button,
- * which has no border, stays 30). */
-.composerBtn,
-.composerBtnAccent {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  display: grid;
-  place-items: center;
-  font-size: var(--fs-13);
-  flex: 0 0 auto;
-}
-
-.composerBtnAccent {
-  color: var(--accent-strong);
-  font-size: var(--fs-15);
-}
-
-.composerField {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-20);
-  padding: var(--space-9) var(--space-14);
-  font-size: var(--fs-12-5);
-  color: var(--text-faint);
-}
-
-.composerSend {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-full);
-  background: var(--accent);
-  display: grid;
-  place-items: center;
-  font-size: var(--fs-12);
-  flex: 0 0 auto;
-  color: var(--accent-on);
-  font-weight: var(--fw-800);
-}
+/* ── composer ──────────────────────────────────────────────────────────────
+ * The composer band moved to ./CircleComposer.module.css when it stopped being
+ * a drawing and became a write. Its rules are not duplicated here — but the
+ * `--chrome` ground it paints on is still declared on `.screen` above, which is
+ * exactly why the band still matches the header after the move.
+ */

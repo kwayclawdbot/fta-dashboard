@@ -10,18 +10,46 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * The reaction vocabulary, as the DATABASE closes it.
+ *
+ * These two unions were written against migration 150 and never re-widened when
+ * migration 190 widened the CHECK constraints behind them, so the types claimed
+ * a smaller vocabulary than the column accepts: `respect` and the `stance_event`
+ * target have been legal in Postgres since 190 and `src/lib/social/stance.ts`
+ * has been writing both — as untyped object literals, because the types here
+ * refused them. Both are now stated, so the TS surface and the CHECK agree.
+ *
+ * `respect` is deliberately NOT in `REACTIONS` below. That array is the six
+ * INFORMATIONAL reactions a research-shaped object offers ("Strong point",
+ * "Needs evidence", …), each with a chip style; respect is a single-affordance
+ * acknowledgement of a stance FLIP and has no place in that picker. Anything
+ * that iterates `REACTIONS` — the totals, the reaction bar — is therefore
+ * unchanged, which is the intent: this widening states what the DB already
+ * allowed, it does not add a control to any surface.
+ */
 export type ReactionKey =
   | "strong_point"
   | "agree"
   | "needs_evidence"
   | "missing_risk"
   | "changed_mind"
-  | "saved";
+  | "saved"
+  /** Migration 190 — acknowledges a stance flip. Not an informational reaction. */
+  | "respect";
 
-export type ReactionTargetType = "research_object" | "ticker_comment" | "feed_post";
+export type ReactionTargetType =
+  | "research_object"
+  | "ticker_comment"
+  | "feed_post"
+  /** Migration 190 — `stance_events.id`. */
+  | "stance_event";
+
+/** The subset of ReactionKey that `REACTIONS` actually draws (respect excluded). */
+export type InformationalReactionKey = Exclude<ReactionKey, "respect">;
 
 export interface ReactionDef {
-  key: ReactionKey;
+  key: InformationalReactionKey;
   glyph: string; // the spec's mark (🧠 ✓ ? ⚠ ↻ 🔖)
   label: string;
   /** token-based chip classes for the active state (both themes). */
@@ -38,9 +66,11 @@ export const REACTIONS: ReactionDef[] = [
   { key: "saved", glyph: "🔖", label: "Saved", chip: "bg-purple-500/12 text-purple-600" },
 ];
 
-export const REACTION_BY_KEY: Record<ReactionKey, ReactionDef> = Object.fromEntries(
-  REACTIONS.map((r) => [r.key, r])
-) as Record<ReactionKey, ReactionDef>;
+export const REACTION_BY_KEY: Record<InformationalReactionKey, ReactionDef> =
+  Object.fromEntries(REACTIONS.map((r) => [r.key, r])) as Record<
+    InformationalReactionKey,
+    ReactionDef
+  >;
 
 export type ReactionCounts = Partial<Record<ReactionKey, number>>;
 

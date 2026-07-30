@@ -29,6 +29,7 @@
   display: grid;
   place-items: center;
   color: var(--text-muted);
+  text-decoration: none;
 }
 
 .plus {
@@ -37,6 +38,8 @@
   line-height: var(--lh-1);
 }
 
+/* Both of these became links when the routes behind them landed; `text-decoration`
+   is reset so the pill and the disc keep the drawing they had as inert marks. */
 .cta {
   background: var(--accent);
   color: var(--accent-on);
@@ -45,6 +48,8 @@
   padding: var(--space-7) var(--space-14);
   border-radius: var(--radius-18);
   white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .tabs {

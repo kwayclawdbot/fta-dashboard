@@ -1,0 +1,407 @@
+/*
+ * "05 Share your call".
+ *
+ * Every container here is the flat card of DESIGN-GRAMMAR §5 (--surface, 1px
+ * --border, a radius from §3) and every type step is one the boards already
+ * use. Two things the board draws that need naming:
+ *
+ *  · THE STANCE FILLS ARE INLINE LITERALS, set by the component, not by this
+ *    file. Board 05 paints the chosen stance in the same red/grey/green it
+ *    paints nowhere else, and they are deliberately NOT --negative / --positive:
+ *    a member's opinion must never be coloured with the price ramp (COLOUR LAW).
+ *    Keeping them out of the stylesheet keeps that impossible to do by accident.
+ *
+ *  · THE MARKER is the script voice's second outing (--font-script), at the
+ *    board's 21px / rotate(7deg). DESIGN-GRAMMAR §1 records the voice as
+ *    club-only; this is a Club screen.
+ */
+
+/* ── Cancel · progress rail · Post ─────────────────────────────────────────── */
+
+.chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.cancel {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-600);
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.rail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.railOn,
+.railOff {
+  width: 26px;
+  height: 3px;
+  border-radius: var(--radius-2);
+}
+
+.railOn {
+  background: var(--accent);
+}
+
+.railOff {
+  background: var(--border);
+}
+
+.post {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-800);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.post:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── The ask ───────────────────────────────────────────────────────────────── */
+
+.ask {
+  position: relative;
+  margin-top: var(--space-16);
+  padding-right: 96px;
+}
+
+.marker {
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: rotate(7deg);
+  font-family: var(--font-script);
+  font-size: var(--fs-20);
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.askTitle {
+  margin: 0;
+  max-width: 15ch;
+  font-size: var(--fs-30);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-n-02em);
+  line-height: var(--lh-1);
+  color: var(--text);
+}
+
+/* The board underlines ONE phrase with a 3px accent rule. A border-bottom would
+   sit on the descenders; an absolutely positioned bar sits under them, which is
+   what the board draws. */
+.underlined {
+  position: relative;
+  display: inline-block;
+}
+
+.underlined::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 3px;
+  border-radius: var(--radius-2);
+  background: var(--accent);
+}
+
+.askCopy {
+  margin: var(--space-11) 0 0;
+  max-width: 34ch;
+  font-size: var(--fs-13);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+/* ── Sections ──────────────────────────────────────────────────────────────── */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+/* The board's field label: the eyebrow ramp, but --text rather than mono-dim,
+   because it names an input rather than opening a section. */
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-600);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.card {
+  margin-top: var(--space-9);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-13);
+  padding: var(--space-12) var(--space-13);
+}
+
+.companyRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.companyName {
+  flex: 1;
+  min-width: 0;
+}
+
+.symbol {
+  font-size: var(--fs-14);
+  font-weight: var(--fw-800);
+  color: var(--text);
+}
+
+.issuer {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.change {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-600);
+  letter-spacing: var(--ls-08em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+/* ── The stance trio ───────────────────────────────────────────────────────── */
+
+.stanceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-11);
+}
+
+.stanceOn,
+.stanceOff {
+  appearance: none;
+  font: inherit;
+  font-size: var(--fs-11);
+  border-radius: var(--radius-8);
+  padding: var(--space-8) var(--space-11);
+  cursor: pointer;
+}
+
+.stanceOff {
+  background: none;
+  border: 1px solid var(--border);
+  font-weight: var(--fw-700);
+  color: var(--text-dim);
+}
+
+/* `background` and `border-color` arrive inline from the component — see the
+   header note. Only the type weight and the knockout colour live here. */
+.stanceOn {
+  border: 1px solid transparent;
+  font-weight: var(--fw-800);
+  color: #fff;
+}
+
+/* ── The post-type pill row ────────────────────────────────────────────────── */
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-7);
+  margin-top: var(--space-9);
+}
+
+.pillOn,
+.pillOff {
+  appearance: none;
+  font: inherit;
+  font-size: var(--fs-10-5);
+  letter-spacing: var(--ls-08em);
+  text-transform: uppercase;
+  border-radius: var(--radius-6);
+  padding: var(--space-8) var(--space-14);
+  cursor: pointer;
+}
+
+.pillOn {
+  background: var(--text);
+  border: 1px solid var(--text);
+  font-weight: var(--fw-800);
+  color: var(--bg);
+}
+
+.pillOff {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-weight: var(--fw-700);
+  color: var(--text-dim);
+}
+
+/* ── The writing card ──────────────────────────────────────────────────────── */
+
+.tickerInput {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 0 var(--space-8);
+  font-family: var(--font-mono);
+  font-size: var(--fs-24);
+  font-weight: var(--fw-700);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.tickerInput:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+
+.tickerInput::placeholder {
+  color: var(--text-faint);
+}
+
+.bodyInput {
+  width: 100%;
+  resize: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-13);
+  line-height: var(--lh-1-5);
+  color: var(--text);
+}
+
+.bodyInput:focus {
+  outline: none;
+}
+
+.bodyInput::placeholder {
+  color: var(--text-dim);
+}
+
+/* The board's footer rule, carrying the bound symbol and the counter. */
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-top: var(--space-12);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border);
+}
+
+.footTicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--accent-strong);
+}
+
+.counter {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text-faint);
+}
+
+/* ── Notes, refusals, the publish footer ───────────────────────────────────── */
+
+.note {
+  margin: var(--space-9) 0 0;
+  font-size: var(--fs-12);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+.noteLink {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.error {
+  margin: var(--space-12) 0 0;
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-600);
+  color: var(--negative);
+}
+
+.footer {
+  margin-top: var(--space-18);
+}
+
+/* The one primary action on the screen — DESIGN-GRAMMAR §4.4. */
+.publish {
+  appearance: none;
+  width: 100%;
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-8);
+  padding: var(--space-15);
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-12em);
+  text-transform: uppercase;
+  color: var(--accent-on);
+  cursor: pointer;
+}
+
+.publish:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.refusal {
+  margin: var(--space-9) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  letter-spacing: var(--ls-12em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.back {
+  display: inline-block;
+  margin-top: var(--space-16);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

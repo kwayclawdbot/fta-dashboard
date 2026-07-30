@@ -24,7 +24,10 @@ export default function MostDivisive({ divisive }: { divisive: DivisiveVM | null
         <SectionEyebrow labelTone="accent" caption="Biggest split in opinions" captionGap={2}>
           Most divisive
         </SectionEyebrow>
-        <EmptyNote tall center>
+        {/* A split needs members who have taken a side, so the way out of this
+            empty state is for someone to take one. The action is the composer,
+            where a stance is actually recorded. */}
+        <EmptyNote tall center action={{ label: "Take a side", href: "/v3/club/compose" }}>
           {DISCOVER_EMPTY.divisive}
         </EmptyNote>
       </section>

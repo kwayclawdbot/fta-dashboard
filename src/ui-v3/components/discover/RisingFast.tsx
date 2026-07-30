@@ -25,7 +25,11 @@ export default function RisingFast({ tiles }: { tiles: RisingTileVM[] }) {
         <SectionEyebrow labelTone="accent" caption="Attention over the last 24h" captionGap={2}>
           Rising fast
         </SectionEyebrow>
-        <EmptyNote>{DISCOVER_EMPTY.rising}</EmptyNote>
+        {/* Nothing is climbing yet, but the whole universe is still screenable —
+            so this one points at the screener rather than the composer. */}
+        <EmptyNote action={{ label: "Screen the whole market", href: "/v3/discover/screener" }}>
+          {DISCOVER_EMPTY.rising}
+        </EmptyNote>
       </section>
     );
   }

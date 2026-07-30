@@ -11,6 +11,8 @@ import {
 } from "@/lib/circles";
 import { getCommunityFeedSeed } from "@/lib/feed-seed";
 import { fetchChangedMinds } from "@/lib/social/stance";
+import { isSharedFeedReadOnly, KID_FEED_READONLY_NOTE } from "@/lib/social/kid-posting";
+import { deriveRegister } from "@/lib/register";
 import { buildClubHomePayload } from "@/lib/club/home-payload";
 import { resolveClubCtx } from "@/lib/club/home-context";
 import { beltForXp, type BeltKey } from "@/lib/belts";
@@ -47,10 +49,46 @@ import { timeAgo } from "@/lib/feed";
  *  5. The artboard's "Circle sentiment moved +6 pts bullish" needs a per-circle
  *     sentiment SERIES. Only the current split exists (one stance per author),
  *     so the Kai row states the split instead of a delta.
- *  6. Composers are display-only in v3 — no write path is wired on these routes.
+ *
+ * GAP 6 IS CLOSED. The composers used to be display-only. They now write to the
+ * SAME tables the old app writes — `feed_posts` (+ `ticker_stances` /
+ * `stance_events` via `set_ticker_stance`), `post_likes`, `object_reactions` and
+ * `club_circle_notes` — through `src/lib/*` helpers, under the member's own RLS.
+ * No new table, no new RPC, no new migration. The write half lives in client
+ * components; this adapter's job is to hand them the VIEWER (who am I, may I
+ * post) and the interaction state (did I already like this, did I already
+ * respect that) so no component has to ask the database who is looking at it.
  */
 
 // ── view model ───────────────────────────────────────────────────────────────
+
+/**
+ * WHO IS LOOKING, and what they are allowed to do.
+ *
+ * Every participation control on these screens is gated on this one object, so
+ * there is exactly one place the gate is decided and exactly one wording for the
+ * refusal. Two postures, both mirroring a server-side rule rather than inventing
+ * a client-side one:
+ *
+ *  - `null` — nobody is signed in. Controls prompt for sign-in; they are never
+ *    hidden, because a feed you cannot answer looks broken rather than locked.
+ *  - `canPost: false` with a `readOnlyNote` — the KID register. The authority is
+ *    the RLS policy on `feed_posts` INSERT (`kid_feed_readonly() AND
+ *    viewer_is_kid()`, migration 161) and the identical clause on
+ *    `club_circle_notes` / `club_circle_members` INSERT (migration 191). This
+ *    flag is the UI half of that pair, read through the same
+ *    `isSharedFeedReadOnly()` the old app's composer reads, so the two halves
+ *    can never drift apart. Reactions stay OPEN to kids — the reaction tables
+ *    carry no kid clause, and SOCIAL-OBJECTS says kids read and react freely.
+ */
+export interface ClubViewerVM {
+  id: string;
+  familyId: string | null;
+  /** May this member author a post / a Circle note / a Circle? */
+  canPost: boolean;
+  /** Why not, in the member's own register. Null when they can. */
+  readOnlyNote: string | null;
+}
 
 /** The 96px Circle bubble, shared by "04 Club Feed" and "16 Club Circles". */
 export interface CircleBubbleVM {
@@ -90,6 +128,12 @@ export interface FeedPostVM {
   likes: number | null;
   /** `post_comments` count. */
   comments: number | null;
+  /**
+   * Does a `post_likes` row already exist for this viewer? The 👍 control is a
+   * TOGGLE, so it has to open in the right state or the first tap deletes a row
+   * the member cannot see and the count goes down.
+   */
+  likedByMe: boolean;
 }
 
 export interface ChangedMindVM {
@@ -107,6 +151,8 @@ export interface ChangedMindVM {
   note: string | null;
   /** `object_reactions` respect count on the stance event — the artboard's 🔥. */
   respect: number | null;
+  /** `get_changed_minds().my_respect` — the toggle's opening state. */
+  myRespect: boolean;
 }
 
 /**
@@ -132,6 +178,8 @@ export interface ClubFeedViewModel {
   source: "live" | "fixtures";
   /** The composer avatar. Empty string hides it. */
   initials: string;
+  /** Null for an anonymous visitor — see ClubViewerVM. */
+  viewer: ClubViewerVM | null;
   circles: CircleBubbleVM[];
   posts: FeedPostVM[];
   changedMind: ChangedMindVM | null;
@@ -143,6 +191,7 @@ export interface ClubCirclesViewModel {
   rows: CircleBubbleVM[];
   /** True when migration 191 has not been applied to this database. */
   missingSchema: boolean;
+  viewer: ClubViewerVM | null;
 }
 
 export interface CircleNoteVM {
@@ -168,6 +217,8 @@ export interface NoteGroupVM {
 
 export interface CircleRoomViewModel {
   source: "live" | "fixtures";
+  /** `club_circles.id` — what a note and a join are written against. */
+  id: string;
   slug: string;
   title: string;
   topic: string;
@@ -183,6 +234,16 @@ export interface CircleRoomViewModel {
   split: { bull: number; neutral: number; bear: number } | null;
   /** The composer placeholder's channel name. */
   channel: string;
+  viewer: ClubViewerVM | null;
+  /**
+   * Is this viewer on the roster? `club_circle_notes` INSERT is member-gated in
+   * RLS, so a non-member gets the JOIN affordance instead of the composer —
+   * joining is a real write (`club_circle_members`, migration 191) and not a
+   * dead button.
+   */
+  joined: boolean;
+  /** The clock has not run out. A closed Circle takes no more notes and no joins. */
+  open: boolean;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -351,6 +412,9 @@ function fixtureFeedModel(): ClubFeedViewModel {
   return {
     source: "fixtures",
     initials: "MH",
+    // The fixture branch is the ANONYMOUS branch, so there is no viewer and
+    // every participation control renders its signed-out posture.
+    viewer: null,
     circles: fixtureCircles().slice(0, FEED_CIRCLE_LIMIT),
     posts: [
       {
@@ -364,6 +428,7 @@ function fixtureFeedModel(): ClubFeedViewModel {
         body: "Blackwell demand is even stronger than the Street expects.",
         likes: 42,
         comments: 17,
+        likedByMe: false,
       },
     ],
     changedMind: {
@@ -378,19 +443,24 @@ function fixtureFeedModel(): ClubFeedViewModel {
       toLabel: "Neutral",
       note: "The Robotaxi event changed my view short term. Let's see execution.",
       respect: 31,
+      myRespect: false,
     },
     kai: { headline: "Unusual options flow detected", ticker: "AMD" },
   };
 }
 
 function fixtureCirclesModel(): ClubCirclesViewModel {
-  return { source: "fixtures", rows: fixtureCircles(), missingSchema: false };
+  return { source: "fixtures", rows: fixtureCircles(), missingSchema: false, viewer: null };
 }
 
 function fixtureRoomModel(slug: string): CircleRoomViewModel {
   const nvda = fixtureCircles()[0];
   return {
     source: "fixtures",
+    id: "fx-circle-1",
+    viewer: null,
+    joined: false,
+    open: true,
     slug: slug || nvda.slug,
     title: nvda.title,
     topic: nvda.topic,
@@ -456,6 +526,41 @@ function fixtureRoomModel(slug: string): CircleRoomViewModel {
   };
 }
 
+// ── the viewer ───────────────────────────────────────────────────────────────
+
+/**
+ * Resolve the participation posture from the request profile.
+ *
+ * `deriveRegister` + `isSharedFeedReadOnly` are the SAME pair the old app's
+ * composer uses, so the v3 gate and the shipped gate are one decision made in
+ * one place. If the owner ever re-opens kid posting they flip the constant in
+ * `kid-posting.ts` and the RLS predicate — and both front ends follow.
+ */
+function viewerFrom(
+  userId: string,
+  profile: { role: string | null; age_group: string | null; track: string | null; family_id: string | null } | null
+): ClubViewerVM {
+  const readOnly = isSharedFeedReadOnly(deriveRegister(profile));
+  return {
+    id: userId,
+    familyId: profile?.family_id ?? null,
+    canPost: !readOnly,
+    readOnlyNote: readOnly ? KID_FEED_READONLY_NOTE : null,
+  };
+}
+
+/**
+ * What the composer route needs before it can draw anything: who is writing,
+ * and whether they are allowed to. Its own entry point because /v3/club/compose
+ * reads none of the feed.
+ */
+export async function getComposeViewer(): Promise<ClubViewerVM | null> {
+  const user = await getRequestUser();
+  if (!user) return null;
+  const profile = await getRequestProfile();
+  return viewerFrom(user.id, profile ?? null);
+}
+
 // ── entry points ─────────────────────────────────────────────────────────────
 
 /**
@@ -485,6 +590,10 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
   ]);
 
   const displayName = profile?.display_name?.trim() ?? "";
+  const viewer = viewerFrom(user.id, profile ?? null);
+  // `likedByMe` arrives from the feed seed as a serialisable array; a Set is what
+  // a per-row lookup wants.
+  const liked = new Set(seed?.likedByMe ?? []);
 
   const posts: FeedPostVM[] = (seed?.posts ?? [])
     // Emptiness is judged AFTER the marker comes off, so a row whose only
@@ -505,6 +614,7 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
         body: cleanBody(p.body),
         likes: seed?.likeCount[p.id] ?? 0,
         comments: seed?.commentCount[p.id] ?? 0,
+        likedByMe: liked.has(p.id),
       };
     });
 
@@ -524,12 +634,14 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
         toLabel: STANCE_WORD[flip.to_stance],
         note: flip.note ? cleanBody(flip.note) || null : null,
         respect: flip.respect_count ?? null,
+        myRespect: !!flip.my_respect,
       }
     : null;
 
   return {
     source: "live",
     initials: initialsFrom(displayName || "Member"),
+    viewer,
     circles: circlesRes.rows.slice(0, FEED_CIRCLE_LIMIT).map((r) => mapCircle(r, now)),
     posts,
     changedMind,
@@ -544,15 +656,19 @@ export async function getClubCirclesViewModel(): Promise<ClubCirclesViewModel> {
 
   const supabase = await getRequestClient();
   const now = Date.now();
-  const { rows, missingSchema } = await listCircles(supabase).catch(() => ({
-    rows: [] as CircleListRow[],
-    missingSchema: true,
-  }));
+  const [{ rows, missingSchema }, profile] = await Promise.all([
+    listCircles(supabase).catch(() => ({
+      rows: [] as CircleListRow[],
+      missingSchema: true,
+    })),
+    getRequestProfile(),
+  ]);
 
   return {
     source: "live",
     rows: rows.slice(0, CIRCLES_GRID_LIMIT).map((r) => mapCircle(r, now)),
     missingSchema,
+    viewer: viewerFrom(user.id, profile ?? null),
   };
 }
 
@@ -570,7 +686,10 @@ export async function getCircleRoomViewModel(
   if (!user) return fixtureRoomModel(slug);
 
   const supabase = await getRequestClient();
-  const { room } = await getCircleRoom(supabase, slug).catch(() => ({ room: null }));
+  const [{ room }, profile] = await Promise.all([
+    getCircleRoom(supabase, slug).catch(() => ({ room: null })),
+    getRequestProfile(),
+  ]);
   if (!room) return null;
 
   const now = new Date();
@@ -602,15 +721,22 @@ export async function getCircleRoomViewModel(
   }
 
   const staked = split.bull + split.neutral + split.bear;
+  const clock = timeLeft(circle.expires_at, now);
 
   return {
     source: "live",
+    id: circle.id,
+    viewer: viewerFrom(user.id, profile ?? null),
+    joined: room.joined,
+    // The same predicate the RLS policy applies (`expires_at > now()`), so the
+    // composer disappears at exactly the moment the write would start failing.
+    open: clock !== null,
     slug: circle.slug,
     title: circle.title,
     topic: circle.topic,
     ticker: circle.ticker,
     premise: circle.premise,
-    clock: timeLeft(circle.expires_at, now),
+    clock,
     urgent: isUrgent(circle.expires_at, nowMs),
     elapsedPct: elapsedPctOf(circle.created_at, circle.expires_at, nowMs),
     members: roster.length,
