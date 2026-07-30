@@ -1,0 +1,65 @@
+/*
+ * The "+ Filter" panel. No artboard — composed from the grammar (§9):
+ * ONE flat card (--surface + 1px --border + a radius from §3), no shadow, and
+ * option pills that reuse the filter rail's chip exactly. Every value below is
+ * already in tokens.css and already in rotation on the screener.
+ */
+
+.panel {
+  margin-top: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-13);
+  padding: var(--space-13);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-13);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-7);
+  margin-top: var(--space-8);
+}
+
+/* The rail's chip, unselected: neutral border, dim label — the "+ Filter" look. */
+.option {
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-600);
+  padding: var(--space-6) var(--space-11);
+  border-radius: var(--radius-16);
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+}
+
+/* Selected: the applied chip's own outline, so the panel and the rail agree. */
+.on {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.done {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  cursor: pointer;
+}

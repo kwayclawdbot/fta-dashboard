@@ -53,11 +53,14 @@
   gap: var(--space-12);
 }
 
+/* An <a> since the bell became the link to the alert stream — the drawn shape
+   is unchanged; only the underline the anchor would bring has to be refused. */
 .bell {
   position: relative;
   display: grid;
   place-items: center;
   color: var(--text-dim);
+  text-decoration: none;
 }
 
 .bellBadge {

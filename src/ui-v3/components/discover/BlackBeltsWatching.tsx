@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { DISCOVER_EMPTY, type BeltWatchVM } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY } from "@/ui-v3/discover-copy";
+import type { BeltWatchVM } from "@/ui-v3/discover-data";
 import EmptyNote from "@/ui-v3/components/EmptyNote";
 import { tickerPaint } from "@/ui-v3/ticker-palette";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";

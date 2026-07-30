@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DISCOVER_EMPTY, type TrendingChipVM } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY } from "@/ui-v3/discover-copy";
+import type { TrendingChipVM } from "@/ui-v3/discover-data";
 import EmptyNote from "@/ui-v3/components/EmptyNote";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./TrendingChips.module.css";
