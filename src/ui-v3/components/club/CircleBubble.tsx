@@ -81,8 +81,13 @@ function Clock({ circle, prefix = "" }: { circle: CircleBubbleVM; prefix?: strin
  * The artboard's ninth grid cell: a dashed opener bubble with a full --positive
  * ring. It opens a real Circle — `club_circles` + the opener's own
  * `club_circle_members` row — via /v3/club/circles/new.
+ *
+ * Withheld entirely from a register that cannot open one, rather than rendered
+ * inert: this cell IS the affordance, so an unclickable copy of it would just be
+ * a grid cell that does nothing.
  */
-export function StartCircleBubble() {
+export function StartCircleBubble({ canPost = true }: { canPost?: boolean }) {
+  if (!canPost) return null;
   return (
     <Link href="/v3/club/circles/new" className={`${styles.cell} ${styles.grid}`}>
       <div className={styles.ring} style={{ "--arc": "var(--positive)", "--pct": "100%" } as CSSProperties}>

@@ -22,7 +22,10 @@ import styles from "./ClubFeedScreen.module.css";
 export default function ClubFeedScreen({ model }: { model: ClubFeedViewModel }) {
   return (
     <AppShell>
-      <ClubHeader active="feed" right={<ClubHeadActions />} />
+      <ClubHeader
+        active="feed"
+        right={<ClubHeadActions canPost={!model.viewer || model.viewer.canPost} />}
+      />
 
       {model.circles.length > 0 ? (
         <>

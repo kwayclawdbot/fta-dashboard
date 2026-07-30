@@ -12,9 +12,13 @@ import styles from "./ClubCirclesScreen.module.css";
  * adapter caps the list at eight so the opener tile always closes the grid.
  */
 export default function ClubCirclesScreen({ model }: { model: ClubCirclesViewModel }) {
+  // Anonymous keeps the affordance (it leads somewhere that asks them to sign
+  // in); the kid register does not, because `club_circles` INSERT refuses it.
+  const canOpen = !model.viewer || model.viewer.canPost;
+
   return (
     <AppShell>
-      <ClubHeader active="circles" right={<StartCircleCta />} />
+      <ClubHeader active="circles" right={<StartCircleCta canPost={canOpen} />} />
 
       <p className={styles.rule}>
         Breakout rooms around one event or thesis. Every Circle expires — 30 days max, then
@@ -25,7 +29,7 @@ export default function ClubCirclesScreen({ model }: { model: ClubCirclesViewMod
         {model.rows.map((c) => (
           <CircleBubble key={c.slug} circle={c} variant="grid" />
         ))}
-        <StartCircleBubble />
+        <StartCircleBubble canPost={canOpen} />
       </div>
     </AppShell>
   );
