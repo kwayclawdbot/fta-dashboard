@@ -1,0 +1,39 @@
+/*
+ * Board "07 You Profile" — the row of small counter tiles. Five equal flex
+ * slots; the artboard's own labels wrap to two lines inside a 6px side pad.
+ */
+
+.row {
+  display: flex;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}
+
+.tile {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-13);
+  padding: var(--space-11) var(--space-6);
+  text-align: center;
+  min-width: 0;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-15);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+/*
+ * The artboard tints exactly one tile green: "Accuracy 71%". No accuracy metric
+ * is computed anywhere in the app (and migration 196 forbids adding one without
+ * a ruling), so that tile never renders and no tile here is ever --positive.
+ */
+
+.label {
+  font-size: var(--fs-8);
+  color: var(--text-faint);
+  margin-top: var(--space-3);
+}

@@ -1,0 +1,55 @@
+/* Board "07 You Profile" — the graded-call list. Flat rows, grammar §5. */
+
+.section {
+  margin-top: var(--space-15);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-10) var(--space-12);
+}
+
+.ticker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-11-5);
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  flex: 0 0 auto;
+}
+
+.win {
+  color: var(--positive);
+}
+
+.loss {
+  color: var(--negative);
+}

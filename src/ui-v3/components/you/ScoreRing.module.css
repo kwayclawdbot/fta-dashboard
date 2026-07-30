@@ -1,0 +1,47 @@
+/*
+ * The profile dial from board "07 You Profile" — 64px conic ring around a 52px
+ * disc painted in --bg (so it reads as a hole punched through the page).
+ *
+ * Deliberately not <SignalRing>: that primitive is 48/38px and its disc is
+ * --surface. Same idea, different object; the shared one is read-only in this
+ * lane, so the artboard's version lives here.
+ */
+
+.ring {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: conic-gradient(
+    var(--accent) 0 var(--ring-pct),
+    var(--border) var(--ring-pct) 100%
+  );
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.disc {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-16);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.label {
+  /* 6.5px is a one-off on the artboards — below the extractor's count floor. */
+  font-size: 6.5px;
+  color: var(--text-dim);
+  letter-spacing: var(--ls-08em);
+  margin-top: var(--space-1);
+}

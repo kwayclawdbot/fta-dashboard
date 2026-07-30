@@ -1,0 +1,74 @@
+/*
+ * Board "07 You Profile" — the streak panel.
+ *
+ * This is a THIRD gradient wash: 120deg with a single 65% stop, and 14px/16px
+ * padding. The shared <GradientPanel> ships only "brief" (120deg, three stops)
+ * and "you" (110deg, 70%), and is read-only in this lane — so the tone is
+ * declared here on the same theme-scoped pattern that component uses. Board
+ * "22 Belts" reuses the identical wash for its active row.
+ * See the report's shared-primitive requests.
+ */
+
+.panel {
+  margin-top: var(--space-14);
+  background: linear-gradient(120deg, #241009 0%, #17141a 65%);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius-16);
+  padding: var(--space-14) var(--space-16);
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .panel {
+  background: linear-gradient(120deg, #ffeedd 0%, #ffffff 65%);
+}
+
+.flame {
+  font-size: var(--fs-26);
+  line-height: var(--lh-1);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  font-weight: var(--fw-600);
+}
+
+.count {
+  font-size: var(--fs-19);
+  font-weight: var(--fw-800);
+  color: var(--text);
+  margin-top: var(--space-3);
+}
+
+.unit {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--text-dim);
+}
+
+.pips {
+  display: flex;
+  gap: var(--space-4);
+  flex: 0 0 auto;
+}
+
+.pip {
+  width: 8px;
+  height: 22px;
+  border-radius: var(--radius-4);
+  background: var(--accent-soft);
+}
+
+.pipOn {
+  background: var(--accent);
+}

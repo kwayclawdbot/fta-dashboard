@@ -1,0 +1,116 @@
+/* Board "07 You Profile" — the screen title row and the identity block. */
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* The script voice's first real use in ui-v3: the screen's own name. */
+.title {
+  font-family: var(--font-script);
+  font-size: var(--fs-34);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.settings {
+  color: var(--text-dim);
+  font-size: var(--fs-13);
+  text-decoration: none;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  margin-top: var(--space-16);
+}
+
+/*
+ * The avatar's belt-agnostic accent ring. Its conic sweep and halo are
+ * theme-literal on the artboards (identical hexes in the light twin), so they
+ * are written out rather than routed through a role token.
+ */
+/*
+ * 98px, not the artboard's declared 92px. The mockup ships no box-sizing reset,
+ * so its `width:92px; padding:3px` is CONTENT-box — 98px on the page, with a
+ * 92px disc inside. base.css puts all of v3 on border-box, so the outer size is
+ * stated directly and the 3px padding still leaves a 92px disc.
+ */
+.avatarRing {
+  width: 98px;
+  height: 98px;
+  border-radius: var(--radius-full);
+  padding: var(--space-3);
+  background: conic-gradient(var(--accent), #ffb25e, var(--accent));
+  flex: 0 0 auto;
+  box-shadow: 0 0 14px rgba(255, 122, 26, 0.18);
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 3px solid var(--bg);
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-weight: var(--fw-800);
+  /* 28px is a one-off — below the extractor's count floor. */
+  font-size: 28px;
+  overflow: hidden;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font-script);
+  font-size: var(--fs-24);
+  color: var(--accent-strong);
+  line-height: 1.1;
+}
+
+.beltRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+  text-decoration: none;
+}
+
+.beltSwatch {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-3);
+  background: var(--belt-tone);
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.beltLabel {
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.star {
+  color: var(--gold);
+  font-size: var(--fs-12);
+}
+
+.rank {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  margin-top: var(--space-4);
+}
