@@ -62,3 +62,20 @@
   border-bottom: 7px solid transparent;
   margin-left: 3px;
 }
+
+/* Playing: the same disc, a square instead of a triangle. Cut from the glyph's
+   own box (11 wide, 14 tall) so the two states weigh the same on the disc. */
+.stopGlyph {
+  width: 11px;
+  height: 12px;
+  background: var(--bg);
+  border-radius: 1.5px;
+}
+
+/* Rendering: the disc dims while the clip is being synthesised. No spinner —
+   there is no spinner anywhere in this design system, and a 36px one would be
+   more motion than the wait deserves. */
+.play:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

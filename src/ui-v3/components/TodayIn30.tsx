@@ -1,4 +1,5 @@
 import type { IndexChipVM } from "@/ui-v3/home-data";
+import BriefPlayButton from "./BriefPlayButton";
 import GradientPanel from "./GradientPanel";
 import IndexChips from "./IndexChips";
 import styles from "./TodayIn30.module.css";
@@ -11,6 +12,11 @@ import styles from "./TodayIn30.module.css";
  * filters the bare activity tallies out. The panel keeps its shape and its index
  * chips (those are real, live quotes) and says the brief is still coming, which
  * is true, instead of printing "1 research look across the Club".
+ *
+ * THE ▶ FOLLOWS THAT SAME NULL. It reads the brief aloud (see BriefPlayButton
+ * and /api/v3/brief-audio), so on a brief with nothing in it there is nothing to
+ * play and the button is not drawn at all — offering a play control over the
+ * sentence "the brief will land later" would be the panel promising twice.
  */
 export default function TodayIn30({
   line,
@@ -32,9 +38,7 @@ export default function TodayIn30({
             </div>
           )}
         </div>
-        <button type="button" className={styles.play} aria-label="Play today's brief">
-          <span className={styles.playGlyph} />
-        </button>
+        {line ? <BriefPlayButton /> : null}
       </div>
       <IndexChips initial={indices} />
     </GradientPanel>

@@ -325,12 +325,41 @@ function isDegenerateBriefItem(item: RawBriefItem): boolean {
  * only thing the brief managed was a degenerate count, this is null and the
  * panel renders its index chips plus an honest waiting line.
  */
+/** Every brief item worth saying out loud, in the order the brief put them. */
+function briefItemsWorthSaying(brief: unknown): string[] {
+  return rows<RawBriefItem>(brief, "items")
+    .filter(
+      (it) =>
+        typeof it?.text === "string" && it.text.trim().length > 0 && !isDegenerateBriefItem(it),
+    )
+    .map((it) => (it.text as string).trim());
+}
+
 function mapBriefLine(brief: unknown): string | null {
-  const item = rows<RawBriefItem>(brief, "items").find(
-    (it) =>
-      typeof it?.text === "string" && it.text.trim().length > 0 && !isDegenerateBriefItem(it),
-  );
-  return item ? (item.text as string) : null;
+  return briefItemsWorthSaying(brief)[0] ?? null;
+}
+
+/**
+ * What the ▶ on "Today in 30 seconds" READS ALOUD.
+ *
+ * The panel prints the lead line; the button reads the whole brief, which is
+ * what a thirty-second summary is and why the artboard put a play control on it
+ * rather than beside a paragraph. Both come from the SAME filter, so the button
+ * can never be offered on a brief the panel decided had nothing in it — null
+ * here and null there happen together, by construction.
+ *
+ * Nothing is composed or rewritten for the ear: these are the brief's own
+ * sentences, joined. The cap is a safety rail on a TTS request, not an editorial
+ * choice — the brief route emits a handful of items and has never come near it.
+ */
+const SPEECH_ITEM_LIMIT = 8;
+const SPEECH_CHAR_LIMIT = 1200;
+
+export function briefSpokenText(brief: unknown): string | null {
+  const items = briefItemsWorthSaying(brief).slice(0, SPEECH_ITEM_LIMIT);
+  if (items.length === 0) return null;
+  const text = items.join(" ");
+  return text.length > SPEECH_CHAR_LIMIT ? text.slice(0, SPEECH_CHAR_LIMIT) : text;
 }
 
 /**
