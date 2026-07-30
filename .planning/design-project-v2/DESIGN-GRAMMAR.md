@@ -1,9 +1,14 @@
 # ui-v3 Design Grammar
 
-Written from the one screen actually translated so far — **"01 Home"** — element by
-element. Every value below is a real px/token in `src/ui-v3`, not an aspiration.
-When the next screen is translated, this file gets amended from *that* artboard;
-it is never extended by invention.
+Written from the screens actually translated — **"01 Home"** first, then the
+Discover, Club, Watch and You boards — element by element. Every value below is a
+real px/token in `src/ui-v3`, not an aspiration. When the next screen is
+translated, this file gets amended from *that* artboard; it is never extended by
+invention.
+
+The primitive variants in §5-§8 are recorded the same way: a variant exists
+because two artboards draw the same object differently, and it is named after the
+difference, never after a preference.
 
 ---
 
@@ -96,13 +101,21 @@ Only two container treatments exist. There is no third.
 ever. Used by the strip card and the signal row.
 
 **Gradient panel** (`GradientPanel`) — a warm diagonal wash + `1px solid
---accent-soft` + `--radius-16`. Exactly two tones, both from the artboards:
+--accent-soft`. Exactly four tones, each read off an artboard:
 
-- `brief` — `linear-gradient(120deg, #2A1208, #1A0E12 55%, #17141A)` (light: `#FFE9D6 → #FFF1E4 55% → #FFFFFF`)
-- `you` — `linear-gradient(110deg, #241009, #17141A 70%)` (light: `#FFEEDD → #FFFFFF 70%`)
+| tone | wash (dark → light) | radius | padding | board |
+| --- | --- | --- | --- | --- |
+| `brief` | `120deg #2A1208, #1A0E12 55%, #17141A` → `#FFE9D6, #FFF1E4 55%, #FFFFFF` | 16 | 14 / 15 | 01 Home |
+| `you` | `110deg #241009, #17141A 70%` → `#FFEEDD, #FFFFFF 70%` | 16 | 13 / 15 | 01 Home |
+| `streak` | `120deg #241009, #17141A 65%` → `#FFEEDD, #FFFFFF 65%` | 16 | 14 / 16 | 07 You Profile |
+| `close` | `135deg #241009, #17141A 60%` → `#FFEEDD, #FFFFFF 60%` | 18 | 16 | 06 Watch |
 
-These stops have no semantic token — they are one-off washes — so they live as
-theme-scoped custom properties inside `GradientPanel.module.css` and nowhere else.
+The stops have no semantic token — they are one-off washes — so they live as
+theme-scoped custom properties `--wash-brief/you/streak/close` in `base.css`.
+They are declared there rather than in the component because the `streak` wash is
+also painted by the lifted rung on "22 Belts", and one declaration per wash means
+one light override per wash. A panel takes `href` when the artboard makes the
+whole panel its own tap target; the box does not change.
 
 **Shadows are halos, not elevation.** `--shadow-1..3` are all
 `0 0 Npx rgba(255,122,26,…)`. Nothing on this screen is lifted off the page.
@@ -114,11 +127,26 @@ theme-scoped custom properties inside `GradientPanel.module.css` and nowhere els
 `SectionEyebrow` is the only way a section opens:
 
 ```
-mono · 9.5px · 600 · .16em · uppercase · --text
-  [optional] one <EyebrowAccent> run
-  [optional] right-aligned action, 11px/600/--accent, same baseline
-  [optional] caption, 10.5px/--text-faint, 3px beneath
+mono · 9.5px · 600 · .16em · uppercase
+  [optional] one <EyebrowAccent> run (labelTone="text" only)
+  [optional] right-aligned action, 11px, same baseline
+  [optional] caption, 10.5px/--text-faint, 2-3px beneath
 ```
+
+The boards use two colour assignments and they are opposites, so both are
+variants rather than a default plus an override:
+
+| prop | value | drawn by |
+| --- | --- | --- |
+| `labelTone` | `text` (default) — label `--text`, one optional accent run | 01 Home, 04 Club Feed |
+| | `accent` — the whole label is `--accent` | 02 Discover ×5, 07 You Profile, 22 Belts |
+| `actionTone` | `accent` (default) — 11px/600/`--accent` | 01 Home |
+| | `dim` — 11px/400/`--text-dim` | Discover, Club Feed, You |
+| `actionSize` | `word` (default) 11px / `glyph` 12px | "See all" / the bare "→" |
+| `captionGap` | `3` (default) / `2` | Home / every Discover caption |
+
+An action with an `actionHref` is a link; without one it is inert text (the
+screener's "→" marks a section that has no destination yet).
 
 ---
 
@@ -136,20 +164,51 @@ synthesise a brand color for a ticker the design never drew.
 must be positioned and must reserve 7px of clearance. `--surface-2` /
 `--text-muted`, except rank 1 which is `--accent` / `--accent-on`.
 
-**`SignalRing`** — 48px `conic-gradient(var(--accent) 0 P%, var(--border) P% 100%)`
-around a 38px `--surface` disc holding a mono 13px value and a 6.5px/`.08em`
+**`SignalRing`** — `conic-gradient(var(--accent) 0 P%, var(--border) P% 100%)`
+around a centred disc holding a mono value and, on two boards, a 6.5px/`.08em`
 `--text-dim` caption. The primitive never derives its own number; the caller
-supplies `pct`, `value`, and `label`.
+supplies `pct`, `value` and `caption`. Three size classes, one per board, and
+nothing between them:
+
+| `size` | ring / disc | value | caption | `discTone` | board |
+| --- | --- | --- | --- | --- | --- |
+| `sm` | 48 / 38 | mono 13 | 0px beneath | `surface` | 01 Home, YOU strip |
+| `md` | 64 / 52 | mono 16 | 1px beneath, may be two lines | `bg` | 07 You Profile |
+| `lg` | 88 / 74 | mono 17 | none | `surface` | 06 Watch |
+
+`discTone` is what the ring is punched through: `surface` when it sits on a card,
+`bg` when it sits on the page. They are different tokens in light theme.
 
 ---
 
-## 8. Nav pattern
+## 8. Shell and nav pattern
+
+`AppShell` is the column every screen sits in: centred, `max-width: 430px`,
+`--bg`. The boards use three shapes and no others.
+
+| shape | props | boards |
+| --- | --- | --- |
+| nav destination | *(defaults)* — 18px well, five-slot nav | 01 Home, 02 Discover, 04 Club, 06 Watch, 07 You … |
+| detail + action bar | `nav={false}` `bar={…}` | 19 Alert Setup (arm), 22 Belts (next rung) |
+| full bleed | `padding="bleed"` `nav={false}` | 23 Inside Circle |
+
+The bar slot is the artboards' pinned footer: hairline on top, `12px 18px 24px`,
+laid out as a row (one child fills it with `flex: 1`, two can share it).
+`padding="bleed"` hands the column straight to the children, so a screen whose
+bands run to the edge keeps its own `flex: 1` on the band that should absorb the
+slack — without one, the content sits at the top of the column.
 
 `BottomNav` — `border-top: 1px solid --border`, `background: --bg`, padding
 `10px 8px 16px`, five equal `flex: 1` slots. Each slot is a 15px typographic
 glyph (`⌂ ◎ ✦ ▣ ◉` — text, not an icon set) over a 9px/600 label, `--text-faint`.
 The active slot flips both to `--accent` and the label to 700. Active is derived
 from `usePathname`, and it is the only client-side state on the screen.
+
+**The glyphs do not share a line-height.** None of the five exists in Instrument
+Sans, so each falls back to a different face; the artboard declares no
+line-height, which gives line boxes of 19 / 23 / 19 / 20 / 23px and puts every
+label under its own glyph. Pinning one value flattens them and moves three of the
+five labels by up to 3.5px. Leave it inherited.
 
 ---
 
@@ -190,3 +249,46 @@ Recorded so the next screen does not have to rediscover them.
   Polygon index snapshots are not entitled on this account.
 - **Script voice is unexercised.** `--font-script` has no Home usage; its rules
   must be written from whichever artboard first uses it.
+
+---
+
+## 11. Translation gotchas
+
+Four ways the mockup DOM and the v3 DOM disagree about the *same* declaration.
+Each of these cost a lane real time; none is discoverable by reading the artboard
+markup alone.
+
+**1. The mockup has no `box-sizing` reset — its boxes are content-box.** v3 sets
+`border-box` on everything (base.css). So an artboard's `width:38px;
+border:2.5px` renders **43px** on the page, and `width:34px; border:1px` renders
+36px. Convert every declared size that sits next to a border or padding: state
+the outer size in v3, and say so in a comment. Getting this wrong is a silent
+2-8px error that only shows up as accumulated drift down the screen.
+
+**2. Wait for `document.fonts.ready` plus ~3s before measuring an artboard.**
+The mockups pull Barlow Condensed / Instrument Sans / IBM Plex Mono / Kaushan
+from the Google CDN. Measure too early and every box is a fallback-metrics box —
+which reads as a real difference and sends you editing correct CSS. The same wait
+applies to the v3 side before a side-by-side.
+
+**3. `svg` is inline on the artboards and blockified by Tailwind.** Preflight
+sets `display: block; vertical-align: middle`; the mockups declare neither, so an
+artboard sparkline sits on the text baseline and its line box is ~4px taller than
+the graphic — which is what the caption beneath is spaced off. base.css restores
+both halves for every v3 svg. Undo only `display` and the graphic hangs from
+`vertical-align: middle` instead, moving everything below it. An svg that really
+is a block opts out at `:global([data-ui="v3"]) .yourClass` — a bare class loses
+to the base rule's `[data-ui="v3"] svg`.
+
+**4. Every light-theme selector must be scoped `[data-ui="v3"][data-theme="light"]`.**
+The old app writes `data-theme` on `<html>`. A bare `[data-theme="light"] .x`
+therefore matches while v3 is in dark, and light values leak into the dark
+screen. Write it as `:global([data-ui="v3"][data-theme="light"]) .x` in every
+module — that exact form, so the pattern is greppable.
+
+And one process note, because it is what made this refactor safe: **capture
+390×844 screenshots of every screen in both themes before touching a shared
+primitive, and diff after.** A consolidation that is genuinely behaviour-
+preserving comes back at 0 differing pixels — not "close enough" — so any
+non-zero diff is either a real regression or a change you should be able to name
+before you look at it.
