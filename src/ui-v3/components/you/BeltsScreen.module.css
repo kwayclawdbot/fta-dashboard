@@ -1,0 +1,112 @@
+/*
+ * Board "22 Belts" — a DETAIL screen, not a nav destination.
+ *
+ * It carries the same app column as <AppShell> but replaces the five-slot nav
+ * with a pinned progress bar (padding 12px 18px 24px above a hairline). AppShell
+ * hard-wires <BottomNav> and is read-only in this lane, so the column is
+ * restated here. See the report's shared-primitive requests.
+ */
+
+.viewport {
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+}
+
+.screen {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.body {
+  padding: var(--space-18) var(--space-18) 0;
+  flex: 1;
+}
+
+/* ── header ───────────────────────────────────────────────────────────────── */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.back {
+  color: var(--text-muted);
+  font-size: var(--fs-16);
+  text-decoration: none;
+  line-height: var(--lh-1);
+}
+
+.title {
+  font-family: var(--font-script);
+  font-size: var(--fs-30);
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.blurb {
+  font-size: var(--fs-11-5);
+  color: var(--text-dim);
+  margin-top: var(--space-8);
+  line-height: var(--lh-1-5);
+}
+
+/* ── pinned footer ────────────────────────────────────────────────────────── */
+
+.footer {
+  padding: var(--space-12) var(--space-18) 24px;
+  border-top: 1px solid var(--border);
+}
+
+.nextCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-11) var(--space-14);
+}
+
+.nextGlyph {
+  font-size: var(--fs-14);
+  flex: 0 0 auto;
+}
+
+.nextBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.nextTitle {
+  font-size: var(--fs-11-5);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.nextDetail {
+  font-size: var(--fs-9-5);
+  color: var(--text-dim);
+  margin-top: var(--space-1);
+}
+
+.track {
+  width: 40px;
+  height: 6px;
+  border-radius: var(--radius-3);
+  background: var(--border);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.fill {
+  width: var(--fill-pct);
+  height: 100%;
+  background: var(--accent);
+}
