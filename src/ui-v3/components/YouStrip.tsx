@@ -35,7 +35,7 @@ export default function YouStrip({ you }: { you: YouStripVM }) {
         </div>
       </div>
 
-      <SignalRing pct={you.pct} value={String(you.pct)} label="XP" />
+      <SignalRing pct={you.pct} value={String(you.pct)} caption="XP" />
     </GradientPanel>
   );
 }
