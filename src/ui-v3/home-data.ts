@@ -6,6 +6,8 @@ import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
 import { clubFixtures } from "@/lib/clubhome/fixtures";
 import { beltProgress } from "@/lib/belts";
 import { LEVELS } from "@/lib/xp";
+import { TRENDING_DISCLAIMER } from "@/lib/club/score";
+import { MIN_POSITIONED_OPINIONS } from "@/ui-v3/club-floors";
 
 /**
  * ui-v3 Home — the ONLY data access the screen performs.
@@ -29,15 +31,31 @@ export interface TrendingTileVM {
   rank: number;
   ticker: string;
   /**
-   * The artboard's "78%" line. Real source is the trending core's `heat`
-   * (0-100 club-score dial) or, failing that, `sentiment.bullPct`. Both are
-   * genuine percentages, so `isPct` is true and the tile appends "%".
+   * The artboard's "78%" line. ONE unit for the whole strip — see `mapTrending`.
+   * Never a mix of a percentage on one card and a raw score on the next.
    */
   metric: number | null;
   /** False when `metric` is the unbounded raw attention `score`, which must NOT wear a % sign. */
   isPct: boolean;
   /** The artboard's "▲ 6" line — trending core `change` (club_change_14d). */
   delta: number | null;
+}
+
+export interface TrendingStripVM {
+  tiles: TrendingTileVM[];
+  /**
+   * Names the unit the whole strip is printing when that unit is NOT a
+   * percentage — rendered as a small mono caption beside the section subtitle so
+   * a bare "9" is never left to be read as a percent. Null when the tiles carry
+   * a real percentage, which the "%" sign already names.
+   */
+  unitLabel: string | null;
+  /**
+   * `TRENDING_DISCLAIMER`, verbatim. The trending contract documents it as a
+   * line the UI MUST render (attention ≠ recommendation), so it travels with the
+   * rows rather than being retyped in the component.
+   */
+  disclaimer: string;
 }
 
 export interface IndexChipVM {
@@ -73,8 +91,12 @@ export interface HomeViewModel {
   initials: string;
   /** No notifications core exists yet — live always yields null and the badge is omitted. */
   notificationCount: number | null;
-  trending: TrendingTileVM[];
-  /** The artboard's one-liner under "TODAY IN 30 SECONDS" — brief core `items[0].text`. */
+  trending: TrendingStripVM;
+  /**
+   * The artboard's one-liner under "TODAY IN 30 SECONDS" — the brief core's lead
+   * item, once the degenerate activity-count lines are filtered out (see
+   * `mapBriefLine`). Null → the panel says the brief has not landed yet.
+   */
   briefLine: string | null;
   /**
    * Index chips. Not in any seed, so:
@@ -94,14 +116,21 @@ interface RawTrendingRow {
   score?: number | null;
   change?: number | null;
   heat?: number | null;
-  sentiment?: { bullPct?: number | null } | null;
+  sentiment?: {
+    bull?: number | null;
+    neutral?: number | null;
+    bear?: number | null;
+    bullPct?: number | null;
+  } | null;
 }
 interface RawForYouItem {
   ticker?: string | null;
   delta?: string | null;
+  kind?: string | null;
   watchState?: string | null;
 }
 interface RawBriefItem {
+  kind?: string | null;
   text?: string | null;
 }
 
@@ -118,31 +147,96 @@ const TRENDING_LIMIT = 5;
 /** The artboard shows three signal rows. */
 const SIGNAL_LIMIT = 3;
 
-function mapTrending(section: unknown): TrendingTileVM[] {
-  return rows<RawTrendingRow>(section, "rows")
-    .filter((r) => typeof r?.ticker === "string" && r.ticker.length > 0)
-    .slice(0, TRENDING_LIMIT)
-    .map((r, i) => {
-      // Prefer a real percentage. `heat` is the 0-100 club-score dial; bullPct
-      // is the bull share. Only if BOTH are absent do we fall back to the raw
-      // attention `score`, which is unbounded and therefore never gets a "%".
-      const pct = r.heat ?? r.sentiment?.bullPct ?? null;
-      const isPct = pct !== null;
-      return {
-        rank: r.rank ?? i + 1,
-        ticker: (r.ticker as string).toUpperCase(),
-        metric: isPct ? Math.round(pct) : (r.score ?? null),
-        isPct,
-        delta: r.change ?? null,
-      };
-    });
+function positionedOf(row: RawTrendingRow): number {
+  const s = row.sentiment;
+  if (!s) return 0;
+  return (s.bull ?? 0) + (s.neutral ?? 0) + (s.bear ?? 0);
 }
+
+/**
+ * The ranked strip — and the one rule that governs it: EVERY CARD PRINTS THE
+ * SAME UNIT.
+ *
+ * The unit is chosen once, for the whole strip, by walking three candidates in
+ * order and taking the first that every row can answer:
+ *
+ *  1. `heat` — the 0-100 club-score dial. The trending core nulls it for any row
+ *     below FLOORS.trendingScore, so on a founding club only the leaders have it.
+ *  2. `sentiment.bullPct` — the bull share, and ONLY when every row clears
+ *     MIN_POSITIONED_OPINIONS. One member clicking "bullish" is a 100% that
+ *     means nothing, so the floor gates the percentage, not just the ranking.
+ *  3. the raw attention `score` — unbounded, so it wears no "%" and the strip
+ *     carries a mono caption naming it instead.
+ *
+ * Mixing them is the bug this replaces: the live strip printed "AAPL 100%" from
+ * a one-sided bullPct beside "GOOG 9" from a raw score, as though 100 and 9 were
+ * the same measurement.
+ */
+function mapTrending(section: unknown): TrendingStripVM {
+  const raw = rows<RawTrendingRow>(section, "rows")
+    .filter((r): r is RawTrendingRow & { ticker: string } =>
+      typeof r?.ticker === "string" && r.ticker.length > 0,
+    )
+    .slice(0, TRENDING_LIMIT);
+
+  const disclaimer = TRENDING_DISCLAIMER;
+  if (raw.length === 0) return { tiles: [], unitLabel: null, disclaimer };
+
+  const everyHeat = raw.every((r) => typeof r.heat === "number");
+  const everyBullPct = raw.every(
+    (r) =>
+      typeof r.sentiment?.bullPct === "number" &&
+      positionedOf(r) >= MIN_POSITIONED_OPINIONS,
+  );
+
+  const unit: "heat" | "bullPct" | "score" = everyHeat
+    ? "heat"
+    : everyBullPct
+      ? "bullPct"
+      : "score";
+
+  const value = (r: RawTrendingRow): number | null => {
+    if (unit === "heat") return Math.round(r.heat as number);
+    if (unit === "bullPct") return Math.round(r.sentiment?.bullPct as number);
+    return typeof r.score === "number" ? Math.round(r.score) : null;
+  };
+
+  return {
+    tiles: raw.map((r, i) => ({
+      rank: r.rank ?? i + 1,
+      ticker: r.ticker.toUpperCase(),
+      metric: value(r),
+      isPct: unit !== "score",
+      delta: r.change ?? null,
+    })),
+    unitLabel: unit === "score" ? "CLUB SCORE" : null,
+    disclaimer,
+  };
+}
+
+/**
+ * The foryou core's own last-resort line (route.ts `reasonsFor` step 6): the
+ * sentence it appends to EVERY ticker so a row always has something to say. It
+ * is a statement that nothing happened, which is the definition of a row not
+ * worth a slot on the artboard's three-row stack.
+ */
+const FORYOU_FILLER = "Steady in the Club — no shift this week";
+
+/**
+ * Fewer than this many real signals → the section shows its empty state rather
+ * than a single lonely row pretending to be a stack. Read by <YourSignals>.
+ */
+export const SIGNAL_MIN = 2;
 
 function mapSignals(section: unknown): SignalRowVM[] {
   const seen = new Set<string>();
   return rows<RawForYouItem>(section, "items")
     .filter((it) => {
       if (typeof it?.ticker !== "string" || typeof it?.delta !== "string") return false;
+      // Drop the core's no-news line. A row that says "nothing changed" is not a
+      // signal, and three of them stacked under "YOUR SIGNALS" reads as a screen
+      // pretending to have content.
+      if (it.delta.trim() === FORYOU_FILLER) return false;
       if (seen.has(it.delta)) return false;
       seen.add(it.delta);
       return true;
@@ -153,13 +247,45 @@ function mapSignals(section: unknown): SignalRowVM[] {
       text: it.delta as string,
       // watchState is the only real per-row state the foryou core exposes.
       affordance: it.watchState === "triggered" || it.watchState === "near_trigger" ? "add" : "go",
+      // No count core backs the artboard's orange pill, so it never renders.
+      // NOTHING here invents an earnings or count signal kind.
       count: null,
     }));
 }
 
+/**
+ * Below this, the brief's raw activity tally is noise dressed as news: "1
+ * research look across the Club in the last day" is a true sentence that tells a
+ * member nothing, and it was the whole brief on the live club.
+ */
+const BRIEF_MIN_ACTIVITY = 5;
+
+/**
+ * Is this brief item a bare activity count rather than something about the
+ * market?
+ *
+ * Deliberately narrow: ONE kind (`research_velocity`, the brief route's item 1),
+ * and only while its own count is under the floor. Every other kind the route
+ * emits — watcher growth, sentiment shift, and the rest — names a ticker or a
+ * move, and passes untouched. A club with real research volume also passes.
+ */
+function isDegenerateBriefItem(item: RawBriefItem): boolean {
+  if (item.kind !== "research_velocity") return false;
+  const count = Number(String(item.text ?? "").match(/^\s*([\d,]+)/)?.[1]?.replace(/,/g, ""));
+  return Number.isFinite(count) && count < BRIEF_MIN_ACTIVITY;
+}
+
+/**
+ * The brief's lead line — the first item that actually says something. When the
+ * only thing the brief managed was a degenerate count, this is null and the
+ * panel renders its index chips plus an honest waiting line.
+ */
 function mapBriefLine(brief: unknown): string | null {
-  const first = rows<RawBriefItem>(brief, "items")[0];
-  return typeof first?.text === "string" && first.text.length > 0 ? first.text : null;
+  const item = rows<RawBriefItem>(brief, "items").find(
+    (it) =>
+      typeof it?.text === "string" && it.text.trim().length > 0 && !isDegenerateBriefItem(it),
+  );
+  return item ? (item.text as string) : null;
 }
 
 /**

@@ -1,29 +1,40 @@
 import Link from "next/link";
-import type { TrendingTileVM } from "@/ui-v3/home-data";
+import type { TrendingStripVM } from "@/ui-v3/home-data";
 import SectionEyebrow, { EyebrowAccent } from "./SectionEyebrow";
 import TickerTile from "./TickerTile";
 import RankPip from "./RankPip";
+import EmptyNote from "./EmptyNote";
 import styles from "./TopInTheClub.module.css";
 
 /**
  * The ranked attention strip. Each card is rank pip + ticker tile + symbol +
  * metric + delta, and rank 1 alone carries the accent border and halo.
  *
- * `metric` is a percentage when the trending core supplied a real one (heat or
- * bullPct); otherwise it is the raw attention score and renders WITHOUT a "%",
- * because that number is unbounded and a percent sign would be a lie.
+ * ONE UNIT FOR THE WHOLE STRIP. `metric` is a percentage on every card or a raw
+ * club score on every card — never a mix — and when it is the score the mono
+ * `unitLabel` names it, because an unlabelled "9" beside a "100%" is a lie about
+ * what was measured. home-data.ts owns that choice; this component only prints.
+ *
+ * The trailing line is the trending contract's compliance disclaimer, which that
+ * contract documents as MUST-render wherever the ledger is shown.
  */
-export default function TopInTheClub({ rows }: { rows: TrendingTileVM[] }) {
-  if (rows.length === 0) return null;
-
+export default function TopInTheClub({ strip }: { strip: TrendingStripVM }) {
   return (
     <section className={styles.section}>
       <SectionEyebrow caption="Live ranking by member attention &amp; conviction">
         Top in <EyebrowAccent>the club</EyebrowAccent>
       </SectionEyebrow>
 
+      {strip.unitLabel ? <div className={styles.unit}>{strip.unitLabel}</div> : null}
+
+      {strip.tiles.length === 0 ? (
+        <EmptyNote>
+          The attention ledger is still filling. Ranked names appear once the Club starts
+          reading and taking sides.
+        </EmptyNote>
+      ) : (
       <div className={styles.strip}>
-        {rows.map((row) => (
+        {strip.tiles.map((row) => (
           <Link
             key={row.ticker}
             href={`/v3/discover`}
@@ -51,6 +62,9 @@ export default function TopInTheClub({ rows }: { rows: TrendingTileVM[] }) {
           </Link>
         ))}
       </div>
+      )}
+
+      <p className={styles.disclaimer}>{strip.disclaimer}</p>
     </section>
   );
 }

@@ -1,15 +1,34 @@
 import Link from "next/link";
-import type { SignalRowVM } from "@/ui-v3/home-data";
+import { SIGNAL_MIN, type SignalRowVM } from "@/ui-v3/home-data";
 import SectionEyebrow from "./SectionEyebrow";
 import TickerTile from "./TickerTile";
+import EmptyNote from "./EmptyNote";
 import styles from "./YourSignals.module.css";
 
 /**
  * The personal signal stack. Each row is tile + symbol + what changed + one
  * trailing affordance, chosen from the three the artboard defines.
+ *
+ * home-data.ts has already dropped the foryou core's "nothing changed" filler,
+ * so what arrives here is only rows that say something. Below SIGNAL_MIN the
+ * section keeps its eyebrow and shows the honest state instead: one lonely row
+ * under a three-row heading looked like a screen with content missing, and
+ * padding it back out with filler was the thing that made it read as fake.
  */
 export default function YourSignals({ rows }: { rows: SignalRowVM[] }) {
-  if (rows.length === 0) return null;
+  if (rows.length < SIGNAL_MIN) {
+    return (
+      <section className={styles.section}>
+        <SectionEyebrow actionLabel="See all" actionHref="/v3/watch">
+          Your signals
+        </SectionEyebrow>
+        <EmptyNote>
+          Signals appear as your watchlist heats up — new watchers, opinion swings, and Kai
+          Watch moving toward a trigger.
+        </EmptyNote>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.section}>

@@ -21,7 +21,7 @@ export default function HomeScreen({ model }: { model: HomeViewModel }) {
       <h2 className={styles.greeting}>GM, {model.greetingName} 👋</h2>
       <p className={styles.subtitle}>Here&rsquo;s what the Club is seeing</p>
 
-      <TopInTheClub rows={model.trending} />
+      <TopInTheClub strip={model.trending} />
       <TodayIn30 line={model.briefLine} indices={model.indices} />
       <YourSignals rows={model.signals} />
       {model.you ? <YouStrip you={model.you} /> : null}

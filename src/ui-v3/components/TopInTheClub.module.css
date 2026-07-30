@@ -4,6 +4,31 @@
   margin-top: var(--space-16);
 }
 
+/*
+ * Names the unit the strip is printing when that unit is not a percentage. Same
+ * mono/9.5px/.16em treatment the boards give every caption-rank label, one ramp
+ * dimmer than the eyebrow above it so it reads as a note on the subtitle rather
+ * than a second section head.
+ */
+.unit {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: var(--ls-16em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: var(--space-3);
+}
+
+/*
+ * The trending contract's compliance line. Caption voice — the boards' smallest
+ * muted ramp — so it sits under the strip as a footnote, not a warning banner.
+ */
+.disclaimer {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  margin-top: var(--space-8);
+}
+
 .strip {
   display: flex;
   gap: var(--space-9);
