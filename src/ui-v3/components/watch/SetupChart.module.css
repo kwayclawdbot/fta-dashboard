@@ -1,0 +1,107 @@
+/*
+ * "19 Alert Setup" — the setup on the chart.
+ *
+ * The artboard draws this as a hand-written inline SVG: two translucent zone
+ * rects, three dashed level rules, the close polyline, and an accent dot on the
+ * last point. It is translated as SVG, element for element — no charting
+ * library is involved, and the zone tints are the artboard's own alpha values.
+ */
+
+.card {
+  margin-top: var(--space-14);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-13) var(--space-14);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: var(--fw-600);
+}
+
+.quote {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text);
+}
+
+.up {
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}
+
+.plot {
+  position: relative;
+  margin-top: var(--space-10);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 120px;
+}
+
+.entryZone {
+  fill: rgba(74, 227, 131, 0.09);
+}
+
+.invalidZone {
+  fill: rgba(255, 77, 109, 0.09);
+}
+
+.entryRule {
+  stroke: var(--positive);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+
+.invalidRule {
+  stroke: var(--negative);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+
+.line {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+.marker {
+  fill: var(--accent);
+}
+
+/* The two level captions, knocked into the page ground so they read over the line. */
+.tag {
+  position: absolute;
+  right: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  background: var(--bg);
+  padding: var(--space-1) var(--space-5);
+  border-radius: var(--radius-4);
+}
+
+.entryTag {
+  top: 20px;
+  color: var(--positive);
+}
+
+.invalidTag {
+  bottom: 14px;
+  color: var(--negative);
+}
