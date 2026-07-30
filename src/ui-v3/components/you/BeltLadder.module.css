@@ -1,0 +1,137 @@
+/*
+ * Board "22 Belts" — the ladder.
+ *
+ * Every rung is a flat card at .85 opacity except the member's own, which is
+ * lifted by the warm wash, a 1.5px accent hairline and the accent halo. That
+ * halo (rgba(255,122,26,.14)) is a one-off on this board — --shadow-1/2 are .2
+ * and .25 — so it is written out.
+ */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-14);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-13);
+  padding: var(--space-10) var(--space-13);
+  opacity: 0.85;
+}
+
+.rowHere {
+  background: linear-gradient(120deg, #241009 0%, #17141a 65%);
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 0 12px rgba(255, 122, 26, 0.14);
+  opacity: 1;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .rowHere {
+  background: linear-gradient(120deg, #ffeedd 0%, #ffffff 65%);
+}
+
+/*
+ * The belt object itself: a ring in the belt tone around a knotted bar.
+ *
+ * 43px, not the artboard's declared 38px. The mockup ships no box-sizing reset,
+ * so its `width:38px; border:2.5px` is CONTENT-box and measures 43px on the
+ * page; v3 is border-box, so the outer size is stated directly. Same conversion
+ * applies to the ★ badge below (14px + 2px border → 18px).
+ */
+.knot {
+  width: 43px;
+  height: 43px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 2.5px solid var(--belt-tone);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.knotHere {
+  background: var(--bg);
+}
+
+.knotBar {
+  width: 16px;
+  height: 5px;
+  border-radius: var(--radius-2);
+  background: var(--belt-tone);
+  display: inline-block;
+}
+
+/* The apex marker — only the rung the member has actually reached wears it. */
+.knotStar {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  display: grid;
+  place-items: center;
+  /* 7px is a one-off on this board. */
+  font-size: 7px;
+  color: var(--accent-on);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.nameHere {
+  font-weight: var(--fw-800);
+}
+
+.hereTag {
+  font-size: var(--fs-9);
+  color: var(--accent-strong);
+  font-weight: var(--fw-600);
+}
+
+.gate {
+  font-size: var(--fs-9-5);
+  color: var(--text-dim);
+  margin-top: var(--space-1);
+}
+
+/*
+ * On the lifted rung the artboard warms the gate line off the neutral ramp
+ * (#B8AEB0 dark / #7A6A5E light). Neither is a semantic role, so the pair is
+ * declared here — same treatment GradientPanel gives its one-off washes.
+ */
+.gateHere {
+  color: #b8aeb0;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .gateHere {
+  color: #7a6a5e;
+}
+
+.share {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  color: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+.shareHere {
+  color: var(--accent-strong);
+}

@@ -1,0 +1,91 @@
+/*
+ * Board "22 Belts" — the "how belts show up" legend. A single flat card whose
+ * rows are separated by a hairline rather than by gaps.
+ */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.card {
+  margin-top: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-12) var(--space-13);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+}
+
+.row + .row {
+  margin-top: var(--space-11);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-11);
+}
+
+/*
+ * 38px, not the artboard's declared 34px — the mockup has no box-sizing reset,
+ * so its `width:34px; border:2px` is content-box. The live-node below converts
+ * the same way (12px + 2px border → 16px).
+ */
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 2px solid var(--belt-tone);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  font-weight: var(--fw-700);
+  font-size: var(--fs-11);
+  flex: 0 0 auto;
+  position: relative;
+}
+
+/* The live-node dot the apex belt earns. Its ring is the card it sits on. */
+.node {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  border: 2px solid var(--surface);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.chip {
+  font-size: var(--fs-9);
+  color: var(--belt-ink);
+  background: var(--belt-tone);
+  border-radius: var(--radius-4);
+  padding: 1px 5px;
+  font-weight: var(--fw-700);
+}
+
+.flame {
+  font-size: var(--fs-9);
+  color: var(--accent-strong);
+}
+
+.note {
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+  margin-top: var(--space-1);
+}

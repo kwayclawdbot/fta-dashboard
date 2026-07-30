@@ -1,0 +1,92 @@
+/*
+ * Board "07 You Profile" — the 1 : 1.5 card pair under the identity block.
+ * Left: a single headline figure. Right: three ranked bars.
+ * Flat cards (grammar §5): --surface + 1px --border, no shadow.
+ */
+
+.row {
+  display: flex;
+  gap: var(--space-12);
+  margin-top: var(--space-18);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-14);
+  min-width: 0;
+}
+
+.figureCard {
+  flex: 1;
+}
+
+.barsCard {
+  flex: 1.5;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: var(--fw-600);
+}
+
+.figure {
+  font-size: var(--fs-26);
+  font-weight: var(--fw-800);
+  color: var(--accent-strong);
+  letter-spacing: var(--ls-n-02em);
+  margin-top: var(--space-8);
+}
+
+.figureNote {
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin-top: var(--space-6);
+}
+
+.bars {
+  margin-top: var(--space-10);
+}
+
+.bar + .bar {
+  margin-top: var(--space-9);
+}
+
+.barHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-10-5);
+  color: var(--text-muted);
+  gap: var(--space-6);
+}
+
+.barValue {
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+
+.barName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track {
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-2);
+  margin-top: var(--space-4);
+}
+
+.fill {
+  width: var(--fill-pct);
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-2);
+}
