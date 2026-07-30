@@ -1,0 +1,88 @@
+/*
+ * /v3/watch/setups — armed watches + live setups.
+ *
+ * Flat card rows (§5) at radius-12 with the screener row's 9/11 padding. The
+ * meta line is the mono ramp the alert digest already uses for a status, dotted
+ * between runs with the same middot the teaser row uses.
+ */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-9) var(--space-11);
+  text-decoration: none;
+}
+
+/* A preset_match rule spans the whole universe, so it has no ticker identity.
+   The mark is the nav's own Club glyph, at the tile's 26px footprint. */
+.universe {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border-radius: var(--radius-8);
+  font-size: var(--fs-11);
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  display: block;
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-7);
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+}
+
+.kind {
+  color: var(--text-muted);
+  letter-spacing: 0.16em;
+}
+
+.state {
+  color: var(--text-faint);
+}
+
+/* near_trigger / triggered — the one accent run this row is allowed (§4). */
+.stateLive {
+  color: var(--accent-strong);
+  font-weight: var(--fw-600);
+}
+
+.chevron {
+  color: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+/* A second region opens on the same step a section with an eyebrow uses. */
+.setups {
+  margin-top: var(--space-16);
+}

@@ -5,18 +5,25 @@ import styles from "./WatchHeader.module.css";
  * The head both Watch artboards open with: the script "watch" mark and the
  * four-tab rail beneath it.
  *
- * Only two of the four tabs have a v3 route today (OVERVIEW → /v3/watch,
- * ALERTS → /v3/watch/alerts). WATCHLIST and KAI WATCH have no artboard and no
- * v3 screen, so they render as the plain inactive labels the mockup draws
- * rather than as links to nothing.
+ * All four tabs are now real destinations. WATCHLIST and KAI WATCH have no
+ * artboard of their own — they are composed from the grammar (GRAMMAR §9) — but
+ * a rail where half the labels are inert is the reason this screen read as a
+ * dead end once you were logged in, so the tab goes where the label says.
  */
 
-export type WatchTab = "overview" | "watchlist" | "kai-watch" | "alerts";
+/**
+ * `none` is for the two screens the HUB opens that are not tabs at all —
+ * Earnings Calendar and Opinion Changes. Lighting the OVERVIEW pill on them
+ * would say you are on a tab you are not, so the rail draws all four as the
+ * plain inactive labels it already draws, and those screens carry 06's own ✕
+ * back to the hub instead.
+ */
+export type WatchTab = "overview" | "watchlist" | "kai-watch" | "alerts" | "none";
 
 const TABS: { id: WatchTab; label: string; href: string | null }[] = [
   { id: "overview", label: "OVERVIEW", href: "/v3/watch" },
-  { id: "watchlist", label: "WATCHLIST", href: null },
-  { id: "kai-watch", label: "KAI WATCH", href: null },
+  { id: "watchlist", label: "WATCHLIST", href: "/v3/watch/list" },
+  { id: "kai-watch", label: "KAI WATCH", href: "/v3/watch/setups" },
   { id: "alerts", label: "ALERTS", href: "/v3/watch/alerts" },
 ];
 
