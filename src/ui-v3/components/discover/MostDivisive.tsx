@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { DivisiveVM } from "@/ui-v3/discover-data";
-import { discoverPaint } from "./discover-palette";
+import { tickerPaint } from "@/ui-v3/ticker-palette";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./MostDivisive.module.css";
 
@@ -15,7 +15,7 @@ import styles from "./MostDivisive.module.css";
 export default function MostDivisive({ divisive }: { divisive: DivisiveVM | null }) {
   if (!divisive) return null;
 
-  const paint = discoverPaint(divisive.ticker);
+  const paint = tickerPaint(divisive.ticker);
 
   return (
     <section className={styles.section}>

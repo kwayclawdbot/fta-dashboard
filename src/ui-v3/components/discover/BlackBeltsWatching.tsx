@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { BeltWatchVM } from "@/ui-v3/discover-data";
-import { discoverPaint } from "./discover-palette";
+import { tickerPaint } from "@/ui-v3/ticker-palette";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./BlackBeltsWatching.module.css";
 
@@ -27,7 +27,7 @@ export default function BlackBeltsWatching({ tickers }: { tickers: BeltWatchVM[]
 
       <div className={styles.row}>
         {tickers.map((item) => {
-          const paint = discoverPaint(item.ticker);
+          const paint = tickerPaint(item.ticker);
           return (
             <Link key={item.ticker} href="/v3/discover/screener" className={styles.item}>
               <div

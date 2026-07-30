@@ -12,7 +12,8 @@
  * fallback for any ticker the mockups never drew.
  *
  * Sourced from `.planning/design-project-v2/mockups/Cheat Code App.dc.html`
- * (cross-checked against the Light twin).
+ * (cross-checked against the Light twin): boards "01 Home", "02 Discover" and
+ * "15 Discover Screener".
  */
 
 export interface TickerPaint {
@@ -33,6 +34,8 @@ const BRAND: Record<string, TickerPaint> = {
   AMD: { bg: "#140E14", fg: "#ED1C24" },
   AMZN: { bg: "#141208", fg: "#FF9900" },
   NFLX: { bg: "#1A0E10", fg: "#E50914" },
+  MSFT: { bg: "#0E1216", fg: "#00A4EF" },
+  CRWD: { bg: "#1A0E10", fg: "#FF4D3D" },
   AAPL: NEUTRAL,
 };
 
