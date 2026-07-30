@@ -1,0 +1,94 @@
+/*
+ * Translated from [data-screen-label="09 Splash"] and "10 Login".
+ *
+ * BOX-SIZING NOTE (grammar §11.1): every ring here is positioned with `inset`
+ * and no width/height, so its border box resolves to the offsets regardless of
+ * box-sizing. These are the artboard's numbers unconverted — unlike a declared
+ * `width` next to a `border`, which would need +2×border in v3.
+ *
+ * The halos are theme-literal, like every accent glow in --shadow-1..3: the
+ * accent is the same hex in both themes, so its glow is too.
+ */
+
+.splash {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+/* Inner ring — the one that pings outward and fades. */
+.ping {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: 1.5px solid rgba(255, 122, 26, 0.35);
+  animation: cping 2.6s ease-out infinite;
+}
+
+@keyframes cping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* Hold the rest frame rather than removing the ring: same silhouette, no motion. */
+@media (prefers-reduced-motion: reduce) {
+  .ping {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/* Outer ring — static, 16px clear of the mark on every side. */
+.halo {
+  position: absolute;
+  inset: -16px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 122, 26, 0.15);
+}
+
+.disc {
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+}
+
+.discSplash {
+  position: absolute;
+  inset: 14px;
+  box-shadow: 0 0 30px rgba(255, 122, 26, 0.3);
+}
+
+.discAuth {
+  width: 64px;
+  height: 64px;
+  box-shadow: 0 0 22px rgba(255, 122, 26, 0.25);
+}
+
+/*
+ * The knocked-out diamond. `--bg`, not `--accent-on`: this is a shape punched
+ * THROUGH the disc to the page behind it, which is a different token from text
+ * SITTING ON accent (grammar §4).
+ */
+.glyph {
+  background: var(--bg);
+  transform: rotate(45deg);
+}
+
+.glyphSplash {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-5);
+}
+
+.glyphAuth {
+  width: 17px;
+  height: 17px;
+  border-radius: var(--radius-3);
+}

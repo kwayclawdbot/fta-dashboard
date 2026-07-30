@@ -1,10 +1,12 @@
 /*
- * The warm gradient panel. Four tones exist on the artboards and no others:
+ * The warm gradient panel. Five tones exist on the artboards and no others:
  *   "brief"  — 120deg, three stops, radius 16, 14/15 padding  (01 Home, TODAY IN 30)
  *   "you"    — 110deg, two stops,   radius 16, 13/15 padding  (01 Home, YOU strip)
  *   "streak" — 120deg, 65% stop,    radius 16, 14/16 padding  (07 You Profile)
  *   "close"  — 135deg, 60% stop,    radius 18, 16 padding     (06 Watch)
- * All four share the accent-soft hairline.
+ *   "pro"    — 150deg, 65% stop,    radius 20, 16 padding     (11 Pricing)
+ * The first four share the accent-soft hairline; "pro" is the selected-plan
+ * card and carries a full-accent 1.5px border plus an accent halo instead.
  *
  * The gradient stops themselves live in base.css as --wash-*: the streak wash is
  * also painted by the lifted rung on "22 Belts", and one declaration per wash
@@ -38,6 +40,24 @@
   --panel-gradient: var(--wash-close);
   border-radius: var(--radius-18);
   padding: var(--space-16);
+}
+
+/*
+ * The selected plan. Board 11 draws its border at 1.5px in ACCENT — the only
+ * panel on any board that does — and hangs an accent halo off it. The halo is a
+ * one-off (the extractor only emits shadows it sees twice) and is theme-literal
+ * like every other halo in --shadow-1..3: the accent is the same hex in both
+ * themes, so the glow is too.
+ */
+.pro {
+  --panel-gradient: var(--wash-pro);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-20);
+  padding: var(--space-16);
+  box-shadow: 0 0 18px rgba(255, 122, 26, 0.15);
+  /* The BEST VALUE badge is pinned to the panel's own top edge and must not be
+     clipped by the .panel overflow that keeps the wash inside the radius. */
+  overflow: visible;
 }
 
 /* The same box when the whole panel is its own tap target. */

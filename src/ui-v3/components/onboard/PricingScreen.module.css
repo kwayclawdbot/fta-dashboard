@@ -1,0 +1,198 @@
+/*
+ * Translated from [data-screen-label="11 Pricing"].
+ *
+ * The board runs a 20px well (not the shell's 18px) and pins its CTA in a
+ * bordered bar, so the screen takes AppShell padding="bleed" + bar and owns the
+ * well itself.
+ */
+
+.well {
+  flex: 1;
+  padding: 20px 20px 0;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/*
+ * The board pairs ✕ with a "Restore" affordance. Restoring a purchase is an
+ * app-store concept; this is a Stripe subscription on the web, where there is
+ * nothing to restore. The row keeps its ✕ alone.
+ */
+.close {
+  color: var(--text-dim);
+  font-size: var(--fs-16);
+  text-decoration: none;
+}
+
+/*
+ * 32px script. No --fs-32: like the splash's 44px, this size appears once across
+ * all 23 boards and the extractor only emits repeated values. Written out rather
+ * than minting a token the next regeneration would drop.
+ */
+.headline {
+  font-family: var(--font-script);
+  font-size: 32px;
+  color: var(--text);
+  margin-top: var(--space-14);
+  line-height: var(--lh-1);
+}
+
+.subtitle {
+  font-size: var(--fs-13);
+  color: var(--text-dim);
+  margin-top: var(--space-6);
+  line-height: var(--lh-1-5);
+}
+
+/*
+ * The paid card. Board 11 puts it 16px under the subtitle — where the
+ * Annual/Monthly toggle used to sit is simply closed up, because a toggle with
+ * one option is not a control.
+ */
+.paid {
+  margin-top: var(--space-16);
+}
+
+/* Pinned to the card's own top edge, overhanging it by 10px. */
+.badge {
+  position: absolute;
+  top: -10px;
+  right: var(--space-16);
+  background: var(--accent);
+  color: var(--accent-on);
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  font-weight: var(--fw-700);
+  letter-spacing: var(--ls-12em);
+  padding: var(--space-3) var(--space-10);
+  border-radius: var(--radius-10);
+}
+
+/* The free plan is a flat card — the grammar's other container, §5. */
+.free {
+  margin-top: var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-20);
+  padding: var(--space-16);
+}
+
+.planHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-12);
+}
+
+.planName {
+  font-size: var(--fs-17);
+  font-weight: var(--fw-800);
+  color: var(--text);
+}
+
+.planNameSm {
+  font-size: var(--fs-15);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.planTag {
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+  margin-top: var(--space-3);
+}
+
+.planTagSm {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  margin-top: var(--space-3);
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-size: var(--fs-20);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.priceSm {
+  font-family: var(--font-mono);
+  font-size: var(--fs-18);
+  font-weight: var(--fw-600);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.interval {
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-14);
+  list-style: none;
+  padding: 0;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-9);
+  font-size: var(--fs-12);
+  color: var(--text);
+}
+
+/*
+ * The tick disc. On the paid card it is an accent tint; on the free card the
+ * neutral --surface-2 — the board's way of saying one list is the offer and the
+ * other is the floor. Grammar §4: accent marks the region's one primary thing,
+ * and on this screen that is the paid plan.
+ */
+.check {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-full);
+  background: rgba(255, 122, 26, 0.18);
+  color: var(--accent-strong);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-9);
+}
+
+.featuresMuted {
+  margin-top: var(--space-12);
+}
+
+.featuresMuted .feature {
+  color: var(--text-muted);
+}
+
+.featuresMuted .check {
+  background: var(--surface-2);
+  color: var(--text-dim);
+}
+
+/*
+ * The pinned bar holds a stack, not a row: the CTA and the terms under it. The
+ * shell's .bar is a flex row, so this fills it.
+ */
+.barStack {
+  flex: 1;
+}
+
+.footnote {
+  text-align: center;
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+  margin-top: var(--space-9);
+}

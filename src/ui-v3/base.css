@@ -43,13 +43,23 @@
  * once here, in the hand-written layer, and consumed by name.
  *
  * Read out of the mockups: 01 Home (brief, you), 07 You Profile (streak, reused
- * by 22 Belts), 06 Watch (close).
+ * by 22 Belts), 06 Watch (close), 09 Splash (splash), 10 Login (authhead),
+ * 11 Pricing (pro).
+ *
+ * The last three are the ONBOARDING washes and two of them are RADIAL rather
+ * than diagonal — they light the top of a full screen instead of a panel inside
+ * one, which is the difference between a page that opens and a card that sits
+ * on it. `pro` is the only wash whose panel also carries a full-accent border
+ * (see GradientPanel's `pro` tone).
  * ------------------------------------------------------------------------ */
 [data-ui="v3"] {
   --wash-brief: linear-gradient(120deg, #2a1208 0%, #1a0e12 55%, #17141a 100%);
   --wash-you: linear-gradient(110deg, #241009 0%, #17141a 70%);
   --wash-streak: linear-gradient(120deg, #241009 0%, #17141a 65%);
   --wash-close: linear-gradient(135deg, #241009 0%, #17141a 60%);
+  --wash-splash: radial-gradient(120% 80% at 50% 20%, #221109 0%, #0d0b0e 55%);
+  --wash-authhead: radial-gradient(140% 100% at 50% 0%, #2a1208 0%, #0d0b0e 75%);
+  --wash-pro: linear-gradient(150deg, #2a1208 0%, #17141a 65%);
 }
 
 [data-ui="v3"][data-theme="light"] {
@@ -57,6 +67,9 @@
   --wash-you: linear-gradient(110deg, #ffeedd 0%, #ffffff 70%);
   --wash-streak: linear-gradient(120deg, #ffeedd 0%, #ffffff 65%);
   --wash-close: linear-gradient(135deg, #ffeedd 0%, #ffffff 60%);
+  --wash-splash: radial-gradient(120% 80% at 50% 20%, #ffe3c8 0%, #f7f4ef 55%);
+  --wash-authhead: radial-gradient(140% 100% at 50% 0%, #ffe9d6 0%, #f7f4ef 75%);
+  --wash-pro: linear-gradient(150deg, #ffe9d6 0%, #ffffff 65%);
 }
 
 /* ---------------------------------------------------------------------------
