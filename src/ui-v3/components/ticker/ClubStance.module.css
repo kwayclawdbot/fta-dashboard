@@ -126,6 +126,12 @@
   line-height: var(--lh-1);
 }
 
+/* The artboard drops the unit to 14px and the muted ramp — the number leads. */
+.dialUnit {
+  font-size: var(--fs-14);
+  color: var(--text-dim);
+}
+
 .dialCaption {
   font-family: var(--font-mono);
   font-size: 7px;

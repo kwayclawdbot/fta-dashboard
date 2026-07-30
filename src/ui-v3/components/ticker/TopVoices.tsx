@@ -1,6 +1,7 @@
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import EmptyNote from "@/ui-v3/components/EmptyNote";
 import BeltChip from "@/ui-v3/components/club/BeltChip";
+import MemberDisc from "@/ui-v3/components/club/MemberDisc";
 import { TICKER_EMPTY, type VoiceVM } from "@/ui-v3/ticker-data";
 import styles from "./TopVoices.module.css";
 
@@ -38,9 +39,7 @@ export default function TopVoices({ voices }: { voices: VoiceVM[] }) {
           {voices.map((voice) => (
             <article key={voice.id} className={styles.card}>
               <div className={styles.head}>
-                <span className={styles.initials} aria-hidden="true">
-                  {voice.initials}
-                </span>
+                <MemberDisc initials={voice.initials} belt={voice.beltKey} />
                 <span className={styles.author}>{voice.authorName}</span>
                 {voice.beltKey && voice.beltLabel ? (
                   <BeltChip belt={voice.beltKey} label={voice.beltLabel} size="sm" />

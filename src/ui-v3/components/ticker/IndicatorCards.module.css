@@ -91,6 +91,8 @@
   gap: 2.5px;
   height: 26px;
   margin-top: var(--space-9);
+  /* The card is the frame; a bar never escapes it. */
+  overflow: hidden;
 }
 
 .slot {

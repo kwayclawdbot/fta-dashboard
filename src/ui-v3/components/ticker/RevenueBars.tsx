@@ -48,14 +48,22 @@ export default function RevenueBars({
 
       <div className={styles.plot}>
         {revenue.bars.map((bar) => (
-          <div key={bar.label} className={styles.col}>
-            <span className={`${styles.amount} ${bar.lead ? styles.amountLead : ""}`} data-numeric>
-              {bar.valueLabel}
-            </span>
-            <div
-              className={`${styles.bar} ${bar.lead ? styles.barLead : ""}`}
-              style={{ "--h": `${bar.pct}%` } as CSSProperties}
-            />
+          <div
+            key={bar.label}
+            className={styles.col}
+            style={{ "--h": `${bar.pct}%` } as CSSProperties}
+          >
+            <div className={styles.barBox}>
+              {/* Seated on the bar's own top edge, so the number labels the
+                  bar rather than floating at the top of the plot. */}
+              <span
+                className={`${styles.amount} ${bar.lead ? styles.amountLead : ""}`}
+                data-numeric
+              >
+                {bar.valueLabel}
+              </span>
+              <div className={`${styles.bar} ${bar.lead ? styles.barLead : ""}`} />
+            </div>
             <span className={styles.year} data-numeric>
               {bar.label}
             </span>

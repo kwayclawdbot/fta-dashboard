@@ -34,9 +34,24 @@
   color: var(--negative);
 }
 
+/*
+ * THE ARTBOARD'S OWN BARS DO NOT RENDER, and this is the one place the
+ * translation departs from what the mockup DRAWS in order to honour what it
+ * SPECIFIES.
+ *
+ * Board 13 declares `align-items: flex-end` on an 88px row, which leaves each
+ * column at content height — indefinite. Its bars then ask for `height: 18%` /
+ * `40%` / `78%` / `100%` of that indefinite height, which resolves to auto, so
+ * every bar computes to 0 and the mockup shows four labels floating over empty
+ * space. Open the mockup and the chart is missing; the four declared
+ * percentages are the design, and they are unambiguous.
+ *
+ * So the column stretches to the full row and the bar gets a definite box to be
+ * a percentage OF. Nothing about the intended drawing changes.
+ */
 .plot {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: var(--space-10);
   height: 88px;
   margin-top: var(--space-12);
@@ -53,7 +68,21 @@
   gap: var(--space-5);
 }
 
+/* The definite box the bar is a percentage of. */
+.barBox {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
 .amount {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--h);
+  margin-bottom: var(--space-5);
+  text-align: center;
   font-family: var(--font-mono);
   font-size: var(--fs-8-5);
   color: var(--text-dim);
@@ -68,7 +97,10 @@
  * newest year lands on accent — the one accent object in this region (§4).
  */
 .bar {
-  width: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: var(--h);
   background: var(--surface-2);
   border-radius: var(--radius-5) var(--radius-5) 0 0;

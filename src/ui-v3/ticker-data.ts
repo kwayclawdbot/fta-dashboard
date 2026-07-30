@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getRequestClient, getRequestUser } from "@/lib/supabase/rsc";
+import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
 import { getBars, getOHLCBars, type Bar, type OHLCBar } from "@/lib/market/polygon";
 import { getFundamentals } from "@/lib/market/polygon";
 import { listCircles } from "@/lib/circles";
@@ -499,6 +500,42 @@ function rangeChips(symbol: string, active: RangeKey): RangeChipVM[] {
   }));
 }
 
+/* ── 03 Ticker: the club-score dial ───────────────────────────────────────── */
+
+interface LedgerRow {
+  ticker?: string | null;
+  heat?: number | null;
+}
+
+/**
+ * The 0-100 dial, read from the SAME field Home's strip reads.
+ *
+ * `ticker_intel_snapshots.club_score` is an unbounded weighted sum — printing it
+ * in a ring captioned with a percent sign would be a category error, and a raw
+ * 22 in a dial that looks like a percentage reads as a company nobody likes.
+ * The trending core normalizes it against the top of the ledger into `heat`,
+ * and gates it behind the trending-score floor so a founding club cannot show a
+ * manufactured 100 for whichever name happens to rank first.
+ *
+ * Below the floor `heat` is null and the ring is simply not drawn.
+ */
+async function readHeat(symbol: string): Promise<number | null> {
+  const supabase = await getRequestClient();
+  const rows = await soft(async () => {
+    const { rest } = buildClubHomeSeedSplit(supabase);
+    const seed = await rest;
+    const section = (seed as Record<string, unknown> | null)?.trending;
+    const value =
+      section && typeof section === "object"
+        ? (section as Record<string, unknown>).rows
+        : null;
+    return Array.isArray(value) ? (value as LedgerRow[]) : [];
+  }, [] as LedgerRow[]);
+
+  const row = rows.find((r) => (r.ticker ?? "").toUpperCase() === symbol);
+  return num(row?.heat);
+}
+
 /* ── 03 Ticker: the club's stance ─────────────────────────────────────────── */
 
 async function readStance(symbol: string): Promise<StanceVM | null> {
@@ -652,23 +689,12 @@ export async function getTickerOverview(
   const head = await readHead(symbol);
   if (!head) return null;
 
-  const supabase = await getRequestClient();
-  const [series, stance, circle, voices, snapshot] = await Promise.all([
+  const [series, stance, circle, voices, heat] = await Promise.all([
     readSeries(symbol, range),
     readStance(symbol),
     readCircle(symbol),
     readVoices(symbol),
-    soft(
-      async () =>
-        ((
-          await supabase
-            .from("ticker_intel_snapshots")
-            .select("ticker, rank, club_score, watchers")
-            .eq("ticker", symbol)
-            .maybeSingle()
-        ).data ?? null) as SnapshotRow | null,
-      null as SnapshotRow | null,
-    ),
+    readHeat(symbol),
   ]);
 
   return {
@@ -679,7 +705,7 @@ export async function getTickerOverview(
     stance,
     // The artboard's "WEIGHTED SIGNAL" ring, driven by the one real 0-100 club
     // dial that exists. See omission 2 at the top of this file.
-    clubScore: num(snapshot?.club_score),
+    clubScore: heat,
     stats: statCards(stance, head.clubRank),
     circle,
     voices,
@@ -774,26 +800,43 @@ function mixOf(
   return { bullish: checks.filter(Boolean).length, total: checks.length };
 }
 
-function mixWordFor(pct: number): string {
-  if (pct >= 70) return "Leaning bullish";
-  if (pct <= 30) return "Leaning bearish";
+/**
+ * The word the gauge prints, and the ONLY place it is decided — the component
+ * derives its colour from the same two thresholds, so the word and the tone can
+ * never contradict each other the way "Leaning bullish" in caution-gold did.
+ */
+export const MIX_BULL_AT = 70;
+export const MIX_BEAR_AT = 30;
+
+export function mixWordFor(pct: number): string {
+  if (pct >= MIX_BULL_AT) return "Leaning bullish";
+  if (pct <= MIX_BEAR_AT) return "Leaning bearish";
   return "Mixed";
 }
 
+/** The pinned line on board 12. One sentence, one line at 390px. */
+const TECHNICALS_FOOTNOTE = "Pivots off the last reported session · Not investment advice";
+
+/**
+ * The artboard's tile is a MARK over a SENTENCE — "▲ 20D" above "Above MA20".
+ * The mark names the period, the line beneath names the state, and neither
+ * repeats the other.
+ */
 function stateTiles(metric: MetricRow | null): TechIndicatorVM[] {
   const out: TechIndicatorVM[] = [];
-  const state = (raw: string | null, label: string) => {
+  const state = (raw: string | null, period: string, name: string) => {
     if (!raw) return;
     const above = /above/i.test(raw);
     const below = /below/i.test(raw);
+    if (!above && !below) return;
     out.push({
-      label,
-      value: above ? `▲ ${label}` : below ? `▼ ${label}` : raw,
-      bullish: above ? true : below ? false : null,
+      label: `${above ? "Above" : "Below"} ${name}`,
+      value: `${above ? "▲" : "▼"} ${period}`,
+      bullish: above,
     });
   };
-  state(metric?.ema20_state ?? null, "EMA20");
-  state(metric?.ema50_state ?? null, "EMA50");
+  state(metric?.ema20_state ?? null, "20D", "EMA20");
+  state(metric?.ema50_state ?? null, "50D", "EMA50");
   if (metric?.vol_ratio != null) {
     out.push({
       label: "Rel. volume",
@@ -834,7 +877,7 @@ export async function getTickerTechnicals(symbol: string): Promise<TickerTechnic
     macd,
     levels: lastBar ? pivotLevels(lastBar, head.price) : [],
     tiles: stateTiles(metric),
-    footnote: "Levels are floor-trader pivots off the last reported session · Not investment advice",
+    footnote: TECHNICALS_FOOTNOTE,
   };
 }
 
@@ -849,6 +892,12 @@ function money(v: number): string {
 }
 
 const REVENUE_YEARS = 4;
+/**
+ * The tallest bar's share of the plot. Not 100: the amount label is seated on
+ * each bar's top edge, so the leader needs its own line of headroom — which is
+ * also exactly where the artboard puts its own tallest reported bar (78%).
+ */
+const REVENUE_PEAK_PCT = 80;
 
 export async function getTickerFundamentals(symbol: string): Promise<TickerFundamentalsVM | null> {
   const user = await getRequestUser();
@@ -872,7 +921,7 @@ export async function getTickerFundamentals(symbol: string): Promise<TickerFunda
           bars: years.map((a, i) => ({
             label: a.label,
             value: a.revenue as number,
-            pct: Math.max(6, Math.round(((a.revenue as number) / maxRevenue) * 100)),
+            pct: Math.max(6, Math.round(((a.revenue as number) / maxRevenue) * REVENUE_PEAK_PCT)),
             valueLabel: money(a.revenue as number),
             lead: i === years.length - 1,
           })),
@@ -1146,7 +1195,7 @@ function overviewFixture(range: RangeKey): TickerOverviewVM {
         authorName: "Tanya Reyes",
         initials: "TR",
         beltLabel: "Black Belt",
-        beltKey: "black" as BeltKey,
+        beltKey: "black",
         snippet:
           "Data-center revenue is doing the heavy lifting again — the gaming line barely moved this quarter.",
         kind: "thesis",
@@ -1155,8 +1204,10 @@ function overviewFixture(range: RangeKey): TickerOverviewVM {
         id: "v2",
         authorName: "Kwame Diallo",
         initials: "KD",
-        beltLabel: "Brown Belt",
-        beltKey: "brown" as BeltKey,
+        // The ladder is white / yellow / blue / purple / black — there is no
+        // brown belt in this club, however familiar the word is elsewhere.
+        beltLabel: "Purple Belt",
+        beltKey: "purple",
         snippet: "Watching supply commentary more than the headline number going into the print.",
         kind: "risk",
       },
@@ -1170,7 +1221,9 @@ function technicalsFixture(): TickerTechnicalsVM {
     source: "fixtures",
     head: ART_HEAD,
     mixPct: 67,
-    mixWord: "Leaning bullish",
+    // The artboard reads "8 of 12" and calls it BUY. 67% is not a lean by the
+    // thresholds above, so the fixture prints what the rule prints.
+    mixWord: mixWordFor(67),
     mixBullish: 4,
     mixTotal: 6,
     rsi: 62,
@@ -1184,11 +1237,11 @@ function technicalsFixture(): TickerTechnicalsVM {
       { label: "S2", value: 158, kind: "support" },
     ],
     tiles: [
-      { label: "EMA20", value: "▲ EMA20", bullish: true },
-      { label: "EMA50", value: "▲ EMA50", bullish: true },
+      { label: "Above EMA20", value: "▲ 20D", bullish: true },
+      { label: "Above EMA50", value: "▲ 50D", bullish: true },
       { label: "Rel. volume", value: "1.4x", bullish: null },
     ],
-    footnote: "Levels are floor-trader pivots off the last reported session · Not investment advice",
+    footnote: TECHNICALS_FOOTNOTE,
   };
 }
 
@@ -1206,7 +1259,7 @@ function fundamentalsFixture(): TickerFundamentalsVM {
       bars: years.map((y, i) => ({
         label: y.label,
         value: y.value,
-        pct: Math.max(6, Math.round((y.value / max) * 100)),
+        pct: Math.max(6, Math.round((y.value / max) * REVENUE_PEAK_PCT)),
         valueLabel: money(y.value),
         lead: i === years.length - 1,
       })),

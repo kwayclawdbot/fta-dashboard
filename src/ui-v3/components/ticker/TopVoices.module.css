@@ -27,19 +27,6 @@
   gap: var(--space-8);
 }
 
-.initials {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-full);
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: var(--fs-9-5);
-  font-weight: var(--fw-700);
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-}
-
 .author {
   font-size: var(--fs-12);
   font-weight: var(--fw-700);

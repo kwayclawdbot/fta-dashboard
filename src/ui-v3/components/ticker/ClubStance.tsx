@@ -54,6 +54,7 @@ export default function ClubStance({
                 <div>
                   <div className={styles.dialValue} data-numeric>
                     {Math.round(clubScore)}
+                    <span className={styles.dialUnit}>%</span>
                   </div>
                   <div className={styles.dialCaption}>
                     CLUB

@@ -77,7 +77,10 @@ export default function IndicatorCards({
                   className={`${styles.bar} ${bar >= 0 ? styles.barUp : styles.barDown}`}
                   style={
                     {
-                      "--h": `${Math.max(6, Math.round((Math.abs(bar) / peak) * 100))}%`,
+                      // Each bar hangs off the centre line, so the tallest may
+                      // only use HALF the box — scaling to 100% put the peak
+                      // bar through the top of the card.
+                      "--h": `${Math.max(4, Math.round((Math.abs(bar) / peak) * 50))}%`,
                     } as CSSProperties
                   }
                 />

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { MIX_BEAR_AT, MIX_BULL_AT } from "@/ui-v3/ticker-data";
 import styles from "./SignalGauge.module.css";
 
 /**
@@ -26,7 +27,9 @@ export default function SignalGauge({
   total: number;
 }) {
   const angle = Math.round((Math.max(0, Math.min(100, pct)) / 100) * 180) - 90;
-  const tone = pct >= 70 ? styles.up : pct <= 30 ? styles.down : styles.mid;
+  // The SAME two thresholds that chose the word — a gauge reading "Leaning
+  // bullish" in caution-gold is the component disagreeing with its own label.
+  const tone = pct >= MIX_BULL_AT ? styles.up : pct <= MIX_BEAR_AT ? styles.down : styles.mid;
 
   return (
     <div className={styles.card}>

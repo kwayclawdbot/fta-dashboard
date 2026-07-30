@@ -31,9 +31,7 @@ export default function StateTiles({ tiles }: { tiles: TechIndicatorVM[] }) {
           >
             {tile.value}
           </div>
-          <div className={styles.label}>
-            {tile.bullish === null ? tile.label : `vs ${tile.label}`}
-          </div>
+          <div className={styles.label}>{tile.label}</div>
         </div>
       ))}
     </div>
