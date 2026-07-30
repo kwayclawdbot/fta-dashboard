@@ -14,6 +14,8 @@
   display: none;
 }
 
+/* The chips are buttons now (the ✕ works), so the button reset is part of the
+   pill rather than a separate rule — nothing about the drawn shape changed. */
 .chip {
   flex: 0 0 auto;
   background: var(--surface);
@@ -24,9 +26,20 @@
   padding: var(--space-6) var(--space-11);
   border-radius: var(--radius-16);
   white-space: nowrap;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  appearance: none;
 }
 
 .add {
   border-color: var(--border);
   color: var(--text-dim);
+}
+
+/* Open state: the neutral chip takes the same outline the active ones wear, so
+   the rail says which control the panel below belongs to. */
+.addOpen {
+  border-color: var(--accent);
+  color: var(--accent-strong);
 }

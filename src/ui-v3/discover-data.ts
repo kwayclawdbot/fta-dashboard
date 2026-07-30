@@ -3,9 +3,14 @@ import "server-only";
 import { getRequestClient, getRequestUser } from "@/lib/supabase/rsc";
 import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
 import { getCachedBeltWatch } from "@/lib/club/club-cache";
-import { sectorOf } from "@/lib/screener-sectors";
+import { sectorOf, SECTORS, type Sector } from "@/lib/screener-sectors";
 import { TRENDING_DISCLAIMER } from "@/lib/club/score";
 import { MIN_POSITIONED_OPINIONS } from "@/ui-v3/club-floors";
+import {
+  DEFAULT_FILTERS,
+  type ScreenerCandidateVM,
+  type ScreenerFilters,
+} from "@/ui-v3/screener-filter";
 import type { SparkTone } from "@/ui-v3/components/discover/Sparkline";
 
 /**
@@ -81,23 +86,6 @@ export interface DiscoverViewModel {
   disclaimer: string;
 }
 
-export interface FilterChipVM {
-  label: string;
-}
-
-export interface ScreenerRowVM {
-  ticker: string;
-  series: number[] | null;
-  /** The stroke tone, from the SERIES' OWN direction — see `toneFor`. */
-  tone: SparkTone;
-  /** Real: screener_metrics.price. */
-  priceLabel: string | null;
-  /** Real: screener_metrics.chg_1d. */
-  changePct: number | null;
-  /** Real: trending sentiment.bullPct — the club signal. */
-  signalPct: number | null;
-}
-
 export interface StanceRowVM {
   ticker: string;
   /**
@@ -132,9 +120,22 @@ export interface TrendingChipVM {
 
 export interface ScreenerViewModel {
   source: "live" | "fixtures";
-  chips: FilterChipVM[];
-  summary: string;
-  rows: ScreenerRowVM[];
+  /**
+   * THE WHOLE SCREENABLE SET, unfiltered. The chips are interactive, so the
+   * screen is applied in the browser (see src/ui-v3/screener-filter.ts) and the
+   * server's job is to ship the candidates, not one pre-screened page of them.
+   */
+  candidates: ScreenerCandidateVM[];
+  /** The sectors PRESENT in `candidates` — the filter never offers an empty one. */
+  sectors: Sector[];
+  /** The screen the board opens on: the artboard's own three thresholds. */
+  initialFilters: ScreenerFilters;
+  /**
+   * The three regions below the results are the CLUB's stance, not the screen's:
+   * they read the whole ledger and do not answer to the chips. Narrowing them
+   * would make "Club's most bullish" mean "most bullish large-cap tech name",
+   * which is not what the heading says.
+   */
   mostBullish: StanceCardVM;
   mostBearish: StanceCardVM;
   trendingChips: TrendingChipVM[];
@@ -182,17 +183,9 @@ function seedRows(section: unknown): RawTrendingRow[] {
 const RISING_LIMIT = 3;
 const QUIET_LIMIT = 5;
 const BELT_LIMIT = 5;
-/** "15 Discover Screener" draws three result rows and three names per stance. */
-const SCREENER_ROW_LIMIT = 3;
+/** "15 Discover Screener" draws three names per stance. */
 const STANCE_LIMIT = 3;
 const TRENDING_CHIP_LIMIT = 5;
-
-/**
- * The default screen the artboard draws, expressed as real predicates. Sector
- * and market cap come from `screener_metrics`; signal is the club's bull share.
- * The thresholds are the artboard's own — the chips are not interactive yet.
- */
-const SCREEN = { sector: "Technology", minMcap: 10_000_000_000, minSignal: 70 } as const;
 
 /** "1.2K watching" — the artboard's compact count. */
 function compact(n: number): string {
@@ -395,20 +388,35 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
   const ledger = await readLedger();
   const metrics = await readMetrics(ledger.map((r) => (r.ticker as string).toUpperCase()));
 
-  // The ledger is the base set because "club signal" only exists there; the
-  // sector and market-cap predicates come from screener_metrics.
-  const matches = ledger.filter((r) => {
-    const m = metrics.get((r.ticker as string).toUpperCase());
-    const signal = r.sentiment?.bullPct;
-    if (typeof signal !== "number" || signal <= SCREEN.minSignal) return false;
-    // The "Signal > 70%" chip is a claim about club conviction, so it has to
-    // clear the same floor the number itself does. Without this the screen
-    // matched names whose 100% was a single member's click — the live board
-    // listed two of them under a chip that read like a consensus filter.
-    if (positionedOf(r) < MIN_POSITIONED_OPINIONS) return false;
-    if (!m || m.mcap == null || m.mcap <= SCREEN.minMcap) return false;
-    return sectorOf(m.sector) === SCREEN.sector;
+  // THE CANDIDATE SET. The ledger is the base because "club signal" only exists
+  // there; sector, market cap, price and day change are joined off
+  // screener_metrics. No predicate runs here — the chips own that now, and they
+  // run in the browser (src/ui-v3/screener-filter.ts).
+  const candidates: ScreenerCandidateVM[] = ledger.map((r) => {
+    const ticker = (r.ticker as string).toUpperCase();
+    const m = metrics.get(ticker);
+    const series = seriesFor(m);
+    return {
+      ticker,
+      series,
+      tone: toneFor(series),
+      priceLabel: m?.price != null ? `$${m.price.toFixed(2)}` : null,
+      changePct: m?.chg_1d ?? null,
+      // The club-signal pill is a share, and it obeys the same floor as the
+      // stance cards it is repeated on. Below the floor it is null — which the
+      // signal predicate then reads as "not screenable", not as a zero. Without
+      // this the screen matched names whose 100% was a single member's click.
+      signalPct:
+        positionedOf(r) >= MIN_POSITIONED_OPINIONS ? (r.sentiment?.bullPct ?? null) : null,
+      sector: sectorOf(m?.sector),
+      mcap: m?.mcap ?? null,
+    };
   });
+
+  // Only sectors with a name behind them are offered — a picker whose options
+  // can only ever return zero rows is a worse lie than no picker.
+  const present = new Set(candidates.map((c) => c.sector).filter(Boolean));
+  const sectors = SECTORS.filter((s) => present.has(s));
 
   const stance = ledger.filter((r) => typeof r.sentiment?.bullPct === "number");
 
@@ -459,35 +467,9 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
 
   return {
     source: "live",
-    chips: [
-      { label: "Tech" },
-      { label: "Mkt cap > $10B" },
-      { label: `Signal > ${SCREEN.minSignal}%` },
-    ],
-    // "0 matches · sorted by club signal" claims an ordering over nothing.
-    summary:
-      matches.length === 0
-        ? "0 matches"
-        : `${matches.length} ${matches.length === 1 ? "match" : "matches"} · sorted by club signal`,
-    rows: matches
-      .sort((a, b) => (b.sentiment?.bullPct ?? 0) - (a.sentiment?.bullPct ?? 0))
-      .slice(0, SCREENER_ROW_LIMIT)
-      .map((r) => {
-        const ticker = (r.ticker as string).toUpperCase();
-        const m = metrics.get(ticker);
-        const series = seriesFor(m);
-        return {
-          ticker,
-          series,
-          tone: toneFor(series),
-          priceLabel: m?.price != null ? `$${m.price.toFixed(2)}` : null,
-          changePct: m?.chg_1d ?? null,
-          // The club-signal pill is a share too, and it obeys the same floor as
-          // the stance cards it is repeated on.
-          signalPct:
-            positionedOf(r) >= MIN_POSITIONED_OPINIONS ? (r.sentiment?.bullPct ?? null) : null,
-        };
-      }),
+    candidates,
+    sectors,
+    initialFilters: DEFAULT_FILTERS,
     mostBullish,
     mostBearish,
     trendingChips: ledger
@@ -564,12 +546,21 @@ function discoverFixtures(): DiscoverViewModel {
   };
 }
 
+/**
+ * The anonymous screener.
+ *
+ * ONE DELIBERATE DIVERGENCE FROM THE ARTBOARD. Board 15's count line reads "14
+ * MATCHES" above three rows, which worked while the count and the list were two
+ * unrelated strings — the adapter reported every match and drew only the top
+ * three. Now that the chips are live, the count is computed from the list the
+ * member is actually looking at, so three artboard rows read "3 matches". The
+ * rows themselves are the artboard's, unchanged; only the number that describes
+ * them stopped being independent of them.
+ */
 function screenerFixtures(): ScreenerViewModel {
   return {
     source: "fixtures",
-    chips: [{ label: "Tech" }, { label: "Mkt cap > $10B" }, { label: "Signal > 70%" }],
-    summary: "14 matches · sorted by club signal",
-    rows: [
+    candidates: [
       {
         ticker: "NVDA",
         series: [...ART_SERIES.NVDA],
@@ -577,6 +568,8 @@ function screenerFixtures(): ScreenerViewModel {
         priceLabel: "$173.42",
         changePct: 4.7,
         signalPct: 78,
+        sector: "Technology",
+        mcap: 4.2e12,
       },
       {
         ticker: "PLTR",
@@ -585,6 +578,8 @@ function screenerFixtures(): ScreenerViewModel {
         priceLabel: "$156.90",
         changePct: 2.1,
         signalPct: 74,
+        sector: "Technology",
+        mcap: 3.7e11,
       },
       {
         ticker: "AMD",
@@ -593,8 +588,12 @@ function screenerFixtures(): ScreenerViewModel {
         priceLabel: "$182.10",
         changePct: 1.9,
         signalPct: 71,
+        sector: "Technology",
+        mcap: 2.9e11,
       },
     ],
+    sectors: ["Technology"],
+    initialFilters: DEFAULT_FILTERS,
     mostBullish: {
       rows: [
         { ticker: "NVDA", pct: 78 },
