@@ -25,15 +25,12 @@
   opacity: 0.85;
 }
 
+/* The wash is the streak panel's, shared by name from base.css. */
 .rowHere {
-  background: linear-gradient(120deg, #241009 0%, #17141a 65%);
+  background: var(--wash-streak);
   border: 1.5px solid var(--accent);
   box-shadow: 0 0 12px rgba(255, 122, 26, 0.14);
   opacity: 1;
-}
-
-:global([data-ui="v3"][data-theme="light"]) .rowHere {
-  background: linear-gradient(120deg, #ffeedd 0%, #ffffff 65%);
 }
 
 /*

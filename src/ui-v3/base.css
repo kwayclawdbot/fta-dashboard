@@ -33,6 +33,33 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * Panel washes.
+ *
+ * Four artboards paint a warm diagonal gradient behind a "this is about you /
+ * today" moment. The stops are one-off washes, not roles, so the extractor has
+ * no token for them — but four separate components draw them (GradientPanel's
+ * four tones plus the lifted rung on "22 Belts"), and when the same wash lived
+ * in two files each copy also needed its own light override. They are declared
+ * once here, in the hand-written layer, and consumed by name.
+ *
+ * Read out of the mockups: 01 Home (brief, you), 07 You Profile (streak, reused
+ * by 22 Belts), 06 Watch (close).
+ * ------------------------------------------------------------------------ */
+[data-ui="v3"] {
+  --wash-brief: linear-gradient(120deg, #2a1208 0%, #1a0e12 55%, #17141a 100%);
+  --wash-you: linear-gradient(110deg, #241009 0%, #17141a 70%);
+  --wash-streak: linear-gradient(120deg, #241009 0%, #17141a 65%);
+  --wash-close: linear-gradient(135deg, #241009 0%, #17141a 60%);
+}
+
+[data-ui="v3"][data-theme="light"] {
+  --wash-brief: linear-gradient(120deg, #ffe9d6 0%, #fff1e4 55%, #ffffff 100%);
+  --wash-you: linear-gradient(110deg, #ffeedd 0%, #ffffff 70%);
+  --wash-streak: linear-gradient(120deg, #ffeedd 0%, #ffffff 65%);
+  --wash-close: linear-gradient(135deg, #ffeedd 0%, #ffffff 60%);
+}
+
+/* ---------------------------------------------------------------------------
  * Inherited-property reset. One rule, every property `body` can hand down.
  * ------------------------------------------------------------------------ */
 [data-ui="v3"] {

@@ -1,4 +1,5 @@
 import type { StreakPanelVM } from "@/ui-v3/you-data";
+import GradientPanel from "@/ui-v3/components/GradientPanel";
 import styles from "./StreakPanel.module.css";
 
 /**
@@ -7,7 +8,7 @@ import styles from "./StreakPanel.module.css";
  */
 export default function StreakPanel({ vm }: { vm: StreakPanelVM }) {
   return (
-    <div className={styles.panel}>
+    <GradientPanel tone="streak" className={styles.panel}>
       <div className={styles.flame}>🔥</div>
 
       <div className={styles.body}>
@@ -22,6 +23,6 @@ export default function StreakPanel({ vm }: { vm: StreakPanelVM }) {
           <span key={i} className={`${styles.pip} ${on ? styles.pipOn : ""}`} />
         ))}
       </div>
-    </div>
+    </GradientPanel>
   );
 }
