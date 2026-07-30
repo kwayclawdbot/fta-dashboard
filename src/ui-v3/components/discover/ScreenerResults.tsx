@@ -1,7 +1,7 @@
 import Link from "next/link";
 import TickerTile from "@/ui-v3/components/TickerTile";
 import EmptyNote from "@/ui-v3/components/EmptyNote";
-import { DISCOVER_EMPTY } from "@/ui-v3/discover-data";
+import { DISCOVER_EMPTY } from "@/ui-v3/discover-copy";
 import { SHOW_SAVE_SCREEN } from "@/ui-v3/launch-flags";
 import type { ScreenerCandidateVM } from "@/ui-v3/screener-filter";
 import Sparkline from "./Sparkline";

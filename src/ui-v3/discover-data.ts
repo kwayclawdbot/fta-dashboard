@@ -6,6 +6,7 @@ import { getCachedBeltWatch } from "@/lib/club/club-cache";
 import { sectorOf, SECTORS, type Sector } from "@/lib/screener-sectors";
 import { TRENDING_DISCLAIMER } from "@/lib/club/score";
 import { MIN_POSITIONED_OPINIONS } from "@/ui-v3/club-floors";
+import { DISCOVER_EMPTY } from "@/ui-v3/discover-copy";
 import {
   DEFAULT_FILTERS,
   type ScreenerCandidateVM,
@@ -255,18 +256,6 @@ function positionedOf(row: RawTrendingRow): number {
  */
 const DIVISIVE_MIN_POSITIONED = MIN_POSITIONED_OPINIONS;
 const DIVISIVE_MAX_GAP = 20;
-
-/** The empty copy for each region that can legitimately have nothing to show. */
-export const DISCOVER_EMPTY = {
-  divisive: `Not enough positioned opinions yet — a split takes ${MIN_POSITIONED_OPINIONS}+ members on one name.`,
-  beltWatch: "No black belts yet — the first member to get there leads this row.",
-  rising: "No names are climbing yet. This fills as the Club reads and takes sides.",
-  quietToLoud: "Nothing has woken up yet — this row needs two weeks of attention history.",
-  screenerRows: "Nothing clears this screen right now. Loosen a filter and the matches come back.",
-  bullish: "No bullish consensus yet.",
-  bearish: "No bearish positions on the board yet.",
-  trendingChips: "The attention ledger is still filling.",
-} as const;
 
 function pickDivisive(rows: RawTrendingRow[]): DivisiveVM | null {
   let best: { row: RawTrendingRow; gap: number } | null = null;
