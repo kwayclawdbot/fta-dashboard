@@ -1,0 +1,61 @@
+/*
+ * The v3 404. Nothing here is a new object: the mono eyebrow treatment, the
+ * display heading, the muted body ramp and the accent pill are the same four the
+ * artboards already use — arranged with air, because an error screen is the one
+ * place the boards leave room.
+ */
+
+.wrap {
+  padding-top: 96px;
+  max-width: 300px;
+}
+
+/* Same mono / .14em / uppercase eyebrow the boards open every section with. */
+.code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  font-weight: var(--fw-600);
+  letter-spacing: var(--ls-14em);
+  color: var(--accent-strong);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-26);
+  font-weight: var(--fw-800);
+  font-style: italic;
+  color: var(--text);
+  margin-top: var(--space-10);
+}
+
+.copy {
+  font-size: var(--fs-12);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+  margin-top: var(--space-10);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+  margin-top: var(--space-18);
+}
+
+/* The boards' accent pill: filled, --accent-on foreground, fully rounded. */
+.primary {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  border-radius: var(--radius-full);
+  padding: var(--space-10) var(--space-16);
+  text-decoration: none;
+}
+
+.secondary {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-500);
+  color: var(--text-dim);
+  text-decoration: none;
+}
