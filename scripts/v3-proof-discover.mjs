@@ -28,13 +28,24 @@ const SCREENS = [
   { slug: "discover-screener", label: "15 Discover Screener", route: "/v3/discover/screener" },
 ];
 
+/**
+ * The mockups pull four Google faces over the network. Captured early they
+ * silently render in a fallback and EVERY measured height is wrong, which reads
+ * as a mismatch in the component. So: wait for document.fonts.ready, then give
+ * the layout a further settle before measuring or shooting anything.
+ */
+async function settleFonts(page) {
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(3000);
+}
+
 async function shotArtboard(browser, theme, label, file) {
   const page = await browser.newPage({
     viewport: { width: 1200, height: 1200 },
     deviceScaleFactor: SCALE,
   });
   await page.goto(`file://${MOCK[theme]}`);
-  await page.waitForTimeout(1200); // webfonts
+  await settleFonts(page);
   const el = page.locator(`[data-screen-label="${label}"]`);
   await el.screenshot({ path: file });
   await page.close();
@@ -53,7 +64,7 @@ async function shotRoute(browser, theme, route, file, fullFile) {
       document.querySelector('[data-ui="v3"]')?.setAttribute("data-theme", "light");
     });
   }
-  await page.waitForTimeout(900);
+  await settleFonts(page);
   await page.screenshot({ path: file }); // viewport-clipped: the artboard's own box
   await page.screenshot({ path: fullFile, fullPage: true });
   await page.close();
