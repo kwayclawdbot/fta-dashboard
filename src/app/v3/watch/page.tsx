@@ -1,11 +1,16 @@
-import AppShell from "@/ui-v3/components/AppShell";
-import ScreenPlaceholder from "@/ui-v3/components/ScreenPlaceholder";
+import { getWatchOverview } from "@/ui-v3/watch-data";
+import WatchScreen from "@/ui-v3/components/watch/WatchScreen";
 
-/** /v3/watch — placeholder so the bottom nav is fully navigable. */
-export default function V3WatchPage() {
-  return (
-    <AppShell>
-      <ScreenPlaceholder name="Watch" />
-    </AppShell>
-  );
+/**
+ * /v3/watch — "06 Watch".
+ *
+ * All data access happens in getWatchOverview(); the screen below is pure
+ * presentation. /v3 is outside the middleware's protected paths, so an
+ * anonymous visitor gets the same screen rendered from fixtures.
+ */
+export const dynamic = "force-dynamic";
+
+export default async function V3WatchPage() {
+  const model = await getWatchOverview();
+  return <WatchScreen model={model} />;
 }

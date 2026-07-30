@@ -1,0 +1,37 @@
+/*
+ * "06 Watch" — the next setup down, compressed to one line: identity tile,
+ * name + condition count, and how long it has left.
+ *
+ * Flat card at radius-14 (the size class above the destination rows), which is
+ * how the artboard separates it from the four-row list above.
+ */
+
+.row {
+  margin-top: var(--space-14);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-12) var(--space-13);
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  text-decoration: none;
+}
+
+.text {
+  flex: 1;
+  font-size: var(--fs-12);
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.name {
+  color: var(--text);
+  font-weight: var(--fw-700);
+}
+
+.horizon {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+}
