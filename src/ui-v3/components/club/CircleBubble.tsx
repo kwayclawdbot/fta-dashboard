@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { compactCount, type CircleBubbleVM } from "@/ui-v3/club-data";
+import { compactCount, CIRCLE_DAYS, type CircleBubbleVM } from "@/ui-v3/club-data";
 import { circleGlyph, circlePaint } from "./circle-paint";
 import styles from "./CircleBubble.module.css";
 
@@ -79,18 +79,24 @@ function Clock({ circle, prefix = "" }: { circle: CircleBubbleVM; prefix?: strin
 
 /**
  * The artboard's ninth grid cell: a dashed opener bubble with a full --positive
- * ring. Display-only — opening a Circle is not wired on the v3 routes.
+ * ring. It opens a real Circle — `club_circles` + the opener's own
+ * `club_circle_members` row — via /v3/club/circles/new.
+ *
+ * Withheld entirely from a register that cannot open one, rather than rendered
+ * inert: this cell IS the affordance, so an unclickable copy of it would just be
+ * a grid cell that does nothing.
  */
-export function StartCircleBubble() {
+export function StartCircleBubble({ canPost = true }: { canPost?: boolean }) {
+  if (!canPost) return null;
   return (
-    <div className={`${styles.cell} ${styles.grid}`}>
+    <Link href="/v3/club/circles/new" className={`${styles.cell} ${styles.grid}`}>
       <div className={styles.ring} style={{ "--arc": "var(--positive)", "--pct": "100%" } as CSSProperties}>
         <div className={styles.discOpen} aria-hidden="true">
           +
         </div>
       </div>
       <div className={styles.titleIdle}>Start yours</div>
-      <div className={styles.metaFaint}>30 days on the clock</div>
-    </div>
+      <div className={styles.metaFaint}>{CIRCLE_DAYS} days on the clock</div>
+    </Link>
   );
 }

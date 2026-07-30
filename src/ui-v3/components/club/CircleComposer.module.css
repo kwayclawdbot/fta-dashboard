@@ -1,0 +1,193 @@
+/*
+ * The Circle room's composer footer, live.
+ *
+ * It keeps the artboard's composer box EXACTLY — same 10/14/22 padding, same
+ * hairline, same `--chrome` ground inherited from the room column, same pill
+ * field and same 30px accent send disc — and only swaps the inert marks for real
+ * controls. The whole point is that going from display-only to writable changed
+ * no part of the drawing.
+ *
+ * `--chrome` is declared on `.screen` in CircleRoomScreen.module.css and reaches
+ * here by inheritance, so this file must never re-declare it: two declarations
+ * of the same one-off ground is exactly how the two bands drift apart in one
+ * theme and not the other.
+ */
+
+.composer {
+  /* 22px of home-indicator clearance, straight off the artboard. */
+  padding: var(--space-10) var(--space-14) 22px;
+  border-top: 1px solid var(--border);
+  background: var(--chrome);
+  flex: 0 0 auto;
+}
+
+/* ── the optional stance row ───────────────────────────────────────────────── */
+
+.stanceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-bottom: var(--space-9);
+}
+
+.stanceOn,
+.stanceOff {
+  appearance: none;
+  font: inherit;
+  font-size: var(--fs-10);
+  font-weight: var(--fw-700);
+  letter-spacing: var(--ls-06em);
+  text-transform: uppercase;
+  border-radius: var(--radius-6);
+  padding: var(--space-4) var(--space-9);
+  cursor: pointer;
+}
+
+.stanceOff {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+/* The fill arrives inline from the component — a stance is a member's opinion
+   and must never borrow the price ramp, so those literals are kept out of the
+   stylesheet where a later edit could "helpfully" tokenise them. */
+.stanceOn {
+  border: 1px solid transparent;
+  font-weight: var(--fw-800);
+  color: #fff;
+}
+
+.stanceHint {
+  margin-left: auto;
+  font-size: var(--fs-9-5);
+  color: var(--text-faint);
+}
+
+/* ── the field ─────────────────────────────────────────────────────────────── */
+
+.composerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-9);
+}
+
+/* The artboard's pill, as a real textarea: one row tall, growing to four before
+   it scrolls, so a long note is composable without the footer eating the thread. */
+.field {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-20);
+  padding: var(--space-9) var(--space-14);
+  font: inherit;
+  font-size: var(--fs-12-5);
+  line-height: var(--lh-1-5);
+  color: var(--text);
+  max-height: 96px;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field::placeholder {
+  color: var(--text-faint);
+}
+
+.send {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-12);
+  flex: 0 0 auto;
+  color: var(--accent-on);
+  font-weight: var(--fw-800);
+  cursor: pointer;
+  /* The disc is 30px and a textarea's last line is not, so it pins to the
+     bottom of the row as the field grows. */
+  margin-bottom: 2px;
+}
+
+.send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── join ──────────────────────────────────────────────────────────────────── */
+
+.joinRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-11);
+}
+
+.joinCopy {
+  flex: 1;
+  font-size: var(--fs-12);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+/* The room's one primary action while you are outside it (§4.4). */
+.join {
+  appearance: none;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: var(--accent);
+  padding: var(--space-9) var(--space-14);
+  font: inherit;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-06em);
+  text-transform: uppercase;
+  color: var(--accent-on);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.join:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── stated non-input states ───────────────────────────────────────────────── */
+
+.bar {
+  margin: 0;
+  font-size: var(--fs-12);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+.barLink {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: var(--fw-600);
+}
+
+.err {
+  margin: var(--space-8) 0 0;
+  font-size: var(--fs-11);
+  color: var(--negative);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

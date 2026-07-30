@@ -1,0 +1,245 @@
+/*
+ * The Circle opener.
+ *
+ * Deliberately the SAME objects as ComposeScreen.module.css — the chrome row,
+ * the progress rail, the ask, the field label, the flat card, the accent footer
+ * and the spoken refusal. Two composers on the same section that looked like
+ * different products would be the invention §9 forbids; they are one form
+ * grammar, used twice.
+ *
+ * They are duplicated rather than shared because the two screens are the only
+ * members of that grammar today, and a premature "form primitives" module would
+ * be a third abstraction to keep in sync with two artboards, only one of which
+ * exists. If a third form lands, THAT is when this lifts into a shared
+ * component — with the artboard to check it against.
+ */
+
+.chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.cancel {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-600);
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.rail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.railOn,
+.railOff {
+  width: 26px;
+  height: 3px;
+  border-radius: var(--radius-2);
+}
+
+.railOn {
+  background: var(--accent);
+}
+
+.railOff {
+  background: var(--border);
+}
+
+.post {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-800);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.post:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── the ask ───────────────────────────────────────────────────────────────── */
+
+.ask {
+  margin-top: var(--space-16);
+}
+
+.askTitle {
+  margin: 0;
+  max-width: 15ch;
+  font-size: var(--fs-30);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-n-02em);
+  line-height: var(--lh-1);
+  color: var(--text);
+}
+
+.underlined {
+  position: relative;
+  display: inline-block;
+}
+
+.underlined::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 3px;
+  border-radius: var(--radius-2);
+  background: var(--accent);
+}
+
+.askCopy {
+  margin: var(--space-11) 0 0;
+  max-width: 38ch;
+  font-size: var(--fs-13);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+/* ── fields ────────────────────────────────────────────────────────────────── */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-600);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.card {
+  margin-top: var(--space-9);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-13);
+  padding: var(--space-12) var(--space-13);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-15);
+  line-height: var(--lh-1-5);
+  color: var(--text);
+}
+
+.textarea {
+  resize: none;
+  font-size: var(--fs-13);
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-700);
+  text-transform: uppercase;
+}
+
+.note {
+  margin: var(--space-9) 0 0;
+  font-size: var(--fs-11-5);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-top: var(--space-12);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border);
+}
+
+.footHint {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+}
+
+.counter {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text-faint);
+}
+
+/* ── footer ────────────────────────────────────────────────────────────────── */
+
+.error {
+  margin: var(--space-12) 0 0;
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-600);
+  color: var(--negative);
+}
+
+.footer {
+  margin-top: var(--space-18);
+}
+
+.publish {
+  appearance: none;
+  width: 100%;
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-8);
+  padding: var(--space-15);
+  font: inherit;
+  font-size: var(--fs-13);
+  font-weight: var(--fw-800);
+  letter-spacing: var(--ls-12em);
+  text-transform: uppercase;
+  color: var(--accent-on);
+  cursor: pointer;
+}
+
+.publish:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.refusal {
+  margin: var(--space-9) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  letter-spacing: var(--ls-12em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.back {
+  display: inline-block;
+  margin-top: var(--space-16);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--accent);
+  text-decoration: none;
+}

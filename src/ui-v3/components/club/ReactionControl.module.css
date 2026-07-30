@@ -1,0 +1,43 @@
+/*
+ * The tap targets in a card's action row.
+ *
+ * They must be typographically INDISTINGUISHABLE from the inert marks beside
+ * them (💬, 🔖) when they are off — the boards draw one flat row of glyphs and
+ * counts, not a row of buttons — so the reset here is total and the only
+ * difference an "on" control carries is colour.
+ *
+ * ON is --accent, which is the region's one permitted accent (§4.4) and is
+ * already spent on nothing else inside a feed card.
+ */
+
+.off,
+.on {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: var(--fs-11);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  cursor: pointer;
+  line-height: inherit;
+}
+
+.off {
+  color: var(--text-dim);
+}
+
+.on {
+  color: var(--accent);
+  font-weight: var(--fw-600);
+}
+
+/* The sign-in / retry line. Sits in the same row, at the caption ramp, so it
+   never resizes the card. */
+.note {
+  font-size: var(--fs-10);
+  color: var(--text-faint);
+}

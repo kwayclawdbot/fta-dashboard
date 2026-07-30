@@ -1,6 +1,7 @@
-import type { FeedPostVM } from "@/ui-v3/club-data";
+import type { ClubViewerVM, FeedPostVM } from "@/ui-v3/club-data";
 import BeltChip from "./BeltChip";
 import MemberDisc from "./MemberDisc";
+import ReactionControl from "./ReactionControl";
 import styles from "./FeedPostCard.module.css";
 
 /**
@@ -15,8 +16,20 @@ import styles from "./FeedPostCard.module.css";
  * artboard's engagement row filled in with the absence of engagement, and it made
  * a real feed look abandoned. The artboard only ever draws these counts with
  * numbers in them; zero is the state where the count has not started.
+ *
+ * 👍 IS NOW A CONTROL — it writes `post_likes`, the same table its own count is
+ * read from (see ReactionControl). It is always rendered, even at zero, because
+ * unlike the passive counts beside it, its job is to be tappable: a control that
+ * only appears once someone else has already tapped it can never receive the
+ * first tap. 💬 and 🔖 remain inert; commenting and saving have no v3 route yet.
  */
-export default function FeedPostCard({ post }: { post: FeedPostVM }) {
+export default function FeedPostCard({
+  post,
+  viewer,
+}: {
+  post: FeedPostVM;
+  viewer: ClubViewerVM | null;
+}) {
   return (
     <article className={styles.card}>
       <div className={styles.head}>
@@ -34,9 +47,13 @@ export default function FeedPostCard({ post }: { post: FeedPostVM }) {
       <p className={styles.body}>{post.body}</p>
 
       <div className={styles.actions}>
-        {post.likes !== null && post.likes > 0 ? (
-          <span data-numeric>👍 {post.likes}</span>
-        ) : null}
+        <ReactionControl
+          kind="like"
+          targetId={post.id}
+          count={post.likes ?? 0}
+          mine={post.likedByMe}
+          viewer={viewer}
+        />
         {post.comments !== null && post.comments > 0 ? (
           <span data-numeric>💬 {post.comments}</span>
         ) : null}

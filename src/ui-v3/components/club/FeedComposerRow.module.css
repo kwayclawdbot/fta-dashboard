@@ -1,5 +1,8 @@
 /* Composer prompt — a flat card (GRAMMAR §5) at radius 14, padding 11px 13px. */
 
+/* One rule for both forms: the row is the same object whether it is a link to
+   the composer or the kid register's inert note. `text-decoration` and `color`
+   are reset because the link form would otherwise inherit the anchor defaults. */
 .row {
   display: flex;
   align-items: center;
@@ -9,6 +12,8 @@
   border-radius: var(--radius-14);
   padding: var(--space-11) var(--space-13);
   margin-top: var(--space-16);
+  color: inherit;
+  text-decoration: none;
 }
 
 .copy {

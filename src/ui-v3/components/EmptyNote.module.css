@@ -28,3 +28,48 @@
   text-align: center;
   justify-content: center;
 }
+
+/*
+ * A note carrying an action stacks: the sentence, then the action beneath it.
+ *
+ * This has to re-declare `display`, because `.tall` above is a ROW flex and an
+ * action inside a tall note would otherwise sit beside its own sentence. It is
+ * declared AFTER `.tall` / `.center` so equal specificity resolves in this
+ * rule's favour, and the `.center` pairing is written as a two-class selector so
+ * it outranks the row alignment it is replacing.
+ */
+.withAction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-7);
+}
+
+.withAction.center {
+  align-items: center;
+}
+
+.withAction.tall {
+  justify-content: center;
+}
+
+/*
+ * The one action. DESIGN-GRAMMAR §6's action ramp exactly — 11px / 600 /
+ * --accent — so it is typographically the same object as a "See all", never a
+ * button with chrome. The `appearance`/`background`/`border` reset is there
+ * because the onClick form really is a link that happens to run client code.
+ */
+.action {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  line-height: 1.2;
+  color: var(--accent);
+  cursor: pointer;
+  text-align: inherit;
+}

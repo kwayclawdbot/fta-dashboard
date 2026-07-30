@@ -22,7 +22,10 @@ export default function YourSignals({ rows }: { rows: SignalRowVM[] }) {
         <SectionEyebrow actionLabel="See all" actionHref="/v3/watch">
           Your signals
         </SectionEyebrow>
-        <EmptyNote>
+        {/* This region is empty because the member has not named anything to
+            watch yet — which makes the fix theirs to make, and the note says
+            where. See EmptyNote's own header note on when an action is allowed. */}
+        <EmptyNote action={{ label: "Add names you care about", href: "/v3/watch" }}>
           Signals appear as your watchlist heats up — new watchers, opinion swings, and Kai
           Watch moving toward a trigger.
         </EmptyNote>

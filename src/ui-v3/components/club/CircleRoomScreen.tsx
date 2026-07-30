@@ -4,6 +4,7 @@ import { groupedCount, type CircleRoomViewModel } from "@/ui-v3/club-data";
 import AppShell from "@/ui-v3/components/AppShell";
 import { circleGlyph, circlePaint } from "./circle-paint";
 import CircleNoteRow from "./CircleNoteRow";
+import CircleComposer from "./CircleComposer";
 import styles from "./CircleRoomScreen.module.css";
 
 /**
@@ -22,7 +23,11 @@ import styles from "./CircleRoomScreen.module.css";
  *    and only "# takes" is real.
  *  - The Kai row wants a sentiment SERIES ("moved +6 pts bullish in the last
  *    hour"). Only the current split exists, so the row states the split.
- *  - The composer is display-only; no write path is wired on the v3 routes.
+ *
+ * THE COMPOSER IS LIVE. It writes `club_circle_notes` — the same table this
+ * thread reads — and gates itself on the same predicate the table's RLS policy
+ * applies (member of this circle, not a kid, clock still running). See
+ * ./CircleComposer.tsx; the box it draws is unchanged from the artboard's.
  */
 export default function CircleRoomScreen({ model }: { model: CircleRoomViewModel }) {
   return (
@@ -45,7 +50,13 @@ export default function CircleRoomScreen({ model }: { model: CircleRoomViewModel
         {model.split ? <KaiSplitRow split={model.split} /> : null}
       </div>
 
-      <Composer channel={model.channel} />
+      <CircleComposer
+        circleId={model.id}
+        channel={model.channel}
+        viewer={model.viewer}
+        joined={model.joined}
+        open={model.open}
+      />
     </AppShell>
   );
 }
@@ -160,22 +171,3 @@ function KaiSplitRow({ split }: { split: { bull: number; neutral: number; bear: 
   );
 }
 
-/** Display-only: posting a note is not wired on the v3 routes. */
-function Composer({ channel }: { channel: string }) {
-  return (
-    <div className={styles.composer}>
-      <div className={styles.composerRow}>
-        <span className={styles.composerBtnAccent} aria-hidden="true">
-          +
-        </span>
-        <div className={styles.composerField}>Message # {channel}</div>
-        <span className={styles.composerBtn} aria-hidden="true">
-          📈
-        </span>
-        <span className={styles.composerSend} aria-hidden="true">
-          ➤
-        </span>
-      </div>
-    </div>
-  );
-}
