@@ -1,0 +1,76 @@
+/*
+ * "18 Kai Alerts" — the line that says whose alerts these are and when they
+ * were generated. The whale disc is Kai's own mark: a cool blue field that
+ * exists nowhere else in the token set, so it is declared here per theme.
+ */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  margin-top: var(--space-16);
+}
+
+/*
+ * 36px, not the artboard's declared 34px.
+ *
+ * The mockup HTML ships no box-sizing reset, so its `width:34px` + `1px` border
+ * is content-box and RENDERS at 36px — and because this row is the tallest thing
+ * in it, that 2px is the row's height. v3 is border-box, so the declared size
+ * absorbs the border and the rendered size is what gets matched here.
+ */
+.mark {
+  --kai-field: #0e1b2e;
+  --kai-edge: #2e5578;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--kai-field);
+  border: 1px solid var(--kai-edge);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-15);
+  flex: 0 0 auto;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .mark {
+  --kai-field: #e4f1fa;
+  --kai-edge: #7fa8c4;
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-700);
+  color: var(--text);
+}
+
+.caption {
+  font-size: var(--fs-10);
+  color: var(--text-dim);
+  margin-top: var(--space-1);
+}
+
+.count {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  padding: var(--space-4) var(--space-9);
+  border-radius: var(--radius-12);
+}
+
+/* The day rule that opens each group. */
+.day {
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: var(--ls-16em);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: var(--fw-600);
+}
