@@ -1,0 +1,44 @@
+/*
+ * The ticker tab rail (boards 12/13/14).
+ *
+ * The idle pill carries a border and the active one does not, so the active
+ * pill sits 2px shorter than its neighbours on the artboard. That is the
+ * mockup's own rendering, but four pills on one baseline that do not share a
+ * height read as a fault rather than a state, so the active pill keeps the
+ * border as a TRANSPARENT one: same box, same baseline, no drawn line.
+ */
+
+.rail {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-14);
+}
+
+.tab {
+  font-size: var(--fs-10-5);
+  padding: var(--space-6) var(--space-12);
+  border-radius: var(--radius-16);
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.idle {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-dim);
+  font-weight: var(--fw-600);
+}
+
+.active {
+  background: var(--accent);
+  color: var(--accent-on);
+  font-weight: var(--fw-800);
+}
+
+/* Kai's own blue — theme-literal, identical in the light artboard. */
+.activeKai {
+  background: var(--p-5bc4f0);
+  color: var(--accent-on);
+  font-weight: var(--fw-800);
+}

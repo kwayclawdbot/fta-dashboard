@@ -1,7 +1,14 @@
 /*
  * The ticker tile — a rounded square carrying the issuer's initial in its brand
- * pair. The artboards draw it at two sizes: 34px inside a Top-in-the-Club card,
- * 26px inside a signal row. Both are here; nothing else varies.
+ * pair. Four sizes, one per artboard region, and nothing between them:
+ *
+ *   xl 40px / radius-11 / 19px  "03 Ticker NVDA", the identity hero
+ *   lg 34px / radius-10 / 15px  "01 Home", a Top-in-the-Club card
+ *   md 28px / radius-8  / 13px  "12/13/14 Ticker", the compact tab header
+ *   sm 26px / radius-8  / 11px  "01 Home", a signal row
+ *
+ * `md` and `xl` were added when the four ticker boards were translated; the two
+ * originals are byte-identical to what they were.
  */
 
 .tile {
@@ -11,6 +18,20 @@
   flex: 0 0 auto;
   background: var(--tile-bg);
   color: var(--tile-fg);
+}
+
+.xl {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-11);
+  font-size: var(--fs-19);
+}
+
+.md {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-8);
+  font-size: var(--fs-13);
 }
 
 .lg {

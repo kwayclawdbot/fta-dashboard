@@ -1,0 +1,141 @@
+/* "03 Ticker NVDA" — the identity hero. */
+
+.utility {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back {
+  color: var(--text-muted);
+  font-size: var(--fs-16);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.glyphs {
+  display: flex;
+  gap: var(--space-14);
+  align-items: center;
+}
+
+/* The artboard's gold ★. Hollow when the name is not on the watchlist. */
+.star {
+  color: var(--gold);
+  font-size: var(--fs-15);
+  line-height: 1;
+}
+
+.starOn {
+  color: var(--gold);
+}
+
+.share {
+  color: var(--text-muted);
+  font-size: var(--fs-14);
+  line-height: 1;
+}
+
+.identity {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-10);
+  margin-top: var(--space-14);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  min-width: 0;
+}
+
+/* 21px: the artboard's own size. Used once in the mockups, so the extractor
+   (count >= 3) emits no token for it and the literal is the honest form. */
+.company {
+  font-size: 21px;
+  font-weight: var(--fw-800);
+  color: var(--text);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The club-rank pill. Ground and border are the artboard's accent tints; both
+ * are stated as rgba over the accent hue rather than a token because the
+ * mockups declare them inline and the light twin keeps the same alphas.
+ */
+.rank {
+  flex: 0 0 auto;
+  background: rgba(255, 122, 26, 0.12);
+  border: 1px solid rgba(255, 122, 26, 0.5);
+  color: var(--accent-strong);
+  font-size: var(--fs-10-5);
+  font-weight: var(--fw-700);
+  padding: var(--space-4) var(--space-11);
+  border-radius: var(--radius-16);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.quote {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-10);
+  margin-top: var(--space-12);
+}
+
+/* 28px: likewise a one-off in the mockups — see the note on .company. */
+.price {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.change {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  font-weight: var(--fw-600);
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}
+
+.watching {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-2);
+}
+
+.pips {
+  display: flex;
+}
+
+/*
+ * CONTENT-BOX NOTE: the artboard declares 16px + a 1.5px ring, which renders as
+ * a 19px disc there. v3 is border-box, so the outer size is stated directly.
+ */
+.pip {
+  width: 19px;
+  height: 19px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  border: 1.5px solid var(--bg);
+}
+
+.pip + .pip {
+  margin-left: -5px;
+}
+
+.watchCount {
+  font-size: var(--fs-9-5);
+  color: var(--text-dim);
+}

@@ -1,0 +1,25 @@
+/*
+ * Shared chrome for the four ticker screens: the compliance lines each board
+ * ends on, and the footnote the three drill-downs pin into AppShell's bar slot.
+ */
+
+/*
+ * The trending contract's MUST-render line. It rides the view model rather than
+ * being retyped, and it sits at the foot of the club-attention screen for the
+ * same reason it does on Home and Discover.
+ */
+.disclaimer {
+  font-size: var(--fs-9-5);
+  line-height: var(--lh-1-5);
+  color: var(--text-faint);
+  padding-bottom: var(--space-18);
+}
+
+/* The pinned footnote on boards 12, 13 and 14 — one centred line in the bar. */
+.footnote {
+  flex: 1;
+  font-size: var(--fs-10);
+  line-height: var(--lh-1-5);
+  color: var(--text-faint);
+  text-align: center;
+}
