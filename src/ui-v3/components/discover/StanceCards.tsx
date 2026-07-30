@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { StanceCardVM } from "@/ui-v3/discover-data";
 import styles from "./StanceCards.module.css";
 
@@ -54,14 +55,18 @@ function StanceCard({
           {card.orderLabel ? <div className={styles.order}>{card.orderLabel}</div> : null}
           <div className={styles.list}>
             {card.rows.map((row) => (
-              <div key={row.ticker} className={styles.item}>
+              <Link
+                key={row.ticker}
+                href={`/v3/ticker/${row.ticker}`}
+                className={styles.item}
+              >
                 <span className={styles.ticker}>{row.ticker}</span>
                 {row.pct !== null ? (
                   <span className={styles.pct} data-numeric>
                     {row.pct}%
                   </span>
                 ) : null}
-              </div>
+              </Link>
             ))}
           </div>
         </>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ClubViewerVM, FeedPostVM } from "@/ui-v3/club-data";
 import BeltChip from "./BeltChip";
 import MemberDisc from "./MemberDisc";
@@ -39,7 +40,11 @@ export default function FeedPostCard({
           {post.beltKey && post.beltLabel ? (
             <BeltChip belt={post.beltKey} label={`${post.beltLabel} Belt`} />
           ) : null}
-          {post.ticker ? <div className={styles.ticker}>${post.ticker}</div> : null}
+          {post.ticker ? (
+            <Link href={`/v3/ticker/${post.ticker}`} className={styles.ticker}>
+              ${post.ticker}
+            </Link>
+          ) : null}
         </div>
         <span className={styles.time}>{post.time} ···</span>
       </div>

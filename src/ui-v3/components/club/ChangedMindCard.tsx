@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ChangedMindVM, ClubViewerVM } from "@/ui-v3/club-data";
 import BeltChip from "./BeltChip";
 import MemberDisc from "./MemberDisc";
@@ -45,7 +46,9 @@ export default function ChangedMindCard({
             <BeltChip belt={flip.beltKey} label={`${flip.beltLabel} Belt`} />
           ) : null}
         </div>
-        <span className={styles.ticker}>${flip.ticker}</span>
+        <Link href={`/v3/ticker/${flip.ticker}`} className={styles.ticker}>
+          ${flip.ticker}
+        </Link>
       </div>
 
       <div className={styles.flip}>

@@ -36,11 +36,14 @@
   color: var(--text);
 }
 
+/* A link now (it opens the ticker), but it keeps the artboard's own block box. */
 .ticker {
+  display: block;
   font-family: var(--font-mono);
   font-size: var(--fs-10);
   color: var(--accent-strong);
   margin-top: var(--space-1);
+  text-decoration: none;
 }
 
 .time {

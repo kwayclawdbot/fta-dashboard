@@ -1,0 +1,22 @@
+/* "14 Kai Report" — the pinned action and the compliance line. */
+
+/* The artboard's primary action, in Kai's own blue rather than the app accent. */
+.action {
+  flex: 1;
+  background: var(--p-5bc4f0);
+  color: var(--accent-on);
+  border-radius: var(--radius-20);
+  padding: var(--space-11) 0;
+  text-align: center;
+  font-size: var(--fs-12-5);
+  font-weight: var(--fw-800);
+  text-decoration: none;
+}
+
+.disclaimer {
+  font-size: var(--fs-9-5);
+  line-height: var(--lh-1-5);
+  color: var(--text-faint);
+  margin-top: var(--space-14);
+  padding-bottom: var(--space-18);
+}

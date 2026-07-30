@@ -1,0 +1,79 @@
+/* "03 Ticker NVDA" — the price plot, its axis, and the range chips. */
+
+.plot {
+  position: relative;
+  margin-top: var(--space-10);
+  border-radius: var(--radius-12);
+  /* The artboard's wash under the line, tinted by the line's own direction. */
+  background: linear-gradient(180deg, var(--plot-wash), transparent);
+}
+
+.up {
+  --plot-line: var(--positive);
+  --plot-wash: rgba(74, 227, 131, 0.06);
+  --plot-fill: rgba(74, 227, 131, 0.07);
+}
+
+.down {
+  --plot-line: var(--negative);
+  --plot-wash: rgba(255, 77, 109, 0.06);
+  --plot-fill: rgba(255, 77, 109, 0.07);
+}
+
+/*
+ * The artboard's svg is 100% wide and 128 tall with preserveAspectRatio="none".
+ * base.css blockifies every v3 svg already, so nothing is restored here.
+ */
+.svg {
+  width: 100%;
+  height: 128px;
+}
+
+.line {
+  fill: none;
+  stroke: var(--plot-line);
+  stroke-width: 2.2;
+}
+
+.area {
+  fill: var(--plot-fill);
+  stroke: none;
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  color: var(--text-faint);
+  margin-top: var(--space-4);
+  padding: 0 var(--space-4);
+}
+
+.ranges {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+}
+
+/* Same transparent-border trick the tab rail uses, and for the same reason. */
+.chip {
+  flex: 1;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-600);
+  padding: var(--space-4) var(--space-11);
+  border-radius: var(--radius-8);
+  text-decoration: none;
+}
+
+.chipOn {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-on);
+  font-weight: var(--fw-700);
+}

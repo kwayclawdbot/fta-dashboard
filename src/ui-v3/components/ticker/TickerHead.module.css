@@ -1,0 +1,36 @@
+/* The compact identity row shared by boards 12, 13 and 14. */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.back {
+  color: var(--text-muted);
+  font-size: var(--fs-16);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.symbol {
+  font-size: var(--fs-15);
+  font-weight: var(--fw-800);
+  color: var(--text);
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  color: var(--text);
+}
+
+.change {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10-5);
+  color: var(--positive);
+}
+
+.down {
+  color: var(--negative);
+}

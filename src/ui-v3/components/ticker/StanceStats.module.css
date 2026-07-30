@@ -1,0 +1,41 @@
+/* "03 Ticker NVDA" — the stat card row beneath the stance region. */
+
+.row {
+  display: flex;
+  gap: var(--space-8);
+  margin-top: var(--space-14);
+}
+
+.card {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-9) var(--space-6);
+  text-align: center;
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-13);
+  font-weight: var(--fw-600);
+}
+
+.text {
+  color: var(--text);
+}
+
+.positive {
+  color: var(--positive);
+}
+
+.accent {
+  color: var(--accent-strong);
+}
+
+.label {
+  font-size: var(--fs-8-5);
+  color: var(--text-faint);
+  margin-top: var(--space-3);
+}

@@ -40,7 +40,7 @@ export default function ScreenerResults({
 
       <div className={styles.list}>
         {rows.map((row) => (
-          <Link key={row.ticker} href="/v3/discover/screener" className={styles.row}>
+          <Link key={row.ticker} href={`/v3/ticker/${row.ticker}`} className={styles.row}>
             <TickerTile ticker={row.ticker} size="sm" />
             <div className={styles.symbolCell}>
               <div className={styles.symbol}>{row.ticker}</div>

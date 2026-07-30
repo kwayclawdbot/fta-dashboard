@@ -1,0 +1,97 @@
+/* "12 Ticker Technicals" — the level ladder. */
+
+.card {
+  margin-top: var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-14) var(--space-15);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  font-weight: var(--fw-600);
+}
+
+.empty {
+  font-size: var(--fs-12);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+  margin-top: var(--space-10);
+}
+
+.ladder {
+  margin-top: var(--space-12);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  width: 52px;
+  flex: 0 0 auto;
+}
+
+.resistance {
+  color: var(--negative);
+}
+
+.support {
+  color: var(--positive);
+}
+
+.priceTag {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: var(--fw-700);
+  color: var(--accent-on);
+  background: var(--accent);
+  border-radius: var(--radius-4);
+  text-align: center;
+  padding: var(--space-2) 0;
+  width: 52px;
+  flex: 0 0 auto;
+}
+
+/* The dashed rules — the artboard's own dash rhythm, tinted by side. */
+.rule {
+  flex: 1;
+  height: 2px;
+}
+
+.ruleUp {
+  background: repeating-linear-gradient(90deg, #5a2a38 0 8px, transparent 8px 14px);
+}
+
+.ruleDown {
+  background: repeating-linear-gradient(90deg, #20503a 0 8px, transparent 8px 14px);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .ruleUp {
+  background: repeating-linear-gradient(90deg, #eba7b6 0 8px, transparent 8px 14px);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .ruleDown {
+  background: repeating-linear-gradient(90deg, #6fcb9b 0 8px, transparent 8px 14px);
+}
+
+/* The live price is the one solid rule, and the only halo on the card. */
+.priceRule {
+  flex: 1;
+  height: 3px;
+  background: var(--accent);
+  border-radius: var(--radius-2);
+  box-shadow: 0 0 8px rgba(255, 122, 26, 0.35);
+}

@@ -1,0 +1,44 @@
+/* "03 Ticker NVDA" — the takes on this name, ordered by the club's own ladder. */
+
+.section {
+  margin-top: var(--space-15);
+  /* The artboard's nav sits directly under this section; the well has no
+     bottom padding of its own, so the last card keeps its own clearance. */
+  padding-bottom: var(--space-18);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-10);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-14);
+  padding: var(--space-12) var(--space-13);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.author {
+  font-size: var(--fs-12);
+  font-weight: var(--fw-700);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.body {
+  font-size: var(--fs-11-5);
+  line-height: var(--lh-1-5);
+  color: var(--text-dim);
+  margin-top: var(--space-7);
+}

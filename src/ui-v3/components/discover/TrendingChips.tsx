@@ -38,7 +38,7 @@ export default function TrendingChips({
 
       <div className={styles.rail}>
         {chips.map((chip) => (
-          <Link key={chip.ticker} href="/v3/discover" className={styles.chip}>
+          <Link key={chip.ticker} href={`/v3/ticker/${chip.ticker}`} className={styles.chip}>
             {chip.hot ? <span aria-hidden="true">🔥 </span> : null}
             {chip.ticker}{" "}
             <span

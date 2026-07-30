@@ -1,0 +1,141 @@
+/* "03 Ticker NVDA" — where the club stands. */
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+  margin-top: var(--space-12);
+}
+
+.col {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+/*
+ * THE UNLIT DOT IS A THEME PAIR, so it is declared per theme rather than as one
+ * literal. The artboards draw the bear grid in three tiers and the bull grid in
+ * two; the grid encodes ONE percentage, so it reduces to lit/unlit, and the
+ * unlit value is the artboards' mid tier on each side:
+ *
+ *            bull lit   bull unlit   bear lit   bear unlit
+ *   dark     #4AE383    #2E7A4E      #FF4D6D    #8A3446
+ *   light    #0BA05A    #6FCB9B      #D92652    #EBA7B6
+ *
+ * The lit values are exactly --positive / --negative in both themes, so only
+ * the unlit halves need stating.
+ */
+.bull {
+  --stance: var(--positive);
+  --stance-dim: #2e7a4e;
+}
+
+.bear {
+  --stance: var(--negative);
+  --stance-dim: #8a3446;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .bull {
+  --stance-dim: #6fcb9b;
+}
+
+:global([data-ui="v3"][data-theme="light"]) .bear {
+  --stance-dim: #eba7b6;
+}
+
+.pct {
+  font-size: var(--fs-24);
+  font-weight: var(--fw-800);
+  color: var(--stance);
+  letter-spacing: var(--ls-n-02em);
+}
+
+.colLabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  color: var(--stance);
+  margin-top: var(--space-2);
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+  margin-top: var(--space-8);
+  max-width: 90px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--stance-dim);
+}
+
+.dotOn {
+  background: var(--stance);
+}
+
+/*
+ * The dial. 116px outer, an 8px conic ring, a --bg disc punched through it —
+ * this sits on the page, not on a card, so the hole is --bg (the same
+ * distinction SignalRing draws with `discTone`).
+ */
+.dial {
+  position: relative;
+  width: 116px;
+  height: 116px;
+  flex: 0 0 auto;
+}
+
+.dialArc {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: conic-gradient(
+    var(--accent) 0 var(--dial-pct),
+    var(--border) var(--dial-pct) 100%
+  );
+  box-shadow: 0 0 18px rgba(255, 122, 26, 0.2);
+}
+
+.dialDisc {
+  position: absolute;
+  inset: 8px;
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.dialValue {
+  font-size: var(--fs-26);
+  font-weight: var(--fw-800);
+  color: var(--text);
+  letter-spacing: var(--ls-n-02em);
+  line-height: var(--lh-1);
+}
+
+/* The artboard drops the unit to 14px and the muted ramp — the number leads. */
+.dialUnit {
+  font-size: var(--fs-14);
+  color: var(--text-dim);
+}
+
+.dialCaption {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: var(--ls-12em);
+  color: var(--accent-strong);
+  margin-top: var(--space-3);
+}

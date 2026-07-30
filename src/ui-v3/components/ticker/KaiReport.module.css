@@ -1,0 +1,182 @@
+/*
+ * "14 Kai Report".
+ *
+ * Kai's blue is its own register everywhere it appears in the app, and board 14
+ * is the one board painted in it: a cool diagonal wash under a cool border,
+ * against the warm accent every other board uses. The wash values are the
+ * artboard's own and are declared here as theme-scoped custom properties, the
+ * same way base.css holds the four warm washes.
+ */
+
+.panel {
+  --kai-wash: linear-gradient(140deg, #0e1b2e 0%, #17141a 70%);
+  --kai-edge: #1e3050;
+  --kai-ring: #2e5578;
+  --kai-copy: #a9bed0;
+
+  margin-top: var(--space-16);
+  background: var(--kai-wash);
+  border: 1px solid var(--kai-edge);
+  border-radius: var(--radius-18);
+  padding: var(--space-16);
+}
+
+:global([data-ui="v3"][data-theme="light"]) .panel {
+  --kai-wash: linear-gradient(140deg, #e2f0FB 0%, #ffffff 70%);
+  --kai-edge: #bcd8ec;
+  --kai-ring: #8cb8d8;
+  --kai-copy: #3d5a72;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+/*
+ * CONTENT-BOX NOTE: the artboard declares 44px + a 1.5px ring, which renders as
+ * a 47px disc there. v3 is border-box, so the outer size is stated directly.
+ */
+.avatar {
+  width: 47px;
+  height: 47px;
+  border-radius: var(--radius-full);
+  background: var(--kai-edge);
+  border: 1.5px solid var(--kai-ring);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-20);
+  flex: 0 0 auto;
+}
+
+.panelBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--p-5bc4f0);
+  font-weight: var(--fw-600);
+}
+
+.tagline {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-700);
+  color: var(--text);
+  margin-top: var(--space-3);
+}
+
+.headline {
+  font-size: var(--fs-16);
+  font-weight: var(--fw-700);
+  line-height: 1.4;
+  color: var(--text);
+  margin-top: var(--space-12);
+}
+
+/* ── the evidence rows ────────────────────────────────────────────────────── */
+
+.row {
+  margin-top: var(--space-10);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-16);
+  padding: var(--space-14) var(--space-15);
+  display: flex;
+  gap: var(--space-13);
+  align-items: flex-start;
+}
+
+.figure {
+  width: 56px;
+  flex: 0 0 auto;
+  padding-top: var(--space-14);
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowEyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: var(--fw-600);
+}
+
+.rowTitle {
+  font-size: var(--fs-13);
+  font-weight: var(--fw-700);
+  color: var(--text);
+  margin-top: var(--space-4);
+}
+
+.rowCopy {
+  font-size: var(--fs-10-5);
+  color: var(--text-dim);
+  margin-top: var(--space-3);
+  line-height: var(--lh-1-5);
+  white-space: pre-line;
+}
+
+/* ── what Kai is watching ─────────────────────────────────────────────────── */
+
+/*
+ * The one warm object on this board, and the artboard's own choice: the caution
+ * panel wears a warm wash rather than Kai's blue, so the thing that says "watch
+ * this" does not look like the thing that said "here is what I found".
+ *
+ * Board 14 declares `120deg #241009 0%, #17141A 70%` — the same two stops as
+ * `--wash-streak` at the same angle, one stop position apart (65% vs 70%). That
+ * is under a pixel of difference across a 15px panel, so it reuses the token
+ * rather than adding a fifth wash for a rounding error.
+ */
+.risks {
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-18);
+  background: var(--wash-streak);
+  border: 1px solid var(--accent-soft);
+  border-radius: var(--radius-16);
+  padding: var(--space-14) var(--space-15);
+}
+
+.risksEyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-8-5);
+  letter-spacing: var(--ls-14em);
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  font-weight: var(--fw-600);
+}
+
+.riskList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+}
+
+.risk {
+  display: flex;
+  gap: var(--space-9);
+  font-size: var(--fs-11-5);
+  line-height: var(--lh-1-5);
+  color: var(--text-muted);
+  align-items: baseline;
+}
+
+.bullet {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  flex: 0 0 auto;
+}
