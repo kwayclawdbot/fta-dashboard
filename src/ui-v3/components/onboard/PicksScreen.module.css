@@ -1,0 +1,135 @@
+/*
+ * The seeding step. NO ARTBOARD — every value below is lifted from a board that
+ * does exist, and nothing is a new number:
+ *
+ *   .headline  — "11 Pricing" go pro / "15 Screener" discover (script, lh 1)
+ *   .subtitle  — "11 Pricing" 13px --text-dim, lh 1.5
+ *   .row       — "15 Discover Screener" result row: --surface, 1px --border,
+ *                radius-12, 9/11 padding, 10px gap
+ *   .ticker    — "15 Screener" mono 11/600 in a 44px column
+ *   .add       — "01 Home" signal-row ＋, --positive
+ *   .section   — the 16px section step from the grammar's rhythm (§2)
+ */
+
+.headline {
+  font-family: var(--font-script);
+  font-size: 32px;
+  color: var(--text);
+  line-height: var(--lh-1);
+}
+
+.subtitle {
+  font-size: var(--fs-13);
+  color: var(--text-dim);
+  margin-top: var(--space-6);
+  line-height: var(--lh-1-5);
+}
+
+.search {
+  margin-top: var(--space-16);
+}
+
+.section {
+  margin-top: var(--space-16);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  margin-top: var(--space-10);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-12);
+  padding: var(--space-9) var(--space-11);
+  cursor: pointer;
+}
+
+.row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* The screener's fixed ticker column, so the names below it line up. */
+.ticker {
+  width: 44px;
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  font-weight: var(--fw-600);
+  color: var(--text);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The add mark. --positive, not --accent: "01 Home" already assigns the ＋ this
+ * colour, and grammar §4 rations accent to the region's ONE primary action —
+ * which on this screen is the pinned save button.
+ */
+.add,
+.picked {
+  color: var(--positive);
+  font-weight: var(--fw-800);
+  font-size: var(--fs-13);
+  flex: 0 0 auto;
+}
+
+.remove {
+  color: var(--text-faint);
+  font-weight: var(--fw-800);
+  font-size: var(--fs-12);
+  flex: 0 0 auto;
+}
+
+/* Row states carry a mono label rather than a colour the boards never draw. */
+.row:disabled .add {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-9);
+  letter-spacing: var(--ls-12em);
+}
+
+.error {
+  margin-top: var(--space-12);
+  font-size: var(--fs-12);
+  color: var(--negative);
+  line-height: var(--lh-1-5);
+}
+
+/* The shell's .bar is a flex row; this fills it with a stacked action + escape. */
+.barStack {
+  flex: 1;
+}
+
+/*
+ * Skipping is a real option, so it is a real control — but a dim one. Same
+ * treatment SectionEyebrow gives its `dim` action: 11px, --text-dim.
+ */
+.skip {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-9);
+  background: none;
+  border: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-11);
+  color: var(--text-dim);
+  cursor: pointer;
+}
