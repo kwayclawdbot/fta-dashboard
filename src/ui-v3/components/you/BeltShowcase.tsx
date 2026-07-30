@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import AccentEyebrow from "./AccentEyebrow";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import { beltChipInkVar, beltToneVar, type BeltTone } from "./belt-tone";
 import styles from "./BeltShowcase.module.css";
 
@@ -53,7 +53,7 @@ const ROWS: ShowcaseRow[] = [
 export default function BeltShowcase() {
   return (
     <div className={styles.section}>
-      <AccentEyebrow>How belts show up</AccentEyebrow>
+      <SectionEyebrow labelTone="accent">How belts show up</SectionEyebrow>
 
       <div className={styles.card}>
         {ROWS.map((row) => (

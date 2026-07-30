@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { TrendingChipVM } from "@/ui-v3/discover-data";
-import DiscoverEyebrow from "./DiscoverEyebrow";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./TrendingChips.module.css";
 
 /**
@@ -15,7 +15,7 @@ export default function TrendingChips({ chips }: { chips: TrendingChipVM[] }) {
 
   return (
     <section className={styles.section}>
-      <DiscoverEyebrow>Trending in the club</DiscoverEyebrow>
+      <SectionEyebrow labelTone="accent">Trending in the club</SectionEyebrow>
 
       <div className={styles.rail}>
         {chips.map((chip) => (

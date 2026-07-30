@@ -1,5 +1,4 @@
 import type { ClubFeedViewModel } from "@/ui-v3/club-data";
-import Link from "next/link";
 import AppShell from "@/ui-v3/components/AppShell";
 import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import ClubHeader, { ClubHeadActions } from "./ClubHeader";
@@ -17,9 +16,7 @@ import styles from "./ClubFeedScreen.module.css";
  * renders live member data and the anonymous fixtures view unchanged.
  *
  * The artboard's "See all" beside HAPPENING NOW is styled --text-dim, not the
- * accent it takes on Home; SectionEyebrow only draws the accent variant, so the
- * action is rendered here instead of through that prop. Flagged as a
- * shared-primitive request rather than changed in place.
+ * accent it takes on Home — SectionEyebrow's `actionTone="dim"`.
  */
 export default function ClubFeedScreen({ model }: { model: ClubFeedViewModel }) {
   return (
@@ -29,10 +26,13 @@ export default function ClubFeedScreen({ model }: { model: ClubFeedViewModel }) 
       {model.circles.length > 0 ? (
         <>
           <div className={styles.eyebrowRow}>
-            <SectionEyebrow>Happening now</SectionEyebrow>
-            <Link className={styles.seeAll} href="/v3/club/circles">
-              See all
-            </Link>
+            <SectionEyebrow
+              actionLabel="See all"
+              actionHref="/v3/club/circles"
+              actionTone="dim"
+            >
+              Happening now
+            </SectionEyebrow>
           </div>
           <div className={styles.strip}>
             {model.circles.map((c) => (

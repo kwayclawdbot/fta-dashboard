@@ -1,5 +1,5 @@
 import type { RecentCallVM } from "@/ui-v3/you-data";
-import AccentEyebrow from "./AccentEyebrow";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./RecentCalls.module.css";
 
 /**
@@ -18,12 +18,14 @@ export default function RecentCalls({
 
   return (
     <div className={styles.section}>
-      <AccentEyebrow
+      <SectionEyebrow
+        labelTone="accent"
         actionLabel={seeAllHref ? "See all" : undefined}
         actionHref={seeAllHref ?? undefined}
+        actionTone="dim"
       >
         Recent calls
-      </AccentEyebrow>
+      </SectionEyebrow>
 
       <div className={styles.list}>
         {rows.map((row) => (

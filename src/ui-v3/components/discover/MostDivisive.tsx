@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { DivisiveVM } from "@/ui-v3/discover-data";
 import { discoverPaint } from "./discover-palette";
-import DiscoverEyebrow from "./DiscoverEyebrow";
+import SectionEyebrow from "@/ui-v3/components/SectionEyebrow";
 import styles from "./MostDivisive.module.css";
 
 /**
@@ -19,9 +19,16 @@ export default function MostDivisive({ divisive }: { divisive: DivisiveVM | null
 
   return (
     <section className={styles.section}>
-      <DiscoverEyebrow caption="Biggest split in opinions" actionLabel="→" actionSize="glyph">
+      <SectionEyebrow
+        labelTone="accent"
+        caption="Biggest split in opinions"
+        captionGap={2}
+        actionLabel="→"
+        actionTone="dim"
+        actionSize="glyph"
+      >
         Most divisive
-      </DiscoverEyebrow>
+      </SectionEyebrow>
 
       <div className={styles.panel}>
         <div className={styles.side}>
