@@ -5,8 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { checkClean } from "@/lib/profanity";
-import { openCircle, normalizeTicker } from "@/lib/circles";
-import { CIRCLE_DAYS, type ClubViewerVM } from "@/ui-v3/club-data";
+// CIRCLE_DAYS comes from `@/lib/circles`, NOT from the club-data re-export a
+// server component would use: club-data.ts is `server-only`, so a VALUE import
+// of it from this client module pulls the whole server data layer into the
+// browser graph and the build refuses it. The type import below is erased at
+// compile time and is therefore fine from either side.
+import { openCircle, normalizeTicker, CIRCLE_DAYS } from "@/lib/circles";
+import type { ClubViewerVM } from "@/ui-v3/club-data";
 import AppShell from "@/ui-v3/components/AppShell";
 import styles from "./StartCircleScreen.module.css";
 
