@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { groupedCount, type CircleRoomViewModel } from "@/ui-v3/club-data";
+import AppShell from "@/ui-v3/components/AppShell";
 import { circleGlyph, circlePaint } from "./circle-paint";
 import CircleNoteRow from "./CircleNoteRow";
 import styles from "./CircleRoomScreen.module.css";
@@ -8,11 +9,10 @@ import styles from "./CircleRoomScreen.module.css";
 /**
  * "23 Inside Circle", translated from the artboard.
  *
- * This screen does NOT use AppShell: the artboard gives it a full-bleed 16px
- * header, a full-bleed pinned bar, a 16px thread well and its own composer
- * footer — and no bottom nav. AppShell hard-codes an 18px well plus the nav, so
- * the column is re-established locally rather than by changing a shared
- * primitive (flagged as a shared-primitive request).
+ * The artboard gives it a full-bleed 16px header, a full-bleed pinned bar, a 16px
+ * thread well and its own composer footer — and no bottom nav. That is
+ * <AppShell padding="bleed" nav={false}>; the thread band carries the `flex: 1`
+ * that pins the composer to the bottom of the column.
  *
  * REGIONS WITH NO SOURCE, rendered honestly rather than faked:
  *  - "312 online" and the presence dot: no presence table exists → omitted.
@@ -26,29 +26,27 @@ import styles from "./CircleRoomScreen.module.css";
  */
 export default function CircleRoomScreen({ model }: { model: CircleRoomViewModel }) {
   return (
-    <div className={styles.viewport}>
-      <div className={styles.screen}>
-        <Header model={model} />
-        <ThesisBar premise={model.premise} />
+    <AppShell padding="bleed" nav={false} className={styles.screen}>
+      <Header model={model} />
+      <ThesisBar premise={model.premise} />
 
-        <div className={styles.thread}>
-          {model.groups.map((group) => (
-            <div key={group.label} className={styles.group}>
-              <div className={styles.dayRow}>
-                <span className={styles.dayPill}>{group.label}</span>
-              </div>
-              {group.notes.map((n) => (
-                <CircleNoteRow key={n.id} note={n} />
-              ))}
+      <div className={styles.thread}>
+        {model.groups.map((group) => (
+          <div key={group.label} className={styles.group}>
+            <div className={styles.dayRow}>
+              <span className={styles.dayPill}>{group.label}</span>
             </div>
-          ))}
+            {group.notes.map((n) => (
+              <CircleNoteRow key={n.id} note={n} />
+            ))}
+          </div>
+        ))}
 
-          {model.split ? <KaiSplitRow split={model.split} /> : null}
-        </div>
-
-        <Composer channel={model.channel} />
+        {model.split ? <KaiSplitRow split={model.split} /> : null}
       </div>
-    </div>
+
+      <Composer channel={model.channel} />
+    </AppShell>
   );
 }
 
