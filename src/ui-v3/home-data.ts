@@ -89,7 +89,11 @@ export interface HomeViewModel {
   source: "live" | "fixtures";
   greetingName: string;
   initials: string;
-  /** No notifications core exists yet — live always yields null and the badge is omitted. */
+  /**
+   * The bell badge: alert events fired since `alert_prefs.hub_seen_at`. Null on
+   * a first visit, on a failed read, and on nothing-new — see
+   * `readUnseenAlertCount`. The bell itself always links to /v3/watch/alerts.
+   */
   notificationCount: number | null;
   trending: TrendingStripVM;
   /**
@@ -128,6 +132,13 @@ interface RawForYouItem {
   delta?: string | null;
   kind?: string | null;
   watchState?: string | null;
+  /**
+   * Net stance movement on this ticker over the week — bull adds minus bear
+   * adds, off `ticker_intel_snapshots.provenance.sentiment.net`. The foryou core
+   * already speaks it ("3 net new bull opinions"); this is the same number as a
+   * number, which is what the artboard's count pill wants.
+   */
+  sentimentNet?: number | null;
 }
 interface RawBriefItem {
   kind?: string | null;
@@ -228,6 +239,32 @@ const FORYOU_FILLER = "Steady in the Club — no shift this week";
  */
 export const SIGNAL_MIN = 2;
 
+/**
+ * THE SIGNAL KINDS THAT ARE REAL, and the one that is not.
+ *
+ * The artboard defines three trailing affordances and the grammar records that
+ * live data resolved to `→` almost every time, because `watchState` was the only
+ * per-row state being read. Two kinds were asked for; exactly one of them
+ * exists:
+ *
+ *  ✔ "N new opinions this week" — REAL. `sentimentNet` rides on every foryou
+ *    item (route.ts shapes it from `provenance.sentiment.net`) and the core
+ *    already writes the sentence. Reading the number too is what finally lights
+ *    the orange count pill from something rather than from nothing.
+ *
+ *  ✘ "Earnings in N days" — NO SOURCE. There is no upcoming-earnings date
+ *    anywhere in this repo: no earnings or calendar table in supabase/migrations
+ *    (checked every migration), no earnings-ingest cron (the thirteen crons under
+ *    src/app/api/cron are screener, alerts, news, challenge and clock work), and
+ *    no provider call that returns one. The closest thing is
+ *    `/vX/reference/financials` in src/lib/market/polygon.ts, whose
+ *    `period_of_report_date` is the END OF A QUARTER ALREADY REPORTED — a past
+ *    date, and a fiscal period rather than an announcement. Deriving "earnings
+ *    in 12 days" from it would be arithmetic on the wrong number. So the kind is
+ *    NOT implemented and NOT faked; it needs an earnings-calendar source
+ *    (Polygon Benzinga earnings, or a nightly ingest into a new table) before it
+ *    can render a single row. FLAGGED, not skipped quietly.
+ */
 function mapSignals(section: unknown): SignalRowVM[] {
   const seen = new Set<string>();
   return rows<RawForYouItem>(section, "items")
@@ -242,15 +279,23 @@ function mapSignals(section: unknown): SignalRowVM[] {
       return true;
     })
     .slice(0, SIGNAL_LIMIT)
-    .map((it) => ({
-      ticker: (it.ticker as string).toUpperCase(),
-      text: it.delta as string,
-      // watchState is the only real per-row state the foryou core exposes.
-      affordance: it.watchState === "triggered" || it.watchState === "near_trigger" ? "add" : "go",
-      // No count core backs the artboard's orange pill, so it never renders.
-      // NOTHING here invents an earnings or count signal kind.
-      count: null,
-    }));
+    .map((it) => {
+      const net = typeof it.sentimentNet === "number" ? Math.abs(it.sentimentNet) : 0;
+      // The count pill belongs to the row whose REASON is the stance move. A
+      // row the core chose to speak about research reads may also carry a net,
+      // but pinning a number to a sentence that is not about it is how a badge
+      // stops meaning anything.
+      const isOpinions = it.kind === "sentiment" && net > 0;
+      const armed = it.watchState === "triggered" || it.watchState === "near_trigger";
+      return {
+        ticker: (it.ticker as string).toUpperCase(),
+        text: it.delta as string,
+        // A member's own Kai Watch reaching its level outranks the Club's
+        // opinion count — it is the more personal thing we know about the row.
+        affordance: armed ? ("add" as const) : isOpinions ? ("count" as const) : ("go" as const),
+        count: !armed && isOpinions ? net : null,
+      };
+    });
 }
 
 /**
@@ -307,6 +352,50 @@ function mapYou(xp: number | null): YouStripVM | null {
   };
 }
 
+/**
+ * THE BELL BADGE — alert events fired since this member last opened the hub.
+ *
+ * Source is the watermark the alerts hub already stamps
+ * (`alert_prefs.hub_seen_at`, migration 195) counted against the member's own
+ * `alert_events` rows. Both tables are own-row RLS, so the count is scoped by
+ * the database rather than by a filter here.
+ *
+ * THE CHEAPEST REAL SOURCE. The watch adapter derives the same figure, but only
+ * as a by-product of fetching forty events with their payloads and joining
+ * prices — far too much work for a number in a top bar. This is a `head` count:
+ * two small reads, no rows returned.
+ *
+ * NULL, NOT ZERO, in three cases, and each is a different kind of absence:
+ *  - never visited the hub (`hub_seen_at` is null) — a first visit is not a pile
+ *    of unread mail, so the badge stays off until there is a "since" to count
+ *    from. This is the same rule getWatchAlerts applies to its own count pill.
+ *  - the read failed — a badge is not worth a broken screen.
+ *  - nothing new — zero unseen alerts is an absent badge, not a "0".
+ */
+async function readUnseenAlertCount(
+  supabase: Awaited<ReturnType<typeof getRequestClient>>,
+  userId: string
+): Promise<number | null> {
+  try {
+    const { data: prefs } = await supabase
+      .from("alert_prefs")
+      .select("hub_seen_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const seenAt = (prefs as { hub_seen_at: string | null } | null)?.hub_seen_at ?? null;
+    if (!seenAt) return null;
+
+    const { count, error } = await supabase
+      .from("alert_events")
+      .select("id", { count: "exact", head: true })
+      .gt("fired_at", seenAt);
+    if (error || typeof count !== "number") return null;
+    return count > 0 ? count : null;
+  } catch {
+    return null;
+  }
+}
+
 function initialsFrom(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "";
@@ -358,7 +447,11 @@ export async function getHomeViewModel(): Promise<HomeViewModel> {
   if (!user) return fixtureModel();
 
   const supabase = await getRequestClient();
-  const [route, profile] = await Promise.all([resolveHomeRoute(supabase), getRequestProfile()]);
+  const [route, profile, unseen] = await Promise.all([
+    resolveHomeRoute(supabase),
+    getRequestProfile(),
+    readUnseenAlertCount(supabase, user.id),
+  ]);
 
   const displayName = profile?.display_name?.trim() ?? "";
   const firstName =
@@ -375,8 +468,7 @@ export async function getHomeViewModel(): Promise<HomeViewModel> {
     source: "live",
     greetingName: firstName,
     initials: initialsFrom(displayName || firstName),
-    // No notifications core exists. The badge stays off rather than showing a lie.
-    notificationCount: null,
+    notificationCount: unseen,
     trending: mapTrending(seed?.trending),
     briefLine: mapBriefLine(briefBody),
     // Not in the seed — <IndexChips> fetches these client-side.
