@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { m as mm, AnimatePresence } from "@/lib/motion";
 import {
   UserPlus,
+  Link2,
   Crown,
   GraduationCap,
   Trash2,
@@ -22,6 +23,7 @@ import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import { getBadgeSummaries, type BadgeSummary } from "@/lib/badges";
 import { SectionRule, familyRegister } from "@/components/family/register";
+import AddChildModal, { type ChildMode } from "@/components/family/AddChildModal";
 
 interface FamilyMember {
   id: string;
@@ -49,6 +51,13 @@ export default function FamilyMembersPage() {
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string>("");
   const [tier, setTier] = useState<FamilyTier>("fic");
+
+  // A parent adds their child from HERE now — either by creating the account
+  // outright ("create") or by pulling in an account the child already made on
+  // their own ("link"). The invite link survives as the fallback below the
+  // roster: it is the path that let a real household miss each other, so it is
+  // no longer the first thing a parent sees.
+  const [childMode, setChildMode] = useState<ChildMode | null>(null);
 
   // Parent view/clear of a family member's Kai memory (Lane 8B). Authorized by
   // the kai_memory_view / kai_memory_clear definer RPCs (parent-of-same-family).
@@ -217,16 +226,22 @@ export default function FamilyMembersPage() {
             family
           </p>
         </div>
-        <button
-          onClick={() => {
-            setShowInviteModal(true);
-            if (!inviteLink) generateInviteLink();
-          }}
-          className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm self-start sm:self-auto"
-        >
-          <UserPlus className="w-4 h-4" />
-          Invite Member
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setChildMode("create")}
+            className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add a child
+          </button>
+          <button
+            onClick={() => setChildMode("link")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-display font-semibold text-midnight-300 border border-midnight-700 hover:text-midnight-100 hover:border-midnight-600 transition-colors"
+          >
+            <Link2 className="w-4 h-4" />
+            Link an account
+          </button>
+        </div>
       </mm.div>
 
       {/* Members list */}
@@ -354,7 +369,39 @@ export default function FamilyMembersPage() {
           );
         })}
         </div>
+
+        {/* The invite link, demoted. It still works — a grown-up joining, or a
+            teen with their own device, can use it — but it is no longer the
+            answer to "how do I add my kid", because it depends on the kid
+            finding and using the link. */}
+        <p className="mt-4 text-xs text-midnight-500 font-body">
+          Adding a grown-up, or someone who&apos;d rather sign themselves up?{" "}
+          <button
+            onClick={() => {
+              setShowInviteModal(true);
+              if (!inviteLink) generateInviteLink();
+            }}
+            className="text-midnight-300 underline underline-offset-2 hover:text-gold-600 transition-colors"
+          >
+            Send an invite link instead
+          </button>
+          .
+        </p>
       </mm.div>
+
+      {/* Add a child / link an existing account (parent-side, server-routed) */}
+      {childMode && (
+        <AddChildModal
+          mode={childMode}
+          onClose={() => setChildMode(null)}
+          onAdded={() => {
+            // Re-read the roster rather than splice the response in: the row
+            // needs its badge summary and avatar the same way every other row
+            // got them.
+            loadMembers();
+          }}
+        />
+      )}
 
       {/* Invite Modal */}
       <AnimatePresence>
