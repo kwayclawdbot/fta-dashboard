@@ -10,6 +10,7 @@ import RisingFast from "./RisingFast";
 import MostDivisive from "./MostDivisive";
 import BlackBeltsWatching from "./BlackBeltsWatching";
 import QuietToLoud from "./QuietToLoud";
+import TheBoard from "./TheBoard";
 import styles from "./DiscoverScreen.module.css";
 
 /**
@@ -27,6 +28,15 @@ import styles from "./DiscoverScreen.module.css";
  *
  * What survives is what a founding club can actually fill: the names climbing
  * the ledger, and the sentence saying attention is not a recommendation.
+ *
+ * AND THE BOARD. That trim left the screen reading as two bands over empty
+ * space, because everything above is a SELECTION from the attention ledger and
+ * each selection can come back empty. `TheBoard` is the ledger itself, in its own
+ * rank order, unfiltered — the one band that has rows whenever the Club has read
+ * anything at all. It sits last because it is the general case the bands above
+ * are picking out of.
+ *
+ * The compliance line stays exactly once, here, under all of them.
  */
 export default function DiscoverScreen({ model }: { model: DiscoverViewModel }) {
   return (
@@ -36,6 +46,7 @@ export default function DiscoverScreen({ model }: { model: DiscoverViewModel }) 
       {SHOW_MOST_DIVISIVE ? <MostDivisive divisive={model.divisive} /> : null}
       {SHOW_BELT_WATCH ? <BlackBeltsWatching tickers={model.beltWatch} /> : null}
       {SHOW_QUIET_TO_LOUD ? <QuietToLoud tiles={model.quietToLoud} /> : null}
+      <TheBoard rows={model.board} />
       <p className={styles.disclaimer}>{model.disclaimer}</p>
     </AppShell>
   );

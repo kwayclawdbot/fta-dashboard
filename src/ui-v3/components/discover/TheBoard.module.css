@@ -1,0 +1,5 @@
+/* THE BOARD — the ledger preview. The rows carry their own rules. */
+
+.section {
+  margin-top: var(--space-18);
+}

@@ -20,6 +20,7 @@ export const DISCOVER_EMPTY = {
   rising: "No names are climbing yet. This fills as the Club reads and takes sides.",
   quietToLoud: "Nothing has woken up yet — this row needs two weeks of attention history.",
   screenerRows: "Nothing clears this screen right now. Loosen a filter and the matches come back.",
+  board: "No name is on the board yet — it fills the first time the Club reads one.",
   bullish: "No bullish consensus yet.",
   bearish: "No bearish positions on the board yet.",
   trendingChips: "The attention ledger is still filling.",

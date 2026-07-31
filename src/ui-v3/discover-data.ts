@@ -83,6 +83,18 @@ export interface DiscoverViewModel {
   divisive: DivisiveVM | null;
   beltWatch: BeltWatchVM[];
   quietToLoud: QuietToLoudVM[];
+  /**
+   * "THE BOARD" — the head of the club's ranked attention ledger, as the same
+   * candidate rows board 15 screens, capped at BOARD_LIMIT.
+   *
+   * UNFILTERED BY DESIGN. Every other band on this screen answers to a predicate
+   * — a split within ±20 points, a 14-day climb, a bull share over a floor — and
+   * each of those can legitimately return nothing on a small club, which is how
+   * Discover ended up reading as three eyebrows over empty space. This one is the
+   * ledger itself in its own order, so it has rows whenever the Club has looked
+   * at anything at all.
+   */
+  board: ScreenerCandidateVM[];
   /** `TRENDING_DISCLAIMER`, verbatim — the contract's MUST-render line. */
   disclaimer: string;
 }
@@ -184,6 +196,12 @@ function seedRows(section: unknown): RawTrendingRow[] {
 const RISING_LIMIT = 3;
 const QUIET_LIMIT = 5;
 const BELT_LIMIT = 5;
+/**
+ * "The board" is a PREVIEW of the whole ledger, not the ledger. Eight rows is
+ * roughly one thumb-scroll past the bands above it and leaves "See all →" a job;
+ * the screener draws the rest (RESULT_LIMIT, 25).
+ */
+const BOARD_LIMIT = 8;
 /** "15 Discover Screener" draws three names per stance. */
 const STANCE_LIMIT = 3;
 const TRENDING_CHIP_LIMIT = 5;
@@ -228,6 +246,35 @@ function seriesFor(m: MetricRow | undefined): number[] | null {
 function toneFor(series: number[] | null): SparkTone {
   if (!series || series.length < 2) return "positive";
   return series[series.length - 1] < series[0] ? "negative" : "positive";
+}
+
+/**
+ * ONE ledger row → ONE candidate. Used by the screener's whole candidate set and
+ * by Discover's board preview, so the two surfaces cannot disagree about what a
+ * row of the ledger is — including the floor on the club-signal pill.
+ */
+function toCandidate(
+  row: RawTrendingRow,
+  metrics: Map<string, MetricRow>,
+): ScreenerCandidateVM {
+  const ticker = (row.ticker as string).toUpperCase();
+  const m = metrics.get(ticker);
+  const series = seriesFor(m);
+  return {
+    ticker,
+    series,
+    tone: toneFor(series),
+    priceLabel: m?.price != null ? `$${m.price.toFixed(2)}` : null,
+    changePct: m?.chg_1d ?? null,
+    // The club-signal pill is a share, and it obeys the same floor as the
+    // stance cards it is repeated on. Below the floor it is null — which the
+    // signal predicate then reads as "not screenable", not as a zero. Without
+    // this the screen matched names whose 100% was a single member's click.
+    signalPct:
+      positionedOf(row) >= MIN_POSITIONED_OPINIONS ? (row.sentiment?.bullPct ?? null) : null,
+    sector: sectorOf(m?.sector),
+    mcap: m?.mcap ?? null,
+  };
 }
 
 function bearPctOf(row: RawTrendingRow): number | null {
@@ -328,9 +375,16 @@ export async function getDiscoverViewModel(): Promise<DiscoverViewModel> {
     .sort((a, b) => (b.change ?? 0) - (a.change ?? 0))
     .slice(0, QUIET_LIMIT);
 
-  const metrics = await readMetrics(
-    [...rising, ...quiet].map((r) => (r.ticker as string).toUpperCase()),
-  );
+  // The board is the ledger's own head — the SAME rows, in the SAME rank order,
+  // that the screener page ships as its candidate set. Nothing is re-read for it:
+  // `ledger` is already in hand and its metrics join the one query below.
+  const board = ledger.slice(0, BOARD_LIMIT);
+
+  const metrics = await readMetrics([
+    ...new Set(
+      [...rising, ...quiet, ...board].map((r) => (r.ticker as string).toUpperCase()),
+    ),
+  ]);
 
   return {
     source: "live",
@@ -364,6 +418,7 @@ export async function getDiscoverViewModel(): Promise<DiscoverViewModel> {
         tone: toneFor(series),
       };
     }),
+    board: board.map((r) => toCandidate(r, metrics)),
     disclaimer: TRENDING_DISCLAIMER,
   };
 }
@@ -381,26 +436,7 @@ export async function getScreenerViewModel(): Promise<ScreenerViewModel> {
   // there; sector, market cap, price and day change are joined off
   // screener_metrics. No predicate runs here — the chips own that now, and they
   // run in the browser (src/ui-v3/screener-filter.ts).
-  const candidates: ScreenerCandidateVM[] = ledger.map((r) => {
-    const ticker = (r.ticker as string).toUpperCase();
-    const m = metrics.get(ticker);
-    const series = seriesFor(m);
-    return {
-      ticker,
-      series,
-      tone: toneFor(series),
-      priceLabel: m?.price != null ? `$${m.price.toFixed(2)}` : null,
-      changePct: m?.chg_1d ?? null,
-      // The club-signal pill is a share, and it obeys the same floor as the
-      // stance cards it is repeated on. Below the floor it is null — which the
-      // signal predicate then reads as "not screenable", not as a zero. Without
-      // this the screen matched names whose 100% was a single member's click.
-      signalPct:
-        positionedOf(r) >= MIN_POSITIONED_OPINIONS ? (r.sentiment?.bullPct ?? null) : null,
-      sector: sectorOf(m?.sector),
-      mcap: m?.mcap ?? null,
-    };
-  });
+  const candidates: ScreenerCandidateVM[] = ledger.map((r) => toCandidate(r, metrics));
 
   // Only sectors with a name behind them are offered — a picker whose options
   // can only ever return zero rows is a worse lie than no picker.
@@ -507,6 +543,46 @@ const ART_SERIES = {
   AMD: [5, 4, 8, 6, 12, 15, 15],
 } as const;
 
+/**
+ * The artboards' own ledger rows, with the prices board 15 prints. Board 15 draws
+ * three of them, so three is what the anonymous board shows — padding it to
+ * BOARD_LIMIT would mean inventing five quotes, and a fabricated price is the one
+ * thing the fixtures branch exists to avoid. A session replaces this with the
+ * real ledger, where eight rows is the normal case.
+ */
+const ART_CANDIDATES: ScreenerCandidateVM[] = [
+  {
+    ticker: "NVDA",
+    series: [...ART_SERIES.NVDA],
+    tone: toneFor([...ART_SERIES.NVDA]),
+    priceLabel: "$173.42",
+    changePct: 4.7,
+    signalPct: 78,
+    sector: "Technology",
+    mcap: 4.2e12,
+  },
+  {
+    ticker: "PLTR",
+    series: [...ART_SERIES.PLTR],
+    tone: toneFor([...ART_SERIES.PLTR]),
+    priceLabel: "$156.90",
+    changePct: 2.1,
+    signalPct: 74,
+    sector: "Technology",
+    mcap: 3.7e11,
+  },
+  {
+    ticker: "AMD",
+    series: [...ART_SERIES.AMD],
+    tone: toneFor([...ART_SERIES.AMD]),
+    priceLabel: "$182.10",
+    changePct: 1.9,
+    signalPct: 71,
+    sector: "Technology",
+    mcap: 2.9e11,
+  },
+];
+
 function discoverFixtures(): DiscoverViewModel {
   return {
     source: "fixtures",
@@ -531,6 +607,7 @@ function discoverFixtures(): DiscoverViewModel {
       { ticker: "LCID", series: [...ART_SERIES.LCID], tone: "positive" },
       { ticker: "OKLO", series: [...ART_SERIES.OKLO], tone: "positive" },
     ],
+    board: ART_CANDIDATES.slice(0, BOARD_LIMIT),
     disclaimer: TRENDING_DISCLAIMER,
   };
 }
@@ -549,38 +626,7 @@ function discoverFixtures(): DiscoverViewModel {
 function screenerFixtures(): ScreenerViewModel {
   return {
     source: "fixtures",
-    candidates: [
-      {
-        ticker: "NVDA",
-        series: [...ART_SERIES.NVDA],
-        tone: toneFor([...ART_SERIES.NVDA]),
-        priceLabel: "$173.42",
-        changePct: 4.7,
-        signalPct: 78,
-        sector: "Technology",
-        mcap: 4.2e12,
-      },
-      {
-        ticker: "PLTR",
-        series: [...ART_SERIES.PLTR],
-        tone: toneFor([...ART_SERIES.PLTR]),
-        priceLabel: "$156.90",
-        changePct: 2.1,
-        signalPct: 74,
-        sector: "Technology",
-        mcap: 3.7e11,
-      },
-      {
-        ticker: "AMD",
-        series: [...ART_SERIES.AMD],
-        tone: toneFor([...ART_SERIES.AMD]),
-        priceLabel: "$182.10",
-        changePct: 1.9,
-        signalPct: 71,
-        sector: "Technology",
-        mcap: 2.9e11,
-      },
-    ],
+    candidates: ART_CANDIDATES,
     sectors: ["Technology"],
     initialFilters: DEFAULT_FILTERS,
     mostBullish: {
