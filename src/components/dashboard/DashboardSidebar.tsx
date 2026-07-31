@@ -116,7 +116,9 @@ const CLUB_COMMUNITY: NavItem = {
 const CLUB_COMMUNITY_HUB: NavItem = {
   ...CLUB_COMMUNITY,
   subItems: [
-    { label: "Club Feed", href: "/community" },
+    // /community is the chat area again (owner restore, 2026-07-31) — the row
+    // is named for what it opens, not for the feed that used to sit there.
+    { label: "Club Chat", href: "/community" },
     { label: "Changed my mind", href: "/community/changed-my-mind" },
     { label: "Circles", href: "/circles" },
   ],
