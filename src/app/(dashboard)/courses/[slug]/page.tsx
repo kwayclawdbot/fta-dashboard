@@ -514,11 +514,11 @@ export default function CourseDetailPage() {
       {/* Empty state */}
       {course.modules.length === 0 && (
         <EmptyLine
-          title="This path has come down"
-          body="The old lessons have been retired while the curriculum is rebuilt. The new path goes up a block at a time — the first lesson is live now."
+          title="Nothing published yet"
+          body="This path is still being written. Lessons appear here the moment they're published — nothing is hidden behind a placeholder."
           action={
-            <TextAction href="/courses/investing-explained-simply">
-              Go to the first lesson <ArrowRight className="h-3.5 w-3.5" />
+            <TextAction href="/courses">
+              Back to Learn <ArrowRight className="h-3.5 w-3.5" />
             </TextAction>
           }
         />
