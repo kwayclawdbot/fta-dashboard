@@ -52,7 +52,7 @@ export const SHOW_BELT_WATCH: Flag = false;
  * so club_change_14d is a real trajectory rather than the difference between one
  * week of no data and one week of some. "Woke up" needs a before.
  */
-export const SHOW_QUIET_TO_LOUD: Flag = false;
+export const SHOW_QUIET_TO_LOUD: Flag = true;
 
 /**
  * Belts → the "62% OF CLUB" figure on each rung.
