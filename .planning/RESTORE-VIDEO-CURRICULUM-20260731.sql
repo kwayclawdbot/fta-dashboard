@@ -3,19 +3,18 @@
 -- Everything here is reversible; nothing is deleted. Run as ONE transaction via
 --   psql -1 (transaction pooler drops pg_temp without -1 — per standing note).
 --
--- Decisions encoded (owner can override before running):
+-- Decisions (owner-confirmed 2026-07-31):
 --   * The 11 courses 202 unpublished come back. The 28 courses already
 --     unpublished since March stay down.
---   * ALL lessons 202 retired come back EXCEPT the two teen Week-4 options
---     lessons (compliance: 202's own rationale cited options-to-teens).
---     Adult options lessons DO come back.
+--   * ALL lessons 202 retired come back — full pre-overhaul parity, including
+--     the teen Week-4 options lessons (owner's explicit call).
 --   * The 24 interactive HTML lessons get steps=NULL so the viewer falls
 --     through to the full-bleed video/HTML path (steps_draft untouched;
 --     live steps snapshotted below).
 --   * Kids Corner keeps its step lessons (it never had video; nulling steps
 --     would leave kids a dead track).
---   * The pilot audio lesson + course are retired/unpublished (challenge_beats
---     verified: all four lesson beats href "/courses", none names the pilot).
+--   * The pilot audio lesson + course STAY LIVE alongside the restored
+--     catalogue (owner's explicit call).
 
 BEGIN;
 
@@ -33,13 +32,7 @@ UPDATE courses
 -- 2. Un-retire every lesson 202 retired.  Expect: UPDATE 101
 UPDATE lessons SET retired = false WHERE retired = true;
 
--- 3. Compliance carve-out: teen Week-4 options lessons stay hidden.
---    Expect: UPDATE 2
-UPDATE lessons SET retired = true
- WHERE id IN ('f1c00000-0002-0004-0001-000000000001',  -- Calls & Puts Explained
-              'f1c00000-0002-0004-0002-000000000001'); -- Why Options Can Grow (or Vaporize) Fast
-
--- 4. Hand the interactive HTML lessons back to the video path.
+-- 3. Hand the interactive HTML lessons back to the video path.
 --    Expect: UPDATE 24
 UPDATE lessons
    SET steps = NULL
@@ -47,17 +40,11 @@ UPDATE lessons
    AND video_id IS NOT NULL
    AND steps IS NOT NULL;
 
--- 5. Retire the pilot (nothing deleted; progress/XP rows survive by FK).
-UPDATE lessons SET retired = true
- WHERE id = 'c0d3f1a0-0000-4000-8000-000000000003';
-UPDATE courses SET published = false, updated_at = now()
- WHERE id = 'c0d3f1a0-0000-4000-8000-000000000001';
-
 COMMIT;
 
 -- VERIFY (run after commit):
--- SELECT count(*) FROM courses WHERE published;                                  -- expect 11
--- SELECT count(*) FROM lessons WHERE NOT retired;                                -- expect 99
+-- SELECT count(*) FROM courses WHERE published;                                  -- expect 12 (11 restored + pilot)
+-- SELECT count(*) FROM lessons WHERE NOT retired;                                -- expect 102
 -- SELECT count(*) FROM lessons WHERE video_provider='html' AND steps IS NULL;    -- expect 40
 -- SELECT count(*) FROM lesson_progress;                                          -- expect 22 (unchanged)
 -- SELECT count(*) FROM xp_events;                                                -- expect 91 (unchanged)
