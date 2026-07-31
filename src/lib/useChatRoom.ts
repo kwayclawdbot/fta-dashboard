@@ -39,9 +39,20 @@ export interface ChatAuthor {
   avatar_url: string | null;
   username: string | null;
 }
+/**
+ * The chat_messages.category column has existed since migration 016 and is what
+ * the original Community board filtered on (All / Wins / Questions / Discussion).
+ * The drawer and the FTA channel never surfaced it and wrote a constant
+ * "discussion"; the restored Community board does surface it, so the engine now
+ * CARRIES the column instead of hard-coding it. Callers that pass nothing still
+ * write "discussion" — byte-identical behaviour to before.
+ */
+export type ChatCategory = "win" | "question" | "announcement" | "discussion";
+
 export interface ChatMsg {
   id: string;
   content: string;
+  category: ChatCategory;
   created_at: string;
   user_id: string;
   author: ChatAuthor | null;
@@ -158,7 +169,7 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
       const { data } = await supabase
         .from("chat_messages")
         .select(
-          "id, content, created_at, user_id, attachment_url, attachment_type, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id, avatar_url, username)"
+          "id, content, category, created_at, user_id, attachment_url, attachment_type, author:profiles!chat_messages_user_id_fkey(display_name, role, age_group, family_id, avatar_url, username)"
         )
         .eq("room_id", roomId)
         .order("created_at", { ascending: false })
@@ -170,6 +181,7 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
         return {
           id: raw.id,
           content: raw.content || "",
+          category: raw.category || "discussion",
           created_at: raw.created_at,
           user_id: raw.user_id,
           author,
@@ -207,7 +219,8 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
           { event: "INSERT", schema: "public", table: "chat_messages", filter: `room_id=eq.${roomId}` },
           async (payload) => {
             const row = payload.new as {
-              id: string; content: string | null; created_at: string; user_id: string;
+              id: string; content: string | null; category: ChatCategory | null;
+              created_at: string; user_id: string;
               attachment_url: string | null; attachment_type: "image" | "video" | null;
             };
             const author = await getAuthor(row.user_id);
@@ -218,7 +231,8 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
                 ? prev
                 : [
                     {
-                      id: row.id, content: row.content || "", created_at: row.created_at,
+                      id: row.id, content: row.content || "", category: row.category || "discussion",
+                      created_at: row.created_at,
                       user_id: row.user_id, author,
                       attachment_url: row.attachment_url ?? null, attachment_type: row.attachment_type ?? null,
                     },
@@ -237,7 +251,11 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
   }, [roomId]);
 
   const send = useCallback(
-    async (body: string, file: File | null): Promise<SendResult> => {
+    async (
+      body: string,
+      file: File | null,
+      category: ChatCategory = "discussion"
+    ): Promise<SendResult> => {
       const trimmed = body.trim();
       if ((!trimmed && !file) || !me || posting) return { ok: false };
       const clean = checkClean(trimmed);
@@ -270,8 +288,8 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
 
       const { data, error: insErr } = await supabase
         .from("chat_messages")
-        .insert({ room_id: roomId, user_id: me.id, content: trimmed, category: "discussion", ...(attachmentFields || {}) })
-        .select("id, content, created_at, user_id, attachment_url, attachment_type")
+        .insert({ room_id: roomId, user_id: me.id, content: trimmed, category, ...(attachmentFields || {}) })
+        .select("id, content, category, created_at, user_id, attachment_url, attachment_type")
         .single();
 
       if (!insErr && data) {
@@ -280,7 +298,9 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
             ? prev
             : [
                 {
-                  id: data.id, content: data.content || "", created_at: data.created_at, user_id: data.user_id,
+                  id: data.id, content: data.content || "",
+                  category: (data.category as ChatCategory) || "discussion",
+                  created_at: data.created_at, user_id: data.user_id,
                   author: {
                     display_name: me.display_name, role: me.role, age_group: me.age_group,
                     family_id: me.family_id, avatar_url: me.avatar_url, username: me.username ?? null,
