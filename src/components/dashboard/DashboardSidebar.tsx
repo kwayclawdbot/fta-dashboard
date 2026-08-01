@@ -104,12 +104,9 @@ const CLUB_COMMUNITY: NavItem = {
   href: "/community",
   icon: MessageCircle,
 };
-// Canvas v2 adds two club destinations that are places, not actions: the
-// Changed My Mind feed and Circles. They nest under Club rather than taking
-// top-level rows — the five-item primary is the constraint, and this is the
-// same umbrella pattern Watchlist already uses. "Share your call" is
-// deliberately NOT here: composing is an action, reached from the feed and the
-// in-surface rail, and a nav row that opens a composer reads as a place.
+// Circles is a club destination that is a place, not an action. It nests under
+// Club rather than taking a top-level row — the five-item primary is the
+// constraint, and this is the same umbrella pattern Watchlist already uses.
 // Young kids keep the plain CLUB_COMMUNITY row: RLS lets a minor READ a Circle
 // but never open, join or post in one, so surfacing it to them advertises a
 // door that will not open.
@@ -119,7 +116,6 @@ const CLUB_COMMUNITY_HUB: NavItem = {
     // /community is the chat area again (owner restore, 2026-07-31) — the row
     // is named for what it opens, not for the feed that used to sit there.
     { label: "Club Chat", href: "/community" },
-    { label: "Changed my mind", href: "/community/changed-my-mind" },
     { label: "Circles", href: "/circles" },
   ],
 };

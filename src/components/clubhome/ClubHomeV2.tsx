@@ -4,9 +4,9 @@ import { Suspense, use, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, PlayCircle } from "lucide-react";
 
-import { useClubData, fixturesAllowed, type ClubHomeSeed } from "@/lib/clubhome/client";
+import { useClubData, type ClubHomeSeed } from "@/lib/clubhome/client";
 import { useLiveEvents, primaryLiveEvent, isEventUrgent } from "@/lib/clubhome/live-events";
-import type { BriefResponse, ClubScale } from "@/lib/clubhome/contract";
+import type { BriefResponse } from "@/lib/clubhome/contract";
 import type { TodayLoop } from "@/lib/club/today";
 import type { Register } from "@/lib/register";
 
@@ -143,7 +143,6 @@ export default function ClubHomeV2({
   learning,
   challengeExpiresAt = null,
   xp = null,
-  preview,
   seedPromise,
   briefPromise,
   todayPromise,
@@ -154,8 +153,6 @@ export default function ClubHomeV2({
   challengeExpiresAt?: string | null;
   /** Lifetime XP for the closing belt card. null = unavailable, not zero. */
   xp?: number | null;
-  /** design-review only — force fixtures + a scale state (guarded to dev/preview) */
-  preview?: { fixtures: boolean; scale: ClubScale };
   /**
    * SERVER SEED (the empty-first fix). The /dashboard server component builds
    * the club payload with the same assembler the API route uses and hands the
@@ -184,16 +181,12 @@ export default function ClubHomeV2({
 
   // `loading` lets each section tell "still arriving" apart from "the club has
   // nothing". With a seed it is false from the very first render.
-  const { data, loading, usingFixtures } = useClubData({
-    fixtures: preview?.fixtures,
-    scale: preview?.scale,
-    seed,
-  });
+  const { data, loading } = useClubData({ seed });
 
   // LIVE NOW (preserved law): a live/starting room is urgent, above all. Kid
   // register never sees adult live rooms. The rest of the live tier is board
   // 05's subject and no longer renders here.
-  const liveEvents = useLiveEvents({ fixtures: preview?.fixtures, scale: preview?.scale });
+  const liveEvents = useLiveEvents();
   const primaryLive = !isKid && liveEvents.length > 0 ? primaryLiveEvent(liveEvents) : null;
   const liveNow = primaryLive && isEventUrgent(primaryLive) ? primaryLive : null;
 
@@ -204,10 +197,10 @@ export default function ClubHomeV2({
       ? { ...data.brief, items: data.brief.items.filter((i) => i.kind !== "sentiment") }
       : data.brief;
 
-  // ── board-size diagnostic (dev / vercel preview ONLY, never production) ────
+  // ── board-size diagnostic (dev ONLY, never production) ────────────────────
   const trendingRows = data.trending?.rows?.length ?? 0;
   useEffect(() => {
-    if (loading || !fixturesAllowed()) return;
+    if (loading || process.env.NODE_ENV === "production") return;
     console.info(
       `[ClubHome] trending rows=${trendingRows}` +
         ` totalCount=${data.trending?.totalCount ?? "n/a"}` +
@@ -217,12 +210,6 @@ export default function ClubHomeV2({
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-16 lg:max-w-3xl">
-      {usingFixtures && (
-        <div className="pointer-events-none fixed bottom-4 left-4 z-50 rounded-full border border-volt-500/40 bg-card/95 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-gold-700 shadow-soft">
-          fixtures · {preview?.scale ?? "scale"} · {register}
-        </div>
-      )}
-
       {/* Preserved law — only during an active pass */}
       <ChallengeSlot challengeExpiresAt={challengeExpiresAt} />
 

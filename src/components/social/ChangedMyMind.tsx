@@ -11,10 +11,11 @@
  * see the control — pass canFlip=false; they still read the moments if shown.
  *
  * ── CANVAS V2 (lane L2) ──────────────────────────────────────────────────────
- * This is the TICKER-SCOPED instance of the idea. Its club-wide destination now
- * lives at /community/changed-my-mind (Club Screens 03), and this component
- * points at it rather than duplicating it — a ticker page should show the flips
- * on THIS name and hand off, not become a second feed.
+ * This is the TICKER-SCOPED instance of the idea, and now the ONLY one. The
+ * club-wide CHANGED MY MIND destination is retired (owner directive,
+ * 2026-08-01) along with the rest of the feed surfaces, so the hand-off link
+ * that used to close this block is gone: the flips on THIS name are the whole
+ * of it, read where the name is researched.
  *
  * Three colour-law repairs landed here with the STANCE_META migration:
  *   · the stance picker was `STANCE_META[s].chip` — green/red, the PRICE ramp,
@@ -300,15 +301,6 @@ export default function ChangedMyMind({
           </div>
         </div>
       )}
-
-      {/* The hand-off. The club-wide record is the destination; this block is the
-          view onto one name. */}
-      <Link
-        href="/community/changed-my-mind"
-        className="f0-focus inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
-      >
-        Where the Club updated its thinking →
-      </Link>
     </div>
   );
 }

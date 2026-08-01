@@ -1,50 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
-import { deriveRegister } from "@/lib/register";
-import ChangedMyMindClient from "./ChangedMyMindClient";
-import { EMPTY_CHANGED_MINDS, type ChangedMindsFeed } from "@/lib/social/stance";
+import { redirect } from "next/navigation";
 
 /**
- * /community/changed-my-mind — CHANGED MY MIND, promoted to a destination.
- * Canvas v2, Club Screens 03.
+ * /community/changed-my-mind — RETIRED (owner directive, 2026-08-01).
  *
- * The flip flow already existed (migration 151) but lived buried at the bottom
- * of a single ticker's research page, where it could only ever be a widget about
- * one company. The canvas is right that it is the strongest idea in the archive,
- * and an idea that strong needs an address: this is the club-wide record of
- * every member who publicly revised a position, with a RESPECT reaction that
- * answers the update rather than the conclusion.
+ * CHANGED MY MIND was promoted to its own destination alongside the Club feed.
+ * /community is the chat area again, and the flip feed is no longer a surface
+ * the Club offers: no nav row, no profile link, no tab points here. The route
+ * survives only to catch old links and bookmarks and hand them to the chat.
  *
- * SERVER-SEEDED (plan §0.4): the feed is read here and handed down, so the page
- * paints with real rows on first paint instead of flashing its founding state
- * while a client fetch is in flight. A failed read passes the empty feed and the
- * client renders the designed founding state — which is correct, because a
- * failed read genuinely has nothing to show.
+ * ChangedMyMindClient stays on disk, unrouted — the established policy is to
+ * unroute rather than delete, so v3 can build on the primitives.
  */
 export const dynamic = "force-dynamic";
 
 export default async function ChangedMyMindPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const [{ data: feed }, profileRes] = await Promise.all([
-    supabase.rpc("get_changed_minds", { p_limit: 30 }),
-    user
-      ? supabase.from("profiles").select("role, age_group, track").eq("id", user.id).single()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  const seed: ChangedMindsFeed = {
-    ...EMPTY_CHANGED_MINDS,
-    ...((feed ?? {}) as Partial<ChangedMindsFeed>),
-  };
-
-  return (
-    <ChangedMyMindClient
-      seed={seed}
-      userId={user?.id ?? null}
-      isKid={deriveRegister(profileRes.data) === "kid"}
-    />
-  );
+  redirect("/community");
 }

@@ -1,31 +1,18 @@
 "use client";
 
 /**
- * ClubHome v2 — typed client for the /api/club/* contract with a fixtures
- * fallback. The UI renders against the contract; where an endpoint responds it
- * wires the real data, where it 404s / errors it returns null and the section
- * falls back to a founding-era state (never a fabricated number).
+ * ClubHome v2 — typed client for the /api/club/* contract. The UI renders
+ * against the contract; where an endpoint responds it wires the real data,
+ * where it 404s / errors it returns null and the section falls back to a
+ * founding-era state (never a fabricated number).
  *
- * FIXTURES GUARD (safety-critical): `?fixtures=1` renders rich fixture data for
- * design review, but ONLY when `fixturesAllowed()` passes — dev or a vercel
- * PREVIEW deploy. In production it can never activate: the query param is
- * ignored and the live client is always used. See next.config.ts for the
- * NEXT_PUBLIC_VERCEL_ENV passthrough that drives the guard.
+ * There is no fixture path any more. The `?fixtures=1` design-review harness
+ * and its data are deleted — every number this client hands a surface came off
+ * a real read or is absent.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { ClubData, ClubEndpoint, ClubScale } from "./contract";
-import { clubFixtures } from "./fixtures";
-
-/** True only in dev or a vercel preview — NEVER in production. */
-export function fixturesAllowed(): boolean {
-  const env = process.env.NEXT_PUBLIC_VERCEL_ENV;
-  // Vercel: 'production' | 'preview' | 'development'. Undefined locally.
-  if (env) return env !== "production";
-  // No Vercel env (local `next dev` / `next start`): allow unless NODE_ENV=production
-  // AND we can't prove we're a preview — default to blocking in bare production builds.
-  return process.env.NODE_ENV !== "production";
-}
+import { useEffect, useRef, useState } from "react";
+import type { ClubData, ClubEndpoint } from "./contract";
 
 const ENDPOINTS: ClubEndpoint[] = [
   "pulse", "collective", "invite", "brief",
@@ -91,9 +78,6 @@ export type ClubHomeSeed = { [K in ClubEndpoint]?: unknown } & {
 };
 
 export interface UseClubDataOptions {
-  /** design-review only — force fixture data (ignored in production) */
-  fixtures?: boolean;
-  scale?: ClubScale;
   /**
    * Server-rendered payload. When present the hook starts ALREADY POPULATED and
    * skips its initial client fetch entirely — that is the whole fix for the
@@ -106,13 +90,11 @@ export interface UseClubDataOptions {
 export interface UseClubDataResult {
   data: ClubDataState;
   loading: boolean;
-  usingFixtures: boolean;
 }
 
 /**
- * Load every ClubHome section in parallel. Fixtures short-circuit (synchronous,
- * no loading flash). Live mode fetches all endpoints concurrently and hydrates
- * each independently so one slow/absent endpoint never blocks the others.
+ * Load every ClubHome section in parallel: all endpoints fetch concurrently and
+ * hydrate independently so one slow/absent endpoint never blocks the others.
  */
 /** Merge a server seed (or a fetched batch) onto a state, ignoring null sections
  *  so an absent section never overwrites what is already there. */
@@ -138,15 +120,14 @@ function errorKeys(batch: ClubHomeSeed | ClubHomeBatch | null): ClubEndpoint[] {
 }
 
 /**
- * Load every ClubHome section in parallel. Three modes, in priority order:
+ * Load every ClubHome section in parallel. Two modes, in priority order:
  *
- *   1. FIXTURES  — synchronous, no loading flash (design review only).
- *   2. SEEDED    — the server already built the payload (src/lib/club/home-payload.ts)
+ *   1. SEEDED    — the server already built the payload (src/lib/club/home-payload.ts)
  *                  and handed it across the RSC boundary. First paint carries
  *                  real data; the initial client fetch is SKIPPED entirely. Only
  *                  the sections the server flagged in `_errors` are re-fetched
  *                  individually, preserving per-section degradation.
- *   3. LIVE      — the original path: ONE batched GET /api/club/home, with the
+ *   2. LIVE      — the original path: ONE batched GET /api/club/home, with the
  *                  nine-way fan-out as its own fallback. Still used whenever the
  *                  seed is absent (client navigation, persona fell through, or
  *                  an RSC failure), so nothing regresses.
@@ -156,41 +137,25 @@ function errorKeys(batch: ClubHomeSeed | ClubHomeBatch | null): ClubEndpoint[] {
  * distinction is what stops the founding state from flashing.
  */
 export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
-  const usingFixtures = !!opts.fixtures && fixturesAllowed();
-  const scale: ClubScale = opts.scale ?? "scale";
-
-  const fixtureData = useMemo<ClubDataState | null>(() => {
-    if (!usingFixtures) return null;
-    return clubFixtures(scale) as ClubDataState;
-  }, [usingFixtures, scale]);
-
   // The seed is read ONCE, at mount. It arrives from a server component and is
   // referentially stable for the life of the mount; pinning it in a ref keeps it
   // out of the effect's dependency list so a re-render can never restart the
   // load.
   const seedRef = useRef<ClubHomeSeed | null | undefined>(undefined);
   if (seedRef.current === undefined) seedRef.current = opts.seed ?? null;
-  const seed = usingFixtures ? null : seedRef.current;
+  const seed = seedRef.current;
 
-  const [data, setData] = useState<ClubDataState>(() => {
-    if (fixtureData) return fixtureData;
-    return seed ? applyBatch(EMPTY_STATE, seed) : EMPTY_STATE;
-  });
+  const [data, setData] = useState<ClubDataState>(() =>
+    seed ? applyBatch(EMPTY_STATE, seed) : EMPTY_STATE
+  );
   // Seeded AND complete → nothing is in flight, so we are not loading. Seeded
   // with errored sections → those are still arriving, so we are.
-  const [loading, setLoading] = useState(() => {
-    if (usingFixtures) return false;
-    if (seed) return errorKeys(seed).length > 0;
-    return true;
-  });
+  const [loading, setLoading] = useState(() =>
+    seed ? errorKeys(seed).length > 0 : true
+  );
   const startedRef = useRef(false);
 
   useEffect(() => {
-    if (usingFixtures) {
-      setData(fixtureData ?? EMPTY_STATE);
-      setLoading(false);
-      return;
-    }
     if (startedRef.current) return;
     startedRef.current = true;
 
@@ -264,9 +229,9 @@ export function useClubData(opts: UseClubDataOptions = {}): UseClubDataResult {
       ctrl.abort();
       clearTimeout(t);
     };
-  }, [usingFixtures, fixtureData]);
+  }, []);
 
-  return { data, loading, usingFixtures };
+  return { data, loading };
 }
 
 /**

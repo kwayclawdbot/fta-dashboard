@@ -423,9 +423,7 @@ export default async function PublicProfilePage({
           claims the change paid off. */}
       {flips.length > 0 && (
         <section className="space-y-2.5 pt-1">
-          <ListHead action={<TextAction href="/community/changed-my-mind">All flips</TextAction>}>
-            Changed their mind
-          </ListHead>
+          <ListHead>Changed their mind</ListHead>
           <div className="space-y-2">
             {flips.map((f) => (
               <RowCard
