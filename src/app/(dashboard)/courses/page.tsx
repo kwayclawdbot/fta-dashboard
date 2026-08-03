@@ -17,6 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
+import { canSeeCourse, trackForRegister } from "@/lib/courseVisibility";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -121,11 +122,18 @@ export default function CoursesPage() {
         .eq("id", user.id)
         .single();
 
-      const userTrack = profile?.age_group || profile?.track || "adults";
+      // THE REGISTER IS THE TRACK. This used to read `age_group || track ||
+      // "adults"` straight off the row, which resolved a legacy `role='child'`
+      // profile with no age band onto the ADULTS track — the very row
+      // deriveRegister calls a kid. Register first, track derived from it, so
+      // this page and the /courses/[slug] guard and /progress cannot disagree.
+      const register = deriveRegister(profile);
+      const viewer = { register, role: profile?.role ?? null };
+      const userTrack = trackForRegister(register);
       setTrack(userTrack);
       // Register drives what a kid should NOT see (the advanced FTA ICT cohort
       // card + "Join the next cohort" upsell — audit #3).
-      setIsKid(deriveRegister(profile) === "kid");
+      setIsKid(register === "kid");
 
       // Family membership tier drives program gating (central matrix in
       // src/lib/tier.ts). Kids inherit the family's tier.
@@ -222,18 +230,30 @@ export default function CoursesPage() {
         }))
         .filter((c) => c.modules.length > 0);
 
-      // Own-track course first, then (parents only) the family library
-      const mine = fic.filter((c) =>
+      // WHICH COURSES THIS REGISTER MAY SEE — the one shared rule
+      // (src/lib/courseVisibility.ts), which the course/lesson guard and
+      // /progress call with the same viewer. Ordering stays as it was: own-track
+      // course first, then the rest of the family library for whoever gets it.
+      const visible = fic.filter((c) =>
+        canSeeCourse(viewer, {
+          program: "fic",
+          tracks: c.modules.map((m) => m.track),
+        })
+      );
+      const mine = visible.filter((c) =>
         c.modules.some((m) => m.track === userTrack)
       );
-      const others =
-        profile?.role !== "child"
-          ? fic.filter((c) => !c.modules.some((m) => m.track === userTrack))
-          : [];
+      const others = visible.filter(
+        (c) => !c.modules.some((m) => m.track === userTrack)
+      );
       setFicCards([...mine, ...others].map(toCard));
 
       const fta = all.find((c) => c.program === "fta");
-      setFtaCard(fta ? toCard(fta) : null);
+      setFtaCard(
+        fta && canSeeCourse(viewer, { program: "fta", tracks: [] })
+          ? toCard(fta)
+          : null
+      );
       setLoading(false);
     }
     load();

@@ -5,6 +5,7 @@ import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import PricingMatrix from "@/components/entitlements/PricingMatrix";
 import { TextAction } from "@/components/f0/parts";
 import { BoardSection } from "@/components/clubhome/board";
+import { redirectKids } from "@/lib/server/viewer-register";
 
 /**
  * /pricing — the canonical three-tier pricing surface (MONETIZATION-GATES.md).
@@ -82,7 +83,13 @@ function Tier({
   );
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Price tags are a parent's business. The nav has never shown this to a kid,
+  // but hiding a row is not a gate — a typed URL or a stale link walked a child
+  // straight onto the $99/$2,997 checkout surface. Same server-side redirect
+  // /screener uses.
+  await redirectKids();
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 pb-16">
       {/* Hand-composed masthead (not DisplayHead) for ONE reason: the canvas's

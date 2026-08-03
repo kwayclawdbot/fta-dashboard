@@ -133,12 +133,29 @@ export default function ChatComposer({
       setText("");
       clearAttachment();
       setError(null);
-    } else if (res.error === "profanity") {
-      setError(PROFANITY_MESSAGE);
-    } else if (res.error === "upload") {
-      setError("Upload didn't go through. Try again.");
-    } else if (res.error === "send") {
-      setError("Message didn't send. Try again.");
+      return;
+    }
+    // Mirrors the Community board's mapping — same kinds, same discipline: the
+    // "try again" line is only for failures retrying can fix. A guardrail
+    // ("blocked") or a rejected message ("rejected") says what actually
+    // happened. See classifySendError in src/lib/useChatRoom.ts.
+    switch (res.error) {
+      case "profanity":
+        setError(PROFANITY_MESSAGE);
+        break;
+      case "upload":
+        setError("Upload didn't go through. Try again.");
+        break;
+      case "blocked":
+        setError(
+          res.message ?? "Posting is closed right now by your family's settings."
+        );
+        break;
+      case "rejected":
+        setError(res.message ?? PROFANITY_MESSAGE);
+        break;
+      default:
+        setError("Message didn't send. Try again.");
     }
   }
 

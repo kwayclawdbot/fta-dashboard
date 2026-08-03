@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { FIC_CHECKOUT_URL } from "@/lib/free-class";
+import { useEntitlements } from "@/components/entitlements/EntitlementsProvider";
 
 /**
  * The ONE upsell surface for the free tier. Every locked door in the app renders
@@ -227,6 +228,46 @@ export default function UpsellCard({
 }) {
   const c = CONTEXT[context] ?? CONTEXT.generic;
   const Icon = c.icon;
+
+  /* ── NO COMMERCIAL ASK IS EVER PUT IN FRONT OF A CHILD ────────────────────
+     Same rule, and the same authority, as FtaDoor: the register comes from the
+     server-computed EntitlementsProvider snapshot, which fails closed to a free
+     ADULT default, so a card mounted outside the provider behaves exactly as it
+     did before. A kid or a teen in a free family was being shown "Join the Club
+     — $99/mo" with a live Stripe link on it; the purchase is a parent's, so the
+     ask is a parent's.
+
+     TWO TREATMENTS, because the two variants are two different objects:
+       · "band" — an inline row beside content that is still on the page. It
+         simply does not render (null), exactly like FtaDoor.
+       · "full" — the object that REPLACES a locked page. Returning null there
+         would leave a child staring at a blank screen, which is a worse answer
+         than the one being fixed, so the door still renders: same silhouette,
+         same honest statement of what is behind it, with the price, the
+         checkout button and the upsell links stripped out and the kid/teen
+         sentence the /fta/chat door already settled on in their place. ── */
+  const { register } = useEntitlements();
+  const isMinor = register !== "adult";
+
+  if (isMinor && variant === "band") return null;
+
+  if (isMinor) {
+    return (
+      <LockedState
+        icon={Icon}
+        tone="amber"
+        lockBadge={false}
+        eyebrow={register === "kid" ? "Not open yet" : "Members only"}
+        title={c.title}
+        body={
+          register === "kid"
+            ? "This part of the club isn't open for your family yet. Ask a parent about joining — they can open it for everybody."
+            : "This part of the club opens with a Club membership. It's a parent's call to make — ask them about joining."
+        }
+        className={className}
+      />
+    );
+  }
 
   if (variant === "band") {
     // Robust to narrow slots: the row wraps (icon+text stay together, the CTA

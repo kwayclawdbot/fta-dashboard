@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { FamilyTier } from "@/lib/tier";
+import type { Register } from "@/lib/register";
 import type { FeedPost } from "@/lib/feed";
 import { timeAgo } from "@/lib/feed";
 import Avatar from "@/components/Avatar";
@@ -55,12 +56,16 @@ export default function ClubDiscussions({
   posts,
   meId,
   tier,
+  register,
   roomId,
   onOpenRoom,
 }: {
   posts: FeedPost[];
   meId: string | null;
   tier: FamilyTier;
+  /** Passed straight through to the room grid, which gates by age as well as
+   *  tier (see rooms.ts — a kid's grid is Main Circle alone). */
+  register: Register;
   roomId: string;
   /** Picking a room on this screen hands the member into the Lounge on it. */
   onOpenRoom: (id: string) => void;
@@ -130,7 +135,7 @@ export default function ClubDiscussions({
         </StripeField>
       )}
 
-      <RoomGrid tier={tier} activeId={roomId} onSelect={onOpenRoom} />
+      <RoomGrid tier={tier} register={register} activeId={roomId} onSelect={onOpenRoom} />
 
       {rest.length > 0 && (
         <section>

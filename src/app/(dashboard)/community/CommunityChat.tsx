@@ -47,6 +47,7 @@ import Avatar from "@/components/Avatar";
 import ProfileLink from "@/components/ProfileLink";
 import TierBadge from "@/components/TierBadge";
 import { FIC_ROOM_ID, FREE_LOUNGE_ROOM_ID, lockedRoomsFor, openRoomsFor } from "./rooms";
+import { deriveRegister } from "@/lib/register";
 
 /**
  * COMMUNITY — the chat area, restored.
@@ -286,8 +287,20 @@ export default function CommunityChat() {
   const [attachError, setAttachError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const rooms = useMemo(() => openRoomsFor(myTier), [myTier]);
-  const locked = useMemo(() => lockedRoomsFor(myTier), [myTier]);
+  // ROOMS ARE GATED BY AGE AS WELL AS MONEY. This called openRoomsFor(myTier)
+  // and nothing else, so a paying family's young kid was handed the same five
+  // rooms — "Macro & rates", "Semis & AI infra" — as the adults, with a
+  // composer in each. The register decides first (see rooms.ts); tier decides
+  // for everyone else, exactly as before.
+  const myRegister = deriveRegister(me);
+  const rooms = useMemo(
+    () => openRoomsFor(myTier, myRegister),
+    [myTier, myRegister]
+  );
+  const locked = useMemo(
+    () => lockedRoomsFor(myTier, myRegister),
+    [myTier, myRegister]
+  );
   const activeRoom = rooms.find((r) => r.id === activeRoomId) ?? rooms[0] ?? null;
   const roomId = activeRoom?.id ?? "";
 
@@ -504,12 +517,31 @@ export default function CommunityChat() {
       setNewPostText("");
       removeAttachment();
       setShowWelcome(false);
-    } else if (res.error === "profanity") {
-      setAttachError(PROFANITY_MESSAGE);
-    } else if (res.error === "upload") {
-      setAttachError("Upload didn't go through. Check your connection and try again.");
-    } else if (res.error === "send") {
-      setAttachError("Your post didn't go through. Please try again.");
+      return;
+    }
+    // ONE SENTENCE PER REASON. "Please try again" is now reserved for failures
+    // that retrying can actually fix; a guardrail or a content rejection says so
+    // plainly, because telling a member to retry something the database will
+    // refuse every time is the worst possible answer (see classifySendError).
+    switch (res.error) {
+      case "profanity":
+        setAttachError(PROFANITY_MESSAGE);
+        break;
+      case "upload":
+        setAttachError("Upload didn't go through. Check your connection and try again.");
+        break;
+      case "blocked":
+        setAttachError(
+          res.message ?? "Posting is closed right now by your family's settings."
+        );
+        break;
+      case "rejected":
+        // The trigger's own words when they're member-safe; the shared profanity
+        // sentence otherwise, since a rejected post is a rejected post.
+        setAttachError(res.message ?? PROFANITY_MESSAGE);
+        break;
+      default:
+        setAttachError("Your post didn't go through. Please try again.");
     }
   }
 

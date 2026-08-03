@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
+import type { Register } from "@/lib/register";
 
 /* ══════════════════════════════════════════════════════════════════════════
    ROOMS BY TOPIC — Club Screens 02.
@@ -18,8 +19,10 @@ import type { FamilyTier } from "@/lib/tier";
 
    ONE substitution, and only one. Club surfaces are equities-only, so there is
    no Options desk — it is not created, not hidden, it does not exist (migration
-   190). The purple tile in that slot carries MAIN CIRCLE, the room the club
-   actually has and the one a member walks into first.
+   190). That slot carries MAIN CIRCLE, the room the club actually has and the
+   one a member walks into first. It does NOT inherit the drawing's purple: the
+   club's colour law forbids purple outright, so Main Circle takes the club's own
+   warm gold (see its `tile` below).
 
    ── THE COUNTS ARE REAL ──────────────────────────────────────────────────
    The board prints "418 talking" under every tile. We count DISTINCT senders in
@@ -60,7 +63,13 @@ export const TOPIC_ROOMS: TopicRoom[] = [
     brief: "The whole club, one room. Anything that does not have a room of its own.",
     founding: "The room the club started in",
     membersOnly: true,
-    tile: "#7C4DFF",
+    // WARM GOLD, not the board's purple. #7C4DFF was carried over from the
+    // drawing's "Options desk" slot when Main Circle was substituted into it,
+    // and purple is forbidden across every club surface. The club's own warm
+    // gold is the right identity for the room a member walks into first, and it
+    // sits as saturated as its siblings (green / orange / blue / teal) while
+    // holding the tile's white label better than the orange-red beside it.
+    tile: "#B8791A",
   },
   {
     id: "c0000000-0000-4000-a000-000000000004",
@@ -100,14 +109,44 @@ export const ROOM_BY_ID: Record<string, TopicRoom> = Object.fromEntries(
   TOPIC_ROOMS.map((r) => [r.id, r])
 );
 
-/** Rooms a tier may OPEN and post in (app-layer gating, per 016/033/086/190). */
-export function openRoomsFor(tier: FamilyTier): TopicRoom[] {
+/**
+ * THE KID ROOM. A child gets Main Circle and nothing else — one room, the one
+ * the whole club is in and the one a parent can actually follow.
+ *
+ * WHY THIS EXISTS: the room list was gated by TIER alone, so a paying family's
+ * eight-year-old opened the same five rooms their parent did — "Macro & rates",
+ * "Semis & AI infra", the lot — and could post in every one of them. Age was
+ * never asked. It is now: `openRoomsFor` takes the REGISTER as well as the tier,
+ * and the kid branch is decided before the tier branch is reached.
+ */
+const KID_ROOM_IDS: readonly string[] = [FIC_ROOM_ID];
+
+/**
+ * Rooms a member may OPEN and post in (app-layer gating, per 016/033/086/190),
+ * now by tier AND register. Teens and adults are unchanged.
+ */
+export function openRoomsFor(tier: FamilyTier, register: Register): TopicRoom[] {
+  if (register === "kid") {
+    return TOPIC_ROOMS.filter((r) => KID_ROOM_IDS.includes(r.id));
+  }
   if (tier === "free") return TOPIC_ROOMS.filter((r) => !r.membersOnly);
   return TOPIC_ROOMS;
 }
 
-/** Rooms shown but locked for this tier. */
-export function lockedRoomsFor(tier: FamilyTier): TopicRoom[] {
+/**
+ * Rooms shown but locked for this member — the free tier's tasteful teaser.
+ *
+ * A KID IS SHOWN NOTHING THEY CANNOT OPEN. The locked tiles are an upsell
+ * device: they exist to make a free adult want the membership. Pointed at a
+ * child they are just four doors with a lock on them, and every one of them
+ * leads to /upgrade — a commercial ask aimed at someone who cannot buy. Kids get
+ * an empty list, so their grid is Main Circle and that is all.
+ */
+export function lockedRoomsFor(
+  tier: FamilyTier,
+  register: Register
+): TopicRoom[] {
+  if (register === "kid") return [];
   return tier === "free" ? TOPIC_ROOMS.filter((r) => r.membersOnly) : [];
 }
 

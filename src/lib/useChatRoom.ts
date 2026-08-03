@@ -69,9 +69,83 @@ export interface ChatMe {
   username?: string | null;
 }
 
+/* ── WHY A POST DID NOT LAND ──────────────────────────────────────────────────
+   `send` used to collapse EVERY insert failure into `{ok:false, error:"send"}`,
+   and the composer rendered one sentence for it: "Your post didn't go through.
+   Please try again." That sentence is a lie in the two cases that matter most.
+
+   A family's guardrails (the parent-set chat wall / downtime window) refuse the
+   insert at the DATABASE, as an RLS denial — Postgres 42501. A profanity trigger
+   refuses it by RAISING, which arrives as a Postgres exception carrying the
+   message the trigger chose. Both were shown to the member as a network hiccup,
+   so a kid whose parent had closed chat for the evening was told to retry, and
+   retried, and retried.
+
+   The insert's real error is therefore CARRIED OUT of the hook and classified
+   here — once — so the composer maps a KIND to a sentence instead of guessing:
+
+     · "blocked"  — a policy/guardrail denial (42501, or an explicit
+                    permission/guardrail message). Not retryable; say why.
+     · "rejected" — a trigger REJECTED the content. `message` carries the
+                    trigger's own words when they are safe to show a member.
+     · "send"     — everything else, including genuine network failure. The
+                    retry copy is correct here and ONLY here.
+
+   The DB-side profanity trigger is landing in another agent's lane, so the
+   classifier is written against the SHAPE of a raised exception (any code in the
+   P0001 / plpgsql-raise family, or a message that names the rejection) rather
+   than against a specific string, and it never shows a member a message that
+   reads like internals. */
+export type SendErrorKind = "profanity" | "upload" | "blocked" | "rejected" | "send";
+
 export interface SendResult {
   ok: boolean;
-  error?: string;
+  error?: SendErrorKind;
+  /** A member-safe sentence from the database, when there is one. */
+  message?: string;
+}
+
+/** Postgres codes that mean "a policy said no", not "the network dropped". */
+const RLS_DENIED_CODES = new Set(["42501"]);
+/** Postgres codes a `RAISE EXCEPTION` in a trigger arrives as. */
+const RAISED_EXCEPTION_CODES = new Set(["P0001", "P0000", "23514"]);
+
+/**
+ * A raised-exception message is written by us, for a member — but it can still
+ * arrive wrapped in plpgsql context, or be a bare internals string. Show it only
+ * when it reads like a sentence a person wrote: reasonably short, no SQL, no
+ * schema names, no stack context.
+ */
+function memberSafeMessage(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined;
+  const msg = raw.split("\n")[0].trim();
+  if (!msg || msg.length > 160) return undefined;
+  if (/[_"]|\b(?:select|insert|update|relation|column|constraint|function|pg_)\b/i.test(msg))
+    return undefined;
+  return msg;
+}
+
+/** Classify an insert failure into one of the kinds above. */
+export function classifySendError(err: {
+  code?: string | null;
+  message?: string | null;
+} | null): { error: SendErrorKind; message?: string } {
+  if (!err) return { error: "send" };
+  const code = err.code ?? "";
+  const message = err.message ?? "";
+
+  if (RLS_DENIED_CODES.has(code) || /row-level security|permission denied/i.test(message)) {
+    return { error: "blocked" };
+  }
+  if (RAISED_EXCEPTION_CODES.has(code)) {
+    // A guardrail that raises rather than relying on RLS still means "closed",
+    // not "rejected content" — honour the word the trigger used.
+    if (/guardrail|chat is (?:closed|off)|quiet hours|downtime/i.test(message)) {
+      return { error: "blocked", message: memberSafeMessage(message) };
+    }
+    return { error: "rejected", message: memberSafeMessage(message) };
+  }
+  return { error: "send" };
 }
 
 export function useChatRoom(roomId: string, me: ChatMe | null) {
@@ -317,7 +391,8 @@ export function useChatRoom(roomId: string, me: ChatMe | null) {
         return { ok: true };
       }
       setPosting(false);
-      return { ok: false, error: "send" };
+      // The insert's OWN error, classified — never a flat "send" for everything.
+      return { ok: false, ...classifySendError(insErr) };
     },
     [supabase, me, posting, roomId]
   );

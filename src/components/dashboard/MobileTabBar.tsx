@@ -21,6 +21,7 @@ import type { FamilyTier } from "@/lib/tier";
 import { modeFromSolo, modeBrand } from "@/lib/mode";
 import { ClubWordmark } from "@/components/brand/ClubMark";
 import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
+import { deriveRegister } from "@/lib/register";
 import BeltChip from "./BeltChip";
 
 interface Tab {
@@ -60,16 +61,24 @@ function tabsFor(
   role?: string,
   ageGroup?: string,
   tier?: FamilyTier,
-  isSolo?: boolean
+  isSolo?: boolean,
+  track?: string
 ): { tabs: [Tab, Tab, Tab, Tab]; youLabel: string } {
-  const isKid = role === "child" && ageGroup === "kids";
-  const isTeen = ageGroup === "teens" || role === "teen";
+  // The register, from the ONE shared derivation — not a second, narrower
+  // local rule. `role === "child" && ageGroup === "kids"` missed the legacy
+  // child row with no age band that deriveRegister calls a kid, and handed it
+  // the teen tab bar.
+  const register = deriveRegister({ role, age_group: ageGroup, track });
+  const isKid = register === "kid";
+  const isTeen = register === "teen";
   const canParent = role === "parent" || role === "admin";
 
-  if (tier === "free")
-    return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
+  // KID BEFORE TIER. The free branch used to return first, so a kid in a free
+  // family got the adult free tab bar. Age is not a billing state.
   if (isKid)
     return { tabs: [T.Home, T.Learn, T.Club, T.Missions], youLabel: "Me" };
+  if (tier === "free")
+    return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
   if (isTeen)
     return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
   if (canParent && !isSolo)
@@ -84,6 +93,8 @@ interface MobileTabBarProps {
     display_name?: string;
     role?: string;
     age_group?: string;
+    /** Legacy content track — deriveRegister's last resort. */
+    track?: string;
     avatar_url?: string;
     tier?: FamilyTier;
     isSolo?: boolean;
@@ -100,7 +111,8 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
     user.role,
     user.age_group,
     user.tier,
-    user.isSolo
+    user.isSolo,
+    user.track
   );
   const mode = modeFromSolo(user.isSolo);
   const individual = mode === "individual";
@@ -136,8 +148,22 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
     item.subItems
       ? { ...item, subItems: item.subItems.filter((s) => !usedHrefs.has(s.href)) }
       : item;
-  const allNav = getNavItems(user.role, user.age_group, user.tier, user.isSolo);
-  const footerNav = getFooterItems(user.role, user.tier);
+  const allNav = getNavItems(
+    user.role,
+    user.age_group,
+    user.tier,
+    user.isSolo,
+    user.track
+  );
+  // Shop is dropped for kids in here too — the More sheet is the mobile mirror
+  // of the sidebar footer, and a row hidden on desktop that reappears in a
+  // bottom sheet is not hidden at all.
+  const footerNav = getFooterItems(
+    user.role,
+    user.tier,
+    user.age_group,
+    user.track
+  );
   const moreItems: NavItem[] = [...allNav, ...footerNav]
     .filter((item) => item.sectionHeader || !usedHrefs.has(item.href))
     .map(dedupeSubs);
