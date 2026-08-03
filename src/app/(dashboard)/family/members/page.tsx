@@ -23,6 +23,34 @@ import Avatar from "@/components/Avatar";
 import { getBadgeSummaries, type BadgeSummary } from "@/lib/badges";
 import { SectionRule, familyRegister } from "@/components/family/register";
 
+/**
+ * WHO SOMEBODY IS IN A HOUSEHOLD is two columns, not one. `role` is checked
+ * against ('parent','child') in the database and always has been — there is no
+ * 'teen' role, which is why the roster's old dropdown offered one and silently
+ * did nothing every time a parent picked it. The register a teenager actually
+ * lives in is `age_group = 'teens'`: that is what viewer_is_kid(), Kai's
+ * persona and deriveRegister() all read. So the three choices a parent makes
+ * here each write BOTH columns, and the invite carries both to the new member.
+ */
+type Register = "parent" | "teen" | "child";
+
+const REGISTERS: { value: Register; label: string; note: string }[] = [
+  { value: "parent", label: "Parent", note: "Full household access" },
+  { value: "teen", label: "Teen", note: "Teen lessons and community" },
+  { value: "child", label: "Kid", note: "Kid mode, kid-safe Kai" },
+];
+
+const REGISTER_COLUMNS: Record<Register, { role: string; age_group: string; track: string }> = {
+  parent: { role: "parent", age_group: "adults", track: "adults" },
+  teen: { role: "child", age_group: "teens", track: "teens" },
+  child: { role: "child", age_group: "kids", track: "kids" },
+};
+
+function registerOf(member: { role: string; age_group: string | null }): Register {
+  if (member.role === "parent" || member.role === "admin") return "parent";
+  return member.age_group === "teens" ? "teen" : "child";
+}
+
 interface FamilyMember {
   id: string;
   display_name: string | null;
@@ -47,6 +75,7 @@ export default function FamilyMembersPage() {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [inviteRegister, setInviteRegister] = useState<Register>("child");
   const [familyId, setFamilyId] = useState<string>("");
   const [tier, setTier] = useState<FamilyTier>("fic");
 
@@ -135,10 +164,19 @@ export default function FamilyMembersPage() {
 
     // family_invites has no `invited_by` column — sending it made PostgREST
     // reject the insert, so the "invite link" pointed at a code that was never
-    // stored (a dead link). Insert only real columns; role defaults to 'child'.
+    // stored (a dead link). Insert only real columns.
+    //
+    // ROLE IS NOW CHOSEN. It used to be omitted, so every invite this screen
+    // ever produced fell to the column default 'child' — a household with one
+    // parent had no way to add a second one, because the only role-selecting
+    // path (AddFamily) self-gates to families that have no members yet.
+    // redeem_invite (migration 207) lands both columns on the new profile.
+    const { role, age_group } = REGISTER_COLUMNS[inviteRegister];
     const { error: inviteErr } = await supabase.from("family_invites").insert({
       family_id: familyId,
       code,
+      role,
+      age_group,
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
 
@@ -153,23 +191,28 @@ export default function FamilyMembersPage() {
   }
 
   async function handleRemoveMember(userId: string) {
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({ family_id: null })
       .eq("id", userId);
-    setMembers((prev) => prev.filter((m) => m.id !== userId));
+    if (!error) setMembers((prev) => prev.filter((m) => m.id !== userId));
     setConfirmRemove(null);
   }
 
-  async function handleRoleChange(userId: string, newRole: string) {
+  // A parent moving somebody between registers writes role AND age_group/track
+  // together — the old version wrote role alone, and wrote 'teen', a value the
+  // profiles_role_check constraint rejects. The write failed every time and the
+  // screen showed the new label anyway, because the error was never read. It is
+  // read now: on failure the row snaps back to what the database actually holds.
+  async function handleRegisterChange(userId: string, next: Register) {
     setUpdatingRole(userId);
-    await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", userId);
-    setMembers((prev) =>
-      prev.map((m) => (m.id === userId ? { ...m, role: newRole } : m))
-    );
+    const columns = REGISTER_COLUMNS[next];
+    const { error } = await supabase.from("profiles").update(columns).eq("id", userId);
+    if (!error) {
+      setMembers((prev) =>
+        prev.map((m) => (m.id === userId ? { ...m, ...columns } : m))
+      );
+    }
     setUpdatingRole(null);
   }
 
@@ -218,10 +261,7 @@ export default function FamilyMembersPage() {
           </p>
         </div>
         <button
-          onClick={() => {
-            setShowInviteModal(true);
-            if (!inviteLink) generateInviteLink();
-          }}
+          onClick={() => setShowInviteModal(true)}
           className="cta-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm self-start sm:self-auto"
         >
           <UserPlus className="w-4 h-4" />
@@ -308,17 +348,21 @@ export default function FamilyMembersPage() {
                 </button>
               )}
 
-              {/* Role dropdown */}
+              {/* Register dropdown */}
               {!isCurrentUser && (
                 <select
-                  value={member.role}
-                  onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                  value={registerOf(member)}
+                  onChange={(e) =>
+                    handleRegisterChange(member.id, e.target.value as Register)
+                  }
                   disabled={updatingRole === member.id}
                   className="bg-midnight-800 border border-midnight-700 rounded-md px-2 py-1 text-xs text-midnight-200 font-body shrink-0 focus:outline-none focus:border-midnight-600"
                 >
-                  <option value="parent">Parent</option>
-                  <option value="teen">Teen</option>
-                  <option value="child">Child</option>
+                  {REGISTERS.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
                 </select>
               )}
 
@@ -387,14 +431,53 @@ export default function FamilyMembersPage() {
               </div>
 
               <p className="text-sm text-midnight-300 font-body mb-4">
-                Share this link with a family member. It expires in 7 days.
+                Who are you adding? The link carries the answer, so they land in
+                the right place the moment they sign up.
               </p>
+
+              {/* WHO THEY JOIN AS — chosen before the code is minted, because
+                  the code IS the choice: it is written into the invite row and
+                  redeemed against it. Changing the answer invalidates a link
+                  already on screen, so it is cleared. */}
+              <div className="space-y-px mb-5">
+                {REGISTERS.map((r) => {
+                  const active = inviteRegister === r.value;
+                  return (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => {
+                        setInviteRegister(r.value);
+                        setInviteLink("");
+                        setCopied(false);
+                      }}
+                      aria-pressed={active}
+                      className={`flex w-full items-baseline gap-3 border-l-2 px-3 py-2 text-left transition-colors ${
+                        active
+                          ? "border-gold-400 bg-gold-400/5"
+                          : "border-midnight-700 hover:border-midnight-500"
+                      }`}
+                    >
+                      <span
+                        className={`font-display text-sm font-bold ${
+                          active ? "text-midnight-100" : "text-midnight-300"
+                        }`}
+                      >
+                        {r.label}
+                      </span>
+                      <span className="font-body text-[11px] text-midnight-500">
+                        {r.note}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
               {generatingLink ? (
                 <div className="flex items-center justify-center py-6">
                   <div className="w-5 h-5 border-2 border-gold-400/30 border-t-gold-400 rounded-full animate-spin" />
                 </div>
-              ) : (
+              ) : inviteLink ? (
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -413,11 +496,19 @@ export default function FamilyMembersPage() {
                     )}
                   </button>
                 </div>
+              ) : (
+                <button
+                  onClick={generateInviteLink}
+                  className="cta-button flex w-full items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Create the invite link
+                </button>
               )}
 
               <p className="text-[11px] text-midnight-500 mt-3 font-body">
                 The invited member will join your family and can start learning
-                immediately.
+                immediately. The link expires in 7 days.
               </p>
             </mm.div>
           </>
