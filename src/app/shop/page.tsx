@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import ShopBrowser from "@/components/shop/ShopBrowser";
-import { PRODUCT_SELECT, type ShopProduct } from "@/lib/shop";
+import { PRODUCT_SELECT, isListable, type ShopProduct } from "@/lib/shop";
 
 export default async function ShopPage() {
   const supabase = await createClient();
@@ -12,7 +12,9 @@ export default async function ShopPage() {
     .eq("active", true)
     .order("sort", { ascending: true });
 
-  const products = (data || []) as ShopProduct[];
+  // Only finished offers reach the grid — a row with no price or no cover is a
+  // record the shop keeps, not a book it sells. See isListable.
+  const products = ((data || []) as ShopProduct[]).filter(isListable);
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">

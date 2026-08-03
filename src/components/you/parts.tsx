@@ -43,10 +43,14 @@ import { StreakPip } from "@/components/art";
    `text-gold-700` (the ramp that flips), never `text-volt-*` (frozen).
    ══════════════════════════════════════════════════════════════════════════ */
 
-/** The one honest empty value. A measure is "—", never a fabricated stand-in. */
-export function dash(n: number | null | undefined): string {
-  return n == null ? "—" : n.toLocaleString();
-}
+/* The one honest empty value. It LIVES in `@/lib/dash` — a directive-free
+   module — because this file is `"use client"`, and a plain function exported
+   from a client module cannot be CALLED during a server render (React throws
+   "Attempted to call dash() from the server"). The server-rendered public
+   profile at /u/[username] did exactly that and threw on every handle. The
+   re-export keeps the client surfaces that already import it from here working
+   unchanged. */
+export { dash } from "@/lib/dash";
 
 /* ── Masthead ─────────────────────────────────────────────────────────────
    The board sets "you" / "belts" as a lowercase Kaushan Script wordmark at

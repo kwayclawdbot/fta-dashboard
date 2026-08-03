@@ -88,6 +88,21 @@ function inputTokens(text: string | null): string[] {
   return Array.from(new Set(picks)).slice(0, 3);
 }
 
+/**
+ * Shorten to roughly `max` characters WITHOUT slicing through a word.
+ * `.slice(0, 70) + "…"` reads as broken text ("…a pair of Ai…"); an ellipsis is
+ * a promise that the sentence continues, not licence to cut a word in half.
+ * Falls back to a hard cut only when a single word is longer than the budget.
+ */
+function clipAtWord(text: string, max: number): string {
+  const s = text.trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  const base = lastSpace > max * 0.5 ? cut.slice(0, lastSpace) : cut;
+  return base.replace(/[\s,;:.\-–—]+$/, "") + "…";
+}
+
 function Coin({ delay, reduce }: { delay: number; reduce: boolean | null }) {
   return (
     <m.span
@@ -189,7 +204,15 @@ export default function MoneyMachine(props: Props) {
               transition={{ delay: 0.1 + i * 0.12, duration: 0.4, ease: "easeOut" }}
             >
               <Package className="h-4 w-4 shrink-0 text-gold-600" />
-              <span className="truncate text-sm text-ink">{t}</span>
+              {/* `truncate` cut these mid-WORD — "a pair of Ai…" on the
+                  dashboard card — because it clips a single line at whatever
+                  pixel the box ends on. These are short phrases, not a feed of
+                  arbitrary text, so they simply wrap; two lines is enough for
+                  every one we ship, and past that the clamp ends at a line
+                  break rather than inside a word. */}
+              <span className="line-clamp-2 min-w-0 text-sm leading-snug text-ink">
+                {t}
+              </span>
             </m.div>
           ))}
           <MobileConnector />
@@ -252,9 +275,7 @@ export default function MoneyMachine(props: Props) {
           {/* engine label from how_they_make_money */}
           {howTheyMakeMoney && (
             <p className="mt-2 max-w-[10rem] text-center text-[11px] leading-snug text-soft">
-              {howTheyMakeMoney.length > 70
-                ? howTheyMakeMoney.slice(0, 70).trim() + "…"
-                : howTheyMakeMoney}
+              {clipAtWord(howTheyMakeMoney, 70)}
             </p>
           )}
           <MobileConnector />
@@ -291,9 +312,7 @@ export default function MoneyMachine(props: Props) {
           {whyInvestorsWatch && (
             <p className="flex items-start gap-1 text-right text-[11px] leading-snug text-soft md:text-left">
               <Eye className="mt-0.5 hidden h-3 w-3 shrink-0 text-gold-600 md:inline" />
-              {whyInvestorsWatch.length > 64
-                ? whyInvestorsWatch.slice(0, 64).trim() + "…"
-                : whyInvestorsWatch}
+              {clipAtWord(whyInvestorsWatch, 64)}
             </p>
           )}
         </div>

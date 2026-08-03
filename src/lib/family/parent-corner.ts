@@ -114,12 +114,52 @@ export const WEEKLY_PARENT_FIELDS: {
   title: string;
 }[] = [
   { key: "parent_what_child_learned", title: "What your child learned" },
+  // (see CHILD_LEARNED_KEY below — this one field is a report, and a report
+  //  about a week nobody has opened yet is a claim the app cannot make.)
   { key: "parent_dinner_questions", title: "Dinner-table questions" },
   { key: "parent_explain_simply", title: "Explain it simply" },
   { key: "parent_what_not_to_do", title: "What not to do" },
   { key: "parent_risk_talk", title: "The risk talk" },
   { key: "parent_patience", title: "On patience" },
 ];
+
+/**
+ * THE ONE FIELD THAT IS A REPORT.
+ *
+ * Five of the six weekly notes are instructions to a parent — how to open it,
+ * how to explain it, what to avoid. They are true the moment they are
+ * published. The sixth is different: "What your child learned" is written in
+ * the past tense about a specific child ("Your child learned that a stock is a
+ * small piece of ownership…"), and the Parent Corner rendered it to every
+ * household the day a week went live — including households whose kids have
+ * earned no XP and completed no mission all week. That is the app telling a
+ * parent something happened that did not happen.
+ *
+ * The content is still the right content; only the CLAIM is wrong. So when
+ * there is no child activity behind it, the same note ships as the week's
+ * CURRICULUM — what the family is about to cover — under its own heading and in
+ * the forward voice. When the kids have actually been in it, the report stands
+ * as written.
+ */
+export const CHILD_LEARNED_KEY = "parent_what_child_learned" as const;
+
+/** The heading the note carries when it is a plan rather than a report. */
+export const CHILD_LEARNED_LOOKAHEAD_TITLE = "This week's lesson";
+
+/**
+ * Turn the report into the plan. Two narrow, deliberate substitutions on the
+ * editor's own sentence — the tense of the claim and nothing else. We do not
+ * paraphrase editorial copy at render time; we only stop it from asserting a
+ * past that has not occurred.
+ */
+export function asLookaheadVoice(body: string): string {
+  return body
+    .replace(
+      /^\s*your (?:child|kid|kids|children) learned\b/i,
+      "This week your family learns"
+    )
+    .replace(/\bWe used\b/g, "We use");
+}
 
 /**
  * FAMILY NIGHT — the four questions the guided flow walks a household through,

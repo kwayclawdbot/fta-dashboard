@@ -10,6 +10,7 @@ import {
   AUDIENCE_LABELS,
   KIND_LABELS,
   formatUsd,
+  isListable,
   parseDescription,
   savingsCents,
   type ShopProduct,
@@ -32,6 +33,9 @@ export default async function ProductPage({
 
   if (!product) notFound();
   const p = product as ShopProduct;
+  // Hidden from the grid means hidden here too — otherwise /shop/<slug> is
+  // still a live product page offering an unfinished record for $0.
+  if (!isListable(p)) notFound();
 
   // Bundle contents
   let included: ShopProduct[] = [];

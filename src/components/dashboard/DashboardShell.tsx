@@ -185,7 +185,12 @@ export default function DashboardShell({
       : "family";
 
   return (
-    <div data-mode={mode} className="min-h-screen bg-midnight-950">
+    // `bg-midnight-950` was the DARK-app vocabulary this shell was born in. The
+    // token still resolves (to `--m950`, which every theme now sets to the same
+    // value as `--paper`), so it painted the right colour by accident while
+    // naming a surface the app no longer has. Same ground, said in the
+    // vocabulary the app actually uses.
+    <div data-mode={mode} className="min-h-screen bg-paper">
       <ModeManager mode={mode} />
       <KaiSheetProvider
         tier={user.tier}

@@ -13,6 +13,13 @@ export interface MarketQuote {
   prevClose: number | null;
   updated: number | null;
   delayed: boolean;
+  /**
+   * TRUE when the session had no print and `price` is the previous close
+   * standing in for the mark (weekends, evenings, pre-market before the first
+   * trade). The number is real, it just isn't today's. Optional so older
+   * cached payloads still typecheck.
+   */
+  stale?: boolean;
 }
 
 export interface MarketCompany {

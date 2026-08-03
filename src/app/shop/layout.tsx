@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Shop | The Cheat Code Guides",
@@ -8,7 +9,25 @@ export const metadata: Metadata = {
     "Physical books, workbooks, and lesson plans from the Cheat Code Club — money stuff, minus the snooze.",
 };
 
-export default function ShopLayout({ children }: { children: React.ReactNode }) {
+/* The storefront is PUBLIC — anyone may browse it signed out — but it is also
+   linked from inside the app, so the header has to know which of the two it is
+   talking to. It used to say "Member login" unconditionally, which told a
+   member who was already signed in to sign in. One session read settles it. */
+export const dynamic = "force-dynamic";
+
+export default async function ShopLayout({ children }: { children: React.ReactNode }) {
+  let signedIn = false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    signedIn = !!user;
+  } catch {
+    // Auth unavailable — the shop still sells. Fall back to the signed-out
+    // header, which works for everyone.
+  }
+
   return (
     <div className="min-h-screen bg-paper text-ink">
       <header className="sticky top-0 z-30 border-b border-sand bg-paper/85 backdrop-blur">
@@ -30,10 +49,10 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
               Shop
             </Link>
             <Link
-              href="/dashboard"
+              href={signedIn ? "/dashboard" : "/login"}
               className="rounded-full bg-ink px-3.5 py-1.5 font-semibold text-paper hover:opacity-90"
             >
-              Member login
+              {signedIn ? "Back to the Club" : "Member login"}
             </Link>
           </nav>
         </div>
