@@ -256,6 +256,14 @@ export default function SettingsSurface() {
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   /** Real renewal / expiry date for the current plan — null when none exists. */
   const [renewsAt, setRenewsAt] = useState<string | null>(null);
+  /**
+   * Does this family have a Stripe customer behind it? Answered by
+   * GET /api/billing/portal without touching Stripe, so the MEMBERSHIP row
+   * knows on load whether it can open the real billing portal or must hand off
+   * to /upgrade. `null` = still asking.
+   */
+  const [portalAvailable, setPortalAvailable] = useState<boolean | null>(null);
+  const [openingPortal, setOpeningPortal] = useState(false);
   const nameCheckSeq = useRef(0);
 
   useEffect(() => {
@@ -315,6 +323,56 @@ export default function SettingsSurface() {
       }
     })();
   }, [supabase]);
+
+  /**
+   * BILLING — ask once, on load, whether there is a portal to open. The route
+   * answers from the family row alone (no Stripe call), so this costs nothing
+   * and lets the MEMBERSHIP row render its true state instead of discovering it
+   * after a click. A child gets a 403 here, which resolves to `false` and the
+   * row never appears for them anyway.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/billing/portal");
+        const json = (await res.json()) as { available?: boolean };
+        if (!cancelled) setPortalAvailable(res.ok && json.available === true);
+      } catch {
+        if (!cancelled) setPortalAvailable(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /**
+   * Open Stripe's own Customer Portal — the only place a member can change a
+   * card, read an invoice or cancel. If the family has no customer on file
+   * (a hand-provisioned beta household), the 409 lands them on /upgrade, which
+   * is the honest destination for "there is nothing to manage yet".
+   */
+  async function openBillingPortal() {
+    if (openingPortal) return;
+    setOpeningPortal(true);
+    try {
+      const res = await fetch("/api/billing/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnTo: "/settings" }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { url?: string };
+      if (res.ok && json.url) {
+        window.location.href = json.url;
+        return;
+      }
+    } catch {
+      /* fall through to the plans page */
+    }
+    setOpeningPortal(false);
+    router.push("/upgrade");
+  }
 
   // @mentions resolve on display_name with spaces stripped — warn on a clash.
   async function checkUsername(name: string) {
@@ -594,13 +652,33 @@ export default function SettingsSurface() {
                 value={`${ent.challenge.daysRemaining}d left`}
               />
             )}
-            {!isChild && (
-              <SettingLink
-                href="/upgrade"
-                label="Plans & billing"
-                sub="See what each tier unlocks, or change your plan"
-              />
-            )}
+            {/* THE DOOR OUT. This row used to link to /upgrade — the SALES
+                page — so a paying parent had no way from Settings to see a
+                renewal, change a card or cancel. When the family has a Stripe
+                customer, the row now opens Stripe's own Customer Portal and
+                returns here; when it doesn't (a hand-provisioned household,
+                or a free member), it still hands off to the plans page. While
+                the answer is unknown the row reads as the plans link, which is
+                true for everyone and never flashes the wrong promise. */}
+            {!isChild &&
+              (portalAvailable ? (
+                <SettingAction
+                  onClick={() => void openBillingPortal()}
+                  disabled={openingPortal}
+                  label="Plans & billing"
+                  sub={
+                    openingPortal
+                      ? "Opening your billing portal…"
+                      : "Payment method, invoices, renewal — or cancel"
+                  }
+                />
+              ) : (
+                <SettingLink
+                  href="/upgrade"
+                  label="Plans & billing"
+                  sub="See what each tier unlocks, or change your plan"
+                />
+              ))}
             <SettingLink href="/referrals" label="Refer a friend" sub="Share the Club" />
           </div>
         </Card>

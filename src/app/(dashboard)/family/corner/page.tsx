@@ -9,7 +9,11 @@ import {
   CONVERSATION_TOPICS,
   ALWAYS_ON_GUIDANCE,
   WEEKLY_PARENT_FIELDS,
+  CHILD_LEARNED_KEY,
+  CHILD_LEARNED_LOOKAHEAD_TITLE,
+  asLookaheadVoice,
 } from "@/lib/family/parent-corner";
+import { ageGroupLabel } from "@/lib/age-label";
 import AgeBandTips from "@/components/family/AgeBandTips";
 import {
   FamilySurface,
@@ -78,10 +82,35 @@ export default async function ParentCornerPage() {
 
   const earned = missions.reduce((sum, m) => sum + m.xp_reward * m.completed_by.length, 0);
 
+  /**
+   * HAS ANY CHILD ACTUALLY BEEN IN THIS WEEK? Only the two week-scoped measures
+   * count: XP earned in the last seven days and missions completed in the last
+   * seven days. (`watchlistCount` is the family's whole board, all-time, so a
+   * pick added in March would otherwise vouch for August.) With no household
+   * kids at all — a solo adult reading the Corner — there is nothing to report
+   * on either, and the week reads as the plan it is.
+   */
+  const kidsWereActive = ctx.kids.some((k) => {
+    const w = childWeek.get(k.id);
+    return !!w && ((w.xpThisWeek ?? 0) > 0 || (w.missionsThisWeek ?? 0) > 0);
+  });
+
   // Only the fields the editor actually filled in. An empty note is an absence,
   // not a heading with nothing under it.
+  //
+  // "What your child learned" is the one note written as a REPORT. Nothing has
+  // happened yet in a household whose kids haven't opened the week, so it ships
+  // as the week's curriculum instead — same words, honest tense, own heading.
   const weeklyNotes = week
-    ? WEEKLY_PARENT_FIELDS.map((f) => ({ title: f.title, body: week[f.key] })).filter(
+    ? WEEKLY_PARENT_FIELDS.map((f) => {
+        const raw = week[f.key];
+        const lookahead = f.key === CHILD_LEARNED_KEY && !kidsWereActive;
+        return {
+          title: lookahead ? CHILD_LEARNED_LOOKAHEAD_TITLE : f.title,
+          body:
+            lookahead && typeof raw === "string" ? asLookaheadVoice(raw) : raw,
+        };
+      }).filter(
         (s): s is { title: string; body: string } =>
           typeof s.body === "string" && s.body.trim().length > 0
       )
@@ -130,11 +159,12 @@ export default async function ParentCornerPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-[13.5px] font-bold text-ink">
                       {k.display_name || "Member"}
-                      {k.age_group && (
-                        <span className="ml-1.5 font-body text-[11px] font-normal capitalize text-soft">
-                          {k.age_group}
-                        </span>
-                      )}
+                      {/* The shared band label — "Kid" / "Teen" — not the raw
+                          `age_group` column capitalised, which read "Kids" for
+                          one child while /family called the same child "Teen". */}
+                      <span className="ml-1.5 font-body text-[11px] font-normal text-soft">
+                        {ageGroupLabel(k.role, k.age_group)}
+                      </span>
                     </p>
                     {/* A sentence of state, not a row of coloured pills. Green
                         is PRICE by law, and a completed mission is not a gain. */}

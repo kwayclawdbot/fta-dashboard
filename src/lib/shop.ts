@@ -108,6 +108,24 @@ export function formatUsd(cents: number | null | undefined): string {
   });
 }
 
+/**
+ * IS THIS THING FOR SALE? `active` says a row exists; it does not say the row
+ * is finished. "The Investing Textbook" is the live example — it is the
+ * Challenge fulfilment record (see lib/server/challenge-vip.ts), which needs to
+ * stay on disk under its slug, but it carries `price_cents = 0` and no cover,
+ * so the storefront rendered it as a grey "No cover" tile priced at $0. A free
+ * book with no picture, sitting between two $49 guides, reads as a broken shop.
+ *
+ * A product reaches the storefront only when it has BOTH a real price and a
+ * cover. Anything short of that is a record, not an offer — the row is
+ * untouched, it simply isn't listed or reachable at /shop/<slug>.
+ */
+export function isListable(
+  p: Pick<ShopProduct, "price_cents" | "cover_image_path">
+): boolean {
+  return p.price_cents > 0 && !!p.cover_image_path?.trim();
+}
+
 export function savingsCents(p: Pick<ShopProduct, "price_cents" | "compare_at_cents">): number {
   if (p.compare_at_cents == null) return 0;
   return Math.max(0, p.compare_at_cents - p.price_cents);

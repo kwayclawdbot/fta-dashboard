@@ -17,8 +17,11 @@ import {
   RowCard,
   EmptyCard,
   TextAction,
-  dash,
 } from "@/components/you/parts";
+// `dash` is a plain function, not a component: it must come from the
+// directive-free module, never across the "use client" boundary. Importing it
+// from `parts.tsx` is what made every public profile throw in production.
+import { dash } from "@/lib/dash";
 
 /**
  * /u/[username] — the public member profile, built to Club Screens board 09

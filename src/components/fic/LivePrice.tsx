@@ -53,8 +53,12 @@ export default function LivePrice({
           {formatChangePct(quote.changePercent)}
         </span>
       )}
-      {showDelayed && quote.delayed && (
-        <span className="text-[10px] text-midnight-500">delayed</span>
+      {/* Off-hours the mark IS the previous close (see shapeSnapshot). Say so
+          rather than labelling a Friday number "delayed" on a Sunday. */}
+      {showDelayed && (quote.stale || quote.delayed) && (
+        <span className="text-[10px] text-soft">
+          {quote.stale ? "at last close" : "delayed"}
+        </span>
       )}
     </div>
   );

@@ -149,11 +149,16 @@ export async function loadPortfolio(): Promise<PortfolioState | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // A member who has never opened the simulator HAS no portfolio row, and that
+  // is the normal first-visit state — not an error. `.single()` answers zero
+  // rows with PGRST116 and a 406, which the browser logs as a failed request on
+  // every load of /simulator. `.maybeSingle()` returns null for the same case,
+  // which is exactly what the line below already handles.
   const { data: portfolio } = await supabase
     .from("sim_portfolios")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!portfolio) return null;
 
@@ -205,11 +210,13 @@ export async function ensurePortfolio(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  // Same as loadPortfolio: "no row yet" is the case this function exists to
+  // handle, so it must not be raised as a 406.
   const { data: existing } = await supabase
     .from("sim_portfolios")
     .select("id")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (existing) return existing.id;
 
