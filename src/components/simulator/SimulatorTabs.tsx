@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LineChart, Target, Bot } from "lucide-react";
+import { useEntitlements } from "@/components/entitlements/EntitlementsProvider";
 
 /**
  * The rail across the three faces of PRACTICE: the live Trading Floor
@@ -24,9 +25,15 @@ const TABS = [
 
 export default function SimulatorTabs() {
   const pathname = usePathname();
+  // The Trading Floor is now closed to kids server-side (/simulator redirects
+  // them), and Pattern Practice IS a kid surface they arrive at from the Kids
+  // Corner — so without this the rail would offer a child a tab that bounces
+  // them back to Home. A rail never points at a door it knows is shut.
+  const { register } = useEntitlements();
+  const tabs = register === "kid" ? TABS.filter((t) => t.href !== "/simulator") : TABS;
   return (
     <nav aria-label="Practice" className="club2-track -mx-1 flex gap-1.5 overflow-x-auto px-1 py-1">
-      {TABS.map((t) => {
+      {tabs.map((t) => {
         const active =
           t.href === "/simulator" ? pathname === "/simulator" : pathname.startsWith(t.href);
         const Icon = t.icon;

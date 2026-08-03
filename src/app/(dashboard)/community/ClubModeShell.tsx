@@ -214,6 +214,7 @@ export default function ClubModeShell({
             posts={initialData?.posts ?? []}
             meId={me?.id ?? null}
             tier={tier}
+            register={register}
             roomId={roomId}
             onOpenRoom={(id) => {
               setRoomId(id);

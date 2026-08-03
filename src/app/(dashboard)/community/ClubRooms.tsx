@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { FamilyTier } from "@/lib/tier";
+import { deriveRegister, type Register } from "@/lib/register";
 import { MentionProvider } from "@/lib/mentions";
 import { useChatRoom, type ChatMe } from "@/lib/useChatRoom";
 import ChatMessageList from "@/components/community/chat/ChatMessageList";
@@ -39,15 +40,18 @@ import {
 
 export function RoomGrid({
   tier,
+  register,
   activeId,
   onSelect,
 }: {
   tier: FamilyTier;
+  /** Age, not just money: a kid's grid is Main Circle and nothing else. */
+  register: Register;
   activeId?: string;
   onSelect: (id: string) => void;
 }) {
-  const open = useMemo(() => openRoomsFor(tier), [tier]);
-  const locked = useMemo(() => lockedRoomsFor(tier), [tier]);
+  const open = useMemo(() => openRoomsFor(tier, register), [tier, register]);
+  const locked = useMemo(() => lockedRoomsFor(tier, register), [tier, register]);
   const ids = useMemo(() => [...open, ...locked].map((r) => r.id), [open, locked]);
   const { activity, loading } = useRoomActivity(ids);
 
@@ -109,7 +113,11 @@ export default function ClubRooms({
   activeId: string;
   onSelect: (id: string) => void;
 }) {
-  const rooms = useMemo(() => openRoomsFor(tier), [tier]);
+  // The register comes from the member already in hand — the Lounge never needs
+  // a prop for it, and deriving it here means the rail cannot show a room the
+  // grid hid.
+  const register = deriveRegister(me);
+  const rooms = useMemo(() => openRoomsFor(tier, register), [tier, register]);
   const ids = useMemo(() => rooms.map((r) => r.id), [rooms]);
   const { activity, loading: activityLoading } = useRoomActivity(ids);
 

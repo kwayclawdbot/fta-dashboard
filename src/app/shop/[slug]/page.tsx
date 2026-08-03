@@ -14,12 +14,19 @@ import {
   savingsCents,
   type ShopProduct,
 } from "@/lib/shop";
+import { redirectKids } from "@/lib/server/viewer-register";
 
 export default async function ProductPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // The commercial surface itself — this page mounts <BuyButton/>, which opens
+  // a live Stripe checkout. Kids are turned away server-side before any of it
+  // renders; logged-out visitors keep the public storefront. (Gate only — the
+  // storefront's content and styling are untouched.)
+  await redirectKids();
+
   const { slug } = await params;
   const supabase = await createClient();
 
