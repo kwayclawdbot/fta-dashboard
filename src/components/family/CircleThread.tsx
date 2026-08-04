@@ -6,6 +6,7 @@ import Avatar from "@/components/Avatar";
 import { beltForXp } from "@/lib/belts";
 import type { CircleMessage, FamilyMember } from "@/lib/family/queries";
 import { FoundingState, FamilyCard, Chip } from "@/components/family/canvas";
+import { GUARDRAIL_CIRCLE_BLOCKED } from "@/lib/family/guardrails";
 
 /**
  * F4 · FAMILY CIRCLE — the private household thread, drawn as the board draws
@@ -93,9 +94,7 @@ export default function CircleThread({
 
     setSending(false);
     if (err || !data) {
-      setError(
-        "That message did not send. If a guardrail is active right now — downtime, or the daily limit — the Circle reopens when it lifts."
-      );
+      setError(GUARDRAIL_CIRCLE_BLOCKED);
       return;
     }
     setDraft("");

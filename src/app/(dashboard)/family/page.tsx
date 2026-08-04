@@ -147,7 +147,7 @@ export default async function FamilyHomePage() {
           </span>
           {progress.next && (
             <span className="font-mono font-bold tabular-nums text-gold-700">
-              {progress.toNext.toLocaleString()} XP to Level {progress.next.level} 🎁
+              {progress.toNext.toLocaleString()} XP to Level {progress.next.level}
             </span>
           )}
         </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { GUARDRAIL_ACTIVE_NOTICE } from "@/lib/family/guardrails";
 
 /**
  * THE METER BEHIND THE DAILY LIMIT (canvas F3).
@@ -63,9 +64,7 @@ export default function FamilyActivityPing({ active = true }: { active?: boolean
         🌙 Your account is resting
       </p>
       <p className="mt-1 max-w-md text-[12.5px] leading-relaxed text-soft">
-        A guardrail on this account is active right now — either downtime or the
-        daily limit. Reading stays open; posting, paper trades and Circle
-        messages resume when it lifts.
+        {GUARDRAIL_ACTIVE_NOTICE}
       </p>
     </div>
   );

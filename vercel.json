@@ -48,6 +48,10 @@
       "schedule": "30 16 * * *"
     },
     {
+      "path": "/api/cron/fic-week-rollover",
+      "schedule": "0 12 * * *"
+    },
+    {
       "path": "/api/cron/challenge-sequences",
       "schedule": "10 12 * * *"
     },
