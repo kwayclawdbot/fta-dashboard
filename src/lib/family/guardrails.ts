@@ -214,3 +214,30 @@ export const DAILY_LIMIT_CHOICES: { value: number | null; label: string }[] = [
 
 export const DOWNTIME_START_CHOICES = [19, 20, 21, 22, 23];
 export const DOWNTIME_END_CHOICES = [5, 6, 7, 8, 9];
+
+/**
+ * CANONICAL GUARDRAIL-BLOCKED MICROCOPY — one source of truth for the Family
+ * surfaces (Circle send, watchlist vote, activity banner). These used to be
+ * three near-duplicate strings that had drifted apart, each carrying an em-dash
+ * in visible copy. A guardrail is downtime or the daily limit; it pauses writes
+ * while reading stays open. Edit the voice here once and every surface follows.
+ */
+const GUARDRAIL_ACTIVE_STATE =
+  "A guardrail on this account is active right now (downtime, or the daily limit).";
+
+/**
+ * Short "that write was blocked" line. `action` is the verb that failed
+ * ("send"/"save"); `subject` is what reopens ("It" for the Circle, "Voting").
+ */
+export function guardrailBlocked(action: string, subject: string): string {
+  return `That didn't ${action}. ${GUARDRAIL_ACTIVE_STATE} ${subject} reopens on its own when the guardrail lifts.`;
+}
+
+/** Circle message failed to post. */
+export const GUARDRAIL_CIRCLE_BLOCKED = guardrailBlocked("send", "It");
+
+/** Watchlist vote failed to save. */
+export const GUARDRAIL_VOTE_BLOCKED = guardrailBlocked("save", "Voting");
+
+/** Informational banner: the account is resting; reading stays open. */
+export const GUARDRAIL_ACTIVE_NOTICE = `${GUARDRAIL_ACTIVE_STATE} Reading stays open; posting, paper trades and Circle messages resume when it lifts.`;

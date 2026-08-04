@@ -88,11 +88,12 @@ export default function ThisWeekPanel({
     return (
       <div className="club-b-card px-5 py-6">
         <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
-          This week <span className="text-accent">is being prepared</span>
+          This week&apos;s company <span className="text-accent">drops soon</span>
         </p>
         <p className="mt-2.5 max-w-[62ch] text-[14px] leading-relaxed text-soft">
-          {isSolo ? "Your" : "Your family's"} next Company of the Week and club
-          assignment land here soon. Check back shortly.
+          {isSolo ? "Your" : "Your family's"} next Company of the Week and the
+          family assignment land here. While you wait, the last company you
+          studied is on your Watchlist.
         </p>
       </div>
     );
