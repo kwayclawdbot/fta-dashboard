@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { FLOORS, TRENDING_DISCLAIMER, floorMet } from "@/lib/club/score";
+import { FLOORS, TRENDING_DISCLAIMER, clubSentiment, floorMet } from "@/lib/club/score";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 import { getQuotes, isConfigured } from "@/lib/market/polygon";
 
@@ -71,10 +71,8 @@ export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
     const q = quotes[(r.ticker || "").toUpperCase()];
     const score = Number(r.club_score);
     const rowFloorMet = floorMet(score, FLOORS.trendingScore);
-    const bull = r.sentiment_bullish ?? 0;
-    const neutral = r.sentiment_neutral ?? 0;
-    const bear = r.sentiment_bearish ?? 0;
-    const positioned = bull + neutral + bear;
+    // Shared split logic (reused by /api/club/index) so the two ledgers can't drift.
+    const sentiment = clubSentiment(r.sentiment_bullish, r.sentiment_neutral, r.sentiment_bearish);
 
     return {
       rank: r.rank,
@@ -86,12 +84,7 @@ export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
       price: q?.price ?? null,
       changePct: q?.changePercent ?? null,
       watchers: r.watchers ?? 0,
-      sentiment: {
-        bull,
-        neutral,
-        bear,
-        bullPct: positioned > 0 ? Math.round((bull / positioned) * 100) : null,
-      },
+      sentiment,
       heat:
         rowFloorMet && topScore > 0
           ? Math.max(1, Math.round((score / topScore) * 100))
