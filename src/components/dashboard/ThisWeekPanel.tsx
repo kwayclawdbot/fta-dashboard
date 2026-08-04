@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { FicWeek } from "@/lib/fic";
 import MoneyMachine from "@/components/fic/MoneyMachine";
+import Ticker from "@/components/ui/Ticker";
 import { BoardSection } from "@/components/clubhome/board";
 
 /**
@@ -155,8 +156,9 @@ export default function ThisWeekPanel({
               className="f0-focus inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
             >
               <LineChart className="h-4 w-4" />
-              Open <span className="font-mono">{ticker}</span> in the Practice
-              Chart
+              Open{" "}
+              <Ticker symbol={ticker} variant="chip" size="sm" tone="family" />{" "}
+              in the Practice Chart
             </Link>
           )}
 

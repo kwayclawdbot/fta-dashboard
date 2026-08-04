@@ -13,11 +13,13 @@ import { useEffect, useState } from "react";
        the Club's brand/volt treatment, so identity still reads at a glance.
    A bare `<span>AAPL</span>` in ink text is exactly what this replaces.
 
-   COLOUR LAW: the vibrant fallback is BRAND, so it is volt (orange) — the
-   action/brand hue. It never borrows green/red (price), lime (sentiment) or
-   kai-blue (AI). The logo tile itself is achromatic (white ground, sand
-   hairline); brand identity is carried by the logo art or the volt chip, never
-   by a coloured ground behind the symbol.
+   COLOUR LAW: the vibrant fallback is BRAND, so its hue follows the surface's
+   register via `tone`. Club (default) = volt orange — the action/brand hue.
+   Family Mode = warm GOLD (`tone="family"`) — Family stays gold and NEVER goes
+   volt or purple. Either way it never borrows green/red (price), lime
+   (sentiment) or kai-blue (AI). The logo tile itself is achromatic (white
+   ground, sand hairline); brand identity is carried by the logo art or the
+   coloured chip, never by a coloured ground behind a real logo.
 
    FAIL-SOFT LOGOS (follows CompanyLogo/TickerTile): most of the market has no
    branding image at Polygon (funds, small caps), so `/api/market/logo` answers
@@ -41,6 +43,15 @@ import { useEffect, useState } from "react";
 export type TickerSize = "sm" | "md" | "lg";
 export type TickerVariant = "logo" | "logo-only" | "chip";
 
+/* REGISTER / TONE — which brand accent the vibrant fallback wears.
+     • `club` (default) — the Club's volt-orange treatment (UNCHANGED behaviour).
+     • `family` — Family Mode's warm-GOLD treatment. Family stays gold, NEVER
+       volt or purple (a firm brand rule), so a ticker on a family surface that
+       falls back to a chip/monogram gets the gold gradient, not the orange one.
+   The achromatic real-logo tile (white ground, sand hairline) is identical in
+   both tones — only the coloured fallback differs. */
+export type TickerTone = "club" | "family";
+
 export interface TickerProps {
   /** The ticker symbol, e.g. "AAPL". Rendered uppercased. */
   symbol: string;
@@ -50,9 +61,15 @@ export interface TickerProps {
   /**
    * `logo` (default) — logo tile + symbol text.
    * `logo-only` — just the tile (symbol lives in aria-label).
-   * `chip` — vibrant volt chip, no logo attempt (tight spaces).
+   * `chip` — vibrant chip, no logo attempt (tight spaces).
    */
   variant?: TickerVariant;
+  /**
+   * Brand register of the vibrant fallback. `club` (default) = volt orange
+   * (current behaviour, DO NOT change on Club surfaces). `family` = warm gold,
+   * for Family Mode surfaces. Never mix: family gold, club volt.
+   */
+  tone?: TickerTone;
   /** Show the company name under/next to the symbol (logo variants only). */
   showName?: boolean;
   /** Make the whole ticker a link (usually to /research/SYMBOL). */
@@ -96,37 +113,84 @@ function logoExists(symbol: string): Promise<boolean> {
   return p;
 }
 
-/** The vibrant volt chip — the brand-treatment fallback / tight-space form.
- *  Filled volt→amber gradient, white symbol, a faint volt glow. This is the
- *  "never plain text" guarantee made visible. */
-function VoltChip({ sym, cls }: { sym: string; cls: string }) {
+/* ── TONE TREATMENTS ─────────────────────────────────────────────────────────
+   The vibrant fallback's colour, per register. Pulled from globals.css:
+     • club  → volt orange (--color-volt-*, board-tuned #FFB020 highlight), white
+       symbol. The Club's brand/action hue. UNCHANGED from the original.
+     • family → the FAMILY gold ramp (--color-gold-400 #FBBF24 → -500 #F59E0B),
+       dark ink symbol (--accent-on #1A1614) — the exact treatment Family's
+       accent CTA wears, so a chip reads as gold, never volt. The monogram tile
+       uses the soft amber ground (--color-chip-amber) + gold-700 text, matching
+       CompanyLogo's family fallback so tiles are consistent across Family. */
+interface ToneTreatment {
+  /** Filled chip / tile face. */
+  fill: string;
+  /** Chip / tile symbol colour. */
+  text: string;
+  chipShadow: string;
+  tileShadow: string;
+  /** Extra classes for the monogram tile (lets family use the soft-amber ground). */
+  tileClass: string;
+}
+
+const TONES: Record<TickerTone, ToneTreatment> = {
+  club: {
+    fill: "linear-gradient(135deg, var(--color-volt-600) 0%, #FFB020 100%)",
+    text: "#FFFFFF",
+    chipShadow: "0 1px 6px color-mix(in srgb, var(--color-volt-500) 42%, transparent)",
+    tileShadow: "0 1px 5px color-mix(in srgb, var(--color-volt-500) 38%, transparent)",
+    tileClass: "",
+  },
+  family: {
+    fill: "linear-gradient(135deg, var(--color-gold-400) 0%, var(--color-gold-500) 100%)",
+    text: "var(--accent-on)",
+    chipShadow: "0 1px 6px color-mix(in srgb, var(--color-gold-500) 40%, transparent)",
+    tileShadow: "0 1px 5px color-mix(in srgb, var(--color-gold-500) 34%, transparent)",
+    tileClass: "",
+  },
+};
+
+/** The vibrant chip — the brand-treatment fallback / tight-space form. Filled
+ *  gradient in the register's hue, symbol in its on-colour, a faint glow. This
+ *  is the "never plain text" guarantee made visible. */
+function TickerChip({ sym, cls, tone }: { sym: string; cls: string; tone: TickerTone }) {
+  const t = TONES[tone];
   return (
     <span
-      className={`inline-flex items-center rounded-md font-display font-bold uppercase leading-none tracking-[0.02em] text-white ${cls}`}
-      style={{
-        background: "linear-gradient(135deg, var(--color-volt-600) 0%, #FFB020 100%)",
-        boxShadow: "0 1px 6px color-mix(in srgb, var(--color-volt-500) 42%, transparent)",
-      }}
+      className={`inline-flex items-center rounded-md font-display font-bold uppercase leading-none tracking-[0.02em] ${cls}`}
+      style={{ background: t.fill, color: t.text, boxShadow: t.chipShadow }}
     >
       {sym}
     </span>
   );
 }
 
-/** The volt identity tile shown while checking, or when no logo exists — a
- *  vibrant volt square with the symbol's monogram, so a logo-less ticker still
- *  gets a brand-coloured mark rather than a neutral placeholder. */
-function VoltTile({ mono, tile, radius }: { mono: string; tile: number; radius: number }) {
+/** The identity tile shown while checking, or when no logo exists — a vibrant
+ *  square in the register's hue with the symbol's monogram, so a logo-less
+ *  ticker still gets a brand-coloured mark rather than a neutral placeholder. */
+function TickerTileMark({
+  mono,
+  tile,
+  radius,
+  tone,
+}: {
+  mono: string;
+  tile: number;
+  radius: number;
+  tone: TickerTone;
+}) {
+  const t = TONES[tone];
   return (
     <span
-      className="grid shrink-0 place-items-center font-display font-black leading-none text-white"
+      className={`grid shrink-0 place-items-center font-display font-black leading-none ${t.tileClass}`}
       style={{
         width: tile,
         height: tile,
         borderRadius: radius,
         fontSize: Math.round(tile * 0.42),
-        background: "linear-gradient(135deg, var(--color-volt-600) 0%, #FFB020 100%)",
-        boxShadow: "0 1px 5px color-mix(in srgb, var(--color-volt-500) 38%, transparent)",
+        background: t.fill,
+        color: t.text,
+        boxShadow: t.tileShadow,
       }}
       aria-hidden
     >
@@ -140,6 +204,7 @@ export default function Ticker({
   companyName,
   size = "md",
   variant = "logo",
+  tone = "club",
   showName = false,
   href,
   className = "",
@@ -174,9 +239,9 @@ export default function Ticker({
 
   if (variant === "chip") {
     // Pure vibrant chip, no logo attempt.
-    face = <VoltChip sym={sym || "?"} cls={s.chip} />;
+    face = <TickerChip sym={sym || "?"} cls={s.chip} tone={tone} />;
   } else {
-    // Logo tile (or volt tile while checking / on miss) + optional symbol text.
+    // Logo tile (or tone tile while checking / on miss) + optional symbol text.
     const tile =
       hasLogo === true ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -194,7 +259,7 @@ export default function Ticker({
           className="shrink-0 bg-white object-contain p-0.5 ring-1 ring-sand"
         />
       ) : (
-        <VoltTile mono={mono} tile={s.tile} radius={s.radius} />
+        <TickerTileMark mono={mono} tile={s.tile} radius={s.radius} tone={tone} />
       );
 
     if (variant === "logo-only") {

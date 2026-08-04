@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getFamilyContext, getFamilyWatchlist, getVotes } from "@/lib/family/queries";
 import WatchlistVote from "@/components/family/WatchlistVote";
 import FamilyActivityPing from "@/components/family/FamilyActivityPing";
+import Ticker from "@/components/ui/Ticker";
 import {
   FamilySurface,
   FamilyMast,
@@ -106,10 +107,17 @@ export default async function FamilyWatchlistPage() {
               href={`/research/${encodeURIComponent(w.ticker)}`}
               className="f0-focus f0-press min-w-0 flex-1 rounded-xl border border-sand bg-card px-2 py-3 text-center shadow-soft"
             >
-              <p className="font-display text-[14px] font-black text-ink">
-                {w.ticker.slice(0, 1)}
-              </p>
-              <p className="mt-1 truncate font-mono text-[10px] text-ink">{w.ticker}</p>
+              {/* Logo tile (or warm-gold monogram when the company has no
+                  branding image) — never the bare first initial. */}
+              <span className="flex justify-center">
+                <Ticker
+                  symbol={w.ticker}
+                  variant="logo-only"
+                  size="md"
+                  tone="family"
+                />
+              </span>
+              <p className="mt-1.5 truncate font-mono text-[10px] text-ink">{w.ticker}</p>
               <p className="mt-1 truncate text-[9px] text-soft">
                 {new Date(w.updated_at).toLocaleDateString(undefined, {
                   month: "short",
