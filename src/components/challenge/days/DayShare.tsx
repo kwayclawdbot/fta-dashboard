@@ -5,6 +5,7 @@ import type React from "react";
 import { Check, Trophy } from "lucide-react";
 import { SOCIAL_FLOORS } from "@/lib/social/reactions";
 import { StreakFlame } from "@/components/art";
+import Ticker from "@/components/ui/Ticker";
 import type { Stance } from "@/lib/social/stance";
 import type { ChallengeDay, ChallengeState } from "@/lib/challenge/types";
 import { RESEARCH_QUESTIONS, fmtUsd, type DaySeed } from "./data";
@@ -253,7 +254,8 @@ export default function DayShare({
     script = "the room has spoken";
     head = top ? (
       <MissionHead align="left">
-        Cohort pick: <span className="text-gold-700">{top.ticker}</span>
+        Cohort pick:{" "}
+        <Ticker symbol={top.ticker} variant="chip" size="lg" tone="family" />
       </MissionHead>
     ) : (
       <MissionHead align="left">
