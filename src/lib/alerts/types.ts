@@ -147,6 +147,15 @@ export interface AlertSetup {
   expires_at: string;
   created_at: string;
   subscribed?: boolean;
+  /**
+   * Machine-recorded lifecycle detail (jsonb). `conditions` is the honest
+   * "2 of 3" breakdown the cron writes; rendered as ticks ONLY when present —
+   * never fabricated. Tolerant shape so future keys don't break the reader.
+   */
+  detail?: {
+    conditions?: { label: string; met: boolean }[];
+    [k: string]: unknown;
+  } | null;
 }
 
 export interface StrategyProfile {
