@@ -12,6 +12,10 @@ import TierBadge from "@/components/TierBadge";
 import { TickerTile } from "@/components/canvas2";
 import Ticker from "@/components/ui/Ticker";
 import { BadgeShelf } from "@/components/profile/Badge";
+import HowTheyInvest from "@/components/profile/HowTheyInvest";
+import FollowButton from "@/components/profile/FollowButton";
+import { getUserInsights } from "@/lib/insights/compute";
+import { getFollowCounts } from "@/lib/insights/follows";
 import {
   Card,
   ListHead,
@@ -161,8 +165,10 @@ export default async function PublicProfilePage({
 
   const isOwn = auth?.user?.id === profile.id;
 
-  // Everything below identity, in one round of parallel reads.
-  const [defs, partRes, flipRes, stanceRes] = await Promise.all([
+  // Everything below identity, in one round of parallel reads. `insights` and
+  // `follow` join the round: both read RLS-scoped through the session client,
+  // both are cheap single selects (getUserInsights never recomputes).
+  const [defs, partRes, flipRes, stanceRes, insights, follow] = await Promise.all([
     supabase
       .from("badges")
       .select("slug, title, subtitle, sort")
@@ -176,7 +182,22 @@ export default async function PublicProfilePage({
       .eq("user_id", profile.id)
       .order("updated_at", { ascending: false })
       .limit(6),
+    getUserInsights(supabase, profile.id),
+    getFollowCounts(supabase, profile.id, auth?.user?.id),
   ]);
+
+  // The digest is real only when it carries something to say. An uncomputed
+  // member (no row) or a bare row with nothing but nulls hides the whole
+  // section rather than drawing an empty scaffold.
+  const hasInsights =
+    !!insights &&
+    (insights.favorite_tickers.length > 0 ||
+      insights.bull_lean != null ||
+      insights.favorite_sectors.length > 0 ||
+      !!insights.kai_read ||
+      !!insights.trading_style.risk_posture ||
+      !!insights.trading_style.timeframe ||
+      insights.trading_style.setups.length > 0);
 
   const badgeRows = mergeBadgeRows(
     (defs.data ?? []) as { slug: string; title: string; subtitle: string | null; sort: number }[],
@@ -207,7 +228,7 @@ export default async function PublicProfilePage({
         <h1 className="min-w-0 truncate font-display text-[36px] font-extrabold uppercase leading-[0.9] tracking-[-0.04em] text-ink">
           Profile
         </h1>
-        {isOwn && (
+        {isOwn ? (
           <Link
             href="/settings"
             aria-label="Settings"
@@ -215,6 +236,12 @@ export default async function PublicProfilePage({
           >
             <Settings className="h-5 w-5" />
           </Link>
+        ) : (
+          <FollowButton
+            username={profile.username}
+            initialFollowing={follow.isFollowing}
+            initialFollowers={follow.followers}
+          />
         )}
       </header>
 
@@ -341,6 +368,12 @@ export default async function PublicProfilePage({
           until there&apos;s something real behind it.
         </p>
       </section>
+
+      {/* ── HOW THEY INVEST — the generated "who to follow" digest ────────────
+          Inserted before the watchlist, built from getUserInsights in the
+          profile's own vocabulary. Absent entirely when there's nothing real
+          to show (uncomputed member / all-null row). */}
+      {hasInsights && insights && <HowTheyInvest insights={insights} who={who} />}
 
       {/* ── WATCHLIST — the board's labelled tile row ─────────────────────── */}
       {profile.liked_tickers.length > 0 && (
