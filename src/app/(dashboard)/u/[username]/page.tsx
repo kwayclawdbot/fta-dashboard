@@ -10,6 +10,8 @@ import BeltBadge from "@/components/BeltBadge";
 import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
 import { TickerTile } from "@/components/canvas2";
+import Ticker from "@/components/ui/Ticker";
+import { BadgeShelf } from "@/components/profile/Badge";
 import {
   Card,
   ListHead,
@@ -285,32 +287,7 @@ export default async function PublicProfilePage({
             body="Badges are earned, not given — this shelf fills as they learn."
           />
         ) : (
-          <div className="club2-track flex gap-2 overflow-x-auto pb-1">
-            {badgeRows.map((b) => (
-              <div
-                key={b.slug}
-                title={b.subtitle ?? undefined}
-                className={`club-b-card flex w-[92px] shrink-0 flex-col items-center gap-2 rounded-[13px] px-1.5 py-[11px] text-center ${
-                  b.awarded ? "" : "opacity-45"
-                }`}
-              >
-                <span
-                  className="grid h-[34px] w-[34px] place-items-center rounded-full font-display text-[15px] font-extrabold"
-                  style={
-                    b.awarded
-                      ? { background: "var(--accent-solid)", color: "var(--accent-on)" }
-                      : { background: "var(--sand)", color: "var(--soft)" }
-                  }
-                  aria-hidden
-                >
-                  {b.title.slice(0, 1).toUpperCase()}
-                </span>
-                <span className="font-display text-[9.5px] font-bold leading-tight text-ink">
-                  {b.title}
-                </span>
-              </div>
-            ))}
-          </div>
+          <BadgeShelf badges={badgeRows} />
         )}
       </section>
 
@@ -400,11 +377,7 @@ export default async function PublicProfilePage({
               <RowCard
                 key={s.ticker}
                 href={`/research/${encodeURIComponent(s.ticker)}`}
-                lead={
-                  <span className="font-mono text-[11px] font-semibold text-ink">
-                    {s.ticker.toUpperCase()}
-                  </span>
-                }
+                lead={<Ticker symbol={s.ticker} variant="chip" size="sm" />}
                 title={
                   <span className="text-[11.5px] font-normal text-soft">
                     {STANCE_WORD[s.stance] ?? s.stance}
