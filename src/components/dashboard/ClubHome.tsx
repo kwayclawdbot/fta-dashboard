@@ -14,6 +14,7 @@ import {
 } from "@/lib/market/client";
 import Sparkline from "@/components/fic/Sparkline";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import Ticker from "@/components/ui/Ticker";
 import BeltHeroStrip from "@/components/dashboard/BeltHeroStrip";
 import ClubPulseMasthead from "@/components/dashboard/ClubPulseMasthead";
 import ClubActivityStrip from "@/components/community/ClubActivityStrip";
@@ -279,9 +280,12 @@ export default function ClubHome({
           <span className="shrink-0 font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-kai-600">
             Kai briefing
           </span>
-          <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">
-            {briefing.ticker} {briefing.direction}
-            {briefing.setup_label ? ` — ${briefing.setup_label}` : ""}
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-[14px] font-semibold text-ink">
+            <Ticker symbol={briefing.ticker} variant="chip" size="sm" />
+            <span className="min-w-0 truncate">
+              {briefing.direction}
+              {briefing.setup_label ? ` — ${briefing.setup_label}` : ""}
+            </span>
           </span>
           <ArrowRight className="h-4 w-4 shrink-0 text-kai-500" aria-hidden />
         </Link>

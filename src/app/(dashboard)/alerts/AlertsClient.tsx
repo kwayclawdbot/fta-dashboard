@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
+import Ticker from "@/components/ui/Ticker";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import PickCard from "@/components/alerts/PickCard";
 import { FoundingState } from "@/components/family/canvas";
@@ -1684,7 +1685,7 @@ function HistoryEventRow({
         ) : (
           <StatePill tone="quiet" label={kindLabel} />
         )}
-        <span className="font-mono text-[12px] font-semibold text-ink">{e.ticker}</span>
+        <Ticker symbol={e.ticker} variant="chip" size="sm" />
         <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
           {timeAgo(e.fired_at)}
         </span>
@@ -1737,7 +1738,7 @@ function HistoryBroadcastRow({
     <CardLink href={`/research/${encodeURIComponent(b.ticker)}`} edge="kai" dim={compact}>
       <div className="flex items-center gap-2.5">
         <StatePill tone="kai" label="Kai daily" />
-        <span className="font-mono text-[12px] font-semibold text-ink">{b.ticker}</span>
+        <Ticker symbol={b.ticker} variant="chip" size="sm" />
         <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
           {timeAgo(b.issued_at)}
         </span>
