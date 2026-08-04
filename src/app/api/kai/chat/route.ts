@@ -27,6 +27,8 @@ import { beltForXp } from "@/lib/belts";
 import { serviceClient } from "@/lib/server/membership";
 import { logClubEvent } from "@/lib/club/track";
 import type { Register } from "@/lib/register";
+import { parseAlertRequest, sanitizeRuleSpec, AlertParseError } from "@/lib/alerts/parse";
+import { MAX_ACTIVE_RULES } from "@/lib/alerts/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -51,6 +53,10 @@ function sse(obj: unknown): Uint8Array {
 interface ToolCtx {
   supabase: Awaited<ReturnType<typeof createClient>>;
   familyId: string | null;
+  /** Caller identity — derived from the authenticated session, NEVER the model. */
+  userId: string;
+  /** Whether this caller may set alerts (paying adult; same gate as Kai Watch). */
+  canAlerts: boolean;
 }
 
 /** Compact one screener_metrics row into the fields the briefing cares about. */
@@ -175,6 +181,175 @@ async function runDailyChanges(
   };
 }
 
+/**
+ * propose_alert_rule — parse a member's plain English into a concrete PROPOSAL
+ * (LANE R4, chat). Uses the SAME parser as /api/kai-watch/parse (src/lib/alerts/
+ * parse). PROPOSES ONLY — never writes. The model is instructed to read the
+ * proposal back and get an explicit yes before create_alert_rule.
+ */
+async function runProposeAlert(
+  input: Record<string, unknown>,
+  ctx: ToolCtx
+): Promise<{ result: string }> {
+  if (!ctx.canAlerts) {
+    return {
+      result: JSON.stringify({
+        supported: false,
+        rules: [],
+        note: "Setting alerts is a paying-member feature; this member isn't eligible. Don't offer to set one.",
+      }),
+    };
+  }
+  const request = String(input.request || "").trim();
+  if (request.length < 2) {
+    return { result: JSON.stringify({ supported: false, rules: [], note: "Ask the member what they'd like you to watch." }) };
+  }
+  try {
+    const parsed = await parseAlertRequest({ text: request });
+    return {
+      result: JSON.stringify({
+        supported: parsed.supported,
+        rules: parsed.rules, // [{ kind, ticker, params, label }]
+        note: parsed.note,
+        confirmation_required:
+          "This is a PROPOSAL only — nothing is saved. Read the rule(s) back to the member in plain English and get an explicit yes before calling create_alert_rule with these exact rules.",
+      }),
+    };
+  } catch (e) {
+    const code = e instanceof AlertParseError ? e.code : "parse_failed";
+    return {
+      result: JSON.stringify({
+        supported: false,
+        rules: [],
+        note:
+          code === "unavailable"
+            ? "The alert parser is offline right now — tell the member you can't set alerts this moment."
+            : "Couldn't read that into a watchable rule. Ask the member to rephrase (a ticker + a condition like a price, a % move, or volume).",
+      }),
+    };
+  }
+}
+
+/**
+ * create_alert_rule — SAVE confirmed rule(s). Called only after the member says
+ * yes. Caller identity comes from ctx.userId (the authenticated session), NEVER
+ * the model; each rule is re-sanitized server-side (label recomputed), inserted
+ * under own-row RLS with the 20-active DB cap enforced by trigger.
+ */
+async function runCreateAlert(
+  input: Record<string, unknown>,
+  ctx: ToolCtx
+): Promise<{ result: string }> {
+  if (!ctx.canAlerts) {
+    return { result: "This member can't set alerts (paying-member feature). Do not save anything." };
+  }
+  const rawRules = Array.isArray(input.rules) ? input.rules : [];
+  const specs = rawRules
+    .map((r) => sanitizeRuleSpec(r))
+    .filter((s): s is NonNullable<ReturnType<typeof sanitizeRuleSpec>> => s !== null)
+    .slice(0, 3);
+  if (specs.length === 0) {
+    return {
+      result:
+        "None of those were valid, watchable rules. Re-run propose_alert_rule on the member's request and confirm the proposal before saving.",
+    };
+  }
+  const created: string[] = [];
+  for (const s of specs) {
+    const { data, error } = await ctx.supabase
+      .from("alert_rules")
+      .insert({
+        user_id: ctx.userId, // session identity — never trusted from the model
+        kind: s.kind,
+        ticker: s.ticker,
+        params: s.params,
+        label: s.label,
+        surface: "manual",
+        active: true,
+      })
+      .select("id, label")
+      .single();
+    if (error) {
+      if (/cap reached/i.test(error.message)) {
+        return {
+          result: JSON.stringify({
+            created,
+            error: `The member is at the ${MAX_ACTIVE_RULES}-active-alert cap. ${
+              created.length ? `Saved ${created.length} before hitting it. ` : ""
+            }Tell them to pause an existing alert first, then try again.`,
+          }),
+        };
+      }
+      return {
+        result: JSON.stringify({
+          created,
+          error: "Couldn't save one of the alerts. Tell the member it didn't go through and to try again.",
+        }),
+      };
+    }
+    if (data?.label) created.push(String(data.label));
+  }
+  return {
+    result: JSON.stringify({
+      created,
+      note: "Saved to the member's account. Confirm in one line what's now live. These are notifications, not advice.",
+    }),
+  };
+}
+
+/**
+ * list_my_alerts — the member's active personalized rules + the Kai Daily setups
+ * they follow. Read-only, own rows (own-row RLS on both alert_rules and
+ * setup_subscriptions scopes the reads to ctx.userId).
+ */
+async function runListMyAlerts(ctx: ToolCtx): Promise<{ result: string }> {
+  if (!ctx.canAlerts) {
+    return { result: "This member isn't on a plan that includes personal alerts." };
+  }
+  const { data: rules } = await ctx.supabase
+    .from("alert_rules")
+    .select("ticker, label, kind, created_at")
+    .eq("active", true)
+    .order("created_at", { ascending: false });
+
+  // Setups the member is following (own subscriptions → the setup lifecycle rows).
+  const { data: subs } = await ctx.supabase
+    .from("setup_subscriptions")
+    .select("setup_id")
+    .limit(50);
+  const setupIds = (subs || []).map((s) => (s as { setup_id: string }).setup_id);
+  let following: unknown[] = [];
+  if (setupIds.length > 0) {
+    const { data: setups } = await ctx.supabase
+      .from("alert_setups")
+      .select("ticker, direction, thesis, state, created_at")
+      .in("id", setupIds)
+      .order("created_at", { ascending: false });
+    following = (setups || []).map((s) => {
+      const r = s as Record<string, unknown>;
+      return {
+        ticker: r.ticker,
+        direction: r.direction,
+        state: r.state,
+        thesis: typeof r.thesis === "string" ? r.thesis.slice(0, 160) : null,
+      };
+    });
+  }
+
+  return {
+    result: JSON.stringify({
+      active_alerts: (rules || []).map((r) => {
+        const x = r as Record<string, unknown>;
+        return { ticker: x.ticker, label: x.label, kind: x.kind };
+      }),
+      active_count: (rules || []).length,
+      cap: MAX_ACTIVE_RULES,
+      following_setups: following,
+      note: "These are the member's own watches — notifications, not advice.",
+    }),
+  };
+}
+
 /** Execute one Kai tool → { toolResult (string for the model), block? (client render) }. */
 async function runTool(
   name: string,
@@ -183,6 +358,9 @@ async function runTool(
 ): Promise<{ result: string; block?: Block }> {
   try {
     if (name === "get_daily_changes") return runDailyChanges(input, ctx);
+    if (name === "propose_alert_rule") return runProposeAlert(input, ctx);
+    if (name === "create_alert_rule") return runCreateAlert(input, ctx);
+    if (name === "list_my_alerts") return runListMyAlerts(ctx);
     if (name === "get_quote") {
       const sym = normalizeSymbol(String(input.symbol || ""));
       if (!sym) return { result: "Invalid ticker symbol." };
@@ -449,8 +627,17 @@ export async function POST(req: NextRequest) {
       completed_at: fam.hh_completed_at ?? null,
     }) === "individual";
   const profileTier = resolveKaiProfile(register, { solo, deepMode });
-  const tools = chatToolsForProfile(profileTier);
-  const toolCtx = { supabase, familyId: profile?.family_id ?? null };
+  // Conversational alert-setting gate: paying ADULTS only — the exact gate the
+  // Kai Watch panel uses (register 'adult' + non-free tier). Teens (family-adult
+  // register) and kids never get the alert tools. Derived server-side.
+  const canAlerts = register === "adult" && tier !== "free";
+  const tools = chatToolsForProfile(profileTier, { alerts: canAlerts });
+  const toolCtx: ToolCtx = {
+    supabase,
+    familyId: profile?.family_id ?? null,
+    userId: user.id,
+    canAlerts,
+  };
 
   // Ensure a thread (own-row).
   if (!threadId) {
@@ -514,7 +701,7 @@ export async function POST(req: NextRequest) {
   // Everything volatile (history, the current user turn, tool_result payloads,
   // market data) lives in `messages`, which is AFTER both breakpoints — so a new
   // turn never disturbs the cached prefix.
-  const baseSystem = buildChatSystemPrompt(register, profileTier, "");
+  const baseSystem = buildChatSystemPrompt(register, profileTier, "", { alerts: canAlerts });
   const system: { type: "text"; text: string; cache_control?: { type: "ephemeral" } }[] = [
     { type: "text", text: baseSystem, cache_control: { type: "ephemeral" } },
   ];
