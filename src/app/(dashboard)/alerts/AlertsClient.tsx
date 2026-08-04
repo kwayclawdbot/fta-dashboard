@@ -31,7 +31,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
-import WatchSetupButton from "@/components/alerts/WatchSetupButton";
+import PickCard from "@/components/alerts/PickCard";
+import { FoundingState } from "@/components/family/canvas";
 import KaiWatch from "@/components/kai/KaiWatch";
 import WatchRail from "@/components/watch/WatchRail";
 import ProximityMeter from "@/components/watch/ProximityMeter";
@@ -882,43 +883,49 @@ function KaiDailyTab({
     return out;
   }, [broadcasts]);
 
+  const mkt = marketStatus();
+
   return (
     <div className="space-y-6">
       <p className="max-w-lg text-[13px] leading-relaxed text-soft">
-        Kai&apos;s read on the market — the setups worth studying, with the levels
-        that define them. Follow one and you get every step as it develops.
+        Kai&apos;s read on the market — the setups worth studying, laid out as a plan:
+        where it works, where it&apos;s wrong, and what you&apos;d risk to make.
       </p>
 
-      {sampleAlert && <SampleAlertCard s={sampleAlert} />}
-
       {broadcasts.length === 0 ? (
+        /* ── STRONG EMPTY STATE ────────────────────────────────────────────
+           The SMS→app pipeline that writes trade_alerts is paused, so there is
+           genuinely nothing live. We say so honestly (FoundingState), then show
+           ONE plan-led example built from today's REAL screener data so a member
+           can see exactly what a pick looks like the moment one lands. */
         <>
-          <Card className="px-4 py-5">
-            <p className="font-display text-[17px] font-extrabold text-ink">
-              Kai Daily lands here
-            </p>
-            <p className="mt-2 max-w-md text-[13px] leading-relaxed text-soft">
-              Kai&apos;s daily briefing setups post here as soon as they go out.
-              Meanwhile, tell Kai what to watch for you in{" "}
-              <span className="font-semibold text-ink">My watches</span>.
-            </p>
-          </Card>
+          <FoundingState
+            title="No live setups right now"
+            body="Kai posts fresh picks pre-market. When a setup is worth studying, it lands here as a full plan — the call, the levels, and what you'd risk to make. Meanwhile, tell Kai what to watch for you in My watches."
+          />
+
+          {sampleAlert && (
+            <section className="space-y-2">
+              <BoardEyebrow className="mb-1">What a pick looks like</BoardEyebrow>
+              <PickCard b={sampleToAlert(sampleAlert)} current={sampleAlert.price} sample />
+            </section>
+          )}
 
           {marketEvents.length > 0 && (
             <section className="space-y-2">
               <BoardEyebrow className="mb-1">This week in the market</BoardEyebrow>
-              {marketEvents.map((mkt, i) => (
+              {marketEvents.map((mktEv, i) => (
                 <CardLink
                   key={i}
-                  href={mkt.ticker ? `/research/${encodeURIComponent(mkt.ticker)}` : `/news/${mkt.slug}`}
+                  href={mktEv.ticker ? `/research/${encodeURIComponent(mktEv.ticker)}` : `/news/${mktEv.slug}`}
                 >
                   <div className="flex items-center gap-3">
-                    {mkt.ticker && (
-                      <CompanyLogo symbol={mkt.ticker} name={mkt.ticker} size={30} rounded="rounded-[9px]" />
+                    {mktEv.ticker && (
+                      <CompanyLogo symbol={mktEv.ticker} name={mktEv.ticker} size={30} rounded="rounded-[9px]" />
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold text-ink">{mkt.title}</p>
-                      {mkt.dek && <p className="truncate text-[11.5px] text-soft">{mkt.dek}</p>}
+                      <p className="truncate text-[13px] font-semibold text-ink">{mktEv.title}</p>
+                      {mktEv.dek && <p className="truncate text-[11.5px] text-soft">{mktEv.dek}</p>}
                     </div>
                     <ArrowRight className="h-4 w-4 shrink-0 text-soft/60" />
                   </div>
@@ -928,249 +935,70 @@ function KaiDailyTab({
           )}
         </>
       ) : (
-        groups.map((g) => (
-          <section key={g.label} className="space-y-2">
-            <BoardEyebrow className="mb-1">{g.label}</BoardEyebrow>
-            {g.rows.map((b) => {
-              const setup = setupByAlert.get(b.id);
-              const thread = setup ? threadBySetup.get(setup.id) || [] : [];
-              return (
-                <BroadcastCard
-                  key={b.id}
-                  b={b}
-                  current={priceMap[b.ticker] ?? null}
-                  setup={setup}
-                  thread={thread}
-                  onSub={onSub}
-                />
-              );
-            })}
-          </section>
-        ))
+        <>
+          <BoardEyebrow
+            accent
+            className="mb-1"
+            meta={
+              <span className="font-mono text-[10px] tabular-nums text-soft/70">
+                {broadcasts.length} live · {mkt.label.toLowerCase()}
+              </span>
+            }
+          >
+            Today&apos;s picks
+          </BoardEyebrow>
+          {groups.map((g) => (
+            <section key={g.label} className="space-y-4">
+              {groups.length > 1 && <BoardEyebrow className="mb-1">{g.label}</BoardEyebrow>}
+              {g.rows.map((b) => {
+                const setup = setupByAlert.get(b.id);
+                const thread = setup ? threadBySetup.get(setup.id) || [] : [];
+                return (
+                  <PickCard
+                    key={b.id}
+                    b={b}
+                    current={priceMap[b.ticker] ?? null}
+                    setup={setup}
+                    thread={thread}
+                    onSub={onSub}
+                  />
+                );
+              })}
+            </section>
+          ))}
+        </>
       )}
     </div>
   );
 }
 
 /**
- * ONE ALERT — canvas board 18's card, minus the verdict.
- *
- * The canvas puts a green BUY SIGNAL / red SELL SIGNAL pill in this slot. What
- * ships is the setup's own lifecycle state on the state ramp, so the card says
- * what happened and never what to do. The left edge takes the same tone.
+ * Map the server-built SAMPLE (real screener data, never persisted) onto the
+ * TradeAlert shape the PickCard reads, so the empty state showcases the exact
+ * same plan-led card a live pick will render in.
  */
-function BroadcastCard({
-  b,
-  current,
-  setup,
-  thread,
-  onSub,
-}: {
-  b: TradeAlert;
-  current: number | null;
-  setup: AlertSetup | undefined;
-  thread: AlertEvent[];
-  onSub: (setupId: string, subscribed: boolean) => void;
-}) {
-  const meta = setup ? SETUP_STATE_META[setup.state] : null;
-  const tone: StateTone = meta?.tone ?? "kai";
-  const following = !!setup?.subscribed;
-  const L = readSetupLevels(setup?.levels);
-
-  return (
-    <Card edge={tone}>
-      <div className="flex items-center gap-2.5">
-        {meta ? (
-          <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
-        ) : (
-          <StatePill tone="kai" label="Kai daily" />
-        )}
-        <span className="font-mono text-[12px] font-semibold text-ink">{b.ticker}</span>
-        <DirChip dir={b.direction} />
-        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
-          {timeAgo(b.issued_at)}
-        </span>
-      </div>
-
-      <div className="mt-3 flex items-start gap-3">
-        <CompanyLogo symbol={b.ticker} name={b.ticker} size={36} rounded="rounded-[10px]" />
-        <div className="min-w-0 flex-1">
-          {b.setup_label && (
-            <p className="text-[13.5px] font-bold leading-snug text-ink">{b.setup_label}</p>
-          )}
-          {b.narrative && (
-            <p className="mt-1 line-clamp-3 text-[12.5px] leading-relaxed text-ink/80">
-              {b.narrative}
-            </p>
-          )}
-        </div>
-        <div className="shrink-0 text-right">
-          <PerfSince from={b.snapshot_price} to={current} />
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
-            since issued
-          </p>
-        </div>
-      </div>
-
-      {/* The canvas's chip row. Every chip here is a stored number — the levels
-          that define the setup and the price it was issued at. Nothing is
-          asserted as "met" that the machine did not measure. */}
-      {(b.entry != null || L.resistance != null || L.stop != null || b.snapshot_price != null) && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {b.entry != null && (
-            <MetricChip>
-              <span className="uppercase tracking-[0.1em]">Entry</span>
-              <span className="text-ink">{money(b.entry)}</span>
-            </MetricChip>
-          )}
-          {L.resistance != null && (
-            <MetricChip>
-              <span className="uppercase tracking-[0.1em]">Level</span>
-              <span className="text-price-up">{money(L.resistance)}</span>
-            </MetricChip>
-          )}
-          {L.stop != null && (
-            <MetricChip>
-              <span className="uppercase tracking-[0.1em]">Invalid</span>
-              <span className="text-price-down">{money(L.stop)}</span>
-            </MetricChip>
-          )}
-          {b.snapshot_price != null && (
-            <MetricChip>
-              <span className="uppercase tracking-[0.1em]">Issued at</span>
-              <span className="text-ink">{money(b.snapshot_price)}</span>
-            </MetricChip>
-          )}
-        </div>
-      )}
-
-      <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-sand pt-3">
-        {setup ? (
-          <WatchSetupButton
-            setupId={setup.id}
-            initialSubscribed={following}
-            onChange={(sub) => onSub(setup.id, sub)}
-          />
-        ) : null}
-        <Link
-          href={`/research/${encodeURIComponent(b.ticker)}`}
-          className="ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-gold-700 transition hover:text-gold-600"
-        >
-          Research ${b.ticker} <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
-
-      {/* Followed-setup lifecycle thread (opt-ins only). */}
-      {following && (
-        <div className="mt-3 border-t border-sand pt-3">
-          <p className="mb-2 flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-kai-600">
-            <Eye className="h-3.5 w-3.5" /> You&apos;re following this setup
-          </p>
-          {thread.length === 0 ? (
-            <p className="text-[12px] leading-snug text-soft">
-              {setup ? setupStateLine(setup.state, b.ticker) : `Kai is watching ${b.ticker}.`}{" "}
-              You&apos;ll get every step — confirmed, triggered or called off.
-            </p>
-          ) : (
-            <ol className="space-y-2">
-              {thread.map((e) => {
-                const st = (e.payload?.state as SetupState) || "waiting";
-                const tm = SETUP_STATE_META[st];
-                return (
-                  <li key={e.id} className="flex gap-2.5">
-                    <CondRow
-                      met
-                      tone={tm?.tone ?? "quiet"}
-                      label={e.payload?.message || setupStateLine(st, b.ticker)}
-                      value={timeAgo(e.fired_at)}
-                    />
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </div>
-      )}
-    </Card>
-  );
+function sampleToAlert(s: SampleAlert): TradeAlert {
+  const L = s.levels;
+  return {
+    id: `sample-${s.ticker}`,
+    ticker: s.ticker,
+    direction: s.direction,
+    setup_label: s.setup_label,
+    entry: L.pivot,
+    levels: { support: L.shelfLow, resistance: L.pivot, stop: L.invalidation },
+    targets: L.targets.map((t) => ({ price: t.price, label: t.label })),
+    narrative: s.thesis,
+    chart_url: null,
+    source: "kai_morning",
+    snapshot_price: s.price,
+    issued_at: s.issued_at,
+    created_at: s.issued_at,
+  };
 }
 
-/* ---------- SAMPLE alert (built from real screener data) ---------- */
+/* ---------- shared formatters ---------- */
 function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function money0(n: number): string {
-  return Math.round(n).toLocaleString();
-}
-
-function SampleAlertCard({ s }: { s: SampleAlert }) {
-  const L = s.levels;
-  return (
-    <Card className="border-dashed">
-      <div className="flex flex-wrap items-center gap-2">
-        <StatePill tone="kai" label="Sample" />
-        <span className="text-[11.5px] text-soft">What a Kai Daily setup looks like</span>
-        <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.1em] text-soft/60">
-          example only
-        </span>
-      </div>
-
-      <div className="mt-3 flex items-start gap-3">
-        <CompanyLogo symbol={s.ticker} name={s.name} size={40} rounded="rounded-[11px]" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-              ${s.ticker}
-            </span>
-            <DirChip dir={s.direction} />
-          </div>
-          <p className="mt-0.5 text-[13px] font-semibold text-ink/90">{s.setup_label}</p>
-        </div>
-        <div className="shrink-0 text-right">
-          <p className="font-mono text-[15px] font-semibold tabular-nums text-ink">
-            {money(s.price)}
-          </p>
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/60">{s.tier}</p>
-        </div>
-      </div>
-
-      <p className="mt-3 text-[12.5px] leading-relaxed text-ink/80">{s.thesis}</p>
-
-      <div className="mt-3 space-y-2 border-t border-sand pt-3">
-        <CondRow
-          met={false}
-          tone="quiet"
-          label={`Entry zone — reclaim & hold the $${money0(L.pivot)} pivot`}
-          value={`$${money0(L.entryLow)}–${money0(L.entryHigh)}`}
-        />
-        {L.targets.map((t) => (
-          <CondRow
-            key={t.label}
-            met={false}
-            tone="quiet"
-            label={t.label}
-            value={`$${money0(t.price)}`}
-          />
-        ))}
-        <CondRow
-          met={false}
-          tone="quiet"
-          label={`Invalidation — close below the $${money0(L.shelfLow)} shelf`}
-          value={`$${money0(L.invalidation)}`}
-        />
-      </div>
-
-      <p className="mt-3 flex gap-2 text-[12.5px] leading-relaxed text-ink/80">
-        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-kai-600" />
-        <span>{s.kaiRead}</span>
-      </p>
-
-      <p className="mt-2.5 text-[11px] leading-relaxed text-soft/70">
-        Kai&apos;s read is educational analysis of price levels — not a
-        recommendation to buy or sell, and not personalized advice.
-      </p>
-    </Card>
-  );
 }
 
 function PerfSince({ from, to }: { from: number | null; to: number | null }) {
