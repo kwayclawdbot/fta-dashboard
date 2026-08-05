@@ -52,6 +52,7 @@ const CLASS_TYPE_ORDER: ClassType[] = [
 
 interface Rec extends RecordingPlayable {
   description: string;
+  assignment: string;
   scheduledIso: string | null;
   classType: ClassType | null;
 }
@@ -84,7 +85,7 @@ export default function FtaRecordingsPage() {
 
       const { data } = await supabase
         .from("live_sessions")
-        .select("id, title, description, scheduled_at, duration_min, recording_url, recording_path, recording_kind, status, track, min_tier, class_type")
+        .select("id, title, description, assignment, scheduled_at, duration_min, recording_url, recording_path, recording_kind, status, track, min_tier, class_type")
         .eq("status", "completed")
         .eq("min_tier", "academy")
         .order("scheduled_at", { ascending: false });
@@ -94,6 +95,7 @@ export default function FtaRecordingsPage() {
           id: s.id as string,
           title: s.title as string,
           description: (s.description as string) || "",
+          assignment: (s.assignment as string) || "",
           durationMin: (s.duration_min as number) || 45,
           scheduledIso: (s.scheduled_at as string) || null,
           scheduledAt: fmt((s.scheduled_at as string) || null),
