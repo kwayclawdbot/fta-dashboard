@@ -58,12 +58,14 @@ export async function getKaiChatSeed(
   // DEFINER so it returns the household past the parent-only family_profiles RLS,
   // hard-scoped to caller.
   const { data: persData } = await supabase.rpc("kai_personalization");
-  const persFam = ((persData || {}) as {
+  const pers = (persData || {}) as {
+    door?: "club" | "family" | null;
     family?: {
       household?: { adults?: number; kids?: number; kid_age_ranges?: string[] } | null;
       hh_completed_at?: string | null;
     } | null;
-  }).family;
+  };
+  const persFam = pers.family;
   const register = deriveRegister(profile);
   const deepMode = profile?.kai_deep_mode === true;
   const solo =
@@ -71,9 +73,12 @@ export async function getKaiChatSeed(
       household: persFam?.household ?? null,
       completed_at: persFam?.hh_completed_at ?? null,
     }) === "individual";
-  const kaiProfile = resolveKaiProfile(register, { solo, deepMode });
-  // A Family-Mode adult (not already solo/club) is the only one who may opt in.
-  const canToggleDeepMode = register === "adult" && !solo;
+  const door = pers.door ?? null;
+  const kaiProfile = resolveKaiProfile(register, { door, solo, deepMode });
+  // A Family-Mode adult (not already on the club door) is the only one who may
+  // opt in. Door-first, with the old solo verdict as the no-family fallback.
+  const clubDoor = door ? door === "club" : solo;
+  const canToggleDeepMode = register === "adult" && !clubDoor;
 
   const [tier, threadsRes, usageRes, memoryRes] = await Promise.all([
     getClubTier(supabase, profile?.family_id),

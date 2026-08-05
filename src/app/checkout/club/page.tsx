@@ -1,5 +1,6 @@
 import { cleanSrc, CLUB_CANCEL_URL } from "@/lib/server/checkout-sessions";
 import CheckoutClient from "@/components/checkout/CheckoutClient";
+import { publicMode } from "@/lib/experience/server";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,13 @@ export default async function CheckoutClubPage({
 }) {
   const { src: rawSrc } = await searchParams;
   const src = cleanSrc(rawSrc) || "site";
+  const mode = await publicMode();
   const publishableKey =
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
 
   return (
     <CheckoutClient
+      mode={mode}
       flow="club"
       src={src}
       publishableKey={publishableKey}

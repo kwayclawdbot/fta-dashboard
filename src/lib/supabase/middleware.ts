@@ -4,10 +4,25 @@ import { REF_COOKIE, REF_COOKIE_MAX_AGE } from "@/lib/referral";
 import { getProjectJwks } from "@/lib/supabase/jwks";
 import { maybeAttachDemoSession, isPreview } from "@/lib/demo/preview-demo";
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+export async function updateSession(
+  request: NextRequest,
+  /**
+   * Extra REQUEST headers to forward to the app (E1 stamps `x-experience`).
+   * Applied through a fresh clone at every NextResponse.next() below, never a
+   * clone taken once up front: `request.cookies.set()` in the setAll adapter
+   * mutates the request's own cookie header, so a stale copy would drop a
+   * refreshed auth cookie on its way to the server components.
+   */
+  extraRequestHeaders?: Record<string, string>
+) {
+  const requestInit = () => {
+    if (!extraRequestHeaders) return { request };
+    const headers = new Headers(request.headers);
+    for (const [k, v] of Object.entries(extraRequestHeaders)) headers.set(k, v);
+    return { request: { headers } };
+  };
+
+  let supabaseResponse = NextResponse.next(requestInit());
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
@@ -21,9 +36,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          supabaseResponse = NextResponse.next(requestInit());
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

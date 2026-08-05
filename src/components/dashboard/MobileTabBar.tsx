@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import type { FamilyTier } from "@/lib/tier";
-import { modeFromSolo, modeBrand } from "@/lib/mode";
+import { modeFromDoorOrSolo, modeBrand } from "@/lib/mode";
 import { ClubWordmark } from "@/components/brand/ClubMark";
 import { getNavItems, getFooterItems, type NavItem } from "./DashboardSidebar";
 import { deriveRegister } from "@/lib/register";
@@ -98,6 +98,8 @@ interface MobileTabBarProps {
     avatar_url?: string;
     tier?: FamilyTier;
     isSolo?: boolean;
+    /** Stored experience (families.door) — the brand axis. */
+    door?: "club" | "family";
   };
   /** Lifetime XP for the More-sheet belt chip (null while loading). */
   xp?: number | null;
@@ -114,7 +116,7 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
     user.isSolo,
     user.track
   );
-  const mode = modeFromSolo(user.isSolo);
+  const mode = modeFromDoorOrSolo(user.door, user.isSolo);
   const individual = mode === "individual";
   const brand = modeBrand(mode);
   // The 5th slot ("You"/"Me") — a user glyph opening the full-nav sheet.

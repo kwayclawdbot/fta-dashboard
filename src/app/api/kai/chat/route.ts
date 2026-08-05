@@ -597,6 +597,8 @@ export async function POST(req: NextRequest) {
   const pers = (persData || {}) as {
     display_name?: string | null;
     xp?: number;
+    /** Stored experience (families.door, migration 215) — null with no family. */
+    door?: "club" | "family" | null;
     family?: {
       experience?: string | null;
       goals?: string[] | null;
@@ -626,7 +628,11 @@ export async function POST(req: NextRequest) {
       household: fam.household ?? null,
       completed_at: fam.hh_completed_at ?? null,
     }) === "individual";
-  const profileTier = resolveKaiProfile(register, { solo, deepMode });
+  const profileTier = resolveKaiProfile(register, {
+    door: pers.door ?? null,
+    solo,
+    deepMode,
+  });
   // Conversational alert-setting gate: paying ADULTS only — the exact gate the
   // Kai Watch panel uses (register 'adult' + non-free tier). Teens (family-adult
   // register) and kids never get the alert tools. Derived server-side.

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
   getRequestClient,
   getRequestFamilyMemberCount,
@@ -16,6 +17,12 @@ import { resolveViewAs } from "@/lib/server/view-as";
 import { applyViewAs } from "@/lib/view-as";
 import { EntitlementsProvider } from "@/components/entitlements/EntitlementsProvider";
 import type { EntitlementState } from "@/lib/entitlements";
+import { parseExperience, type ExperienceKey } from "@/lib/experience/registry";
+import {
+  CLUB_VIEW_COOKIE,
+  clubHostLive,
+  requestExperience,
+} from "@/lib/experience/server";
 
 export default async function DashboardLayout({
   children,
@@ -60,6 +67,7 @@ export default async function DashboardLayout({
     vipRes,
     fpRes,
     memberCount,
+    doorRes,
   ] = await Promise.all([
     // Family membership tier (FIC/FTA) — kids inherit the family's tier. The
     // Club clock (migration 127): an fta family may be `clubLapsed` (past its
@@ -105,6 +113,17 @@ export default async function DashboardLayout({
     // and it is only asked for the owners whose solo verdict can turn on it.
     familyId && isOwnerRole
       ? getRequestFamilyMemberCount(familyId)
+      : Promise.resolve(null),
+    // THE DOOR (migration 215) — the stored experience this household entered
+    // through. It replaces the household-shape INFERENCE the shell used to make;
+    // asked for every member (kids included, they inherit the family's door) and
+    // in the same batch, so it costs no latency. Own-family read under RLS.
+    familyId
+      ? supabase
+          .from("families")
+          .select("door")
+          .eq("id", familyId)
+          .maybeSingle()
       : Promise.resolve(null),
   ]);
 
@@ -164,6 +183,55 @@ export default async function DashboardLayout({
     viewAs
   );
 
+  // ── THE DOOR — stored experience in, inference out (E1) ────────────────────
+  // The shell used to answer "Club or Family?" with `user.isSolo`, i.e. with the
+  // shape of a household someone typed into a wizard. It now reads the stored
+  // door. Three things can move it, in this order:
+  //   1. the admin "view as" preview — its personas ARE doors (club vs the four
+  //      family-side registers), so the switcher keeps repainting the shell;
+  //   2. an accepted "view in Club Mode" session (see /switch) — ADULTS ONLY,
+  //      re-checked here against the real register on every render, so the
+  //      cookie alone can never give a kid or teen the Club skin;
+  //   3. otherwise the family's own door.
+  // No family yet (a member mid-provisioning) has no door to read, and falls
+  // back to exactly the previous solo inference.
+  const register = deriveRegister(ctx);
+  const storedDoor = parseExperience(
+    (doorRes?.data as { door?: string } | null)?.door
+  );
+  const viewAsDoor: ExperienceKey | null = viewAs
+    ? viewAs === "club"
+      ? "club"
+      : "family"
+    : null;
+  const memberDoor: ExperienceKey =
+    viewAsDoor ?? storedDoor ?? (ctx.isSolo ? "club" : "family");
+
+  const hostExperience = await requestExperience();
+  const clubViewCookie =
+    (await cookies()).get(CLUB_VIEW_COOKIE)?.value === "1";
+  const clubView =
+    clubViewCookie &&
+    register === "adult" &&
+    hostExperience === "club" &&
+    memberDoor === "family";
+
+  // WRONG-DOMAIN INTERSTITIAL (spec §2 rule 3). Entirely gated on the club host
+  // actually serving: while cheatcode.com is parked there is one live host, so
+  // no member can be on the "wrong" one and this branch never fires in
+  // production. Without the gate a club-door member on the family host would be
+  // sent to a switcher whose only exit is a domain that does not resolve — a
+  // trap, not a product surface. /switch lives outside this route group, so the
+  // redirect can never loop back through this layout.
+  if (
+    clubHostLive() &&
+    hostExperience !== memberDoor &&
+    !clubView &&
+    !viewAs
+  ) {
+    redirect("/switch");
+  }
+
   // user_metadata rides in the signed token (and is refreshed with it), so the
   // fallback name is the same value getUser() would have returned — it is only
   // ever consulted when the profile has no display_name of its own.
@@ -193,7 +261,7 @@ export default async function DashboardLayout({
   const entitlements: EntitlementState = {
     tier: effectiveClubTier(ctx.tier, ctx.clubLapsed),
     realTier: ctx.tier,
-    register: deriveRegister(ctx),
+    register,
     clubLapsed: ctx.clubLapsed,
     challenge: challengeExpiresAt
       ? {
@@ -213,6 +281,8 @@ export default async function DashboardLayout({
     <>
       <DashboardShell
         user={userData}
+        door={memberDoor}
+        clubView={clubView}
         challengeExpiresAt={challengeExpiresAt}
         clubLapsed={ctx.clubLapsed}
         clubUntil={clubUntil}

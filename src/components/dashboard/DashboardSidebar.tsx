@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
-import { modeFromSolo, modeBrand } from "@/lib/mode";
+import { modeFromDoorOrSolo, modeBrand } from "@/lib/mode";
 import { deriveRegister } from "@/lib/register";
 import { ClubMark, ClubWordmark } from "@/components/brand/ClubMark";
 
@@ -536,6 +536,8 @@ interface DashboardSidebarProps {
     track?: string;
     tier?: FamilyTier;
     isSolo?: boolean;
+    /** Stored experience (families.door) — the brand axis. */
+    door?: "club" | "family";
   };
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -570,7 +572,7 @@ export default function DashboardSidebar({
   // Investing Club — part of Cheat Code Club". FTA is an add-on tier on top of
   // either door (its identity lives in the gold nav section + chip), so it no
   // longer flips the whole logo.
-  const mode = modeFromSolo(user.isSolo);
+  const mode = modeFromDoorOrSolo(user.door, user.isSolo);
   const brand = modeBrand(mode);
   const collapsedMark = mode === "individual" ? "CC" : "FIC";
   const supabase = createClient();

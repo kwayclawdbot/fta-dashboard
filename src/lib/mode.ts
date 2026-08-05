@@ -18,8 +18,35 @@
  */
 
 import { isSoloProfile, isSoloHousehold, type SoloHousehold } from "@/lib/register";
+import type { ExperienceKey } from "@/lib/experience/registry";
 
 export type MemberMode = "family" | "individual";
+
+/**
+ * The STORED experience (families.door, migration 215). This is now the primary
+ * source of a member's mode: it is stamped once from the entry domain at
+ * registration and never inferred again. The solo-derived helpers below remain
+ * for the contexts that have no door to read — pre-onboarding screens, and any
+ * surface holding a household but no family row.
+ */
+export type Door = ExperienceKey;
+
+/** Mode from the stored door. The door IS the answer; nothing is inferred. */
+export function modeFromDoor(door: Door): MemberMode {
+  return door === "club" ? "individual" : "family";
+}
+
+/**
+ * Door-first, solo as the fallback. Use wherever the door MAY be missing (a
+ * member with no family yet): a stored door always wins, and only its absence
+ * falls back to the household-shape inference this file used to do everywhere.
+ */
+export function modeFromDoorOrSolo(
+  door: Door | null | undefined,
+  isSolo: boolean | null | undefined
+): MemberMode {
+  return door ? modeFromDoor(door) : modeFromSolo(isSolo);
+}
 
 /**
  * Mode from the already-derived solo flag. The dashboard layout computes isSolo

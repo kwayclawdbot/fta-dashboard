@@ -50,6 +50,7 @@ export default function CheckoutClient({
   subtitle,
   backHref,
   backLabel,
+  mode = "club",
 }: {
   flow: CheckoutFlow;
   src: string;
@@ -61,6 +62,12 @@ export default function CheckoutClient({
   subtitle: string;
   backHref: string;
   backLabel: string;
+  /**
+   * The `data-mode` skin, resolved from the ENTRY HOST by the server page that
+   * renders this (E1). A client component can't read the request header, so the
+   * door is threaded in as a prop rather than guessed from window.location.
+   */
+  mode?: "club" | "family";
 }) {
   const reduce = useReducedMotion();
   const [bump, setBump] = useState<BumpChoice>("none");
@@ -155,7 +162,7 @@ export default function CheckoutClient({
 
   return (
     <div
-      data-mode="club"
+      data-mode={mode}
       className="min-h-screen bg-paper text-ink"
     >
       {/* Header */}

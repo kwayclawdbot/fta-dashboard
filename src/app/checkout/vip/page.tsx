@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cleanSrc, vipGateOpen, VIP_CANCEL_URL } from "@/lib/server/checkout-sessions";
 import { verifyContinuationToken } from "@/lib/server/challenge-token";
 import CheckoutClient from "@/components/checkout/CheckoutClient";
+import { publicMode } from "@/lib/experience/server";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function CheckoutVipPage({
 
   const { src: rawSrc, t } = await searchParams;
   const src = cleanSrc(rawSrc) || "funnel";
+  const mode = await publicMode();
   const publishableKey =
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
 
@@ -33,6 +35,7 @@ export default async function CheckoutVipPage({
 
   return (
     <CheckoutClient
+      mode={mode}
       flow="vip"
       src={src}
       publishableKey={publishableKey}

@@ -65,22 +65,26 @@ export const KAI_COMPLIANCE_FLOOR = `COMPLIANCE FLOOR — these rules are absolu
  *     setting, opt-in, query param, or crafted "give me the club version"
  *     request can escalate a kid off this profile.
  *   - register "teen" → "family-adult" (a minor never receives the club tier).
- *   - register "adult", Family Mode OFF (solo/individual) → "club".
- *   - register "adult", Family Mode ON → "family-adult", UNLESS the adult has
+ *   - register "adult", door "club" → "club".
+ *   - register "adult", door "family" → "family-adult", UNLESS the adult has
  *     opted into "Deeper analysis mode" (deepMode) → "club".
  *
- * NOTE: `solo` is derived by the caller from src/lib/mode.ts (memberMode, the
- * C1 mode framework) and passed in here as a boolean. deepMode is ignored for
- * non-adults by construction (kid/teen return before it is ever read).
+ * NOTE: `door` is the STORED experience (families.door, migration 215) — the
+ * axis that replaced the household-shape inference. `solo` is kept only as the
+ * fallback for a member who has no family row to read a door from; it is the
+ * old src/lib/mode.ts verdict and produces the identical answer for every
+ * existing member (the migration's backfill reproduces it exactly). deepMode is
+ * ignored for non-adults by construction (kid/teen return before it is read).
  */
 export function resolveKaiProfile(
   register: Register,
-  opts: { solo?: boolean; deepMode?: boolean } = {}
+  opts: { door?: "club" | "family" | null; solo?: boolean; deepMode?: boolean } = {}
 ): KaiProfile {
   if (register === "kid") return "kid"; // hard isolation — always resolved first
   if (register === "teen") return "family-adult"; // minors never escalate
   // adult:
-  if (opts.solo || opts.deepMode) return "club";
+  const club = opts.door ? opts.door === "club" : !!opts.solo;
+  if (club || opts.deepMode) return "club";
   return "family-adult";
 }
 
