@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { m } from "@/lib/motion";
-import { Clock, Play, X } from "lucide-react";
+import { Clock, ListChecks, NotebookText, Play, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 import {
@@ -49,6 +49,67 @@ export interface RecordingPlayable {
   recordingPath?: string;
   scheduledAt?: string;
   trackLabel?: string;
+  /** Class NOTES — multi-paragraph prose (paragraphs split on blank lines). */
+  description?: string;
+  /** HOMEWORK — a short plain-text list or paragraph; newlines are meaningful. */
+  assignment?: string;
+}
+
+/**
+ * Class NOTES + HOMEWORK for the recording being watched, in the player's own
+ * dark (`night-*`) register — a mono small-caps eyebrow matching the meta line,
+ * then ivory body copy. NOTES is multi-paragraph prose, split on blank lines so
+ * it reads as paragraphs rather than one run-on block. HOMEWORK is a short
+ * plain-text list; its newlines are preserved with `whitespace-pre-line`, and it
+ * only appears when an assignment exists.
+ */
+function RecordingNotes({
+  description,
+  assignment,
+}: {
+  description?: string;
+  assignment?: string;
+}) {
+  const notes = (description ?? "").trim();
+  const homework = (assignment ?? "").trim();
+  if (!notes && !homework) return null;
+
+  const paragraphs = notes.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+
+  return (
+    <div className="border-t border-night-700 px-4 pb-5 pt-4">
+      {paragraphs.length > 0 && (
+        <section>
+          <p className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-night-300">
+            <NotebookText className="h-3 w-3" aria-hidden />
+            Class Notes
+          </p>
+          <div className="mt-2.5 space-y-2.5">
+            {paragraphs.map((para, i) => (
+              <p
+                key={i}
+                className="whitespace-pre-line text-[13.5px] leading-relaxed text-night-100"
+              >
+                {para}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {homework && (
+        <section className={paragraphs.length > 0 ? "mt-5" : ""}>
+          <p className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-accent">
+            <ListChecks className="h-3 w-3" aria-hidden />
+            Homework
+          </p>
+          <p className="mt-2.5 whitespace-pre-line text-[13.5px] leading-relaxed text-night-100">
+            {homework}
+          </p>
+        </section>
+      )}
+    </div>
+  );
 }
 
 export default function RecordingPlayerModal({
@@ -126,10 +187,10 @@ export default function RecordingPlayerModal({
         tabIndex={-1}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="night-island w-full max-w-3xl shadow-lift focus:outline-none"
+        className="night-island flex max-h-[90vh] w-full max-w-3xl flex-col shadow-lift focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 px-4 pb-3 pt-4">
           <div className="min-w-0">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 font-mono text-[9.5px] font-bold uppercase tracking-[0.16em] text-[color:var(--accent-on)]">
               <Play className="h-2.5 w-2.5" fill="currentColor" aria-hidden />
@@ -151,7 +212,7 @@ export default function RecordingPlayerModal({
           </button>
         </div>
 
-        <div className="mx-3 aspect-video overflow-hidden rounded-[14px] bg-night-950">
+        <div className="mx-3 aspect-video shrink-0 overflow-hidden rounded-[14px] bg-night-950">
           {session.recordingKind === "upload" ? (
             error ? (
               <div className="flex h-full w-full items-center justify-center px-6">
@@ -185,23 +246,32 @@ export default function RecordingPlayerModal({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pb-4 pt-3 font-mono text-[10px] uppercase tracking-[0.14em] tabular-nums text-night-300">
-          <span className="flex items-center gap-1.5">
-            <Clock className="h-3 w-3" />
-            {session.durationMin} min
-          </span>
-          {session.trackLabel && (
-            <>
-              <span aria-hidden>·</span>
-              <span className="text-accent">{session.trackLabel}</span>
-            </>
-          )}
-          {session.scheduledAt && (
-            <>
-              <span aria-hidden>·</span>
-              <span>Recorded {session.scheduledAt}</span>
-            </>
-          )}
+        {/* Meta + notes + homework scroll under the fixed header/video so a
+            long set of class notes never pushes the player past the viewport. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 pb-4 pt-3 font-mono text-[10px] uppercase tracking-[0.14em] tabular-nums text-night-300">
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              {session.durationMin} min
+            </span>
+            {session.trackLabel && (
+              <>
+                <span aria-hidden>·</span>
+                <span className="text-accent">{session.trackLabel}</span>
+              </>
+            )}
+            {session.scheduledAt && (
+              <>
+                <span aria-hidden>·</span>
+                <span>Recorded {session.scheduledAt}</span>
+              </>
+            )}
+          </div>
+
+          <RecordingNotes
+            description={session.description}
+            assignment={session.assignment}
+          />
         </div>
       </m.div>
     </div>
