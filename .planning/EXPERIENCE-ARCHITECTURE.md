@@ -64,6 +64,18 @@ Rules that keep this sane:
    solo Club member taps "Add your family" (lane C1 surface) → `families.door` flips to
    `family`. Never flipped by which URL someone happened to visit.
 
+## 2b. Minor-content visibility (owner decisions 2026-08-05)
+
+Now that `feed_posts`/`post_comments` carry `author_register` (mig 214, shipped):
+- **Kid rows: family-only, everywhere.** Shipped in 214. Never club-wide, never public.
+- **Teen rows: Family-mode surfaces only.** Family-door viewers (and the teen's own
+  family) see teen posts/activity; club-door surfaces filter them out. Requires the
+  E1 `families.door` column → implement as a `viewer_door()` policy-safe helper
+  (same pattern as `get_my_family_id()`; feed tables are not in the Realtime
+  publication, but keep predicates function/own-column based per the 018/019 laws)
+  plus door-aware filters on the service-role routes (`/api/club/thinking`, `/api/search`).
+- **Adult rows: club-wide** (unchanged).
+
 ## 3. Data model
 
 ### Phase E1 (migration)
