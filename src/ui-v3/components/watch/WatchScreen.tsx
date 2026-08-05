@@ -1,7 +1,7 @@
 import AppShell from "@/ui-v3/components/AppShell";
 import type { WatchOverviewVM } from "@/ui-v3/watch-data";
 import WatchHeader from "./WatchHeader";
-import WatchDestinations from "./WatchDestinations";
+import DestinationList from "@/ui-v3/components/DestinationList";
 import GettingClosePanel from "./GettingClosePanel";
 import SetupTeaserRow from "./SetupTeaserRow";
 
@@ -18,7 +18,7 @@ export default function WatchScreen({ model }: { model: WatchOverviewVM }) {
   return (
     <AppShell>
       <WatchHeader active="overview" closeHref="/v3" tabGap="16px" />
-      <WatchDestinations rows={model.destinations} />
+      <DestinationList rows={model.destinations} />
       <GettingClosePanel setup={model.closest} />
       {model.next ? <SetupTeaserRow setup={model.next} /> : null}
     </AppShell>

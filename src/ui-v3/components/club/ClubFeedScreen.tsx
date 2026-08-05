@@ -7,6 +7,7 @@ import CircleBubble from "./CircleBubble";
 import FeedComposerRow from "./FeedComposerRow";
 import FeedPostCard from "./FeedPostCard";
 import KaiInsightRow from "./KaiInsightRow";
+import LiveSection from "./LiveSection";
 import styles from "./ClubFeedScreen.module.css";
 
 /**
@@ -44,6 +45,13 @@ export default function ClubFeedScreen({ model }: { model: ClubFeedViewModel }) 
           </div>
         </>
       ) : null}
+
+      {/* INTERIM (owner IA, 2026-08-05): Live has no artboard and no nav slot,
+          so it sits here as a row into the old session screens. Placed with the
+          Circles strip rather than below the feed — both regions answer "what is
+          happening right now", and a session already running is the one thing on
+          this screen that stops being useful if you have to scroll to find it. */}
+      <LiveSection row={model.live} />
 
       <FeedComposerRow initials={model.initials} viewer={model.viewer} />
 

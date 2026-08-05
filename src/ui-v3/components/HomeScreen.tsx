@@ -4,6 +4,7 @@ import TopBarV3 from "./TopBarV3";
 import TopInTheClub from "./TopInTheClub";
 import TodayIn30 from "./TodayIn30";
 import YourSignals from "./YourSignals";
+import LearnSection from "./LearnSection";
 import YouStrip from "./YouStrip";
 import styles from "./HomeScreen.module.css";
 
@@ -24,6 +25,11 @@ export default function HomeScreen({ model }: { model: HomeViewModel }) {
       <TopInTheClub strip={model.trending} />
       <TodayIn30 line={model.briefLine} indices={model.indices} />
       <YourSignals rows={model.signals} />
+      {/* INTERIM (owner IA, 2026-08-05): Learn has no artboard and no nav slot,
+          so it sits here as a row into the old course screens. Placed after the
+          market sections and before the closing YOU strip — the belt strip is
+          the artboard's last word on Home and stays that way. */}
+      <LearnSection row={model.learn} />
       {model.you ? <YouStrip you={model.you} /> : null}
     </AppShell>
   );

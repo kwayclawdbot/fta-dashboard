@@ -8,6 +8,7 @@ import { beltProgress } from "@/lib/belts";
 import { LEVELS } from "@/lib/xp";
 import { TRENDING_DISCLAIMER } from "@/lib/club/score";
 import { MIN_POSITIONED_OPINIONS } from "@/ui-v3/club-floors";
+import type { DestinationRowVM } from "@/ui-v3/components/DestinationList";
 
 /**
  * ui-v3 Home — the ONLY data access the screen performs.
@@ -110,6 +111,12 @@ export interface HomeViewModel {
   indices: IndexChipVM[] | null;
   signals: SignalRowVM[];
   you: YouStripVM | null;
+  /**
+   * The interim Learn row — see LearnSection. Always present (Learn is a place
+   * that exists whether or not we can say anything about your progress); it is
+   * the row's own `caption` that goes null when there is no real source.
+   */
+  learn: DestinationRowVM;
 }
 
 // ── narrow reads of the seed (sections cross the RSC boundary as `unknown`) ───
@@ -460,6 +467,46 @@ function fixtureModel(): HomeViewModel {
     // Mid-ladder XP: the real belt ladder tops out at 3,200 (src/lib/xp.ts), so
     // a value like the artboard's 12,840 would peg the bar and ring at 100%.
     you: mapYou(2840),
+    // The fixtures branch names a lesson so the row can be reviewed with its
+    // caption drawn; the live branch below only ever prints a real one.
+    learn: mapLearn({ title: "Reading the Daily Candle" }),
+  };
+}
+
+// ── the interim Learn row ────────────────────────────────────────────────────
+
+/**
+ * Where Learn points. The v3 course screens do not exist yet, so this is an
+ * OLD-CHROME route by the owner's interim-IA decision (2026-08-05) — the one
+ * place a v3 row is allowed to leave v3, and `leavesV3` says so at the row.
+ */
+const LEARN_HREF = "/courses";
+
+/**
+ * The Learn row.
+ *
+ * `pickup` is `resolveHomeRoute()`'s `learning` — the next lesson waiting for
+ * this member. Home ALREADY resolves that route for the greeting and the XP
+ * strip, so the caption costs this screen nothing: no extra query, no extra
+ * round trip. That matters here specifically, because Home is already carrying
+ * a ~3s perf TODO on the brief; buying a nicer caption with another wave of
+ * course/lesson_progress reads would have made a known problem worse.
+ *
+ * The trade is that `learning` is only populated on the club-solo branch. Every
+ * other persona resolves to `kind:"client"` and arrives here as null, and then
+ * the row renders as the title alone. That is the honest outcome under §9.5 —
+ * a real caption when there is a real source, and no caption rather than an
+ * invented one — and it is why this is a caption rather than a count.
+ */
+function mapLearn(pickup: { title?: string | null } | null | undefined): DestinationRowVM {
+  const next = pickup?.title?.trim();
+  return {
+    glyph: "📚",
+    title: "Learn",
+    caption: next ? `Next: ${next}` : null,
+    badge: null,
+    href: LEARN_HREF,
+    leavesV3: true,
   };
 }
 
@@ -504,5 +551,6 @@ export async function getHomeViewModel(): Promise<HomeViewModel> {
     indices: null,
     signals: mapSignals(seed?.foryou),
     you: mapYou(xp),
+    learn: mapLearn("learning" in route ? route.learning : null),
   };
 }

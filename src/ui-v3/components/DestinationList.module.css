@@ -1,9 +1,14 @@
 /*
- * "06 Watch" — the four destination rows.
+ * The destination row. Drawn by "06 Watch" (four rows), and by the interim
+ * Learn and Live entries on Home and Club.
  *
  * Flat card (§5 of the grammar) at radius-13, which is the size class between a
  * signal row (12) and a Top-in-the-Club card (14). The leading glyph is the
  * artboard's own emoji, kept as text for the same reason the nav glyphs are.
+ *
+ * Moved here from watch/WatchDestinations.module.css with every declaration
+ * byte-identical — the rows on Home and Club are the same object as the rows on
+ * Watch, so they must be the same pixels.
  */
 
 .list {
@@ -11,6 +16,16 @@
   flex-direction: column;
   gap: var(--space-8);
   margin-top: var(--space-16);
+}
+
+/*
+ * Under a SectionEyebrow the list is CONTENT, not a new section, so it takes the
+ * grammar's head → content step (§2, --space-10) instead of the section-
+ * separation step above. "06 Watch" opens straight from the header with no
+ * eyebrow, which is why the default is the larger value.
+ */
+.listUnderEyebrow {
+  margin-top: var(--space-10);
 }
 
 .row {
@@ -52,6 +67,20 @@
 
 .chevron {
   color: var(--text-faint);
+}
+
+/* A row that leaves v3 for old chrome announces it to assistive tech only —
+   the visual row is unchanged, because the artboard draws one row treatment. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* A live count, one of the accent roles the grammar permits (§4.5). */

@@ -10,6 +10,7 @@ import { effectiveClubTier } from "@/lib/tier";
 import { WATCH_STATE_META, SETUP_STATE_META, readSetupLevels } from "@/lib/alerts/watch-ui";
 import { SETUP_LIFECYCLE_THRESHOLDS } from "@/lib/alerts/setup-lifecycle";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
+import type { DestinationRowVM } from "@/ui-v3/components/DestinationList";
 import type { WatchState } from "@/lib/alerts/watch-state";
 import { getBars } from "@/lib/market/polygon";
 
@@ -57,17 +58,12 @@ import { getBars } from "@/lib/market/polygon";
 
 /* ── view model: 06 Watch ─────────────────────────────────────────────────── */
 
-export interface WatchDestinationVM {
-  /** The artboard's own leading emoji. */
-  glyph: string;
-  title: string;
-  /** The one number that says why you'd go here. Null when there is no source. */
-  caption: string | null;
-  /** A live count worth an accent pill; null renders the chevron instead. */
-  badge: number | null;
-  /** Null until that screen has a v3 artboard — the row stays inert. */
-  href: string | null;
-}
+/**
+ * The Watch overview's rows ARE destination rows — the shared primitive owns
+ * the shape now that Home and Club draw the same object. Kept as a named alias
+ * so this file still reads in its own vocabulary.
+ */
+export type WatchDestinationVM = DestinationRowVM;
 
 export interface SetupConditionVM {
   label: string;

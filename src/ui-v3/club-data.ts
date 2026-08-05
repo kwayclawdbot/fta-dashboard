@@ -17,6 +17,8 @@ import { resolveClubCtx } from "@/lib/club/home-context";
 import { beltForXp, type BeltKey } from "@/lib/belts";
 import { KAI_USERNAME } from "@/lib/kai/system-author";
 import { timeAgo } from "@/lib/feed";
+import { formatClassWhen } from "@/lib/free-class";
+import type { DestinationRowVM } from "@/ui-v3/components/DestinationList";
 
 /**
  * ui-v3 Club — the ONLY data access the three Club screens perform.
@@ -174,6 +176,12 @@ export interface ClubFeedViewModel {
   circles: CircleBubbleVM[];
   posts: FeedPostVM[];
   kai: KaiInsightVM | null;
+  /**
+   * The interim Live row — see LiveSection. Always present (Live is a place
+   * that exists whether or not a session is on the calendar); the row's own
+   * `caption` goes null when there is no real session to name.
+   */
+  live: DestinationRowVM;
 }
 
 export interface ClubCirclesViewModel {
@@ -433,6 +441,9 @@ function fixtureFeedModel(): ClubFeedViewModel {
       },
     ],
     kai: { headline: "Unusual options flow detected", ticker: "AMD" },
+    // The fixtures branch names a session so the row can be reviewed with its
+    // caption drawn; the live branch only ever prints a real one.
+    live: mapLive({ title: null, scheduled_at: FIXTURE_LIVE_AT, status: "scheduled" }),
   };
 }
 
@@ -552,13 +563,97 @@ export async function getComposeViewer(): Promise<ClubViewerVM | null> {
   return viewerFrom(user.id, profile ?? null);
 }
 
+// ── the interim Live row ─────────────────────────────────────────────────────
+
+/**
+ * Where Live points. OLD CHROME, by the owner's interim-IA decision
+ * (2026-08-05): the live screens have no v3 artboard, so the row opens the
+ * existing session list and `leavesV3` says so at the row.
+ */
+const LIVE_HREF = "/live-sessions";
+
+/** The fixtures branch's session — a fixed future instant, so the row's caption
+ *  is stable across review sessions instead of drifting past and reading as an
+ *  old session that never got cleaned up. */
+const FIXTURE_LIVE_AT = "2026-09-01T23:00:00.000Z";
+
+interface LiveSessionRow {
+  title: string | null;
+  scheduled_at: string | null;
+  status: string | null;
+}
+
+/**
+ * The Live row.
+ *
+ * SOURCE NOTE, because there are two "live" tables and picking the wrong one
+ * would make this row lie: `live_events` is the S2.5 live-ROOM object, while
+ * `live_sessions` is the scheduled Zoom class list that /live-sessions actually
+ * renders. This row points at /live-sessions, so it reads `live_sessions` —
+ * a caption sourced from the other table would describe something the member
+ * does not find when they arrive.
+ *
+ * A session already running says so; otherwise the caption is the next one's
+ * start time, formatted by the same `formatClassWhen` the funnel uses so the
+ * two never word a date differently. No session on the calendar → null caption
+ * and the title alone (§9.5), never a placeholder date.
+ *
+ * `badge` stays null even when a session is live. The accent pill is a COUNT
+ * (grammar §4.5) and the only count available here is "1", which tells a member
+ * nothing that the word "Live now" has not already told them — and spending an
+ * accent on it would take the region's one accent role for no information.
+ */
+function mapLive(row: LiveSessionRow | null): DestinationRowVM {
+  const isLive = row?.status === "live";
+  const caption = row
+    ? isLive
+      ? "Live now"
+      : row.scheduled_at
+        ? formatClassWhen(row.scheduled_at)
+        : null
+    : null;
+
+  return {
+    glyph: "🎥",
+    title: "Live",
+    caption,
+    badge: null,
+    href: LIVE_HREF,
+    leavesV3: true,
+  };
+}
+
+/**
+ * The next session worth naming: anything not cancelled that has not already
+ * finished. The two-hour grace window matches /api/free-class/next, so a class
+ * in progress still resolves as the next one rather than disappearing the
+ * moment it starts.
+ *
+ * Read under the member's own client, so RLS decides what they may see. Any
+ * failure degrades to null and the row renders without a caption.
+ */
+async function readNextLiveSession(
+  supabase: Awaited<ReturnType<typeof getRequestClient>>
+): Promise<LiveSessionRow | null> {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { data } = await supabase
+    .from("live_sessions")
+    .select("title, scheduled_at, status")
+    .neq("status", "cancelled")
+    .gte("scheduled_at", cutoff)
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return (data as LiveSessionRow | null) ?? null;
+}
+
 // ── entry points ─────────────────────────────────────────────────────────────
 
 /**
  * "04 Club Feed".
  *
- * Four independent reads, run together: the Circles strip, the feed seed, the
- * changed-mind RPC and the club `pulse` core. Any one of them coming back empty
+ * Independent reads, run together: the Circles strip, the feed seed, the club
+ * `pulse` core and the next live session. Any one of them coming back empty
  * removes its region rather than failing the screen.
  */
 export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
@@ -568,7 +663,7 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
   const supabase = await getRequestClient();
   const now = Date.now();
 
-  const [circlesRes, seed, profile, pulse] = await Promise.all([
+  const [circlesRes, seed, profile, pulse, nextLive] = await Promise.all([
     listCircles(supabase).catch(() => ({ rows: [], missingSchema: true })),
     getCommunityFeedSeed(supabase).catch(() => null),
     getRequestProfile(),
@@ -577,6 +672,7 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
       .then((ctx) => (ctx ? buildClubHomePayload(ctx, ["pulse"]) : null))
       .then((payload) => payload?.pulse ?? null)
       .catch(() => null),
+    readNextLiveSession(supabase).catch(() => null),
   ]);
 
   const displayName = profile?.display_name?.trim() ?? "";
@@ -624,6 +720,7 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
     viewer,
     circles: circlesRes.rows.slice(0, FEED_CIRCLE_LIMIT).map((r) => mapCircle(r, now)),
     posts,
+    live: mapLive(nextLive),
     kai: kaiPost
       ? { headline: cleanBody(kaiPost.body), ticker: kaiPost.ticker_tags?.[0] ?? null }
       : mapKai(pulse),
