@@ -30,6 +30,8 @@ interface Post {
     verified: boolean;
   };
   votes: number;
+  /** Has THIS viewer liked it — so the card can render its own state (lane B). */
+  likedByMe: boolean;
   comments: number;
   saves: number;
   href: string;
@@ -42,15 +44,22 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
 
   // Member-authored posts (exclude auto 'activity' cards and 'anchor').
   //
-  // KID WALL (214): this runs on the SERVICE-ROLE client, which bypasses RLS —
-  // the new family-scoped SELECT policy cannot reach it, so the exclusion has to
-  // be an explicit query filter. `author_register` is NOT NULL as of 214 (every
-  // historical row was backfilled), so a plain .neq is null-safe here.
+  // THE READ WALL, RESTATED AS A FILTER. This runs on the SERVICE-ROLE client,
+  // which bypasses RLS, so neither the kid wall (214) nor the teen door wall
+  // (216) can reach it — the band has to be an explicit query filter:
+  //   • kid rows  → never here (family-only, and this is a club surface);
+  //   • teen rows → only for a viewer on the FAMILY door;
+  //   • adult rows → always.
+  // `author_register` is NOT NULL as of 214 (every historical row backfilled),
+  // so the .in() is null-safe and needs no companion .neq.
+  const door = await ctx.getDoor();
+  const bands = door === "family" ? ["adult", "teen"] : ["adult"];
+
   const { data: posts } = await admin
     .from("feed_posts")
     .select("id, author_id, title, body, ticker_tags, created_at")
     .eq("kind", "post")
-    .neq("author_register", "kid")
+    .in("author_register", bands)
     .order("created_at", { ascending: false })
     .limit(40);
 
@@ -68,9 +77,14 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
 
   const [{ data: likes }, { data: comments }, { data: saves }, { data: authors }, { data: metrics }] =
     await Promise.all([
-      admin.from("post_likes").select("post_id").in("post_id", ids),
-      // Kid comments are family-only (214) — they must not move a public count.
-      admin.from("post_comments").select("post_id").in("post_id", ids).neq("author_register", "kid"),
+      // `user_id` comes back too, so "did I like this" is answered by the read
+      // that was already being paid for — no second query, and no client-side
+      // fetch of the viewer's likes (lane B: the card ships its own state).
+      admin.from("post_likes").select("post_id, user_id").in("post_id", ids),
+      // Replies are counted through the SAME band as the posts above: a kid's
+      // reply is family-only (214) and a teen's is family-door-only (216), so
+      // neither moves a count on a surface that cannot show the reply.
+      admin.from("post_comments").select("post_id").in("post_id", ids).in("author_register", bands),
       // Saves = the 'saved' object reaction on a feed post (migration 150).
       admin
         .from("object_reactions")
@@ -84,7 +98,11 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
         : Promise.resolve({ data: [] as { ticker: string; name: string | null }[] }),
     ]);
 
-  const likeCount = countBy(likes || [], "post_id");
+  const likeRows = (likes || []) as { post_id: string; user_id: string }[];
+  const likeCount = countBy(likeRows, "post_id");
+  const likedByMe = new Set(
+    likeRows.filter((l) => l.user_id === ctx.user.id).map((l) => l.post_id)
+  );
   const commentCount = countBy(comments || [], "post_id");
   const saveCount = countBy(saves || [], "target_id");
   const authorMap = new Map((authors || []).map((a) => [a.id, a]));
@@ -127,6 +145,7 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
         verified: role === "admin" || role === "coach",
       },
       votes: likeCount.get(p.id) || 0,
+      likedByMe: likedByMe.has(p.id),
       comments: commentCount.get(p.id) || 0,
       saves: saveCount.get(p.id) || 0,
       // Real, working link — the ticker's research page (with the community tab),

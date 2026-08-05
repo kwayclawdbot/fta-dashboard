@@ -10,6 +10,7 @@ import {
   type SessionUser,
 } from "@/lib/supabase/rsc";
 import { deriveRegister, type Register } from "@/lib/register";
+import { parseExperience, type ExperienceKey } from "@/lib/experience/registry";
 import { siteUrl } from "@/lib/site-url";
 
 /**
@@ -79,6 +80,13 @@ export interface ClubCtx {
   getTier(): Promise<FamilyTier>;
   /** Memoised viewer register (kid / teen / adult). */
   getRegister(): Promise<Register>;
+  /**
+   * Memoised viewer DOOR (club / family, migration 215) — the stored experience
+   * of this member's household. Needed by the cores that read the feed through
+   * the SERVICE-ROLE client, where RLS (and therefore the 216 teen wall) does not
+   * apply and the band has to be a query filter.
+   */
+  getDoor(): Promise<ExperienceKey>;
   /** Memoised full snapshot ledger read (ordered by rank) — pulse + trending. */
   getSnapshots(): Promise<ClubSnapshotRow[]>;
   /** Memoised metrics read-through (non-blocking; after()-deferred refresh). */
@@ -128,6 +136,16 @@ export async function resolveClubCtx(
     return deriveRegister(prof);
   });
 
+  // THE DOOR (216). One `viewer_door()` RPC rather than a families read: the
+  // helper is the SAME function the RLS policies call, so a service-role core
+  // and a session-scoped read can never disagree about which door a member is
+  // on. It is also null-safe by construction (no family → 'club', the stricter
+  // band), and it costs one small round trip only for the cores that ask.
+  const getDoor = once<ExperienceKey>(async () => {
+    const { data } = await supabase.rpc("viewer_door");
+    return parseExperience(data) ?? "club";
+  });
+
   const getSnapshots = once<ClubSnapshotRow[]>(async () => {
     const { data } = await supabase
       .from("ticker_intel_snapshots")
@@ -156,6 +174,7 @@ export async function resolveClubCtx(
     getProfile,
     getTier,
     getRegister,
+    getDoor,
     getSnapshots,
     ensureFresh,
   };

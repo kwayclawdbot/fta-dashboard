@@ -35,8 +35,19 @@ export async function peopleCore(ctx: ClubCtx): Promise<CoreResult> {
 
   const candidateIds = candidates.map((p) => p.id);
 
+  // Contribution is counted through the viewer's own read wall: a post this
+  // viewer could not open must not lift its author up a club ranking. Kid rows
+  // are family-only (214), teen rows family-door-only (216); this is the
+  // service-role client, so the band is a filter, not RLS.
+  const bands = (await ctx.getDoor()) === "family" ? ["adult", "teen"] : ["adult"];
+
   const [{ data: posts }, { data: comments }] = await Promise.all([
-    admin.from("feed_posts").select("id, author_id, ticker_tags").eq("kind", "post").in("author_id", candidateIds),
+    admin
+      .from("feed_posts")
+      .select("id, author_id, ticker_tags")
+      .eq("kind", "post")
+      .in("author_register", bands)
+      .in("author_id", candidateIds),
     admin.from("community_ticker_comments").select("user_id").in("user_id", candidateIds),
   ]);
 
