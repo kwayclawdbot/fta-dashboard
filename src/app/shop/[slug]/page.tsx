@@ -10,16 +10,24 @@ import {
   AUDIENCE_LABELS,
   KIND_LABELS,
   formatUsd,
+  isListable,
   parseDescription,
   savingsCents,
   type ShopProduct,
 } from "@/lib/shop";
+import { redirectKids } from "@/lib/server/viewer-register";
 
 export default async function ProductPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // The commercial surface itself — this page mounts <BuyButton/>, which opens
+  // a live Stripe checkout. Kids are turned away server-side before any of it
+  // renders; logged-out visitors keep the public storefront. (Gate only — the
+  // storefront's content and styling are untouched.)
+  await redirectKids();
+
   const { slug } = await params;
   const supabase = await createClient();
 
@@ -32,6 +40,9 @@ export default async function ProductPage({
 
   if (!product) notFound();
   const p = product as ShopProduct;
+  // Hidden from the grid means hidden here too — otherwise /shop/<slug> is
+  // still a live product page offering an unfinished record for $0.
+  if (!isListable(p)) notFound();
 
   // Bundle contents
   let included: ShopProduct[] = [];

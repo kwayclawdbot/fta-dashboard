@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ClubMark } from "@/components/brand/ClubMark";
+import { publicBrand } from "@/lib/experience/server";
 
 /**
  * SPLASH / ENTRY — canvas board 09.
@@ -27,6 +28,9 @@ import { ClubMark } from "@/components/brand/ClubMark";
  * from /login. No commercial copy is authored here.
  */
 export default async function Home() {
+  // E1: the door is resolved from the entry HOST, never hardcoded. Inert until
+  // the club host serves — see publicBrand() in src/lib/experience/server.
+  const { mode } = await publicBrand();
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,7 +40,7 @@ export default async function Home() {
 
   return (
     <div
-      data-mode="club"
+      data-mode={mode}
       className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-paper px-6 pb-24 pt-16 text-ink"
     >
       {/* Board 09's radial: warm at the top, paper by the middle. */}

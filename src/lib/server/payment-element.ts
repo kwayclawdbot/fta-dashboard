@@ -152,12 +152,14 @@ interface CreateOpts {
   shipping?: PeShipping;
   /** Email-first OTO: attach the purchase to this already-created account. */
   userId?: string | null;
+  /** The experience this checkout was entered through (E1) — see the webhook. */
+  door?: "club" | "family";
 }
 
 export async function createPaymentElementSubscription(
   opts: CreateOpts
 ): Promise<PeResult> {
-  const { sk, flow, src, bump, email, name, shipping, userId } = opts;
+  const { sk, flow, src, bump, email, name, shipping, userId, door } = opts;
 
   const cust = await findOrCreateCustomer(sk, {
     email,
@@ -180,6 +182,7 @@ export async function createPaymentElementSubscription(
   // Email-first OTO: stamp the account id so the invoice.paid webhook
   // (peSession → client_reference_id) lands the grant on the existing family.
   if (userId) form.set("metadata[user_id]", userId);
+  if (door) form.set("metadata[door]", door);
 
   // One-time add-invoice-items on the first invoice.
   let ai = 0;

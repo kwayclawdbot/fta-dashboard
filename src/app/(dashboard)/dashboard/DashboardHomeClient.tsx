@@ -1174,8 +1174,18 @@ export default function DashboardHomeClient() {
               </section>
 
               {/* Clubhouse activity — demoted below the family strips, capped to a
-                  short glance; self-contained, renders null when empty */}
-              <ClubActivityStrip limit={2} />
+                  short glance; self-contained, renders null when empty.
+
+                  NOT FOR KIDS (214). This strip is a live sliver of the ADULT
+                  club feed, and it was mounted outside the kid branch — a child's
+                  home screen was showing them the town square. Kid social is
+                  structured and family-scoped; the club strip is an adult object.
+
+                  Gated on `register`, not the local `isKid` (which is the narrower
+                  role+track pair): deriveRegister is the same precedence ladder
+                  viewer_is_kid() uses server-side, so a kid recorded only by
+                  age_group is caught here too. */}
+              {register !== "kid" && <ClubActivityStrip limit={2} />}
             </>
           )}
         </>

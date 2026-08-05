@@ -98,9 +98,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // WHERE STRIPE SENDS THEM BACK. The portal is opened from two places now —
+  // /upgrade and the MEMBERSHIP block in /settings — and dumping a member who
+  // came from Settings onto the sales page is a worse landing than the one they
+  // left. The caller may name its own return path; anything that isn't a plain
+  // same-origin path is ignored (open-redirect guard), and the default stays
+  // /settings, which is where a paying parent goes looking for billing.
+  const body = (await req.json().catch(() => null)) as { returnTo?: unknown } | null;
+  const asked = typeof body?.returnTo === "string" ? body.returnTo : "";
+  const returnTo =
+    asked.startsWith("/") && !asked.startsWith("//") ? asked : "/settings";
+
   const form = new URLSearchParams();
   form.set("customer", customerId);
-  form.set("return_url", new URL("/upgrade", req.nextUrl.origin).toString());
+  form.set("return_url", new URL(returnTo, req.nextUrl.origin).toString());
 
   const res = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
     method: "POST",

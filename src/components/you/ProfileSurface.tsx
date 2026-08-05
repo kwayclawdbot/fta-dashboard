@@ -2,13 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, RotateCcw, Settings as SettingsIcon } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronRight,
+  Lock,
+  RotateCcw,
+  Settings as SettingsIcon,
+} from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp, levelProgress, type XpKind } from "@/lib/xp";
 import { beltForXp, beltProgress } from "@/lib/belts";
 import { computeStreak } from "@/lib/streak";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
+import { deriveRegister } from "@/lib/register";
+import { canSeeCourse } from "@/lib/courseVisibility";
 import { XpLevelObject } from "@/components/canvas2";
 import { StreakFlame } from "@/components/art";
 import {
@@ -206,7 +214,13 @@ export default function ProfileSurface() {
       const [profileRes, xp, eventsRes, progressRes, coursesRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("display_name, username, avatar_url, created_at")
+          // role / age_group / track ride along for the REGISTER: this surface
+          // is the kid nav's "My Badges", and its Learning list was printing
+          // "Adult Foundations" and "FTA Trade Ready" to children as tappable
+          // rows straight into the adult library.
+          .select(
+            "display_name, username, avatar_url, created_at, role, age_group, track"
+          )
           .eq("id", user.id)
           .maybeSingle(),
         getUserXp(supabase, user.id).catch(() => 0),
@@ -223,7 +237,9 @@ export default function ProfileSurface() {
           .eq("status", "completed"),
         supabase
           .from("courses")
-          .select("slug, title, modules(lessons(id))")
+          // `program` + `modules.track` are what the shared visibility rule
+          // reads. Nothing else about this query changed.
+          .select("slug, title, program, modules(track, lessons(id))")
           .in("program", ["fic", "fta"])
           .eq("published", true)
           .order("sort_order"),
@@ -272,10 +288,24 @@ export default function ProfileSurface() {
       type NestedCourse = {
         slug: string;
         title: string;
-        modules: { lessons: { id: string }[] | null }[] | null;
+        program: string | null;
+        modules: { track: string | null; lessons: { id: string }[] | null }[] | null;
+      };
+      // The SAME rule /courses and the /courses/[slug] guard use — a row that
+      // opens a course this register may not see must not be listed here.
+      const viewer = {
+        register: deriveRegister(profile),
+        role: (profile?.role as string | null) ?? null,
       };
       const courses: CourseLine[] = [];
       for (const c of (coursesRes.data ?? []) as unknown as NestedCourse[]) {
+        if (
+          !canSeeCourse(viewer, {
+            program: c.program,
+            tracks: (c.modules ?? []).map((m) => m.track),
+          })
+        )
+          continue;
         const lessons = (c.modules ?? []).flatMap((m) => m.lessons ?? []);
         if (lessons.length === 0) continue;
         courses.push({
@@ -372,8 +402,19 @@ export default function ProfileSurface() {
       }));
 
       // ── credential shelf (self-award, then read) ──────────────────────────
-      await evaluateBadges(supabase, user.id);
-      setBadges(await getBadgeState(supabase, user.id));
+      // GUARDED SEPARATELY, and this matters: the shelf's loading state is four
+      // placeholder cards, and `badges` staying null leaves them on the page for
+      // good. Before this, a throw anywhere in here fell out to the outer catch
+      // — which, by then, has already `settled` and so does nothing — and a kid
+      // with no badges sat looking at four blank white squares forever. The
+      // shelf now ALWAYS resolves to an array, so the placeholders always give
+      // way to either the real shelf or the honest empty state.
+      try {
+        await evaluateBadges(supabase, user.id);
+        setBadges(await getBadgeState(supabase, user.id));
+      } catch {
+        setBadges([]);
+      }
     } catch {
       if (!settled) {
         setFailed(true);
@@ -631,13 +672,19 @@ export default function ProfileSurface() {
           Badges
         </ListHead>
         {badges == null ? (
+          // LOADING IS NOT EMPTY. These were bare white cards whose only tell
+          // was a pulse — which prefers-reduced-motion removes, leaving four
+          // blank squares indistinguishable from four broken badges. They now
+          // carry the sand fill the rest of the app's skeletons use, so a
+          // loading shelf reads as loading with or without motion.
           <div className="flex gap-2" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="club-b-card h-[86px] w-[92px] shrink-0 rounded-[14px] motion-safe:animate-pulse"
+                className="h-[86px] w-[92px] shrink-0 rounded-[14px] bg-sand/60 motion-safe:animate-pulse"
               />
             ))}
+            <span className="sr-only">Loading your badges</span>
           </div>
         ) : awarded.length === 0 ? (
           <EmptyCard
@@ -651,16 +698,23 @@ export default function ProfileSurface() {
           />
         ) : (
           <div className="club2-track flex gap-2 overflow-x-auto pb-1">
+            {/* AN UNEARNED BADGE SAYS SO. It used to be the same tile at 45%
+                opacity — a washed-out card with no mark and no words, which
+                reads as a rendering fault rather than as something still to
+                earn. It now wears a dashed muted outline, a small lock on the
+                glyph, and the words "Not earned yet" under the title. */}
             {(badges ?? []).map((b) => (
               <div
                 key={b.slug}
                 title={b.subtitle ?? undefined}
-                className={`club-b-card flex w-[92px] shrink-0 flex-col items-center gap-2 rounded-[14px] px-2 py-3 text-center ${
-                  b.awarded ? "" : "opacity-45"
+                className={`flex w-[92px] shrink-0 flex-col items-center gap-2 rounded-[14px] px-2 py-3 text-center ${
+                  b.awarded
+                    ? "club-b-card"
+                    : "border border-dashed border-sand bg-transparent"
                 }`}
               >
                 <span
-                  className="grid h-8 w-8 place-items-center rounded-full font-display text-[13px] font-extrabold"
+                  className="relative grid h-8 w-8 place-items-center rounded-full font-display text-[13px] font-extrabold"
                   style={
                     b.awarded
                       ? { background: "var(--accent-solid)", color: "var(--accent-on)" }
@@ -668,11 +722,24 @@ export default function ProfileSurface() {
                   }
                   aria-hidden
                 >
-                  {b.title.slice(0, 1).toUpperCase()}
+                  {b.awarded ? (
+                    b.title.slice(0, 1).toUpperCase()
+                  ) : (
+                    <Lock className="h-3.5 w-3.5" />
+                  )}
                 </span>
-                <span className="font-display text-[10px] font-bold leading-tight text-ink">
+                <span
+                  className={`font-display text-[10px] font-bold leading-tight ${
+                    b.awarded ? "text-ink" : "text-soft"
+                  }`}
+                >
                   {b.title}
                 </span>
+                {!b.awarded && (
+                  <span className="text-[9px] font-medium leading-none text-soft">
+                    Not earned yet
+                  </span>
+                )}
               </div>
             ))}
           </div>

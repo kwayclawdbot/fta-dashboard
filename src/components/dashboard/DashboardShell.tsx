@@ -111,6 +111,17 @@ interface DashboardShellProps {
    * first-run timestamps) and must never be driven by a fake register.
    */
   viewAs?: string | null;
+  /**
+   * The household's STORED experience (families.door, migration 215), already
+   * resolved by the layout — admin preview and the no-family fallback included.
+   * The shell no longer infers this from household shape.
+   */
+  door?: "club" | "family";
+  /**
+   * A family-door ADULT who accepted "view in Club Mode" on the club host
+   * (/switch). Session-scoped and re-authorized server-side every render.
+   */
+  clubView?: boolean;
   children: React.ReactNode;
 }
 
@@ -120,6 +131,8 @@ export default function DashboardShell({
   clubLapsed,
   clubUntil,
   viewAs,
+  door = "family",
+  clubView = false,
   children,
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -174,18 +187,31 @@ export default function DashboardShell({
     : null;
 
   // MODE (Cheat Code Club redesign R1) — the brand/palette skin. FTA hub routes
-  // are the metallic-gold desk regardless of household; otherwise a solo member
-  // gets the Club skin (sand + volt orange), a household keeps Family (warm gold,
-  // unchanged). Stamped on the wrapper for the SSR subtree; ModeManager mirrors
-  // it onto <html> for body chrome + the tab favicon.
+  // are the metallic-gold desk regardless of household; otherwise the skin is
+  // the household's stored DOOR (E1) — Club is sand + volt orange, Family warm
+  // gold. This used to be `user.isSolo`, i.e. the shape of a household typed
+  // into an onboarding wizard; the door is stamped from the entry domain at
+  // registration instead and never re-inferred. Stamped on the wrapper for the
+  // SSR subtree; ModeManager mirrors it onto <html> for body chrome + favicon.
   const mode: "club" | "family" | "fta" = pathname.startsWith("/fta")
     ? "fta"
-    : user.isSolo
+    : clubView
       ? "club"
-      : "family";
+      : door;
+
+  // The brand axis for the nav surfaces. They read the DOOR now (wordmark,
+  // collapsed mark, fic-chip label) rather than re-deriving it from household
+  // shape; `isSolo` stays on the user object because the nav COMPOSITION — the
+  // Family group vs. the solo Account row — is still a roster question.
+  const brandUser = { ...user, door: clubView ? ("club" as const) : door };
 
   return (
-    <div data-mode={mode} className="min-h-screen bg-midnight-950">
+    // `bg-midnight-950` was the DARK-app vocabulary this shell was born in. The
+    // token still resolves (to `--m950`, which every theme now sets to the same
+    // value as `--paper`), so it painted the right colour by accident while
+    // naming a surface the app no longer has. Same ground, said in the
+    // vocabulary the app actually uses.
+    <div data-mode={mode} className="min-h-screen bg-paper">
       <ModeManager mode={mode} />
       <KaiSheetProvider
         tier={user.tier}
@@ -194,7 +220,7 @@ export default function DashboardShell({
         isSolo={user.isSolo}
       >
       <DashboardSidebar
-        user={user}
+        user={brandUser}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         mobileOpen={mobileOpen}
@@ -207,7 +233,7 @@ export default function DashboardShell({
         }`}
       >
         <DashboardTopBar
-          user={user}
+          user={brandUser}
           xp={xp}
           onMenuClick={() => setMobileOpen(true)}
         />
@@ -279,7 +305,7 @@ export default function DashboardShell({
       </div>
 
       {/* App-style bottom tab bar — phones only, dashboard routes only. */}
-      <MobileTabBar user={user} xp={xp} />
+      <MobileTabBar user={brandUser} xp={xp} />
 
       {/* The contextual Kai sheet + its floating FAB are owned by
           KaiSheetProvider (wrapping this subtree) — Kai is a system capability,

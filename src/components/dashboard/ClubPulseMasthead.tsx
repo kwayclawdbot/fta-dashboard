@@ -91,6 +91,8 @@ export default function ClubPulseMasthead({ isKid = false }: { isKid?: boolean }
           .from("feed_posts")
           .select("id", { count: "exact", head: true })
           .neq("kind", "anchor")
+          // KID WALL (214) — kid rows are family-only and never move a Club count.
+          .neq("author_register", "kid")
           .gte("created_at", todayISO),
         supabase
           .from("community_ticker_comments")

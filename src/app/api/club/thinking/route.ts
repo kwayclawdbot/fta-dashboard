@@ -41,10 +41,16 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
   const admin = ctx.admin();
 
   // Member-authored posts (exclude auto 'activity' cards and 'anchor').
+  //
+  // KID WALL (214): this runs on the SERVICE-ROLE client, which bypasses RLS —
+  // the new family-scoped SELECT policy cannot reach it, so the exclusion has to
+  // be an explicit query filter. `author_register` is NOT NULL as of 214 (every
+  // historical row was backfilled), so a plain .neq is null-safe here.
   const { data: posts } = await admin
     .from("feed_posts")
     .select("id, author_id, title, body, ticker_tags, created_at")
     .eq("kind", "post")
+    .neq("author_register", "kid")
     .order("created_at", { ascending: false })
     .limit(40);
 
@@ -63,7 +69,8 @@ export async function thinkingCore(ctx: ClubCtx): Promise<CoreResult> {
   const [{ data: likes }, { data: comments }, { data: saves }, { data: authors }, { data: metrics }] =
     await Promise.all([
       admin.from("post_likes").select("post_id").in("post_id", ids),
-      admin.from("post_comments").select("post_id").in("post_id", ids),
+      // Kid comments are family-only (214) — they must not move a public count.
+      admin.from("post_comments").select("post_id").in("post_id", ids).neq("author_register", "kid"),
       // Saves = the 'saved' object reaction on a feed post (migration 150).
       admin
         .from("object_reactions")

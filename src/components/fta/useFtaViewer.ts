@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getFamilyTier, type FamilyTier } from "@/lib/tier";
+import { deriveRegister } from "@/lib/register";
 import type { ChatMe } from "@/lib/useChatRoom";
 import type { Role } from "@/lib/feed";
 
@@ -68,5 +69,12 @@ export function useFtaViewer() {
     };
   }, []);
 
-  return { loading, me, tier, profile, isFta: tier === "fta" };
+  // KID GATE (214). `isFta` was the tier alone, so a kid in an FTA household
+  // opened the FTA hub — including /fta/chat's composer. The database refuses
+  // those writes (207 confines kids to the Main Circle), so the UI was offering
+  // an action that could only fail. FTA is an adult room; a kid gets the
+  // LockedState instead. Same precedence as viewer_is_kid() server-side.
+  const isKid = profile ? deriveRegister(profile) === "kid" : false;
+
+  return { loading, me, tier, profile, isFta: tier === "fta" && !isKid };
 }

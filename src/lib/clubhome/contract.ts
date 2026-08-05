@@ -1,11 +1,10 @@
 /**
  * ClubHome v2 — the data contract the UI lane consumes and the DATA lane builds
  * under /api/club/*. These types mirror .planning/CLUBHOME-V2-PLAN.md §"DATA
- * CONTRACT" exactly. The UI renders against THESE shapes with a fixtures
- * fallback (see fixtures.ts) so design review sees the page fully alive in both
- * scale states before the endpoints land, and degrades gracefully (founding-era
- * framing, never a bare/embarrassing number) where an endpoint 404s or a metric
- * sits below its floor.
+ * CONTRACT" exactly. The UI renders against THESE shapes and degrades
+ * gracefully (founding-era framing, never a bare/embarrassing number) where an
+ * endpoint 404s or a metric sits below its floor. There is no fixture fallback:
+ * the design-review harness and its fabricated data are deleted.
  *
  * NB: this lib lives in `src/lib/clubhome/` — deliberately DISTINCT from
  * `src/lib/club/**` which is the DATA lane's territory. UI never writes there.
@@ -181,15 +180,15 @@ export interface PeopleMember {
   tags: string[];           // style tags
   reason: string;           // why they're worth following
   href: string;
-  /** compact follower count — fixtures/at-scale ONLY. Real endpoints never send
-   *  this (no follow graph exists at our N); the UI hides it when absent. */
+  /** compact follower count — at-scale ONLY. Real endpoints never send this
+   *  (no follow graph exists at our N); the UI hides it when absent. */
   followers?: number | null;
 }
 export interface PeopleResponse {
   members: PeopleMember[];
 }
 
-// ── endpoint registry (keeps client + fixtures in lockstep) ──────────────────
+// ── endpoint registry ────────────────────────────────────────────────────────
 export interface ClubData {
   pulse: PulseResponse;
   collective: CollectiveResponse;
@@ -203,5 +202,5 @@ export interface ClubData {
 }
 export type ClubEndpoint = keyof ClubData;
 
-/** scale states used ONLY by fixtures/preview review — never inferred for real users */
+/** scale states — a review vocabulary, never inferred for real users */
 export type ClubScale = "founding" | "scale";

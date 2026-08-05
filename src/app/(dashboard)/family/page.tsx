@@ -16,6 +16,7 @@ import {
   type FamilyMember,
 } from "@/lib/family/queries";
 import { guardrailSummary } from "@/lib/family/guardrails";
+import { ageGroupLabel } from "@/lib/age-label";
 import {
   FamilySurface,
   FamilyMast,
@@ -146,7 +147,7 @@ export default async function FamilyHomePage() {
           </span>
           {progress.next && (
             <span className="font-mono font-bold tabular-nums text-gold-700">
-              {progress.toNext.toLocaleString()} XP to Level {progress.next.level} 🎁
+              {progress.toNext.toLocaleString()} XP to Level {progress.next.level}
             </span>
           )}
         </div>
@@ -434,7 +435,15 @@ function MemberOrb({ member }: { member: FamilyMember }) {
         {member.display_name || "Member"}
       </p>
       <p className="mt-0.5 truncate text-[10.5px] text-soft">
-        {belt.label} · {member.role === "parent" ? "Admin" : isKid ? "Teen" : "Member"}
+        {/* "Teen" used to be hard-coded for every child, so a nine-year-old was
+            labelled a teenager here and a "Kid" two screens over. One helper
+            now answers that question for the whole family surface. */}
+        {belt.label} ·{" "}
+        {member.role === "parent"
+          ? "Admin"
+          : isKid
+            ? ageGroupLabel(member.role, member.age_group)
+            : "Member"}
       </p>
       <XpTag amount={member.xp} prefix="" suffix="" className="mt-0.5 justify-center" />
     </>

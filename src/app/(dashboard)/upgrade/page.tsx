@@ -905,7 +905,13 @@ function ManageBilling() {
     setOpening(true);
     setFailed(false);
     try {
-      const res = await fetch("/api/billing/portal", { method: "POST" });
+      // Name our own return path — the route now defaults to /settings, where
+      // the second entry point to the portal lives.
+      const res = await fetch("/api/billing/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnTo: "/upgrade" }),
+      });
       const json = (await res.json()) as { url?: string };
       if (res.ok && json.url) {
         window.location.href = json.url;

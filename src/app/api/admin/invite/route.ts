@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const email = String(body?.email || "").trim();
   const program = body?.program === "fta" ? "fta" : "fic";
+  // Which DOOR this member is being invited into (E1). Defaults to 'family' —
+  // the platform is family-first, and an admin grant with no stated door should
+  // never quietly hand someone the individual Club experience.
+  const door = body?.door === "club" ? "club" : "family";
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
     return NextResponse.json({ error: "invalid email" }, { status: 400 });
 
@@ -30,6 +34,7 @@ export async function POST(req: NextRequest) {
     program,
     source: "admin",
     invitedBy: userRes.user.id,
+    door,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 });
   return NextResponse.json({ ok: true, mode: result.mode });

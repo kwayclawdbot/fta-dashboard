@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { ClubMark } from "@/components/brand/ClubMark";
+import { publicBrand } from "@/lib/experience/server";
 
 /**
  * PRE-AUTH CHROME (lane L6, canvas boards 09–11).
@@ -20,16 +21,23 @@ import { ClubMark } from "@/components/brand/ClubMark";
  * byte-identical to the previous revision.
  *
  * NOTE: /onboarding renders `fixed inset-0` over this chrome by design; it
- * still inherits `data-mode="club"` because it is a DOM descendant.
+ * still inherits the mode set here because it is a DOM descendant.
+ *
+ * E1: the mode and the wordmark are no longer literals — they come from the
+ * experience the ENTRY HOST resolves to (src/lib/experience). Host wins on every
+ * logged-out surface. While the club host is not yet serving, publicBrand()
+ * returns the Club umbrella for every host, so this renders exactly as before.
  */
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { mode, brand } = await publicBrand();
+
   return (
     <div
-      data-mode="club"
+      data-mode={mode}
       className="relative min-h-dvh bg-paper text-ink"
     >
       {/* Canvas board 10: a 230px warm brand wash behind the mark. Token-mixed
@@ -47,7 +55,7 @@ export default function AuthLayout({
         <header className="flex flex-col items-center text-center">
           <ClubMark size={46} />
           <p className="mt-4 font-display text-[13px] font-extrabold uppercase tracking-[0.2em] text-ink">
-            Cheat Code Club
+            {brand}
           </p>
           <p className="mt-2 text-[13px] text-soft">
             Raise investors, not spenders.
@@ -57,7 +65,7 @@ export default function AuthLayout({
         <main className="mt-11 flex-1">{children}</main>
 
         <footer className="f0-rule-top mt-12 pt-5 text-center text-[11px] text-soft">
-          &copy; {new Date().getFullYear()} Cheat Code Club. All rights reserved.
+          &copy; {new Date().getFullYear()} {brand}. All rights reserved.
         </footer>
       </div>
     </div>

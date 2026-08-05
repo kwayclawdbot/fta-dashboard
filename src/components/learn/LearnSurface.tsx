@@ -466,13 +466,8 @@ function JourneyTab({ state }: { state: LearnState }) {
         {paths.length === 0 ? (
           <div className="mt-3">
             <EmptyLine
-              title="The new curriculum is landing"
-              body="The old lessons have come down. The rebuilt path goes up a block at a time — the first lesson is live now."
-              action={
-                <TextAction href="/courses/investing-explained-simply">
-                  Start the first lesson <ArrowRight className="h-3.5 w-3.5" />
-                </TextAction>
-              }
+              title="No paths published yet"
+              body="Lessons appear here as they're published — nothing is hidden behind a placeholder."
             />
           </div>
         ) : (
@@ -507,9 +502,8 @@ function JourneyTab({ state }: { state: LearnState }) {
           <div className="min-w-0 flex-[1.3] rounded-2xl border border-sand bg-card p-4 sm:p-5">
             <MonoEyebrow>Continue</MonoEyebrow>
             <p className="mt-2.5 text-[13px] leading-relaxed text-soft">
-              {paths.length === 0
-                ? "Nothing to pick up yet — the first lesson of the new curriculum is where this starts."
-                : "Your place in a path shows up here the moment you open a lesson — with the exact lesson to pick back up on."}
+              Your place in a path shows up here the moment you open a lesson — with the
+              exact lesson to pick back up on.
             </p>
             {tier === "free" && (
               <div className="mt-3">

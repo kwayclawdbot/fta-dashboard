@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { provisionMembership } from "@/lib/server/membership";
 import { provisionChallengeVip } from "@/lib/server/challenge-vip";
 import { provisionClubMembership } from "@/lib/server/club-membership";
@@ -7,6 +8,7 @@ import {
   peSessionFromInvoice,
   peSessionFromPaymentIntent,
 } from "@/lib/server/pe-session";
+import { parseExperience } from "@/lib/experience/registry";
 
 /**
  * Stripe checkout.session.completed → provision membership + send the
@@ -53,6 +55,60 @@ async function dispatchPeProvision(session: any): Promise<void> {
   } else if (kind === "club_membership") {
     const r = await provisionClubMembership(session);
     if (!r.ok) console.error("pe club provision failed:", r.error);
+  }
+  await rememberStripeCustomer(
+    session?.customer_details?.email || session?.customer_email,
+    session?.customer
+  );
+}
+
+/**
+ * REMEMBER WHO PAID, AT STRIPE.
+ *
+ * `families.stripe_customer_id` is what /api/billing/portal opens the Customer
+ * Portal against — the only place a member can change a card, read an invoice
+ * or cancel. Nothing in the app had ever WRITTEN that column: it was read in
+ * one file and set in none, so the portal was unreachable for every household
+ * (verified against production — 0 of 22 families carried a customer id) and
+ * the billing row in Settings could only ever fall through to the plans page.
+ *
+ * Every checkout already tells us the customer; this stamps it onto the family
+ * the buyer's email belongs to, after provisioning has had its chance to create
+ * that family. Best-effort and never fatal — a missed stamp costs a portal
+ * link, while a thrown error here would cost Stripe a 2xx and retry a
+ * provisioning that already succeeded.
+ *
+ * NOTE FOR THE OWNER: this only covers purchases from here on. The families
+ * that already paid need a one-time backfill from Stripe (match on customer
+ * email) before their Settings row can open the portal.
+ */
+async function rememberStripeCustomer(
+  email: string | null | undefined,
+  customerId: unknown
+): Promise<void> {
+  const id = typeof customerId === "string" ? customerId.trim() : "";
+  const mail = (email || "").trim().toLowerCase();
+  if (!id || !mail) return;
+  try {
+    const admin = createAdminClient();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("family_id")
+      .ilike("email", mail)
+      .not("family_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+    const familyId = profile?.family_id;
+    if (!familyId) return;
+    // Only fill a blank. If a family somehow carries a different customer we do
+    // not silently repoint their billing at a new one.
+    await admin
+      .from("families")
+      .update({ stripe_customer_id: id })
+      .eq("id", familyId)
+      .is("stripe_customer_id", null);
+  } catch (e) {
+    console.error("stripe customer capture failed:", e);
   }
 }
 
@@ -105,6 +161,10 @@ export async function POST(req: NextRequest) {
         console.error("challenge_vip provision failed:", result.error);
         return NextResponse.json({ error: "vip provision failed" }, { status: 500 });
       }
+      await rememberStripeCustomer(
+        s.customer_details?.email || s.customer_email,
+        s.customer
+      );
       return NextResponse.json({ received: true, vip: result.vipId, created: result.created });
     }
     // Cheat Code Club $99/mo membership (marketing-site guest checkout): explicit
@@ -118,6 +178,10 @@ export async function POST(req: NextRequest) {
         console.error("club_membership provision failed:", result.error);
         return NextResponse.json({ error: "club provision failed" }, { status: 500 });
       }
+      await rememberStripeCustomer(
+        s.customer_details?.email || s.customer_email,
+        s.customer
+      );
       return NextResponse.json({ received: true, club: true, created: result.created });
     }
     const email: string | undefined =
@@ -141,11 +205,16 @@ export async function POST(req: NextRequest) {
         source: "stripe",
         stripeSession: s.id,
         clubMonths: isChallenge ? 12 : undefined,
+        // E1: the door the buyer walked through, stamped into the checkout's
+        // metadata from the entry host. Absent on legacy payment-link sessions
+        // — then the onboarding answer decides, exactly as before.
+        door: parseExperience(s.metadata?.door) ?? undefined,
       });
       if (!result.ok) {
         console.error("stripe provision failed:", result.error);
         return NextResponse.json({ error: "provision failed" }, { status: 500 });
       }
+      await rememberStripeCustomer(email, s.customer);
     }
   }
   return NextResponse.json({ received: true });

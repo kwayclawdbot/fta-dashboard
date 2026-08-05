@@ -39,7 +39,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { FamilyTier } from "@/lib/tier";
-import { modeFromSolo, modeBrand } from "@/lib/mode";
+import { modeFromDoorOrSolo, modeBrand } from "@/lib/mode";
+import { deriveRegister } from "@/lib/register";
 import { ClubMark, ClubWordmark } from "@/components/brand/ClubMark";
 
 export interface SubNavItem {
@@ -104,20 +105,18 @@ const CLUB_COMMUNITY: NavItem = {
   href: "/community",
   icon: MessageCircle,
 };
-// Canvas v2 adds two club destinations that are places, not actions: the
-// Changed My Mind feed and Circles. They nest under Club rather than taking
-// top-level rows — the five-item primary is the constraint, and this is the
-// same umbrella pattern Watchlist already uses. "Share your call" is
-// deliberately NOT here: composing is an action, reached from the feed and the
-// in-surface rail, and a nav row that opens a composer reads as a place.
+// Circles is a club destination that is a place, not an action. It nests under
+// Club rather than taking a top-level row — the five-item primary is the
+// constraint, and this is the same umbrella pattern Watchlist already uses.
 // Young kids keep the plain CLUB_COMMUNITY row: RLS lets a minor READ a Circle
 // but never open, join or post in one, so surfacing it to them advertises a
 // door that will not open.
 const CLUB_COMMUNITY_HUB: NavItem = {
   ...CLUB_COMMUNITY,
   subItems: [
-    { label: "Club Feed", href: "/community" },
-    { label: "Changed my mind", href: "/community/changed-my-mind" },
+    // /community is the chat area again (owner restore, 2026-07-31) — the row
+    // is named for what it opens, not for the feed that used to sit there.
+    { label: "Club Chat", href: "/community" },
     { label: "Circles", href: "/circles" },
   ],
 };
@@ -322,10 +321,22 @@ function practiceGroup(includeSimulator: boolean): NavItem {
  * collapse toggle rather than eating into the ≤9 top-level scroll budget. Free
  * families skip Shop (no store upsell path yet); Admin points at /admin (the
  * neutral admin Dashboard landing), not the CRM.
+ *
+ * KIDS SKIP SHOP TOO, and for a much harder reason than "no upsell path yet":
+ * the store sells real books with a real Stripe checkout, and this row put that
+ * checkout two taps from a child's home screen. The row is gone for them and
+ * the route redirects them server-side (src/app/shop/page.tsx) — the nav is
+ * never the gate, but it must not be the invitation either.
  */
-export function getFooterItems(role?: string, tier: FamilyTier = "fic"): NavItem[] {
+export function getFooterItems(
+  role?: string,
+  tier: FamilyTier = "fic",
+  ageGroup?: string,
+  track?: string
+): NavItem[] {
   const items: NavItem[] = [];
-  if (tier !== "free") {
+  const isKid = deriveRegister({ role, age_group: ageGroup, track }) === "kid";
+  if (tier !== "free" && !isKid) {
     items.push({ label: "Shop", href: "/shop", icon: ShoppingBag });
   }
   items.push({ label: "Help", href: "/help", icon: LifeBuoy });
@@ -347,12 +358,47 @@ export function getNavItems(
   role?: string,
   ageGroup?: string,
   tier: FamilyTier = "fic",
-  isSolo = false
+  isSolo = false,
+  track?: string
 ): NavItem[] {
-  const isChild = role === "child";
-  const isKid = isChild && ageGroup === "kids";
+  // ONE DEFINITION OF "KID", AND IT IS deriveRegister'S. This read
+  // `role === "child" && ageGroup === "kids"`, which disagrees with the register
+  // the rest of the app runs on: deriveRegister treats a bare `role='child'`
+  // with NO age band as a kid (the youngest, safest answer), and this did not —
+  // so a legacy child row with a null age_group fell through to the teen/parent
+  // navigation and was handed the adult rows.
+  const isKid = deriveRegister({ role, age_group: ageGroup, track }) === "kid";
   const canParent = role === "parent" || role === "admin";
   const isFta = tier === "fta";
+
+  // ── KID FIRST. This branch used to sit BELOW the free-tier branch, so a kid
+  //    in a free family never reached it: they got the free adult nav — Join the
+  //    Club, the Free Class hub, the watchlist upsell — with a commercial row in
+  //    it. Age outranks billing state, always, so the kid loop is resolved
+  //    before tier is even consulted. Free kids get the same curated loop as
+  //    paying kids; anything inside it that a free family cannot open still
+  //    walls at its own door. ──
+  if (isKid) {
+    // Kid mental model Home · Learn · Club · Missions · Me — Learn is a retention
+    // pillar, so it stays one tap from primary (never buried under "Me"). The
+    // primary four lead; the rest (News, Kai, Watchlist, Practice, Badges,
+    // Leaderboard) stay reachable below as their curated loop.
+    return [
+      { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
+      learnGroup(true), // My Lessons · Live Classes · My Cards
+      CLUB_COMMUNITY,
+      CLUB_MISSIONS,
+      FAMILY_MORE_HEADER,
+      CLUB_NEWS,
+      KAI_ASK,
+      CLUB_WATCHLIST,
+      practiceGroup(false), // chart + games only for young kids
+      { label: "My Badges", href: "/progress", icon: Trophy },
+      LEADERBOARD,
+    ];
+    // Young kids never see the FTA hub or any upsell — their loop stays
+    // curated (the day-trading traders chat / recordings are teen+adult).
+  }
 
   // ── Free tier (social-funnel signups): "give the tools, gate the guidance."
   //    Home (limited + journey checklist), read-only Community, the free courses
@@ -414,30 +460,6 @@ export function getNavItems(
       // FTA hub keeps its own gold, hard-split treatment at the tail.
       isFta ? FTA_SECTION : FTA_LOCKED,
     ];
-  }
-
-  // ── Young kids (7 top-level): surface the play/earn loop flat, nest lessons.
-  //    Community now appears on the kid DESKTOP nav too (it was mobile-only). ──
-  if (isKid) {
-    // Kid mental model Home · Learn · Club · Missions · Me — Learn is a retention
-    // pillar, so it stays one tap from primary (never buried under "Me"). The
-    // primary four lead; the rest (News, Kai, Watchlist, Practice, Badges,
-    // Leaderboard) stay reachable below as their curated loop.
-    return [
-      { label: "Kids Corner", href: "/dashboard", icon: LayoutDashboard },
-      learnGroup(true), // My Lessons · Live Classes · My Cards
-      CLUB_COMMUNITY,
-      CLUB_MISSIONS,
-      FAMILY_MORE_HEADER,
-      CLUB_NEWS,
-      KAI_ASK,
-      CLUB_WATCHLIST,
-      practiceGroup(false), // chart + games only for young kids
-      { label: "My Badges", href: "/progress", icon: Trophy },
-      LEADERBOARD,
-    ];
-    // Young kids never see the FTA hub or any upsell — their loop stays
-    // curated (the day-trading traders chat / recordings are teen+adult).
   }
 
   // ── Teens + parents (both tiers). Primary+More grouping, matching the club
@@ -509,8 +531,13 @@ interface DashboardSidebarProps {
     display_name?: string;
     role?: string;
     age_group?: string;
+    /** Legacy content track — deriveRegister's last resort, so the nav's idea
+     *  of "kid" is byte-identical to every other surface's. */
+    track?: string;
     tier?: FamilyTier;
     isSolo?: boolean;
+    /** Stored experience (families.door) — the brand axis. */
+    door?: "club" | "family";
   };
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -527,14 +554,25 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const navItems = getNavItems(user.role, user.age_group, user.tier, user.isSolo);
-  const footerItems = getFooterItems(user.role, user.tier);
+  const navItems = getNavItems(
+    user.role,
+    user.age_group,
+    user.tier,
+    user.isSolo,
+    user.track
+  );
+  const footerItems = getFooterItems(
+    user.role,
+    user.tier,
+    user.age_group,
+    user.track
+  );
   // Umbrella wordmark is MODE-driven, not tier-driven: an individual member
   // (solo household) lives in "Cheat Code Club"; a family lives in "Family
   // Investing Club — part of Cheat Code Club". FTA is an add-on tier on top of
   // either door (its identity lives in the gold nav section + chip), so it no
   // longer flips the whole logo.
-  const mode = modeFromSolo(user.isSolo);
+  const mode = modeFromDoorOrSolo(user.door, user.isSolo);
   const brand = modeBrand(mode);
   const collapsedMark = mode === "individual" ? "CC" : "FIC";
   const supabase = createClient();

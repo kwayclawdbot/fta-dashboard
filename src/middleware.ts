@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import {
+  EXPERIENCE_HEADER,
+  resolveExperienceFromHost,
+} from "@/lib/experience/registry";
 
 /**
  * Legacy Vercel host we are migrating away from. Requests hitting this host are
@@ -25,7 +29,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return await updateSession(request);
+  // EXPERIENCE (E1) — the entry host names the door, and it is stamped on the
+  // REQUEST so every server component below can read it with headers() without
+  // re-deriving it (and without a client component ever guessing from
+  // window.location). Logged-out surfaces render this; a logged-in member
+  // renders their stored families.door. Rewriting the request headers is the
+  // only way to add one, so the incoming set is cloned and passed through.
+  return await updateSession(request, {
+    [EXPERIENCE_HEADER]: resolveExperienceFromHost(request.headers.get("host")),
+  });
 }
 
 export const config = {

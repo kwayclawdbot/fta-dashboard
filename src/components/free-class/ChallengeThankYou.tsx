@@ -73,13 +73,12 @@ import {
  */
 
 /**
- * Prefilled intro post the "commitment step" deep-links into. The community
- * composer reads `?compose=` and seeds the textarea with this. Copy flexes for
- * solo / couple / friends / family — nobody is assumed to be a parent.
+ * Where the "commitment step" sends a new member to introduce themselves: the
+ * Club chat itself. It used to deep-link a prefilled composer via `?compose=`,
+ * but /community is the chat area again (owner restore, 2026-07-31) and nothing
+ * reads that param — so the link opens the room and the member writes in it.
  */
-const INTRO_TEMPLATE =
-  "Hi everyone — just joined the 5-Day Investing Challenge! 👋 A bit about me (or my family / crew): \n\nOne money habit I want to build by Day 5: ";
-const INTRO_HREF = `/community?compose=${encodeURIComponent(INTRO_TEMPLATE)}`;
+const INTRO_HREF = "/community";
 export default function ChallengeThankYou({
   firstName,
   ages = null,
@@ -415,8 +414,8 @@ export default function ChallengeThankYou({
                   </Action>
                 </div>
                 <p className="mt-2.5 text-[12px] leading-relaxed text-soft">
-                  We&apos;ll open the composer with a friendly starter — just fill
-                  in the blanks and post.
+                  Two lines is plenty — who you&apos;re doing this with, and the
+                  habit you&apos;re after.
                 </p>
               </div>
             </div>

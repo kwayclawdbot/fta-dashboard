@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { FicWeek } from "@/lib/fic";
 import MoneyMachine from "@/components/fic/MoneyMachine";
+import Ticker from "@/components/ui/Ticker";
 import { BoardSection } from "@/components/clubhome/board";
 
 /**
@@ -88,11 +89,12 @@ export default function ThisWeekPanel({
     return (
       <div className="club-b-card px-5 py-6">
         <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
-          This week <span className="text-accent">is being prepared</span>
+          This week&apos;s company <span className="text-accent">drops soon</span>
         </p>
         <p className="mt-2.5 max-w-[62ch] text-[14px] leading-relaxed text-soft">
-          {isSolo ? "Your" : "Your family's"} next Company of the Week and club
-          assignment land here soon. Check back shortly.
+          {isSolo ? "Your" : "Your family's"} next Company of the Week and the
+          family assignment land here. While you wait, the last company you
+          studied is on your Watchlist.
         </p>
       </div>
     );
@@ -154,8 +156,9 @@ export default function ThisWeekPanel({
               className="f0-focus inline-flex items-center gap-1.5 font-display text-[13px] font-bold text-gold-700 transition-colors hover:text-gold-600"
             >
               <LineChart className="h-4 w-4" />
-              Open <span className="font-mono">{ticker}</span> in the Practice
-              Chart
+              Open{" "}
+              <Ticker symbol={ticker} variant="chip" size="sm" tone="family" />{" "}
+              in the Practice Chart
             </Link>
           )}
 

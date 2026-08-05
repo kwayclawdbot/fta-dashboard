@@ -6,6 +6,7 @@ import { awardXp, hasXpForRef } from "@/lib/xp";
 import Avatar from "@/components/Avatar";
 import type { CircleVote, FamilyMember, WatchlistEntry } from "@/lib/family/queries";
 import { FoundingState, FamilyCard, Chip, Eyebrow } from "@/components/family/canvas";
+import { GUARDRAIL_VOTE_BLOCKED } from "@/lib/family/guardrails";
 
 /** What a vote pays. Kept next to the code that actually inserts it. */
 const VOTE_XP = 10;
@@ -79,9 +80,7 @@ export default function WatchlistVote({
 
     setBusy(null);
     if (err || !data) {
-      setError(
-        "That vote did not save. If a guardrail is active right now — downtime, or the daily limit — voting reopens when it lifts."
-      );
+      setError(GUARDRAIL_VOTE_BLOCKED);
       return;
     }
     setVotes((prev) => [...prev.filter((v) => v.user_id !== viewerId), data as CircleVote]);

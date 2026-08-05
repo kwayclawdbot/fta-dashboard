@@ -10,6 +10,12 @@ import BeltBadge from "@/components/BeltBadge";
 import AgeBadge from "@/components/community/AgeBadge";
 import TierBadge from "@/components/TierBadge";
 import { TickerTile } from "@/components/canvas2";
+import Ticker from "@/components/ui/Ticker";
+import { BadgeShelf } from "@/components/profile/Badge";
+import HowTheyInvest from "@/components/profile/HowTheyInvest";
+import FollowButton from "@/components/profile/FollowButton";
+import { getUserInsights } from "@/lib/insights/compute";
+import { getFollowCounts } from "@/lib/insights/follows";
 import {
   Card,
   ListHead,
@@ -17,8 +23,11 @@ import {
   RowCard,
   EmptyCard,
   TextAction,
-  dash,
 } from "@/components/you/parts";
+// `dash` is a plain function, not a component: it must come from the
+// directive-free module, never across the "use client" boundary. Importing it
+// from `parts.tsx` is what made every public profile throw in production.
+import { dash } from "@/lib/dash";
 
 /**
  * /u/[username] — the public member profile, built to Club Screens board 09
@@ -156,8 +165,10 @@ export default async function PublicProfilePage({
 
   const isOwn = auth?.user?.id === profile.id;
 
-  // Everything below identity, in one round of parallel reads.
-  const [defs, partRes, flipRes, stanceRes] = await Promise.all([
+  // Everything below identity, in one round of parallel reads. `insights` and
+  // `follow` join the round: both read RLS-scoped through the session client,
+  // both are cheap single selects (getUserInsights never recomputes).
+  const [defs, partRes, flipRes, stanceRes, insights, follow] = await Promise.all([
     supabase
       .from("badges")
       .select("slug, title, subtitle, sort")
@@ -171,7 +182,22 @@ export default async function PublicProfilePage({
       .eq("user_id", profile.id)
       .order("updated_at", { ascending: false })
       .limit(6),
+    getUserInsights(supabase, profile.id),
+    getFollowCounts(supabase, profile.id, auth?.user?.id),
   ]);
+
+  // The digest is real only when it carries something to say. An uncomputed
+  // member (no row) or a bare row with nothing but nulls hides the whole
+  // section rather than drawing an empty scaffold.
+  const hasInsights =
+    !!insights &&
+    (insights.favorite_tickers.length > 0 ||
+      insights.bull_lean != null ||
+      insights.favorite_sectors.length > 0 ||
+      !!insights.kai_read ||
+      !!insights.trading_style.risk_posture ||
+      !!insights.trading_style.timeframe ||
+      insights.trading_style.setups.length > 0);
 
   const badgeRows = mergeBadgeRows(
     (defs.data ?? []) as { slug: string; title: string; subtitle: string | null; sort: number }[],
@@ -202,7 +228,7 @@ export default async function PublicProfilePage({
         <h1 className="min-w-0 truncate font-display text-[36px] font-extrabold uppercase leading-[0.9] tracking-[-0.04em] text-ink">
           Profile
         </h1>
-        {isOwn && (
+        {isOwn ? (
           <Link
             href="/settings"
             aria-label="Settings"
@@ -210,6 +236,12 @@ export default async function PublicProfilePage({
           >
             <Settings className="h-5 w-5" />
           </Link>
+        ) : (
+          <FollowButton
+            username={profile.username}
+            initialFollowing={follow.isFollowing}
+            initialFollowers={follow.followers}
+          />
         )}
       </header>
 
@@ -282,32 +314,7 @@ export default async function PublicProfilePage({
             body="Badges are earned, not given — this shelf fills as they learn."
           />
         ) : (
-          <div className="club2-track flex gap-2 overflow-x-auto pb-1">
-            {badgeRows.map((b) => (
-              <div
-                key={b.slug}
-                title={b.subtitle ?? undefined}
-                className={`club-b-card flex w-[92px] shrink-0 flex-col items-center gap-2 rounded-[13px] px-1.5 py-[11px] text-center ${
-                  b.awarded ? "" : "opacity-45"
-                }`}
-              >
-                <span
-                  className="grid h-[34px] w-[34px] place-items-center rounded-full font-display text-[15px] font-extrabold"
-                  style={
-                    b.awarded
-                      ? { background: "var(--accent-solid)", color: "var(--accent-on)" }
-                      : { background: "var(--sand)", color: "var(--soft)" }
-                  }
-                  aria-hidden
-                >
-                  {b.title.slice(0, 1).toUpperCase()}
-                </span>
-                <span className="font-display text-[9.5px] font-bold leading-tight text-ink">
-                  {b.title}
-                </span>
-              </div>
-            ))}
-          </div>
+          <BadgeShelf badges={badgeRows} />
         )}
       </section>
 
@@ -362,6 +369,12 @@ export default async function PublicProfilePage({
         </p>
       </section>
 
+      {/* ── HOW THEY INVEST — the generated "who to follow" digest ────────────
+          Inserted before the watchlist, built from getUserInsights in the
+          profile's own vocabulary. Absent entirely when there's nothing real
+          to show (uncomputed member / all-null row). */}
+      {hasInsights && insights && <HowTheyInvest insights={insights} who={who} />}
+
       {/* ── WATCHLIST — the board's labelled tile row ─────────────────────── */}
       {profile.liked_tickers.length > 0 && (
         <section className="space-y-2.5 pt-1">
@@ -397,11 +410,7 @@ export default async function PublicProfilePage({
               <RowCard
                 key={s.ticker}
                 href={`/research/${encodeURIComponent(s.ticker)}`}
-                lead={
-                  <span className="font-mono text-[11px] font-semibold text-ink">
-                    {s.ticker.toUpperCase()}
-                  </span>
-                }
+                lead={<Ticker symbol={s.ticker} variant="chip" size="sm" />}
                 title={
                   <span className="text-[11.5px] font-normal text-soft">
                     {STANCE_WORD[s.stance] ?? s.stance}
@@ -423,9 +432,7 @@ export default async function PublicProfilePage({
           claims the change paid off. */}
       {flips.length > 0 && (
         <section className="space-y-2.5 pt-1">
-          <ListHead action={<TextAction href="/community/changed-my-mind">All flips</TextAction>}>
-            Changed their mind
-          </ListHead>
+          <ListHead>Changed their mind</ListHead>
           <div className="space-y-2">
             {flips.map((f) => (
               <RowCard

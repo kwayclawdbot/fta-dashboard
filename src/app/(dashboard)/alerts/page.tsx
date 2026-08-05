@@ -147,7 +147,7 @@ export default async function AlertsPage() {
     supabase
       .from("alert_setups")
       .select(
-        "id, alert_id, ticker, direction, thesis, entry, levels, snapshot_price, state, state_entered_at, expires_at, created_at"
+        "id, alert_id, ticker, direction, thesis, entry, levels, snapshot_price, state, state_entered_at, expires_at, created_at, detail"
       )
       .order("created_at", { ascending: false })
       .limit(40),

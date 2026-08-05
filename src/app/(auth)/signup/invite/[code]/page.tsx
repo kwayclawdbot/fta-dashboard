@@ -38,6 +38,12 @@ interface InviteData {
   family_name: string;
   invited_by_name: string;
   role?: string;
+  /**
+   * The family's stored experience (E1). An invite can never cross doors — the
+   * joiner inherits the family's — so this is carried only so the pre-onboarding
+   * screens can brand themselves correctly before the profile row exists.
+   */
+  door?: "club" | "family";
 }
 
 function InviteSignupForm() {
@@ -70,6 +76,7 @@ function InviteSignupForm() {
         family_name?: string;
         inviter_name?: string;
         role?: string;
+        door?: string;
       } | null;
 
       if (!info?.valid) {
@@ -83,6 +90,7 @@ function InviteSignupForm() {
         family_name: info.family_name!,
         invited_by_name: info.inviter_name || "A family member",
         role: info.role,
+        door: info.door === "club" ? "club" : "family",
       });
       setInviteValid(true);
       setChecking(false);
@@ -104,6 +112,10 @@ function InviteSignupForm() {
         data: {
           display_name: displayName,
           invite_code: code,
+          // Inherited from the family being joined (invite_details, migration
+          // 213) so the screens between signup and the first dashboard render
+          // are already in the right brand.
+          door: inviteData.door ?? "family",
         },
         emailRedirectTo: authCallbackUrl(),
       },

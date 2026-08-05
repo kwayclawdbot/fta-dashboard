@@ -221,6 +221,8 @@ export function useClubRead(supabase: SupabaseClient, ticker: string): ClubReadD
       )
       .contains("ticker_tags", [ticker])
       .in("position", ["bull", "bear"])
+      // KID WALL (214) — a kid's position never becomes a club portrait.
+      .neq("author_register", "kid")
       .order("created_at", { ascending: false })
       .limit(60)
       .then(

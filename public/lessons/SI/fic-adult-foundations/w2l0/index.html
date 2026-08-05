@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How to Read a Business (Before You Read a Chart) &middot; SI-100 Adults &middot; Module 2 &middot; Lesson 2.0</title>
+<meta name="fta-course" content="SI-100-Adults" />
+<meta name="fta-module" content="2" />
+<meta name="fta-lesson" content="L2.0" />
+<meta name="fta-lesson-title" content="How to Read a Business (Before You Read a Chart)" />
+<meta name="fta-lesson-objectives" content="Define a business as a machine that turns what people want into money|Learn the five questions that decode any company|Run a real company through all five|See how this feeds the Company of the Week" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="./assets/lesson-theme.css" />
+<style>
+/* w2l0 (Adults) — bridge lesson. Reuses the warm-paper lesson skin; a few small
+   layout helpers only, no bespoke animation system. */
+.center{margin-left:auto;margin-right:auto}
+.center-narrow{text-align:center;max-width:760px;margin:0 auto}
+#hero{position:relative;overflow:hidden}
+.hero-scrim{position:absolute;inset:0;z-index:0;
+  background:linear-gradient(105deg,rgba(251,247,239,.96),rgba(251,247,239,.86) 46%,rgba(251,247,239,.5) 100%),
+             radial-gradient(900px 520px at 86% -10%,rgba(251,191,36,.16),transparent 60%)}
+.hero-inner{position:relative;z-index:2;max-width:1000px}
+.hero-copy{max-width:660px}
+.startwrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px}
+.hint{font-size:13px;color:var(--soft);font-weight:600}
+.qlist{max-width:820px;margin:22px auto 0;display:grid;gap:14px}
+.qrow{display:flex;gap:16px;align-items:flex-start;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);padding:18px 20px;box-shadow:var(--shadow)}
+.qnum{flex:0 0 auto;width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;
+  font:800 15px/1 var(--font-display,'Poppins');color:var(--gold-700,#a16207);background:rgba(251,191,36,.16)}
+.qrow h4{margin:0 0 4px;font:700 17px/1.25 var(--font-display,'Poppins');color:var(--ink)}
+.qrow p{margin:0;color:var(--soft);font-size:14.5px;line-height:1.5}
+.worked{max-width:820px;margin:20px auto 0;background:var(--card);border:1px solid var(--sand);
+  border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden}
+.worked .wrow{display:grid;grid-template-columns:200px 1fr;gap:18px;padding:16px 22px;border-top:1px solid var(--sand)}
+.worked .wrow:first-child{border-top:none}
+.worked .wq{font:700 14px/1.3 var(--font-display,'Poppins');color:var(--ink)}
+.worked .wa{color:var(--soft);font-size:14.5px;line-height:1.55}
+@media(max-width:640px){.worked .wrow{grid-template-columns:1fr;gap:6px}}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+
+<!-- ============ 1 · HERO ============ -->
+<section id="hero">
+  <div class="hero-scrim"></div>
+  <div class="inner hero-inner">
+    <div class="hero-copy">
+      <div class="label">SI-100 Adults &middot; Module 2 &middot; Lesson 2.0</div>
+      <h1 class="title" style="font-size:clamp(34px,7vw,64px);line-height:1.02;letter-spacing:-.02em;margin:12px 0 14px">How to Read a Business (Before You Read a Chart)</h1>
+      <p class="lead">A chart shows you what a price did. It never tells you what a company is. Before the candles, learn the five questions that decode any business in plain English, and you will pick stocks to study for a reason, not a hunch.</p>
+      <div class="badges">
+        <span class="badge">SI-100 &middot; <b>Adults</b></span>
+        <span class="badge">~<b>5</b> min</span>
+        <span class="badge"><b>5</b> questions, one method</span>
+      </div>
+      <div class="startwrap">
+        <button class="btn" id="startBtn">Start the lesson &nbsp;&rarr;</button>
+        <span class="hint">Read it once and you own the method.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · DEFINE — what a business actually is ============ -->
+<section id="define-biz">
+  <div class="inner">
+    <div class="anim center-narrow" style="text-align:left;max-width:820px;margin:0 auto">
+      <div class="label">Start Here</div>
+      <h2 class="title">A business is a machine</h2>
+      <p class="lead center" style="text-align:left">A business takes something people want and turns it into money. That is the whole idea, whether the company sells shoes, software, or coffee.</p>
+    </div>
+    <div class="define anim d1" style="max-width:820px;margin:18px auto 0">
+      <p>Three plain words run every one of them. <b>Revenue</b> is the money coming in when people buy. <b>Costs</b> are what it takes to run the machine: the product, the workers, the buildings. <b>Profit</b> is what is left when you take costs out of revenue. Revenue minus costs equals profit. A giant company and a lemonade stand run on that exact sentence.</p>
+      <p>Here is why this comes before charts. A candlestick tells you what a price did last Tuesday. It cannot tell you whether the machine behind the price is any good. Judge the business first, and the chart becomes a tool instead of a guess.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · THE FIVE QUESTIONS ============ -->
+<section id="five">
+  <div class="inner">
+    <div class="anim center-narrow" style="text-align:left;max-width:820px;margin:0 auto">
+      <div class="label">The Method</div>
+      <h2 class="title">Five questions decode any company</h2>
+      <p class="lead center" style="text-align:left">Ask these in order, in plain English. No jargon, no metaphors yet. If you can answer all five, you understand the business.</p>
+    </div>
+    <div class="qlist anim d1">
+      <div class="qrow"><div class="qnum">1</div><div><h4>What do they sell?</h4><p>Name the actual product or service in one sentence. If you cannot say it plainly, you do not understand it yet.</p></div></div>
+      <div class="qrow"><div class="qnum">2</div><div><h4>How do they make money?</h4><p>Follow the dollar. Sometimes the thing they sell is not where the profit is. That gap is often the whole story.</p></div></div>
+      <div class="qrow"><div class="qnum">3</div><div><h4>Why do customers keep coming back?</h4><p>What makes people choose this one again, and would be hard for a rival to copy? This is the difference between a good year and a good business.</p></div></div>
+      <div class="qrow"><div class="qnum">4</div><div><h4>What could make people buy less?</h4><p>Every business has a weak spot. Say it out loud. Studying the risk is not pessimism; it is the job.</p></div></div>
+      <div class="qrow"><div class="qnum">5</div><div><h4>Is the machine getting stronger or weaker?</h4><p>Pick the one or two numbers that matter, and ask whether they are improving over time. Direction beats any single snapshot.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · WORKED EXAMPLE — Costco through all five ============ -->
+<section id="worked">
+  <div class="inner">
+    <div class="anim center-narrow" style="text-align:left;max-width:820px;margin:0 auto">
+      <div class="label">Worked Example</div>
+      <h2 class="title">Run Costco through the five</h2>
+      <p class="lead center" style="text-align:left">One recognizable company, five plain answers. Notice how question two changes everything.</p>
+    </div>
+    <div class="worked anim d1">
+      <div class="wrow"><div class="wq">1 &middot; What do they sell?</div><div class="wa">Groceries, household goods, and just about everything else, in bulk, inside giant warehouse stores you have to be a member to enter.</div></div>
+      <div class="wrow"><div class="wq">2 &middot; How do they make money?</div><div class="wa">Here is the surprise. Costco barely profits on the groceries; it sells them at close to what it pays. The real profit is the yearly membership fee millions of families pay just to walk in the door.</div></div>
+      <div class="wrow"><div class="wq">3 &middot; Why do customers come back?</div><div class="wa">Prices are low because Costco buys in enormous quantities and passes the savings on. Members have already paid to belong, so they keep using it. That loyalty is the moat.</div></div>
+      <div class="wrow"><div class="wq">4 &middot; What could make people buy less?</div><div class="wa">A cheaper option appears, or members decide the fee is not worth it and do not renew. Thin margins also mean a jump in the cost of goods can squeeze the whole model.</div></div>
+      <div class="wrow"><div class="wq">5 &middot; Stronger or weaker?</div><div class="wa">Watch two numbers: the renewal rate and new sign-ups. Rising renewals mean the machine is getting stronger, no matter what the price did this week.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 · THE METAPHOR (the closer) + COTW tie-in ============ -->
+<section id="close">
+  <div class="inner">
+    <div class="insight anim" style="max-width:820px;margin:0 auto">
+      <p>Now the picture, since you have the method. Reading a business is sizing up a lemonade stand before you buy a share of it. You would want to know what it sells, where the money really comes from, why the same kids come back every day, what could dry up the line, and whether more customers show up each week than last. The five questions are that, scaled to any company on earth.</p>
+    </div>
+    <div class="define anim d1" style="max-width:820px;margin:16px auto 0">
+      <p>This is the exact method behind the Company of the Week. Every week in the Club you will run one real company through these same five questions with your family. Do it enough times and you will read a business faster than most people read a headline, and the charts in the next lessons will finally have something to point at.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6 · QUIZ ============ -->
+<section id="quiz">
+  <div class="inner">
+    <div class="anim center-narrow"><div class="label">Lock It In</div>
+      <h2 class="title">Quick check</h2>
+      <p class="lead center">Five questions. Answer them to earn your points and prove you own the method.</p>
+    </div>
+    <div class="quiz anim d1" id="quizBox">
+      <div class="q" data-correct="1">
+        <h4>1. Before you ever open its chart, what should you understand about a company first?</h4>
+        <button class="opt" data-idx="0">Yesterday's closing price</button>
+        <button class="opt" data-idx="1">What it sells and how it actually makes money</button>
+        <button class="opt" data-idx="2">The color of its last candle</button>
+        <button class="opt" data-idx="3">How many shares exist</button>
+        <div class="exp">The business comes first. A chart shows what a price did; the five questions tell you whether the machine behind it is any good.</div>
+      </div>
+      <div class="q" data-correct="2">
+        <h4>2. Costco barely profits on its groceries. Where does most of its profit come from?</h4>
+        <button class="opt" data-idx="0">Selling food at a big markup</button>
+        <button class="opt" data-idx="1">Advertising on its website</button>
+        <button class="opt" data-idx="2">The yearly membership fee</button>
+        <button class="opt" data-idx="3">Charging for parking</button>
+        <div class="exp">Question two often changes the whole story. The cheap groceries get members in the door; the membership fee is the real engine.</div>
+      </div>
+      <div class="q" data-correct="0">
+        <h4>3. "Why do customers keep coming back?" is really asking about what?</h4>
+        <button class="opt" data-idx="0">Whether the business can hold its customers in a way rivals cannot easily copy</button>
+        <button class="opt" data-idx="1">The company's phone number</button>
+        <button class="opt" data-idx="2">This morning's price move</button>
+        <button class="opt" data-idx="3">The CEO's salary</button>
+        <div class="exp">A durable reason to return is the difference between a good year and a good business.</div>
+      </div>
+      <div class="q" data-correct="3">
+        <h4>4. Which of the five questions is the one that surfaces the risk?</h4>
+        <button class="opt" data-idx="0">What do they sell?</button>
+        <button class="opt" data-idx="1">How do they make money?</button>
+        <button class="opt" data-idx="2">Why do customers come back?</button>
+        <button class="opt" data-idx="3">What could make people buy less?</button>
+        <div class="exp">Naming the weak spot out loud is part of the job, not pessimism. Every business has one.</div>
+      </div>
+      <div class="q" data-correct="1">
+        <h4>5. To judge whether a business is getting stronger, you mainly look at whether...</h4>
+        <button class="opt" data-idx="0">Its logo changed recently</button>
+        <button class="opt" data-idx="1">Its key numbers are improving over time, not just today</button>
+        <button class="opt" data-idx="2">The stock went up this week</button>
+        <button class="opt" data-idx="3">It has more employees than a rival</button>
+        <div class="exp">Direction over time beats any single snapshot. Pick the one or two numbers that matter and watch the trend.</div>
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="score" id="quizScore">0 / 5</div>
+        <p id="quizMsg"></p>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn green" id="quizSubmit">Submit answers</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7 · BRIDGE / SUMMARY ============ -->
+<section id="bridge">
+  <div class="inner">
+    <div class="anim center-narrow" style="max-width:760px;text-align:left;margin:0"><div class="label">You Can Read a Business</div><h2 class="title">Carry these five with you</h2></div>
+    <div class="takeaways anim d1">
+      <div class="take"><span class="ck">&#10003;</span><p>What do they sell? Say it in one plain sentence.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>How do they make money? Follow the dollar, not the product.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Why do customers come back, in a way rivals cannot easily copy?</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>What could make people buy less? Name the risk out loud.</p></div>
+      <div class="take"><span class="ck">&#10003;</span><p>Is the machine getting stronger or weaker over time?</p></div>
+    </div>
+    <div class="nextcard anim d2">
+      <div><div class="up">Up next &middot; Lesson 2.1</div><h3>Candlestick Anatomy &amp; Timeframes</h3></div>
+      <span class="badge">Now the charts have something to point at &rarr;</span>
+    </div>
+    <div class="finish-row anim d3">
+      <button class="btn" id="finishBtn">Finish &amp; mark complete</button>
+      <span class="xp-pill">+50 XP</span>
+      <span class="done-chip" id="doneChip">&#10003; Lesson complete</span>
+    </div>
+  </div>
+</section>
+
+<script src="./ftaBridge.js"></script>
+<script>
+window.sectionTimestamps = [
+  {"id":"hero","label":"Reading a Business"},
+  {"id":"define-biz","label":"A Business Is a Machine"},
+  {"id":"five","label":"The Five Questions"},
+  {"id":"worked","label":"Costco Worked Example"},
+  {"id":"close","label":"The Method in Practice"},
+  {"id":"quiz","label":"Quick Check"},
+  {"id":"bridge","label":"Up Next Candlestick Anatomy"}
+];
+</script>
+<script>
+/* Self-contained lesson runtime (no narration track). Every ftaBridge emit is a
+   harmless no-op when opened standalone; in the dashboard iframe the host records
+   section progress, the quiz attempt, and completion. */
+(function () {
+  'use strict';
+  var ST = window.sectionTimestamps || [];
+  var TOTAL = ST.length;
+  var ids = ST.map(function (s) { return s.id; });
+  var progressBar = document.getElementById('progressBar');
+
+  function pct(idx) { return TOTAL > 1 ? Math.round((idx / (TOTAL - 1)) * 100) : 100; }
+
+  /* ---- start button: reveal + scroll to the first content section ---- */
+  var startBtn = document.getElementById('startBtn');
+  if (startBtn) startBtn.addEventListener('click', function () {
+    var t = document.getElementById(ids[1] || 'define-biz');
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  /* ---- reveal-on-scroll + per-section progress emit ---- */
+  var maxIdx = 0;
+  document.querySelectorAll('.anim').forEach(function (el) { /* start hidden via theme */ });
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      e.target.querySelectorAll('.anim').forEach(function (a) { a.classList.add('vis'); });
+      e.target.classList.add('vis');
+      var idx = ids.indexOf(e.target.id);
+      if (idx >= 0) {
+        if (idx > maxIdx) maxIdx = idx;
+        if (progressBar) progressBar.style.width = pct(maxIdx) + '%';
+        if (window.ftaBridge) window.ftaBridge.section({ id: e.target.id, index: idx, total: TOTAL, progress_pct: pct(idx) });
+      }
+    });
+  }, { threshold: 0.18, rootMargin: '0px 0px -30px 0px' });
+  ids.forEach(function (id) { var s = document.getElementById(id); if (s) io.observe(s); });
+
+  /* ---- quiz ---- */
+  (function () {
+    var box = document.getElementById('quizBox');
+    if (!box) return;
+    box.querySelectorAll('.q').forEach(function (q) {
+      q.querySelectorAll('.opt').forEach(function (opt) {
+        opt.addEventListener('click', function () {
+          q.querySelectorAll('.opt').forEach(function (o) { o.classList.remove('sel'); });
+          opt.classList.add('sel');
+          q.setAttribute('data-sel', opt.getAttribute('data-idx'));
+        });
+      });
+    });
+    var submit = document.getElementById('quizSubmit');
+    submit.addEventListener('click', function () {
+      var qs = box.querySelectorAll('.q');
+      var total = qs.length, correct = 0, answers = [];
+      qs.forEach(function (q, i) {
+        var corr = parseInt(q.getAttribute('data-correct'), 10);
+        var selAttr = q.getAttribute('data-sel');
+        var sel = selAttr === null ? -1 : parseInt(selAttr, 10);
+        var isCorrect = sel === corr;
+        if (isCorrect) correct++;
+        q.querySelectorAll('.opt').forEach(function (o, oi) {
+          o.classList.remove('correct', 'wrong');
+          if (oi === corr) o.classList.add('correct');
+          else if (oi === sel) o.classList.add('wrong');
+          o.disabled = true;
+        });
+        var exp = q.querySelector('.exp'); if (exp) exp.classList.add('vis');
+        answers.push({ question: i + 1, selected: sel, correct_index: corr, is_correct: isCorrect });
+      });
+      var passed = correct >= Math.ceil(total * 0.6);
+      var result = document.getElementById('quizResult');
+      if (result) result.classList.add('vis');
+      document.getElementById('quizScore').textContent = correct + ' / ' + total;
+      document.getElementById('quizMsg').textContent = passed
+        ? (correct === total ? 'Perfect. You can read a business at a glance.' : 'Nice work. Review anything you missed above.')
+        : 'Close. Scroll back through the five questions and give it another look.';
+      submit.style.display = 'none';
+      if (window.ftaBridge) window.ftaBridge.quizAnswer({ score: correct, passed: passed, total: total, correct: correct, answers: answers });
+    });
+  })();
+
+  /* ---- complete ---- */
+  var finishBtn = document.getElementById('finishBtn'), doneChip = document.getElementById('doneChip');
+  function finishLesson() {
+    if (window.ftaBridge) window.ftaBridge.complete({});
+    if (finishBtn) finishBtn.style.display = 'none';
+    if (doneChip) doneChip.style.display = 'inline-flex';
+    if (progressBar) progressBar.style.width = '100%';
+  }
+  if (finishBtn) finishBtn.addEventListener('click', finishLesson);
+  window.__ftaComplete = finishLesson;
+})();
+</script>
+</body>
+</html>

@@ -49,6 +49,53 @@ export const TRENDING_DISCLAIMER =
   "Attention inside the Club — not a recommendation.";
 
 /**
+ * The community STANCE SPLIT on one ticker, derived from the snapshot ledger's
+ * sentiment_bullish / _neutral / _bearish counts. This is the ONE place the
+ * split is computed so /api/club/trending and /api/club/index read an identical
+ * object and can never drift (both feed the same UI vocabulary).
+ *
+ *   bullPct = bull ÷ positioned (0–100), null when nobody has positioned yet —
+ *   a null share renders as an honest absence, never a manufactured 0/100.
+ */
+export interface ClubSentiment {
+  bull: number;
+  neutral: number;
+  bear: number;
+  bullPct: number | null;
+}
+export function clubSentiment(
+  bullish?: number | null,
+  neutral?: number | null,
+  bearish?: number | null
+): ClubSentiment {
+  const bull = bullish ?? 0;
+  const neu = neutral ?? 0;
+  const bear = bearish ?? 0;
+  const positioned = bull + neu + bear;
+  return {
+    bull,
+    neutral: neu,
+    bear,
+    bullPct: positioned > 0 ? Math.round((bull / positioned) * 100) : null,
+  };
+}
+
+/**
+ * CLUB INDEX floors (scale-aware honesty for the ranked community-insight
+ * surface). A ticker's split / conviction is only a real signal once enough
+ * members have taken a side; below the row floor a single vote would read as a
+ * confident "100% bullish", which is fabricated volume. And the room only shows
+ * a ranked verdict once a handful of names clear that bar — otherwise the
+ * surface renders its founding empty state instead of a thin one-vote list.
+ */
+export const INDEX_FLOORS = {
+  /** Positioned members (bull+neutral+bear) a row needs before its split shows. */
+  rowPositioned: 3,
+  /** Qualifying names the room needs before it shows the ranked index. */
+  minNames: 3,
+} as const;
+
+/**
  * SNAPSHOT SIGNAL FLOORS (Kai Intelligence Layer §2c) — MIRROR of the constants
  * in migration 141's refresh_club_metrics(). The `unusual_activity` composite on
  * a ticker_intel_snapshot only trips when a 24h spike clears BOTH an absolute

@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 /**
  * /club — the canonical Club entry used by go-live push notifications
  * (src/lib/live/notify.ts builds `/club?live={id}`). The Club itself lives at
- * /community (Feed · Lounge · Live). This bridges the push deep-link into the
- * Live tab, focused on the room that just went live.
+ * /community, which is the chat area again (owner restore, 2026-07-31) and no
+ * longer carries a Live tab — so a go-live deep-link goes to the live sessions
+ * surface, which is where the room actually is.
  *
  *   /club                → /community
- *   /club?live={id}      → /community?mode=live&live={id}
+ *   /club?live={id}      → /live-sessions?live={id}
  */
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function ClubEntry({
   const raw = Array.isArray(sp.live) ? sp.live[0] : sp.live;
   const live = raw ? raw.trim() : "";
   if (live) {
-    redirect(`/community?mode=live&live=${encodeURIComponent(live)}`);
+    redirect(`/live-sessions?live=${encodeURIComponent(live)}`);
   }
   redirect("/community");
 }

@@ -150,6 +150,10 @@ export async function GET(req: NextRequest) {
       .from("feed_posts")
       .select("id, title, body, ticker_tags")
       .eq("kind", "post")
+      // Kid-authored rows are family-only (214). This is the admin (service-role)
+      // client, so RLS does not scope it — the filter is the wall, mirroring the
+      // deriveRegister filter the members branch above already applies.
+      .neq("author_register", "kid")
       .or(`title.ilike.%${like}%,body.ilike.%${like}%`)
       .order("created_at", { ascending: false })
       .limit(5);

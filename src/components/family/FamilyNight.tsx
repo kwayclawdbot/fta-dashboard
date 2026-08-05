@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Avatar from "@/components/Avatar";
+import Ticker from "@/components/ui/Ticker";
 import WatchlistVote from "@/components/family/WatchlistVote";
 import type { CircleVote, FamilyMember, WatchlistEntry } from "@/lib/family/queries";
 import {
@@ -189,7 +190,16 @@ export default function FamilyNight({
                 <p className="mt-1.5 font-display text-[20px] font-extrabold text-ink">
                   {brief.companyName}
                 </p>
-                <p className="mt-0.5 font-mono text-[12px] text-soft">{brief.ticker}</p>
+                {/* The pick's ticker rides its logo tile (warm-gold monogram on
+                    a miss), never bare mono text. */}
+                <div className="mt-1.5">
+                  <Ticker
+                    symbol={brief.ticker}
+                    companyName={brief.companyName}
+                    size="sm"
+                    tone="family"
+                  />
+                </div>
               </FamilyCard>
               <p className="mt-3 text-[12px] leading-relaxed text-soft">
                 Anyone who has not voted still can — the ballot below stays open
@@ -307,8 +317,8 @@ export default function FamilyNight({
             No price appears on this page on purpose. What a company sells and
             whether it earns money are the things worth arguing about at the
             table; the quote lives on{" "}
-            <span className="font-mono">{brief.ticker}</span>&rsquo;s research
-            page for whoever wants it after.
+            <Ticker symbol={brief.ticker} variant="chip" size="sm" tone="family" />
+            &rsquo;s research page for whoever wants it after.
           </p>
 
           <StepNav

@@ -338,7 +338,15 @@ export default function FloatingKaiButton({
               onClick={collapse}
               aria-label="Tuck Kai away"
               title="Tuck away"
-              className="absolute -left-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-card text-soft opacity-90 shadow-soft ring-2 ring-[var(--paper)] transition-all hover:bg-sand hover:text-ink hover:opacity-100 active:scale-95 md:opacity-0 md:group-hover:opacity-100"
+              /* TOUCH HAS NO HOVER. The reveal-on-hover treatment left phones
+                 with a permanent 90%-opacity "›" floating off the FAB's corner
+                 on a card-coloured disc — against warm paper that reads as a
+                 loose glyph rather than a control, and there is no pointer to
+                 explain it. On a touch layout it now sits tucked against the
+                 FAB as a filled ink chip: unmistakably a button, and clearly
+                 attached to the thing it acts on. From `md` up the original
+                 quiet reveal is exactly as it was. */
+              className="absolute -left-1 -top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-ink text-paper shadow-soft ring-2 ring-[var(--paper)] transition-all active:scale-95 md:-left-2 md:-top-2 md:bg-card md:text-soft md:opacity-0 md:hover:bg-sand md:hover:text-ink md:group-hover:opacity-100"
             >
               <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
             </button>

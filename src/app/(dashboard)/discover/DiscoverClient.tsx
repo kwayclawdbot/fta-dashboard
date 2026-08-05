@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Bot, Search, Sparkles, X } from "lucide-react";
 
 import NewsClient from "../news/NewsClient";
+import ClubIndex from "@/components/club/ClubIndex";
 import ScreenerSurface from "@/components/screener/ScreenerSurface";
 import UnlockLine from "@/components/entitlements/UnlockLine";
 import { wallFor } from "@/lib/entitlements/paywall";
@@ -289,6 +290,12 @@ function ForYouPanel({
           member has a followed set, and a member with none sees exactly the
           board. */}
       <YourNames movers={movers} rows={rows} />
+
+      {/* The Club Index — the room's ranked community read — leads the For-You
+          view. Self-contained: it reads /api/club/index itself and shows its own
+          founding state below the scale floor, so it never conflicts with the
+          sections below. */}
+      <ClubIndex className="mb-6" />
 
       <RisingFast rows={risers.slice(0, 3)} loading={loading} />
       <MostDivisive row={divisive} loading={loading} />

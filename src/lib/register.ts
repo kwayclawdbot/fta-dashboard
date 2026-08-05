@@ -170,7 +170,7 @@ export function shouldShowFamilySetupNudge(
  */
 export const KID_FIRST_ADVENTURE = {
   title: "Start your first adventure",
-  body: "Your very first lesson is waiting. Press play and let's learn how money grows!",
+  body: "Your very first lesson is waiting. Press play, and let's find out how money grows.",
   cta: "Start my first lesson",
   href: "/courses",
 } as const;

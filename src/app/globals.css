@@ -905,6 +905,28 @@ body {
   }
 }
 
+/* ── Profile badge emblems (ui/profile/Badge) ────────────────────────────────
+   Vibrant crest medallions. Earned draws full colour (glow set inline). Locked
+   is the SAME emblem, desaturated + ghosted — one drawing, two states. The
+   hover sheen sweeps a light band across the crest and is GATED on
+   prefers-reduced-motion; the band stays parked off-canvas otherwise. */
+.badge-emblem--locked {
+  filter: grayscale(1) opacity(0.42);
+}
+.badge-sheen {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes badge-sheen-sweep {
+    0% { transform: translateX(0); opacity: 0; }
+    12% { opacity: 1; }
+    100% { transform: translateX(76px); opacity: 0; }
+  }
+  .badge-emblem:not(.badge-emblem--locked):hover .badge-sheen {
+    animation: badge-sheen-sweep 0.8s ease;
+  }
+}
+
 /* Interactive ledger row — hover charge (volt accent bar slides in) + press. */
 .club-row {
   position: relative;

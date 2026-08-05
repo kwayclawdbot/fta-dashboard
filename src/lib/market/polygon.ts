@@ -109,6 +109,14 @@ export interface Quote {
   prevClose: number | null;
   updated: number | null; // ms epoch
   delayed: boolean;
+  /**
+   * TRUE when the tape had no print for this session and `price` is the
+   * PREVIOUS CLOSE standing in for it. The number is real and tradeable as a
+   * reference mark; it is simply not from today. Surfaces that want to say so
+   * ("at Friday's close") read this flag; every surface that just needs a
+   * number to divide by gets one that isn't zero.
+   */
+  stale: boolean;
 }
 
 interface SnapshotTicker {
@@ -118,24 +126,68 @@ interface SnapshotTicker {
   updated?: number; // ns epoch
   day?: { c?: number; o?: number };
   prevDay?: { c?: number };
-  lastTrade?: { p?: number; t?: number };
-  min?: { c?: number };
+  lastTrade?: { p?: number; t?: number }; // t = ns epoch
+  min?: { c?: number; t?: number }; // t = ms epoch
 }
 
+/** A price is only a price when it is a finite POSITIVE number. */
+function pos(n: number | null | undefined): number | null {
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Shape one snapshot ticker into the client quote.
+ *
+ * WHY THE POSITIVE GUARD. Outside of regular hours Polygon still answers the
+ * snapshot, but with a ZEROED session: `day` and `min` come back as all-zero
+ * bars, `lastTrade` is often absent entirely, and `todaysChange(Perc)` are 0.
+ * The old shaper used `??`, which does not skip 0 — so `min.c === 0` became the
+ * price and every consumer rendered `$0.00`. Worse, anything dividing by the
+ * mark (cost-basis return, "since added") produced a flat −100%: the club
+ * watchlist, the research header, /chart and the dashboard index chips all
+ * reported a total loss every weekend and every evening.
+ *
+ * So: a zero is not a quote. When the session gives us nothing, we fall back to
+ * the previous close — a real, checkable number — with a flat 0 move and
+ * `stale: true` so the UI can label it. Only when there is no previous close
+ * either does the quote read null, and the surfaces print "—".
+ */
 function shapeSnapshot(t: SnapshotTicker): Quote {
-  const price =
-    t.lastTrade?.p ?? t.min?.c ?? (t.day?.c && t.day.c > 0 ? t.day.c : null);
-  const prevClose = t.prevDay?.c ?? null;
-  const change = t.todaysChange ?? null;
-  const changePercent = t.todaysChangePerc ?? null;
+  const live = pos(t.lastTrade?.p) ?? pos(t.min?.c) ?? pos(t.day?.c);
+  const prevClose = pos(t.prevDay?.c);
+
+  // Best-known timestamp, in ms: the snapshot's own stamp, else the last
+  // trade's (both ns), else the last minute bar's (already ms).
+  const nsToMs = (n: number | null | undefined): number | null => {
+    const v = pos(n);
+    return v == null ? null : Math.floor(v / 1e6);
+  };
+  const updated = nsToMs(t.updated) ?? nsToMs(t.lastTrade?.t) ?? pos(t.min?.t);
+
+  if (live == null) {
+    // No print this session. Stand the previous close in for the mark.
+    return {
+      symbol: t.ticker,
+      price: prevClose,
+      change: prevClose == null ? null : 0,
+      changePercent: prevClose == null ? null : 0,
+      prevClose,
+      updated,
+      delayed: true,
+      stale: true,
+    };
+  }
+
   return {
     symbol: t.ticker,
-    price: price ?? null,
-    change,
-    changePercent,
+    price: live,
+    change: typeof t.todaysChange === "number" ? t.todaysChange : null,
+    changePercent:
+      typeof t.todaysChangePerc === "number" ? t.todaysChangePerc : null,
     prevClose,
-    updated: t.updated ? Math.floor(t.updated / 1e6) : null,
+    updated,
     delayed: true, // key feed is DELAYED (~15 min)
+    stale: false,
   };
 }
 
@@ -191,11 +243,14 @@ export async function getFullSnapshot(): Promise<Map<string, SnapshotRow>> {
     30_000 // ~30s — the engine runs every 10 min; this comfortably caches a run
   );
   for (const t of data?.tickers || []) {
-    const price =
-      t.lastTrade?.p ?? t.min?.c ?? (t.day?.c && t.day.c > 0 ? t.day.c : null);
+    // Same positive guard as shapeSnapshot: off-hours the session bars are all
+    // zero, and a rules engine evaluating `price_cross` against 0 would fire
+    // every "below" rule in the book.
+    const price = pos(t.lastTrade?.p) ?? pos(t.min?.c) ?? pos(t.day?.c);
     out.set(t.ticker, {
-      price: price ?? null,
-      changePercent: t.todaysChangePerc ?? null,
+      price: price ?? pos(t.prevDay?.c),
+      changePercent:
+        typeof t.todaysChangePerc === "number" ? t.todaysChangePerc : null,
       volume: typeof t.day?.v === "number" ? t.day.v : null,
     });
   }

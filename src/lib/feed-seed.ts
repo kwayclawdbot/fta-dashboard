@@ -86,6 +86,11 @@ export async function getCommunityFeedSeed(
     .select(
       `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, created_at, ${AUTHOR_SEL}`
     )
+    // KID WALL (214). RLS already scopes kid-authored rows to their household,
+    // so this is defence in depth, not the wall itself — it keeps the shared
+    // feed free of a viewer's OWN kid rows too (the policy admits those), so the
+    // club surface reads the same for every member of a household.
+    .neq("author_register", "kid")
     .order("pinned", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(60)
@@ -143,6 +148,7 @@ export async function getCommunityFeedSeed(
           .from("post_comments")
           .select("post_id")
           .in("post_id", ids)
+          .neq("author_register", "kid")
           .then(({ data }) => data ?? [])
       : Promise.resolve([] as { post_id: string }[]),
   ]);

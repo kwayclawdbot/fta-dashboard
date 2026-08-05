@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommandSearch from "@/components/search/CommandSearch";
 import type { FamilyTier } from "@/lib/tier";
-import { modeFromSolo } from "@/lib/mode";
+import { modeFromDoorOrSolo } from "@/lib/mode";
 import TierBadge from "@/components/TierBadge";
 import Avatar from "@/components/Avatar";
 import BeltChip from "@/components/dashboard/BeltChip";
@@ -116,6 +116,8 @@ interface DashboardTopBarProps {
     age_group?: string;
     tier?: FamilyTier;
     isSolo?: boolean;
+    /** Stored experience (families.door) — the brand axis. */
+    door?: "club" | "family";
   };
   /** Lifetime XP for the belt chip (null while loading). */
   xp?: number | null;
@@ -131,7 +133,7 @@ export default function DashboardTopBar({ user, xp = null, onMenuClick }: Dashbo
 
   const isKid = user.role === "child" && user.age_group === "kids";
   const pageTitle = resolveTitle(pathname, isKid, !!user.isSolo);
-  const mode = modeFromSolo(user.isSolo);
+  const mode = modeFromDoorOrSolo(user.door, user.isSolo);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

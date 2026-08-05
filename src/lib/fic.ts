@@ -186,47 +186,55 @@ export async function getOrientationState(
   const ids = memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"];
 
   // 2) Auto-detections (guarded) for steps not already recorded.
+  //
+  // IN PARALLEL, because none of them depends on another. These four head-only
+  // counts used to be four SEQUENTIAL awaits, and this function is on the
+  // critical path of the family/kid Home: every one of them paid a full Supabase
+  // round trip in turn, back to back, while the kid's dashboard sat on
+  // skeletons. The `!completed.has(...)` short-circuits are preserved exactly —
+  // a step already recorded still issues NO query at all — so WHAT is fetched is
+  // unchanged; only the waiting is.
+  const NOT_ASKED = -1;
+  const [introPosts, watchlistAdds, rsvps, missions] = await Promise.all([
+    completed.has("intro_post")
+      ? NOT_ASKED
+      : safeCount(() =>
+          supabase
+            .from("chat_messages")
+            .select("id", { count: "exact", head: true })
+            .in("user_id", ids)
+        ),
+    completed.has("add_watchlist")
+      ? NOT_ASKED
+      : safeCount(() =>
+          supabase
+            .from("family_watchlist")
+            .select("id", { count: "exact", head: true })
+            .eq("family_id", familyId)
+        ),
+    completed.has("rsvp_class")
+      ? NOT_ASKED
+      : safeCount(() =>
+          supabase
+            .from("session_rsvps")
+            .select("id", { count: "exact", head: true })
+            .in("user_id", ids)
+        ),
+    completed.has("first_mission")
+      ? NOT_ASKED
+      : safeCount(() =>
+          supabase
+            .from("mission_completions")
+            .select("id", { count: "exact", head: true })
+            .in("user_id", ids)
+        ),
+  ]);
+
   const toRecord: string[] = [];
-
-  if (!completed.has("intro_post")) {
-    const n = await safeCount(() =>
-      supabase
-        .from("chat_messages")
-        .select("id", { count: "exact", head: true })
-        .in("user_id", ids)
-    );
-    if (n > 0) toRecord.push("intro_post");
-  }
-
-  if (!completed.has("add_watchlist")) {
-    const n = await safeCount(() =>
-      supabase
-        .from("family_watchlist")
-        .select("id", { count: "exact", head: true })
-        .eq("family_id", familyId)
-    );
-    if (n >= 3) toRecord.push("add_watchlist");
-  }
-
-  if (!completed.has("rsvp_class")) {
-    const n = await safeCount(() =>
-      supabase
-        .from("session_rsvps")
-        .select("id", { count: "exact", head: true })
-        .in("user_id", ids)
-    );
-    if (n > 0) toRecord.push("rsvp_class");
-  }
-
-  if (!completed.has("first_mission")) {
-    const n = await safeCount(() =>
-      supabase
-        .from("mission_completions")
-        .select("id", { count: "exact", head: true })
-        .in("user_id", ids)
-    );
-    if (n > 0) toRecord.push("first_mission");
-  }
+  if (introPosts > 0) toRecord.push("intro_post");
+  if (watchlistAdds >= 3) toRecord.push("add_watchlist");
+  if (rsvps > 0) toRecord.push("rsvp_class");
+  if (missions > 0) toRecord.push("first_mission");
 
   // 3) Persist newly-detected completions (ignore duplicate races).
   if (toRecord.length) {

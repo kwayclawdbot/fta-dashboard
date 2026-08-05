@@ -275,10 +275,17 @@ export default function OnboardingWizard() {
   async function ensureFamily(): Promise<string | null> {
     if (familyId) return familyId;
     const famName = `${displayName.trim() || "My"}'s Family`;
+    // THE DOOR (E1, migration 215). The household step runs before this one, so
+    // a solo answer creates the family on the Club door and a household on the
+    // Family door. The RPC only writes it for a family this call actually
+    // created AND whose door is still untouched, so a member who already bought
+    // through a door keeps the one they paid for (claim_pending_membership runs
+    // first, inside).
     const { data, error: rpcErr } = await supabase.rpc("onboard_create_family", {
       p_name: famName,
       p_display_name: displayName.trim() || "Parent",
       p_avatar_url: avatarUrl,
+      p_door: isSolo ? "club" : "family",
     });
     if (rpcErr) {
       setError(rpcErr.message);

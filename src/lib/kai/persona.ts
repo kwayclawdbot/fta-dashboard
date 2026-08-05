@@ -65,22 +65,26 @@ export const KAI_COMPLIANCE_FLOOR = `COMPLIANCE FLOOR — these rules are absolu
  *     setting, opt-in, query param, or crafted "give me the club version"
  *     request can escalate a kid off this profile.
  *   - register "teen" → "family-adult" (a minor never receives the club tier).
- *   - register "adult", Family Mode OFF (solo/individual) → "club".
- *   - register "adult", Family Mode ON → "family-adult", UNLESS the adult has
+ *   - register "adult", door "club" → "club".
+ *   - register "adult", door "family" → "family-adult", UNLESS the adult has
  *     opted into "Deeper analysis mode" (deepMode) → "club".
  *
- * NOTE: `solo` is derived by the caller from src/lib/mode.ts (memberMode, the
- * C1 mode framework) and passed in here as a boolean. deepMode is ignored for
- * non-adults by construction (kid/teen return before it is ever read).
+ * NOTE: `door` is the STORED experience (families.door, migration 215) — the
+ * axis that replaced the household-shape inference. `solo` is kept only as the
+ * fallback for a member who has no family row to read a door from; it is the
+ * old src/lib/mode.ts verdict and produces the identical answer for every
+ * existing member (the migration's backfill reproduces it exactly). deepMode is
+ * ignored for non-adults by construction (kid/teen return before it is read).
  */
 export function resolveKaiProfile(
   register: Register,
-  opts: { solo?: boolean; deepMode?: boolean } = {}
+  opts: { door?: "club" | "family" | null; solo?: boolean; deepMode?: boolean } = {}
 ): KaiProfile {
   if (register === "kid") return "kid"; // hard isolation — always resolved first
   if (register === "teen") return "family-adult"; // minors never escalate
   // adult:
-  if (opts.solo || opts.deepMode) return "club";
+  const club = opts.door ? opts.door === "club" : !!opts.solo;
+  if (club || opts.deepMode) return "club";
   return "family-adult";
 }
 
@@ -279,13 +283,127 @@ export const GET_DAILY_CHANGES_TOOL = {
   },
 } as const;
 
+/* ─────────────────────── Kai Watch — chat alert tools ─────────────────────── */
+/**
+ * Conversational alert customization (LANE R4, chat surface). Three tools let an
+ * ADULT paying member set a watch by talking to Kai, with a mandatory
+ * propose → confirm → create flow:
+ *
+ *   1. propose_alert_rule — parse plain English into a concrete proposal (SAME
+ *      parser as /api/kai-watch/parse, via src/lib/alerts/parse). PROPOSES ONLY,
+ *      never writes. Kai reads the result back and asks for an explicit yes.
+ *   2. create_alert_rule  — insert the confirmed rule(s). Called ONLY after the
+ *      member says yes. The caller identity is derived from the authenticated
+ *      session server-side (never from the model); own-row RLS + the 20-active
+ *      DB cap apply. Params are re-sanitized server-side before insert.
+ *   3. list_my_alerts     — read the member's active rules + followed setups.
+ *
+ * These are gated to paying ADULTS (register 'adult' + non-free tier) — the exact
+ * gate the Kai Watch panel uses. Teens (family-adult register) and kids never see
+ * them; the route computes that flag and passes it to chatToolsForProfile.
+ */
+
+/** Loose per-kind params object the model echoes back on create (re-sanitized server-side). */
+const ALERT_RULE_PARAMS_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    op: { type: "string", enum: ["above", "below"] },
+    price: { type: "number" },
+    pct: { type: "number" },
+    window: { type: "string", enum: ["1d", "5d"] },
+    ratio: { type: "number" },
+    level: { type: "number" },
+    ema: { type: "integer", enum: [20, 50] },
+    side: { type: "string", enum: ["above", "below"] },
+    edge: { type: "string", enum: ["high", "low"] },
+    sentiment: { type: "string", enum: ["bullish", "bearish"] },
+    move: { type: "number" },
+  },
+} as const;
+
+export const PROPOSE_ALERT_RULE_TOOL = {
+  name: "propose_alert_rule",
+  description:
+    "Turn a member's plain-English watch request (e.g. 'tell me if NVDA drops below 150 and volume spikes', 'ping me when AAPL hits a new 52-week high') into a concrete PROPOSED alert rule. This PROPOSES ONLY — it does NOT save anything. It returns structured rule(s) with a plain-language label plus a note. You MUST read the proposal back to the member in plain English and get an explicit yes before calling create_alert_rule. If the request can't be watched, the result says so with the closest supported alternative — offer that instead. Alerts are NOTIFICATIONS, never advice.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      request: {
+        type: "string",
+        description:
+          "The member's watch request in their own words, e.g. 'watch NVDA over 200 with a volume spike'. Include the ticker if they named one.",
+      },
+    },
+    required: ["request"],
+  },
+} as const;
+
+export const CREATE_ALERT_RULE_TOOL = {
+  name: "create_alert_rule",
+  description:
+    "SAVE alert rule(s) the member has just explicitly confirmed. Call this ONLY after propose_alert_rule returned a proposal AND the member clearly said yes to it. Pass the exact rule(s) from that proposal. Never call this without a confirmed proposal, and never invent a rule here. The alert is saved to the member's own account (identity is taken from their session, not from you); a 20-active-alert cap applies. On success, confirm what's now live in one line.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      rules: {
+        type: "array",
+        description: "The confirmed rule(s), copied from the propose_alert_rule result.",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            kind: {
+              type: "string",
+              enum: [
+                "price_cross",
+                "pct_move",
+                "vol_surge",
+                "rsi_cross",
+                "ema_cross",
+                "w52_break",
+                "sentiment_velocity",
+                "news_event",
+              ],
+            },
+            ticker: { type: "string", description: "Ticker symbol (uppercase); omit only for universe-wide kinds." },
+            params: ALERT_RULE_PARAMS_SCHEMA,
+          },
+          required: ["kind", "params"],
+        },
+      },
+    },
+    required: ["rules"],
+  },
+} as const;
+
+export const LIST_MY_ALERTS_TOOL = {
+  name: "list_my_alerts",
+  description:
+    "List what the member is currently watching: their active personalized alert rules AND the Kai Daily setups they're following. Call this for 'what am I watching', 'what alerts do I have', 'what setups did you send me', or before offering to add a new alert. Read-only, own account.",
+  input_schema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {},
+  },
+} as const;
+
 /**
  * The tool set for a given profile. Kid + family-adult get the education tools;
- * club additionally gets the actionable "what changed today" briefing tool.
+ * club additionally gets the actionable "what changed today" briefing tool. When
+ * `opts.alerts` is true (paying ADULT — resolved server-side, same gate as the
+ * Kai Watch panel), the conversational alert-customization tools are added too;
+ * this is intentionally NOT keyed off the profile alone, because family-adult
+ * covers teens, who must never get alert tools.
  */
-export function chatToolsForProfile(profile: KaiProfile) {
-  if (profile === "club") return [...CHAT_TOOLS, GET_DAILY_CHANGES_TOOL];
-  return CHAT_TOOLS;
+export function chatToolsForProfile(profile: KaiProfile, opts: { alerts?: boolean } = {}) {
+  const base = profile === "club" ? [...CHAT_TOOLS, GET_DAILY_CHANGES_TOOL] : [...CHAT_TOOLS];
+  if (opts.alerts) {
+    return [...base, PROPOSE_ALERT_RULE_TOOL, CREATE_ALERT_RULE_TOOL, LIST_MY_ALERTS_TOOL];
+  }
+  return base;
 }
 
 /**
@@ -373,6 +491,20 @@ export function buildPersonalizationBlock(p: KaiPersonalization): string {
 }
 
 /**
+ * Conversational alert-setting instructions (LANE R4). Appended to the system
+ * prompt ONLY for paying adults who have the alert tools. Hard-codes the
+ * propose → confirm → create flow and the notification-not-advice framing so Kai
+ * always states the parsed rule and gets an explicit yes before it saves.
+ */
+export const KAI_ALERT_TOOLS_PROMPT = `\n\nSETTING ALERTS (this member can have Kai watch things for them):
+- You can set price/level, big-move, volume-surge, RSI, moving-average, 52-week-high/low, club-sentiment, and fresh-news alerts. These are NOTIFICATIONS — "I'll tell you when X happens" — never advice, never "you should buy/sell," never a price prediction.
+- When the member asks to be alerted, notified, pinged, or "told when" something happens (e.g. "watch NVDA over 200 with volume", "let me know if AAPL hits a new high"), call propose_alert_rule with their request. It PROPOSES a concrete rule — it does NOT save anything.
+- ALWAYS confirm before saving. Read the proposed rule back in plain English — the ticker, the exact condition, and the threshold ("So I'll ping you when NVDA closes above $200 and volume runs 3× its average — want me to set that?") — and wait for a clear yes. Never save a rule the member hasn't explicitly confirmed.
+- Only AFTER the member confirms, call create_alert_rule with the exact rule(s) from the proposal. The alert saves to their own account and there's a 20-active-alert cap; if they're at the cap, tell them to pause one first. After it saves, confirm what's now live in one line.
+- If the request isn't something you can watch (analyst ratings, whether a thesis "really" changed, "when it's a good buy", predicting the price), say plainly what you can't do and offer the closest thing you CAN watch (the proposal's note names it) — e.g. a news alert or a price/volume move.
+- Use list_my_alerts to answer "what am I watching / what alerts do I have / what setups did you send me," and before offering to add something they may already have.`;
+
+/**
  * Ask-Kai chat system prompt, profile-aware (Lane C2).
  *
  * `profile` is the guardrail tier (server-resolved via resolveKaiProfile).
@@ -380,13 +512,19 @@ export function buildPersonalizationBlock(p: KaiPersonalization): string {
  * education-first profiles, which are produced byte-for-byte as before so kid
  * and family-adult behavior is unchanged. Only `profile === "club"` takes the
  * new actionable branch.
+ *
+ * `opts.alerts` (paying adult, resolved server-side) appends the conversational
+ * alert-setting instructions. Guarded to adults here too — never for kids/teens.
  */
 export function buildChatSystemPrompt(
   register: Register,
   profile: KaiProfile,
-  personalizationBlock: string = ""
+  personalizationBlock: string = "",
+  opts: { alerts?: boolean } = {}
 ): string {
-  if (profile === "club") return buildClubChatSystemPrompt(personalizationBlock);
+  const alertsBlock = opts.alerts && register === "adult" ? KAI_ALERT_TOOLS_PROMPT : "";
+  const trailing = alertsBlock + personalizationBlock;
+  if (profile === "club") return buildClubChatSystemPrompt(trailing);
 
   const audience =
     register === "kid"
@@ -403,7 +541,7 @@ You are "Ask Kai" — a conversational research assistant inside the app. Use yo
 
 Answer in clean, well-structured Markdown. Keep answers focused. When you decline an advice question, be brief and warm, then offer what you CAN help study.
 
-Where relevant, point members to deeper study on the platform: the research wiki page for a company is at /research/TICKER (e.g. /research/AAPL), and the community watchlist board is at /watchlist/community.${personalizationBlock}`;
+Where relevant, point members to deeper study on the platform: the research wiki page for a company is at /research/TICKER (e.g. /research/AAPL), and the community watchlist board is at /watchlist/community.${trailing}`;
 }
 
 /**

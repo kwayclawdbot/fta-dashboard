@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { m, AnimatePresence } from "@/lib/motion";
@@ -59,6 +59,29 @@ import { formatExchange } from "@/lib/market/exchange";
 import ScrollRow from "@/components/canvas2/ScrollRow";
 
 const PAGE_SIZE = 100;
+/** PostgREST caps a page at 1000 rows; this is that cap, named. */
+const UNIVERSE_PAGE = 1000;
+/**
+ * How much of the universe loads without being asked. Sorted by market cap
+ * descending, the first 4,000 rows are every company with a market cap the data
+ * set knows about plus a deep tail of small caps — more than any default view
+ * shows and more than a filtered screen normally reaches. The remainder (mostly
+ * micro-caps and unpriced listings) is one click away and is ANNOUNCED rather
+ * than silently missing. See the long note in `load` for why this is not simply
+ * "fetch everything".
+ */
+const AUTO_UNIVERSE_ROWS = 4000;
+
+/** A Postgres/PostgREST failure, said in a sentence a member can act on. */
+function readErrorLine(err: { code?: string; message?: string } | null): string {
+  if (err?.code === "57014") {
+    return "The market data took too long to come back. Some of the universe is missing from this screen.";
+  }
+  return err?.message
+    ? `Couldn't load part of the universe (${err.message}).`
+    : "Couldn't load part of the universe.";
+}
+
 const METRIC_COLS =
   "ticker, name, sector, exchange, type, mcap, price, chg_1d, chg_5d, chg_1m, chg_3m, vol, avg_vol_20, vol_ratio, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, gap_pct, like_count, updated_at";
 
@@ -234,6 +257,17 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
 
   const [rows, setRows] = useState<ScreenerRow[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
+  /** How many rows exist upstream — the honest denominator for the match line. */
+  const [universeTotal, setUniverseTotal] = useState<number | null>(null);
+  /** A universe page that FAILED. Stated, never swallowed. */
+  const [universeError, setUniverseError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // `loadMoreUniverse` resumes from wherever the rows currently end without
+  // re-subscribing to `rows` (which would rebuild the callback on every append).
+  const rowsRef = useRef<ScreenerRow[]>([]);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
 
   const [custom, setCustom] = useState<CustomFilters>({});
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
@@ -328,14 +362,27 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
       setTierResolved(true);
     });
 
-    // Full universe (~10k) — PostgREST caps a page at 1000, so fetch the count
-    // then pull all pages via .range() calls. Every filter / sort / search then
-    // runs client-side → instant. To keep FIRST PAINT fast under a throttled
-    // connection we don't block on the whole universe: fetch page 1 (the top
-    // 1000 by mcap — exactly what the default mcap-desc view shows first) plus
-    // count + meta, render immediately, then stream the remaining pages in the
-    // background and append. The visible first page is correct from page 1
-    // alone; full-universe filtering lights up a beat later as the rest lands.
+    /* ── HOW MUCH UNIVERSE TO PULL, AND HOW ──────────────────────────────
+       WHAT WAS BROKEN. This used to compute `pages` from the row count (~11,500
+       → 12 pages) and fire EVERY page at once inside one `Promise.all`. Each of
+       those is a 1,000-row, 22-column read that the planner answers with a seq
+       scan and an ON-DISK merge sort (~270ms of server time each, verified on
+       the production table), so a single visit asked Postgres for a dozen
+       simultaneous disk sorts. Predictably some of them died on the statement
+       timeout — 57014, on `offset=3000` and `offset=7000` every load — and the
+       result was DISCARDED IN SILENCE by `if (r.data)`. The member was left
+       with whichever pages survived, roughly 4,000 rows, while the results
+       header said "4,000 MATCHES" as though that were the market.
+
+       WHAT HAPPENS NOW. Pages are fetched ONE AT A TIME, so the database is
+       never asked for more than one sort at once, and only up to
+       AUTO_UNIVERSE_ROWS of them load on their own. That window is the whole of
+       what any default view can show (sorted by market cap, the visible table
+       never reaches past it) and it covers every company a member is likely to
+       screen for. The rest of the tail loads when it is asked for — see
+       `loadMoreUniverse` — and until it does the surface SAYS SO next to the
+       match count. A page that fails now sets `universeError` and stops;
+       nothing is dropped quietly. */
     const pageQuery = (i: number) =>
       supabase
         .from("screener_metrics")
@@ -343,7 +390,7 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         .not("price", "is", null)
         .order("mcap", { ascending: false, nullsFirst: false })
         .order("ticker", { ascending: true })
-        .range(i * 1000, i * 1000 + 999);
+        .range(i * UNIVERSE_PAGE, i * UNIVERSE_PAGE + UNIVERSE_PAGE - 1);
 
     const [countRes, metaRes, firstRes] = await Promise.all([
       supabase
@@ -359,22 +406,65 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
     ]);
 
     setMeta((metaRes.data as Meta) ?? null);
-    setRows((firstRes.data as ScreenerRow[]) ?? []);
+    setUniverseTotal(countRes.count ?? null);
+    if (firstRes.error) {
+      setUniverseError(readErrorLine(firstRes.error));
+      setRows([]);
+    } else {
+      setRows((firstRes.data as ScreenerRow[]) ?? []);
+    }
     setLoading(false); // paint the top-of-universe page now
+    if (firstRes.error) return;
 
     const total = countRes.count ?? 0;
-    const pages = Math.max(1, Math.ceil(total / 1000));
-    if (pages > 1) {
-      const rest = await Promise.all(
-        Array.from({ length: pages - 1 }, (_, i) => pageQuery(i + 1))
-      );
-      setRows((prev) => {
-        const all = [...prev];
-        for (const r of rest) if (r.data) all.push(...(r.data as ScreenerRow[]));
-        return all;
-      });
+    const autoPages = Math.min(
+      Math.ceil(total / UNIVERSE_PAGE),
+      Math.ceil(AUTO_UNIVERSE_ROWS / UNIVERSE_PAGE)
+    );
+    // Sequential on purpose — see the note above. One page in flight at a time.
+    for (let i = 1; i < autoPages; i++) {
+      const res = await pageQuery(i);
+      if (res.error) {
+        setUniverseError(readErrorLine(res.error));
+        return;
+      }
+      const batch = (res.data as ScreenerRow[]) ?? [];
+      setRows((prev) => [...prev, ...batch]);
+      if (batch.length < UNIVERSE_PAGE) return; // ran out early — done
     }
   }, [supabase]);
+
+  /**
+   * Pull the rest of the tail, on request. Same one-page-at-a-time discipline;
+   * the button that calls it reports progress and any failure rather than
+   * leaving the member to guess how much of the market they just screened.
+   */
+  const loadMoreUniverse = useCallback(async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    setUniverseError(null);
+    const total = universeTotal ?? 0;
+    let loaded = rowsRef.current.length;
+    while (loaded < total) {
+      const res = await supabase
+        .from("screener_metrics")
+        .select(METRIC_COLS)
+        .not("price", "is", null)
+        .order("mcap", { ascending: false, nullsFirst: false })
+        .order("ticker", { ascending: true })
+        .range(loaded, loaded + UNIVERSE_PAGE - 1);
+      if (res.error) {
+        setUniverseError(readErrorLine(res.error));
+        break;
+      }
+      const batch = (res.data as ScreenerRow[]) ?? [];
+      if (batch.length === 0) break;
+      setRows((prev) => [...prev, ...batch]);
+      loaded += batch.length;
+      if (batch.length < UNIVERSE_PAGE) break;
+    }
+    setLoadingMore(false);
+  }, [supabase, loadingMore, universeTotal]);
 
   useEffect(() => {
     load();
@@ -602,6 +692,8 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   // wall is untouched and still governs the universe read.
 
   const chips = activeChips(custom);
+  /** Is every upstream row in hand? Drives what the match count claims. */
+  const universeComplete = universeTotal == null || rows.length >= universeTotal;
   const coverage =
     meta?.mcap_count != null && meta?.common_count
       ? Math.round((meta.mcap_count / meta.common_count) * 100)
@@ -888,9 +980,17 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
         {/* Results header — board 15's line, verbatim shape:
             "14 MATCHES · SORTED BY CLUB SIGNAL"   ·   "Save screen" */}
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+          {/* THE COUNT AND WHAT IT COUNTED. A match count is only meaningful
+              against the set it searched, so when the tail of the universe
+              isn't loaded the line says how many rows were actually screened
+              instead of implying the whole market. */}
           <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-soft">
             {results.length.toLocaleString()}{" "}
-            {results.length === 1 ? "MATCH" : "MATCHES"} · SORTED BY{" "}
+            {results.length === 1 ? "MATCH" : "MATCHES"}
+            {universeComplete || results.length === rows.length
+              ? ""
+              : ` OF ${rows.length.toLocaleString()} SCREENED`}{" "}
+            · SORTED BY{" "}
             {(SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "").toUpperCase()}
           </span>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -939,6 +1039,41 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
             </button>
           </div>
         </div>
+
+        {/* ── WHAT WAS ACTUALLY SCREENED ───────────────────────────────────
+            The universe used to fail in silence: deep pages timed out, their
+            results were dropped, and nothing on the surface admitted it. Both
+            states are now stated — a partial window with the way to complete
+            it, and an outright failure with what went wrong. */}
+        {universeError && (
+          <p className="text-[11px] leading-snug text-soft">
+            {universeError}{" "}
+            <button
+              onClick={() => void loadMoreUniverse()}
+              className="f0-focus rounded font-semibold text-gold-700 underline decoration-1 underline-offset-2"
+            >
+              Try again
+            </button>
+          </p>
+        )}
+        {!universeError && !universeComplete && (
+          <p className="text-[11px] leading-snug text-soft">
+            Screening the top {rows.length.toLocaleString()} companies by market
+            cap.{" "}
+            {loadingMore ? (
+              <span className="font-semibold text-ink">
+                Loading the rest of the market…
+              </span>
+            ) : (
+              <button
+                onClick={() => void loadMoreUniverse()}
+                className="f0-focus rounded font-semibold text-gold-700 underline decoration-1 underline-offset-2"
+              >
+                Include all {(universeTotal ?? 0).toLocaleString()}
+              </button>
+            )}
+          </p>
+        )}
 
         {/* FOUNDING STATE. The surface opens on CLUB SIGNAL, and a club of nine
             tickers with one or two participants each has no signal to sort by —

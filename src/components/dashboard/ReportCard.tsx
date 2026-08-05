@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { levelForXp } from "@/lib/xp";
 import { BoardSection } from "@/components/clubhome/board";
 import { Meter, dash } from "@/components/f0/parts";
+import { buildNeedsWork, type NeedsWorkFlag } from "@/lib/family/report-card-flags";
 
 /**
  * REPORT CARD — a child's week, as a board object.
@@ -72,30 +73,10 @@ interface Stats {
   error?: string;
 }
 
-function olderThanDays(iso: string | null, days: number): boolean {
-  if (!iso) return true;
-  return Date.now() - new Date(iso).getTime() > days * 86400000;
-}
-
-/** Impure (reads the clock) — callers must run this in an effect, never render. */
-function buildNeedsWork(s: Stats): string[] {
-  const out: string[] = [];
-  if (s.behind_count > 0)
-    out.push(
-      `Behind pace — ${s.behind_count} unlocked lesson${
-        s.behind_count === 1 ? "" : "s"
-      } still open`
-    );
-  if (s.quiz_low > 0)
-    out.push(
-      `${s.quiz_low} quiz${s.quiz_low === 1 ? "" : "zes"} below 70% — retake suggested`
-    );
-  if (olderThanDays(s.last_practice_at, 7))
-    out.push("No pattern or game practice in the last 7 days");
-  if (olderThanDays(s.last_flashcard_at, 7))
-    out.push("No flashcard reviews in the last 7 days");
-  return out;
-}
+/* `buildNeedsWork` moved to lib/family/report-card-flags.ts, where each flag
+   now carries BOTH the bullet a parent reads and the imperative the coach's
+   note needs — see that file for why the note used to say "the best next step
+   is to No pattern or game practice in the last 7 days." */
 
 export default function ReportCard({
   childId,
@@ -106,7 +87,7 @@ export default function ReportCard({
 }) {
   const supabase = createClient();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [needsWork, setNeedsWork] = useState<string[]>([]);
+  const [needsWork, setNeedsWork] = useState<NeedsWorkFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const [noteLoading, setNoteLoading] = useState(false);
@@ -136,7 +117,10 @@ export default function ReportCard({
               gamesBest: s.game_count > 0 ? s.game_best : null,
               xp: s.xp,
               level: levelForXp(s.xp).name,
-              needsWork: work,
+              // Both halves travel: the diagnoses the model may cite, and the
+              // imperatives the deterministic fallback sentence needs.
+              needsWork: work.map((f) => f.label),
+              nextSteps: work.map((f) => f.nextStep),
             },
           }),
         });
@@ -301,12 +285,12 @@ export default function ReportCard({
           <BoardSection id={`rc-work-${childId}`} label="Needs" mark="work">
             <ul className="mt-2.5 space-y-1.5">
               {needsWork.map((n) => (
-                <li key={n} className="flex gap-2 text-[13.5px] leading-snug text-ink">
+                <li key={n.label} className="flex gap-2 text-[13.5px] leading-snug text-ink">
                   <AlertTriangle
                     className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-600"
                     aria-hidden
                   />
-                  {n}
+                  {n.label}
                 </li>
               ))}
             </ul>

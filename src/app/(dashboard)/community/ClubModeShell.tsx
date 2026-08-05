@@ -48,12 +48,8 @@ const MODE_PRESENCE: Record<Mode, string> = {
 
 export default function ClubModeShell({
   initialData,
-  demoEvents = false,
 }: {
   initialData: CommunityFeedSeed | null;
-  /** preview/dev only — surface fixture live_events so the Live mode + on-air
-   *  rule are reviewable before the S2.5 backend lands. */
-  demoEvents?: boolean;
 }) {
   const searchParams = useSearchParams();
   // Go-live deep-link (/club?live={id} → /community?mode=live&live={id}): the
@@ -92,7 +88,7 @@ export default function ClubModeShell({
 
   // LOADING IS NOT EMPTY: the live tab owns "Nobody is on the air." at
   // display size, so it needs the in-flight signal, not just an empty array.
-  const { events, loading: eventsLoading } = useLiveEventsState({ fixtures: demoEvents });
+  const { events, loading: eventsLoading } = useLiveEventsState();
   const showLive = !isKid;
   const primaryLive = showLive ? primaryLiveEvent(events) : null;
   const liveNow = primaryLive && isEventUrgent(primaryLive) ? primaryLive : null;
@@ -218,6 +214,7 @@ export default function ClubModeShell({
             posts={initialData?.posts ?? []}
             meId={me?.id ?? null}
             tier={tier}
+            register={register}
             roomId={roomId}
             onOpenRoom={(id) => {
               setRoomId(id);

@@ -2,9 +2,18 @@ export const dynamic = "force-dynamic";
 
 import { createClient } from "@/lib/supabase/server";
 import ShopBrowser from "@/components/shop/ShopBrowser";
-import { PRODUCT_SELECT, type ShopProduct } from "@/lib/shop";
+import { PRODUCT_SELECT, isListable, type ShopProduct } from "@/lib/shop";
+import { redirectKids } from "@/lib/server/viewer-register";
 
 export default async function ShopPage() {
+  // NO CHILD IS EVER PUT IN FRONT OF A CHECKOUT. Shop sat in the kid navigation
+  // and every product page carried a working Stripe "Buy now", so a kid was two
+  // taps from a card form. The nav row is gone (DashboardSidebar/MobileTabBar)
+  // and this is the door behind it — the /screener pattern, server-side, so a
+  // typed URL or an old link lands the same way. Signed-out visitors are
+  // untouched: the storefront stays public.
+  await redirectKids();
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("shop_products")
@@ -12,7 +21,9 @@ export default async function ShopPage() {
     .eq("active", true)
     .order("sort", { ascending: true });
 
-  const products = (data || []) as ShopProduct[];
+  // Only finished offers reach the grid — a row with no price or no cover is a
+  // record the shop keeps, not a book it sells. See isListable.
+  const products = ((data || []) as ShopProduct[]).filter(isListable);
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-10">

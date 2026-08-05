@@ -166,6 +166,13 @@ export interface CreateOpts {
   email?: string | null;
   /** Selected one-time order bump, if any. */
   bump?: BumpChoice;
+  /**
+   * The EXPERIENCE this checkout was entered through (E1), resolved from the
+   * request host. Rides in session metadata so the webhook can stamp
+   * families.door for the buyer — the door is decided by the door they walked
+   * through, once, at provisioning.
+   */
+  door?: "club" | "family";
 }
 
 /**
@@ -213,6 +220,10 @@ export async function createClubCheckoutSession(
   if (userId) form.set("subscription_data[metadata][user_id]", userId);
   form.set("metadata[kind]", "club_membership");
   if (src) form.set("metadata[src]", src);
+  if (opts.door) {
+    form.set("metadata[door]", opts.door);
+    form.set("subscription_data[metadata][door]", opts.door);
+  }
   if (userId) {
     form.set("client_reference_id", userId);
     form.set("metadata[user_id]", userId);
@@ -260,6 +271,10 @@ export async function createVipCheckoutSession(
   if (userId) form.set("subscription_data[metadata][user_id]", userId);
   form.set("metadata[kind]", "challenge_vip");
   if (src) form.set("metadata[src]", src);
+  if (opts.door) {
+    form.set("metadata[door]", opts.door);
+    form.set("subscription_data[metadata][door]", opts.door);
+  }
   if (userId) {
     form.set("client_reference_id", userId);
     form.set("metadata[user_id]", userId);
