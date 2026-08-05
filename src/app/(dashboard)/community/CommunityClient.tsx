@@ -340,6 +340,11 @@ export default function CommunityClient({
         .select(
           `id, author_id, family_id, kind, body, title, link, audience, attachment_url, attachment_type, attachment_meta, activity_payload, anchor_week_id, pinned, ticker_tags, position, time_horizon, content_type, created_at, ${AUTHOR_SEL}`
         )
+        // KID WALL (214). Kid-authored rows are family-only in RLS; this keeps
+        // the SHARED feed clean of them even for the household that can see them,
+        // so /community renders identically for everyone. Kid achievement lives
+        // on the family surfaces.
+        .neq("author_register", "kid")
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(60);
@@ -358,7 +363,7 @@ export default function CommunityClient({
       if (ids.length) {
         const [{ data: likes }, { data: comments }] = await Promise.all([
           supabase.from("post_likes").select("post_id, user_id").in("post_id", ids),
-          supabase.from("post_comments").select("post_id").in("post_id", ids),
+          supabase.from("post_comments").select("post_id").in("post_id", ids).neq("author_register", "kid"),
         ]);
         const lc: Record<string, number> = {};
         const mine = new Set<string>();
@@ -720,6 +725,8 @@ export default function CommunityClient({
         .from("post_comments")
         .select(`id, post_id, author_id, body, created_at, ${COMMENT_AUTHOR_SEL}`)
         .eq("post_id", postId)
+        // KID WALL (214) — kid replies never render in the shared thread.
+        .neq("author_register", "kid")
         .order("created_at", { ascending: true });
       const norm: PostComment[] = (data ?? []).map((r) => {
         const raw = r as unknown as PostComment & { author: FeedAuthor | FeedAuthor[] | null };
@@ -732,6 +739,11 @@ export default function CommunityClient({
   }
   async function addComment(postId: string, body: string): Promise<boolean> {
     if (!me) return false;
+    // KID FEED READ-ONLY (161 + 214). The authority is the post_comments INSERT
+    // policy; this is the matching client guard so a kid who reaches the call by
+    // any route (a stale render, a keyboard submit) fails quietly instead of
+    // firing a write the database will reject.
+    if (isSharedFeedReadOnly(deriveRegister(me))) return false;
     const clean = checkClean(body);
     if (!clean.ok) return false;
     const { data, error } = await supabase
@@ -1334,6 +1346,7 @@ export default function CommunityClient({
                           likeCount={likeCount[p.id] || 0} liked={likedByMe.has(p.id)} onLike={() => toggleLike(p.id)}
                           commentCount={commentCount[p.id] || 0} commentsOpen={!!openComments[p.id]} onToggleComments={() => toggleComments(p.id)}
                           comments={commentsByPost[p.id]} onAddComment={addComment} tierOf={tierOf} xpOf={xpOf}
+                          feedReadOnlyKid={feedReadOnlyKid}
                           canManage={!!me && !!p.author_id && p.author_id === me.id && !feedReadOnlyKid}
                           onEditPost={savePostEdit} onDeletePost={deletePost}
                         />
@@ -1492,6 +1505,13 @@ interface EngagementProps {
   onAddComment: (postId: string, body: string) => Promise<boolean>;
   tierOf: (a: FeedAuthor | null) => FamilyTier;
   xpOf?: (userId: string | null | undefined) => number;
+  /**
+   * KID FEED READ-ONLY (161 + 214). The viewer is a kid, so the shared feed is
+   * read + react only: no reply box, a warm note instead. This was computed at
+   * the top of the client and never threaded down here, so kids kept being
+   * offered a reply box whose submit the database now refuses.
+   */
+  feedReadOnlyKid?: boolean;
   /** Your own entry — the overflow menu is offered only when this is true. */
   canManage?: boolean;
   onEditPost?: (postId: string, body: string) => Promise<{ ok: boolean; error?: string }>;
@@ -2048,7 +2068,7 @@ function WatchlistShareCard({ payload }: { payload: WatchlistSharePayload }) {
 }
 
 function CommentThread(props: EngagementProps) {
-  const { post, me, comments, onAddComment, readOnly, xpOf } = props;
+  const { post, me, comments, onAddComment, readOnly, feedReadOnlyKid, xpOf } = props;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -2098,7 +2118,14 @@ function CommentThread(props: EngagementProps) {
           to reply
         </p>
       )}
-      {me && !readOnly && (
+      {/* KID FEED READ-ONLY (214): the same warm note the composer slot shows,
+          in place of a reply box the server will refuse. Read + react stays. */}
+      {me && !readOnly && feedReadOnlyKid && (
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+          {KID_FEED_READONLY_NOTE}
+        </p>
+      )}
+      {me && !readOnly && !feedReadOnlyKid && (
         <div>
           {err && <p className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-ink">{err}</p>}
           <div className="flex items-end gap-2.5">
