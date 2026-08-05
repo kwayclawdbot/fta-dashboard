@@ -11,6 +11,7 @@ import type {
   TrendingResponse,
 } from "@/lib/clubhome/contract";
 import { BoardSection, BrandTile } from "./board";
+import PostInteractions from "./PostInteractions";
 
 /**
  * WHERE THE CLUB SPLITS — the block that renders two of the sections Home has
@@ -38,6 +39,10 @@ import { BoardSection, BrandTile } from "./board";
  *
  *   3  THE BEST THINKING — the top member-authored post by real engagement, as
  *      one board card row. One post, not a feed: the feed is /community's job.
+ *      It is INTERACTIVE: like and reply happen on the card (<PostInteractions>).
+ *      They used to exist only inside the /community feed, which the 07-31
+ *      "community = chat" directive unrouted — so the product showed a reply
+ *      count with no way to reply. The card is where the verbs belong now.
  *
  * FOUNDING STATES ARE DESIGNED, not accidental. The club is small: most days
  * there is no contested ticker and often no debate. Each object is absent when
@@ -203,35 +208,50 @@ export default function ClubSplit({
         {/* 2 — the live debate, votable in place */}
         {liveDebate && <DebateBlock debate={liveDebate} />}
 
-        {/* 3 — the best thinking, one row */}
+        {/* 3 — the best thinking, one row, now with the two verbs it was
+            missing. The row is still a link to the post's home; the interaction
+            line sits under it, INSIDE the same card, so the card stays one
+            object rather than becoming a card with a toolbar. The reply count
+            moved out of the byline and onto the affordance that opens it — a
+            count you can act on beats a count you can only read. */}
         {lead && (
-          <Link
-            href={lead.href}
-            className="club-b-card f0-focus f0-press flex items-center gap-2.5 px-3 py-[10px]"
-          >
-            <span
-              className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] text-accent"
-              style={{
-                background: "color-mix(in srgb, var(--accent-solid) 13%, transparent)",
-              }}
-              aria-hidden
+          <div className="club-b-card px-3 py-[10px]">
+            <Link
+              href={lead.href}
+              className="f0-focus f0-press -mx-1 flex items-center gap-2.5 rounded-lg px-1"
             >
-              <MessageSquare className="h-3.5 w-3.5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[12.5px] font-semibold text-ink">
-                {lead.title}
+              <span
+                className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[8px] text-accent"
+                style={{
+                  background: "color-mix(in srgb, var(--accent-solid) 13%, transparent)",
+                }}
+                aria-hidden
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
               </span>
-              <span className="block truncate text-[11px] text-soft">
-                {lead.author.name}
-                {lead.author.badge ? ` · ${lead.author.badge}` : ""}
-                {lead.comments > 0
-                  ? ` · ${lead.comments} repl${lead.comments === 1 ? "y" : "ies"}`
-                  : ""}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12.5px] font-semibold text-ink">
+                  {/* The composer does not require a title, so the top post
+                      frequently has none — the row used to render a blank
+                      line where the subject belongs. First words of the post
+                      instead: the member's own sentence, never invented copy. */}
+                  {lead.title?.trim() || lead.excerpt?.trim() || "A member's thinking"}
+                </span>
+                <span className="block truncate text-[11px] text-soft">
+                  {lead.author.name}
+                  {lead.author.badge ? ` · ${lead.author.badge}` : ""}
+                </span>
               </span>
-            </span>
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-soft" aria-hidden />
-          </Link>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-soft" aria-hidden />
+            </Link>
+            <PostInteractions
+              postId={lead.id}
+              likes={lead.votes}
+              liked={lead.likedByMe ?? false}
+              comments={lead.comments}
+              isKid={isKid}
+            />
+          </div>
         )}
       </div>
     </BoardSection>

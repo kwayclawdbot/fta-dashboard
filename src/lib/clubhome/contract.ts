@@ -136,10 +136,17 @@ export interface ThinkingPost {
   ticker?: string | null;
   company?: string | null;
   title: string;
+  /** First 240 chars of the body — the card's fallback line when a post carries
+   *  no title (the composer does not require one). */
+  excerpt?: string | null;
   author: ThinkingAuthor;
   saves: number;
   comments: number;
   votes: number;
+  /** Has the requesting member liked it — the card renders its own like state
+   *  (lane B). Server-answered from the like read the ranking already pays for,
+   *  so the client never fetches its own likes. */
+  likedByMe?: boolean;
   href: string;
   editorPick?: boolean;
 }
