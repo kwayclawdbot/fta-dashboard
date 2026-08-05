@@ -308,6 +308,7 @@ function InviteMemberButton() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [program, setProgram] = useState<"fic" | "fta">("fic");
+  const [door, setDoor] = useState<"family" | "club">("family");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -324,7 +325,7 @@ function InviteMemberButton() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session?.access_token ?? ""}`,
       },
-      body: JSON.stringify({ email, program }),
+      body: JSON.stringify({ email, program, door }),
     });
     const j = await res.json().catch(() => ({}));
     setBusy(false);
@@ -388,6 +389,29 @@ function InviteMemberButton() {
                   }`}
                 >
                   {pr === "fic" ? "FIC — Investing Club" : "FTA — Trading Academy"}
+                </button>
+              ))}
+            </div>
+            {/* THE DOOR (E1) — which experience this member is provisioned
+                into. Not a plan and not a tier: the same membership, entered
+                through Cheat Code Club (individual) or Family Investing Club.
+                Stamped once at provisioning; changed afterwards only by the
+                explicit conversion flow, never by a domain visit. */}
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+              Door
+            </p>
+            <div className="flex gap-2 mb-4">
+              {(["family", "club"] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDoor(d)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${
+                    door === d
+                      ? "bg-accent/15 border-accent text-accent"
+                      : "border-sand text-soft"
+                  }`}
+                >
+                  {d === "family" ? "Family Investing Club" : "Cheat Code Club"}
                 </button>
               ))}
             </div>

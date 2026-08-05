@@ -7,6 +7,7 @@ import {
 import { verifyContinuationToken } from "@/lib/server/challenge-token";
 import { bumpNeedsShipping } from "@/lib/checkout-bumps";
 import type { BumpChoice, CheckoutFlow } from "@/lib/checkout-bumps";
+import { EXPERIENCE_HEADER, parseExperience } from "@/lib/experience/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
     name: body.name?.trim() || shipping?.name?.trim(),
     shipping: needsShipping ? shipping : undefined,
     userId,
+    door: parseExperience(req.headers.get(EXPERIENCE_HEADER)) ?? undefined,
   });
 
   if (result.error || !result.clientSecret) {

@@ -8,6 +8,7 @@ import {
   peSessionFromInvoice,
   peSessionFromPaymentIntent,
 } from "@/lib/server/pe-session";
+import { parseExperience } from "@/lib/experience/registry";
 
 /**
  * Stripe checkout.session.completed → provision membership + send the
@@ -204,6 +205,10 @@ export async function POST(req: NextRequest) {
         source: "stripe",
         stripeSession: s.id,
         clubMonths: isChallenge ? 12 : undefined,
+        // E1: the door the buyer walked through, stamped into the checkout's
+        // metadata from the entry host. Absent on legacy payment-link sessions
+        // — then the onboarding answer decides, exactly as before.
+        door: parseExperience(s.metadata?.door) ?? undefined,
       });
       if (!result.ok) {
         console.error("stripe provision failed:", result.error);

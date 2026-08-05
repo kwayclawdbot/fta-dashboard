@@ -98,6 +98,7 @@ export async function peSessionFromInvoice(
       kind: sub.metadata?.kind,
       src: sub.metadata?.src,
       bump: sub.metadata?.bump,
+      door: sub.metadata?.door,
       flow: sub.metadata?.flow,
       user_id: sub.metadata?.user_id,
     },

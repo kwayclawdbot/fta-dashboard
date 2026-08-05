@@ -5,6 +5,7 @@ import {
   cleanSrc,
   CLUB_CANCEL_URL,
 } from "@/lib/server/checkout-sessions";
+import { EXPERIENCE_HEADER, parseExperience } from "@/lib/experience/registry";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
   const bump = rawBump === "textbook" || rawBump === "parents_bundle" ? rawBump : "none";
   const { url, error } = await createClubCheckoutSession({
     sk,
+    door: parseExperience(req.headers.get(EXPERIENCE_HEADER)) ?? undefined,
     origin: req.nextUrl.origin,
     src,
     uiMode: "hosted",
@@ -88,6 +90,7 @@ export async function POST(req: NextRequest) {
 
   const { url, error } = await createClubCheckoutSession({
     sk,
+    door: parseExperience(req.headers.get(EXPERIENCE_HEADER)) ?? undefined,
     origin: req.nextUrl.origin,
     src,
     uiMode: "hosted",

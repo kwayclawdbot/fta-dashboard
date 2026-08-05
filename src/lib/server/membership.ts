@@ -34,6 +34,17 @@ export async function provisionMembership(opts: {
    * Undefined = unlimited Club (every regular fta / fic purchase, admin grant).
    */
   clubMonths?: number;
+  /**
+   * The EXPERIENCE the buyer entered through (E1) — 'club' from the Cheat Code
+   * Club door, 'family' from the Family Investing Club door, taken from the
+   * checkout session metadata (itself stamped from the request host). Stashed on
+   * the pending row because the FAMILY does not exist yet for a new buyer: the
+   * claim at onboarding (claim_pending_membership, migration 215) stamps
+   * families.door from it, so the door someone paid through is the door they get
+   * regardless of what the onboarding wizard's household question says.
+   * Undefined = no door purchased; onboarding decides.
+   */
+  door?: "club" | "family";
 }) {
   const db = serviceClient();
   const email = opts.email.trim().toLowerCase();
@@ -60,6 +71,7 @@ export async function provisionMembership(opts: {
       // Carries the Club clock to the onboarding claim (claim_pending_membership
       // stamps club_until = claim + club_months). Null = unlimited Club.
       club_months: opts.clubMonths ?? null,
+      door: opts.door ?? null,
     });
     if (pendErr) return { ok: false as const, error: pendErr.message };
   }

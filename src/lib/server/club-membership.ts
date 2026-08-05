@@ -73,6 +73,10 @@ export async function provisionClubMembership(session: Session): Promise<ClubPro
     program: "fic",
     source: "stripe",
     stripeSession: sessionId,
+    // The door this checkout was entered through (E1) — stamped onto the
+    // family at the onboarding claim. Club checkout defaults to the club door
+    // when the session carries no explicit one (legacy payment links).
+    door: session.metadata?.door === "family" ? "family" : "club",
   });
   if (!result.ok) {
     return { ok: false, created: false, error: result.error };
