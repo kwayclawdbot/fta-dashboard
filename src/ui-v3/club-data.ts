@@ -10,7 +10,6 @@ import {
   type CircleStance,
 } from "@/lib/circles";
 import { getCommunityFeedSeed } from "@/lib/feed-seed";
-import { fetchChangedMinds } from "@/lib/social/stance";
 import { isSharedFeedReadOnly, KID_FEED_READONLY_NOTE } from "@/lib/social/kid-posting";
 import { deriveRegister } from "@/lib/register";
 import { buildClubHomePayload } from "@/lib/club/home-payload";
@@ -137,25 +136,6 @@ export interface FeedPostVM {
   likedByMe: boolean;
 }
 
-export interface ChangedMindVM {
-  id: string;
-  authorName: string;
-  initials: string;
-  beltLabel: string | null;
-  beltKey: BeltKey | null;
-  ticker: string;
-  /** `stance_events.from_stance` → the artboard's "Bearish" run, stance-toned. */
-  fromLabel: string | null;
-  fromStance: CircleStance | null;
-  /** `stance_events.to_stance` → the artboard's neutral-toned second run. */
-  toLabel: string;
-  note: string | null;
-  /** `object_reactions` respect count on the stance event — the artboard's 🔥. */
-  respect: number | null;
-  /** `get_changed_minds().my_respect` — the toggle's opening state. */
-  myRespect: boolean;
-}
-
 /**
  * Seeded demo content carries a provenance marker in the body — `[seed:v2demo]`
  * and friends — so an operator can tell fixture rows from member rows in the
@@ -193,7 +173,6 @@ export interface ClubFeedViewModel {
   viewer: ClubViewerVM | null;
   circles: CircleBubbleVM[];
   posts: FeedPostVM[];
-  changedMind: ChangedMindVM | null;
   kai: KaiInsightVM | null;
 }
 
@@ -284,13 +263,6 @@ function initialsFrom(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
-
-/** The artboard's stance wording. */
-const STANCE_WORD: Record<CircleStance, string> = {
-  bull: "Bullish",
-  bear: "Bearish",
-  neutral: "Neutral",
-};
 
 /** Under 48h the artboard flips the clock from --accent-strong to --negative. */
 const URGENT_HOURS = 48;
@@ -460,20 +432,6 @@ function fixtureFeedModel(): ClubFeedViewModel {
         likedByMe: false,
       },
     ],
-    changedMind: {
-      id: "fx-flip-1",
-      authorName: "Tiffany R.",
-      initials: "TR",
-      beltLabel: "Blue",
-      beltKey: "blue",
-      ticker: "TSLA",
-      fromLabel: "Bearish",
-      fromStance: "bear",
-      toLabel: "Neutral",
-      note: "The Robotaxi event changed my view short term. Let's see execution.",
-      respect: 31,
-      myRespect: false,
-    },
     kai: { headline: "Unusual options flow detected", ticker: "AMD" },
   };
 }
@@ -610,10 +568,9 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
   const supabase = await getRequestClient();
   const now = Date.now();
 
-  const [circlesRes, seed, flips, profile, pulse] = await Promise.all([
+  const [circlesRes, seed, profile, pulse] = await Promise.all([
     listCircles(supabase).catch(() => ({ rows: [], missingSchema: true })),
     getCommunityFeedSeed(supabase).catch(() => null),
-    fetchChangedMinds(supabase, 1).catch(() => null),
     getRequestProfile(),
     // Only the ONE core the Kai row needs — the other eight are not read here.
     resolveClubCtx(supabase)
@@ -661,33 +618,12 @@ export async function getClubFeedViewModel(): Promise<ClubFeedViewModel> {
       };
     });
 
-  const flip = flips?.items?.[0] ?? null;
-  const flipName = flip?.display_name?.trim() || flip?.username || "Member";
-  const changedMind: ChangedMindVM | null = flip
-    ? {
-        id: flip.id,
-        authorName: flipName,
-        initials: initialsFrom(flipName),
-        // get_changed_minds returns no XP, so the belt chip has no source here.
-        beltLabel: null,
-        beltKey: null,
-        ticker: flip.ticker,
-        fromLabel: flip.from_stance ? STANCE_WORD[flip.from_stance] : null,
-        fromStance: flip.from_stance ?? null,
-        toLabel: STANCE_WORD[flip.to_stance],
-        note: flip.note ? cleanBody(flip.note) || null : null,
-        respect: flip.respect_count ?? null,
-        myRespect: !!flip.my_respect,
-      }
-    : null;
-
   return {
     source: "live",
     initials: initialsFrom(displayName || "Member"),
     viewer,
     circles: circlesRes.rows.slice(0, FEED_CIRCLE_LIMIT).map((r) => mapCircle(r, now)),
     posts,
-    changedMind,
     kai: kaiPost
       ? { headline: cleanBody(kaiPost.body), ticker: kaiPost.ticker_tags?.[0] ?? null }
       : mapKai(pulse),

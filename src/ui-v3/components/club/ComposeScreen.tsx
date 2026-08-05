@@ -339,16 +339,18 @@ export default function ComposeScreen({ viewer }: { viewer: ClubViewerVM | null 
             </div>
 
             {/* A flip is a real event with a required reason, and this screen
-                collects no reason. Saying so — and handing over the destination
-                that does — beats filing an unexplained reversal. */}
+                collects no reason, so it refuses rather than filing an
+                unexplained reversal.
+
+                This used to hand off to /community/compose — the old Changed My
+                Mind flow. That handoff is gone with the CMM retirement: v3 does
+                not send a member into old chrome to finish a v3 action. The
+                refusal stands on its own until v3 grows its own reason step. */}
             {isFlip ? (
               <p className={styles.note}>
                 You already hold a position on {security.ticker}. Changing it is a recorded
-                flip and needs a reason, which lives on{" "}
-                <Link href="/community/compose" className={styles.noteLink}>
-                  Share your call
-                </Link>
-                .
+                flip and needs a reason, which this screen can&rsquo;t take yet — keep your
+                standing position for now.
               </p>
             ) : prior ? (
               <p className={styles.note}>Your standing position on this name.</p>

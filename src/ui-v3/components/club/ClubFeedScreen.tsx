@@ -6,7 +6,6 @@ import ClubHeader, { ClubHeadActions } from "./ClubHeader";
 import CircleBubble from "./CircleBubble";
 import FeedComposerRow from "./FeedComposerRow";
 import FeedPostCard from "./FeedPostCard";
-import ChangedMindCard from "./ChangedMindCard";
 import KaiInsightRow from "./KaiInsightRow";
 import styles from "./ClubFeedScreen.module.css";
 
@@ -52,10 +51,6 @@ export default function ClubFeedScreen({ model }: { model: ClubFeedViewModel }) 
         <FeedPostCard key={p.id} post={p} viewer={model.viewer} />
       ))}
 
-      {model.changedMind ? (
-        <ChangedMindCard flip={model.changedMind} viewer={model.viewer} />
-      ) : null}
-
       {/*
         A feed with nothing in it is the one empty state on these screens that is
         empty because NOBODY HAS SPOKEN YET — which makes it an invitation rather
@@ -67,7 +62,7 @@ export default function ClubFeedScreen({ model }: { model: ClubFeedViewModel }) 
         The kid register gets the same sentence without the action, because the
         action leads to a composer that register is not allowed to open.
       */}
-      {model.posts.length === 0 && !model.changedMind ? (
+      {model.posts.length === 0 ? (
         <EmptyNote
           action={
             model.viewer && !model.viewer.canPost

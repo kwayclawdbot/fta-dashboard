@@ -7,7 +7,6 @@ import {
   getRequestUser,
 } from "@/lib/supabase/rsc";
 import { effectiveClubTier } from "@/lib/tier";
-import { getCachedStanceShifts } from "@/lib/club/club-cache";
 import { WATCH_STATE_META, SETUP_STATE_META, readSetupLevels } from "@/lib/alerts/watch-ui";
 import { SETUP_LIFECYCLE_THRESHOLDS } from "@/lib/alerts/setup-lifecycle";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
@@ -199,23 +198,6 @@ export interface EarningsVM {
    * manufacture dates in the meantime.
    */
   days: EarningsDayVM[];
-}
-
-/** A ticker the club changed its mind about, from `get_stance_shifts`. */
-export interface OpinionChangeVM {
-  ticker: string;
-  /** Members who moved their stance inside the window. */
-  shifts: number;
-  /** Net stance NOW: positive = more bulls than bears. Zero = evenly split. */
-  net: number;
-  href: string;
-}
-
-export interface OpinionChangesVM {
-  source: "live" | "fixtures";
-  /** The window the RPC was asked for, so the screen can name it honestly. */
-  hours: number;
-  rows: OpinionChangeVM[];
 }
 
 /* ── view model: 18 Kai Alerts ────────────────────────────────────────────── */
@@ -633,7 +615,6 @@ const WATCH_DEST_HREF = {
   watchlist: "/v3/watch/list",
   kaiWatch: "/v3/watch/setups",
   earnings: "/v3/watch/earnings",
-  changes: "/v3/watch/changes",
 } as const;
 
 /** A ticker's own screen. Owned by another lane; the link resolves at merge. */
@@ -663,13 +644,6 @@ function fixtureOverview(): WatchOverviewVM {
         caption: null,
         badge: null,
         href: WATCH_DEST_HREF.earnings,
-      },
-      {
-        glyph: "🔁",
-        title: "Opinion Changes",
-        caption: "4 tickers shifted today",
-        badge: null,
-        href: WATCH_DEST_HREF.changes,
       },
     ],
     closest: {
@@ -822,7 +796,7 @@ export async function getWatchOverview(): Promise<WatchOverviewVM> {
 
   const [supabase, profile] = await Promise.all([getRequestClient(), getRequestProfile()]);
 
-  const [watchlistCount, rules, shifts, setups] = await Promise.all([
+  const [watchlistCount, rules, setups] = await Promise.all([
     // Real symbol count, family-scoped like the rest of the watchlist.
     profile?.family_id
       ? soft(
@@ -837,7 +811,6 @@ export async function getWatchOverview(): Promise<WatchOverviewVM> {
         )
       : Promise.resolve<number | null>(null),
     readActiveRules(supabase, null),
-    soft(() => getCachedStanceShifts(24), [] as { ticker: string }[]),
     soft(
       async () =>
         ((
@@ -889,16 +862,6 @@ export async function getWatchOverview(): Promise<WatchOverviewVM> {
       caption: null,
       badge: null,
       href: WATCH_DEST_HREF.earnings,
-    },
-    {
-      glyph: "🔁",
-      title: "Opinion Changes",
-      caption:
-        shifts.length > 0
-          ? `${shifts.length} ticker${shifts.length === 1 ? "" : "s"} shifted today`
-          : null,
-      badge: null,
-      href: WATCH_DEST_HREF.changes,
     },
   ];
 
@@ -1658,52 +1621,3 @@ export async function getWatchEarnings(): Promise<EarningsVM> {
   return { source: "live", symbols, days: [] };
 }
 
-/* ── /v3/watch/changes — Opinion Changes ──────────────────────────────────── */
-
-const STANCE_WINDOW_HOURS = 24;
-
-function fixtureOpinionChanges(): OpinionChangesVM {
-  return {
-    source: "fixtures",
-    hours: STANCE_WINDOW_HOURS,
-    rows: [
-      { ticker: "NVDA", shifts: 14, net: 9, href: tickerHref("NVDA") },
-      { ticker: "TSLA", shifts: 11, net: -6, href: tickerHref("TSLA") },
-      { ticker: "RIVN", shifts: 7, net: -7, href: tickerHref("RIVN") },
-      { ticker: "PLTR", shifts: 4, net: 0, href: tickerHref("PLTR") },
-    ],
-  };
-}
-
-/**
- * Tickers the club changed its mind about in the last 24 hours.
- *
- * `get_stance_shifts` (migration 195) is aggregate-only by construction: it
- * counts `ticker_sentiment` rows UPDATED after they were created, and sums the
- * current votes. So a row here says how many members moved and which way the
- * club leans NOW — and it can never say who moved. The direction shown is the
- * club's present stance, not a per-member flip, and the screen words it that
- * way.
- */
-export async function getOpinionChanges(): Promise<OpinionChangesVM> {
-  const user = await getRequestUser();
-  if (!user) return fixtureOpinionChanges();
-
-  const shifts = await soft(
-    () => getCachedStanceShifts(STANCE_WINDOW_HOURS),
-    [] as { ticker: string; shifts: number; net_now: number }[]
-  );
-
-  return {
-    source: "live",
-    hours: STANCE_WINDOW_HOURS,
-    rows: shifts
-      .filter((s) => Boolean(s.ticker))
-      .map((s) => ({
-        ticker: s.ticker.toUpperCase(),
-        shifts: num(Number(s.shifts)) ?? 0,
-        net: num(Number(s.net_now)) ?? 0,
-        href: tickerHref(s.ticker),
-      })),
-  };
-}
