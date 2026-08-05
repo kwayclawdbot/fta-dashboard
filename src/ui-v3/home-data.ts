@@ -3,7 +3,7 @@ import "server-only";
 import { getRequestClient, getRequestProfile, getRequestUser } from "@/lib/supabase/rsc";
 import { resolveHomeRoute } from "@/lib/club/home-route";
 import { buildClubHomeSeedSplit } from "@/lib/club/home-payload";
-import { clubFixtures } from "@/lib/clubhome/fixtures";
+import { clubFixtures } from "@/ui-v3/club-fixtures";
 import { beltProgress } from "@/lib/belts";
 import { LEVELS } from "@/lib/xp";
 import { TRENDING_DISCLAIMER } from "@/lib/club/score";
