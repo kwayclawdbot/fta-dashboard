@@ -71,6 +71,10 @@ export default function ClubActivityStrip({ limit = 4 }: { limit?: number }) {
           "id, kind, body, created_at, activity_payload, author:profiles!feed_posts_author_id_fkey(id, display_name, role, age_group, family_id, avatar_url)"
         )
         .neq("kind", "anchor")
+        // KID WALL (214): this strip is a sliver of the CLUB, so it never
+        // carries a kid's card — not even their own household's. Kid progress
+        // shows on the family surfaces.
+        .neq("author_register", "kid")
         .order("created_at", { ascending: false })
         .limit(limit);
       if (!mounted) return;
