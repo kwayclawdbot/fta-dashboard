@@ -1,0 +1,272 @@
+{
+  "base": "https://fta-dashboard-bcjg6fzn3-kways-clawds-projects.vercel.app",
+  "capturedAt": "2026-08-06T22:00:44.676Z",
+  "on": [
+    {
+      "slug": "01-home",
+      "board": "01 Home",
+      "oldPath": "/",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/01-home-dark.png"
+    },
+    {
+      "slug": "02-discover",
+      "board": "02 Discover",
+      "oldPath": "/discover",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/02-discover-dark.png"
+    },
+    {
+      "slug": "15-screener",
+      "board": "15 Discover Screener",
+      "oldPath": "/discover/screener",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/15-screener-dark.png"
+    },
+    {
+      "slug": "03-ticker",
+      "board": "03 Ticker",
+      "oldPath": "/ticker/NVDA",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/03-ticker-dark.png"
+    },
+    {
+      "slug": "12-ticker-technicals",
+      "board": "12 Technicals",
+      "oldPath": "/ticker/NVDA/technicals",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/12-ticker-technicals-dark.png"
+    },
+    {
+      "slug": "13-ticker-fundamentals",
+      "board": "13 Fundamentals",
+      "oldPath": "/ticker/NVDA/fundamentals",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/13-ticker-fundamentals-dark.png"
+    },
+    {
+      "slug": "14-ticker-kai",
+      "board": "14 Kai",
+      "oldPath": "/ticker/NVDA/kai",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/14-ticker-kai-dark.png"
+    },
+    {
+      "slug": "07-you",
+      "board": "07 You Profile",
+      "oldPath": "/you",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/07-you-dark.png"
+    },
+    {
+      "slug": "22-belts",
+      "board": "22 Belts",
+      "oldPath": "/you/belts",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/22-belts-dark.png"
+    },
+    {
+      "slug": "09-welcome",
+      "board": "09 Splash",
+      "oldPath": "/welcome",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/09-welcome-dark.png"
+    },
+    {
+      "slug": "10-login",
+      "board": "10 Login",
+      "oldPath": "/login",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": false,
+      "file": ".planning/design-project-v2/proof/cutover-preview/10-login-dark.png"
+    },
+    {
+      "slug": "11-pricing",
+      "board": "11 Pricing",
+      "oldPath": "/pricing",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/11-pricing-dark.png"
+    },
+    {
+      "slug": "01-home",
+      "board": "01 Home",
+      "oldPath": "/",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/01-home-light.png"
+    },
+    {
+      "slug": "02-discover",
+      "board": "02 Discover",
+      "oldPath": "/discover",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/02-discover-light.png"
+    },
+    {
+      "slug": "15-screener",
+      "board": "15 Discover Screener",
+      "oldPath": "/discover/screener",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/15-screener-light.png"
+    },
+    {
+      "slug": "03-ticker",
+      "board": "03 Ticker",
+      "oldPath": "/ticker/NVDA",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/03-ticker-light.png"
+    },
+    {
+      "slug": "12-ticker-technicals",
+      "board": "12 Technicals",
+      "oldPath": "/ticker/NVDA/technicals",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/12-ticker-technicals-light.png"
+    },
+    {
+      "slug": "13-ticker-fundamentals",
+      "board": "13 Fundamentals",
+      "oldPath": "/ticker/NVDA/fundamentals",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/13-ticker-fundamentals-light.png"
+    },
+    {
+      "slug": "14-ticker-kai",
+      "board": "14 Kai",
+      "oldPath": "/ticker/NVDA/kai",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/14-ticker-kai-light.png"
+    },
+    {
+      "slug": "07-you",
+      "board": "07 You Profile",
+      "oldPath": "/you",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/07-you-light.png"
+    },
+    {
+      "slug": "22-belts",
+      "board": "22 Belts",
+      "oldPath": "/you/belts",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/22-belts-light.png"
+    },
+    {
+      "slug": "09-welcome",
+      "board": "09 Splash",
+      "oldPath": "/welcome",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/09-welcome-light.png"
+    },
+    {
+      "slug": "10-login",
+      "board": "10 Login",
+      "oldPath": "/login",
+      "theme": "light",
+      "status": 200,
+      "servedV3": false,
+      "file": ".planning/design-project-v2/proof/cutover-preview/10-login-light.png"
+    },
+    {
+      "slug": "11-pricing",
+      "board": "11 Pricing",
+      "oldPath": "/pricing",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/11-pricing-light.png"
+    }
+  ],
+  "off": [
+    {
+      "oldPath": "/",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/discover",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/discover/screener",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/ticker/NVDA",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/ticker/NVDA/technicals",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/ticker/NVDA/fundamentals",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/ticker/NVDA/kai",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/you",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/you/belts",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/welcome",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/login",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/pricing",
+      "oldAppReturns": true
+    }
+  ]
+}
