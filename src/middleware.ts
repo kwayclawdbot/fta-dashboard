@@ -4,6 +4,12 @@ import {
   EXPERIENCE_HEADER,
   resolveExperienceFromHost,
 } from "@/lib/experience/registry";
+import {
+  CUTOVER_COOKIE,
+  cutoverCookieWrite,
+  isCutoverEnabled,
+  resolveV3Rewrite,
+} from "@/lib/v3-cutover";
 
 /**
  * Legacy Vercel host we are migrating away from. Requests hitting this host are
@@ -35,9 +41,39 @@ export async function middleware(request: NextRequest) {
   // window.location). Logged-out surfaces render this; a logged-in member
   // renders their stored families.door. Rewriting the request headers is the
   // only way to add one, so the incoming set is cloned and passed through.
-  return await updateSession(request, {
-    [EXPERIENCE_HEADER]: resolveExperienceFromHost(request.headers.get("host")),
-  });
+  // V3 CUTOVER (default off) — see src/lib/v3-cutover.ts. When the harness is
+  // on and this path is one of the staged screens, the OLD url is answered by
+  // the v3 tree. The target is handed to updateSession rather than applied
+  // here, so every auth check below still runs against the path that was
+  // REQUESTED: /you stays protected as /you even though /v3/you renders it.
+  const rewritePath = isCutoverEnabled(request)
+    ? resolveV3Rewrite(request.nextUrl.pathname)
+    : null;
+  let rewriteTo: URL | undefined;
+  if (rewritePath) {
+    rewriteTo = request.nextUrl.clone();
+    rewriteTo.pathname = rewritePath;
+  }
+
+  const response = await updateSession(
+    request,
+    { [EXPERIENCE_HEADER]: resolveExperienceFromHost(request.headers.get("host")) },
+    rewriteTo
+  );
+
+  // Persist an explicit ?v3=1 / ?v3=0 so the reviewer's choice survives the
+  // next tap. Written on the way out so it rides whatever response the session
+  // layer produced — including a redirect.
+  const cookieWrite = cutoverCookieWrite(request);
+  if (cookieWrite !== null) {
+    response.cookies.set(CUTOVER_COOKIE, cookieWrite, {
+      path: "/",
+      sameSite: "lax",
+      httpOnly: false,
+    });
+  }
+
+  return response;
 }
 
 export const config = {

@@ -13,7 +13,23 @@ export async function updateSession(
    * mutates the request's own cookie header, so a stale copy would drop a
    * refreshed auth cookie on its way to the server components.
    */
-  extraRequestHeaders?: Record<string, string>
+  extraRequestHeaders?: Record<string, string>,
+  /**
+   * V3 CUTOVER: when set, the pass-through response becomes a REWRITE to this
+   * url instead of a plain next().
+   *
+   * It is threaded in here rather than applied by the caller for one reason
+   * that matters: every auth decision below reads `request.nextUrl.pathname`,
+   * which is still the ORIGINAL path. So a rewritten /you is protected as /you,
+   * not as the unprotected /v3/you it will actually render. Rewriting upstream
+   * of this function — by mutating nextUrl, or by returning early with a
+   * rewrite — is exactly how a cutover harness turns into an auth bypass.
+   *
+   * Redirects still win: the demo-session hook and the two auth redirects below
+   * return before this is ever used, because sending someone to a different url
+   * outranks choosing which tree answers the current one.
+   */
+  rewriteTo?: URL
 ) {
   const requestInit = () => {
     if (!extraRequestHeaders) return { request };
@@ -22,7 +38,14 @@ export async function updateSession(
     return { request: { headers } };
   };
 
-  let supabaseResponse = NextResponse.next(requestInit());
+  /** The pass-through response — a rewrite under the cutover harness, a plain
+   *  next() otherwise. Rebuilt on every cookie refresh, same as before. */
+  const passThrough = () =>
+    rewriteTo
+      ? NextResponse.rewrite(rewriteTo, requestInit())
+      : NextResponse.next(requestInit());
+
+  let supabaseResponse = passThrough();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
@@ -36,7 +59,7 @@ export async function updateSession(
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next(requestInit());
+          supabaseResponse = passThrough();
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
