@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { deriveRegister } from "@/lib/register";
+import { isMemberVisibleOnDoor } from "@/lib/register";
 import { FLOORS, floorMet } from "@/lib/club/score";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
@@ -41,16 +41,22 @@ export async function debateCore(ctx: ClubCtx): Promise<CoreResult> {
   // consented adult member faces for the "join the debate" social proof. These
   // are Club members (avatar set, non-kid) — NOT vote-attributed: the per-member
   // vote direction stays sealed behind the aggregate RPC, so nothing leaks.
+  // The faces are door-walled like every other people listing: kids never (214),
+  // teens to the family door only (216) — this stack carries NAMES, so it is a
+  // people surface, not decoration.
   let participants: { id: string; name: string | null; url: string | null }[] = [];
   if (s.total > 0) {
     const admin = ctx.admin();
-    const { data: people } = await admin
-      .from("profiles")
-      .select("id, display_name, username, avatar_url, role, age_group, track")
-      .not("avatar_url", "is", null)
-      .limit(40);
+    const [{ data: people }, door] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("id, display_name, username, avatar_url, role, age_group, track")
+        .not("avatar_url", "is", null)
+        .limit(40),
+      ctx.getDoor(),
+    ]);
     participants = (people || [])
-      .filter((p) => deriveRegister(p) !== "kid")
+      .filter((p) => isMemberVisibleOnDoor(p, door))
       .slice(0, 8)
       .map((p) => ({
         id: p.id,

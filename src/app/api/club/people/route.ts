@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { deriveRegister } from "@/lib/register";
+import { isMemberVisibleOnDoor } from "@/lib/register";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
@@ -9,7 +9,8 @@ import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-c
  * "People worth following" — v1 DISCOVERY only (no follow graph, no follower
  * counts that would be fake at our N). Surfaces genuinely useful members by real
  * contribution: posts authored, ticker comments, and likes their work earned.
- * Kid-walled (same wall as the screener). Excludes the viewer + kids. Tags +
+ * Kid-walled (same wall as the screener). Excludes the viewer, kids, and — for a
+ * club-door viewer — teens (216): the club door lists adults only. Tags +
  * reason are derived from what each member actually does — nothing invented.
  *
  * The body is `peopleCore(ctx)` — shared verbatim with GET /api/club/home.
@@ -27,9 +28,16 @@ export async function peopleCore(ctx: ClubCtx): Promise<CoreResult> {
     .select("id, display_name, username, avatar_url, role, age_group, track")
     .limit(200);
 
-  // Candidate pool: non-kid, not the viewer.
+  // ONE door resolution for both walls below (memoised on the ctx, so the
+  // batched /api/club/home pays for it once across all nine cores).
+  const door = await ctx.getDoor();
+
+  // Candidate pool: not the viewer, and visible on the viewer's door — kids are
+  // never listed (214) and teens are listed to the family door only (216). A
+  // club-door viewer gets an adults-only directory: the wall is about the PERSON
+  // here, not only about what they wrote.
   const candidates = (profiles || []).filter(
-    (p) => p.id !== ctx.user.id && deriveRegister(p) !== "kid"
+    (p) => p.id !== ctx.user.id && isMemberVisibleOnDoor(p, door)
   );
   if (candidates.length === 0) return { body: { kidWalled: false, members: [] } };
 
@@ -39,7 +47,7 @@ export async function peopleCore(ctx: ClubCtx): Promise<CoreResult> {
   // viewer could not open must not lift its author up a club ranking. Kid rows
   // are family-only (214), teen rows family-door-only (216); this is the
   // service-role client, so the band is a filter, not RLS.
-  const bands = (await ctx.getDoor()) === "family" ? ["adult", "teen"] : ["adult"];
+  const bands = door === "family" ? ["adult", "teen"] : ["adult"];
 
   const [{ data: posts }, { data: comments }] = await Promise.all([
     admin

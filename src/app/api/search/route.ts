@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { deriveRegister } from "@/lib/register";
+import { deriveRegister, isMemberVisibleOnDoor } from "@/lib/register";
 import { parseExperience } from "@/lib/experience/registry";
 import { rankTickerHits, type SearchCandidate } from "@/lib/market/ticker-search";
 import { formatExchange } from "@/lib/market/exchange";
@@ -121,7 +121,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ tickers, members: [], theses: [], lessons, debates: [] });
   }
 
-  // ── Members — public profiles (non-kid, with a public handle).
+  // ── Members — public profiles with a public handle, walled by the searcher's
+  //    door: kids are never returned (214) and teens only to a family-door
+  //    searcher (216), so a club-door search matches adults only. Same wall the
+  //    theses branch below applies to authorship, applied to the PERSON.
   const membersP = (async (): Promise<SearchHit[]> => {
     const { data } = await admin
       .from("profiles")
@@ -139,7 +142,7 @@ export async function GET(req: NextRequest) {
         track: string | null;
       }[]) ?? []
     )
-      .filter((p) => deriveRegister(p) !== "kid" && p.username)
+      .filter((p) => isMemberVisibleOnDoor(p, door) && p.username)
       .slice(0, 5)
       .map((p) => ({
         id: `m:${p.id}`,
@@ -158,7 +161,7 @@ export async function GET(req: NextRequest) {
       .eq("kind", "post")
       // THE READ WALL, RESTATED AS A FILTER. This is the admin (service-role)
       // client, so RLS scopes nothing — the filter IS the wall, mirroring the
-      // deriveRegister filter the members branch above already applies:
+      // isMemberVisibleOnDoor filter the members branch above already applies:
       // kid rows are family-only (214) and teen rows are family-door-only (216),
       // so a club-door searcher can match adult thinking and nothing else.
       .in("author_register", door === "family" ? ["adult", "teen"] : ["adult"])

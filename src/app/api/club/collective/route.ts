@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { FLOORS, floorMet } from "@/lib/club/score";
-import { deriveRegister } from "@/lib/register";
+import { isMemberVisibleOnDoor } from "@/lib/register";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 
 /**
@@ -12,8 +12,9 @@ import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-c
  * Reads the cached 'collective' KV (precomputed counts) + a small, bounded avatar
  * roster. `floorMet` is false below FLOORS.connectedMinds → the UI renders the
  * founding-era / Build-the-Club growth engine instead of raw small counts.
- * Avatars: adults+teens only, and only members who set an avatar (a light
- * consent proxy — kids are never surfaced in the constellation).
+ * Avatars: only members who set an avatar (a light consent proxy) AND who are
+ * visible on the viewer's door — kids never (214), teens to the family door only
+ * (216), so the club-door constellation is adult faces.
  *
  * The body is `collectiveCore(ctx)` — shared verbatim with GET /api/club/home.
  */
@@ -45,8 +46,9 @@ export async function collectiveCore(ctx: ClubCtx): Promise<CoreResult> {
     .not("avatar_url", "is", null)
     .limit(60);
 
+  const door = await ctx.getDoor();
   const avatars = (people || [])
-    .filter((p) => deriveRegister(p) !== "kid")
+    .filter((p) => isMemberVisibleOnDoor(p, door))
     .slice(0, 24)
     .map((p) => ({ id: p.id, url: p.avatar_url as string }));
 

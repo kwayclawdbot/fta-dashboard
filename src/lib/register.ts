@@ -16,6 +16,8 @@
  * role is stored as `child`, and an adult with no age band is never baby-talked.
  */
 
+import type { ExperienceKey } from "@/lib/experience/registry";
+
 export type Register = "kid" | "teen" | "adult";
 
 /** The celebration system speaks kid/teen/parent; adult maps to parent there. */
@@ -149,6 +151,30 @@ export function isAdultRegister(
   profile: RegisterProfile | null | undefined
 ): boolean {
   return deriveRegister(profile) === "adult";
+}
+
+/**
+ * THE PEOPLE WALL, AS ONE PREDICATE — may a viewer on `door` see this member at
+ * all on a people-listing surface (directory, search, avatar roster)?
+ *
+ * It is the register wall (214/216) applied to the PERSON rather than to their
+ * posts, and it reads the same way round: a minor is visible only inside the
+ * family door their household actually lives behind.
+ *   • kid   → never listed outside the family door (214).
+ *   • teen  → family door only (216); a club-door viewer sees adults only.
+ *   • adult → always listed.
+ *
+ * Every call site is a SERVICE-ROLE read, where RLS scopes nothing and the wall
+ * has to be an explicit filter. Passing a `door` (rather than reading it here)
+ * keeps this synchronous and lets each route reuse its memoised door resolution.
+ */
+export function isMemberVisibleOnDoor(
+  profile: RegisterProfile | null | undefined,
+  door: ExperienceKey
+): boolean {
+  const register = deriveRegister(profile);
+  if (register === "kid") return false;
+  return door === "family" || register === "adult";
 }
 
 /**
