@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveRegister } from "@/lib/register";
+import { parseExperience } from "@/lib/experience/registry";
 import { rankTickerHits, type SearchCandidate } from "@/lib/market/ticker-search";
 import { formatExchange } from "@/lib/market/exchange";
 
@@ -41,13 +42,18 @@ export async function GET(req: NextRequest) {
   }
   const like = q.replace(/[%,()]/g, "");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, age_group, track")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Register AND door, resolved in one round trip together. `viewer_door()` is
+  // the same SECURITY DEFINER helper the RLS policies call (216), so this route
+  // and the database can never disagree about which experience the searcher is
+  // in — and because it is an RPC it runs in PARALLEL with the profile read
+  // instead of waiting on family_id to come back first.
+  const [{ data: profile }, { data: doorValue }] = await Promise.all([
+    supabase.from("profiles").select("role, age_group, track").eq("id", user.id).maybeSingle(),
+    supabase.rpc("viewer_door"),
+  ]);
   const register = deriveRegister(profile);
   const isKid = register === "kid";
+  const door = parseExperience(doorValue) ?? "club";
 
   const admin = createAdminClient();
 
@@ -150,10 +156,12 @@ export async function GET(req: NextRequest) {
       .from("feed_posts")
       .select("id, title, body, ticker_tags")
       .eq("kind", "post")
-      // Kid-authored rows are family-only (214). This is the admin (service-role)
-      // client, so RLS does not scope it — the filter is the wall, mirroring the
-      // deriveRegister filter the members branch above already applies.
-      .neq("author_register", "kid")
+      // THE READ WALL, RESTATED AS A FILTER. This is the admin (service-role)
+      // client, so RLS scopes nothing — the filter IS the wall, mirroring the
+      // deriveRegister filter the members branch above already applies:
+      // kid rows are family-only (214) and teen rows are family-door-only (216),
+      // so a club-door searcher can match adult thinking and nothing else.
+      .in("author_register", door === "family" ? ["adult", "teen"] : ["adult"])
       .or(`title.ilike.%${like}%,body.ilike.%${like}%`)
       .order("created_at", { ascending: false })
       .limit(5);
