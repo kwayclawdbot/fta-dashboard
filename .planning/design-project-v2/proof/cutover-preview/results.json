@@ -1,6 +1,6 @@
 {
-  "base": "https://fta-dashboard-bcjg6fzn3-kways-clawds-projects.vercel.app",
-  "capturedAt": "2026-08-06T22:00:44.676Z",
+  "base": "https://fta-dashboard-p7ouuau0h-kways-clawds-projects.vercel.app",
+  "capturedAt": "2026-08-07T14:20:34.388Z",
   "on": [
     {
       "slug": "01-home",
@@ -111,6 +111,33 @@
       "file": ".planning/design-project-v2/proof/cutover-preview/11-pricing-dark.png"
     },
     {
+      "slug": "15-screener-via-old-url",
+      "board": "15 Discover Screener",
+      "oldPath": "/screener",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/15-screener-via-old-url-dark.png"
+    },
+    {
+      "slug": "03-ticker-via-research",
+      "board": "03 Ticker",
+      "oldPath": "/research/NVDA",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/03-ticker-via-research-dark.png"
+    },
+    {
+      "slug": "13-fundamentals-via-research-tab",
+      "board": "13 Fundamentals",
+      "oldPath": "/research/NVDA?tab=fundamentals",
+      "theme": "dark",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/13-fundamentals-via-research-tab-dark.png"
+    },
+    {
       "slug": "01-home",
       "board": "01 Home",
       "oldPath": "/",
@@ -217,6 +244,33 @@
       "status": 200,
       "servedV3": true,
       "file": ".planning/design-project-v2/proof/cutover-preview/11-pricing-light.png"
+    },
+    {
+      "slug": "15-screener-via-old-url",
+      "board": "15 Discover Screener",
+      "oldPath": "/screener",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/15-screener-via-old-url-light.png"
+    },
+    {
+      "slug": "03-ticker-via-research",
+      "board": "03 Ticker",
+      "oldPath": "/research/NVDA",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/03-ticker-via-research-light.png"
+    },
+    {
+      "slug": "13-fundamentals-via-research-tab",
+      "board": "13 Fundamentals",
+      "oldPath": "/research/NVDA?tab=fundamentals",
+      "theme": "light",
+      "status": 200,
+      "servedV3": true,
+      "file": ".planning/design-project-v2/proof/cutover-preview/13-fundamentals-via-research-tab-light.png"
     }
   ],
   "off": [
@@ -266,6 +320,18 @@
     },
     {
       "oldPath": "/pricing",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/screener",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/research/NVDA",
+      "oldAppReturns": true
+    },
+    {
+      "oldPath": "/research/NVDA?tab=fundamentals",
       "oldAppReturns": true
     }
   ]

@@ -1,4 +1,4 @@
-# Cutover preview proof — 2026-08-06
+# Cutover preview proof — 2026-08-07
 
 What this folder proves: with the harness on, **the OLD url serves the v3
 screen**, and with it off the old app comes back. Every shot below was taken at
@@ -14,9 +14,23 @@ V3_BASE=https://<preview-url> node scripts/v3-proof-cutover.mjs
 
 ## Result
 
-**22 of 24 preview shots pass. 12 of 12 off-switch checks pass** — every staged
+**28 of 30 preview shots pass. 15 of 15 off-switch checks pass** — every staged
 path returns the old app under `?v3=0`, so the switch is reversible.
 Machine-readable detail in `results.json`.
+
+Three of those shots are the **real old urls** for screens already covered by
+their v3-shaped paths, and they are the point of the second wave: a cutover only
+counts at the urls members' bookmarks and the in-app links actually use.
+
+| shot | old url | proves |
+| --- | --- | --- |
+| `15-screener-via-old-url-*` | `/screener` | the old screener url serves v3 |
+| `03-ticker-via-research-*` | `/research/NVDA` | the old research url serves v3 |
+| `13-fundamentals-via-research-tab-*` | `/research/NVDA?tab=fundamentals` | the old `?tab=` deep link reaches the matching v3 tab route |
+
+Also checked, and deliberately NOT rewritten: `/research/thesis/abc` stays with
+the old app. "thesis" is a ticker-shaped string sitting on a real sibling route,
+and mapping it to `/v3/ticker/THESIS` is the obvious way to get this wrong.
 
 The two that are not from the preview are marked `-LOCAL`:
 
@@ -62,6 +76,13 @@ only so the Live section from decision 2 can be reviewed somewhere. Captured at
    screen with one dead LIVE and one live LIVE wants a decision: either the tab
    adopts the same interim destination, or the section waits. Left alone rather
    than guessed at.
+
+3. **The ticker chart is empty** in `03-ticker-via-research-*` ("No price
+   history came back for this range"). That is a data condition on the preview,
+   not a rendering fault — the screen is drawing its honest empty state. Same
+   reason `/research/BRK.B` rewrites correctly and then 404s: the v3 ticker
+   screen 404s on symbols it cannot resolve, and the already-shipped
+   `/ticker/BRK.B` mapping behaves identically. Neither is new.
 
 ## Environment note
 

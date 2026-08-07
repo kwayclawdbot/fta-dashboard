@@ -38,6 +38,17 @@ const SCREENS = [
   { slug: "09-welcome", old: "/welcome", board: "09 Splash" },
   { slug: "10-login", old: "/login", board: "10 Login" },
   { slug: "11-pricing", old: "/pricing", board: "11 Pricing" },
+
+  // THE REAL OLD URLS for two screens already listed above. They are shot
+  // separately because a cutover is only as good as the urls it actually
+  // intercepts, and these are the ones existing bookmarks and in-app links use.
+  { slug: "15-screener-via-old-url", old: "/screener", board: "15 Discover Screener" },
+  { slug: "03-ticker-via-research", old: "/research/NVDA", board: "03 Ticker" },
+  {
+    slug: "13-fundamentals-via-research-tab",
+    old: "/research/NVDA?tab=fundamentals",
+    board: "13 Fundamentals",
+  },
 ];
 
 /**
