@@ -36,6 +36,10 @@ export const CUTOVER_QUERY = "v3";
  * drift against main is still being reconciled, and shipping them behind the
  * same switch would mean the switch could not be turned on until that lands.
  * Keeping the wave small is what makes it flippable.
+ *
+ * Each staged SCREEN is reachable by every url the old app used for it, which
+ * is why the count of entries here exceeds the count of screens: /screener and
+ * /discover/screener are one screen, and so are /research/NVDA and /ticker/NVDA.
  */
 const EXACT_ROUTES: Record<string, string> = {
   "/": "/v3",
@@ -46,6 +50,14 @@ const EXACT_ROUTES: Record<string, string> = {
   "/welcome": "/v3/welcome",
   "/login": "/v3/login",
   "/pricing": "/v3/pricing",
+
+  // THE REAL OLD URLS. The four entries above under /discover and /ticker are
+  // the v3 shape; these two are where the old app actually put the same
+  // screens, and they are what an existing member's bookmarks and in-app links
+  // point at. Without them the cutover would leave the old screener and the old
+  // research page reachable and un-cut-over — the flag would be on and half the
+  // app would still be the old one.
+  "/screener": "/v3/discover/screener",
 };
 
 /**
@@ -55,13 +67,47 @@ const EXACT_ROUTES: Record<string, string> = {
 const TICKER_ROUTE = /^\/ticker\/([A-Za-z.]{1,10})(\/(?:technicals|fundamentals|kai))?$/;
 
 /**
+ * The OLD ticker screen: /research/NVDA.
+ *
+ * Deliberately ONE segment. /research/thesis/[id] is a real sibling route and
+ * "thesis" is a legal ticker-shaped string — anchoring the end of the pattern is
+ * what keeps a thesis permalink from being rewritten to /v3/ticker/THESIS. It is
+ * also excluded by name below, because relying on the segment count alone would
+ * break the moment anyone adds /research/thesis.
+ */
+const RESEARCH_ROUTE = /^\/research\/([A-Za-z.]{1,10})$/;
+
+/** Sibling routes under /research that are not tickers and never map. */
+const RESEARCH_NON_TICKER = new Set(["thesis"]);
+
+/**
+ * The old research screen carries its tabs as `?tab=` deep links rather than
+ * path segments; v3 gives each tab its own route. This is that translation.
+ *
+ * `overview` is the base screen, and `news` has no v3 tab at all — both land on
+ * the ticker screen itself rather than inventing a destination, which is the
+ * closest honest answer.
+ */
+const RESEARCH_TAB_PATH: Record<string, string> = {
+  overview: "",
+  technicals: "/technicals",
+  fundamentals: "/fundamentals",
+  kai: "/kai",
+  news: "",
+};
+
+/**
  * The v3 path that should answer this old path, or null to leave it alone.
  *
  * Pure and total: it looks at a pathname and nothing else. Whether the harness
  * is ON is a separate question (`isCutoverEnabled`) so that the two can be
  * reasoned about — and tested — independently.
  */
-export function resolveV3Rewrite(pathname: string): string | null {
+export function resolveV3Rewrite(
+  pathname: string,
+  /** Needed only by /research, whose tabs are `?tab=` rather than path segments. */
+  searchParams?: URLSearchParams
+): string | null {
   // Never re-enter. /v3/* is already the destination; rewriting it would loop.
   if (pathname === "/v3" || pathname.startsWith("/v3/")) return null;
 
@@ -70,6 +116,16 @@ export function resolveV3Rewrite(pathname: string): string | null {
 
   const ticker = TICKER_ROUTE.exec(pathname);
   if (ticker) return `/v3/ticker/${ticker[1].toUpperCase()}${ticker[2] ?? ""}`;
+
+  const research = RESEARCH_ROUTE.exec(pathname);
+  if (research && !RESEARCH_NON_TICKER.has(research[1].toLowerCase())) {
+    const tab = searchParams?.get("tab")?.toLowerCase() ?? "";
+    // An unrecognised tab is not an error worth refusing the rewrite over — it
+    // resolves to the ticker screen, which is where the old page would have
+    // landed too.
+    const suffix = RESEARCH_TAB_PATH[tab] ?? "";
+    return `/v3/ticker/${research[1].toUpperCase()}${suffix}`;
+  }
 
   return null;
 }

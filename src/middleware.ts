@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
   // here, so every auth check below still runs against the path that was
   // REQUESTED: /you stays protected as /you even though /v3/you renders it.
   const rewritePath = isCutoverEnabled(request)
-    ? resolveV3Rewrite(request.nextUrl.pathname)
+    ? resolveV3Rewrite(request.nextUrl.pathname, request.nextUrl.searchParams)
     : null;
   let rewriteTo: URL | undefined;
   if (rewritePath) {
