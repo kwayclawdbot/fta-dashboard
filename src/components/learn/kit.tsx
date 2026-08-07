@@ -1,4 +1,3 @@
-import { Kaushan_Script } from "next/font/google";
 import { computeStreak as computeStreakImpl } from "@/lib/streak";
 import {
   StreakFlame,
@@ -25,13 +24,7 @@ import {
 // The board sets every "learn" wordmark in Kaushan Script. Loaded here rather
 // than in the root layout so the face belongs to this surface and nothing else
 // pays for it.
-const script = Kaushan_Script({
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-/** The script wordmark ("learn"), board 08 + board 20 head. */
+/** The standard product wordmark, set in the shared Sora display register. */
 export function LearnWordmark({
   children = "learn",
   className = "",
@@ -41,7 +34,7 @@ export function LearnWordmark({
 }) {
   return (
     <span
-      className={`${script.className} block text-[34px] leading-none text-ink sm:text-[38px] ${className}`}
+      className={`block font-display text-[34px] font-bold leading-none tracking-tight text-ink sm:text-[38px] ${className}`}
     >
       {children}
     </span>

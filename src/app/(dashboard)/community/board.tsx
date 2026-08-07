@@ -42,8 +42,7 @@ import ScrollRow from "@/components/canvas2/ScrollRow";
 /* ── marker annotation ────────────────────────────────────────────────────── */
 
 /** The hand-drawn margin note the boards put in the corner of a screen. */
-export const MARKER_FONT =
-  '"Caveat", "Bradley Hand", "Segoe Script", "Brush Script MT", cursive';
+export const MARKER_FONT = 'var(--font-sora), sans-serif';
 
 export function Marker({
   children,
@@ -57,7 +56,7 @@ export function Marker({
   return (
     <span
       aria-hidden
-      className={`pointer-events-none select-none whitespace-pre-line text-[20px] font-bold leading-[1.05] text-gold-700 ${className}`}
+      className={`pointer-events-none select-none whitespace-pre-line text-[13px] font-bold uppercase tracking-[0.12em] leading-[1.15] text-gold-700 ${className}`}
       style={{ fontFamily: MARKER_FONT, transform: `rotate(${rotate}deg)` }}
     >
       {children}
