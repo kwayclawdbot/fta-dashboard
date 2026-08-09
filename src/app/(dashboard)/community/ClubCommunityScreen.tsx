@@ -79,7 +79,7 @@ function normAuthor(a: FeedAuthor | FeedAuthor[] | null): FeedAuthor | null {
  * segments; each ring starts its sweep at a different angle so the row
  * shimmers instead of repeating.
  */
-function ringGradient(i: number): string {
+export function ringGradient(i: number): string {
   const from = 210 + i * 47;
   return [
     `conic-gradient(from ${from}deg`,
@@ -96,7 +96,7 @@ function ringGradient(i: number): string {
   ].join(", ");
 }
 
-function CircleRing({
+export function CircleRing({
   index,
   title,
   sub,

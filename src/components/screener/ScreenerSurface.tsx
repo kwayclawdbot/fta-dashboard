@@ -20,16 +20,8 @@ import {
   CornerDownLeft,
   Bookmark,
 } from "lucide-react";
-import {
-  Bone,
-  BoardCard,
-  BoardChip,
-  BoardHead,
-  FoundingLine,
-  PillTabs,
-  SectionMark,
-  Spark,
-} from "@/components/discover/board";
+import { Bone, BoardCard, FoundingLine } from "@/components/discover/board";
+import { sparkPath } from "@/components/clubhome/MarketPulse";
 import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { createClient } from "@/lib/supabase/client";
 import { parseScreenerQuery } from "@/lib/screener-nl";
@@ -164,21 +156,202 @@ function HeatChip({ n }: { n: number | null | undefined }) {
 }
 
 /* ---------- the row sparkline ----------
-   Board 15 hangs a 52×18 sparkline off every result row. A network call per
-   row is not payable at 100 rows a page — but the row ALREADY carries four real
-   readings of its own past (3m, 1m, 5d, 1d) plus the live mark, so the line is
-   reconstructed from those: p_then = p_now / (1 + chg/100). Every point is a
-   real price the feed supplied; nothing is interpolated or smoothed, and a row
-   missing its history simply draws no line. */
-function seriesFor(r: ScreenerRow): number[] | null {
-  const p = r.price;
-  if (p == null) return null;
-  const at = (chg: number | null | undefined) =>
-    chg == null ? null : p / (1 + chg / 100);
-  const pts = [at(r.chg_3m), at(r.chg_1m), at(r.chg_5d), at(r.chg_1d), p].filter(
-    (v): v is number => v != null && Number.isFinite(v) && v > 0
+   The terminal anatomy hangs a REAL line sparkline off every ticker row, drawn
+   by the shared bars-fetch pattern (clubhome/MarketPulse's exported sparkPath,
+   fed by the same GET /api/market/bars?range=1m read its useBarSeries makes —
+   real daily closes, never a reconstruction). One adaptation for a 100-row
+   page: the fetch is deferred until the row scrolls into view and deduplicated
+   through a module promise cache, so opening the screener is never a hundred
+   simultaneous network calls (the same discipline discover/board's TickerSpark
+   documents for its own row strips). Month drift colors the CURVE; the day
+   move colors the % beside it — the two may disagree, and that's correct.
+   No bars → no line; the slot holds its height so rows never reflow. */
+const rowBarCache = new Map<string, Promise<number[]>>();
+
+function rowCloses(symbol: string): Promise<number[]> {
+  const key = symbol.toUpperCase();
+  let p = rowBarCache.get(key);
+  if (!p) {
+    p = fetch(`/api/market/bars?symbol=${encodeURIComponent(key)}&range=1m`, {
+      headers: { accept: "application/json" },
+    })
+      .then((res) =>
+        res.ok ? (res.json() as Promise<{ bars?: { t: number; c: number }[] }>) : null
+      )
+      .then((json) =>
+        (json?.bars ?? []).map((b) => b.c).filter((c) => Number.isFinite(c))
+      )
+      .catch(() => []);
+    rowBarCache.set(key, p);
+  }
+  return p;
+}
+
+function RowSpark({ symbol }: { symbol: string }) {
+  const host = useRef<HTMLSpanElement>(null);
+  const [closes, setCloses] = useState<number[] | null>(null);
+  const [seen, setSeen] = useState(false);
+
+  useEffect(() => {
+    const el = host.current;
+    if (!el || seen) return;
+    if (typeof IntersectionObserver === "undefined") {
+      // No observer (old browsers, jsdom): load anyway, from a callback so a
+      // synchronous setState never cascades a render on every mount.
+      const id = setTimeout(() => setSeen(true), 0);
+      return () => clearTimeout(id);
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "240px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen]);
+
+  useEffect(() => {
+    if (!seen) return;
+    let live = true;
+    rowCloses(symbol).then((c) => {
+      if (live && c.length >= 2) setCloses(c);
+    });
+    return () => {
+      live = false;
+    };
+  }, [seen, symbol]);
+
+  const path = closes ? sparkPath(closes) : null;
+  const net = closes ? closes[closes.length - 1] - closes[0] : 0;
+  const stroke =
+    net > 0 ? "var(--price-up)" : net < 0 ? "var(--price-down)" : "var(--soft)";
+  return (
+    <span ref={host} aria-hidden className="block h-[20px] w-full">
+      {path && (
+        <svg
+          viewBox="0 0 90 24"
+          preserveAspectRatio="none"
+          className="h-full w-full"
+        >
+          <path
+            d={path}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      )}
+    </span>
   );
-  return pts.length >= 3 ? pts : null;
+}
+
+/* ---------- terminal primitives (style law — semantic tokens only) ----------
+   Section labels are WHITE BOLD CAPS ~13px on the ink token (charcoal on the
+   family paper, white on the club terminal — same class, no branch). Choice
+   chips are RAISED WELLS on --m800 (a light-sand well on family/club-light, a
+   raised cool well on club-dark); the active one takes the brand-accent pill.
+   Tabs underline in Kai's violet. Nothing here hardcodes a surface hex, so
+   family-light stays coherent without a mode branch. */
+function SectionLabel({
+  id,
+  className = "",
+  children,
+}: {
+  id?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <h2
+      id={id}
+      className={`text-[13px] font-bold uppercase tracking-[0.06em] text-ink ${className}`}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function WellChip({
+  as: Tag = "span",
+  active = false,
+  className = "",
+  children,
+  ...rest
+}: {
+  as?: React.ElementType;
+  active?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  /* ButtonHTMLAttributes so a chip rendered `as "button"` can declare
+     `type="button"` — without it a chip inside a form would submit it. */
+} & React.ButtonHTMLAttributes<HTMLElement>) {
+  return (
+    <Tag
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-[11px] py-[6px] text-[11.5px] font-semibold transition-colors ${
+        active
+          ? "border-accent/60 bg-accent/12 text-gold-700"
+          : "border-sand bg-midnight-800 text-soft hover:text-ink"
+      } ${className}`}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+/** The law's tab anatomy: violet (--kai-blue) 2px underline on the live tab. */
+function UnderlineTabs<T extends string>({
+  options,
+  value,
+  onChange,
+  ariaLabel,
+  idPrefix,
+  panelId,
+  className = "",
+}: {
+  options: { key: T; label: string }[];
+  value: T;
+  onChange: (k: T) => void;
+  ariaLabel: string;
+  idPrefix: string;
+  panelId: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      className={`club2-track flex gap-5 overflow-x-auto border-b border-sand ${className}`}
+    >
+      {options.map((o) => {
+        const on = o.key === value;
+        return (
+          <button
+            key={o.key}
+            id={`${idPrefix}-${o.key}`}
+            role="tab"
+            type="button"
+            aria-selected={on}
+            aria-controls={panelId}
+            onClick={() => onChange(o.key)}
+            className={`f0-focus -mb-px shrink-0 border-b-2 border-transparent pb-2.5 text-[13px] font-semibold transition-colors ${
+              on ? "text-kai-600 dark:text-kai-300" : "text-soft hover:text-ink"
+            }`}
+            style={on ? { borderBottomColor: "var(--kai-blue)" } : undefined}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 interface Meta {
@@ -217,31 +390,34 @@ interface SavedScreen {
 }
 
 /**
- * ScreenerSurface — the full-universe stock screener, rebuilt to the owner's
- * mockup BOARD 15 (`15 Discover Screener`, tiles `light-r2-*` / `dark-r2-*`;
- * markup in `.planning/design-project-v2/Cheat Code App Light.dc.html`).
+ * ScreenerSurface — the full-universe stock screener, restyled to the ratified
+ * CLUB TERMINAL STYLE law (.planning/CLUB-TERMINAL-STYLE.md). It is SHARED by
+ * the club Discover Screens tab, the standalone /screener route and every
+ * family placement, so the whole restyle is SEMANTIC TOKENS ONLY — the same
+ * classes render the dark terminal in club-dark and stay coherent on the
+ * family/club-light paper; there is no mode branch anywhere in this file.
  *
- * WHAT THE BOARD DRAWS, TOP TO BOTTOM:
- *   masthead        "discover" — the board files the screener as a TAB of
- *                   Discover, not as its own titled page
- *   tabs            FOR YOU · SCREENER · TRENDING, SCREENER lit as an orange pill
- *   filter chips    white, 1px ORANGE outline, "Tech ✕" — one per active filter,
- *                   with a quiet "+ Filter" at the end
- *   results header  "14 MATCHES · SORTED BY CLUB SIGNAL"  ·  "Save screen"
- *   results         white ROW CARDS: 26px mark · ticker · 52×18 sparkline ·
- *                   price · day move · signal chip
- *   conviction      two cards side by side — "Club's most bullish" on a green
- *                   hairline, "Club's most bearish" on a pink one
- *   trending        "TRENDING IN THE CLUB" — a wrap of outlined chips
+ * THE ANATOMY, TOP TO BOTTOM:
+ *   masthead        "DISCOVER" caps wordmark · Sora headline · mono coverage
+ *                   line (the screener is filed as a TAB of Discover)
+ *   tabs            For you · Screener · Trending — violet (--kai-blue) 2px
+ *                   underline on the live tab
+ *   search / NL     rounded 14px cards, 15px interior padding; the plain-
+ *                   English field wears Kai's violet hairline
+ *   chips           every one-of-N choice is a RAISED WELL (--m800) chip;
+ *                   the live one takes the brand-accent pill
+ *   results header  "14 MATCHES · SORTED BY CLUB SIGNAL" in mono caps, with
+ *                   "Save screen" as the solid orange pill CTA
+ *   results         quiet rounded ticker rows: 32px logo tile · bold Sora
+ *                   ticker · real-closes line sparkline · mono price ·
+ *                   green/red day move · signal chip
+ *   conviction      two cards side by side — "Club's most bullish" on a
+ *                   sentiment hairline, "most bearish" on the plain one
+ *   trending        "TRENDING IN THE CLUB" — a wrap of raised-well chips
  *
- * The previous pass drew all of this as a hairline ledger with a sortable
- * desktop column header and no cards anywhere. None of it remains: the results
- * are cards, the chips are the board's chips, and the copy on the results
- * header is the board's copy verbatim.
- *
- * `embedded` renders it as the SCREENER tab inside Discover, so the masthead,
- * the tab row and the two board-15 tail blocks are dropped — the host already
- * carries all three. The data, filters, full-universe load, saved screens and
+ * `embedded` renders it as the Screens tab inside Discover, so the masthead,
+ * the tab row and the two tail blocks are dropped — the host already carries
+ * all three. The data, filters, full-universe load, saved screens and
  * free-tier gating are identical in both placements.
  *
  * `nlSeed` / `seedScreenId` — the CLUB-mode Discover composition (CheatCodeDoors
@@ -756,19 +932,29 @@ export default function ScreenerSurface({
       : null;
 
   return (
-    <div
-      className={
-        embedded ? "space-y-4" : "mx-auto max-w-3xl space-y-4 px-4 pb-24 sm:px-6"
-      }
-    >
-      {/* ── Masthead + tabs (board 15) ──────────────────────────────────────
-          The board files the screener as a TAB of Discover, so the standalone
-          route wears Discover's head with SCREENER lit. Embedded inside
-          Discover the host already draws both, so neither renders twice. */}
+    <div className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}>
+      {/* ── Masthead + tabs ────────────────────────────────────────────────
+          The screener is filed as a TAB of Discover, so the standalone route
+          wears Discover's terminal head — caps wordmark, Sora headline, mono
+          coverage line, violet-underline tabs with SCREENER live. Embedded
+          inside Discover the host already draws all of it. */}
       {!embedded && (
         <>
-          <BoardHead title="discover" sub="Screen the whole market on your own terms" />
-          <PillTabs
+          <span className="font-display text-[13px] font-bold uppercase tracking-[0.24em] text-ink">
+            Discover
+          </span>
+          <h1 className="mt-3 font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
+            Screen the whole market
+          </h1>
+          {/* Coverage is DATA, so it's mono — delayed feed, stated plainly. */}
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
+            Delayed ~15 min
+            {meta?.last_trading_day ? ` · ${meta.last_trading_day}` : ""}
+            {meta?.universe_count ? ` · ${meta.universe_count.toLocaleString()} securities` : ""}
+            {coverage != null ? ` · mkt cap on ${coverage}% of stocks` : ""}
+            {meta?.history_days ? ` · ${meta.history_days}d window` : ""}
+          </p>
+          <UnderlineTabs
             options={[
               { key: "foryou", label: "For you" },
               { key: "screener", label: "Screener" },
@@ -781,32 +967,31 @@ export default function ScreenerSurface({
             ariaLabel="Discover views"
             idPrefix="screener-tab"
             panelId="screener-panel"
+            className="mt-5"
           />
-          <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
-            Delayed ~15 min
-            {meta?.last_trading_day ? ` · ${meta.last_trading_day}` : ""}
-            {meta?.universe_count ? ` · ${meta.universe_count.toLocaleString()} securities` : ""}
-            {coverage != null ? ` · mkt cap on ${coverage}% of stocks` : ""}
-            {meta?.history_days ? ` · ${meta.history_days}d window` : ""}
-          </p>
         </>
       )}
 
+      {/* Rhythm is UNEVEN by design: ~10px inside a thought, 24px between
+          sections — never a uniform space-y stack. */}
       <div
         id="screener-panel"
         role={embedded ? undefined : "tabpanel"}
         aria-labelledby={embedded ? undefined : "screener-tab-screener"}
-        className="space-y-4"
+        className={embedded ? "" : "mt-5"}
       >
-        {/* Search — the board's card, not a naked rule */}
-        <BoardCard radius={14} className="flex items-center gap-2.5 px-3.5 py-2.5">
+        {/* Search — one rounded terminal card, proper interior padding */}
+        <BoardCard
+          radius={14}
+          className="flex items-center gap-2.5 px-[15px] py-[11px]"
+        >
           <Search className="h-4 w-4 shrink-0 text-soft" aria-hidden />
           <input
             value={custom.q ?? ""}
             onChange={(e) => setCustom((c) => ({ ...c, q: e.target.value || null }))}
             placeholder="Search by ticker or company name…"
             aria-label="Search the universe"
-            className="min-w-0 flex-1 bg-transparent font-display text-[14px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-soft/80"
           />
           {custom.q && (
             <button
@@ -820,19 +1005,25 @@ export default function ScreenerSurface({
         </BoardCard>
 
         {/* ── Screen in plain English ───────────────────────────────────────
-            The surface's one AI affordance, so it keeps Kai blue — carried on
-            the board's card with a Kai hairline rather than a bespoke tinted
-            slab. The parse is deterministic (src/lib/screener-nl.ts): it only
-            ever produces filters the panel below can also produce, so a parsed
-            screen and a hand-built one are indistinguishable, and the chips
-            narrate exactly what it understood. Nothing recognised → honest
-            keyword fallback. */}
-        <BoardCard radius={14} className="!border-kai-500/35 px-3.5 py-3">
-          <div className="mb-1.5 flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
+            The surface's one AI affordance, so it wears Kai's violet — the
+            same card-with-a-kai-hairline anatomy as Discover's KAI
+            INTERPRETATION card. The parse is deterministic
+            (src/lib/screener-nl.ts): it only ever produces filters the panel
+            below can also produce, so a parsed screen and a hand-built one
+            are indistinguishable. Nothing recognised → honest keyword
+            fallback. */}
+        <BoardCard
+          radius={14}
+          className="mt-2.5 px-[15px] py-[13px]"
+          style={{
+            borderColor: "color-mix(in srgb, var(--kai-blue) 40%, var(--sand))",
+          }}
+        >
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-kai-600 dark:text-kai-300">
             <Sparkles className="h-3 w-3" />
             Screen in plain English
           </div>
-          <div className="relative">
+          <div className="relative mt-1.5">
             <input
               value={nlInput}
               onChange={(e) => {
@@ -843,51 +1034,50 @@ export default function ScreenerSurface({
                 if (e.key === "Enter") runNL(nlInput);
               }}
               placeholder="e.g. Semis under $60 with rising volume"
-              className="w-full bg-transparent py-1 pr-10 font-display text-[14px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-soft/70"
+              className="w-full bg-transparent py-1 pr-10 text-[13px] text-ink outline-none placeholder:text-soft/80"
             />
             <button
               onClick={() => runNL(nlInput)}
               disabled={!nlInput.trim()}
               aria-label="Run plain-English screen"
-              className="f0-focus f0-press absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center rounded-full bg-kai-500 px-2 py-1.5 text-white transition disabled:opacity-40 dark:bg-kai-400"
+              className="f0-focus f0-press absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center rounded-full px-2 py-1.5 text-white transition disabled:opacity-40"
+              style={{ backgroundColor: "var(--kai-blue)" }}
             >
               <CornerDownLeft className="h-3.5 w-3.5" />
             </button>
           </div>
           {nlNote && (
-            <p className="mt-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+            <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
               {nlNote}
             </p>
           )}
         </BoardCard>
 
-        {/* ── Quick start — the board's chip row ────────────────────────────
-            Board 15 draws every one-of-N choice on this surface as a chip, so
-            the presets are chips: the current one takes the ORANGE outline the
-            board gives an active filter, and re-selecting it clears it. */}
-        <div>
-          <p className="mb-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
-            Quick start
-          </p>
-          <ScrollRow className="-m-1 flex gap-[7px] p-1">
+        {/* ── Quick start — preset chips as raised wells ────────────────────
+            Every one-of-N choice on this surface is a chip in a raised dark
+            well; the live one takes the accent pill, and re-selecting it
+            clears it. */}
+        <div className="mt-6">
+          <SectionLabel>Quick start</SectionLabel>
+          <ScrollRow className="-m-1 mt-2 flex gap-[7px] p-1">
             {PRESETS.map((p) => (
-              <BoardChip
+              <WellChip
                 key={p.id}
                 as="button"
                 type="button"
-                tone={activePresetId === p.id ? "accent" : "quiet"}
+                active={activePresetId === p.id}
                 aria-pressed={activePresetId === p.id}
                 onClick={() => applyPreset(p)}
                 className="f0-focus f0-press"
               >
                 {p.label}
-              </BoardChip>
+              </WellChip>
             ))}
           </ScrollRow>
         </div>
 
         {activePresetId && (
-          <BoardCard radius={14} className="px-3.5 py-3">
+          <BoardCard radius={14} className="mt-3 px-[15px] py-[13px]">
             {(() => {
               const ap = getPreset(activePresetId)!;
               return (
@@ -923,15 +1113,13 @@ export default function ScreenerSurface({
             `saved === null` is "not read yet", which must never take the
             founding branch. */}
         {saved !== null && saved.length > 0 && (
-          <div>
-            <p className="mb-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.16em] text-soft">
-              Your screens
-            </p>
-            <ScrollRow className="-m-1 flex gap-[7px] p-1">
+          <div className="mt-6">
+            <SectionLabel>Your screens</SectionLabel>
+            <ScrollRow className="-m-1 mt-2 flex gap-[7px] p-1">
               {saved.map((s) => {
                 const on = appliedScreenId === s.id;
                 return (
-                  <BoardChip key={s.id} tone={on ? "accent" : "quiet"}>
+                  <WellChip key={s.id} active={on}>
                     <button
                       type="button"
                       onClick={() => applyScreen(s)}
@@ -947,25 +1135,26 @@ export default function ScreenerSurface({
                     >
                       <X className="h-3 w-3" />
                     </button>
-                  </BoardChip>
+                  </WellChip>
                 );
               })}
             </ScrollRow>
           </div>
         )}
 
-        {/* Filter panel — a carded disclosure */}
-        <BoardCard radius={16} className="overflow-hidden">
+        {/* Filter panel — a carded disclosure. White-caps label, 15px interior
+            padding, hairline-ruled ledger inside (never cards-in-cards). */}
+        <BoardCard radius={16} className="mt-6 overflow-hidden">
           <button
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
-            className="f0-focus flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left"
+            className="f0-focus flex w-full items-center justify-between gap-2 px-[15px] py-3 text-left"
           >
-            <span className="flex items-center gap-2 font-display text-[12.5px] font-bold uppercase tracking-[0.08em] text-ink">
-              <SlidersHorizontal className="h-4 w-4 text-gold-700" />
+            <span className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+              <SlidersHorizontal className="h-4 w-4 text-soft" />
               Filters
               {chips.length > 0 && (
-                <span className="font-mono text-[11px] font-bold text-gold-700">
+                <span className="font-mono text-[11px] font-bold tabular-nums text-gold-700">
                   {chips.length}
                 </span>
               )}
@@ -982,7 +1171,7 @@ export default function ScreenerSurface({
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="border-t border-sand px-3.5">
+                <div className="border-t border-sand px-[15px]">
                   <FilterPanel
                     isFTA={isFTA}
                     isKid={isKid}
@@ -996,51 +1185,51 @@ export default function ScreenerSurface({
           </AnimatePresence>
         </BoardCard>
 
-        {/* Active filter chips — board 15's own "Tech ✕" row, verbatim: white
-            fill, 1px ORANGE outline, orange label, with a quiet "+ Filter" at
-            the end that opens the panel above. */}
-        <div className="club2-track -m-1 flex flex-wrap items-center gap-[7px] p-1">
-          {chips.map((c) => (
-            <BoardChip
-              key={c.key}
+        {/* Active filter chips — one accent pill per live filter ("Tech ✕"),
+            with a quiet raised-well "+ Filter" that opens the panel above. */}
+        <div className="mt-3">
+          <div className="club2-track -m-1 flex flex-wrap items-center gap-[7px] p-1">
+            {chips.map((c) => (
+              <WellChip
+                key={c.key}
+                as="button"
+                type="button"
+                active
+                onClick={() => clearFilter(c.key)}
+                className="f0-focus f0-press"
+                aria-label={`Remove the ${c.label} filter`}
+              >
+                {c.label}
+                <X className="h-3 w-3" />
+              </WellChip>
+            ))}
+            <WellChip
               as="button"
               type="button"
-              tone="accent"
-              onClick={() => clearFilter(c.key)}
+              onClick={() => setFiltersOpen(true)}
               className="f0-focus f0-press"
-              aria-label={`Remove the ${c.label} filter`}
             >
-              {c.label}
-              <X className="h-3 w-3" />
-            </BoardChip>
-          ))}
-          <BoardChip
-            as="button"
-            type="button"
-            tone="quiet"
-            onClick={() => setFiltersOpen(true)}
-            className="f0-focus f0-press"
-          >
-            + Filter
-          </BoardChip>
-          {chips.length > 0 && (
-            <button
-              onClick={clearAll}
-              className="f0-focus ml-1 rounded text-[10.5px] font-semibold text-soft underline hover:text-ink"
-            >
-              Clear all
-            </button>
-          )}
+              + Filter
+            </WellChip>
+            {chips.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="f0-focus ml-1 rounded text-[10.5px] font-semibold text-soft underline hover:text-ink"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Results header — board 15's line, verbatim shape:
+        {/* Results header — the terminal line:
             "14 MATCHES · SORTED BY CLUB SIGNAL"   ·   "Save screen" */}
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           {/* THE COUNT AND WHAT IT COUNTED. A match count is only meaningful
               against the set it searched, so when the tail of the universe
               isn't loaded the line says how many rows were actually screened
               instead of implying the whole market. */}
-          <span className="font-mono text-[9px] uppercase tracking-[0.06em] text-soft">
+          <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-soft">
             {results.length.toLocaleString()}{" "}
             {results.length === 1 ? "MATCH" : "MATCHES"}
             {universeComplete || results.length === rows.length
@@ -1050,9 +1239,10 @@ export default function ScreenerSurface({
             {(SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? "").toUpperCase()}
           </span>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {/* SAVE SCREEN — board 15 draws it right here. It writes a real row
-                (migration 194) and only appears once there is a screen worth
-                keeping, so it never invites a member to save the empty view. */}
+            {/* SAVE SCREEN — the row's one primary act, so it takes the solid
+                orange pill. It writes a real row (migration 194) and only
+                appears once there is a screen worth keeping, so it never
+                invites a member to save the empty view. */}
             {userId && !filtersEmpty(custom) && (
               <SaveScreenControl
                 name={screenName}
@@ -1067,7 +1257,7 @@ export default function ScreenerSurface({
             {/* The sort is a stated fact, not a hidden default: the surface
                 opens on CLUB SIGNAL — what the Club is actually engaging with
                 — and the line above says so. */}
-            <label className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
+            <label className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
               Sort
               <select
                 value={sortKey}
@@ -1088,7 +1278,7 @@ export default function ScreenerSurface({
             <button
               onClick={() => setExplainerOpen((v) => !v)}
               aria-expanded={explainerOpen}
-              className="f0-focus inline-flex items-center gap-1 rounded font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft hover:text-ink"
+              className="f0-focus inline-flex items-center gap-1 rounded font-mono text-[10px] uppercase tracking-[0.14em] text-soft hover:text-ink"
             >
               <Info className="h-3.5 w-3.5" />
               How to use this
@@ -1102,7 +1292,7 @@ export default function ScreenerSurface({
             states are now stated — a partial window with the way to complete
             it, and an outright failure with what went wrong. */}
         {universeError && (
-          <p className="text-[11px] leading-snug text-soft">
+          <p className="mt-3 text-[11px] leading-snug text-soft">
             {universeError}{" "}
             <button
               onClick={() => void loadMoreUniverse()}
@@ -1113,7 +1303,7 @@ export default function ScreenerSurface({
           </p>
         )}
         {!universeError && !universeComplete && (
-          <p className="text-[11px] leading-snug text-soft">
+          <p className="mt-3 text-[11px] leading-snug text-soft">
             Screening the top {rows.length.toLocaleString()} companies by market
             cap.{" "}
             {loadingMore ? (
@@ -1138,7 +1328,7 @@ export default function ScreenerSurface({
             fix. Distinct from loading: the universe has already landed by the
             time this can render. */}
         {sortKey === "like_count" && results.length > 0 && maxHeat === 0 && (
-          <FoundingLine>
+          <FoundingLine className="mt-3">
             The Club hasn&apos;t warmed any of these names yet, so this list is in
             no meaningful order. Like a ticker on its research page to start its
             signal — or{" "}
@@ -1164,7 +1354,10 @@ export default function ScreenerSurface({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <BoardCard radius={14} className="flex items-start gap-2 px-3.5 py-3">
+              <BoardCard
+                radius={14}
+                className="mt-3 flex items-start gap-2 px-[15px] py-[13px]"
+              >
                 <p className="text-[12.5px] leading-relaxed text-soft">
                   A screener filters thousands of stocks down to a short list that shares one trait — trading near a high, surging in volume, or looking oversold. It is a tool for finding candidates to <em>research</em>, never a list of things to buy. Combine a few filters, change the sort, then dig into any company that catches your eye.
                 </p>
@@ -1179,13 +1372,14 @@ export default function ScreenerSurface({
           )}
         </AnimatePresence>
 
-        {/* ── Results — board 15's ROW CARDS, at every breakpoint ───────────
-            One white card per match: mark, ticker, sparkline, price, day move,
-            signal chip. The extra columns the old ledger carried (1m/3m/vol/cap
-            /RSI) drop below the identity line on small screens exactly as they
-            did, but as type on the card rather than as ruled cells. */}
+        {/* ── Results — the established ticker-row anatomy, at every
+            breakpoint: real logo tile · bold Sora ticker · line sparkline
+            (real 1m closes; month drift colors the curve) · mono price ·
+            green/red day move · signal chip. The extra readings the terminal
+            keeps (1m/3m/vol/cap/RSI) sit as mono type on a second line inside
+            the same row, with the row's actions — never ruled cells. */}
         {results.length === 0 ? (
-          <BoardCard radius={18} className="px-5 py-12">
+          <BoardCard radius={16} className="mt-3 px-5 py-12">
             <Telescope className="mb-3 h-7 w-7 text-gold-700" />
             <h3 className="font-display text-[21px] font-extrabold tracking-[-0.02em] text-ink">
               Nothing matches
@@ -1197,7 +1391,7 @@ export default function ScreenerSurface({
           </BoardCard>
         ) : (
           <>
-            <div className="flex flex-col gap-[7px]">
+            <div className="mt-3 flex flex-col gap-2">
               {pageRows.map((r) => (
                 <ResultCard
                   key={r.ticker}
@@ -1215,7 +1409,7 @@ export default function ScreenerSurface({
 
             {/* Pagination */}
             {pageCount > 1 && (
-              <div className="flex items-center justify-center gap-4 pt-1">
+              <div className="mt-4 flex items-center justify-center gap-4">
                 <button
                   disabled={page === 0}
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -1271,7 +1465,7 @@ function ClubTail({ ledger }: { ledger: TrendingResponse | null }) {
   if (stanced.length === 0 && trending.length === 0) return null;
 
   return (
-    <div className="space-y-4 pt-2">
+    <div className="mt-7">
       {stanced.length > 0 && (
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <ConvictionCard title="Club's most bullish" rows={bullish} tone="bull" />
@@ -1280,8 +1474,8 @@ function ClubTail({ ledger }: { ledger: TrendingResponse | null }) {
       )}
 
       {trending.length > 0 && (
-        <div>
-          <SectionMark label="Trending in the Club" />
+        <div className={stanced.length > 0 ? "mt-6" : ""}>
+          <SectionLabel>Trending in the Club</SectionLabel>
           <div className="mt-2.5 flex flex-wrap gap-[7px]">
             {trending.map((r) => (
               <Link
@@ -1289,10 +1483,10 @@ function ClubTail({ ledger }: { ledger: TrendingResponse | null }) {
                 href={researchHref(r.ticker)}
                 className="f0-focus rounded-full"
               >
-                <BoardChip className="!font-mono !text-[11px] !text-ink">
+                <WellChip className="font-mono !text-[11px] !font-normal !text-ink">
                   {r.ticker.toUpperCase()}{" "}
                   <span className={pctTone(r.changePct)}>{fmtPct(r.changePct)}</span>
-                </BoardChip>
+                </WellChip>
               </Link>
             ))}
           </div>
@@ -1314,13 +1508,14 @@ function ConvictionCard({
   if (rows.length === 0) return null;
   return (
     <div
-      className={`rounded-[16px] border bg-card px-3.5 py-[13px] ${
+      className={`rounded-[16px] border bg-card px-[15px] py-[13px] ${
         tone === "bull" ? "border-sentiment/40" : "border-sand"
       }`}
     >
+      {/* the terminal's white-caps label register, toned by the card */}
       <p
-        className={`font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em] ${
-          tone === "bull" ? "text-sentiment" : "text-soft"
+        className={`text-[11px] font-bold uppercase tracking-[0.08em] ${
+          tone === "bull" ? "text-sentiment" : "text-ink"
         }`}
       >
         {title}
@@ -1354,13 +1549,11 @@ function ConvictionCard({
 /* ============================================================================
  * SCREENER SKELETON — the route's own furniture, not a generic list skeleton.
  *
- * Both the /screener route shell and this component's in-flight branch used
- * DashboardSkeleton, which draws a stack of rounded CARDS — a shape that exists
- * nowhere on the finished surface, so every screener open flashed the old
- * design for the length of a ~10k-row universe fetch and then swapped to a
- * hairline ledger. This is the finished page furniture with only the parts that
- * genuinely depend on data left blank: the masthead is real type, the ledger is
- * ruled rows, and the rules land where the real rules will land.
+ * The finished page furniture with only the parts that genuinely depend on
+ * data left blank: the masthead and headline are real type, the tab rule sits
+ * where the real tabs land, and the bones trace the ticker-row anatomy (logo
+ * tile · two-line identity · sparkline slot · price stack) so the universe
+ * fetch resolves without a layout swap.
  *
  * Exported so the route shell (app/(dashboard)/screener/loading.tsx) renders
  * the identical thing and navigation does not shift.
@@ -1368,52 +1561,62 @@ function ConvictionCard({
 export function ScreenerSkeleton({ embedded = false }: { embedded?: boolean }) {
   return (
     <div
-      className={
-        embedded ? "space-y-4" : "mx-auto max-w-3xl space-y-4 px-4 pb-24 sm:px-6"
-      }
+      className={embedded ? "" : "mx-auto max-w-3xl px-4 pb-24 sm:px-6"}
       aria-busy="true"
     >
       {!embedded && (
         <>
-          <BoardHead title="discover" sub="Screen the whole market on your own terms" />
-          <div className="flex items-center gap-4">
+          <span className="font-display text-[13px] font-bold uppercase tracking-[0.24em] text-ink">
+            Discover
+          </span>
+          <h1 className="mt-3 font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
+            Screen the whole market
+          </h1>
+          <Bone w={220} h={8} className="mt-2" />
+          <div className="mt-5 flex items-end gap-5 border-b border-sand pb-2.5">
+            <Bone w={52} h={10} />
             <Bone w={62} h={10} />
-            <Bone w={72} h={22} className="!rounded-full" />
-            <Bone w={62} h={10} />
+            <Bone w={58} h={10} />
           </div>
-          <Bone w={220} h={8} />
         </>
       )}
 
       {/* Search + Kai field + chips — real geometry, empty of data. */}
-      <BoardCard radius={14} className="px-3.5 py-3">
-        <Bone w="60%" h={12} />
-      </BoardCard>
-      <BoardCard radius={14} className="space-y-2 px-3.5 py-3">
-        <Bone w={150} h={8} />
-        <Bone w="70%" h={12} />
-      </BoardCard>
-      <div className="flex gap-[7px]">
-        {[72, 88, 64, 96].map((w, i) => (
-          <Bone key={i} w={w} h={26} className="!rounded-full" />
-        ))}
-      </div>
+      <div className={embedded ? "" : "mt-5"}>
+        <BoardCard radius={14} className="px-[15px] py-[13px]">
+          <Bone w="60%" h={12} />
+        </BoardCard>
+        <BoardCard radius={14} className="mt-2.5 space-y-2 px-[15px] py-[13px]">
+          <Bone w={150} h={8} />
+          <Bone w="70%" h={12} />
+        </BoardCard>
+        <div className="mt-6 flex gap-[7px]">
+          {[72, 88, 64, 96].map((w, i) => (
+            <Bone key={i} w={w} h={28} className="!rounded-full" />
+          ))}
+        </div>
 
-      <div className="flex flex-col gap-[7px]">
-        {Array.from({ length: 9 }).map((_, i) => (
-          <BoardCard key={i} radius={12} className="px-[11px] py-[9px]">
-            <div className="flex items-center gap-2.5">
-              <Bone w={26} h={26} className="!rounded-lg" />
-              <Bone w={44} h={9} />
-              <Bone w={52} h={12} className="hidden sm:block" />
-              <Bone w={64} h={9} className="ml-auto" />
-              <Bone w={38} h={9} />
-            </div>
-            <div className="mt-2 pl-[36px]">
-              <Bone w="55%" h={8} />
-            </div>
-          </BoardCard>
-        ))}
+        <div className="mt-6 flex flex-col gap-2">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <BoardCard key={i} radius={14} className="px-3.5 py-3">
+              <div className="flex items-center gap-3">
+                <Bone w={32} h={32} className="!rounded-[9px]" />
+                <span className="min-w-0 flex-1">
+                  <Bone w={48} h={10} />
+                  <Bone w={92} h={8} className="mt-1.5" />
+                </span>
+                <Bone w={64} h={12} className="hidden sm:block" />
+                <span>
+                  <Bone w={54} h={10} className="ml-auto" />
+                  <Bone w={38} h={8} className="ml-auto mt-1.5" />
+                </span>
+              </div>
+              <div className="mt-2.5 pl-[44px]">
+                <Bone w="55%" h={8} />
+              </div>
+            </BoardCard>
+          ))}
+        </div>
       </div>
       <span className="sr-only">Loading the market universe</span>
     </div>
@@ -1449,11 +1652,12 @@ function SaveScreenControl({
   const [open, setOpen] = useState(false);
 
   if (!open) {
+    // The primary CTA of the results line — the law's solid orange pill.
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="f0-focus f0-press inline-flex items-center gap-1 rounded font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold-700 transition-colors hover:text-gold-600"
+        className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-[6px] text-[11px] font-bold text-night-950"
       >
         <Bookmark className="h-3.5 w-3.5" />
         Save screen
@@ -1496,7 +1700,7 @@ function SaveScreenControl({
         type="button"
         onClick={onSave}
         disabled={!name.trim() || saving}
-        className="f0-focus f0-press rounded font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-gold-700 disabled:opacity-40"
+        className="f0-focus f0-press rounded-full bg-accent px-3 py-[5px] text-[11px] font-bold text-night-950 disabled:opacity-40"
       >
         {saving ? "Saving…" : "Save"}
       </button>
@@ -1522,17 +1726,17 @@ function SaveScreenControl({
 }
 
 /* ============================================================================
- * RESULT CARD — one match, one white card. Board 15's result row, verbatim:
+ * RESULT ROW — one match, one quiet rounded row in the established ticker-row
+ * anatomy (the same object MarketPulse / the watchlist movers draw):
  *
- *   [26px mark] TICKER  [52×18 sparkline]      $173.42   ▲4.7%   [78%]
+ *   [32px logo] TICKER (Sora bold)   [1m line sparkline]   $173.42   [78]
+ *               Company name (soft)                         +4.7%
  *
- * The board's row is a single line; the numbers this app has and the board does
- * not draw (the company name, the longer windows, cap, and the row's actions)
- * sit on a SECOND line inside the same card, so nothing the screener could do
- * before is lost and the card still reads as the board's object.
- *
- * The sparkline is reconstructed from the row's own real 3m/1m/5d/1d readings
- * (see `seriesFor`) — no per-row network call, no invented curve.
+ * The sparkline is REAL daily closes off /api/market/bars (see RowSpark); the
+ * month's drift colors the curve while the day move colors the % — the two may
+ * disagree, which is correct. The readings the terminal keeps beyond the
+ * board's line (1m/3m/vol/cap/RSI) and the row's actions sit as mono type on a
+ * second line inside the same row, so nothing the screener could do is lost.
  * ==========================================================================*/
 function ResultCard({
   r,
@@ -1555,7 +1759,7 @@ function ResultCard({
 }) {
   return (
     <BoardCard
-      radius={12}
+      radius={14}
       role="link"
       tabIndex={0}
       aria-label={`Open ${r.ticker} research`}
@@ -1566,44 +1770,45 @@ function ResultCard({
           onOpen();
         }
       }}
-      className="f0-focus group cursor-pointer px-[11px] py-[9px] transition-colors hover:border-accent"
+      className="f0-focus group cursor-pointer px-3.5 py-3 transition-colors hover:border-accent"
     >
-      {/* the board's line */}
-      <div className="flex items-center gap-2.5">
-        <CompanyLogo symbol={r.ticker} name={r.name} size={26} rounded="rounded-[8px]" />
-        <span className="w-[46px] shrink-0 font-mono text-[11px] font-semibold text-ink">
-          {r.ticker}
+      {/* the identity line */}
+      <div className="flex items-center gap-3">
+        <CompanyLogo symbol={r.ticker} name={r.name} size={32} rounded="rounded-[9px]" />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate font-display text-[13.5px] font-bold leading-none text-ink">
+              {r.ticker}
+            </span>
+            {r.type === "etf" && (
+              <span className="shrink-0 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
+                ETF
+              </span>
+            )}
+          </span>
+          <span className="mt-[4px] block truncate text-[11px] leading-none text-soft">
+            {r.name || "—"}
+          </span>
         </span>
-        <span className="hidden w-[52px] shrink-0 sm:block">
-          <Spark
-            points={seriesFor(r)}
-            width={52}
-            height={18}
-            strokeWidth={1.6}
-            className="block w-full"
-          />
+        {/* the line sparkline — real 1m closes, month drift colors the curve */}
+        <span className="hidden w-[64px] shrink-0 sm:block">
+          <RowSpark symbol={r.ticker} />
         </span>
-        <span className="flex-1 truncate text-right font-mono text-[10.5px] tabular-nums text-ink">
-          {fmtPrice(r.price)}
-        </span>
-        <span
-          className={`w-[46px] shrink-0 text-right font-mono text-[10px] tabular-nums ${pctTone(r.chg_1d)}`}
-        >
-          {fmtPct(r.chg_1d)}
+        <span className="shrink-0 text-right">
+          <span className="block font-mono text-[13px] font-semibold leading-none tabular-nums text-ink">
+            {fmtPrice(r.price)}
+          </span>
+          <span
+            className={`mt-[4px] block font-mono text-[11px] font-semibold leading-none tabular-nums ${pctTone(r.chg_1d)}`}
+          >
+            {fmtPct(r.chg_1d)}
+          </span>
         </span>
         <HeatChip n={r.like_count} />
       </div>
 
-      {/* everything the board's single line has no room for */}
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 pl-[36px]">
-        <span className="min-w-0 max-w-[22ch] truncate text-[11px] leading-snug text-soft">
-          {r.name || "—"}
-        </span>
-        {r.type === "etf" && (
-          <span className="font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
-            ETF
-          </span>
-        )}
+      {/* everything the identity line has no room for — mono readings */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-[44px]">
         {r.exchange && (
           <span className="hidden font-mono text-[8.5px] uppercase tracking-[0.14em] text-soft/70 sm:inline">
             {formatExchange(r.exchange)}
@@ -2045,14 +2250,16 @@ function FilterPanel({
 }
 
 /* ── Field group ───────────────────────────────────────────────────────────
-   The board's orange mono section mark over a run of filter rows, INSIDE the
-   filter card. A rule between rows of one card is the board's own idiom
-   (board 17's pick card separates its quote the same way); a card per filter
+   A white-caps section label (the terminal register — never a tiny gray mono
+   mark) over a run of hairline-ruled filter rows, INSIDE the filter card. A
+   rule between rows of one card is the established idiom; a card per filter
    would be cards inside cards. */
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section className="pt-4 first:pt-3">
-      <SectionMark label={label} />
+    <section className="pt-4 first:pt-3.5">
+      <h3 className="text-[12px] font-bold uppercase tracking-[0.08em] text-ink">
+        {label}
+      </h3>
       <div className="f0-ledger mt-1">{children}</div>
     </section>
   );
@@ -2155,12 +2362,10 @@ function NumField({
   );
 }
 
-/* A selection toggle, on the shared .f0-chip / .f0-chip-on primitive.
-   Previously a bespoke amber-tinted pill; the primitive exists precisely so
-   the filter panel, the active-filter row and the canvas's stance/post-type
-   controls cannot each invent their own selected state. .f0-chip-on inverts
-   to a solid field (and flips in dark), so the choice survives with colour
-   stripped — it is a value change, not a hue change. */
+/* A selection toggle — the law's raised-well chip: a quiet --m800 well at
+   rest (light sand on the family paper, a raised cool well on the club
+   terminal), the accent pill when selected. Same tokens as WellChip, in the
+   filter panel's mono register. */
 function Chip({
   active,
   onClick,
@@ -2175,8 +2380,10 @@ function Chip({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`f0-chip f0-press f0-focus px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em] ${
-        active ? "f0-chip-on" : "text-soft hover:text-ink"
+      className={`f0-press f0-focus inline-flex shrink-0 items-center rounded-full border px-3 py-[6px] font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
+        active
+          ? "border-accent/60 bg-accent/12 text-gold-700"
+          : "border-sand bg-midnight-800 text-soft hover:text-ink"
       }`}
     >
       {children}

@@ -12,13 +12,14 @@ import ProximityMeter from "@/components/watch/ProximityMeter";
 import {
   Card,
   StatePill,
+  StatGrid,
   MetricChip,
   CondRow,
   Eyebrow as BoardEyebrow,
 } from "@/components/alerts/board";
 import DetailActions from "./DetailActions";
 import { formatMove, moveToneClass } from "@/lib/format-move";
-import type { AlertEvent, AlertRule } from "@/lib/alerts/types";
+import type { AlertEvent, AlertRule, TradeAlert } from "@/lib/alerts/types";
 import type { WatchState } from "@/lib/alerts/watch-state";
 import type { SetupState } from "@/lib/alerts/setup-lifecycle";
 import {
@@ -27,6 +28,7 @@ import {
   watchStateLine,
   setupStateLine,
   freshnessLabel,
+  readSetupLevels,
   type StateTone,
 } from "@/lib/alerts/watch-ui";
 
@@ -130,6 +132,60 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
 
   const snap = event.payload?.snapshot_price ?? null;
   const perfPct = snap != null && current != null && snap > 0 ? ((current - snap) / snap) * 100 : null;
+
+  // ── The plan levels, when this event points at a broadcast pick. The Kai
+  // Watch card's Entry/Stop/Target/R:R StatGrid renders ONLY the legs the
+  // trade_alerts row actually stores — a missing level is a missing cell,
+  // never a dash pretending to be a reading.
+  let planEntry: number | null = null;
+  let planStop: number | null = null;
+  let planTarget: number | null = null;
+  if (event.alert_id) {
+    const { data: ta } = await supabase
+      .from("trade_alerts")
+      .select("entry, levels, targets, snapshot_price")
+      .eq("id", event.alert_id)
+      .maybeSingle();
+    if (ta) {
+      const b = ta as Pick<TradeAlert, "entry" | "levels" | "targets" | "snapshot_price">;
+      const L = readSetupLevels(b.levels);
+      planEntry = b.entry ?? b.snapshot_price ?? null;
+      planStop = L.stop ?? L.support ?? null;
+      planTarget = b.targets?.[0]?.price ?? L.resistance ?? null;
+    }
+  }
+  const planRisk =
+    planEntry != null && planStop != null ? Math.abs(planEntry - planStop) : null;
+  const planReward =
+    planEntry != null && planTarget != null ? Math.abs(planTarget - planEntry) : null;
+  const planRr =
+    planRisk != null && planReward != null && planRisk > 0 ? planReward / planRisk : null;
+
+  const fmt2 = (n: number) =>
+    n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // The card's stat rows — the plan when a broadcast carries one, otherwise
+  // the measured flag-point numbers this event does have.
+  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [
+    ...(planEntry != null ? [{ k: "Entry", v: fmt2(planEntry) }] : []),
+    ...(planStop != null ? [{ k: "Stop", v: fmt2(planStop), tone: "down" as const }] : []),
+    ...(planTarget != null
+      ? [{ k: "Target", v: fmt2(planTarget), tone: "up" as const }]
+      : []),
+    ...(planRr != null ? [{ k: "R:R", v: `${planRr.toFixed(1)}:1` }] : []),
+    ...(snap != null ? [{ k: "Flagged at", v: fmt2(snap) }] : []),
+    ...(perfPct != null
+      ? [
+          {
+            k: "Since",
+            v: `${perfPct >= 0 ? "+" : ""}${perfPct.toFixed(1)}%`,
+            ...(Math.abs(perfPct) >= 0.05
+              ? { tone: (perfPct >= 0 ? "up" : "down") as "up" | "down" }
+              : {}),
+          },
+        ]
+      : []),
+  ];
 
   // State + tone.
   const isSetupUpdate = event.kind === "setup_update";
@@ -248,37 +304,45 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
           <Sparkline symbol={ticker} height={104} />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {snap != null && (
-            <MetricChip>
-              <span className="uppercase tracking-[0.1em]">Flagged at</span>
-              <span className="text-ink">
-                {snap.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </MetricChip>
-          )}
-          {perfPct != null && (
-            <MetricChip>
-              <span className="uppercase tracking-[0.1em]">Since</span>
-              <span className={perfPct >= 0 ? "text-price-up" : "text-price-down"}>
-                {perfPct >= 0 ? "+" : ""}
-                {perfPct.toFixed(1)}%
-              </span>
-            </MetricChip>
-          )}
-          {event.payload?.delayed && <MetricChip>delayed ~15m</MetricChip>}
-        </div>
+        {/* the Kai Watch card's stat rows — Entry/Stop/Target/R:R when the
+            broadcast carries a plan, the flag-point + measured move always. */}
+        {stats.length > 0 && <StatGrid className="mt-3" stats={stats} />}
+
+        {event.payload?.delayed && (
+          <div className="mt-2.5">
+            <MetricChip>delayed ~15m</MetricChip>
+          </div>
+        )}
       </Card>
 
-      {/* ── WHY KAI ALERTED YOU ──────────────────────────────────────────── */}
-      <Card className="mt-3">
+      {/* ── WHY KAI ALERTED YOU — the Kai Watch urgency frame: a live state
+          gets the 1.5px accent edge over the accent wash (mixed from
+          --accent-solid so it flips per mode), everything else keeps the
+          quiet 1px sand card. Same device as PickCard's high tier. ───────── */}
+      <div
+        className="mt-3 rounded-[16px] border border-sand bg-card px-4 py-3.5"
+        style={
+          isLive
+            ? {
+                borderWidth: 1.5,
+                borderColor: "color-mix(in srgb, var(--accent-solid) 55%, var(--sand))",
+                background: "color-mix(in srgb, var(--accent-solid) 10%, var(--card))",
+              }
+            : undefined
+        }
+      >
         <BoardEyebrow accent>
           {isLive ? "Why Kai alerted you · live" : "Why Kai alerted you"}
         </BoardEyebrow>
-        <p className="mt-2.5 text-[14px] leading-relaxed text-ink">{whatChanged}</p>
+        <p
+          className={`mt-2.5 font-display tracking-[-0.01em] text-ink ${
+            isLive
+              ? "text-[17px] font-extrabold leading-[1.2]"
+              : "text-[14.5px] font-bold leading-[1.25]"
+          }`}
+        >
+          {whatChanged}
+        </p>
 
         {conditionLabel && (
           <div className="mt-3 border-t border-sand pt-3">
@@ -303,7 +367,7 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
             This watch has fired {firedCount} times
           </p>
         )}
-      </Card>
+      </div>
 
       {/* ── CONDITIONS · how it got here (board 19's checklist card) ────── */}
       {timeline.length > 1 && (
@@ -362,7 +426,10 @@ export default async function AlertDetailPage({ params }: { params: Promise<{ id
             </span>
             <div className="min-w-0">
               <BoardEyebrow>Kai&apos;s read</BoardEyebrow>
-              <p className="mt-2 text-[14px] leading-relaxed text-ink">{kaiRead}</p>
+              {/* The Kai Watch card's quoted read — Kai's voice, kai-blue. */}
+              <p className="mt-2 text-[14px] leading-relaxed">
+                <span className="text-kai-blue">&ldquo;{kaiRead}&rdquo;</span>
+              </p>
               <p className="mt-2 font-mono text-[9.5px] uppercase leading-relaxed tracking-[0.14em] text-soft/60">
                 An interpretation of what already happened — never a forecast.
               </p>

@@ -29,7 +29,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchNewsFeed } from "@/lib/news/client";
 import { AI_GENERATED_TAG, KIND_META, type NewsCardData, type NewsKind } from "@/lib/news/types";
-import NewsEntry from "@/components/news/NewsCard";
+import NewsEntry, { NewsLedgerRow } from "@/components/news/NewsCard";
+import { useAppMode } from "@/lib/useAppMode";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import {
   Bone,
@@ -63,6 +64,11 @@ export default function NewsClient({
   embedded?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
+  // CLUB-TERMINAL-STYLE: the club shell reads the newsroom as a hairline
+  // ledger (source + mono timestamp · white semibold headline · ticker
+  // chips); family/kid keep the card column byte-identical. SSR resolves
+  // "family" first, so the family tree never flickers.
+  const clubLedger = useAppMode() === "club";
   const [articles, setArticles] = useState<NewsCardData[]>(initialArticles ?? []);
   const [loading, setLoading] = useState(initialArticles == null);
   const [kind, setKind] = useState<KindKey>("all");
@@ -293,6 +299,12 @@ export default function NewsClient({
               ? "No stories tagged with that ticker yet."
               : "Nothing filed yet — the newsroom updates before the open and after the close on market days."}
           </FoundingLine>
+        ) : clubLedger ? (
+          <div className="divide-y divide-sand/70">
+            {shown.map((a, i) => (
+              <NewsLedgerRow key={a.slug} article={a} lead={i === 0} />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col gap-2.5">
             {shown.map((a, i) => (

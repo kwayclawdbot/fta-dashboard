@@ -171,6 +171,33 @@ function SettingRow({
   );
 }
 
+/* ── Terminal section head (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09) ──
+   The CLUB skin writes section labels as WHITE BOLD CAPS ~13px (never the tiny
+   gray mono eyebrow); the FAMILY render keeps the shipped ListHead exactly.
+   One component, one branch — every section reads the same primitive. */
+function SectionHead({
+  club,
+  quiet = false,
+  children,
+}: {
+  club: boolean;
+  /** Sub-section register ("On this device") — soft caps in club, uncharged
+      eyebrow in family. */
+  quiet?: boolean;
+  children: React.ReactNode;
+}) {
+  if (!club) return <ListHead charged={!quiet}>{children}</ListHead>;
+  return (
+    <h2
+      className={`text-[13px] font-bold uppercase tracking-[0.06em] ${
+        quiet ? "text-soft" : "text-ink"
+      }`}
+    >
+      {children}
+    </h2>
+  );
+}
+
 function SettingLink({
   href,
   label,
@@ -435,26 +462,57 @@ export default function SettingsSurface() {
   const plan = planLabel(ent.tier, ent.realTier);
   const renewLabel = monthYear(renewsAt);
 
+  /* CLUB TERMINAL SKIN. The club branch swaps the lowercase wordmark for the
+     terminal caps masthead, the mono eyebrows for white-caps section heads,
+     and the uniform space-y stack for the law's uneven rhythm (mt-3 inside a
+     thought, mt-7 between sections). Dark cards come free — Card rides
+     var(--card)/var(--sand), which are the club-dark tokens. Every control,
+     every commercial string and the whole family render are byte-identical. */
+  const isClub = appMode === "club";
+  const secCls = isClub ? "mt-7" : "space-y-2.5 pt-1";
+  const headGap = isClub ? "mt-3" : "";
+  const cardPad = isClub ? "px-4" : "px-3.5";
+  const cardPadY = isClub ? "px-4 py-4" : "px-3.5 py-3.5";
+
   return (
-    <div className="mx-auto max-w-2xl space-y-4 pb-16">
-      <BoardMast
-        word="settings"
-        lede="How the app looks, what reaches you, and what you're a member of."
-        action={
+    <div className={isClub ? "mx-auto max-w-2xl pb-16" : "mx-auto max-w-2xl space-y-4 pb-16"}>
+      {isClub ? (
+        <header className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+              Settings
+            </h1>
+            <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+              How the app looks, what reaches you, and what you&apos;re a member of.
+            </p>
+          </div>
           <Link
             href="/progress"
-            className="f0-focus inline-flex items-center gap-1.5 rounded font-display text-[12px] font-bold text-soft transition-colors hover:text-ink"
+            className="f0-focus inline-flex shrink-0 items-center gap-1.5 rounded pt-1 font-display text-[12px] font-bold text-soft transition-colors hover:text-ink"
           >
             <ArrowLeft className="h-4 w-4" /> You
           </Link>
-        }
-      />
+        </header>
+      ) : (
+        <BoardMast
+          word="settings"
+          lede="How the app looks, what reaches you, and what you're a member of."
+          action={
+            <Link
+              href="/progress"
+              className="f0-focus inline-flex items-center gap-1.5 rounded font-display text-[12px] font-bold text-soft transition-colors hover:text-ink"
+            >
+              <ArrowLeft className="h-4 w-4" /> You
+            </Link>
+          }
+        />
+      )}
 
       {/* ── PROFILE ──────────────────────────────────────────────────────── */}
-      <section className="space-y-2.5 pt-1">
-        <ListHead>Profile</ListHead>
-        <form onSubmit={saveProfile}>
-          <Card className="space-y-4 rounded-[16px] px-3.5 py-3.5">
+      <section className={isClub ? "mt-6" : "space-y-2.5 pt-1"}>
+        <SectionHead club={isClub}>Profile</SectionHead>
+        <form onSubmit={saveProfile} className={headGap || undefined}>
+          <Card className={`space-y-4 rounded-[16px] ${cardPadY}`}>
             <div className="flex items-center gap-3.5">
               <RingAvatar name={displayName || email || "?"} avatarUrl={avatarUrl} size={64} />
               <div className="min-w-0 flex-1">
@@ -541,9 +599,9 @@ export default function SettingsSurface() {
           Family Mode is light-only by design, so showing a control that could
           never take effect there would be a lie. Policy: src/lib/theme.ts. */}
       {appMode === "club" && (
-        <section className="space-y-2.5 pt-1">
-          <ListHead>Appearance</ListHead>
-          <Card className="space-y-3 rounded-[16px] px-3.5 py-3.5">
+        <section className={secCls}>
+          <SectionHead club={isClub}>Appearance</SectionHead>
+          <Card className={`space-y-3 rounded-[16px] ${headGap} ${cardPadY}`}>
             <SegmentedRail
               options={THEMES}
               value={themePref}
@@ -562,9 +620,9 @@ export default function SettingsSurface() {
       )}
 
       {/* ── NOTIFICATIONS ────────────────────────────────────────────────── */}
-      <section className="space-y-2.5 pt-1">
-        <ListHead>Notifications</ListHead>
-        <Card className="rounded-[16px] px-3.5">
+      <section className={secCls}>
+        <SectionHead club={isClub}>Notifications</SectionHead>
+        <Card className={`rounded-[16px] ${headGap} ${cardPad} ${isClub ? "py-1" : ""}`}>
           <div className="f0-ledger">
             {DELIVERY.map((t) => (
               <SettingRow key={t.key} label={t.label} sub={t.sub}>
@@ -578,9 +636,11 @@ export default function SettingsSurface() {
           </div>
         </Card>
 
-        <div className="space-y-2.5 pt-2">
-          <ListHead charged={false}>On this device</ListHead>
-          <Card className="space-y-3 rounded-[16px] px-3.5 py-3.5">
+        <div className={isClub ? "mt-5" : "space-y-2.5 pt-2"}>
+          <SectionHead club={isClub} quiet>
+            On this device
+          </SectionHead>
+          <Card className={`space-y-3 rounded-[16px] ${headGap} ${cardPadY}`}>
             <p className="text-[11px] leading-relaxed text-soft">
               Turning a category off silences its push only — it still lands in your
               bell.
@@ -606,7 +666,7 @@ export default function SettingsSurface() {
         {/* Trade-alert delivery (briefing, digest, daily cap, quiet hours) lives
             in the /alerts hub — one authority, this is only the pointer. */}
         {isAdult && ent.tier !== "free" && (
-          <Card className="rounded-[16px] px-3.5">
+          <Card className={`rounded-[16px] ${cardPad} ${isClub ? "mt-3" : ""}`}>
             <SettingLink
               href="/alerts"
               label="Trade alerts"
@@ -617,9 +677,9 @@ export default function SettingsSurface() {
       </section>
 
       {/* ── MEMBERSHIP ───────────────────────────────────────────────────── */}
-      <section className="space-y-2.5 pt-1">
-        <ListHead>Membership</ListHead>
-        <Card className="rounded-[16px] px-3.5">
+      <section className={secCls}>
+        <SectionHead club={isClub}>Membership</SectionHead>
+        <Card className={`rounded-[16px] ${headGap} ${cardPad} ${isClub ? "py-1" : ""}`}>
           <div className="f0-ledger">
             <SettingRow label="Plan" value={plan} />
             {/* THE ABSENT DATE IS DESIGNED, not a fallback character. `Renews —`
@@ -695,13 +755,22 @@ export default function SettingsSurface() {
         </Card>
       </section>
 
-      {/* Family Mode — self-gates to null for anyone who isn't a solo owner. */}
-      <AddFamily variant="settings" familyId={familyId ?? undefined} />
+      {/* Family Mode — self-gates to null for anyone who isn't a solo owner.
+          Only the CLUB rhythm wraps it (empty-div margins collapse away when it
+          self-gates); the family tree keeps the bare child so space-y-4 never
+          sees a phantom sibling. */}
+      {isClub ? (
+        <div className="mt-7">
+          <AddFamily variant="settings" familyId={familyId ?? undefined} />
+        </div>
+      ) : (
+        <AddFamily variant="settings" familyId={familyId ?? undefined} />
+      )}
 
       {/* ── ACCOUNT ──────────────────────────────────────────────────────── */}
-      <section className="space-y-2.5 pt-1">
-        <ListHead>Account</ListHead>
-        <Card className="rounded-[16px] px-3.5">
+      <section className={secCls}>
+        <SectionHead club={isClub}>Account</SectionHead>
+        <Card className={`rounded-[16px] ${headGap} ${cardPad} ${isClub ? "py-1" : ""}`}>
           <div className="f0-ledger">
             <SettingAction
               label="Replay the walkthrough"
@@ -739,7 +808,11 @@ export default function SettingsSurface() {
         </Card>
       </section>
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-1 text-[11px] text-soft">
+      <div
+        className={`flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-soft ${
+          isClub ? "mt-6" : "pt-1"
+        }`}
+      >
         <span>Looking for your belt, badges and reps?</span>
         <TextAction href="/progress">Your profile</TextAction>
         <TextAction href="/belts">The belt ladder</TextAction>

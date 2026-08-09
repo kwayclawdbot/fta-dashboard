@@ -131,6 +131,48 @@ export function CashTags({
   );
 }
 
+/* ── The club-terminal ledger row ──────────────────────────────────────────
+   CLUB-TERMINAL-STYLE law: in club mode the newsroom is a hairline LEDGER,
+   not a card column — desk (the story's source) + mono timestamp on top,
+   the headline white semibold underneath, the dek clamped, and the ticker
+   chips as doors. Same real article data, same Dateline/CashTags objects;
+   only the container changes. Family mode never renders this (NewsClient
+   branches on useAppMode), so the family card column is byte-identical. */
+export function NewsLedgerRow({
+  article,
+  lead = false,
+}: {
+  article: NewsCardData;
+  lead?: boolean;
+}) {
+  return (
+    <article className="group py-3.5 first:pt-1.5">
+      <Link href={`/news/${article.slug}`} className="f0-focus block rounded-lg">
+        <Dateline kind={article.kind} at={article.generated_at} />
+        <h2
+          className={`mt-1.5 font-display font-semibold leading-[1.25] tracking-[-0.01em] text-ink transition-colors group-hover:text-gold-700 ${
+            lead ? "max-w-[26ch] text-[18px]" : "max-w-[40ch] text-[15px]"
+          }`}
+        >
+          {article.title}
+        </h2>
+        {article.dek && (
+          <p
+            className={`mt-1 max-w-[58ch] leading-relaxed text-soft ${
+              lead ? "text-[12.5px]" : "line-clamp-2 text-[12px]"
+            }`}
+          >
+            {article.dek}
+          </p>
+        )}
+      </Link>
+      {article.tickers.length > 0 && (
+        <CashTags tickers={article.tickers} className="mt-2" />
+      )}
+    </article>
+  );
+}
+
 /* ── The entry ─────────────────────────────────────────────────────────────
    `lead` promotes the top story to board 01's warm FEATURE CARD — the same
    gradient, hairline and radius the canvas uses for its one dominant card on a

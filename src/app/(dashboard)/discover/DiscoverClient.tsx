@@ -119,7 +119,7 @@ const TRENDING_WALL_DETAIL =
 /**
  * MODE SPLIT. The CLUB register gets the owner's mockup-board Discover — the
  * "DISCOVER / ◈ AI" app bar, the "What are you looking for?" ask, the KAI
- * INTERPRETATION chips, underline tabs (Top Matches · Trending · Screens ·
+ * INTERPRETATION chips, underline tabs (Screens · Top Matches · Trending ·
  * Saved) and the board's result rows — composed in <ClubDiscover /> at the
  * foot of this file. Every family / fta member keeps the boards-02/15
  * composition in <FamilyDiscover /> BYTE-FOR-BYTE.
@@ -1335,8 +1335,12 @@ function useClubLedger() {
  *                a card labeled in violet small caps, holding plain-phrase
  *                chips: "Market Cap < $20B" · "Profitable" · "Revenue
  *                Growth > 20%" · "Industry: AI"
- *   tabs         Top Matches · Trending · Screens · Saved — the live one in
- *                violet with a violet underline
+ *   tabs         Screens · Top Matches · Trending · Saved — the live one in
+ *                violet with a violet underline. SCREENS leads and is the
+ *                default: the screener is the primary surface of Discover
+ *                now, so the board opens on the full universe rather than a
+ *                curated list (kid registers, with no Screens door, still
+ *                open on Top Matches).
  *   result rows  round company mark · bold name · line 2 "$7.2B  Rev +46%
  *                YoY" · line 3 "Profitable · 87% Bullish" in green · the
  *                ticker in mono · the price bold right · a green sparkline ·
@@ -1397,7 +1401,10 @@ function ClubDiscover({ board, extras, showScreener = true }: DiscoverClientProp
   const { trending, loading } = useClubLedger();
   const rows = useMemo(() => trending?.rows ?? [], [trending]);
 
-  const [tab, setTab] = useState<ClubTab>("matches");
+  // SCREENS is the default door — the screener is Discover's primary surface.
+  // A kid register has no Screens tab, so the `activeTab` fallback below lands
+  // them on Top Matches without ever mounting the walled surface.
+  const [tab, setTab] = useState<ClubTab>("screens");
   const [draft, setDraft] = useState("");
   /** The last plain-English ask. null = none yet — the honest default state. */
   const [query, setQuery] = useState<string | null>(null);
@@ -1444,15 +1451,13 @@ function ClubDiscover({ board, extras, showScreener = true }: DiscoverClientProp
     setTab("screens");
   }
 
+  // Screens leads (and is the default active tab); Saved keeps the tail.
+  // Kid registers get neither door, exactly as the server resolved.
   const tabs: { key: ClubTab; label: string }[] = [
+    ...(showScreener ? [{ key: "screens" as const, label: "Screens" }] : []),
     { key: "matches", label: "Top Matches" },
     { key: "trending", label: "Trending" },
-    ...(showScreener
-      ? [
-          { key: "screens" as const, label: "Screens" },
-          { key: "saved" as const, label: "Saved" },
-        ]
-      : []),
+    ...(showScreener ? [{ key: "saved" as const, label: "Saved" }] : []),
   ];
   const activeTab: ClubTab = tabs.some((t) => t.key === tab) ? tab : "matches";
 
@@ -1568,9 +1573,11 @@ function ClubDiscover({ board, extras, showScreener = true }: DiscoverClientProp
           />
         )}
 
-        {/* The full screener lives whole behind the board's Screens tab —
-            mounted only when opened (its universe read is heavy), seeded with
-            the standing ask / saved screen so the two views never disagree. */}
+        {/* The full screener lives whole behind the board's Screens tab — now
+            the FIRST and default tab, so it mounts on arrival (the universe
+            read is the price of being the primary surface; leaving the tab
+            unmounts it again). Seeded with the standing ask / saved screen so
+            the two views never disagree. */}
         {activeTab === "screens" && showScreener && (
           <ScreenerSurface
             embedded

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RotateCcw } from "lucide-react";
+import { ChevronRight, RotateCcw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { deriveRegister } from "@/lib/register";
@@ -11,61 +11,75 @@ import { COMMUNITY_DISCLAIMER } from "@/lib/community-watchlist";
 import { TickerTile } from "@/components/canvas2";
 import {
   CIRCLE_DAYS,
+  joinCircle,
   listCircles,
   normalizeTicker,
   openCircle,
   timeLeft,
   type CircleListRow,
 } from "@/lib/circles";
+import Avatar from "@/components/Avatar";
 import { EmptyLine, TextAction } from "@/components/f0/parts";
-import {
-  BoardCard,
-  BoardMasthead,
-  PresenceLine,
-  SectionLabel,
-} from "@/app/(dashboard)/community/board";
+import { BoardCard, TickerMark } from "@/app/(dashboard)/community/board";
+import { CircleRing } from "@/app/(dashboard)/community/ClubCommunityScreen";
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CIRCLES — the list (canvas v2, App board 16). Route: /circles.
+   CIRCLES — the list. Route: /circles. CLUB-TERMINAL-STYLE law, built to the
+   owner's Aug-7 mockup board's CIRCLES phone, object for object:
 
-   A Circle is a breakout room around ONE event or ONE thesis, on a hard
-   30-day clock. Backed by migration 190 (club_circles / club_circle_members /
-   club_circle_notes) — every title, roster count and clock on this screen is a
-   real row. Nothing is seeded.
+     · header: CIRCLES (white bold caps) + violet "Create Circle" on the right
+       (the violet action is --kai-blue; kids never see it — opening a Circle
+       stays an adult act, exactly as before).
+     · the NEON RING ROW — the same segmented conic rings the club COMMUNITY
+       screen draws (imported from ClubCommunityScreen, one component, one
+       drawing), each carrying a REAL open Circle: its ticker mark or initial,
+       its name, and the live countdown ("8d left"). No open Circle → no row.
+     · ACTIVE · LIVE NOW · JOINED tabs with the violet 2px underline.
+         Active   — every room with the clock still running.
+         Live Now — rooms with a note posted in the last 24 hours (a real read
+                    of club_circle_notes; the mockup's presence badge has no
+                    presence source, so recent thread activity is the honest
+                    signal we do have — stated adaptation).
+         Joined   — rooms this member's own club_circle_members row is in.
+     · LEDGER ROWS in the mockup's anatomy: logo tile · name · "N members"
+       activity line · the real member-avatar cluster · mono countdown ·
+       violet Join pill · chevron. Every count and every face is a real row;
+       the mockup's "Very active" grades are replaced by the measured thread
+       reading ("N notes" / "active today") and omitted when there is none.
 
-   WHAT THE CANVAS SHOWS THAT WE DO NOT:
-     · "1.8K" in a room. Production has a handful of members; the count here is
-       whatever the roster actually holds, and a Circle nobody has joined says
-       so in words.
-     · "graded at month end". Grading a member's calls is a performance claim
-       (plan §0.1). A closed Circle keeps its thread as the record — that is the
-       receipt, and it is not a scoreboard.
-     · Eight saturated topic tiles. The identity object is the TickerTile when a
-       Circle is bound to an equity, and the topic word otherwise. One accent,
-       per the colour law; the tile field is achromatic by design.
-
-   SCHEMA GATE: migration 190 ships in the same commit but is applied out of
-   band. Until it lands, the reads answer "relation does not exist" and this
-   surface renders a STATED absence — not an empty room that looks real.
+   EVERYTHING KEPT: the OpenForm (now behind "Create Circle"), the kid
+   read-only wall, the missing-schema stated absence, the failed-load retry,
+   the closed-rooms record, the how-it-works copy and the canonical community
+   disclaimer, byte-identical. Joining from a row writes through the same
+   joinCircle() the room screen uses — same table, same RLS.
    ══════════════════════════════════════════════════════════════════════════ */
 
 function Skeleton() {
   return (
-    <div className="mx-auto max-w-2xl space-y-10" aria-busy="true">
-      <div className="space-y-3">
-        <span className="block h-2.5 w-28 animate-pulse rounded bg-sand" />
-        <span className="block h-9 w-44 animate-pulse rounded bg-sand" />
-        <span className="block h-4 w-80 animate-pulse rounded bg-sand" />
+    <div className="mx-auto max-w-2xl" aria-busy="true">
+      <div className="flex items-center justify-between">
+        <span className="block h-4 w-24 animate-pulse rounded bg-sand" />
+        <span className="block h-4 w-20 animate-pulse rounded bg-sand" />
       </div>
-      <div className="f0-ledger">
+      <div className="mt-6 flex gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="f0-ledger-row">
+          <span key={i} className="h-[64px] w-[64px] shrink-0 animate-pulse rounded-full bg-sand" />
+        ))}
+      </div>
+      <div className="mt-7 flex gap-6">
+        <span className="block h-3.5 w-14 animate-pulse rounded bg-sand" />
+        <span className="block h-3.5 w-16 animate-pulse rounded bg-sand/70" />
+        <span className="block h-3.5 w-14 animate-pulse rounded bg-sand/70" />
+      </div>
+      <div className="mt-4 divide-y divide-sand/70">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 py-4">
             <span className="h-11 w-11 shrink-0 animate-pulse rounded-[10px] bg-sand" />
             <span className="min-w-0 flex-1 space-y-2">
               <span className="block h-3.5 w-40 animate-pulse rounded bg-sand" />
-              <span className="block h-2.5 w-28 animate-pulse rounded bg-sand" />
+              <span className="block h-2.5 w-28 animate-pulse rounded bg-sand/70" />
             </span>
-            <span className="h-4 w-12 shrink-0 animate-pulse rounded bg-sand" />
+            <span className="h-7 w-14 shrink-0 animate-pulse rounded-full bg-sand" />
           </div>
         ))}
       </div>
@@ -73,57 +87,116 @@ function Skeleton() {
   );
 }
 
-/** One Circle as a CARD — the Club's unit, so a Circle sits in the same system
- *  as everything else the member just walked past. The clock is the loudest
- *  thing after the name. */
-function CircleRow({ c }: { c: CircleListRow }) {
+/* ── one member face on a row's cluster ──────────────────────────────────── */
+
+interface Face {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+/* ── one Circle as the mockup's ledger row ───────────────────────────────── */
+
+function CircleLedgerRow({
+  c,
+  faces,
+  joined,
+  liveToday,
+  canJoin,
+  joinBusy,
+  onJoin,
+}: {
+  c: CircleListRow;
+  faces: Face[];
+  joined: boolean;
+  liveToday: boolean;
+  canJoin: boolean;
+  joinBusy: boolean;
+  onJoin: () => void;
+}) {
   const left = timeLeft(c.expires_at);
+  const closed = left === null;
   return (
-    <Link
-      href={`/circles/${c.slug}`}
-      className="group flex items-center gap-3 rounded-[14px] border border-sand bg-card p-3.5 transition-colors hover:border-gold-300"
-    >
-      {c.ticker ? (
-        <span className="shrink-0 self-center">
-          <TickerTile ticker={c.ticker} size="sm" showDelta={false} />
+    <div className="flex items-center gap-3 py-3.5">
+      {/* identity tile + name + the measured activity line — the row's door */}
+      <Link
+        href={`/circles/${c.slug}`}
+        className="f0-focus flex min-w-0 flex-1 items-center gap-3 rounded-lg"
+      >
+        {c.ticker ? (
+          <span className="shrink-0">
+            <TickerTile ticker={c.ticker} size="sm" showDelta={false} />
+          </span>
+        ) : (
+          <span
+            className="f0-tile-field grid h-11 w-11 shrink-0 place-items-center rounded-[10px] font-display text-[15px] font-black"
+            aria-hidden
+          >
+            {c.topic.slice(0, 1).toUpperCase()}
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display text-[15px] font-semibold text-ink">
+            {c.title}
+          </span>
+          <span className="mt-1 block truncate text-[11.5px] text-soft">
+            {c.members === 1 ? "1 member" : `${c.members.toLocaleString()} members`}
+            {c.notes > 0 && (
+              <> · {c.notes === 1 ? "1 note" : `${c.notes.toLocaleString()} notes`}</>
+            )}
+            {liveToday && <span className="text-sentiment"> · active today</span>}
+            {closed && <> · clock ran out</>}
+          </span>
         </span>
-      ) : (
-        <span
-          className="f0-tile-field grid h-11 w-11 shrink-0 place-items-center self-center rounded-[10px] font-display text-[15px] font-black"
-          aria-hidden
-        >
-          {c.topic.slice(0, 1).toUpperCase()}
+      </Link>
+
+      {/* the real member faces — no roster read, no cluster */}
+      {faces.length > 0 && (
+        <span className="f0-stack hidden shrink-0 sm:flex" aria-hidden>
+          {faces.slice(0, 4).map((f) => (
+            <Avatar key={f.id} name={f.display_name} avatarUrl={f.avatar_url} size="xs" />
+          ))}
         </span>
       )}
 
-      <span className="min-w-0 flex-1 self-center">
-        <span className="block truncate font-display text-[15px] font-bold text-ink">
-          {c.title}
+      {/* the clock, mono */}
+      {left && (
+        <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-soft">
+          {left} left
         </span>
-        <span className="mt-1 block truncate font-mono text-[10.5px] uppercase tracking-[0.12em] text-soft">
-          {c.topic} ·{" "}
-          {left ? (
-            <span className="text-gold-700">{left} left</span>
-          ) : (
-            <span>clock ran out</span>
-          )}{" "}
-          · {c.members} in
-        </span>
-      </span>
+      )}
 
-      <span className="shrink-0 self-center text-right">
-        <span className="block font-mono text-[14px] font-semibold tabular-nums text-ink">
-          {c.notes === 0 ? "—" : c.notes.toLocaleString()}
+      {/* the violet Join pill — the same write the room screen makes */}
+      {joined ? (
+        <span className="shrink-0 rounded-full border border-sand px-3.5 py-1.5 font-display text-[11.5px] font-bold text-soft">
+          In
         </span>
-        <span className="mt-0.5 block text-eyebrow font-display font-bold uppercase text-soft">
-          Notes
-        </span>
-      </span>
-    </Link>
+      ) : (
+        canJoin &&
+        !closed && (
+          <button
+            type="button"
+            onClick={onJoin}
+            disabled={joinBusy}
+            className="f0-focus f0-press shrink-0 rounded-full bg-kai-blue-soft px-4 py-1.5 font-display text-[12px] font-bold text-kai-blue transition-opacity disabled:opacity-50"
+          >
+            {joinBusy ? "…" : "Join"}
+          </button>
+        )
+      )}
+
+      <Link
+        href={`/circles/${c.slug}`}
+        aria-label={`Open ${c.title}`}
+        className="f0-focus shrink-0 rounded-full text-soft/70 transition-colors hover:text-ink"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Link>
+    </div>
   );
 }
 
-/* ── the opener ──────────────────────────────────────────────────────────── */
+/* ── the opener (unchanged form, now behind "Create Circle") ─────────────── */
 
 function OpenForm({ onOpened }: { onOpened: (slug: string) => void }) {
   const [title, setTitle] = useState("");
@@ -250,6 +323,14 @@ function OpenForm({ onOpened }: { onOpened: (slug: string) => void }) {
 
 /* ── surface ─────────────────────────────────────────────────────────────── */
 
+type CirclesTab = "active" | "live" | "joined";
+
+const TABS: { id: CirclesTab; label: string }[] = [
+  { id: "active", label: "Active" },
+  { id: "live", label: "Live Now" },
+  { id: "joined", label: "Joined" },
+];
+
 export default function CirclesSurface() {
   const router = useRouter();
   const [rows, setRows] = useState<CircleListRow[]>([]);
@@ -257,7 +338,14 @@ export default function CirclesSurface() {
   const [missingSchema, setMissingSchema] = useState(false);
   const [failed, setFailed] = useState(false);
   const [isKid, setIsKid] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const [composing, setComposing] = useState(false);
+  const [tab, setTab] = useState<CirclesTab>("active");
+
+  const [myJoined, setMyJoined] = useState<Set<string>>(() => new Set());
+  const [liveIds, setLiveIds] = useState<Set<string>>(() => new Set());
+  const [facesByCircle, setFacesByCircle] = useState<Record<string, Face[]>>({});
+  const [joinBusy, setJoinBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setFailed(false);
@@ -266,6 +354,8 @@ export default function CirclesSurface() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      const meId = user?.id ?? null;
+      setSignedIn(!!user);
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -277,6 +367,67 @@ export default function CirclesSurface() {
       const { rows: found, missingSchema: gone } = await listCircles(supabase);
       setRows(found);
       setMissingSchema(gone);
+
+      // The row anatomy's real signals — memberships (faces + Joined tab) and
+      // the last day of thread activity (Live Now). Each degrades to absence:
+      // a failed read renders no cluster and an honest empty tab, never a
+      // fabricated face or count.
+      if (found.length > 0) {
+        try {
+          const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const [memsRes, notesRes] = await Promise.all([
+            supabase
+              .from("club_circle_members")
+              .select("circle_id, member_id, joined_at")
+              .order("joined_at", { ascending: true })
+              .limit(400),
+            supabase
+              .from("club_circle_notes")
+              .select("circle_id")
+              .gte("created_at", dayAgo)
+              .limit(400),
+          ]);
+          const mems = (memsRes.data ?? []) as {
+            circle_id: string;
+            member_id: string;
+          }[];
+          setLiveIds(
+            new Set(
+              ((notesRes.data ?? []) as { circle_id: string }[]).map((n) => n.circle_id)
+            )
+          );
+          setMyJoined(
+            new Set(mems.filter((m) => m.member_id === meId).map((m) => m.circle_id))
+          );
+
+          const perCircle = new Map<string, string[]>();
+          for (const m of mems) {
+            const list = perCircle.get(m.circle_id) ?? [];
+            if (list.length < 5) {
+              list.push(m.member_id);
+              perCircle.set(m.circle_id, list);
+            }
+          }
+          const wanted = [...new Set([...perCircle.values()].flat())].slice(0, 60);
+          if (wanted.length > 0) {
+            const { data: profs } = await supabase
+              .from("profiles")
+              .select("id, display_name, avatar_url")
+              .in("id", wanted);
+            const byId = new Map<string, Face>();
+            for (const p of (profs ?? []) as Face[]) byId.set(p.id, p);
+            const map: Record<string, Face[]> = {};
+            for (const [cid, ids] of perCircle) {
+              map[cid] = ids
+                .map((id) => byId.get(id))
+                .filter((f): f is Face => !!f);
+            }
+            setFacesByCircle(map);
+          }
+        } catch {
+          /* faces + tabs degrade to absence */
+        }
+      }
       setLoading(false);
     } catch {
       setFailed(true);
@@ -288,110 +439,228 @@ export default function CirclesSurface() {
     void load();
   }, [load]);
 
-  if (loading) return <Skeleton />;
+  async function join(c: CircleListRow) {
+    if (isKid || joinBusy || myJoined.has(c.id)) return;
+    setJoinBusy(c.id);
+    const ok = await joinCircle(createClient(), c.id);
+    setJoinBusy(null);
+    if (ok) {
+      setMyJoined((prev) => new Set(prev).add(c.id));
+      setRows((prev) =>
+        prev.map((r) => (r.id === c.id ? { ...r, members: r.members + 1 } : r))
+      );
+    }
+  }
 
   const now = new Date();
-  const open = rows.filter((r) => timeLeft(r.expires_at, now) !== null);
-  const closed = rows.filter((r) => timeLeft(r.expires_at, now) === null);
+  const open = useMemo(
+    () => rows.filter((r) => timeLeft(r.expires_at, now) !== null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows]
+  );
+  const closed = useMemo(
+    () => rows.filter((r) => timeLeft(r.expires_at, now) === null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows]
+  );
+
+  const shown = useMemo(() => {
+    if (tab === "live") return open.filter((r) => liveIds.has(r.id));
+    if (tab === "joined") return rows.filter((r) => myJoined.has(r.id));
+    return open;
+  }, [tab, open, rows, liveIds, myJoined]);
+
+  if (loading) return <Skeleton />;
+
+  const canJoin = signedIn && !isKid;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-16">
-      <div>
-        <BoardMasthead
-          title="Circles"
-          presence={
-            <PresenceLine>
-              {rows.length > 0
-                ? `${rows.length} ${rows.length === 1 ? "room" : "rooms"} on the clock`
-                : "Breakout rooms, 30 days each"}
-            </PresenceLine>
-          }
-        />
-        <p className="mt-3.5 max-w-[52ch] text-[14px] leading-relaxed text-soft">
-          Breakout rooms around one event or one thesis. Every Circle runs a
-          30-day clock — when it ends the room closes and the thread stands as
-          the record.
-        </p>
-      </div>
+    <div className="mx-auto max-w-2xl pb-16">
+      {/* ── the mockup's header: CIRCLES + the violet Create Circle ──────── */}
+      <header className="flex h-9 items-center justify-between">
+        <h1 className="font-display text-[15px] font-black uppercase tracking-[0.24em] text-ink">
+          Circles
+        </h1>
+        {!isKid && !missingSchema && !failed && (
+          <button
+            type="button"
+            onClick={() => setComposing((v) => !v)}
+            className="f0-focus font-display text-[13px] font-bold text-kai-blue transition-opacity hover:opacity-80"
+          >
+            {composing ? "Never mind" : "Create Circle"}
+          </button>
+        )}
+      </header>
 
       {failed ? (
-        <EmptyLine
-          title="Circles didn't load"
-          body="Something hiccuped on our end. Nothing was lost — give it another go."
-          action={
-            <TextAction
-              onClick={() => {
-                setLoading(true);
-                void load();
-              }}
-            >
-              <RotateCcw className="h-4 w-4" /> Try again
-            </TextAction>
-          }
-        />
+        <div className="mt-8">
+          <EmptyLine
+            title="Circles didn't load"
+            body="Something hiccuped on our end. Nothing was lost — give it another go."
+            action={
+              <TextAction
+                onClick={() => {
+                  setLoading(true);
+                  void load();
+                }}
+              >
+                <RotateCcw className="h-4 w-4" /> Try again
+              </TextAction>
+            }
+          />
+        </div>
       ) : missingSchema ? (
         /* Stated absence, not a fake room: the tables aren't provisioned here. */
-        <EmptyLine
-          title="Circles aren't switched on yet"
-          body="The room layer hasn't been provisioned on this deployment. As soon as it is, every Circle opened will show up here."
-        />
+        <div className="mt-8">
+          <EmptyLine
+            title="Circles aren't switched on yet"
+            body="The room layer hasn't been provisioned on this deployment. As soon as it is, every Circle opened will show up here."
+          />
+        </div>
       ) : (
         <>
-          {/* ── OPEN ──────────────────────────────────────────────────────── */}
-          <section className="space-y-5">
-            <SectionLabel
-              action={isKid ? undefined : composing ? "Never mind" : "Start a Circle"}
-              onAction={() => setComposing((v) => !v)}
-            >
-              Open now
-            </SectionLabel>
-
-            {composing && !isKid && (
+          {composing && !isKid && (
+            <div className="mt-5">
               <OpenForm
                 onOpened={(slug) => {
                   setComposing(false);
                   router.push(`/circles/${slug}`);
                 }}
               />
-            )}
+            </div>
+          )}
 
-            {open.length === 0 ? (
-              <EmptyLine
-                title="No Circle is open"
-                body={
-                  isKid
-                    ? "Nobody in the Club has opened a room yet. When a grown-up in the Club starts one, you'll be able to read along here."
-                    : "Nobody has opened a room yet — which means the first one is yours. Pick one event or one thesis, put 30 days on it, and see who stands with you."
-                }
-                action={
-                  isKid ? undefined : (
-                    <TextAction onClick={() => setComposing(true)}>
-                      Start the first Circle
-                    </TextAction>
-                  )
-                }
-              />
-            ) : (
-              <div className="f0-stagger space-y-3">
-                {open.map((c, i) => (
-                  <div key={c.id} style={{ "--i": Math.min(i, 12) } as React.CSSProperties}>
-                    <CircleRow c={c} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          {/* ── the neon ring row — every open Circle, soonest clock first ── */}
+          {open.length > 0 && (
+            <div className="-mx-1 mt-5 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {open.slice(0, 12).map((c, i) => {
+                const left = timeLeft(c.expires_at);
+                return (
+                  <CircleRing
+                    key={c.id}
+                    index={i}
+                    title={c.ticker ?? c.title}
+                    sub={left ? `${left} left` : "closing"}
+                    href={`/circles/${c.slug}`}
+                    face={
+                      c.ticker ? (
+                        <TickerMark ticker={c.ticker} size={40} radius={20} />
+                      ) : (
+                        <span className="font-display text-[15px] font-black uppercase text-ink">
+                          {c.title.slice(0, 1)}
+                        </span>
+                      )
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
 
-          {/* ── CLOSED ────────────────────────────────────────────────────── */}
-          {closed.length > 0 && (
-            <section className="space-y-5">
-              <SectionLabel>Clock ran out</SectionLabel>
-              <div className="space-y-3">
+          {/* ── Active · Live Now · Joined — the violet underline tabs ────── */}
+          <div
+            role="tablist"
+            aria-label="Circles"
+            className="mt-6 flex gap-7 border-b border-sand"
+          >
+            {TABS.map((t) => {
+              const on = t.id === tab;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setTab(t.id)}
+                  className={`f0-focus relative pb-2.5 font-display text-[14px] transition-colors ${
+                    on ? "font-bold text-kai-blue" : "font-semibold text-soft hover:text-ink"
+                  }`}
+                >
+                  {t.label}
+                  {on && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-kai-blue"
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── the ledger ─────────────────────────────────────────────────── */}
+          {shown.length === 0 ? (
+            <div className="mt-6">
+              {tab === "live" ? (
+                <EmptyLine
+                  title="No room is live right now"
+                  body="A Circle shows up here the moment someone posts to its thread — activity in the last 24 hours counts as live."
+                />
+              ) : tab === "joined" ? (
+                <EmptyLine
+                  title="You haven't joined a Circle"
+                  body={
+                    isKid
+                      ? "You can read every Circle in the Club. Posting stays in your Family Circle."
+                      : "Join a room from the list and it lives here. Reading is open to every member either way."
+                  }
+                />
+              ) : (
+                <EmptyLine
+                  title="No Circle is open"
+                  body={
+                    isKid
+                      ? "Nobody in the Club has opened a room yet. When a grown-up in the Club starts one, you'll be able to read along here."
+                      : "Nobody has opened a room yet — which means the first one is yours. Pick one event or one thesis, put 30 days on it, and see who stands with you."
+                  }
+                  action={
+                    isKid ? undefined : (
+                      <TextAction onClick={() => setComposing(true)}>
+                        Start the first Circle
+                      </TextAction>
+                    )
+                  }
+                />
+              )}
+            </div>
+          ) : (
+            <div className="mt-1 divide-y divide-sand/70">
+              {shown.map((c) => (
+                <CircleLedgerRow
+                  key={c.id}
+                  c={c}
+                  faces={facesByCircle[c.id] ?? []}
+                  joined={myJoined.has(c.id)}
+                  liveToday={liveIds.has(c.id)}
+                  canJoin={canJoin}
+                  joinBusy={joinBusy === c.id}
+                  onJoin={() => void join(c)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* ── CLOSED — the record stands ─────────────────────────────────── */}
+          {tab === "active" && closed.length > 0 && (
+            <section className="mt-10">
+              <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+                Clock ran out
+              </h2>
+              <div className="mt-2 divide-y divide-sand/70">
                 {closed.map((c) => (
-                  <CircleRow key={c.id} c={c} />
+                  <CircleLedgerRow
+                    key={c.id}
+                    c={c}
+                    faces={facesByCircle[c.id] ?? []}
+                    joined={myJoined.has(c.id)}
+                    liveToday={false}
+                    canJoin={false}
+                    joinBusy={false}
+                    onJoin={() => {}}
+                  />
                 ))}
               </div>
-              <p className="text-[13px] leading-relaxed text-soft">
+              <p className="mt-4 text-[13px] leading-relaxed text-soft">
                 A closed Circle keeps its thread. Nobody is scored on it — the record is the
                 point.
               </p>
@@ -399,9 +668,11 @@ export default function CirclesSurface() {
           )}
 
           {/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
-          <section className="space-y-4">
-            <SectionLabel>How a Circle works</SectionLabel>
-            <p className="max-w-xl text-[14px] leading-relaxed text-soft">
+          <section className="mt-10">
+            <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+              How a Circle works
+            </h2>
+            <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-soft">
               One event or one thesis per room, {CIRCLE_DAYS} days on the clock, no extensions.
               Join to post; leave whenever. Your stance inside a Circle belongs to that room&apos;s
               premise — it doesn&apos;t move your standing position on the ticker.
@@ -410,7 +681,7 @@ export default function CirclesSurface() {
                 : ""}
             </p>
             {/* The canonical community disclaimer, byte-identical. */}
-            <p className="max-w-xl text-[12.5px] leading-relaxed text-soft">
+            <p className="mt-4 max-w-xl text-[12.5px] leading-relaxed text-soft">
               {COMMUNITY_DISCLAIMER}
             </p>
           </section>

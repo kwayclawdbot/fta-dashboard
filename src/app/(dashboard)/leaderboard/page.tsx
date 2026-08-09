@@ -20,7 +20,7 @@ import TierBadge from "@/components/TierBadge";
 import ProfileLink from "@/components/ProfileLink";
 import { SegmentedRail } from "@/components/canvas2";
 import { isOffBoardIdentity } from "@/lib/leaderboardExclusions";
-import { BoardMast, EmptyCard, ListHead, TextAction } from "@/components/you/parts";
+import { BoardMast, EmptyCard, TextAction } from "@/components/you/parts";
 
 /**
  * THE BOARD — two dimensions (Individuals | Families) × three trailing periods
@@ -160,6 +160,60 @@ function RankedCard({
       >
         {children}
       </div>
+    </div>
+  );
+}
+
+/* ── CLUB TERMINAL LEDGER (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09) ──
+   The club branch renders the board as a hairline-separated ledger inside one
+   dark card — mono two-digit ranks, Sora names, intrinsic belt chips, mono XP
+   right-rail — instead of the family's ranked-card podium. Same RPC rows, same
+   exclusions, same fold/pin/founding logic; only the skin branches. Rank #1
+   carries the accent on its numeral (brand/action — never green/red, a board
+   has no prices). Family/kid render below is untouched. */
+
+/** One ledger line. `pinned` restyles it as a floating card for the
+    bottom-of-viewport self pin, where a bare ledger row has no ground. */
+function ClubLedgerRow({ row, pinned = false }: { row: IndRow; pinned?: boolean }) {
+  const belt = beltForXp(row.xp);
+  const lead = row.rank === 1;
+  return (
+    <div
+      className={`flex items-center gap-3 px-3 py-[11px] ${
+        pinned ? "rounded-[12px] border border-sand bg-card" : ""
+      }`}
+    >
+      <span
+        className={`w-7 shrink-0 font-mono text-[12px] font-semibold tabular-nums ${
+          lead ? "text-accent" : "text-soft"
+        }`}
+      >
+        <span className="sr-only">Rank </span>
+        {String(row.rank).padStart(2, "0")}
+      </span>
+      <ProfileLink username={row.username} variant="avatar" className="shrink-0 self-center">
+        <Avatar name={row.display_name} avatarUrl={row.avatar_url} xp={row.xp} size="sm" />
+      </ProfileLink>
+      <span className="min-w-0 flex-1 self-center">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <ProfileLink
+            username={row.username}
+            className="max-w-[9rem] truncate font-display text-[13px] font-bold text-ink sm:max-w-none"
+          >
+            {row.display_name || "Member"}
+          </ProfileLink>
+          <BeltBadge rank={belt} size="xs" />
+          {(row.is_me || pinned) && <YouMark />}
+        </span>
+      </span>
+      <span className="shrink-0 self-center text-right">
+        <span className="block font-mono text-[14px] font-semibold tabular-nums text-ink">
+          {row.xp.toLocaleString()}
+        </span>
+        <span className="mt-0.5 block font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-soft">
+          XP
+        </span>
+      </span>
     </div>
   );
 }
@@ -321,16 +375,27 @@ function LeaderboardInner() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-16">
       <m.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
-        <BoardMast
-          word="leaderboard"
-          lede={
-            isClub
-              ? "Ranked by the reps you put in — conviction, not luck. Every rated call, lesson, and rep earns XP."
-              : dimension === "families"
+        {isClub ? (
+          /* Terminal masthead — caps, the loudest type on the screen. */
+          <header>
+            <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+              Leaderboard
+            </h1>
+            <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+              Ranked by the reps you put in — conviction, not luck. Every rated call,
+              lesson, and rep earns XP.
+            </p>
+          </header>
+        ) : (
+          <BoardMast
+            word="leaderboard"
+            lede={
+              dimension === "families"
                 ? "A family's score is the average XP of its members, so families of every size compete fairly."
                 : "Every lesson, quiz, card, and game earns XP and moves your belt. Climb the belts — friendly kid-vs-kid competition welcome."
-          }
-        />
+            }
+          />
+        )}
       </m.div>
 
       {/* Controls. Club gets the trader-voiced window rail; family gets the
@@ -397,6 +462,7 @@ function LeaderboardInner() {
           periodLabel={periodLabel}
           scope={scope}
           meOffBoard={meOffBoard}
+          club={isClub}
         />
       ) : (
         <FamiliesBoard fams={fams} myFamilyId={myFamilyId} periodLabel={periodLabel} />
@@ -407,7 +473,10 @@ function LeaderboardInner() {
           may be added to it. */}
       {isClub && (
         <section className="space-y-2.5 pt-3">
-          <ListHead charged={false}>How rank works</ListHead>
+          {/* Terminal section head — white bold caps, never tiny gray mono. */}
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            How rank works
+          </h2>
           <p className="max-w-[62ch] text-[11.5px] leading-relaxed text-soft">
             Rank is your XP over the selected window — earned by rating calls, finishing
             lessons, and showing up in the room. It rewards consistent reps over one lucky
@@ -575,12 +644,15 @@ function IndividualsBoard({
   periodLabel,
   scope,
   meOffBoard = false,
+  club = false,
 }: {
   ind: { rows: IndRow[]; me: IndRow | null };
   meInRows: boolean;
   periodLabel: string;
   scope: Scope;
   meOffBoard?: boolean;
+  /** Club terminal skin: hairline ledger, no podium. Family cards untouched. */
+  club?: boolean;
 }) {
   const reduce = useReducedMotion() ?? false;
   const [showTail, setShowTail] = useState(false);
@@ -620,8 +692,9 @@ function IndividualsBoard({
   const visible = folded ? ind.rows.slice(0, cut) : ind.rows;
 
   // The podium only exists once there are three to stand on it. Below that the
-  // board is a short list and should look like one.
-  const hasPodium = visible.length >= 3;
+  // board is a short list and should look like one. The CLUB terminal skin
+  // never builds one — its board is a ledger, and rank lives in the mono rail.
+  const hasPodium = !club && visible.length >= 3;
   const podium = hasPodium ? visible.slice(0, 3) : [];
   const rest = hasPodium ? visible.slice(3) : visible;
 
@@ -642,21 +715,41 @@ function IndividualsBoard({
         </div>
       )}
 
-      <div className={hasPodium ? "mt-2 space-y-2" : "space-y-2"}>
-        {rest.map((row) => (
-          <motion.div
-            key={row.id}
-            // FLIP. `layout` is what makes a rank CHANGE legible: when the
-            // window switches and a member moves from 9th to 4th, the row
-            // travels there instead of teleporting.
-            layout
-            {...riseProps(reduce)}
-            ref={myRow && row.id === myRow.id ? selfRef : undefined}
-          >
-            <IndividualRow row={row} />
-          </motion.div>
-        ))}
-      </div>
+      {club ? (
+        /* THE LEDGER — one dark card, hairline-separated rows (.f0-ledger),
+           mono ranks and XP. Same FLIP layout animation as the family rows so
+           a rank CHANGE still travels instead of teleporting. */
+        <div className="rounded-[14px] border border-sand bg-card px-1 py-0.5">
+          <div className="f0-ledger">
+            {rest.map((row) => (
+              <motion.div
+                key={row.id}
+                layout
+                {...riseProps(reduce)}
+                ref={myRow && row.id === myRow.id ? selfRef : undefined}
+              >
+                <ClubLedgerRow row={row} />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className={hasPodium ? "mt-2 space-y-2" : "space-y-2"}>
+          {rest.map((row) => (
+            <motion.div
+              key={row.id}
+              // FLIP. `layout` is what makes a rank CHANGE legible: when the
+              // window switches and a member moves from 9th to 4th, the row
+              // travels there instead of teleporting.
+              layout
+              {...riseProps(reduce)}
+              ref={myRow && row.id === myRow.id ? selfRef : undefined}
+            >
+              <IndividualRow row={row} />
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {folded && (
         <div className="pt-3">
@@ -695,7 +788,11 @@ function IndividualsBoard({
           when knowing your rank matters most. */}
       {myRow && !selfOnScreen && (
         <div className="sticky bottom-2 z-20 mt-3 [filter:drop-shadow(0_6px_16px_rgba(0,0,0,0.18))]">
-          <IndividualRow row={myRow} pinned={!meInRows} />
+          {club ? (
+            <ClubLedgerRow row={myRow} pinned />
+          ) : (
+            <IndividualRow row={myRow} pinned={!meInRows} />
+          )}
         </div>
       )}
 

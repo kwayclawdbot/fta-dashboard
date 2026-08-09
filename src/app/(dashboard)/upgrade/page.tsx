@@ -26,6 +26,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { getFamilyTierState, TIER_CONFIG, type FamilyTier } from "@/lib/tier";
 import { isSoloProfile } from "@/lib/register";
 import { modeFromSolo } from "@/lib/mode";
@@ -214,6 +215,15 @@ export default function UpgradePage() {
   const router = useRouter();
   const supabase = createClient();
   const reduce = useReducedMotion();
+  // CLUB-TERMINAL-STYLE: in club mode the money figures are DATA and set in
+  // the mono data face (tabular). Family mode keeps the display face —
+  // byte-identical render. Every price STRING stays untouched either way;
+  // this flips typography only. The dark terminal card skin itself comes
+  // free through the tokens (.club-b-card / .club-b-warm / bg-accent).
+  const terminal = useAppMode() === "club";
+  const priceFace = terminal
+    ? "font-mono font-bold tabular-nums tracking-tight"
+    : "font-display font-extrabold";
   const [tier, setTier] = useState<FamilyTier | null>(null);
   // FTA Club clock (migration 127): a lapsed FTA family keeps academy access for
   // life but its Club membership has ended — the fta panel shows a $99/mo renewal.
@@ -582,7 +592,7 @@ export default function UpgradePage() {
               : "for your whole family."}
           </p>
           <div className="mt-5 flex items-baseline gap-2">
-            <span className="font-display text-display-1 font-extrabold text-ink">
+            <span className={`text-display-1 text-ink ${priceFace}`}>
               $99
             </span>
             <span className="text-sm text-soft">/mo · cancel anytime</span>
@@ -818,7 +828,7 @@ export default function UpgradePage() {
           {" "}{clubName} keeps running right alongside it.
         </p>
         <div className="mt-5 flex items-baseline gap-2">
-          <span className="font-display text-display-1 font-extrabold text-ink">
+          <span className={`text-display-1 text-ink ${priceFace}`}>
             $2,997
           </span>
           <span className="text-sm text-soft">one-time</span>
