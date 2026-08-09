@@ -8,21 +8,29 @@ import { marketStatus } from "@/lib/alerts/watch-ui";
 import { BrandTile } from "./board";
 
 /**
- * MARKET PULSE — the CCDoors horizontal quote strip.
+ * MARKET PULSE — the mockup board's horizontal quote-card strip, verbatim.
  *
- * A row of 122px cards, one per ticker: brand chip + symbol (Sora), the live
- * price in mono, the day move in mono (price ramp), and a 24px area sparkline
- * drawn from REAL daily closes — the reference board's terminal row chart.
+ * The reference home (board 10_07_23, top-left phone) draws:
+ *
+ *   HEADER — "MARKET PULSE" in white bold caps, "Market Open" right-aligned in
+ *   signal green (plain text, no chip).
+ *
+ *   CARDS — a horizontal row of quote cards (three fit, the strip scrolls):
+ *   brand logo + ticker on the top line, the price large and bold, the day
+ *   move in the price ramp, and a bottom sentiment band — "81% Bullish" in
+ *   green on a soft green ground. NO sparkline on these cards (the board draws
+ *   its row curves in the watchlist section, not here).
  *
  * DATA. The tickers are the member's own watchlist first (`forYouCore`'s items
  * already carry a live price/changePct off screener_metrics), topped up from
  * the trending ledger's quoted rows — 3–4 cards, no duplicates. A ticker with
- * no price never renders a card, and a card whose bars fetch fails renders
- * WITHOUT a sparkline (price + change only) — the curve is never faked.
+ * no price never renders a card.
  *
- * SPARKLINE. One cheap GET /api/market/bars?symbol=X&range=1m per card
- * (s-maxage=900 on the server, so repeat opens are CDN hits): the last month of
- * daily closes, normalized into the prototype's 90×24 viewBox.
+ * SENTIMENT BAND. The board's "NN% Bullish" maps to the REAL community stance
+ * split the trending ledger already carries (`sentiment.bullPct`, bull ÷
+ * positioned). A ticker with no positioned members — or one that never appears
+ * in the ledger — renders WITHOUT the band; the number is never faked. Kid
+ * register never sees sentiment, so the band is walled behind `isKid`.
  *
  * MARKET CLOCK. The "Market open / Pre-market / After hours" stamp is the real
  * America/New_York session clock (src/lib/alerts/watch-ui.ts marketStatus),
@@ -67,10 +75,10 @@ function useMarketStatus() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-/* ── sparkline path over real closes, 90×24 like the prototype ──────────────
-   EXPORTED: the reference board draws the same little curve wherever a ticker
-   row appears (pulse cards AND the watchlist movers), so YourSignals reuses
-   this path + the bars hook below instead of growing its own. */
+/* ── sparkline path over real closes, 90×24 like the board ──────────────────
+   EXPORTED for the watchlist movers (the one section the board draws row
+   curves in). The pulse cards themselves no longer draw one — the reference
+   board's quote cards carry price + move + sentiment, no chart. */
 export function sparkPath(vals: number[], w = 90, h = 24): string | null {
   if (vals.length < 2) return null;
   const min = Math.min(...vals);
@@ -84,13 +92,6 @@ export function sparkPath(vals: number[], w = 90, h = 24): string | null {
       return `${i === 0 ? "M" : "L"}${x} ${y}`;
     })
     .join(" ");
-}
-
-/** The same curve closed to the baseline — the board's soft area fill under
- *  every row chart. Same real closes, presentation only. */
-export function sparkAreaPath(vals: number[], w = 90, h = 24): string | null {
-  const line = sparkPath(vals, w, h);
-  return line ? `${line} L${w} ${h} L0 ${h} Z` : null;
 }
 
 /**
@@ -137,13 +138,26 @@ interface PulseCard {
   ticker: string;
   price: number;
   changePct: number | null;
+  /** Real community stance (bull ÷ positioned, 0–100) from the trending
+   *  ledger. null = nobody positioned / not in the ledger → no band. */
+  bullPct: number | null;
 }
 
-/** Member's watchlist tickers first, topped up from trending. Quoted only. */
+/** Member's watchlist tickers first, topped up from trending. Quoted only.
+ *  The sentiment band joins from the trending ledger by ticker. */
 function deriveCards(
   foryou?: ForYouResponse | null,
   trending?: TrendingResponse | null
 ): PulseCard[] {
+  const bullByTicker = new Map<string, number>();
+  for (const r of trending?.rows ?? []) {
+    const sym = (r.ticker ?? "").toUpperCase();
+    const pct = r.sentiment?.bullPct;
+    if (sym && typeof pct === "number" && Number.isFinite(pct)) {
+      bullByTicker.set(sym, pct);
+    }
+  }
+
   const out: PulseCard[] = [];
   const seen = new Set<string>();
   const push = (ticker?: string | null, price?: number | null, changePct?: number | null) => {
@@ -156,6 +170,7 @@ function deriveCards(
       price,
       changePct:
         typeof changePct === "number" && Number.isFinite(changePct) ? changePct : null,
+      bullPct: bullByTicker.get(sym) ?? null,
     });
   };
   for (const it of foryou?.items ?? []) push(it.ticker, it.price, it.changePct);
@@ -166,33 +181,33 @@ function deriveCards(
 export default function MarketPulse({
   foryou,
   trending,
+  isKid = false,
 }: {
   foryou?: ForYouResponse | null;
   trending?: TrendingResponse | null;
+  /** Kid register never sees sentiment — the bullish band is walled. */
+  isKid?: boolean;
 }) {
   const cards = deriveCards(foryou, trending);
   const clock = useMarketStatus();
-
-  // Real daily closes per ticker; a missing series = no path, never a fake one.
-  const series = useBarSeries(cards.map((c) => c.ticker));
 
   // No quoted ticker anywhere → the strip is honestly absent.
   if (cards.length === 0) return null;
 
   return (
     <section aria-labelledby="market-pulse">
-      {/* The board writes section labels in WHITE caps with the market clock
-          right-aligned in signal green ("MARKET PULSE · Market Open"). */}
+      {/* the board writes the label in WHITE bold caps with the market clock
+          right-aligned in signal green ("MARKET PULSE ··· Market Open") */}
       <div className="flex items-baseline justify-between gap-3">
         <h2
           id="market-pulse"
-          className="min-w-0 text-[11px] font-bold uppercase tracking-[0.16em] text-ink"
+          className="min-w-0 text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
         >
           Market pulse
         </h2>
         {clock && (
           <span
-            className={`shrink-0 font-mono text-[11px] font-medium leading-none ${
+            className={`shrink-0 text-[12px] font-semibold leading-none ${
               clock.open ? "text-price-up" : "text-soft"
             }`}
           >
@@ -203,62 +218,46 @@ export default function MarketPulse({
 
       <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
         {cards.map((c) => {
-          const closes = series[c.ticker];
-          // Direction: the day move when we have one; else the month's real
-          // drift (last close vs first) — never an assumed green.
-          const up =
-            c.changePct != null
-              ? c.changePct >= 0
-              : closes
-                ? closes[closes.length - 1] >= closes[0]
-                : true;
-          const strokeVar = up ? "var(--price-up)" : "var(--price-down)";
-          const path = closes ? sparkPath(closes) : null;
-          const area = closes ? sparkAreaPath(closes) : null;
+          const up = c.changePct == null || c.changePct >= 0;
+          const showBand = !isKid && c.bullPct != null;
           return (
             <Link
               key={c.ticker}
               href={`/research/${encodeURIComponent(c.ticker)}`}
-              className="f0-focus f0-press w-[122px] flex-none rounded-[14px] border border-sand bg-card p-3.5 text-left"
+              className="f0-focus f0-press w-[118px] flex-none overflow-hidden rounded-[14px] border border-sand bg-card text-left"
             >
-              <span className="flex items-center gap-2">
-                <BrandTile ticker={c.ticker} size={26} radius={8} fontSize={11} />
-                <span className="truncate font-display text-[12.5px] font-bold leading-none text-ink">
-                  {c.ticker}
+              <span className="block px-3 pt-3" style={{ paddingBottom: showBand ? 10 : 12 }}>
+                <span className="flex items-center gap-2">
+                  <BrandTile ticker={c.ticker} size={28} radius={8} fontSize={11} />
+                  <span className="truncate font-display text-[13.5px] font-bold leading-none text-ink">
+                    {c.ticker}
+                  </span>
                 </span>
-              </span>
-              <span className="mt-2.5 block font-mono text-[16px] font-semibold leading-none text-ink tabular-nums">
-                ${c.price.toFixed(2)}
-              </span>
-              {c.changePct != null && (
-                <span
-                  className={`mt-[7px] block font-mono text-[12px] font-semibold leading-none tabular-nums ${
-                    up ? "text-price-up" : "text-price-down"
-                  }`}
-                >
-                  {c.changePct > 0 ? "+" : ""}
-                  {c.changePct.toFixed(2)}%
+                <span className="mt-2.5 block font-display text-[17px] font-extrabold leading-none text-ink tabular-nums">
+                  ${c.price.toFixed(2)}
                 </span>
-              )}
-              {path && (
-                <span className="mt-2.5 block h-[24px]" aria-hidden>
-                  <svg
-                    viewBox="0 0 90 24"
-                    preserveAspectRatio="none"
-                    className="h-full w-full"
+                {c.changePct != null && (
+                  <span
+                    className={`mt-[7px] block text-[12.5px] font-semibold leading-none tabular-nums ${
+                      up ? "text-price-up" : "text-price-down"
+                    }`}
                   >
-                    {/* the board's soft area wash under every row curve */}
-                    {area && (
-                      <path d={area} fill={strokeVar} opacity={0.14} stroke="none" />
-                    )}
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={strokeVar}
-                      strokeWidth={1.6}
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                    {c.changePct > 0 ? "+" : ""}
+                    {c.changePct.toFixed(2)}%
+                  </span>
+                )}
+              </span>
+              {/* the board's bottom sentiment band — real positioned members
+                  only; absent band = nobody has positioned on this ticker */}
+              {showBand && (
+                <span
+                  className="block px-3 py-[7px] text-[11.5px] font-semibold leading-none text-price-up"
+                  style={{
+                    background:
+                      "color-mix(in srgb, var(--price-up) 10%, transparent)",
+                  }}
+                >
+                  {Math.round(c.bullPct!)}% Bullish
                 </span>
               )}
             </Link>

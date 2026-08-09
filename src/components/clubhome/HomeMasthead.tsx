@@ -36,10 +36,10 @@ export default function HomeMasthead({
   return (
     <header>
       {/* the board's greeting: large white display line, cool-gray sub */}
-      <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-[-0.02em] text-ink">
+      <h1 className="font-display text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-ink">
         {greetingFor(hour, name)} <span aria-hidden>👋</span>
       </h1>
-      <p className="mt-[6px] text-[13.5px] leading-snug text-soft">
+      <p className="mt-[6px] text-[14px] leading-snug text-soft">
         {isKid
           ? "Here's what the Club is looking at"
           : "Let's crush the market today."}
