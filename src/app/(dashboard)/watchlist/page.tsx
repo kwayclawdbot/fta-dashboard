@@ -52,6 +52,8 @@ import Celebrate, {
   type Register,
 } from "@/components/fic/Celebrate";
 import { formatMove, moveToneClass } from "@/lib/format-move";
+import { useAppMode } from "@/lib/useAppMode";
+import ClubWatchlistBoard from "@/components/watchlist/ClubWatchlistBoard";
 import { beltCelebrateFields } from "@/lib/belts";
 import {
   fetchQuote,
@@ -181,6 +183,7 @@ function timeAgo(dateStr: string) {
 
 export default function WatchlistPage() {
   const supabase = createClient();
+  const mode = useAppMode();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
   const [shareItem, setShareItem] = useState<WatchlistItem | null>(null);
@@ -732,6 +735,45 @@ export default function WatchlistPage() {
         onDone={() => setQueue((q) => q.slice(1))}
       />
 
+      {/* ── CLUB MODE — the owner's dark terminal board (ChatGPT Image Aug 7
+          2026 10:07:23): MY WATCHLIST ledger + MY PORTFOLIO practice book.
+          Family / kid keep the ladder board below byte-for-byte; every modal
+          (add sheet, limit moment, research card, Kai, share) stays shared, so
+          the club rows route through the SAME gates: openAdd() carries the
+          free-tier cap, the signal pill opens the research/verdict flow, and
+          the downgrade offer still rides inline for a free board over cap. */}
+      {mode === "club" && !isKid ? (
+        <>
+          {isFree && items.length > WATCHLIST_FREE_ACTIVE && (
+            <WatchlistDowngradeScreen
+              variant="inline"
+              items={items.map((i) => ({
+                id: i.id,
+                ticker: i.ticker,
+                company_name: i.company_name,
+                created_at: i.created_at,
+              }))}
+            />
+          )}
+          <ClubWatchlistBoard
+            items={items}
+            quotes={quotes}
+            isFree={isFree}
+            activeFlags={activeFlags}
+            canRemove={(item) =>
+              item.champion_id === userId ||
+              role === "parent" ||
+              role === "admin"
+            }
+            onAdd={openAdd}
+            onRemove={deleteItem}
+            onOpenSignal={(item) =>
+              item.status === "watch" ? startStudy(item) : openResearch(item)
+            }
+          />
+        </>
+      ) : (
+        <>
       {/* ── Board head — canvas 06/17: wordmark, pill rail, actions ───────── */}
       <m.header
         initial={{ opacity: 0, y: -8 }}
@@ -1456,6 +1498,8 @@ export default function WatchlistPage() {
             </section>
           )}
         </div>
+      )}
+        </>
       )}
 
       {/* ── Watch with Kai (prefilled from a row, or blank from the masthead) ─ */}

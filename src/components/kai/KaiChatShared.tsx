@@ -25,7 +25,7 @@ import { wallFor } from "@/lib/entitlements";
 import UnlockLine from "@/components/entitlements/UnlockLine";
 import { PriceChart } from "@/components/kai/ReportCharts";
 import Markdown from "@/components/kai/Markdown";
-import { Card, CardLabel, SectionMark } from "@/components/research/board";
+import { Card } from "@/components/research/board";
 import {
   useNewMemberHints,
   HintReopen,
@@ -61,57 +61,156 @@ interface Thread {
   updated_at: string;
 }
 
-/** Kai-blue text: #2563FF is heavy on near-black, so it steps up the ramp. */
-const KAI_INK = "text-kai-600 dark:text-kai-300";
+/**
+ * Kai's accent, SEMANTIC. `.text-kai-blue` reads `--kai-blue`, which the theme
+ * blocks re-skin per mode: the club-dark terminal writes Kai in the owner
+ * board's bright violet (#7C6BFF — the "KAI" wordmark and "KAI ANALYSIS"
+ * eyebrow on the reference phone), while family-light keeps the calmer Kai
+ * blue (#2563FF). NEVER a literal kai-ramp step with a dark: variant here —
+ * that was the old KAI_INK and it could not follow the club's violet.
+ */
+const KAI_INK = "text-kai-blue";
 
 /** Ratified Club words for a spent Kai meter. Resolved once, at module load. */
 const KAI_FULL_WALL = wallFor("kai_chat_full");
 
 /**
- * The Kai tint laid over `.f0-hero-field` — mixed from the --color-kai-* tokens
- * (never a literal hex) so it tracks the palette and inherits the primitive's
- * theme behaviour. Same field the Kai Watch masthead uses: this is the one
- * surface in the system where BLUE leads, because the whole surface is Kai.
+ * The Kai answer card's tint, written on --kai-blue so it follows the mode
+ * accent (violet wash on the club terminal — the board's "KAI ANALYSIS" card
+ * with its faint violet hairline — Kai blue wash in family-light). Overrides
+ * <Card tone="kai">'s literal-blue TINT, which cannot flip to the club violet.
  */
-const KAI_TINT: React.CSSProperties = {
-  background: [
-    "radial-gradient(118% 130% at 84% 2%, color-mix(in srgb, var(--color-kai-400) 52%, transparent) 0%, transparent 58%)",
-    "radial-gradient(104% 124% at 2% 102%, color-mix(in srgb, var(--color-kai-600) 44%, transparent) 0%, transparent 62%)",
-    "linear-gradient(155deg, color-mix(in srgb, var(--color-kai-700) 46%, transparent) 0%, transparent 72%)",
-  ].join(", "),
+const KAI_CARD_TINT: React.CSSProperties = {
+  background:
+    "linear-gradient(140deg, color-mix(in srgb, var(--kai-blue) 12%, var(--color-card)) 0%, var(--color-card) 70%)",
+  borderColor: "color-mix(in srgb, var(--kai-blue) 30%, var(--color-sand))",
 };
 
 /**
- * Kai's identity mark. The canvas gives Kai an avatar disc on a blue tint with
- * a blue ring wherever Kai speaks (App Light L1059 Kai Report, L1408 Kai
- * Alerts, L422 the feed insight card) — `.f0-kai-mark` is the foundation's
- * translation of it, and the live pulse rides its corner so the mark reads as
- * a presence rather than a logo.
+ * Kai's identity mark — the board's robot-mascot slot (top-right of the Kai
+ * phone). We render the system's `.f0-kai-mark` disc in that position, with
+ * its gradient re-based on --kai-blue so it is violet on the club terminal
+ * and Kai-blue in family-light (the primitive's own gradient is a literal
+ * blue ramp and cannot follow the club accent).
  *
- * COLOUR LAW: this is the only blue object on the surface, and blue is used
- * for nothing that is not Kai.
+ * COLOUR LAW: this is the only Kai-accent object on the surface that is not
+ * text, and the Kai accent is used for nothing that is not Kai.
  */
 function KaiMark({ size = 28 }: { size?: number }) {
   return (
     <span className="relative shrink-0" aria-hidden>
       <span
         className="f0-kai-mark"
-        style={{ width: size, height: size }}
+        style={{
+          width: size,
+          height: size,
+          background:
+            "linear-gradient(150deg, color-mix(in srgb, var(--kai-blue) 82%, #FFFFFF 18%) 0%, var(--kai-blue) 100%)",
+          boxShadow: "0 8px 18px -12px color-mix(in srgb, var(--kai-blue) 70%, transparent)",
+        }}
       >
         <Sparkles style={{ width: size * 0.5, height: size * 0.5 }} />
       </span>
       <span className="absolute -right-0.5 -top-0.5 flex h-2 w-2 items-center justify-center">
-        <span className="absolute inline-flex h-2 w-2 rounded-full bg-kai-400/60 motion-safe:animate-ping" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-kai-500" />
+        <span
+          className="absolute inline-flex h-2 w-2 rounded-full motion-safe:animate-ping"
+          style={{ background: "color-mix(in srgb, var(--kai-blue) 60%, transparent)" }}
+        />
+        <span
+          className="relative inline-flex h-1.5 w-1.5 rounded-full"
+          style={{ background: "var(--kai-blue)" }}
+        />
       </span>
     </span>
   );
 }
 
 /**
+ * A suggestion chip — the board's pill row ("Research · Explain · Compare ·
+ * Chart · Analyze" under the greeting; "Key Takeaways · Revenue · EPS ·
+ * Valuation" under an answer). A raised card pill on the page ground: dark
+ * cool pill on the club terminal, white pill on family paper. Wired to the
+ * existing suggested-question mechanism — it PREFILLS the composer (and
+ * focuses it); the member still sends.
+ */
+function SuggestionChip({
+  label,
+  onPick,
+}: {
+  label: string;
+  onPick: () => void;
+}) {
+  return (
+    <button
+      onClick={onPick}
+      className="f0-focus f0-press shrink-0 whitespace-nowrap rounded-full border border-sand bg-card px-4 py-2 text-[12.5px] font-semibold text-soft shadow-soft transition-colors hover:border-[color:var(--kai-blue)] hover:text-ink"
+    >
+      {label}
+    </button>
+  );
+}
+
+/** The greeting chips, per guardrail profile. Labels are the board's verbs for
+ *  adults (kids keep their friendly full questions); every prompt runs through
+ *  the same prefill-the-composer mechanism the old chips used. */
+function starterChips(profile: KaiProfile): { label: string; prompt: string }[] {
+  if (profile === "kid") {
+    return [
+      { label: "What does Apple make?", prompt: "What does Apple make?" },
+      { label: "Tell me about Disney", prompt: "Tell me about Disney" },
+      { label: "How does Nintendo earn money?", prompt: "How does Nintendo earn money?" },
+    ];
+  }
+  if (profile === "club") {
+    return [
+      { label: "Research", prompt: "What changed in the market today?" },
+      { label: "Explain", prompt: "Explain NVDA's business in plain words" },
+      {
+        label: "Compare",
+        prompt:
+          "Compare NVDA vs AMD over the last 2 years. Show revenue, EPS and price performance.",
+      },
+      { label: "Chart", prompt: "Show me Nvidia's 1-year chart" },
+      { label: "Analyze", prompt: "Read the setup on NVDA" },
+    ];
+  }
+  return [
+    { label: "Research", prompt: "Research Microsoft — the business, the numbers, and the risks" },
+    { label: "Explain", prompt: "Explain Apple's business" },
+    {
+      label: "Compare",
+      prompt:
+        "Compare NVDA vs AMD over the last 2 years. Show revenue, EPS and price performance.",
+    },
+    { label: "Chart", prompt: "Show me Nvidia's 1-year chart" },
+    { label: "Analyze", prompt: "What are Costco's risks?" },
+  ];
+}
+
+/** Follow-up chips shown under a COMPLETED Kai answer — the board's
+ *  "Key Takeaways · Revenue · EPS · Valuation" row. Same prefill mechanism. */
+function followUpChips(profile: KaiProfile): { label: string; prompt: string }[] {
+  if (profile === "kid") {
+    return [
+      { label: "Tell me more", prompt: "Tell me more!" },
+      { label: "How do they make money?", prompt: "How do they make money?" },
+      { label: "Is it risky?", prompt: "Is it risky?" },
+    ];
+  }
+  return [
+    { label: "Key Takeaways", prompt: "Give me the key takeaways from that." },
+    { label: "Revenue", prompt: "Go deeper on the revenue picture." },
+    { label: "EPS", prompt: "Go deeper on EPS." },
+    { label: "Valuation", prompt: "How does the valuation look?" },
+  ];
+}
+
+/**
  * An evidence block Kai attaches to a turn. Charts and headlines are EVIDENCE,
  * not cards — they hang off the entry on a rule, at the same reading measure as
- * the prose, so the conversation stays one column of attributed material.
+ * the prose, so the conversation stays one column of attributed material. The
+ * chart caption is the board's bold in-card chart title ("NVDA vs AMD
+ * Performance (2Y)").
  */
 function BlockView({ block }: { block: Block }) {
   if (block.kind === "chart") {
@@ -120,7 +219,7 @@ function BlockView({ block }: { block: Block }) {
         <figcaption className="mb-2 flex items-baseline justify-between gap-3">
           <Link
             href={`/research/${encodeURIComponent(block.symbol)}`}
-            className={`font-mono text-eyebrow font-semibold uppercase ${KAI_INK} hover:opacity-80`}
+            className="font-display text-[14px] font-bold tracking-tight text-ink hover:opacity-80"
           >
             ${block.symbol} · {block.range}
           </Link>
@@ -185,6 +284,15 @@ function BlockView({ block }: { block: Block }) {
  * Same thread/history/usage APIs and the same streaming pipeline in both — no
  * server changes. Both share the degraded-state handling (honest error copy +
  * Try again) and the usage-count fix (increment only on a successful `done`).
+ *
+ * ── SKIN (owner board "ChatGPT Image Aug 7 2026, 10_07_23 AM", Kai phone) ──
+ * One structure, semantic tokens: the club-dark terminal shows the board
+ * exactly — violet "KAI" wordmark header, "How can Kai help you today?"
+ * greeting, the Research/Explain/Compare/Chart/Analyze pill row, user turns
+ * as right-aligned raised bubbles, Kai turns as the "KAI ANALYSIS" violet-
+ * washed card, follow-up chips under the answer, and the rounded "Ask Kai
+ * anything…" pill composer. Family-light renders the same structure on paper
+ * (Kai blue, white cards) so kid/family stay coherent without a branch.
  */
 export default function KaiChatShared({
   initialData = null,
@@ -201,7 +309,7 @@ export default function KaiChatShared({
   autoThreadId?: string | null;
   /** Panel-only: close the slide-over. */
   onClose?: () => void;
-  /** Panel-only: a page-context label shown as a Kai-blue chip in the header
+  /** Panel-only: a page-context label shown as a Kai-accent chip in the header
    *  (e.g. "NVDA", "Lesson: Reading a candle"). Tells Kai — and the member —
    *  what Kai already knows about the current surface. */
   contextChip?: string | null;
@@ -418,6 +526,12 @@ export default function KaiChatShared({
     if (activeId === id) newThread();
   }
 
+  /** The suggestion-chip mechanism: prefill the composer and focus it. */
+  function pickSuggestion(prompt: string) {
+    setInput(prompt);
+    composerRef.current?.focus();
+  }
+
   // The streaming pipeline for one turn. Assumes a trailing streaming assistant
   // bubble already exists (send() and retry() both set that up). Usage is
   // incremented ONLY on a successful `done` event — a failed turn (server 4xx/5xx,
@@ -561,10 +675,10 @@ export default function KaiChatShared({
   }
 
   if (!ready) {
-    // LOADING ≠ EMPTY. This is the SHAPE of the surface pulsing — the Kai field,
-    // the start-here chips and the composer — so it can never be mistaken for
-    // the founding state of a member who has never asked Kai anything (which is
-    // the designed empty state further down, with real copy in it).
+    // LOADING ≠ EMPTY. This is the SHAPE of the surface pulsing — the greeting
+    // headline, the suggestion-chip row and the pill composer — so it can never
+    // be mistaken for the founding state of a member who has never asked Kai
+    // anything (which is the designed empty state further down, with real copy).
     return (
       <div
         className={`flex flex-col ${isPanel ? "h-full" : "h-[70vh]"}`}
@@ -572,30 +686,31 @@ export default function KaiChatShared({
         aria-label="Opening Kai"
       >
         <div className="flex items-center gap-3 border-b border-sand px-4 py-3.5">
-          <div
-            className="f0-kai-mark motion-safe:animate-pulse"
-            style={{ width: 28, height: 28 }}
-            aria-hidden
-          />
           <div className="space-y-1.5">
-            <div className="h-3.5 w-24 animate-pulse rounded bg-sand" />
+            <div className="h-4 w-14 animate-pulse rounded bg-sand" />
             <div className="h-2.5 w-56 animate-pulse rounded bg-sand/70" />
           </div>
+          <div className="flex-1" />
+          <div
+            className="f0-kai-mark motion-safe:animate-pulse"
+            style={{ width: 30, height: 30 }}
+            aria-hidden
+          />
         </div>
         <div className="flex-1 px-4 py-5">
           <div className="mx-auto max-w-2xl">
-            <div className="f0-hero-field h-44 w-full animate-pulse" />
-            <div className="mt-6 flex flex-wrap gap-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-8 w-44 animate-pulse rounded-lg bg-sand/70" />
+            <div className="h-8 w-72 max-w-full animate-pulse rounded bg-sand" />
+            <div className="mt-5 flex gap-2 overflow-hidden">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-9 w-24 shrink-0 animate-pulse rounded-full bg-sand/70" />
               ))}
             </div>
           </div>
         </div>
-        <div className="border-t border-sand px-4 py-3.5">
-          <div className="mx-auto flex max-w-[65ch] items-end gap-3">
-            <div className="h-9 flex-1 animate-pulse rounded border-b border-sand bg-sand/40" />
-            <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-kai-500/40" />
+        <div className="px-4 pb-4 pt-2">
+          <div className="mx-auto flex max-w-[65ch] items-end gap-2.5">
+            <div className="h-12 flex-1 animate-pulse rounded-full border border-sand bg-card" />
+            <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-sand/70" />
           </div>
         </div>
       </div>
@@ -604,6 +719,11 @@ export default function KaiChatShared({
 
   const capReached = cap > 0 && usedToday >= cap;
   const leftToday = cap > 0 ? Math.max(cap - usedToday, 0) : null;
+  const lastMsg = messages[messages.length - 1];
+  // The board's follow-up chip row appears only under a COMPLETED Kai answer —
+  // never while streaming, never on an errored turn, never once the cap is spent.
+  const showFollowUps =
+    lastMsg?.role === "assistant" && !lastMsg.streaming && !lastMsg.error && !capReached;
 
   return (
     // Page: fit the viewport EXACTLY (100dvh minus the sticky TopBar + main
@@ -652,9 +772,10 @@ export default function KaiChatShared({
                 <div key={t.id} className="group flex items-center gap-2 py-2.5">
                   <span
                     aria-hidden
-                    className={`h-3.5 w-[3px] shrink-0 rounded-full ${
-                      activeId === t.id ? "bg-kai-500" : "bg-transparent"
-                    }`}
+                    className="h-3.5 w-[3px] shrink-0 rounded-full"
+                    style={{
+                      background: activeId === t.id ? "var(--kai-blue)" : "transparent",
+                    }}
                   />
                   <button
                     onClick={() => openThread(t.id)}
@@ -686,8 +807,11 @@ export default function KaiChatShared({
 
       {/* Main */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {/* Header — the page keeps its exact header; the panel gets a branded
-            identity header with the full-view jump + close. */}
+        {/* Header — the board's masthead: the "KAI" wordmark in the Kai accent
+            (violet on the club terminal), the compliance line under it, and
+            Kai's mark on the right where the board seats the robot mascot.
+            The panel keeps its compact chrome (menu · full-view · memory ·
+            close) around the same identity. */}
         {isPanel ? (
           <div className="flex items-center gap-2 border-b border-sand px-3 py-2.5">
             <button
@@ -699,8 +823,10 @@ export default function KaiChatShared({
             </button>
             <KaiMark size={26} />
             <div className="min-w-0 flex-1">
-              <h2 className="font-display text-[13px] font-extrabold uppercase tracking-tight leading-tight text-ink">
-                Ask Kai
+              <h2
+                className={`font-display text-[14px] font-extrabold uppercase leading-tight tracking-[0.26em] ${KAI_INK}`}
+              >
+                Kai
               </h2>
               <p className="truncate font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
                 {isKid ? "Your company guide" : "Signals · interpretation · not advice"}
@@ -708,7 +834,7 @@ export default function KaiChatShared({
             </div>
             {leftToday !== null && (
               /* Canvas's trailing count chip on the Kai strip (App Light L1413). */
-              <span className="f0-chip shrink-0 px-2 py-0.5 font-mono text-[9.5px] tabular-nums text-soft">
+              <span className="f0-chip shrink-0 bg-card px-2 py-0.5 font-mono text-[9.5px] tabular-nums text-soft">
                 {leftToday} left
               </span>
             )}
@@ -737,7 +863,7 @@ export default function KaiChatShared({
           </div>
         ) : null}
         {/* Context chip — the current surface Kai already knows about (ticker /
-            lesson / thesis / alert). Kai-blue, panel only. */}
+            lesson / thesis / alert). Kai-accent, panel only. */}
         {isPanel && contextChip && (
           <div className="flex items-center gap-2 border-b border-sand bg-kai-blue-soft px-3 py-1.5">
             <Sparkles className={`h-3.5 w-3.5 shrink-0 ${KAI_INK}`} />
@@ -758,10 +884,11 @@ export default function KaiChatShared({
             >
               <Menu className="h-5 w-5" />
             </button>
-            <KaiMark size={30} />
             <div className="min-w-0 flex-1">
-              <h1 className="font-display text-[15px] font-extrabold uppercase leading-none tracking-tight text-ink">
-                Ask Kai
+              <h1
+                className={`font-display text-[18px] font-extrabold uppercase leading-none tracking-[0.28em] ${KAI_INK}`}
+              >
+                Kai
               </h1>
               <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
                 Signals and interpretation · educational, not advice
@@ -771,7 +898,7 @@ export default function KaiChatShared({
               /* The meter reads FORWARD, not backward: a free member should see
                  what they have spent of a known allowance, not a countdown to
                  zero. Both numbers are interpolated — never a hardcoded "3". */
-              <span className="f0-chip shrink-0 px-2.5 py-1 font-mono text-[10px] tabular-nums text-soft">
+              <span className="f0-chip shrink-0 bg-card px-2.5 py-1 font-mono text-[10px] tabular-nums text-soft">
                 {Math.min(usedToday, cap)} of {cap} questions used today
               </span>
             )}
@@ -783,84 +910,66 @@ export default function KaiChatShared({
             >
               <Brain className="h-4.5 w-4.5" />
             </button>
+            <KaiMark size={32} />
           </header>
         )}
 
-        {/* The conversation — the member's question reads as the LEAD and Kai's
-            answer sits in the board's tinted Kai field beneath it, so a thread
-            scans as one column of the member's own research rather than as a
-            messaging app. Kai speaks inside a card wherever the mockup lets Kai
-            speak (boards 14 and 18); this surface follows that. */}
+        {/* The conversation. The board keeps the greeting + verb chips at the
+            TOP of the scroll (they ride above the first turn and scroll away),
+            the member's turns as right-aligned raised bubbles, and Kai's turns
+            in the violet-washed "KAI ANALYSIS" card, with follow-up chips under
+            a finished answer. */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5">
-          {messages.length === 0 ? (
-            <div className="mx-auto max-w-2xl">
-              {/* the ONE dark object on this surface — it is the Kai field, and
-                  it retires the moment the conversation starts. */}
-              <section className="f0-hero-field f0-grain px-5 py-7 sm:px-7 sm:py-8">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 -z-10 opacity-90 dark:opacity-100"
-                  style={KAI_TINT}
-                />
-                <p className="font-mono text-eyebrow font-semibold uppercase text-kai-300">
-                  {isKid ? "Kai · your company guide" : "Kai · research analyst"}
-                </p>
-                <h2 className="mt-3 font-display text-display-2 font-extrabold uppercase">
-                  {isKid ? "Hi — I'm Kai" : "Ask about any company"}
-                </h2>
-                <p className="mt-3.5 max-w-md text-[13.5px] leading-relaxed opacity-75">
-                  {isKid
-                    ? "Ask me about a company you already know and I'll explain what it does and how it makes money, in plain words."
-                    : "Signals and interpretation. Kai explains what a business does, reads what its numbers and price history say, and tells you what moved today — never what happens next, and never what to buy or sell."}
-                </p>
-              </section>
+          {/* Greeting — the board's headline, always at the head of the scroll. */}
+          <div className={isPanel ? "" : "mx-auto max-w-2xl"}>
+            <h2 className="font-display text-[24px] font-bold leading-tight tracking-tight text-ink sm:text-[27px]">
+              {isKid ? "Hi — I'm Kai!" : "How can Kai help you today?"}
+            </h2>
 
-              {!isKid &&
-                (introHint.show ? (
-                  <p className="mt-5 max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
-                    Ask for a business explained, a chart read, a number
-                    unpacked, or the recent headlines on a ticker. Kai answers
-                    with what it can actually see — and says so plainly when the
-                    honest answer is that it can&apos;t know.
-                  </p>
-                ) : (
-                  <div className="mt-5">
-                    <HintReopen
-                      onClick={introHint.reopen}
-                      label="What can Kai do?"
-                    />
-                  </div>
-                ))}
-
-              <div className="mt-6">
-                <SectionMark>Start here</SectionMark>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(profile === "kid"
-                    ? ["What does Apple make?", "Tell me about Disney", "How does Nintendo earn money?"]
-                    : profile === "club"
-                      ? ["What changed today?", "Read the setup on NVDA", "Why did AAPL move today?"]
-                      : ["Explain Apple's business", "Show me Nvidia's 1-year chart", "What are Costco's risks?"]
-                  ).map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => setInput(q)}
-                      className="f0-focus f0-press rounded-full border border-sand bg-card px-3 py-1.5 text-[12px] font-semibold text-soft shadow-soft transition-colors hover:border-volt-300 hover:text-ink"
-                    >
-                      {q}
-                    </button>
-                  ))}
+            {messages.length === 0 &&
+              (isKid ? (
+                <p className="mt-2.5 max-w-md text-[13.5px] leading-relaxed text-soft">
+                  Ask me about a company you already know and I&apos;ll explain what
+                  it does and how it makes money, in plain words.
+                </p>
+              ) : introHint.show ? (
+                <p className="mt-2.5 max-w-[62ch] text-[13.5px] leading-relaxed text-soft">
+                  Ask for a business explained, a chart read, a number unpacked,
+                  or the recent headlines on a ticker. Kai answers with what it
+                  can actually see — and says so plainly when the honest answer
+                  is that it can&apos;t know.
+                </p>
+              ) : (
+                <div className="mt-2.5">
+                  <HintReopen onClick={introHint.reopen} label="What can Kai do?" />
                 </div>
-              </div>
+              ))}
+
+            {/* The board's suggestion pill row — Research · Explain · Compare ·
+                Chart · Analyze (kids keep their friendly questions). Each chip
+                prefills the composer via the suggested-question mechanism. */}
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none]">
+              {starterChips(profile).map((c) => (
+                <SuggestionChip
+                  key={c.label}
+                  label={c.label}
+                  onPick={() => pickSuggestion(c.prompt)}
+                />
+              ))}
             </div>
-          ) : (
-            <div className="mx-auto max-w-[65ch] space-y-4">
+          </div>
+
+          {messages.length > 0 && (
+            <div className="mx-auto mt-6 max-w-[65ch] space-y-4">
               {messages.map((m, i) =>
                 m.role === "assistant" ? (
                   <article key={m.id || i}>
-                    <Card tone="kai" radius="md" className="px-4 py-3.5">
-                      <CardLabel tone="kai">
-                        {m.error ? "Kai · couldn't answer" : "Kai"}
-                      </CardLabel>
+                    <Card tone="kai" radius="md" className="px-4 py-3.5" style={KAI_CARD_TINT}>
+                      <p
+                        className={`font-mono text-[10px] font-semibold uppercase leading-none tracking-[0.16em] ${KAI_INK}`}
+                      >
+                        {m.error ? "Kai · couldn't answer" : isKid ? "Kai" : "Kai Analysis"}
+                      </p>
                       <div className="mt-2.5">
                         <div
                           className={`text-[14.5px] leading-relaxed ${
@@ -896,22 +1005,39 @@ export default function KaiChatShared({
                     </Card>
                   </article>
                 ) : (
-                  <article key={m.id || i} className="pt-1">
-                    <span className="font-mono text-[9px] font-semibold uppercase leading-none tracking-[0.14em] text-soft">
-                      You asked
-                    </span>
-                    <p className="mt-2 whitespace-pre-wrap font-display text-[17px] font-bold leading-snug tracking-tight text-ink">
-                      {m.content}
-                    </p>
+                  /* The member's turn — the board's right-aligned raised bubble
+                     (dark cool card on the terminal, white card on paper). */
+                  <article key={m.id || i} className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md border border-sand bg-card px-4 py-3 shadow-soft">
+                      <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink">
+                        {m.content}
+                      </p>
+                    </div>
                   </article>
                 )
+              )}
+
+              {/* Follow-up chips under a finished answer — the board's
+                  "Key Takeaways · Revenue · EPS · Valuation" row. Prefill only;
+                  the member still sends. */}
+              {showFollowUps && (
+                <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {followUpChips(profile).map((c) => (
+                    <SuggestionChip
+                      key={c.label}
+                      label={c.label}
+                      onPick={() => pickSuggestion(c.prompt)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Composer — a ruled line, not a boxed input. */}
-        <div className="border-t border-sand px-4 py-3.5">
+        {/* Composer — the board's rounded "Ask Kai anything…" pill with the
+            round send control beside it. */}
+        <div className="px-4 pb-4 pt-2">
           {capReached ? (
             /* Spent meter. The fact first, then — for a free adult only — the
                door, in the ratified Club words. A kid never sees commercial
@@ -935,25 +1061,27 @@ export default function KaiChatShared({
                   {capNote}
                 </p>
               )}
-              <div className="mx-auto flex max-w-[65ch] items-end gap-3">
-                <textarea
-                  ref={composerRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      send();
-                    }
-                  }}
-                  rows={1}
-                  placeholder={isKid ? "Ask Kai about a company…" : "Ask Kai about a company or ticker…"}
-                  className="max-h-32 flex-1 resize-none border-b border-sand bg-transparent px-1 py-2 text-[15px] leading-relaxed text-ink placeholder:text-soft/55 focus:border-kai-500 focus:outline-none"
-                />
+              <div className="mx-auto flex max-w-[65ch] items-end gap-2.5">
+                <div className="flex min-w-0 flex-1 items-end rounded-[26px] border border-sand bg-card px-4 py-1.5 shadow-soft transition-colors focus-within:border-[color:var(--kai-blue)]">
+                  <textarea
+                    ref={composerRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        send();
+                      }
+                    }}
+                    rows={1}
+                    placeholder="Ask Kai anything…"
+                    className="max-h-32 w-full resize-none bg-transparent py-1.5 text-[15px] leading-relaxed text-ink placeholder:text-soft/60 focus:outline-none"
+                  />
+                </div>
                 <button
                   onClick={send}
                   disabled={sending || !input.trim()}
-                  className="f0-focus f0-press flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-kai-500 text-white transition hover:brightness-110 disabled:opacity-45"
+                  className={`f0-focus f0-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-sand bg-card shadow-soft transition hover:border-[color:var(--kai-blue)] disabled:opacity-45 ${KAI_INK}`}
                   aria-label="Send"
                 >
                   {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4.5 w-4.5" />}
@@ -1045,9 +1173,8 @@ export default function KaiChatShared({
                   aria-checked={deepMode}
                   disabled={deepModeSaving}
                   onClick={() => toggleDeepMode(!deepMode)}
-                  className={`f0-focus relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                    deepMode ? "bg-kai-500" : "bg-sand"
-                  }`}
+                  className="f0-focus relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50"
+                  style={{ background: deepMode ? "var(--kai-blue)" : "var(--sand)" }}
                   aria-label="Toggle deeper analysis mode"
                 >
                   <span

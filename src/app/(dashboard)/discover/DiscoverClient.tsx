@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bot, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Bot, Mic, Search, Sparkles, Star, X } from "lucide-react";
 
 import NewsClient from "../news/NewsClient";
 import ClubIndex from "@/components/club/ClubIndex";
@@ -43,7 +43,13 @@ import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { useAppMode } from "@/lib/useAppMode";
 import { parseScreenerQuery, type ParsedScreen } from "@/lib/screener-nl";
 import { createClient } from "@/lib/supabase/client";
-import { fmtMcap, type CustomFilters } from "@/lib/screener";
+import {
+  fmtMcap,
+  matchesCustom,
+  sortRows,
+  type CustomFilters,
+  type ScreenerRow,
+} from "@/lib/screener";
 
 /**
  * DISCOVER — rebuilt screen-for-screen to the owner's mockup.
@@ -111,12 +117,12 @@ const TRENDING_WALL_DETAIL =
 
 /* ── the surface ─────────────────────────────────────────────────────────── */
 /**
- * MODE SPLIT (CheatCodeDoors redesign). The CLUB register gets the prototype's
- * Discover — the "What are you looking for?" query bar, Kai's reading of the
- * ask, underline tabs (Top matches · Trending · Saved screens), a cards/table
- * ledger and saved-screen cards — composed in <ClubDiscover /> at the foot of
- * this file. Every family / fta member keeps the boards-02/15 composition in
- * <FamilyDiscover /> BYTE-FOR-BYTE.
+ * MODE SPLIT. The CLUB register gets the owner's mockup-board Discover — the
+ * "DISCOVER / ◈ AI" app bar, the "What are you looking for?" ask, the KAI
+ * INTERPRETATION chips, underline tabs (Top Matches · Trending · Screens ·
+ * Saved) and the board's result rows — composed in <ClubDiscover /> at the
+ * foot of this file. Every family / fta member keeps the boards-02/15
+ * composition in <FamilyDiscover /> BYTE-FOR-BYTE.
  *
  * `useAppMode` resolves to "family" on the server and the first client paint,
  * so the family tree never flickers; a club member gets at most one
@@ -1313,61 +1319,78 @@ function useClubLedger() {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * CLUB MODE — the CheatCodeDoors Discover composition.
+ * CLUB MODE — the owner's mockup board, object for object.
  *
- * SOURCE OF TRUTH: the `isDiscover` branch (club mode) of
- * `CheatCodeDoors.dc.html` — head "What are you looking for?" / "Plain English
- * in. A screen out.", a carded query bar, Kai's reading of the ask with
- * machine-readable chips, key·value filter chips with a dashed "+ Filter",
- * underline tabs, a Cards|Table segmented toggle over the results, result cards
- * (mark · name+sym · why line · price/chg), a ruled result table, and
- * saved-screen cards with a mono badge.
+ * SOURCE OF TRUTH: the Discover phone of the club board
+ * `~/Downloads/mobile-app-design-consultation/uploads/ChatGPT Image Aug 7,
+ * 2026 at 10_07_23 AM.png` (second phone, top row — verified by cropping the
+ * board and itemizing the screen at 4×). WHAT THE PHONE DRAWS, TOP TO BOTTOM:
  *
- * TOKEN MAP (prototype var → app token): paper→--paper · card→bg-card ·
- * ink→text-ink · soft→text-soft · sand→border-sand · accent→--accent-solid
- * (small TEXT takes gold-700, the accent ramp's readable end — same contrast
- * rule board.tsx documents) · kai→--kai-blue/--kai-blue-soft. Sora→font-display,
- * IBM Plex Mono→font-mono. Nothing is hard-coded, so club-light flips free.
+ *   app bar      "DISCOVER" wordmark · a violet "◈ AI" pill · a round search
+ *   headline     "What are you looking for?"
+ *   query bar    one rounded card, the worked ask "Show me profitable AI
+ *                companies under $20B growing revenue over 20%." with a MIC
+ *                glyph in the right slot
+ *   KAI INTERPRETATION
+ *                a card labeled in violet small caps, holding plain-phrase
+ *                chips: "Market Cap < $20B" · "Profitable" · "Revenue
+ *                Growth > 20%" · "Industry: AI"
+ *   tabs         Top Matches · Trending · Screens · Saved — the live one in
+ *                violet with a violet underline
+ *   result rows  round company mark · bold name · line 2 "$7.2B  Rev +46%
+ *                YoY" · line 3 "Profitable · 87% Bullish" in green · the
+ *                ticker in mono · the price bold right · a green sparkline ·
+ *                a gold star at the far edge
+ *
+ * TOKEN MAP (board paint → app token): phone paper→--paper · row/query
+ * cards→bg-card · chip ground→bg-sand · white→text-ink · the violet (AI pill,
+ * KAI label, live tab)→--kai-blue / text-kai-* · the green bullish line→
+ * text-sentiment (community, never the price ramp) · sparkline→price tokens
+ * (TickerSpark tints by real sign) · the gold star→gold-700, the accent
+ * ramp's readable end. Nothing hard-coded; club-light flips free.
  *
  * HONESTY ADAPTATIONS (real data only — nothing invented):
- *  · The prototype paints a worked NL query at rest. There is no query until
- *    the member asks one, so at rest the bar INVITES (prototype placeholder
- *    verbatim) and the Kai reading card only exists once a real ask was parsed
- *    — by the same deterministic src/lib/screener-nl.ts parse the screener
- *    runs, so the chips shown are exactly the filters applied.
- *  · "Top matches" at rest is the Club's own board (the boards-02 feed — real
- *    attention, real floors); the moment an ask lands, the real screener takes
- *    the panel over, seeded with the query. The prototype's mic has no voice
- *    backend — the slot carries the Kai handoff instead.
- *  · The cards/table toggle runs on the ranked attention ledger. Its table
- *    swaps the prototype's Cap/Growth columns (not in the trending contract)
- *    for Watching/Signal, which the ledger actually carries — watcher counts
- *    stay floor-gated and the free-tier redactions + unlock line are identical
- *    to the family branch.
- *  · Saved-screen cards carry the screen's REAL shape (filter count · sort) —
- *    the prototype's "14 matches · 3 new" needs a match count no endpoint
- *    computes, so no number is manufactured for the badge.
+ *  · The board paints a worked ask at rest. Until the member asks, the bar
+ *    carries the board's sentence as the PLACEHOLDER and the KAI
+ *    INTERPRETATION card doesn't exist; a real ask is parsed by the same
+ *    deterministic src/lib/screener-nl.ts the screener runs, so the chips are
+ *    exactly the filters applied. The parser has no "Profitable" / revenue-
+ *    growth facts (no fundamentals feed), so those chips appear only if a
+ *    future parse produces them — never as decoration.
+ *  · Result rows: line 2's "$7.2B" is the REAL market cap (screener_metrics);
+ *    its "Rev +46% YoY" has no data source, so the slot carries the real 3-
+ *    month price move instead. Line 3's "87% Bullish" is the ledger's real
+ *    bull share (absent = not drawn); "Profitable" is omitted — no feed.
+ *  · At rest the row list is the ranked community-attention ledger
+ *    (/api/club/trending) — real floors, the server's free cap redactions,
+ *    the unlock line and the verbatim compliance disclaimer. An ask swaps in
+ *    real screener matches from the top of the market-cap universe, with the
+ *    coverage stated and the full screener one tap away (Screens tab).
+ *  · The mic has no voice backend — the glyph is the Kai handoff. The star is
+ *    the family-watchlist add (the same write the screener's own star makes);
+ *    with no family to write to, no star is drawn.
+ *  · Free-tier meters and the kid walls are unchanged: kids get no Screens /
+ *    Saved doors and a plain-English ask stays shut, exactly as the server
+ *    resolved `showScreener`.
  * ══════════════════════════════════════════════════════════════════════════*/
 
-type ClubTab = "matches" | "trending" | "saved";
+type ClubTab = "matches" | "trending" | "screens" | "saved";
 
 const CLUB_PANEL_ID = "club-discover-panel";
 
 /** Ticker-shaped asks go straight to research, like the family masthead's. */
 const TICKERISH = /^[A-Za-z][A-Za-z.\-]{0,5}$/;
 
-function ClubDiscover({
-  initialNews,
-  board,
-  extras,
-  showScreener = true,
-}: DiscoverClientProps) {
+/** The board's worked ask, verbatim — as the INVITATION, never as data. */
+const CLUB_ASK_PLACEHOLDER =
+  "Show me profitable AI companies under $20B growing revenue over 20%.";
+
+function ClubDiscover({ board, extras, showScreener = true }: DiscoverClientProps) {
   const router = useRouter();
   const { openKai } = useKaiSheet();
+  const askRef = useRef<HTMLInputElement>(null);
 
   const entries = useMemo(() => board?.entries ?? [], [board]);
-  const movers = useMemo(() => extras?.forYouMovers ?? [], [extras]);
-  const beltWatch = useMemo(() => extras?.beltWatch ?? [], [extras]);
   const contributions = extras?.contributions ?? [];
   const reports = extras?.reports ?? [];
 
@@ -1379,14 +1402,23 @@ function ClubDiscover({
   /** The last plain-English ask. null = none yet — the honest default state. */
   const [query, setQuery] = useState<string | null>(null);
   const [seedScreenId, setSeedScreenId] = useState<string | null>(null);
-  /** Flips on the first real ask / "+ Filter" / saved-screen run, and the
-   *  screener owns the matches panel from then on (its universe loads once). */
-  const [screenerOn, setScreenerOn] = useState(false);
 
   const parsed = useMemo(
     () => (query ? parseScreenerQuery(query) : null),
     [query]
   );
+
+  // The board's result rows, run against the REAL top-of-universe page.
+  const matches = useClubMatches(query, parsed, showScreener);
+  // The board's gold star — the family-watchlist add, shared by every row.
+  const star = useWatchStar();
+
+  /** ticker → ledger row, for the green "% Bullish" line on match rows. */
+  const intel = useMemo(() => {
+    const m = new Map<string, TrendingRow>();
+    for (const r of rows) m.set(r.ticker.toUpperCase(), r);
+    return m;
+  }, [rows]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -1399,94 +1431,111 @@ function ClubDiscover({
     // Kid wall: the screener door stays shut, exactly as the server resolved.
     if (!showScreener) return;
     setQuery(t);
-    setSeedScreenId(null);
-    setScreenerOn(true);
     setTab("matches");
   }
 
   function clearAsk() {
     setDraft("");
     setQuery(null);
-    setSeedScreenId(null);
-    setScreenerOn(false);
   }
 
   function runSavedScreen(id: string) {
-    setQuery(null);
     setSeedScreenId(id);
-    setScreenerOn(true);
-    setTab("matches");
+    setTab("screens");
   }
 
   const tabs: { key: ClubTab; label: string }[] = [
-    { key: "matches", label: "Top matches" },
+    { key: "matches", label: "Top Matches" },
     { key: "trending", label: "Trending" },
     ...(showScreener
-      ? [{ key: "saved" as const, label: "Saved screens" }]
+      ? [
+          { key: "screens" as const, label: "Screens" },
+          { key: "saved" as const, label: "Saved" },
+        ]
       : []),
   ];
   const activeTab: ClubTab = tabs.some((t) => t.key === tab) ? tab : "matches";
 
   return (
     <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">
-      <header>
-        {/* Prototype head: Sora 800 24/1.1 -.02em + a 13px soft promise line. */}
-        <h1 className="font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
-          What are you looking for?
-        </h1>
-        <p className="mt-[5px] text-[13px] leading-normal text-soft">
-          Plain English in. A screen out.
-        </p>
-
-        {/* The query bar — the prototype's card (16px radius, sand hairline,
-            13×15 padding), as a REAL input. The mic slot carries the Kai
-            handoff (no voice backend exists), and a typed ask shows the run
-            arrow in the readable end of the accent ramp. */}
-        <form onSubmit={submit} role="search" className="mt-4">
-          <div className="flex items-center gap-2.5 rounded-[16px] border border-sand bg-card px-[15px] py-[13px]">
-            <Search className="h-[17px] w-[17px] shrink-0 text-soft" aria-hidden />
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Search a ticker, or describe what you want…"
-              aria-label="Search a ticker, or describe a screen in plain English"
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-soft/80"
-            />
-            {(screenerOn || query) && (
-              <button
-                type="button"
-                onClick={clearAsk}
-                aria-label="Clear the ask and go back to the board"
-                className="f0-focus shrink-0 rounded-full p-1 text-soft transition-colors hover:text-ink"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-            {draft.trim() ? (
-              <button
-                type="submit"
-                aria-label="Run it"
-                className="f0-focus f0-press shrink-0 rounded-full p-1 text-gold-700"
-              >
-                <ArrowRight className="h-[17px] w-[17px]" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openKai({ chip: "Discover", query: null })}
-                aria-label="Ask Kai"
-                className="f0-focus f0-press shrink-0 rounded-full p-1 text-kai-600 dark:text-kai-300"
-              >
-                <Sparkles className="h-[17px] w-[17px]" />
-              </button>
-            )}
-          </div>
-        </form>
-
-        {/* Kai's reading — ONLY once a real ask exists. Chips are the machine
-            form of the same deterministic parse the screener below applies. */}
-        {query && parsed && <KaiReadingCard query={query} parsed={parsed} />}
+      {/* ── the board's app bar: wordmark · violet AI pill · round search ── */}
+      <header className="flex items-center justify-between gap-3">
+        <span className="font-display text-[13px] font-bold uppercase tracking-[0.24em] text-ink">
+          Discover
+        </span>
+        <span className="flex items-center gap-2">
+          {/* The "◈ AI" pill — the Kai handoff, in Kai's own violet. */}
+          <button
+            type="button"
+            onClick={() => openKai({ chip: "Discover", query: null })}
+            aria-label="Ask Kai"
+            className="f0-focus f0-press flex h-[30px] items-center gap-1.5 rounded-full border px-3 text-[12px] font-bold text-kai-600 dark:text-kai-300"
+            style={{
+              backgroundColor: "var(--kai-blue-soft)",
+              borderColor: "color-mix(in srgb, var(--kai-blue) 40%, transparent)",
+            }}
+          >
+            <Bot className="h-3.5 w-3.5" aria-hidden />
+            AI
+          </button>
+          <RoundButton label="Search" onClick={() => askRef.current?.focus()}>
+            <Search className="h-4 w-4" aria-hidden />
+          </RoundButton>
+        </span>
       </header>
+
+      {/* ── headline ── */}
+      <h1 className="mt-4 font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
+        What are you looking for?
+      </h1>
+
+      {/* ── the query bar: one rounded card, mic in the right slot. The
+          board's worked ask is the PLACEHOLDER; the mic (no voice backend
+          exists) is the Kai handoff; a typed ask swaps in the run arrow. ── */}
+      <form onSubmit={submit} role="search" className="mt-4">
+        <div className="flex items-center gap-2.5 rounded-[16px] border border-sand bg-card px-[15px] py-[13px]">
+          <input
+            ref={askRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={CLUB_ASK_PLACEHOLDER}
+            aria-label="Search a ticker, or describe a screen in plain English"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-soft/80"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={clearAsk}
+              aria-label="Clear the ask"
+              className="f0-focus shrink-0 rounded-full p-1 text-soft transition-colors hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {draft.trim() ? (
+            <button
+              type="submit"
+              aria-label="Run it"
+              className="f0-focus f0-press shrink-0 rounded-full p-1 text-gold-700"
+            >
+              <ArrowRight className="h-[17px] w-[17px]" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => openKai({ chip: "Discover", query: null })}
+              aria-label="Ask Kai"
+              className="f0-focus f0-press shrink-0 rounded-full p-1 text-soft transition-colors hover:text-ink"
+            >
+              <Mic className="h-[17px] w-[17px]" aria-hidden />
+            </button>
+          )}
+        </div>
+      </form>
+
+      {/* ── KAI INTERPRETATION — ONLY once a real ask exists. The chips are
+          the same deterministic parse the match run applies. ── */}
+      {query && parsed && <KaiInterpretation query={query} parsed={parsed} />}
 
       <ClubTabs tabs={tabs} value={activeTab} onChange={setTab} />
 
@@ -1497,40 +1546,15 @@ function ClubDiscover({
         className="mt-4"
       >
         {activeTab === "matches" &&
-          (screenerOn && showScreener ? (
-            <ScreenerSurface
-              embedded
-              nlSeed={query ?? undefined}
-              seedScreenId={seedScreenId}
+          (query && parsed && showScreener ? (
+            <ClubMatchesPanel
+              matches={matches}
+              intel={intel}
+              star={star}
+              onOpenScreener={() => setTab("screens")}
             />
           ) : (
-            <>
-              {/* The prototype's filter row at rest: no filters exist yet, so
-                  the row is honestly just its dashed "+ Filter" tail — the
-                  door into the full screener. */}
-              {showScreener && (
-                <div className="mb-5 flex flex-wrap gap-[7px]">
-                  <button
-                    type="button"
-                    onClick={() => setScreenerOn(true)}
-                    className="f0-focus f0-press rounded-[10px] border border-dashed border-sand px-2.5 py-[7px] text-[11px] font-semibold text-soft transition-colors hover:border-accent hover:text-ink"
-                  >
-                    + Filter
-                  </button>
-                </div>
-              )}
-              {/* With no ask made, the member's "top matches" are what the
-                  Club itself surfaces — the boards-02 feed, every floor and
-                  founding state intact. */}
-              <ForYouPanel
-                rows={rows}
-                loading={loading}
-                movers={movers}
-                beltWatch={beltWatch}
-                blackBelts={extras?.blackBelts ?? 0}
-                initialNews={initialNews}
-              />
-            </>
+            <ClubLedgerList trending={trending} rows={rows} loading={loading} star={star} />
           ))}
 
         {activeTab === "trending" && (
@@ -1544,6 +1568,17 @@ function ClubDiscover({
           />
         )}
 
+        {/* The full screener lives whole behind the board's Screens tab —
+            mounted only when opened (its universe read is heavy), seeded with
+            the standing ask / saved screen so the two views never disagree. */}
+        {activeTab === "screens" && showScreener && (
+          <ScreenerSurface
+            embedded
+            nlSeed={query ?? undefined}
+            seedScreenId={seedScreenId}
+          />
+        )}
+
         {activeTab === "saved" && showScreener && (
           <ClubSavedScreens onRun={runSavedScreen} />
         )}
@@ -1554,10 +1589,11 @@ function ClubDiscover({
 
 /* ── the underline tab row ───────────────────────────────────────────────── */
 /**
- * Prototype: 20px gaps on a sand rule; the live tab holds a 2px accent
- * underline. The prototype paints the live LABEL raw accent too — at 13px on
- * paper that fails contrast, so the label takes gold-700 (the accent ramp's
- * text end, per the board.tsx rule) while the underline keeps the full accent.
+ * The board: four labels on a hairline, the live one VIOLET with a violet
+ * underline (this screen's active color is Kai's — the AI pill, the KAI
+ * INTERPRETATION mark and the live tab all take the same --kai-blue family).
+ * The label uses the kai text ramp (`text-kai-600 dark:text-kai-300`) for
+ * contrast; the underline takes the full token.
  */
 function ClubTabs({
   tabs,
@@ -1585,11 +1621,12 @@ function ClubTabs({
             aria-selected={on}
             aria-controls={CLUB_PANEL_ID}
             onClick={() => onChange(t.key)}
-            className={`f0-focus -mb-px shrink-0 border-b-2 pb-2.5 text-[13px] font-semibold transition-colors ${
+            className={`f0-focus -mb-px shrink-0 border-b-2 border-transparent pb-2.5 text-[13px] font-semibold transition-colors ${
               on
-                ? "border-accent text-gold-700"
-                : "border-transparent text-soft hover:text-ink"
+                ? "text-kai-600 dark:text-kai-300"
+                : "text-soft hover:text-ink"
             }`}
+            style={on ? { borderBottomColor: "var(--kai-blue)" } : undefined}
           >
             {t.label}
           </button>
@@ -1599,15 +1636,16 @@ function ClubTabs({
   );
 }
 
-/* ── Kai's reading of the ask ────────────────────────────────────────────── */
+/* ── KAI INTERPRETATION ──────────────────────────────────────────────────── */
 /**
- * Prototype: a kai-hairlined, kai-tinted card — the sentence, a "KAI READ THAT
- * AS" mark, and machine chips. The chips here carry the prototype's key·value
- * filter-chip form (uppercase key, mono accent value) because they ARE the
- * editable filters: the screener below receives exactly this parse, and its
- * own chip row is where they are edited/removed.
+ * The board: a card under the query bar — "KAI INTERPRETATION" in violet small
+ * caps over plain-phrase chips ("Market Cap < $20B" · "Industry: AI"). The
+ * query itself stays in the bar above (the board keeps it there too), and each
+ * chip is one whole phrase on the sand ground — card on paper, chip on card,
+ * the board's three-layer stack. Chips are DERIVED from the same deterministic
+ * parse the match run applies, so what the card claims is what actually ran.
  */
-function KaiReadingCard({
+function KaiInterpretation({
   query,
   parsed,
 }: {
@@ -1616,43 +1654,35 @@ function KaiReadingCard({
 }) {
   const pairs = clubFilterPairs(parsed);
   return (
-    <div
-      className="mt-3 rounded-[16px] border p-3.5"
+    <section
+      aria-label="Kai's interpretation of your ask"
+      className="mt-3 rounded-[16px] border bg-card p-3.5"
       style={{
-        borderColor: "color-mix(in srgb, var(--kai-blue) 55%, var(--sand))",
-        backgroundColor: "var(--kai-blue-soft)",
+        borderColor: "color-mix(in srgb, var(--kai-blue) 40%, var(--sand))",
       }}
     >
-      <p className="text-[13.5px] font-medium leading-normal text-ink [text-wrap:pretty]">
-        {query}
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-kai-600 dark:text-kai-300">
+        Kai interpretation
       </p>
-      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
-        Kai read that as
-      </p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-2.5 flex flex-wrap gap-2">
         {pairs.length > 0 ? (
           pairs.map((p) => (
             <span
               key={`${p.k}-${p.v}`}
-              className="flex items-center gap-1.5 rounded-[8px] border border-sand bg-card px-[9px] py-[5px]"
+              className="rounded-[10px] border border-sand bg-sand px-3 py-[7px] text-[12px] font-medium text-ink"
             >
-              <span className="text-[10px] uppercase tracking-[0.08em] text-soft">
-                {p.k}
-              </span>
-              <span className="font-mono text-[11px] font-semibold text-gold-700">
-                {p.v}
-              </span>
+              {p.k} {p.v}
             </span>
           ))
         ) : (
-          // Nothing structured was recognised — the screener falls back to a
-          // name search, and the chip says so instead of inventing a filter.
-          <span className="rounded-[8px] border border-sand bg-card px-[9px] py-[5px] font-mono text-[11px] text-ink">
-            keyword search
+          // Nothing structured was recognised — the run falls back to a name
+          // search, and the chip says so instead of inventing a filter.
+          <span className="rounded-[10px] border border-sand bg-sand px-3 py-[7px] text-[12px] font-medium text-ink">
+            Search &ldquo;{query}&rdquo;
           </span>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -1711,6 +1741,513 @@ const EMA_LABELS: Record<NonNullable<CustomFilters["emaTrend"]>, string> = {
   below50: "< 50-day EMA",
   above2050: "> 20 & 50 EMA",
 };
+
+/* ── the match run ───────────────────────────────────────────────────────── */
+/**
+ * The board's result rows, run for real. One page of the same
+ * `screener_metrics` read the full screener opens with (top of the universe by
+ * market cap — the columns and ordering are that surface's own, copied small
+ * rather than importing its whole engine), filtered by the SAME
+ * matchesCustom() the screener applies and ranked by club heat (like_count,
+ * the screener's club-mode default sort). The coverage is STATED under the
+ * list and the whole universe is one tap away on the Screens tab — a match
+ * list that quietly scanned 8% of the market and said nothing would be a lie
+ * of omission.
+ *
+ * Kid RLS note: `enabled` is the server-resolved `showScreener`, so a kid
+ * register never even issues the read that migration 137 walls off.
+ */
+const MATCH_COLS =
+  "ticker, name, sector, exchange, type, mcap, price, chg_1d, chg_5d, chg_1m, chg_3m, vol, avg_vol_20, vol_ratio, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, gap_pct, like_count";
+const MATCH_SCAN_ROWS = 1000;
+const MATCH_LIMIT = 12;
+
+interface ClubMatchesState {
+  rows: ScreenerRow[] | null; // null = no completed run yet
+  scanned: number | null;
+  loading: boolean;
+  error: string | null;
+}
+
+function useClubMatches(
+  query: string | null,
+  parsed: ParsedScreen | null,
+  enabled: boolean
+): ClubMatchesState {
+  const supabase = useMemo(() => createClient(), []);
+  const [state, setState] = useState<ClubMatchesState>({
+    rows: null,
+    scanned: null,
+    loading: false,
+    error: null,
+  });
+
+  /* eslint-disable react-hooks/set-state-in-effect -- syncing to a NEW ask
+     from the host IS an external-input sync (same contract as the screener's
+     own seed effects): one reset per distinct query, then the async read. */
+  useEffect(() => {
+    if (!query || !parsed || !enabled) {
+      setState({ rows: null, scanned: null, loading: false, error: null });
+      return;
+    }
+    let live = true;
+    setState({ rows: null, scanned: null, loading: true, error: null });
+    supabase
+      .from("screener_metrics")
+      .select(MATCH_COLS)
+      .not("price", "is", null)
+      .order("mcap", { ascending: false, nullsFirst: false })
+      .order("ticker", { ascending: true })
+      .range(0, MATCH_SCAN_ROWS - 1)
+      .then(({ data, error }) => {
+        if (!live) return;
+        if (error) {
+          setState({
+            rows: null,
+            scanned: null,
+            loading: false,
+            error:
+              "The market universe couldn't be read just now. Try again, or open the full screener.",
+          });
+          return;
+        }
+        const all = (data as unknown as ScreenerRow[]) ?? [];
+        // Same graceful degrade as the screener's own NL box: a parse with no
+        // recognised filters becomes a name/ticker search, never a guess.
+        const f: CustomFilters =
+          parsed.matched.length > 0
+            ? { ...parsed.filters, q: parsed.leftover || null }
+            : { q: query };
+        const hit = all.filter((r) => matchesCustom(r, f));
+        setState({
+          rows: sortRows(hit, "like_count", "desc").slice(0, MATCH_LIMIT),
+          scanned: all.length,
+          loading: false,
+          error: null,
+        });
+      });
+    return () => {
+      live = false;
+    };
+  }, [supabase, query, parsed, enabled]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  return state;
+}
+
+/* ── the gold star ───────────────────────────────────────────────────────── */
+/**
+ * The board draws a gold star on every result row. The one real write a star
+ * can make here is the same one the screener's own row action makes: a
+ * `family_watchlist` insert (status "watch", the member as champion — the
+ * pattern copied small from ScreenerSurface.addToFamily). Already-watched
+ * tickers render the star filled; a member with no family gets NO star rather
+ * than a dead control. Adds only — removing a watchlist row can carry research
+ * and notes away with it, so that stays on the Watchlist surface.
+ */
+interface WatchStar {
+  canStar: boolean;
+  watched: Set<string>;
+  busy: string | null;
+  add: (ticker: string, name: string | null, price: number | null) => void;
+}
+
+function useWatchStar(): WatchStar {
+  const supabase = useMemo(() => createClient(), []);
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [watched, setWatched] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user || !live) return;
+      setUserId(user.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("family_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      const fid =
+        (profile as { family_id?: string | null } | null)?.family_id ?? null;
+      if (!live) return;
+      setFamilyId(fid);
+      if (!fid) return;
+      const { data } = await supabase
+        .from("family_watchlist")
+        .select("ticker")
+        .eq("family_id", fid);
+      if (!live || !data) return;
+      setWatched(
+        new Set(
+          (data as { ticker: string }[]).map((r) => r.ticker.toUpperCase())
+        )
+      );
+    })();
+    return () => {
+      live = false;
+    };
+  }, [supabase]);
+
+  const add = useCallback(
+    async (ticker: string, name: string | null, price: number | null) => {
+      if (!familyId || !userId || busy) return;
+      const t = ticker.toUpperCase();
+      if (watched.has(t)) return;
+      setBusy(t);
+      const { error } = await supabase.from("family_watchlist").insert({
+        family_id: familyId,
+        company_name: name || t,
+        ticker: t,
+        status: "watch",
+        champion_id: userId,
+        snapshot_price: price,
+        snapshot_at: new Date().toISOString(),
+      });
+      if (!error) setWatched((prev) => new Set(prev).add(t));
+      setBusy(null);
+    },
+    [supabase, familyId, userId, busy, watched]
+  );
+
+  return { canStar: familyId != null, watched, busy, add };
+}
+
+/* ── one result row, exactly as the board draws it ───────────────────────── */
+/**
+ * Anatomy, left to right: 40px round mark · bold name over a soft mono line 2
+ * over a green "% Bullish" line 3 · the mono ticker and the bold price on one
+ * baseline · a real sparkline under the price (TickerSpark — daily closes,
+ * tinted by their true sign) · the gold star at the edge. Line 2 and line 3
+ * carry only what a feed carries — see the branch header for what the board's
+ * "Rev +46% YoY" / "Profitable" honestly become.
+ */
+interface ClubRowData {
+  ticker: string;
+  name: string | null;
+  price: number | null;
+  /** The soft mono line-2 (mcap · 3m move, or the ledger's watcher count). */
+  sub: string | null;
+  /** The green line-3, only when someone has really positioned. */
+  bullPct: number | null;
+}
+
+function ClubMatchRow({ row, star }: { row: ClubRowData; star: WatchStar }) {
+  const t = row.ticker.toUpperCase();
+  const on = star.watched.has(t);
+  return (
+    <div className="relative">
+      <Link
+        href={`/research/${encodeURIComponent(row.ticker)}`}
+        className={`f0-focus flex items-center gap-3 rounded-[16px] border border-sand bg-card p-[13px] transition-colors hover:border-accent ${
+          star.canStar ? "pr-11" : ""
+        }`}
+      >
+        <CompanyLogo
+          symbol={row.ticker}
+          name={row.name}
+          size={40}
+          rounded="rounded-full"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display text-[14.5px] font-bold leading-tight text-ink">
+            {row.name ?? t}
+          </span>
+          {row.sub && (
+            <span className="mt-[3px] block truncate font-mono text-[11px] text-soft">
+              {row.sub}
+            </span>
+          )}
+          {row.bullPct != null && (
+            <span className="mt-[3px] flex items-center gap-1.5 text-[11.5px] font-semibold text-sentiment">
+              <span
+                aria-hidden
+                className="h-[5px] w-[5px] shrink-0 rounded-full"
+                style={{ backgroundColor: "var(--sentiment-fill)" }}
+              />
+              {row.bullPct}% Bullish
+            </span>
+          )}
+        </span>
+        <span className="shrink-0 text-right">
+          <span className="flex items-baseline justify-end gap-2.5">
+            <span className="font-mono text-[11px] uppercase text-soft">
+              {t}
+            </span>
+            <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+              {formatPrice(row.price)}
+            </span>
+          </span>
+          <TickerSpark
+            symbol={row.ticker}
+            width={76}
+            height={18}
+            className="ml-auto mt-[7px] block w-[76px]"
+          />
+        </span>
+      </Link>
+      {star.canStar && (
+        <button
+          type="button"
+          disabled={on || star.busy === t}
+          onClick={() => star.add(row.ticker, row.name, row.price)}
+          aria-label={
+            on ? `${t} is on your watchlist` : `Add ${t} to your watchlist`
+          }
+          className="f0-focus f0-press absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5"
+        >
+          <Star
+            aria-hidden
+            className={`h-4 w-4 ${
+              on
+                ? "fill-current text-gold-700"
+                : "text-soft transition-colors hover:text-gold-700"
+            }`}
+          />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── Top Matches with an ask standing ────────────────────────────────────── */
+function ClubMatchesPanel({
+  matches,
+  intel,
+  star,
+  onOpenScreener,
+}: {
+  matches: ClubMatchesState;
+  intel: Map<string, TrendingRow>;
+  star: WatchStar;
+  onOpenScreener: () => void;
+}) {
+  if (matches.loading) {
+    return (
+      <div className="flex flex-col gap-2.5" aria-busy="true">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-[16px] border border-sand bg-card p-[13px]"
+          >
+            <Bone w={40} h={40} className="!rounded-full" />
+            <span className="flex-1">
+              <Bone w={130} h={11} />
+              <Bone w={90} h={9} className="mt-2" />
+            </span>
+            <Bone w={54} h={11} />
+          </div>
+        ))}
+        <span className="sr-only">Running your screen</span>
+      </div>
+    );
+  }
+
+  if (matches.error) {
+    return (
+      <FoundingLine>
+        {matches.error}{" "}
+        <button
+          type="button"
+          onClick={onOpenScreener}
+          className="font-bold text-gold-700 underline decoration-1 underline-offset-2"
+        >
+          Open the full screener
+        </button>
+      </FoundingLine>
+    );
+  }
+
+  const rows = matches.rows ?? [];
+  const scanned = matches.scanned ?? 0;
+
+  if (rows.length === 0) {
+    return (
+      <FoundingLine>
+        No matches in the top {scanned.toLocaleString()} companies by market
+        cap.{" "}
+        <button
+          type="button"
+          onClick={onOpenScreener}
+          className="font-bold text-gold-700 underline decoration-1 underline-offset-2"
+        >
+          Screen the whole universe
+        </button>{" "}
+        or loosen the ask.
+      </FoundingLine>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-2.5">
+        {rows.map((r) => {
+          const sub = [
+            r.mcap != null ? fmtMcap(r.mcap) : null,
+            r.chg_3m != null ? `${formatChangePct(r.chg_3m)} 3m` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <ClubMatchRow
+              key={r.ticker}
+              star={star}
+              row={{
+                ticker: r.ticker,
+                name: r.name,
+                price: r.price,
+                sub: sub || null,
+                bullPct:
+                  intel.get(r.ticker.toUpperCase())?.sentiment?.bullPct ?? null,
+              }}
+            />
+          );
+        })}
+      </div>
+      {/* Coverage, stated — never implied. */}
+      <p className="mt-3 font-mono text-[10px] leading-relaxed text-soft">
+        {rows.length === MATCH_LIMIT
+          ? `Top ${MATCH_LIMIT} matches`
+          : `${rows.length} ${rows.length === 1 ? "match" : "matches"}`}{" "}
+        in the top {scanned.toLocaleString()} by market cap · by Club signal ·{" "}
+        <button
+          type="button"
+          onClick={onOpenScreener}
+          className="font-bold text-gold-700 underline decoration-1 underline-offset-2"
+        >
+          Open in full screener
+        </button>
+      </p>
+    </>
+  );
+}
+
+/* ── Top Matches at rest: the attention ledger in the board's rows ───────── */
+/**
+ * No ask yet, so the honest "top matches" are the names the Club itself is
+ * paying attention to — /api/club/trending, rank order, with the server's free
+ * cap drawn as redacted rows + the unlock line, and the verbatim compliance
+ * disclaimer. Line 2 is the floor-gated watcher count; line 3 the real bull
+ * share.
+ */
+function ClubLedgerList({
+  trending,
+  rows,
+  loading,
+  star,
+}: {
+  trending: TrendingResponse | null;
+  rows: TrendingRow[];
+  loading: boolean;
+  star: WatchStar;
+}) {
+  const freeCap = trending?.freeCap;
+  const totalCount = trending?.totalCount;
+  const withheldRanks = useMemo(() => {
+    if (!trending?.locked || freeCap == null || totalCount == null) return [];
+    const n = totalCount - freeCap;
+    if (n <= 0) return [];
+    return Array.from({ length: n }, (_, i) => freeCap + i + 1);
+  }, [trending?.locked, freeCap, totalCount]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2.5" aria-busy="true">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-[16px] border border-sand bg-card p-[13px]"
+          >
+            <Bone w={40} h={40} className="!rounded-full" />
+            <span className="flex-1">
+              <Bone w={130} h={11} />
+              <Bone w={90} h={9} className="mt-2" />
+            </span>
+            <Bone w={54} h={11} />
+          </div>
+        ))}
+        <span className="sr-only">Loading the ledger</span>
+      </div>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <FoundingLine>
+        The Club hasn&apos;t formed a read yet. Rate a ticker on the{" "}
+        <Link
+          href="/watchlist/community"
+          className="font-bold text-gold-700 underline decoration-1 underline-offset-2"
+        >
+          Community Watchlist
+        </Link>{" "}
+        and you&apos;ll be the first signal on this board.
+      </FoundingLine>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-col gap-2.5">
+        {rows.map((r) => {
+          const watchers = r.watchers ?? 0;
+          const shown = watchers >= FLOORS.tickerParticipants;
+          return (
+            <ClubMatchRow
+              key={r.ticker}
+              star={star}
+              row={{
+                ticker: r.ticker,
+                name: r.company ?? null,
+                price: r.price ?? null,
+                sub: shown
+                  ? `${watchers.toLocaleString()} watching`
+                  : "New on the board",
+                bullPct: r.sentiment?.bullPct ?? null,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* THE CAP, DRAWN HONESTLY — real rank numbers beside obscured bars,
+          never invented tickers. */}
+      {withheldRanks.length > 0 && (
+        <>
+          <p className="sr-only">
+            {withheldRanks.length} further{" "}
+            {withheldRanks.length === 1 ? "rank is" : "ranks are"} withheld from
+            this ledger.
+          </p>
+          <div
+            role="presentation"
+            aria-hidden
+            className="pointer-events-none mt-[7px] flex flex-col gap-[7px]"
+          >
+            {withheldRanks.map((rank) => (
+              <RedactedSignalRow key={rank} rank={rank} />
+            ))}
+          </div>
+          <UnlockLine cta={TRENDING_WALL.cta}>
+            {freeCap} of {totalCount} names shown. The Club opens{" "}
+            {TRENDING_WALL_DETAIL}
+          </UnlockLine>
+        </>
+      )}
+
+      <p className="mt-3 font-mono text-[10px] leading-relaxed text-soft">
+        {trending?.disclaimer ??
+          "Attention inside the Club — not a recommendation."}
+        {" · Prices delayed ~15 min."}
+      </p>
+    </>
+  );
+}
 
 /* ── TRENDING, in the prototype's result language ────────────────────────── */
 /**
@@ -2187,7 +2724,7 @@ function ClubSavedScreens({ onRun }: { onRun: (id: string) => void }) {
   if (saved.length === 0) {
     return (
       <FoundingLine>
-        Nothing kept yet. Build a screen on Top matches and{" "}
+        Nothing kept yet. Build a screen on the Screens tab and{" "}
         <span className="font-semibold text-ink">Save screen</span> keeps it
         here to re-run any day.
       </FoundingLine>

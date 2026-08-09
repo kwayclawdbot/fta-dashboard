@@ -62,7 +62,9 @@ import {
   COMMUNITY_DISCLAIMER,
   type CommunityEntry,
 } from "@/lib/community-watchlist";
+import { useAppMode } from "@/lib/useAppMode";
 import ResearchCanvas from "./ResearchCanvas";
+import ClubStockHead from "./ClubStockHead";
 import ClubRead, { useClubRead } from "./ClubRead";
 import ClubTickerStrip from "./ClubTickerStrip";
 import KaiReportPanel from "./KaiReportPanel";
@@ -195,6 +197,11 @@ export default function ResearchClient({
   const { openKai } = useKaiSheet();
   const params = useParams<{ ticker: string }>();
   const ticker = (params?.ticker || "").toString().toUpperCase();
+
+  // CLUB-MODE BRANCH (stock-detail mockup). Resolves to "family" on the server
+  // and the first client paint, so every family/kid render below stays
+  // byte-for-byte what it was; only mode === "club" swaps the head.
+  const mode = useAppMode();
 
   // ONE read of what the club thinks, shared by the canvas head (the watching
   // stack + the club-rank pill) and the sentiment ring — the same rows, so the
@@ -622,36 +629,64 @@ export default function ResearchClient({
        analysis holds the reading measure on the left, the club rail takes the
        space that was doing nothing on the right. */
     <div className="mx-auto w-full max-w-3xl px-4 pb-20 sm:px-6 lg:max-w-[1160px]">
-      {/* ── BOARD 03 — the ticker head, rebuilt to the mockup ────────────────
-          Back / watch / share row, logo + name + club-rank pill, the mark, the
-          watching stack, the chart CARD with its member marks and filled range
-          pills, four measure cards, and the Kai band. */}
-      <ResearchCanvas
-        ticker={ticker}
-        companyName={companyName}
-        quote={quote}
-        research={research}
-        dailyBars={bars}
-        barsResolved={barsState === "done" || barsState === "error"}
-        supabase={supabase}
-        back={back}
-        familyId={familyId}
-        userId={userId}
-        clubRank={club.rank}
-        watchers={club.watchers}
-        faces={club.faces}
-        onAskKai={() =>
-          openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })
-        }
-      />
+      {mode === "club" ? (
+        /* ── CLUB STOCK DETAIL — the owner's dark mockup (NVDA phone):
+            ← · logo · name / TICKER · EXCHANGE · 🔔 ★ ↗, the big mark, the
+            move line, range pills over a candle/area chart with a price rail
+            and session stamps, the stat wells, the Community Sentiment bar,
+            and + Watchlist / Create Opinion. Family and kid renders keep the
+            ResearchCanvas branch below untouched. */
+        <ClubStockHead
+          ticker={ticker}
+          companyName={companyName}
+          quote={quote}
+          research={research}
+          researchResolved={researchResolved}
+          dailyBars={bars}
+          barsResolved={barsState === "done" || barsState === "error"}
+          supabase={supabase}
+          back={back}
+          familyId={familyId}
+          userId={userId}
+          club={club}
+          isKid={isKid}
+          canAlert={ageGroup !== "kids" && ageGroup !== "teens"}
+          levels={researchLevels(quote?.price ?? null, keyStats)}
+        />
+      ) : (
+        <>
+          {/* ── BOARD 03 — the ticker head, rebuilt to the mockup ────────────
+              Back / watch / share row, logo + name + club-rank pill, the mark,
+              the watching stack, the chart CARD with its member marks and
+              filled range pills, four measure cards, and the Kai band. */}
+          <ResearchCanvas
+            ticker={ticker}
+            companyName={companyName}
+            quote={quote}
+            research={research}
+            dailyBars={bars}
+            barsResolved={barsState === "done" || barsState === "error"}
+            supabase={supabase}
+            back={back}
+            familyId={familyId}
+            userId={userId}
+            clubRank={club.rank}
+            watchers={club.watchers}
+            faces={club.faces}
+            onAskKai={() =>
+              openKai({ chip: ticker, query: `What should I know about ${ticker} right now?` })
+            }
+          />
 
-      {/* ── 3 compact actions — Watch · Practice · Share ───────────────────── */}
-      <TickerActions
-        ticker={ticker}
-        canAlert={ageGroup !== "kids" && ageGroup !== "teens"}
-        seedPrice={quote?.price ?? null}
-        levels={researchLevels(quote?.price ?? null, keyStats)}
-      />
+          {/* ── 3 compact actions — Watch · Practice · Share ───────────────── */}
+          <TickerActions
+            ticker={ticker}
+            canAlert={ageGroup !== "kids" && ageGroup !== "teens"}
+            seedPrice={quote?.price ?? null}
+            levels={researchLevels(quote?.price ?? null, keyStats)}
+          />
+        </>
+      )}
 
       <div className="mt-10 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10">
         {/* ── THE ANALYSIS — five tabbed subpages ────────────────────────────
