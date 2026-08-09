@@ -4,35 +4,25 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import type { ForYouResponse } from "@/lib/clubhome/contract";
-import { BoardSection, BrandTile, signedPct, toneFor } from "./board";
+import { BrandTile, signedPct, toneFor } from "./board";
+import { sparkPath, sparkAreaPath, useBarSeries } from "./MarketPulse";
 
 /**
- * YOUR SIGNALS — board 01's third object, built as drawn.
+ * MY WATCHLIST MOVERS — the CCDoors watchlist section.
  *
- * The board draws WHITE ROUNDED CARDS stacked with a 7px gap. Each row is: a
- * 26px brand tile, the ticker in mono, a human line ("Kai Watch: Getting
- * Close", "24 new opinions"), and a small trailing affordance. An earlier pass
- * rendered this as a hairline ledger with a two-line price block on the right;
- * this is the card row.
- *
- * THE TRAILING SLOT. The board draws three different affordances (a plus, a
- * count badge, an arrow), each standing for an action we do not have a
- * per-signal source for. What we DO have on every row is the ticker's live
- * percentage move, which is real, is the right size for that slot, and is the
- * thing a member actually wants there. It renders on the price ramp; where a
- * quote is missing the row falls back to the board's arrow rather than a
- * fabricated 0.00%.
+ * One contained card (16px radius, sand hairline, card ground) listing the
+ * member's own tickers as divided rows: 34px brand tile, ticker plus the human
+ * "what changed" line stacked, a small green/red sparkline mid-row (the
+ * reference board draws a real curve in EVERY watchlist row — same
+ * /api/market/bars closes MarketPulse uses, omitted when no series lands),
+ * and the live percentage move in mono on the right. Where a quote is missing
+ * the row falls back to an arrow rather than a fabricated 0.00%.
  *
  * The lines themselves are `forYouCore`'s per-ticker deltas, derived from
  * `ticker_intel_snapshots` for the tickers this member's family actually
  * watches. Nothing here is composed by the UI.
  *
- * NO CATALYST ROW. The board's middle line is "Earnings in 3 days". There is no
- * earnings or economic calendar anywhere in this app (Polygon financials report
- * what has been FILED, not what is scheduled), so that line is absent rather
- * than approximated.
- *
- * STATES: loading (pulsing cards) · empty watchlist (a stated absence with the
+ * STATES: loading (pulsing rows) · empty watchlist (a stated absence with the
  * way out) · populated. All three are distinct.
  */
 export default function YourSignals({
@@ -64,36 +54,50 @@ export default function YourSignals({
     })
     .slice(0, 4);
 
+  // Real daily closes for the row sparklines — same fetch path as MarketPulse
+  // (CDN-cached per symbol). A ticker whose series never lands simply draws
+  // no curve.
+  const series = useBarSeries(items.map((it) => it.ticker));
+
   return (
-    <BoardSection
-      id="club-signals"
-      label={isKid ? "Your companies" : "Your signals"}
-      action={
+    <section aria-labelledby="club-signals">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2
+          id="club-signals"
+          className="min-w-0 text-[11px] font-bold uppercase tracking-[0.16em] text-ink"
+        >
+          {isKid ? "Your companies" : "My watchlist movers"}
+        </h2>
         <Link
           href="/watchlist"
-          className="f0-focus f0-press shrink-0 rounded-md text-[11px] font-semibold text-accent"
+          className="f0-focus f0-press shrink-0 rounded-md text-[12px] font-semibold text-accent"
         >
           See all
         </Link>
-      }
-    >
+      </div>
+
       {loading && items.length === 0 ? (
-        <div className="mt-2.5 flex flex-col gap-[7px]" aria-busy="true">
+        <div
+          className="mt-3 overflow-hidden rounded-[16px] border border-sand bg-card"
+          aria-busy="true"
+        >
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="club-b-card flex items-center gap-2.5 px-3 py-[10px] motion-safe:animate-pulse"
+              className="flex items-center gap-3 border-b border-sand px-4 py-3.5 last:border-b-0 motion-safe:animate-pulse"
             >
-              <div className="h-[26px] w-[26px] shrink-0 rounded-[8px] bg-ink/10" />
+              <div className="h-[34px] w-[34px] shrink-0 rounded-[11px] bg-ink/10" />
+              <div className="min-w-0 flex-1">
+                <div className="h-2.5 w-14 rounded-full bg-ink/10" />
+                <div className="mt-1.5 h-2 w-32 rounded-full bg-ink/[0.07]" />
+              </div>
               <div className="h-2.5 w-10 shrink-0 rounded-full bg-ink/10" />
-              <div className="h-2.5 flex-1 rounded-full bg-ink/[0.07]" />
-              <div className="h-2.5 w-9 shrink-0 rounded-full bg-ink/10" />
             </div>
           ))}
-          <span className="sr-only">Loading your signals</span>
+          <span className="sr-only">Loading your watchlist movers</span>
         </div>
       ) : items.length === 0 ? (
-        <div className="club-b-card mt-2.5 px-3.5 py-3.5">
+        <div className="mt-3 rounded-[16px] border border-sand bg-card px-4 py-4">
           <p className="text-[13px] font-bold text-ink">
             Nothing on your watch yet
           </p>
@@ -111,31 +115,65 @@ export default function YourSignals({
           </Link>
         </div>
       ) : (
-        <div className="mt-2.5 flex flex-col gap-[7px]">
+        <div className="mt-3 overflow-hidden rounded-[16px] border border-sand bg-card">
           {items.map((it) => {
             const hasPct =
               typeof it.changePct === "number" && Number.isFinite(it.changePct);
+            const closes = series[it.ticker];
+            // Curve colour: the day move decides; with no quote, the month's
+            // real drift — never an assumed green.
+            const up = hasPct
+              ? (it.changePct as number) >= 0
+              : closes
+                ? closes[closes.length - 1] >= closes[0]
+                : true;
+            const strokeVar = up ? "var(--price-up)" : "var(--price-down)";
+            const path = closes ? sparkPath(closes) : null;
+            const area = closes ? sparkAreaPath(closes) : null;
             return (
               <Link
                 key={it.ticker}
                 href={`/research/${encodeURIComponent(it.ticker)}`}
-                className="club-b-card f0-focus f0-press flex items-center gap-2.5 px-3 py-[10px]"
+                className="f0-focus f0-press flex items-center gap-3 border-b border-sand px-4 py-3.5 transition-colors last:border-b-0 hover:bg-accent/5"
               >
                 <BrandTile
                   ticker={it.ticker}
-                  size={26}
-                  radius={8}
-                  fontSize={11}
+                  size={34}
+                  radius={11}
+                  fontSize={13}
                 />
-                <span className="shrink-0 font-mono text-[11px] font-semibold text-ink">
-                  {it.ticker}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-semibold leading-tight text-ink">
+                    {it.ticker}
+                  </span>
+                  <span className="mt-[3px] block truncate text-[11.5px] leading-snug text-soft">
+                    {it.delta}
+                  </span>
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[12px] text-soft">
-                  {it.delta}
-                </span>
+                {/* the board's mid-row curve — real closes only */}
+                {path && (
+                  <span className="block h-[22px] w-[56px] shrink-0" aria-hidden>
+                    <svg
+                      viewBox="0 0 90 24"
+                      preserveAspectRatio="none"
+                      className="h-full w-full"
+                    >
+                      {area && (
+                        <path d={area} fill={strokeVar} opacity={0.14} stroke="none" />
+                      )}
+                      <path
+                        d={path}
+                        fill="none"
+                        stroke={strokeVar}
+                        strokeWidth={1.6}
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                )}
                 {hasPct ? (
                   <span
-                    className={`shrink-0 font-mono text-[10.5px] font-semibold tabular-nums ${toneFor(
+                    className={`shrink-0 font-mono text-[12.5px] font-semibold tabular-nums ${toneFor(
                       it.changePct
                     )}`}
                   >
@@ -152,6 +190,6 @@ export default function YourSignals({
           })}
         </div>
       )}
-    </BoardSection>
+    </section>
   );
 }

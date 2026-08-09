@@ -40,6 +40,10 @@ import type { NewsCardData } from "@/lib/news/types";
 import type { CommunityBoardSeed } from "@/lib/community-watchlist-board";
 import type { DiscoverExtras } from "@/lib/discover";
 import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
+import { useAppMode } from "@/lib/useAppMode";
+import { parseScreenerQuery, type ParsedScreen } from "@/lib/screener-nl";
+import { createClient } from "@/lib/supabase/client";
+import { fmtMcap, type CustomFilters } from "@/lib/screener";
 
 /**
  * DISCOVER — rebuilt screen-for-screen to the owner's mockup.
@@ -106,7 +110,27 @@ const TRENDING_WALL_DETAIL =
   TRENDING_WALL.body.split("Club members get ")[1] ?? TRENDING_WALL.body;
 
 /* ── the surface ─────────────────────────────────────────────────────────── */
-export default function DiscoverClient({
+/**
+ * MODE SPLIT (CheatCodeDoors redesign). The CLUB register gets the prototype's
+ * Discover — the "What are you looking for?" query bar, Kai's reading of the
+ * ask, underline tabs (Top matches · Trending · Saved screens), a cards/table
+ * ledger and saved-screen cards — composed in <ClubDiscover /> at the foot of
+ * this file. Every family / fta member keeps the boards-02/15 composition in
+ * <FamilyDiscover /> BYTE-FOR-BYTE.
+ *
+ * `useAppMode` resolves to "family" on the server and the first client paint,
+ * so the family tree never flickers; a club member gets at most one
+ * family-styled frame before the club branch mounts (the hook's documented
+ * trade-off).
+ */
+export default function DiscoverClient(props: DiscoverClientProps) {
+  const mode = useAppMode();
+  if (mode === "club") return <ClubDiscover {...props} />;
+  return <FamilyDiscover {...props} />;
+}
+
+/* ── FAMILY / FTA composition (boards 02 + 15) — unchanged ───────────────── */
+function FamilyDiscover({
   initialNews,
   board,
   extras,
@@ -1286,4 +1310,922 @@ function useClubLedger() {
   }, []);
 
   return { trending, loading };
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * CLUB MODE — the CheatCodeDoors Discover composition.
+ *
+ * SOURCE OF TRUTH: the `isDiscover` branch (club mode) of
+ * `CheatCodeDoors.dc.html` — head "What are you looking for?" / "Plain English
+ * in. A screen out.", a carded query bar, Kai's reading of the ask with
+ * machine-readable chips, key·value filter chips with a dashed "+ Filter",
+ * underline tabs, a Cards|Table segmented toggle over the results, result cards
+ * (mark · name+sym · why line · price/chg), a ruled result table, and
+ * saved-screen cards with a mono badge.
+ *
+ * TOKEN MAP (prototype var → app token): paper→--paper · card→bg-card ·
+ * ink→text-ink · soft→text-soft · sand→border-sand · accent→--accent-solid
+ * (small TEXT takes gold-700, the accent ramp's readable end — same contrast
+ * rule board.tsx documents) · kai→--kai-blue/--kai-blue-soft. Sora→font-display,
+ * IBM Plex Mono→font-mono. Nothing is hard-coded, so club-light flips free.
+ *
+ * HONESTY ADAPTATIONS (real data only — nothing invented):
+ *  · The prototype paints a worked NL query at rest. There is no query until
+ *    the member asks one, so at rest the bar INVITES (prototype placeholder
+ *    verbatim) and the Kai reading card only exists once a real ask was parsed
+ *    — by the same deterministic src/lib/screener-nl.ts parse the screener
+ *    runs, so the chips shown are exactly the filters applied.
+ *  · "Top matches" at rest is the Club's own board (the boards-02 feed — real
+ *    attention, real floors); the moment an ask lands, the real screener takes
+ *    the panel over, seeded with the query. The prototype's mic has no voice
+ *    backend — the slot carries the Kai handoff instead.
+ *  · The cards/table toggle runs on the ranked attention ledger. Its table
+ *    swaps the prototype's Cap/Growth columns (not in the trending contract)
+ *    for Watching/Signal, which the ledger actually carries — watcher counts
+ *    stay floor-gated and the free-tier redactions + unlock line are identical
+ *    to the family branch.
+ *  · Saved-screen cards carry the screen's REAL shape (filter count · sort) —
+ *    the prototype's "14 matches · 3 new" needs a match count no endpoint
+ *    computes, so no number is manufactured for the badge.
+ * ══════════════════════════════════════════════════════════════════════════*/
+
+type ClubTab = "matches" | "trending" | "saved";
+
+const CLUB_PANEL_ID = "club-discover-panel";
+
+/** Ticker-shaped asks go straight to research, like the family masthead's. */
+const TICKERISH = /^[A-Za-z][A-Za-z.\-]{0,5}$/;
+
+function ClubDiscover({
+  initialNews,
+  board,
+  extras,
+  showScreener = true,
+}: DiscoverClientProps) {
+  const router = useRouter();
+  const { openKai } = useKaiSheet();
+
+  const entries = useMemo(() => board?.entries ?? [], [board]);
+  const movers = useMemo(() => extras?.forYouMovers ?? [], [extras]);
+  const beltWatch = useMemo(() => extras?.beltWatch ?? [], [extras]);
+  const contributions = extras?.contributions ?? [];
+  const reports = extras?.reports ?? [];
+
+  const { trending, loading } = useClubLedger();
+  const rows = useMemo(() => trending?.rows ?? [], [trending]);
+
+  const [tab, setTab] = useState<ClubTab>("matches");
+  const [draft, setDraft] = useState("");
+  /** The last plain-English ask. null = none yet — the honest default state. */
+  const [query, setQuery] = useState<string | null>(null);
+  const [seedScreenId, setSeedScreenId] = useState<string | null>(null);
+  /** Flips on the first real ask / "+ Filter" / saved-screen run, and the
+   *  screener owns the matches panel from then on (its universe loads once). */
+  const [screenerOn, setScreenerOn] = useState(false);
+
+  const parsed = useMemo(
+    () => (query ? parseScreenerQuery(query) : null),
+    [query]
+  );
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const t = draft.trim();
+    if (!t) return;
+    if (TICKERISH.test(t)) {
+      router.push(`/research/${encodeURIComponent(t.toUpperCase())}`);
+      return;
+    }
+    // Kid wall: the screener door stays shut, exactly as the server resolved.
+    if (!showScreener) return;
+    setQuery(t);
+    setSeedScreenId(null);
+    setScreenerOn(true);
+    setTab("matches");
+  }
+
+  function clearAsk() {
+    setDraft("");
+    setQuery(null);
+    setSeedScreenId(null);
+    setScreenerOn(false);
+  }
+
+  function runSavedScreen(id: string) {
+    setQuery(null);
+    setSeedScreenId(id);
+    setScreenerOn(true);
+    setTab("matches");
+  }
+
+  const tabs: { key: ClubTab; label: string }[] = [
+    { key: "matches", label: "Top matches" },
+    { key: "trending", label: "Trending" },
+    ...(showScreener
+      ? [{ key: "saved" as const, label: "Saved screens" }]
+      : []),
+  ];
+  const activeTab: ClubTab = tabs.some((t) => t.key === tab) ? tab : "matches";
+
+  return (
+    <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">
+      <header>
+        {/* Prototype head: Sora 800 24/1.1 -.02em + a 13px soft promise line. */}
+        <h1 className="font-display text-[24px] font-extrabold leading-[1.1] tracking-[-0.02em] text-ink">
+          What are you looking for?
+        </h1>
+        <p className="mt-[5px] text-[13px] leading-normal text-soft">
+          Plain English in. A screen out.
+        </p>
+
+        {/* The query bar — the prototype's card (16px radius, sand hairline,
+            13×15 padding), as a REAL input. The mic slot carries the Kai
+            handoff (no voice backend exists), and a typed ask shows the run
+            arrow in the readable end of the accent ramp. */}
+        <form onSubmit={submit} role="search" className="mt-4">
+          <div className="flex items-center gap-2.5 rounded-[16px] border border-sand bg-card px-[15px] py-[13px]">
+            <Search className="h-[17px] w-[17px] shrink-0 text-soft" aria-hidden />
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Search a ticker, or describe what you want…"
+              aria-label="Search a ticker, or describe a screen in plain English"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-soft/80"
+            />
+            {(screenerOn || query) && (
+              <button
+                type="button"
+                onClick={clearAsk}
+                aria-label="Clear the ask and go back to the board"
+                className="f0-focus shrink-0 rounded-full p-1 text-soft transition-colors hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            {draft.trim() ? (
+              <button
+                type="submit"
+                aria-label="Run it"
+                className="f0-focus f0-press shrink-0 rounded-full p-1 text-gold-700"
+              >
+                <ArrowRight className="h-[17px] w-[17px]" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openKai({ chip: "Discover", query: null })}
+                aria-label="Ask Kai"
+                className="f0-focus f0-press shrink-0 rounded-full p-1 text-kai-600 dark:text-kai-300"
+              >
+                <Sparkles className="h-[17px] w-[17px]" />
+              </button>
+            )}
+          </div>
+        </form>
+
+        {/* Kai's reading — ONLY once a real ask exists. Chips are the machine
+            form of the same deterministic parse the screener below applies. */}
+        {query && parsed && <KaiReadingCard query={query} parsed={parsed} />}
+      </header>
+
+      <ClubTabs tabs={tabs} value={activeTab} onChange={setTab} />
+
+      <div
+        id={CLUB_PANEL_ID}
+        role="tabpanel"
+        aria-labelledby={`club-discover-tab-${activeTab}`}
+        className="mt-4"
+      >
+        {activeTab === "matches" &&
+          (screenerOn && showScreener ? (
+            <ScreenerSurface
+              embedded
+              nlSeed={query ?? undefined}
+              seedScreenId={seedScreenId}
+            />
+          ) : (
+            <>
+              {/* The prototype's filter row at rest: no filters exist yet, so
+                  the row is honestly just its dashed "+ Filter" tail — the
+                  door into the full screener. */}
+              {showScreener && (
+                <div className="mb-5 flex flex-wrap gap-[7px]">
+                  <button
+                    type="button"
+                    onClick={() => setScreenerOn(true)}
+                    className="f0-focus f0-press rounded-[10px] border border-dashed border-sand px-2.5 py-[7px] text-[11px] font-semibold text-soft transition-colors hover:border-accent hover:text-ink"
+                  >
+                    + Filter
+                  </button>
+                </div>
+              )}
+              {/* With no ask made, the member's "top matches" are what the
+                  Club itself surfaces — the boards-02 feed, every floor and
+                  founding state intact. */}
+              <ForYouPanel
+                rows={rows}
+                loading={loading}
+                movers={movers}
+                beltWatch={beltWatch}
+                blackBelts={extras?.blackBelts ?? 0}
+                initialNews={initialNews}
+              />
+            </>
+          ))}
+
+        {activeTab === "trending" && (
+          <ClubTrendingPanel
+            trending={trending}
+            rows={rows}
+            loading={loading}
+            entries={entries}
+            contributions={contributions}
+            reports={reports}
+          />
+        )}
+
+        {activeTab === "saved" && showScreener && (
+          <ClubSavedScreens onRun={runSavedScreen} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── the underline tab row ───────────────────────────────────────────────── */
+/**
+ * Prototype: 20px gaps on a sand rule; the live tab holds a 2px accent
+ * underline. The prototype paints the live LABEL raw accent too — at 13px on
+ * paper that fails contrast, so the label takes gold-700 (the accent ramp's
+ * text end, per the board.tsx rule) while the underline keeps the full accent.
+ */
+function ClubTabs({
+  tabs,
+  value,
+  onChange,
+}: {
+  tabs: { key: ClubTab; label: string }[];
+  value: ClubTab;
+  onChange: (t: ClubTab) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Discover views"
+      className="club2-track mt-5 flex gap-5 overflow-x-auto border-b border-sand"
+    >
+      {tabs.map((t) => {
+        const on = t.key === value;
+        return (
+          <button
+            key={t.key}
+            id={`club-discover-tab-${t.key}`}
+            role="tab"
+            type="button"
+            aria-selected={on}
+            aria-controls={CLUB_PANEL_ID}
+            onClick={() => onChange(t.key)}
+            className={`f0-focus -mb-px shrink-0 border-b-2 pb-2.5 text-[13px] font-semibold transition-colors ${
+              on
+                ? "border-accent text-gold-700"
+                : "border-transparent text-soft hover:text-ink"
+            }`}
+          >
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Kai's reading of the ask ────────────────────────────────────────────── */
+/**
+ * Prototype: a kai-hairlined, kai-tinted card — the sentence, a "KAI READ THAT
+ * AS" mark, and machine chips. The chips here carry the prototype's key·value
+ * filter-chip form (uppercase key, mono accent value) because they ARE the
+ * editable filters: the screener below receives exactly this parse, and its
+ * own chip row is where they are edited/removed.
+ */
+function KaiReadingCard({
+  query,
+  parsed,
+}: {
+  query: string;
+  parsed: ParsedScreen;
+}) {
+  const pairs = clubFilterPairs(parsed);
+  return (
+    <div
+      className="mt-3 rounded-[16px] border p-3.5"
+      style={{
+        borderColor: "color-mix(in srgb, var(--kai-blue) 55%, var(--sand))",
+        backgroundColor: "var(--kai-blue-soft)",
+      }}
+    >
+      <p className="text-[13.5px] font-medium leading-normal text-ink [text-wrap:pretty]">
+        {query}
+      </p>
+      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-kai-600 dark:text-kai-300">
+        Kai read that as
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {pairs.length > 0 ? (
+          pairs.map((p) => (
+            <span
+              key={`${p.k}-${p.v}`}
+              className="flex items-center gap-1.5 rounded-[8px] border border-sand bg-card px-[9px] py-[5px]"
+            >
+              <span className="text-[10px] uppercase tracking-[0.08em] text-soft">
+                {p.k}
+              </span>
+              <span className="font-mono text-[11px] font-semibold text-gold-700">
+                {p.v}
+              </span>
+            </span>
+          ))
+        ) : (
+          // Nothing structured was recognised — the screener falls back to a
+          // name search, and the chip says so instead of inventing a filter.
+          <span className="rounded-[8px] border border-sand bg-card px-[9px] py-[5px] font-mono text-[11px] text-ink">
+            keyword search
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The machine form of a parse — one key·value pair per filter it produced,
+ * matching src/lib/screener-nl.ts output field for field. Purely derived;
+ * nothing here can disagree with what the screener applies.
+ */
+function clubFilterPairs(parsed: ParsedScreen): { k: string; v: string }[] {
+  const f = parsed.filters;
+  const out: { k: string; v: string }[] = [];
+  const usd = (n: number) => (n >= 1e6 ? fmtMcap(n) : `$${n.toLocaleString()}`);
+  const range = (
+    min: number | null | undefined,
+    max: number | null | undefined
+  ) =>
+    min != null && max != null
+      ? `${usd(min)}–${usd(max)}`
+      : min != null
+        ? `> ${usd(min)}`
+        : `< ${usd(max as number)}`;
+  if (f.sector)
+    out.push({
+      k: "Sector",
+      v: f.subsector ? `${f.sector} · ${f.subsector}` : f.sector,
+    });
+  if (f.type)
+    out.push({ k: "Type", v: f.type === "etf" ? "ETFs" : "Common stock" });
+  if (f.exchange) out.push({ k: "Exchange", v: f.exchange });
+  if (f.minMcap != null || f.maxMcap != null)
+    out.push({ k: "Mkt cap", v: range(f.minMcap, f.maxMcap) });
+  if (f.minPrice != null || f.maxPrice != null)
+    out.push({ k: "Price", v: range(f.minPrice, f.maxPrice) });
+  if (f.minChg1d != null) out.push({ k: "1d move", v: `> ${f.minChg1d}%` });
+  if (f.minChg5d != null) out.push({ k: "5d move", v: `> ${f.minChg5d}%` });
+  if (f.minChg1m != null) out.push({ k: "1m move", v: `> ${f.minChg1m}%` });
+  if (f.minChg3m != null) out.push({ k: "3m move", v: `> ${f.minChg3m}%` });
+  if (f.minVolRatio != null)
+    out.push({ k: "Rel vol", v: `> ${f.minVolRatio}×` });
+  if (f.rsiMax != null) out.push({ k: "RSI", v: `< ${f.rsiMax}` });
+  if (f.rsiMin != null) out.push({ k: "RSI", v: `> ${f.rsiMin}` });
+  if (f.emaTrend) out.push({ k: "Trend", v: EMA_LABELS[f.emaTrend] });
+  if (f.nearHigh) out.push({ k: "52w", v: "Near high" });
+  if (f.nearLow) out.push({ k: "52w", v: "Near low" });
+  if (f.minGap != null) out.push({ k: "Gap", v: `> ${f.minGap}%` });
+  if (f.maxGap != null) out.push({ k: "Gap", v: `< ${f.maxGap}%` });
+  const kw = (parsed.leftover || "").replace(/\s+/g, " ").trim();
+  if (kw && parsed.matched.length > 0) out.push({ k: "Keyword", v: kw });
+  return out;
+}
+
+const EMA_LABELS: Record<NonNullable<CustomFilters["emaTrend"]>, string> = {
+  above20: "> 20-day EMA",
+  below20: "< 20-day EMA",
+  above50: "> 50-day EMA",
+  below50: "< 50-day EMA",
+  above2050: "> 20 & 50 EMA",
+};
+
+/* ── TRENDING, in the prototype's result language ────────────────────────── */
+/**
+ * The same ranked attention ledger the family branch reads, drawn as the
+ * prototype's results: a Cards|Table segmented toggle, result cards (38px mark
+ * · Sora name + mono sym · why line · price/chg), or a ruled five-column table.
+ * The free-cap redactions, the unlock line, the compliance disclaimer and the
+ * conviction / discussed / research tails are IDENTICAL data to the family
+ * panel — only the drawing changed.
+ */
+function ClubTrendingPanel({
+  trending,
+  rows,
+  loading,
+  entries,
+  contributions,
+  reports,
+}: {
+  trending: TrendingResponse | null;
+  rows: TrendingRow[];
+  loading: boolean;
+  entries: CommunityBoardSeed["entries"];
+  contributions: DiscoverExtras["contributions"];
+  reports: DiscoverExtras["reports"];
+}) {
+  const [view, setView] = useState<"cards" | "table">("cards");
+
+  const intel = useMemo(() => {
+    const m = new Map<string, TrendingRow>();
+    for (const r of rows) m.set(r.ticker.toUpperCase(), r);
+    return m;
+  }, [rows]);
+
+  // ONE batched quote request for the discussed rows the ledger doesn't price.
+  const extraTickers = useMemo(() => {
+    const s = new Set<string>();
+    entries.forEach((e) => e.ticker && s.add(e.ticker.toUpperCase()));
+    return Array.from(s);
+  }, [entries]);
+
+  const [quotes, setQuotes] = useState<Record<string, MarketQuote>>({});
+  useEffect(() => {
+    if (!extraTickers.length) return;
+    const ctrl = new AbortController();
+    fetchQuotes(extraTickers, ctrl.signal).then(setQuotes).catch(() => {});
+    return () => ctrl.abort();
+  }, [extraTickers]);
+
+  const discussed = useMemo(
+    () =>
+      [...entries]
+        .sort((a, b) => (b.comment_count ?? 0) - (a.comment_count ?? 0))
+        .filter((e) => (e.comment_count ?? 0) > 0)
+        .slice(0, 6),
+    [entries]
+  );
+
+  const stanced = useMemo(
+    () => rows.filter((r) => r.sentiment?.bullPct != null),
+    [rows]
+  );
+  const mostBullish = useMemo(
+    () =>
+      [...stanced]
+        .sort((a, b) => (b.sentiment!.bullPct ?? 0) - (a.sentiment!.bullPct ?? 0))
+        .slice(0, 3),
+    [stanced]
+  );
+  const mostBearish = useMemo(
+    () =>
+      [...stanced]
+        .sort((a, b) => (a.sentiment!.bullPct ?? 0) - (b.sentiment!.bullPct ?? 0))
+        .slice(0, 3),
+    [stanced]
+  );
+
+  // The free cap, straight from the server's own account of it — same
+  // redaction contract as the family branch.
+  const freeCap = trending?.freeCap;
+  const totalCount = trending?.totalCount;
+  const withheldRanks = useMemo(() => {
+    if (!trending?.locked || freeCap == null || totalCount == null) return [];
+    const n = totalCount - freeCap;
+    if (n <= 0) return [];
+    return Array.from({ length: n }, (_, i) => freeCap + i + 1);
+  }, [trending?.locked, freeCap, totalCount]);
+
+  return (
+    <>
+      {/* Prototype toolbar: the 132px segmented Cards|Table on a sand well.
+          The prototype hangs a "Sort ▾" beside it; this ledger's order is the
+          server's rank, so the line STATES the sort instead of faking a menu. */}
+      <div className="flex items-center gap-2.5">
+        <div
+          role="group"
+          aria-label="Result layout"
+          className="flex w-[132px] gap-1 rounded-[11px] bg-sand p-[3px]"
+        >
+          {(["cards", "table"] as const).map((v) => {
+            const on = view === v;
+            return (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setView(v)}
+                className={`f0-focus flex-1 rounded-[9px] py-[7px] text-[11.5px] font-semibold transition-colors ${
+                  on ? "bg-card text-ink" : "text-soft hover:text-ink"
+                }`}
+              >
+                {v === "cards" ? "Cards" : "Table"}
+              </button>
+            );
+          })}
+        </div>
+        <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.14em] text-soft">
+          {loading
+            ? "By Club signal"
+            : `${rows.length} ${rows.length === 1 ? "name" : "names"} · by Club signal`}
+        </span>
+      </div>
+
+      {loading ? (
+        <div className="mt-3.5 flex flex-col gap-2.5" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex items-center gap-3 rounded-[15px] border border-sand bg-card p-[13px]"
+            >
+              <Bone w={38} h={38} className="!rounded-[12px]" />
+              <span className="flex-1">
+                <Bone w={120} h={11} />
+                <Bone w={90} h={9} className="mt-2" />
+              </span>
+              <Bone w={54} h={11} />
+            </div>
+          ))}
+          <span className="sr-only">Loading the ledger</span>
+        </div>
+      ) : rows.length === 0 ? (
+        <FoundingLine className="mt-3.5">
+          The Club hasn&apos;t formed a read yet. Rate a ticker on the{" "}
+          <Link
+            href="/watchlist/community"
+            className="font-bold text-gold-700 underline decoration-1 underline-offset-2"
+          >
+            Community Watchlist
+          </Link>{" "}
+          and you&apos;ll be the first signal on this board.
+        </FoundingLine>
+      ) : view === "cards" ? (
+        <div className="mt-3.5 flex flex-col gap-2.5">
+          {rows.map((r) => (
+            <ClubResultCard key={r.ticker} r={r} />
+          ))}
+        </div>
+      ) : (
+        <ClubLedgerTable rows={rows} />
+      )}
+
+      {/* THE CAP, DRAWN HONESTLY — identical contract to the family branch:
+          real rank numbers beside obscured bars, never invented tickers. */}
+      {withheldRanks.length > 0 && (
+        <>
+          <p className="sr-only">
+            {withheldRanks.length} further{" "}
+            {withheldRanks.length === 1 ? "rank is" : "ranks are"} withheld from
+            this ledger.
+          </p>
+          <div
+            role="presentation"
+            aria-hidden
+            className="pointer-events-none mt-[7px] flex flex-col gap-[7px]"
+          >
+            {withheldRanks.map((rank) => (
+              <RedactedSignalRow key={rank} rank={rank} />
+            ))}
+          </div>
+          <UnlockLine cta={TRENDING_WALL.cta}>
+            {freeCap} of {totalCount} names shown. The Club opens{" "}
+            {TRENDING_WALL_DETAIL}
+          </UnlockLine>
+        </>
+      )}
+
+      {rows.length > 0 && (
+        <p className="mt-3 font-mono text-[10px] leading-relaxed text-soft">
+          {trending?.disclaimer ??
+            "Attention inside the Club — not a recommendation."}
+          {" · Prices delayed ~15 min."}
+        </p>
+      )}
+
+      {(mostBullish.length > 0 || mostBearish.length > 0) && (
+        <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <ConvictionCard title="Club's most bullish" rows={mostBullish} tone="bull" />
+          <ConvictionCard title="Club's most bearish" rows={mostBearish} tone="bear" />
+        </div>
+      )}
+
+      {/* MOST DISCUSSED — same data and rows as the family branch. */}
+      <section className="mt-7" aria-labelledby="club-discover-discussed">
+        <SectionMark
+          id="club-discover-discussed"
+          label="Most discussed"
+          gloss="Where the Club is actually talking"
+        />
+        {discussed.length === 0 ? (
+          <FoundingLine className="mt-3">
+            No thread has caught yet. Champion an idea on the{" "}
+            <Link
+              href="/watchlist/community"
+              className="font-bold text-gold-700 underline decoration-1 underline-offset-2"
+            >
+              Community Watchlist
+            </Link>{" "}
+            and the conversation starts here.
+          </FoundingLine>
+        ) : (
+          <div className="mt-2.5 flex flex-col gap-[7px]">
+            {discussed.map((e) => {
+              const t = e.ticker.toUpperCase();
+              const q = quotes[t];
+              const row = intel.get(t);
+              return (
+                <SignalRow
+                  key={e.id}
+                  ticker={e.ticker}
+                  name={e.company_name}
+                  price={q?.price ?? row?.price ?? e.latest_close ?? null}
+                  changePct={q?.changePercent ?? row?.changePct ?? null}
+                  signal={row?.sentiment?.bullPct ?? null}
+                  comments={e.comment_count ?? 0}
+                />
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* TOP RESEARCH — reused wholesale. */}
+      <section className="mt-7" aria-labelledby="club-discover-research">
+        <SectionMark
+          id="club-discover-research"
+          label="Top research"
+          gloss="The thinking behind the names"
+        />
+        <ResearchCards contributions={contributions} reports={reports} />
+      </section>
+    </>
+  );
+}
+
+/**
+ * The prototype's result card: 38px mark · Sora-bold name with the mono sym on
+ * its baseline · a soft why-line · price and day move right-aligned in mono.
+ * The why-line is REAL: watcher count (floor-gated, "New on the board" below
+ * the floor) and the bull share when anyone has positioned. Grey on purpose —
+ * green/red stay reserved for the price move beside it.
+ */
+function ClubResultCard({ r }: { r: TrendingRow }) {
+  const tone = changeTone(r.changePct ?? undefined);
+  const watchers = r.watchers ?? 0;
+  const shown = watchers >= FLOORS.tickerParticipants;
+  const why = [
+    shown ? `${watchers.toLocaleString()} watching` : "New on the board",
+    r.sentiment?.bullPct != null ? `${r.sentiment.bullPct}% bullish` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <Link
+      href={`/research/${encodeURIComponent(r.ticker)}`}
+      className="f0-focus flex items-center gap-3 rounded-[15px] border border-sand bg-card p-[13px] transition-colors hover:border-accent"
+    >
+      <CompanyLogo
+        symbol={r.ticker}
+        name={r.company}
+        size={38}
+        rounded="rounded-[12px]"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline gap-[7px]">
+          <span className="truncate font-display text-[14px] font-bold leading-tight text-ink">
+            {r.company ?? r.ticker.toUpperCase()}
+          </span>
+          <span className="shrink-0 font-mono text-[11px] text-soft">
+            {r.ticker.toUpperCase()}
+          </span>
+        </span>
+        <span className="mt-1 block truncate text-[11.5px] leading-snug text-soft">
+          {why}
+        </span>
+      </span>
+      <span className="shrink-0 text-right">
+        <span className="block font-mono text-[13px] font-semibold tabular-nums text-ink">
+          {formatPrice(r.price ?? undefined) || "—"}
+        </span>
+        <span
+          className={`mt-[5px] block font-mono text-[11px] tabular-nums ${
+            tone === "up"
+              ? "text-price-up"
+              : tone === "down"
+                ? "text-price-down"
+                : "text-soft"
+          }`}
+        >
+          {formatChangePct(r.changePct ?? undefined) || "—"}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * The prototype's table view — one carded grid, 9px uppercase headers, mono
+ * right-aligned readings. Its Cap/Growth columns aren't in the trending
+ * contract, so the table carries what the ledger really knows: Watching
+ * (floor-gated → an honest dash) and Signal (the lime sentiment ramp — never
+ * the price colours).
+ */
+const LEDGER_GRID =
+  "grid grid-cols-[1.2fr_1fr_0.8fr_0.9fr_0.8fr] items-center gap-1.5";
+
+function ClubLedgerTable({ rows }: { rows: TrendingRow[] }) {
+  return (
+    <div className="mt-3.5 overflow-hidden rounded-[16px] border border-sand bg-card">
+      <div className={`${LEDGER_GRID} border-b border-sand px-[13px] py-[11px]`}>
+        {(["Ticker", "Price", "Chg", "Watching", "Signal"] as const).map(
+          (h, i) => (
+            <span
+              key={h}
+              className={`font-mono text-[9px] uppercase tracking-[0.1em] text-soft ${
+                i > 0 ? "text-right" : ""
+              }`}
+            >
+              {h}
+            </span>
+          )
+        )}
+      </div>
+      {rows.map((r) => {
+        const tone = changeTone(r.changePct ?? undefined);
+        const watchers = r.watchers ?? 0;
+        const shown = watchers >= FLOORS.tickerParticipants;
+        return (
+          <Link
+            key={r.ticker}
+            href={`/research/${encodeURIComponent(r.ticker)}`}
+            className={`f0-focus ${LEDGER_GRID} border-b border-sand px-[13px] py-3 transition-colors last:border-b-0 hover:bg-sand/40`}
+          >
+            <span className="flex min-w-0 items-center gap-[7px]">
+              <CompanyLogo
+                symbol={r.ticker}
+                name={r.company}
+                size={22}
+                rounded="rounded-[7px]"
+              />
+              <span className="truncate font-display text-[12px] font-bold text-ink">
+                {r.ticker.toUpperCase()}
+              </span>
+            </span>
+            <span className="text-right font-mono text-[11.5px] tabular-nums text-ink">
+              {formatPrice(r.price ?? undefined) || "—"}
+            </span>
+            <span
+              className={`text-right font-mono text-[11.5px] tabular-nums ${
+                tone === "up"
+                  ? "text-price-up"
+                  : tone === "down"
+                    ? "text-price-down"
+                    : "text-soft"
+              }`}
+            >
+              {formatChangePct(r.changePct ?? undefined) || "—"}
+            </span>
+            <span className="text-right font-mono text-[11.5px] tabular-nums text-soft">
+              {shown ? watchers.toLocaleString() : "—"}
+            </span>
+            <span
+              className={`text-right font-mono text-[11.5px] tabular-nums ${
+                r.sentiment?.bullPct != null ? "text-sentiment" : "text-soft"
+              }`}
+            >
+              {r.sentiment?.bullPct != null
+                ? `${r.sentiment.bullPct}%`
+                : "—"}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── SAVED SCREENS ───────────────────────────────────────────────────────── */
+/**
+ * The prototype's saved-screen cards: name over a mono meta line, a mono badge
+ * on an accent-tinted ground. Every row is a REAL screener_saved_screens read
+ * (own-row RLS; free members keep reading what they saved — only new writes
+ * are metered, at the save control inside the screener). The prototype badges
+ * "14 matches · 3 new"; no endpoint computes a saved screen's match count, so
+ * the meta line carries the screen's real shape instead and the badge is the
+ * action. Running one hands the id to the screener, which re-applies it
+ * through the same path as its own "Your screens" chips.
+ */
+interface SavedScreenLite {
+  id: string;
+  name: string;
+  filters: CustomFilters;
+  sort_key: string;
+  sort_dir: "asc" | "desc";
+}
+
+const CLUB_SORT_LABELS: Record<string, string> = {
+  like_count: "Club signal",
+  mcap: "market cap",
+  price: "price",
+  chg_1d: "1-day move",
+  chg_5d: "5-day move",
+  chg_1m: "1-month move",
+  chg_3m: "3-month move",
+  vol_ratio: "relative volume",
+  rsi14: "RSI",
+  ticker: "ticker",
+};
+
+function countClubFilters(f: CustomFilters): number {
+  return (Object.keys(f) as (keyof CustomFilters)[]).filter(
+    (k) => k !== "q" && f[k] != null && f[k] !== false
+  ).length;
+}
+
+function ClubSavedScreens({ onRun }: { onRun: (id: string) => void }) {
+  const supabase = useMemo(() => createClient(), []);
+  // null = not read yet (skeleton) — distinct from an honest empty list.
+  const [saved, setSaved] = useState<SavedScreenLite[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    supabase
+      .from("screener_saved_screens")
+      .select("id, name, filters, sort_key, sort_dir")
+      .order("used_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!live) return;
+        setSaved(error ? [] : ((data as SavedScreenLite[]) ?? []));
+      });
+    return () => {
+      live = false;
+    };
+  }, [supabase]);
+
+  if (saved === null) {
+    return (
+      <div className="flex flex-col gap-[9px]" aria-busy="true">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-[15px] border border-sand bg-card px-3.5 py-[13px]"
+          >
+            <span className="flex-1">
+              <Bone w={130} h={11} />
+              <Bone w={90} h={9} className="mt-2" />
+            </span>
+            <Bone w={44} h={22} className="!rounded-[7px]" />
+          </div>
+        ))}
+        <span className="sr-only">Loading your saved screens</span>
+      </div>
+    );
+  }
+
+  if (saved.length === 0) {
+    return (
+      <FoundingLine>
+        Nothing kept yet. Build a screen on Top matches and{" "}
+        <span className="font-semibold text-ink">Save screen</span> keeps it
+        here to re-run any day.
+      </FoundingLine>
+    );
+  }
+
+  return (
+    <>
+      <SectionMark
+        label="Saved screens"
+        gloss="Your kept scans — run one against today's market"
+      />
+      <div className="mt-3 flex flex-col gap-[9px]">
+        {saved.map((s) => {
+          const n = countClubFilters(s.filters);
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onRun(s.id)}
+              className="f0-focus f0-press flex w-full items-center gap-3 rounded-[15px] border border-sand bg-card px-3.5 py-[13px] text-left transition-colors hover:border-accent"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px] font-semibold leading-tight text-ink">
+                  {s.name}
+                </span>
+                <span className="mt-[5px] block font-mono text-[11px] text-soft">
+                  {n === 1 ? "1 filter" : `${n} filters`} · by{" "}
+                  {CLUB_SORT_LABELS[s.sort_key] ?? s.sort_key}
+                </span>
+              </span>
+              <span className="shrink-0 rounded-[7px] bg-accent/12 px-2 py-[5px] font-mono text-[10.5px] font-semibold text-gold-700">
+                Run
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
 }

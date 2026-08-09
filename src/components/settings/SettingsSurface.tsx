@@ -7,6 +7,7 @@ import { ArrowLeft, AtSign, Check, ChevronRight } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { useResolvedTheme, useThemePref } from "@/lib/useTheme";
+import { useAppMode } from "@/lib/useAppMode";
 import type { ThemePref } from "@/lib/theme";
 import { deriveRegister } from "@/lib/register";
 import { useEntitlements } from "@/components/entitlements/EntitlementsProvider";
@@ -239,6 +240,10 @@ export default function SettingsSurface() {
   const ent = useEntitlements();
   const [themePref, setThemePrefValue] = useThemePref();
   const resolved = useResolvedTheme();
+  // Appearance is a CLUB-mode control (family is light-only) — see the
+  // Appearance section below. SSR default is "family", so the control appears
+  // after mount for club members rather than flashing for family ones.
+  const appMode = useAppMode();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [familyId, setFamilyId] = useState<string | null>(null);
@@ -530,25 +535,31 @@ export default function SettingsSurface() {
           This is THE dark-mode control for the whole app. setThemePrefValue →
           setThemePref() writes localStorage, stamps <html data-theme> and
           broadcasts, so every open surface re-skins on the same tick. Nothing
-          here is decorative and nothing needs a reload. */}
-      <section className="space-y-2.5 pt-1">
-        <ListHead>Appearance</ListHead>
-        <Card className="space-y-3 rounded-[16px] px-3.5 py-3.5">
-          <SegmentedRail
-            options={THEMES}
-            value={themePref}
-            onChange={setThemePrefValue}
-            ariaLabel="Theme"
-            barClassName="bg-accent"
-            fill
-          />
-          <p className="text-[11px] leading-relaxed text-soft">
-            {themePref === "system"
-              ? `Following your device — currently ${resolved}. Pick Light or Dark to override it.`
-              : `The app is in ${themePref} mode. The change applies everywhere, instantly.`}
-          </p>
-        </Card>
-      </section>
+          here is decorative and nothing needs a reload.
+
+          CLUB MODE ONLY (doors build): the Club defaults dark with this toggle;
+          Family Mode is light-only by design, so showing a control that could
+          never take effect there would be a lie. Policy: src/lib/theme.ts. */}
+      {appMode === "club" && (
+        <section className="space-y-2.5 pt-1">
+          <ListHead>Appearance</ListHead>
+          <Card className="space-y-3 rounded-[16px] px-3.5 py-3.5">
+            <SegmentedRail
+              options={THEMES}
+              value={themePref}
+              onChange={setThemePrefValue}
+              ariaLabel="Theme"
+              barClassName="bg-accent"
+              fill
+            />
+            <p className="text-[11px] leading-relaxed text-soft">
+              {themePref === "system"
+                ? `Following your device — currently ${resolved}. Pick Light or Dark to override it.`
+                : `The app is in ${themePref} mode. The change applies everywhere, instantly.`}
+            </p>
+          </Card>
+        </section>
+      )}
 
       {/* ── NOTIFICATIONS ────────────────────────────────────────────────── */}
       <section className="space-y-2.5 pt-1">

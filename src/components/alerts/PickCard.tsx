@@ -6,7 +6,7 @@ import Ticker from "@/components/ui/Ticker";
 import PriceTrack from "@/components/alerts/PriceTrack";
 import WatchSetupButton from "@/components/alerts/WatchSetupButton";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
-import { StatePill, MetricChip, CondRow } from "@/components/alerts/board";
+import { StatePill, StatGrid, CondRow } from "@/components/alerts/board";
 import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
 import type { TradeAlert, AlertEvent, AlertSetup } from "@/lib/alerts/types";
 import {
@@ -191,11 +191,25 @@ export default function PickCard({
     `. ${entry != null ? `Entry ${money(entry)}, ` : ""}${stop != null ? `stop ${money(stop)}, ` : ""}${target != null ? `target ${money(target)}. ` : ""}` +
     `What has to happen, and what would tell me the read is wrong?`;
 
+  // CheatCodeDoors urgency: a TRIGGERED pick is the HIGH card — 1.5px accent
+  // edge over the accent-soft wash (mixed from --accent-solid so it flips with
+  // the theme). Everything else keeps the medium 1px sand frame.
+  const isHigh = !sample && derived.label === "Triggered";
+
   return (
     <div
       className={`relative overflow-hidden rounded-[20px] border bg-card shadow-sm ${
         sample ? "border-dashed border-sand" : "border-sand"
       }`}
+      style={
+        isHigh
+          ? {
+              borderWidth: 1.5,
+              borderColor: "color-mix(in srgb, var(--accent-solid) 55%, var(--sand))",
+              background: "color-mix(in srgb, var(--accent-solid) 10%, var(--card))",
+            }
+          : undefined
+      }
     >
       {/* at-a-glance state rail down the left edge */}
       <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={{ background: edgeColor }} />
@@ -236,12 +250,19 @@ export default function PickCard({
           <CallPill dir={b.direction} />
         </div>
 
-        {/* 2 · THE ONE-LINE READ */}
+        {/* 2 · THE ONE-LINE READ — urgency-tiered Sora headline (17px high /
+            14.5px medium, per CheatCodeDoors). */}
         {(b.setup_label || b.narrative) && (
-          <p className="mt-4 text-[16px] font-semibold leading-snug tracking-[-0.01em] text-ink">
+          <p
+            className={`mt-4 font-display tracking-[-0.01em] text-ink ${
+              isHigh
+                ? "text-[17px] font-extrabold leading-[1.2]"
+                : "text-[14.5px] font-bold leading-[1.25]"
+            }`}
+          >
             {b.setup_label && b.narrative ? (
               <>
-                <b className="font-bold text-gold-700">{b.setup_label}.</b> {b.narrative}
+                <b className="text-gold-700">{b.setup_label}.</b> {b.narrative}
               </>
             ) : (
               b.narrative || b.setup_label
@@ -266,28 +287,22 @@ export default function PickCard({
             <PriceTrack stop={stop!} entry={entry!} live={live!} target={target!} direction={b.direction} />
           </div>
         ) : (
-          // No full plan geometry — fall back to honest level chips.
+          // No full plan geometry — the CheatCodeDoors stat rows, from the
+          // levels this alert actually stores (a missing leg is a missing cell).
           (entry != null || stop != null || target != null) && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {entry != null && (
-                <MetricChip>
-                  <span className="uppercase tracking-[0.1em]">Entry</span>
-                  <span className="text-ink">{money(entry)}</span>
-                </MetricChip>
-              )}
-              {target != null && (
-                <MetricChip>
-                  <span className="uppercase tracking-[0.1em]">Target</span>
-                  <span className="text-price-up">{money(target)}</span>
-                </MetricChip>
-              )}
-              {stop != null && (
-                <MetricChip>
-                  <span className="uppercase tracking-[0.1em]">Stop</span>
-                  <span className="text-price-down">{money(stop)}</span>
-                </MetricChip>
-              )}
-            </div>
+            <StatGrid
+              className="mt-4"
+              stats={[
+                ...(entry != null ? [{ k: "Entry", v: money(entry) }] : []),
+                ...(stop != null
+                  ? [{ k: "Stop", v: money(stop), tone: "down" as const }]
+                  : []),
+                ...(target != null
+                  ? [{ k: "Target", v: money(target), tone: "up" as const }]
+                  : []),
+                ...(rr != null ? [{ k: "R:R", v: `${rr.toFixed(1)}R` }] : []),
+              ]}
+            />
           )
         )}
 
@@ -332,16 +347,17 @@ export default function PickCard({
           </div>
         )}
 
-        {/* 5 · STATE ROW */}
+        {/* 5 · STATE ROW — the sub-line is the card's "Kai's read", carried in
+            the prototype's quoted kai-blue voice. */}
         <div className="mt-4 flex items-center gap-2.5 border-t border-sand pt-4">
           <StatePill tone={derived.tone} label={derived.label} live={derived.live} />
-          <p className="min-w-0 flex-1 text-[12.5px] leading-snug text-ink/85">
+          <p className="min-w-0 flex-1 text-[12px] leading-[1.5]">
             {conditions.length > 0 && (
               <span className="font-semibold text-ink">
                 {metCount} of {conditions.length} conditions met.{" "}
               </span>
             )}
-            <span className="text-soft">{derived.sub}</span>
+            <span className="text-kai-blue">&ldquo;{derived.sub}&rdquo;</span>
           </p>
         </div>
 

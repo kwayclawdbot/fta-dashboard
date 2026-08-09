@@ -424,10 +424,14 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* CLUB mode — DARK: obsidian base, lighter charcoal cards, cool ink.  */
-/* Only overrides what differs from club-light; gold tints (g50–g500)  */
-/* + accent cascade from [data-mode="club"]. Text-end gold lifted so   */
-/* active-nav text reads on dark. Specificity (0,3,0) wins.            */
+/* CLUB mode — DARK: PURE-BLACK DATA TERMINAL. Transcribed from the    */
+/* owner's definitive phone board ("ChatGPT Image Aug 7 2026,          */
+/* 10_07_23 AM"): a true-black page, dark cool-gray cards ruled by a   */
+/* 1px hairline, WHITE primary text, COOL gray secondary, and the      */
+/* volt orange held for CTAs/highlights. Only overrides what differs   */
+/* from club-light; gold tints (g50–g500) cascade from                 */
+/* [data-mode="club"]. Text-end gold lifted so active-nav text reads   */
+/* on black. Specificity (0,3,0) wins.                                 */
 /*                                                                     */
 /* TWO selectors: data-mode is set on <html> (=:root, the SAME element */
 /* as data-theme) by ModeManager AND on the shell wrapper (a           */
@@ -437,79 +441,74 @@
 /* ------------------------------------------------------------------ */
 :root[data-theme="dark"][data-mode="club"],
 :root[data-theme="dark"] [data-mode="club"] {
-  /* Dark twin, WARMED off the board ("Cheat Code App.dc.html").
+  /* TERMINAL ramp, board-sampled.
      ---------------------------------------------------------------
-     ROOT CAUSE — the board's dark canvas was transcribed literally, and
-     the board's dark canvas is PLUM. Every value in this ramp carried
-     more blue than red: page #0D0B0E, card #17141A, hairline #2A2530,
-     and a text cluster running #EAE6EE → #6E6774 in which R−B measured
-     −4 to −6 all the way down. A negative R−B is the numeric signature
-     of a cool grey. So the club's night mode was a violet-grey app
-     wearing an orange accent, while family-dark next door (#17120B page,
-     #221C14 card) was a genuine warm charcoal. Two dark modes, two
-     temperatures, one product — and the volt orange, which is the whole
-     point of club mode, has to fight a complementary-ish ground every
-     time it lands on one of these surfaces.
+     The previous twin was a WARM charcoal (page #0E0C09, card #191510,
+     text #F4F0EC→#746D60) — a sepia room. The reference board is the
+     opposite temperature and a full step darker: its canvas samples
+     #000–#050A (true black, faint cool cast), its cards sit around
+     #0D0F12 with a #1A1D22 hairline, and every text sample is white or
+     a COOL gray (R−B negative all the way down). So the whole ramp
+     flips cool and the two ends stretch: page drops to #050505, ink
+     rises to #F5F7FA. Family-dark next door keeps its warm charcoal —
+     this block re-skins the CLUB only.
 
-     REMEDY — hold the LUMINANCE of every step and rotate the hue warm.
-     This is a temperature change, not a value change, so no hierarchy
-     moves and nothing has to be re-laid-out: the ramp reads identically
-     in a greyscale screenshot. R−B goes from −6…−1 to +5…+23 across the
-     ramp. The board's plum stays available as a deliberate object where
-     it is wanted; it is no longer the default ground.
+     Contrast (WCAG, on the new grounds):
+       ink   #F5F7FA on card #0D0F12   ≈ 17.6   · on page ≈ 19.2
+       m300  #AEB6C2 on card           ≈  8.9
+       soft/m400 #8E97A5 on card       ≈  6.2
+       m600  #5C6470 on card           ≈  3.1   (faintest label holds 3:1)
+       sand/m700 #1A1D22 on page       ≈  1.4 hairline — visible, quiet */
+  --m50: #F5F7FA;   /* white heading */
+  --m100: #E8EBF0;
+  --m200: #CDD3DC;
+  --m300: #AEB6C2;
+  --m400: #8E97A5;
+  --m500: #79828F;
+  --m600: #5C6470;  /* faintest label */
+  --m700: #1A1D22;  /* border-strong — the board's card hairline */
+  --m800: #14161B;
+  --m900: #0D0F12;  /* card — the board's dark cool gray */
+  --m950: #050505;  /* page bg — true black */
 
-     Measured, OLD → NEW (WCAG contrast):
-       ink   #F4F0EC on card   16.09 → 16.02   (unchanged value, new card)
-       ink                on page   17.29 → 17.23
-       m100  on card             14.81 → 14.79
-       m200  on card             12.89 → 12.71
-       m300  on card             10.48 → 10.26
-       m400  on card              7.10 →  6.92
-       soft/m500 on card          5.31 →  5.18   · on page 5.71 → 5.57
-       m600  on card              3.35 →  3.55
-       sand/m700 hairline on page 1.31 →  1.37   · on card 1.22 → 1.27
-       m800  on page              1.18 →  1.20
-       card  on page              1.07 →  1.08
-     Body copy (ink, m300, m400, soft) stays far above AA; the faintest
-     label step m600 IMPROVES past 3:1; and every hairline gains a little
-     definition rather than losing it. Nothing regressed. */
-  --m50: #F4F0EC;   /* off-white heading */
-  --m100: #EDE7DF;
-  --m200: #DED7CB;
-  --m300: #C9C2B4;
-  --m400: #A79F90;
-  --m500: #908879;
-  --m600: #746D60;
-  --m700: #2E2A21;  /* border-strong */
-  --m800: #232019;
-  --m900: #191510;  /* card — lifted warm charcoal */
-  --m950: #0E0C09;  /* page bg — warm near-black */
-
-  --paper: #0E0C09;
-  --ink: #F4F0EC;
-  --soft: #908879;
-  --sand: #2E2A21;
-  --card: #191510;
-  --chip-amber: rgba(255, 138, 0, 0.16);
+  --paper: #050505;
+  --ink: #F5F7FA;
+  --soft: #8E97A5;
+  --sand: #1A1D22;
+  --card: #0D0F12;
+  --chip-amber: rgba(255, 107, 0, 0.16);
   --chip-sky: rgba(56, 189, 248, 0.15);
-  --chip-green: rgba(52, 211, 153, 0.15);
+  --chip-green: rgba(34, 197, 94, 0.16);
 
-  --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.55);
-  --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.66);
+  --sh-soft: 0 1px 2px rgba(0, 0, 0, 0.6), 0 6px 18px rgba(0, 0, 0, 0.55);
+  --sh-lift: 0 2px 6px rgba(0, 0, 0, 0.6), 0 18px 44px rgba(0, 0, 0, 0.7);
 
-  --sb-track: #0E0C09;
-  --sb-thumb: #2E2A21;
-  --sb-thumb-hover: #FF7A1A;
+  --sb-track: #050505;
+  --sb-thumb: #1A1D22;
+  --sb-thumb-hover: #FF6B00;
 
-  --urgency-bg: rgba(255, 138, 0, 0.12);
-  --urgency-border: rgba(255, 138, 0, 0.24);
+  --urgency-bg: rgba(255, 107, 0, 0.12);
+  --urgency-border: rgba(255, 107, 0, 0.24);
 
-  /* Off, on the warm-black club card. Same luminance as the plum pair it
-     replaces (edge-on-bg 1.20 → 1.21), rotated warm with the ramp. */
-  --off-bg: #262118;
-  --off-edge: #352F25;
+  /* Off, on the terminal card: a quiet raised cool chip, never a smear. */
+  --off-bg: #14161B;
+  --off-edge: #1F2229;
 
-  /* Lift the text-end of the orange ramp so active-nav text reads on dark. */
+  /* Brand accent — the board's CTA orange ("Create Opinion" fill samples in
+     the #FF6B00 range on black; club-light keeps its own #FF7A1A tuning). */
+  --accent-a: #FF6B00;
+  --accent-b: #FF8A2E;
+  --accent-solid: #FF6B00;
+  --accent-strong: #FF8A2E;
+
+  /* Kai — the board writes Kai's marks in a bright violet on black ("KAI",
+     "KAI ANALYSIS", the attention CTA). Base --kai-blue #2563FF lands ≈3.4:1
+     on the terminal card; this lift is the board's violet AND clears AA-large
+     everywhere Kai speaks. Same variable, so every Kai surface follows. */
+  --kai-blue: #7C6BFF;
+  --kai-blue-soft: rgba(124, 107, 255, 0.12);
+
+  /* Lift the text-end of the orange ramp so active-nav text reads on black. */
   --g600: #FF8A47;
   --g700: #FF9A5C;  /* active text on dark tints */
   --g800: #FFB380;
@@ -1340,8 +1339,11 @@ body {
    leaning pink for the downside. Hue holds across BOTH themes; only the
    ramp step moves. */
 [data-mode="club"] { --price-up: #097F46; --price-down: #C41F48; }
+/* Club-DARK is the pure-black terminal: the board draws its price marks in
+   vivid signal green/red (#22C55E-family up, hot #F23645 down) and uses them
+   generously — both clear AA on the black page and the #0D0F12 card. */
 :root[data-theme="dark"][data-mode="club"],
-:root[data-theme="dark"] [data-mode="club"] { --price-up: #2FBC66; --price-down: #FF4D6D; }
+:root[data-theme="dark"] [data-mode="club"] { --price-up: #22C55E; --price-down: #F23645; }
 
 /* --- Hero field, dark ---------------------------------------------- */
 /* f0-hero-field was cool obsidian (#0B0D11) in BOTH themes — on the warm

@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  APPEARANCE_COOKIE,
+  applyResolved,
+  getStoredThemePref,
+  resolveForPolicy,
+  type AppearancePolicy,
+} from "@/lib/theme";
 
 export type AppMode = "club" | "family" | "fta";
 
@@ -41,7 +48,26 @@ function clearFavicon() {
     .forEach((el) => el.remove());
 }
 
-export default function ModeManager({ mode }: { mode: AppMode }) {
+export default function ModeManager({
+  mode,
+  appearance,
+}: {
+  mode: AppMode;
+  /**
+   * The member's APPEARANCE POLICY (club: dark default + honored toggle ·
+   * family: light only). Stamped into a cookie so the root layout's pre-paint
+   * script applies the right default on the next load, and enforced
+   * immediately here so a family surface can never sit dark (and a club
+   * member's first session lands dark without waiting for a reload).
+   */
+  appearance?: AppearancePolicy;
+}) {
+  useEffect(() => {
+    if (!appearance) return;
+    document.cookie = `${APPEARANCE_COOKIE}=${appearance}; path=/; max-age=31536000; SameSite=Lax`;
+    applyResolved(resolveForPolicy(appearance, getStoredThemePref()));
+  }, [appearance]);
+
   useEffect(() => {
     const root = document.documentElement;
     const prev = root.getAttribute("data-mode");

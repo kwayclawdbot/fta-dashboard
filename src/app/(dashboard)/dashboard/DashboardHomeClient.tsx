@@ -51,6 +51,7 @@ import TeenHomeRails from "@/components/family/TeenHomeRails";
 import KidTodayHero from "@/components/family/KidTodayHero";
 import { getFamilyTier } from "@/lib/tier";
 import { isSoloProfile, deriveRegister, type Register } from "@/lib/register";
+import { useAppMode } from "@/lib/useAppMode";
 import { Meter, TabRail } from "@/components/f0/parts";
 
 /** Next scheduled academy class, for the FTA premium home rail. */
@@ -206,7 +207,11 @@ export default function DashboardHomeClient() {
   const [profileNeedsAttention, setProfileNeedsAttention] = useState(false);
   // Solo (individual, non-parent) member — a family of one. De-parents the Home
   // copy (setup card, empty state, This Week) without any data-model change.
+  // NOTE: copy only — the club/family COMPOSITION branch reads the shell's
+  // resolved mode below, never this questionnaire-derived flag.
   const [isSolo, setIsSolo] = useState(false);
+  // The shell's resolved display mode (data-mode) — the one composition verdict.
+  const appMode = useAppMode();
   // Register (kid/teen/adult) for the club-first Home v2, and the active
   // 5-Day Challenge pass window for its high-priority challenge slot.
   const [register, setRegister] = useState<Register>("adult");
@@ -520,11 +525,16 @@ export default function DashboardHomeClient() {
     return <FreeHome firstName={firstName} />;
   }
 
-  // CLUB (individual / solo) mode — the community-first Home (R3). Family-mode
-  // households fall through to the academy-first layout below, unchanged. FTA
-  // solo owners keep the club-first Home too; their gold Academy rail lives on
-  // the FTA hub, and the club-first surface is the owner-approved default.
-  if (isSolo) {
+  // CLUB mode — the community-first Home (R3 → doors build). THE SHELL'S MODE
+  // IS THE VERDICT: DashboardShell resolves club/family once (register lock →
+  // clubView → door → roster-corrected solo) and stamps data-mode; this surface
+  // reads that instead of re-deriving solo from the questionnaire JSON. The two
+  // used to disagree — isSoloProfile(fpRow) said "solo" for a parent whose
+  // roster plainly had members, so the club home rendered inside a family
+  // shell. One resolver, one answer. Family-mode households fall through to the
+  // academy-first layout below, unchanged; FTA members in club mode keep the
+  // club-first Home (their gold Academy rail lives on the FTA hub).
+  if (appMode === "club") {
     const learning =
       home?.program && home.today
         ? {

@@ -30,20 +30,19 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import CompanyLogo from "@/components/fic/CompanyLogo";
-import Ticker from "@/components/ui/Ticker";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import PickCard from "@/components/alerts/PickCard";
 import { FoundingState } from "@/components/family/canvas";
 import KaiWatch from "@/components/kai/KaiWatch";
 import WatchRail from "@/components/watch/WatchRail";
-import ProximityMeter from "@/components/watch/ProximityMeter";
 import {
   Card,
   CardLink,
   AccentCard,
   Dial,
   StatePill,
-  MetricChip,
+  StatGrid,
+  LifecycleBar,
   CountPill,
   NavCard,
   CondRow,
@@ -750,72 +749,79 @@ function DevelopingRow({
         )}
         <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
       </div>
-      <ProximityMeter
+      <LifecycleBar
         className="mt-2.5"
-        progress={detail?.progress}
+        pct={barPct(detail?.progress, WATCH_BAR[state])}
         tone={meta.tone}
-        metric={typeof detail?.metric === "string" ? detail.metric : null}
+        label={`Watch lifecycle: ${meta.label}`}
       />
+      {typeof detail?.metric === "string" && (
+        <p className="mt-1.5 font-mono text-[10.5px] leading-snug text-soft/80">
+          {detail.metric}
+        </p>
+      )}
     </Card>
   );
 }
 
+/**
+ * CheatCodeDoors' WATCHING lifecycle row: ticker + state chip, the 5px
+ * lifecycle-position bar, a one-line status, "Kai: …" read, then the setup's
+ * stat rows. Every number comes off alert_setups (entry / levels.stop /
+ * levels.resistance); R:R is derived from those stored legs and simply not
+ * drawn when a leg is missing.
+ */
 function LiveSetupCard({ s, current }: { s: AlertSetup; current: number | null }) {
   const meta = SETUP_STATE_META[s.state];
-  // Board 19 puts the two numbers that DEFINE a setup on the screen — where it
-  // works and where it is wrong. They live on alert_setups.levels.
   const L = readSetupLevels(s.levels);
-  const marks: { label: string; value: number; tone: "up" | "down" | "flat" }[] = [];
-  if (s.entry != null) marks.push({ label: "Entry", value: s.entry, tone: "flat" });
-  if (L.resistance != null) marks.push({ label: "Level", value: L.resistance, tone: "up" });
-  if (L.stop != null) marks.push({ label: "Invalid", value: L.stop, tone: "down" });
-  else if (L.support != null) marks.push({ label: "Support", value: L.support, tone: "down" });
+  const entry = s.entry;
+  const stop = L.stop ?? L.support;
+  const target = L.resistance;
+  const rr = rrOf(entry, stop, target);
+  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [];
+  if (entry != null) stats.push({ k: "Entry", v: money(entry) });
+  if (stop != null) stats.push({ k: "Stop", v: money(stop), tone: "down" });
+  if (target != null) stats.push({ k: "Target", v: money(target), tone: "up" });
+  if (rr != null) stats.push({ k: "R:R", v: rr });
+  const px = current ?? s.snapshot_price;
 
   return (
-    <Card edge={meta.tone}>
+    <Card className="rounded-[17px]">
       <div className="flex items-center gap-3">
-        <CompanyLogo symbol={s.ticker} name={s.ticker} size={30} rounded="rounded-[9px]" />
+        <CompanyLogo symbol={s.ticker} name={s.ticker} size={38} rounded="rounded-[11px]" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
+            <span className="font-display text-[14px] font-extrabold leading-[1.15] tracking-tight text-ink">
               ${s.ticker}
             </span>
             <DirChip dir={s.direction} />
           </div>
-          {s.thesis && <p className="mt-0.5 truncate text-[12px] text-soft">{s.thesis}</p>}
+          {px != null && (
+            <p className="mt-1 font-mono text-[11px] font-medium leading-none text-soft">
+              {money(px)}
+            </p>
+          )}
         </div>
-        {current != null && (
-          <span className="shrink-0 font-mono text-[12.5px] font-semibold tabular-nums text-ink">
-            {money(current)}
-          </span>
-        )}
         <StatePill tone={meta.tone} label={meta.label} live={meta.live} />
       </div>
 
-      <p className="mt-2 text-[12.5px] leading-relaxed text-ink/85">
+      <LifecycleBar
+        className="mt-3"
+        pct={SETUP_BAR[s.state]}
+        tone={meta.tone}
+        label={`Setup lifecycle: ${meta.label}`}
+      />
+
+      <p className="mt-2.5 text-[12px] leading-[1.45] text-ink">
         {setupStateLine(s.state, s.ticker)}
       </p>
-
-      {marks.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {marks.map((mk) => (
-            <MetricChip key={mk.label}>
-              <span className="uppercase tracking-[0.1em]">{mk.label}</span>
-              <span
-                className={
-                  mk.tone === "up"
-                    ? "text-price-up"
-                    : mk.tone === "down"
-                      ? "text-price-down"
-                      : "text-ink"
-                }
-              >
-                {money(mk.value)}
-              </span>
-            </MetricChip>
-          ))}
-        </div>
+      {s.thesis && (
+        <p className="mt-2 text-[11.5px] leading-[1.45] text-kai-blue">
+          Kai: {s.thesis}
+        </p>
       )}
+
+      <StatGrid className="mt-3" stats={stats} />
     </Card>
   );
 }
@@ -948,25 +954,42 @@ function KaiDailyTab({
           >
             Today&apos;s picks
           </BoardEyebrow>
-          {groups.map((g) => (
-            <section key={g.label} className="space-y-4">
-              {groups.length > 1 && <BoardEyebrow className="mb-1">{g.label}</BoardEyebrow>}
-              {g.rows.map((b) => {
-                const setup = setupByAlert.get(b.id);
-                const thread = setup ? threadBySetup.get(setup.id) || [] : [];
-                return (
-                  <PickCard
-                    key={b.id}
-                    b={b}
-                    current={priceMap[b.ticker] ?? null}
-                    setup={setup}
-                    thread={thread}
-                    onSub={onSub}
-                  />
-                );
-              })}
-            </section>
-          ))}
+          {groups.map((g) => {
+            /* CheatCodeDoors' Daily Brief blocks (Morning 8:15 · Midday 12:30).
+               The prototype's third block (Close · how the day resolved) has no
+               data source here — no close-recap broadcast exists — so it is
+               omitted rather than faked. The "when" line carries the REAL
+               source (kai_morning / kai_intraday) and the REAL issue time. */
+            const blocks = [
+              { when: "Morning brief", rows: g.rows.filter((b) => b.source === "kai_morning") },
+              { when: "Intraday", rows: g.rows.filter((b) => b.source !== "kai_morning") },
+            ].filter((blk) => blk.rows.length > 0);
+            return (
+              <section key={g.label} className="space-y-4">
+                {blocks.map((blk) => (
+                  <div key={blk.when} className="space-y-4">
+                    <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-kai-blue">
+                      {g.label} · {blk.when} · {clockTime(blk.rows[0].issued_at)}
+                    </p>
+                    {blk.rows.map((b) => {
+                      const setup = setupByAlert.get(b.id);
+                      const thread = setup ? threadBySetup.get(setup.id) || [] : [];
+                      return (
+                        <PickCard
+                          key={b.id}
+                          b={b}
+                          current={priceMap[b.ticker] ?? null}
+                          setup={setup}
+                          thread={thread}
+                          onSub={onSub}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </section>
+            );
+          })}
         </>
       )}
     </div>
@@ -1002,22 +1025,76 @@ function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function PerfSince({ from, to }: { from: number | null; to: number | null }) {
-  if (from == null || to == null || from <= 0) {
-    return <span className="text-[12px] text-soft/60">tracking…</span>;
-  }
-  const pct = ((to - from) / from) * 100;
-  const up = pct >= 0;
+/* ============================================================================
+ * CheatCodeDoors card language — urgency tiers, lifecycle positions and the
+ * "Kai's read" line, mapped onto the REAL machine states (never invented).
+ * ==========================================================================*/
+
+/** The prototype's LIFE bar: fixed lifecycle positions for the watching bar. */
+const WATCH_BAR: Record<WatchState, number> = {
+  watching: 18,
+  building: 42,
+  near_trigger: 78,
+  triggered: 100,
+  cooled: 30,
+  invalidated: 100,
+  earnings_wait: 50,
+};
+const SETUP_BAR: Record<SetupState, number> = {
+  waiting: 18,
+  confirmed: 78,
+  triggered: 100,
+  invalidated: 100,
+  expired: 30,
+};
+
+/** Bar position: the cron's own 0..1 progress when recorded, else the state's
+ *  fixed ladder position — a position, never a probability. */
+function barPct(progress: number | null | undefined, fallback: number): number {
+  return typeof progress === "number" && Number.isFinite(progress)
+    ? Math.min(1, Math.max(0, progress)) * 100
+    : fallback;
+}
+
+/** Reward:risk derived from STORED levels only — null (no cell) when a leg is
+ *  missing, per the "omit rather than fake" rule. */
+function rrOf(
+  entry: number | null,
+  stop: number | null,
+  target: number | null
+): string | null {
+  if (entry == null || stop == null || target == null) return null;
+  const risk = Math.abs(entry - stop);
+  if (risk <= 1e-9) return null;
+  return `${(Math.abs(target - entry) / risk).toFixed(1)}R`;
+}
+
+/** CheatCodeDoors urgency tiers: high = 800 17px Sora title over the accent
+ *  tint with a 1.5px accent edge · med = 700 14.5px on card · low = 12.5px. */
+type Urgency = "high" | "med" | "low";
+const URGENCY_HEAD: Record<Urgency, string> = {
+  high: "font-display text-[17px] font-extrabold leading-[1.2] text-ink",
+  med: "font-display text-[14.5px] font-bold leading-[1.25] text-ink",
+  low: "font-display text-[12.5px] font-bold leading-[1.3] text-ink",
+};
+
+/** The high-urgency frame — accent-soft wash + 1.5px accent edge, mixed from
+ *  --accent-solid so it stays mode-correct and flips with the theme. */
+function urgencyFrame(u: Urgency): React.CSSProperties | undefined {
+  if (u !== "high") return undefined;
+  return {
+    borderWidth: 1.5,
+    borderColor: "color-mix(in srgb, var(--accent-solid) 55%, var(--sand))",
+    background: "color-mix(in srgb, var(--accent-solid) 10%, var(--card))",
+  };
+}
+
+/** The prototype's "Kai's read" interpretation line — kai-blue, quoted. */
+function KaiRead({ text, className = "" }: { text: string; className?: string }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 text-[12.5px] font-bold tabular-nums ${
-        up ? "text-price-up" : "text-price-down"
-      }`}
-    >
-      {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-      {up ? "+" : ""}
-      {pct.toFixed(1)}%
-    </span>
+    <p className={`text-[12px] leading-[1.5] text-kai-blue ${className}`}>
+      &ldquo;{text}&rdquo;
+    </p>
   );
 }
 
@@ -1370,15 +1447,24 @@ function WatchManageCard({
         </button>
       </div>
 
-      {/* How close it actually is — the cron's own number, not a mood. Only
-          drawn once the watch has moved off baseline. */}
-      {meta && meta.tone !== "quiet" && (
-        <ProximityMeter
-          className="mt-2.5"
-          progress={detail?.progress}
-          tone={meta.tone}
-          metric={typeof detail?.metric === "string" ? detail.metric : null}
-        />
+      {/* Where in the lifecycle this watch sits — CheatCodeDoors' 5px bar.
+          The fill is the cron's own 0..1 progress when recorded; otherwise the
+          state's fixed ladder position. Drawn for every active watch (a
+          baseline WATCHING row sits at the ladder's start, honestly low). */}
+      {state && meta && (
+        <>
+          <LifecycleBar
+            className="mt-2.5"
+            pct={barPct(detail?.progress, WATCH_BAR[state])}
+            tone={meta.tone}
+            label={`Watch lifecycle: ${meta.label}`}
+          />
+          {typeof detail?.metric === "string" && (
+            <p className="mt-1.5 font-mono text-[10.5px] leading-snug text-soft/80">
+              {detail.metric}
+            </p>
+          )}
+        </>
       )}
 
       <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-soft/60">
@@ -1653,6 +1739,14 @@ function NewMark() {
   );
 }
 
+/**
+ * A fired watch / Kai update as a CheatCodeDoors alert card: identity row with
+ * the uppercase mono state chip, the urgency-tiered Sora headline, the stat
+ * rows (only cells the event actually recorded), and — on lifecycle updates —
+ * the "Kai's read" line. Urgency comes from the machine's own state: a live
+ * state (Triggered / Heating up) is HIGH; today's other rows are MEDIUM;
+ * older, compacted rows are LOW.
+ */
 function HistoryEventRow({
   e,
   current,
@@ -1673,56 +1767,86 @@ function HistoryEventRow({
     : null;
   const tone: StateTone = meta?.tone ?? "quiet";
   const snap = e.payload?.snapshot_price ?? null;
+  const urgency: Urgency = compact ? "low" : meta?.live ? "high" : "med";
 
   const kindLabel =
     e.kind === "kai_update" ? "Kai update" : e.kind === "setup_update" ? "Setup update" : "Your watch";
 
+  // Stat rows — only quantities this event genuinely carries.
+  const sincePct =
+    !isUpdate && snap != null && snap > 0 && current != null
+      ? ((current - snap) / snap) * 100
+      : null;
+  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [];
+  if (e.payload?.condition) stats.push({ k: "Condition", v: e.payload.condition });
+  if (snap != null) stats.push({ k: "At fire", v: money(snap) });
+  if (sincePct != null)
+    stats.push({
+      k: "Since",
+      v: `${sincePct >= 0 ? "+" : ""}${sincePct.toFixed(1)}%`,
+      tone: sincePct >= 0 ? "up" : "down",
+    });
+
+  // The interpretation line — the state machine's own deterministic read.
+  const kaiLine =
+    state && e.kind === "setup_update"
+      ? setupStateLine(state as SetupState, e.ticker)
+      : state && e.kind === "kai_update"
+        ? watchStateLine(state as WatchState, e.ticker)
+        : null;
+
   return (
-    <CardLink href={`/alerts/e/${e.id}`} edge={tone} dim={compact}>
+    <Link
+      href={`/alerts/e/${e.id}`}
+      style={urgencyFrame(urgency)}
+      className={`f0-focus f0-press block rounded-[18px] border border-sand bg-card p-[15px] transition hover:border-accent/45 ${
+        compact ? "opacity-70" : ""
+      }`}
+    >
       <div className="flex items-center gap-2.5">
+        <CompanyLogo
+          symbol={e.ticker}
+          name={e.ticker}
+          size={compact ? 28 : 36}
+          rounded="rounded-[10px]"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-[13.5px] font-bold leading-[1.15] text-ink">
+            ${e.ticker}
+          </p>
+          <p className="mt-1 truncate font-mono text-[9.5px] leading-none text-soft/70">
+            {kindLabel} · {timeAgo(e.fired_at)}
+          </p>
+        </div>
+        {isNew && <NewMark />}
         {meta ? (
           <StatePill tone={tone} label={meta.label} live={meta.live && !compact} />
         ) : (
           <StatePill tone="quiet" label={kindLabel} />
         )}
-        <Ticker symbol={e.ticker} variant="chip" size="sm" />
-        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
-          {timeAgo(e.fired_at)}
-        </span>
-        {isNew && <NewMark />}
       </div>
 
-      <div className="mt-2.5 flex items-start gap-3">
-        <CompanyLogo symbol={e.ticker} name={e.ticker} size={compact ? 26 : 32} rounded="rounded-[9px]" />
-        <div className="min-w-0 flex-1">
-          <p
-            className={`leading-relaxed text-ink/85 ${
-              compact ? "truncate text-[12px]" : "text-[12.5px]"
-            }`}
-          >
-            {e.payload?.message || "Condition met"}
-          </p>
-          {e.payload?.delayed && (
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
-              delayed ~15m
-            </p>
-          )}
-        </div>
-        {!isUpdate && snap != null ? (
-          <div className="shrink-0 text-right">
-            <PerfSince from={snap} to={current} />
-            <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
-              since fired
-            </p>
-          </div>
-        ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 self-center text-soft/50" />
-        )}
-      </div>
-    </CardLink>
+      <p className={`mt-3 ${URGENCY_HEAD[urgency]} ${compact ? "truncate" : ""}`}>
+        {e.payload?.message || "Condition met"}
+      </p>
+      {e.payload?.delayed && (
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
+          delayed ~15m
+        </p>
+      )}
+
+      {!compact && <StatGrid className="mt-3" stats={stats} />}
+      {!compact && kaiLine && <KaiRead className="mt-3" text={kaiLine} />}
+    </Link>
   );
 }
 
+/**
+ * A Kai Daily broadcast in the feed, on the same card anatomy: MEDIUM urgency
+ * (LOW when compacted), setup label as the Sora headline, the narrative as the
+ * "Kai's read" line, and entry / stop / target / since-issued stat rows read
+ * straight off trade_alerts — a missing level is a missing cell.
+ */
 function HistoryBroadcastRow({
   b,
   current,
@@ -1734,35 +1858,62 @@ function HistoryBroadcastRow({
   isNew?: boolean;
   compact?: boolean;
 }) {
+  const urgency: Urgency = compact ? "low" : "med";
+  const L = readSetupLevels(b.levels);
+  const entry = b.entry ?? null;
+  const stop = L.stop ?? L.support;
+  const target = b.targets?.[0]?.price ?? L.resistance;
+  const sincePct =
+    b.snapshot_price != null && b.snapshot_price > 0 && current != null
+      ? ((current - b.snapshot_price) / b.snapshot_price) * 100
+      : null;
+
+  const stats: { k: string; v: string; tone?: "up" | "down" }[] = [];
+  if (entry != null) stats.push({ k: "Entry", v: money(entry) });
+  if (stop != null) stats.push({ k: "Stop", v: money(stop), tone: "down" });
+  if (target != null) stats.push({ k: "Target", v: money(target), tone: "up" });
+  if (sincePct != null)
+    stats.push({
+      k: "Since issued",
+      v: `${sincePct >= 0 ? "+" : ""}${sincePct.toFixed(1)}%`,
+      tone: sincePct >= 0 ? "up" : "down",
+    });
+
+  const head = b.setup_label || b.narrative || "Daily setup";
+
   return (
-    <CardLink href={`/research/${encodeURIComponent(b.ticker)}`} edge="kai" dim={compact}>
+    <Link
+      href={`/research/${encodeURIComponent(b.ticker)}`}
+      className={`f0-focus f0-press block rounded-[18px] border border-sand bg-card p-[15px] transition hover:border-accent/45 ${
+        compact ? "opacity-70" : ""
+      }`}
+    >
       <div className="flex items-center gap-2.5">
-        <StatePill tone="kai" label="Kai daily" />
-        <Ticker symbol={b.ticker} variant="chip" size="sm" />
-        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-soft/70">
-          {timeAgo(b.issued_at)}
-        </span>
-        {isNew && <NewMark />}
-      </div>
-      <div className="mt-2.5 flex items-start gap-3">
-        <CompanyLogo symbol={b.ticker} name={b.ticker} size={compact ? 26 : 32} rounded="rounded-[9px]" />
+        <CompanyLogo
+          symbol={b.ticker}
+          name={b.ticker}
+          size={compact ? 28 : 36}
+          rounded="rounded-[10px]"
+        />
         <div className="min-w-0 flex-1">
-          <p
-            className={`leading-relaxed text-ink/85 ${
-              compact ? "truncate text-[12px]" : "text-[12.5px]"
-            }`}
-          >
-            {b.setup_label || b.narrative || "Daily setup"}
+          <p className="truncate font-display text-[13.5px] font-bold leading-[1.15] text-ink">
+            ${b.ticker}
+          </p>
+          <p className="mt-1 truncate font-mono text-[9.5px] leading-none text-soft/70">
+            Kai daily · {timeAgo(b.issued_at)}
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <PerfSince from={b.snapshot_price} to={current} />
-          <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-soft/55">
-            since issued
-          </p>
-        </div>
+        {isNew && <NewMark />}
+        <StatePill tone="kai" label="Kai daily" />
       </div>
-    </CardLink>
+
+      <p className={`mt-3 ${URGENCY_HEAD[urgency]} ${compact ? "truncate" : ""}`}>{head}</p>
+
+      {!compact && <StatGrid className="mt-3" stats={stats} />}
+      {!compact && b.setup_label && b.narrative && (
+        <KaiRead className="mt-3" text={b.narrative} />
+      )}
+    </Link>
   );
 }
 
@@ -2311,6 +2462,11 @@ function dateBucket(iso: string): string {
   if (dayDiff < 7) return "Earlier this week";
   if (dayDiff < 30) return "Earlier this month";
   return then.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
+/** "8:15 AM" — the brief block's real issue time (never a scheduled fiction). */
+function clockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
 function timeAgo(iso: string): string {

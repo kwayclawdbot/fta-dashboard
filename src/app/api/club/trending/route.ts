@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FLOORS, TRENDING_DISCLAIMER, clubSentiment, floorMet } from "@/lib/club/score";
 import { resolveClubCtx, type ClubCtx, type CoreResult } from "@/lib/club/home-context";
 import { getQuotes, isConfigured } from "@/lib/market/polygon";
+import { sectorOf } from "@/lib/screener-sectors";
 
 /** Free tier sees the top N of the attention ledger; Club/FTA see the full list. */
 const FREE_TRENDING_ROWS = 5;
@@ -37,13 +38,22 @@ export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
   // the previous dedicated `.limit(12)` read returned.
   const data = (await ctx.getSnapshots()).slice(0, 12);
 
-  // UI-contract reconcile (§6 TrendingRow.company): attach the company name from
-  // screener_metrics so the row can render "Nvidia" alongside the ticker logo.
+  // UI-contract reconcile (§6 TrendingRow.company + .sector): attach the company
+  // name AND the raw SIC sector from screener_metrics in the SAME read the route
+  // already paid for. The SIC string is collapsed into the canonical GICS-style
+  // sector (src/lib/screener-sectors.ts) so the sector heat grid on Home can
+  // aggregate real Club attention per sector with zero extra queries.
   const tickers = data.map((r) => r.ticker).filter(Boolean) as string[];
   const { data: metrics } = tickers.length
-    ? await ctx.supabase.from("screener_metrics").select("ticker, name").in("ticker", tickers)
-    : { data: [] as { ticker: string; name: string | null }[] };
+    ? await ctx.supabase
+        .from("screener_metrics")
+        .select("ticker, name, sector")
+        .in("ticker", tickers)
+    : { data: [] as { ticker: string; name: string | null; sector: string | null }[] };
   const nameByTicker = new Map((metrics || []).map((m) => [m.ticker.toUpperCase(), m.name]));
+  const sectorByTicker = new Map(
+    (metrics || []).map((m) => [m.ticker.toUpperCase(), sectorOf(m.sector)])
+  );
 
   // MARKET MARK — ONE batched Polygon snapshot for the whole ledger slice. The
   // canvas Home leads with price, so a trending row that carries no quote must
@@ -78,6 +88,7 @@ export async function trendingCore(ctx: ClubCtx): Promise<CoreResult> {
       rank: r.rank,
       ticker: r.ticker,
       company: nameByTicker.get((r.ticker || "").toUpperCase()) ?? null,
+      sector: sectorByTicker.get((r.ticker || "").toUpperCase()) ?? null,
       score,
       change: Number(r.club_change_14d),
       participants: r.participants,

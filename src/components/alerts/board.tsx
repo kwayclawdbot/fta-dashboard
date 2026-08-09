@@ -257,6 +257,90 @@ export function MetricChip({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   STAT GRID — CheatCodeDoors' setup stat rows: entry / stop / target / R:R as
+   labelled mono values in a two-up grid whose 1px gaps are the sand hairline
+   (grid gap over the sand ground, cells on card). Sizes are the prototype's:
+   9.5px uppercase label · 12px mono value, 10/12px cell padding, r13 frame.
+   Callers pass ONLY stats they actually have — a missing level is a missing
+   cell, never a dash pretending to be a reading. Green/red stays on PRICE
+   quantities via the optional tone.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function StatGrid({
+  stats,
+  className = "",
+}: {
+  stats: { k: string; v: string; tone?: "up" | "down" }[];
+  className?: string;
+}) {
+  if (stats.length === 0) return null;
+  return (
+    <dl
+      className={`grid grid-cols-2 gap-px overflow-hidden rounded-[13px] border border-sand bg-sand ${className}`}
+    >
+      {stats.map((s, i) => (
+        <div
+          key={s.k}
+          className={`flex items-baseline justify-between gap-2 bg-card px-3 py-2.5 ${
+            i === stats.length - 1 && stats.length % 2 === 1 ? "col-span-2" : ""
+          }`}
+        >
+          <dt className="text-[9.5px] font-medium uppercase tracking-[0.1em] text-soft">
+            {s.k}
+          </dt>
+          <dd
+            className={`font-mono text-[12px] font-semibold tabular-nums ${
+              s.tone === "up"
+                ? "text-price-up"
+                : s.tone === "down"
+                  ? "text-price-down"
+                  : "text-ink"
+            }`}
+          >
+            {s.v}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIFECYCLE BAR — CheatCodeDoors' watching-row progress bar: a 5px sand track
+   whose fill shows WHERE IN THE LIFECYCLE the watch sits (WATCHING → BUILDING
+   → NEAR TRIGGER → TRIGGERED / INVALIDATED). Fed the cron's real 0..1
+   `detail.progress` when one was recorded; otherwise the state's fixed ladder
+   position. It is a position, never a probability — which is why no % is
+   printed and the accessible name says the state in words.
+   ══════════════════════════════════════════════════════════════════════════ */
+export function LifecycleBar({
+  pct,
+  tone = "quiet",
+  label,
+  className = "",
+}: {
+  /** 0..100 lifecycle position. */
+  pct: number;
+  tone?: StateTone;
+  label: string;
+  className?: string;
+}) {
+  const p = Math.min(100, Math.max(0, pct));
+  return (
+    <div
+      role="img"
+      aria-label={label}
+      className={`block h-[5px] overflow-hidden rounded-[3px] bg-sand ${className}`}
+    >
+      <span
+        aria-hidden
+        className="block h-full rounded-[3px]"
+        style={{ width: `${p}%`, background: TONE_VAR[tone] }}
+      />
+    </div>
+  );
+}
+
 /** A neutral count/eyebrow pill (board 18's "3 NEW"). */
 export function CountPill({
   children,

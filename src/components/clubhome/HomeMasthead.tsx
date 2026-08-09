@@ -3,17 +3,11 @@
 import { useLocalHour } from "./clock";
 
 /**
- * HOME MASTHEAD — board 01, the two lines at the top of the screen.
+ * HOME MASTHEAD — CCDoors greeting, two lines.
  *
- * The board draws a WARM PERSONAL GREETING, not a market headline: 26px/700
- * "GM, Marcus 👋" with a 13px sub-line, "Here's what the Club is seeing". An
- * earlier pass replaced it with a 44px data-led headline naming the leading
- * ticker; that is a different object with a different job and the owner
- * rejected it. This is the drawn one.
- *
- * The greeting register is the board's — short and spoken, "GM" in the morning
- * rather than "Good morning" — and it stays consistent across the day rather
- * than mixing an abbreviation with a full phrase.
+ * Line 1 is the time-aware personal greeting ("Good morning, Marcus! 👋") in
+ * the display face; line 2 is the CCDoors tagline ("Let's crush the market
+ * today."). Kid register keeps its existing kid-safe sub-line.
  *
  * PURITY: the local hour arrives from the hour-bucketed external store, so
  * nothing here reads a clock during render. Before the store primes (the server
@@ -23,10 +17,10 @@ import { useLocalHour } from "./clock";
 
 function greetingFor(hour: number | null, name: string): string {
   const who = name ? `, ${name}` : "";
-  if (hour == null) return `Welcome back${who}`;
-  if (hour < 12) return `GM${who}`;
-  if (hour < 17) return `Afternoon${who}`;
-  return `Evening${who}`;
+  if (hour == null) return `Welcome back${who}!`;
+  if (hour < 12) return `Good morning${who}!`;
+  if (hour < 17) return `Good afternoon${who}!`;
+  return `Good evening${who}!`;
 }
 
 export default function HomeMasthead({
@@ -41,13 +35,14 @@ export default function HomeMasthead({
 
   return (
     <header>
-      <h1 className="font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[30px]">
+      {/* the board's greeting: large white display line, cool-gray sub */}
+      <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-[-0.02em] text-ink">
         {greetingFor(hour, name)} <span aria-hidden>👋</span>
       </h1>
-      <p className="mt-1.5 text-[13px] leading-snug text-soft">
+      <p className="mt-[6px] text-[13.5px] leading-snug text-soft">
         {isKid
           ? "Here's what the Club is looking at"
-          : "Here's what the Club is seeing"}
+          : "Let's crush the market today."}
       </p>
     </header>
   );

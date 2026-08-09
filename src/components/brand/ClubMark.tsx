@@ -16,10 +16,17 @@
  * Geometry note: two rings centred at x=34 and x=66 (r≈22, stroke 12) on a
  * 100×64 box. The crossing is faked with a short "over" arc segment on the
  * orange ring drawn last, giving the interlocked weave without masks (crisp at
- * any size). idPrefix keeps gradient ids unique when several marks render.
+ * any size).
+ *
+ * Gradient ids come from React's useId — NOT a module counter. The counter
+ * incremented independently on the server and the client (different render
+ * order, different module lifetimes), so every hydration diffed `cm2-o` vs
+ * `cm3-o` on the sidebar mark and React logged a mismatch on every dashboard
+ * load. useId is hydration-stable by contract; the colons it emits are
+ * stripped because these ids are consumed inside url(#…) references.
  */
 
-let markSeq = 0;
+import { useId } from "react";
 
 export interface ClubMarkProps {
   /** Pixel height (width auto from the 100×64 viewBox). Default 40. */
@@ -39,7 +46,7 @@ export function ClubMark({
   className,
   title = "Cheat Code Club",
 }: ClubMarkProps) {
-  const uid = `cm${(markSeq += 1)}`;
+  const uid = `cm${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const width = Math.round((size * 100) / 64);
   const stroke = 12;
 

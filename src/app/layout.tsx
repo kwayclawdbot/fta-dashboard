@@ -12,7 +12,11 @@ import { MotionProvider } from "@/lib/motion";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Applied before first paint to avoid a light→dark flash on reload.
-const THEME_INIT = `(function(){try{var p=localStorage.getItem('fta-theme')||'light';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?'#17120B':'#F7F4EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
+// Mirrors resolveForPolicy (src/lib/theme.ts): the `cc-appearance` cookie —
+// stamped by the shell's ModeManager — carries the member's door policy.
+//   family → light, always.   club → stored pref, else DARK (the club default).
+//   no cookie → legacy stored-or-light (auth/public/first visit).
+const THEME_INIT = `(function(){try{var k=(document.cookie.match(/(?:^|; )cc-appearance=([^;]*)/)||[])[1];var p=localStorage.getItem('fta-theme');var sys=window.matchMedia('(prefers-color-scheme: dark)').matches;var d;if(k==='family'){d=false;}else if(k==='club'){d=p?(p==='dark'||(p==='system'&&sys)):true;}else{d=p==='dark'||(p==='system'&&sys);}var t=d?'dark':'light';document.documentElement.setAttribute('data-theme',t);var c=d?(k==='club'?'#050505':'#17120B'):'#F7F4EF';document.querySelectorAll('meta[name=\\"theme-color\\"]').forEach(function(m){m.setAttribute('content',c);});}catch(e){}})();`;
 
 // Sora — geometric display face (Bold/ExtraBold headlines) for the Club system.
 // Mapped to --font-display at the token level so every existing headline flips

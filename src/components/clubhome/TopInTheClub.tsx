@@ -1,142 +1,198 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 
-import type { TrendingResponse } from "@/lib/clubhome/contract";
-import {
-  BoardSection,
-  BrandTile,
-  EmptyTile,
-  signedCount,
-  signedPct,
-  toneFor,
-} from "./board";
+import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
+import { BrandTile } from "./board";
 
 /**
- * TOP IN THE CLUB — board 01's first content object, built as drawn.
+ * WHAT THE CLUB IS SEEING — the CCDoors attention section.
  *
- * The board draws a horizontal strip of 74px WHITE ROUNDED CARDS. Each carries,
- * top to bottom: a 15px numeric rank pip hung off the top-left corner, a 34px
- * brand identity tile, the ticker in mono, a large percentage, and a small green
- * caret line. Card #1 wears an orange border and a soft bloom.
+ * The old horizontal ranked-card strip is recomposed as the prototype's
+ * ATTENTION GRAVITY list: a display-face section title, one framing sub-line,
+ * and vertical rows — brand tile, ticker in Sora, a human line under it, and a
+ * 4px attention bar whose fill is proportional to the row's real club
+ * attention score (top row = 100%; if no scores exist the fill degrades to a
+ * linear rank ramp so the ordering itself is still drawn).
  *
- * An earlier pass rendered this as bare tiles on the page with no card, no
- * percentage and a price delta where the caret line goes. This is the card.
+ * REAL DATA ONLY. The rows are the same trending ledger as before; the human
+ * line is composed only from fields the row actually carries (company name,
+ * distinct watchers) and states the ranking itself when neither exists.
  *
- * WHAT THE TWO NUMERALS ARE, and why they change shape below the floor:
+ * SECTORS HEAT GRID + ROTATION (the prototype's opening objects). The trending
+ * rows now carry a real `sector` — classified server-side from
+ * screener_metrics.sector (Polygon SIC) via src/lib/screener-sectors.ts — so
+ * the grid aggregates the SAME attention ledger per sector: heat is each
+ * sector's share of Club attention (distinct watcher counts, degrading to row
+ * count when nobody watches yet), normalized against the hottest sector, and
+ * the % line is the plain average day move of that sector's tickers (omitted
+ * when no quote landed — never a fabricated 0.00%). The rotation row is the
+ * same ranking read top-vs-bottom. Rows without a sector are skipped; zero
+ * classified sectors renders no grid at all, exactly like the prototype's
+ * continuous-encoding tiles: alpha, border and heat label ramp with the
+ * normalized heat, no threshold buckets.
  *
- *   AT SCALE (any row clears FLOORS.trendingScore)
- *     big   = `heat` — club_score normalised 0–100 against the top of the
- *             ledger. That IS the board's conviction percentage.
- *     small = `change` — club_change_14d, the attention delta. The board's
- *             "▲ 6".
+ * The verbatim compliance line (`disclaimer`) still rides under the list: this
+ * is the attention ranking, so it is the object that has to carry it.
  *
- *   AT FOUNDING SIZE (today: nine tickers, top score 22, floor 50)
- *     `heat` is null for every row, so a conviction column would be five em
- *     dashes stacked where the board's loudest numeral goes — which reads as
- *     breakage, not as a young club. The card keeps its exact geometry and the
- *     two slots carry the market mark instead, which is real for every row:
- *     big   = the last price
- *     small = today's percentage move, on the price ramp
- *     The sub-line states which reading is on screen, so the numerals are never
- *     ambiguous.
- *
- *   WITH NEITHER (the market feed is down AND the club is below the floor)
- *     the card drops both numeral lines rather than stacking two em dashes
- *     under every ticker. No number available means no number printed; the
- *     ranking itself — which is the object's actual subject — still stands.
- *
- * The reading is chosen ONCE for the whole strip: a row of mixed meanings would
- * be worse than any of the three.
- *
- * LOADING ≠ EMPTY: `loading` renders pulsing cards; zero rows after loading
- * renders the founding line. Below five rows the strip pads with designed empty
- * slots so nine tickers look like a board filling up.
- *
- * The verbatim compliance line (`disclaimer`) rides under the strip: this is the
- * attention ranking, so it is the object that has to carry it.
+ * LOADING ≠ EMPTY: `loading` renders pulsing rows; zero rows after loading
+ * renders the founding line.
  */
 
-const LEAD = 5;
-const CARD_W = 74;
+interface SectorHeat {
+  name: string;
+  /** 0–100, share of Club attention vs the hottest sector. */
+  heat: number;
+  /** Average day move across the sector's quoted tickers. null = no quotes. */
+  avgChangePct: number | null;
+  /** Normalized position over the set's real range, 0..1 (drives the ramp). */
+  t: number;
+}
 
-function Card({
-  rank,
-  ticker,
-  big,
-  small,
-  smallTone,
-  lead,
-}: {
-  rank: number;
-  ticker: string;
-  /** Omitted in BARE mode — see `mode` below. */
-  big?: string;
-  small?: string;
-  smallTone?: string;
-  lead: boolean;
-}) {
+/** Aggregate the trending ledger into per-sector attention heat. */
+function deriveSectors(rows: TrendingRow[]): SectorHeat[] {
+  const by = new Map<string, { watchers: number; count: number; changes: number[] }>();
+  for (const r of rows) {
+    if (!r.sector) continue;
+    const e = by.get(r.sector) ?? { watchers: 0, count: 0, changes: [] };
+    e.watchers += typeof r.watchers === "number" && r.watchers > 0 ? r.watchers : 0;
+    e.count += 1;
+    if (typeof r.changePct === "number" && Number.isFinite(r.changePct)) {
+      e.changes.push(r.changePct);
+    }
+    by.set(r.sector, e);
+  }
+  if (by.size === 0) return [];
+
+  // ONE attention unit for the whole grid: watcher counts when any exist,
+  // otherwise plain row count — never a mix of the two across sectors.
+  const totalWatchers = [...by.values()].reduce((s, e) => s + e.watchers, 0);
+  const entries = [...by.entries()].map(([name, e]) => ({
+    name,
+    attention: totalWatchers > 0 ? e.watchers : e.count,
+    avgChangePct:
+      e.changes.length > 0
+        ? e.changes.reduce((s, c) => s + c, 0) / e.changes.length
+        : null,
+  }));
+
+  const max = Math.max(...entries.map((e) => e.attention), 1);
+  const heats = entries
+    .map((e) => ({
+      name: e.name,
+      heat: Math.max(1, Math.round((e.attention / max) * 100)),
+      avgChangePct: e.avgChangePct,
+      t: 0,
+    }))
+    .sort((a, b) => b.heat - a.heat)
+    .slice(0, 6);
+
+  // Continuous encoding over the set's REAL range (the prototype's rule):
+  // a single sector — no range — sits at full intensity.
+  const lo = Math.min(...heats.map((h) => h.heat));
+  const hi = Math.max(...heats.map((h) => h.heat));
+  for (const h of heats) h.t = hi > lo ? (h.heat - lo) / (hi - lo) : 1;
+  return heats;
+}
+
+/** Signed one-decimal move for the sector tiles ("+2.4%" / "-0.8%"). */
+function sectorPct(n: number): string {
+  const r = Math.round(n * 10) / 10;
+  return `${r > 0 ? "+" : ""}${r.toFixed(1)}%`;
+}
+
+function SectorsHeatGrid({ sectors }: { sectors: SectorHeat[] }) {
   return (
-    <div className="relative shrink-0" style={{ width: CARD_W }}>
-      <span
-        className={`club-b-pip pointer-events-none absolute -top-[7px] left-2 z-10 ${
-          lead ? "club-b-pip-lead" : ""
-        }`}
-        aria-hidden
-      >
-        {rank}
-      </span>
-      <Link
-        href={`/research/${encodeURIComponent(ticker)}`}
-        className={`club-b-card f0-focus f0-press block py-[9px] text-center ${
-          lead ? "club-b-card-lead" : ""
-        }`}
-      >
-        <BrandTile ticker={ticker} className="mx-auto mt-[2px]" />
-        <span className="mt-1.5 block font-mono text-[10px] font-semibold text-ink">
-          {ticker}
-        </span>
-        {big !== undefined && (
-          <span className="block text-[11px] font-bold text-ink tabular-nums">
-            {big}
+    <div
+      className="mt-3.5 grid grid-cols-3 gap-2"
+      aria-label="Club attention by sector"
+    >
+      {sectors.map((s) => (
+        <Link
+          key={s.name}
+          href="/discover"
+          className="f0-focus f0-press rounded-[14px] border px-3.5 pb-3.5 pt-3.5 text-left"
+          style={{
+            borderColor: `color-mix(in srgb, var(--accent-solid) ${Math.round(
+              (0.12 + s.t * 0.55) * 100
+            )}%, transparent)`,
+            background: `color-mix(in srgb, var(--accent-solid) ${Math.round(
+              s.t * 24
+            )}%, transparent)`,
+          }}
+        >
+          <span className="block truncate font-display text-[12.5px] font-bold leading-[1.15] text-ink">
+            {s.name}
           </span>
-        )}
-        {small !== undefined && (
           <span
-            className={`mt-px block font-mono text-[9px] tabular-nums ${smallTone}`}
+            className="mt-[7px] block font-display text-[17px] font-extrabold leading-none"
+            style={{
+              color: `color-mix(in srgb, var(--accent-solid) ${Math.round(
+                (0.45 + s.t * 0.55) * 100
+              )}%, transparent)`,
+            }}
           >
-            {small}
+            {s.heat}
           </span>
-        )}
-      </Link>
+          {s.avgChangePct != null && (
+            <span
+              className={`mt-[5px] block font-mono text-[10.5px] font-medium leading-none tabular-nums ${
+                s.avgChangePct >= 0 ? "text-price-up" : "text-price-down"
+              }`}
+            >
+              {sectorPct(s.avgChangePct)}
+            </span>
+          )}
+        </Link>
+      ))}
     </div>
   );
 }
 
-function SkeletonCard() {
+function RotationRow({ sectors }: { sectors: SectorHeat[] }) {
+  // Top vs bottom of the SAME ranking: up to two names each, never overlapping.
+  const intoCount = Math.min(2, Math.floor(sectors.length / 2));
+  const into = sectors.slice(0, intoCount);
+  const outOf = sectors.slice(-Math.min(2, sectors.length - intoCount));
+  if (into.length === 0 || outOf.length === 0) return null;
   return (
-    <div className="shrink-0" style={{ width: CARD_W }} aria-hidden>
-      <div className="club-b-card py-[9px] text-center motion-safe:animate-pulse">
-        <div className="mx-auto mt-[2px] h-[34px] w-[34px] rounded-[10px] bg-ink/10" />
-        <div className="mx-auto mt-2 h-2 w-9 rounded-full bg-ink/10" />
-        <div className="mx-auto mt-1.5 h-2.5 w-7 rounded-full bg-ink/10" />
-        <div className="mx-auto mt-1.5 h-1.5 w-6 rounded-full bg-ink/[0.07]" />
-      </div>
+    <div className="flex gap-[26px] pt-[22px]" aria-label="Sector rotation">
+      {[
+        { k: "Out of", list: outOf, cls: "text-price-down" },
+        { k: "Into", list: into, cls: "text-price-up" },
+      ].map(({ k, list, cls }) => (
+        <div key={k} className="min-w-0 flex-1">
+          <div className="text-[10px] font-semibold uppercase leading-none tracking-[0.14em] text-soft">
+            {k}
+          </div>
+          <div className={`mt-1.5 font-display text-[13.5px] font-bold leading-[1.25] ${cls}`}>
+            {list.map((s) => s.name).join(" · ")}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-function EmptySlot() {
+function whyLine(r: TrendingRow): string {
+  const bits: string[] = [];
+  if (r.company) bits.push(r.company);
+  if (typeof r.watchers === "number" && r.watchers > 0)
+    bits.push(`${r.watchers} watching`);
+  return bits.join(" · ") || "Ranked by Club attention";
+}
+
+function SkeletonRow() {
   return (
-    <div className="shrink-0" style={{ width: CARD_W }}>
-      <div className="club-b-card py-[9px] text-center opacity-70">
-        <EmptyTile className="mx-auto mt-[2px]" />
-        <span className="mt-1.5 block font-mono text-[10px] font-semibold text-soft/50">
-          —
-        </span>
-        <span className="block text-[11px] font-bold text-soft/40">—</span>
-        <span className="mt-px block font-mono text-[9px] text-soft/40">—</span>
+    <div
+      className="flex items-center gap-3 border-b border-sand py-[13px] motion-safe:animate-pulse"
+      aria-hidden
+    >
+      <div className="h-[30px] w-[30px] shrink-0 rounded-[10px] bg-ink/10" />
+      <div className="min-w-0 flex-1">
+        <div className="h-2.5 w-14 rounded-full bg-ink/10" />
+        <div className="mt-1.5 h-2 w-32 rounded-full bg-ink/[0.07]" />
+        <div className="mt-[6px] h-1 w-full max-w-[220px] rounded-full bg-ink/[0.07]" />
       </div>
     </div>
   );
@@ -154,131 +210,96 @@ export default function TopInTheClub({
   const all = trending?.rows ?? [];
   const rows = all.slice(0, 10);
   const total = trending?.totalCount ?? all.length;
-
-  // Which pair of numerals the strip is carrying — decided ONCE for the whole
-  // strip, because a row of mixed meanings is worse than either reading.
-  const mode: "conviction" | "price" | "bare" = rows.some((r) => r.heat != null)
-    ? "conviction"
-    : rows.some((r) => r.price != null && Number.isFinite(r.price))
-      ? "price"
-      : "bare";
-
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [atEnd, setAtEnd] = useState(true);
-
-  useEffect(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    let frame = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 8);
-      });
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
-    };
-  }, [rows.length, loading]);
+  const topScore = rows[0]?.score ?? 0;
+  // Sector heat + rotation, from the SAME ledger. Empty (no classifiable
+  // sector on any row) renders neither block.
+  const sectors = deriveSectors(all);
 
   return (
-    <BoardSection
-      id="club-top"
-      label="Top in"
-      mark="the club"
-      sub={
-        mode === "conviction"
-          ? "Live ranking by member attention & conviction"
-          : mode === "price"
-            ? "Live ranking by member attention · today's move"
-            : "Live ranking by member attention"
-      }
-      action={
-        total > rows.length ? (
+    <section aria-labelledby="club-top">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2
+          id="club-top"
+          className="min-w-0 font-display text-[21px] font-extrabold leading-tight tracking-[-0.02em] text-ink"
+        >
+          What the Club is seeing
+        </h2>
+        {total > rows.length && (
           <Link
             href="/discover"
             className="f0-focus f0-press shrink-0 rounded-md text-[11px] font-semibold text-accent"
           >
             See all
           </Link>
-        ) : undefined
-      }
-    >
-      <div className="relative mt-[11px]">
-        {loading ? (
-          <div className="flex gap-[9px] overflow-hidden" aria-busy="true">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <SkeletonCard key={i} />
-            ))}
-            <span className="sr-only">Loading the Club ranking</span>
-          </div>
-        ) : (
-          <div
-            ref={trackRef}
-            className="club2-track -m-1 flex gap-[9px] overflow-x-auto p-1"
-            role="group"
-            aria-label="Tickers ranked by Club attention"
-          >
-            {rows.map((r, i) => {
-              const hasPct =
-                typeof r.changePct === "number" && Number.isFinite(r.changePct);
-              const big =
-                mode === "conviction"
-                  ? r.heat != null
-                    ? `${r.heat}%`
-                    : "—"
-                  : mode === "price"
-                    ? r.price != null && Number.isFinite(r.price)
-                      ? r.price.toFixed(2)
-                      : "—"
-                    : undefined;
-              const small =
-                mode === "conviction"
-                  ? signedCount(r.change)
-                  : mode === "price"
-                    ? signedPct(hasPct ? r.changePct : null)
-                    : undefined;
-              const smallTone =
-                mode === "conviction"
-                  ? toneFor(r.change)
-                  : toneFor(hasPct ? r.changePct : null);
-              return (
-                <Card
-                  key={r.ticker}
-                  rank={r.rank}
-                  ticker={r.ticker}
-                  big={big}
-                  small={small}
-                  smallTone={smallTone}
-                  lead={i === 0}
-                />
-              );
-            })}
-
-            {rows.length > 0 &&
-              rows.length < LEAD &&
-              Array.from({ length: LEAD - rows.length }).map((_, i) => (
-                <EmptySlot key={`slot-${i}`} />
-              ))}
-          </div>
         )}
-
-        {/* The board's own scroll affordance is the PEEK — the fifth card runs
-            half off the screen edge and nothing is washed over it. The shared
-            `.f0-strip-fade` was tried here and reads as a white block sitting on
-            top of a white card, so the peek stands alone. `atEnd` still drives
-            the aria state below. */}
-        <span className="sr-only" aria-live="polite">
-          {!loading && rows.length > LEAD && !atEnd
-            ? "Scroll sideways for more of the ranking"
-            : ""}
-        </span>
       </div>
+      <p className="mt-[6px] text-[12.5px] leading-snug text-soft">
+        Where attention is pooling this morning, not what moved most.
+      </p>
 
-      {!loading && rows.length === 0 && (
+      {/* SECTORS HEAT GRID — real Club attention per sector, ramped orange */}
+      {sectors.length > 0 && <SectorsHeatGrid sectors={sectors} />}
+
+      {/* ROTATION — the same ranking read top-vs-bottom */}
+      {sectors.length > 0 && <RotationRow sectors={sectors} />}
+
+      {/* the board's section labels are white bold caps, not soft gray */}
+      <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.16em] text-ink">
+        Attention gravity
+      </p>
+
+      {loading ? (
+        <div className="mt-1" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonRow key={i} />
+          ))}
+          <span className="sr-only">Loading the Club ranking</span>
+        </div>
+      ) : rows.length > 0 ? (
+        <div className="mt-1" aria-label="Tickers ranked by Club attention">
+          {rows.map((r, i) => {
+            // Fill is the row's REAL attention score against the leader; when
+            // no score exists (a feed gap) it degrades to a linear rank ramp
+            // so the ordering itself is still legible.
+            const fill =
+              topScore > 0
+                ? Math.max(8, Math.round((r.score / topScore) * 100))
+                : Math.max(
+                    8,
+                    Math.round(((rows.length - i) / rows.length) * 100)
+                  );
+            return (
+              <Link
+                key={r.ticker}
+                href={`/research/${encodeURIComponent(r.ticker)}`}
+                className="f0-focus f0-press flex items-center gap-3 border-b border-sand py-[13px] last:border-b-0"
+              >
+                <BrandTile ticker={r.ticker} size={30} radius={10} fontSize={13} />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-[13.5px] font-bold leading-none text-ink">
+                    {r.ticker}
+                  </span>
+                  <span className="mt-[4px] block truncate text-[11.5px] leading-snug text-soft">
+                    {whyLine(r)}
+                  </span>
+                  <span
+                    className="mt-[6px] block h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-sand"
+                    aria-hidden
+                  >
+                    <span
+                      className="block h-full rounded-full"
+                      style={{
+                        width: `${fill}%`,
+                        background: "var(--accent-solid)",
+                      }}
+                    />
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
         <p className="mt-3 text-[13px] leading-relaxed text-soft">
           {isKid
             ? "No company has caught the Club's eye yet. Pick one you know and it lands here first."
@@ -287,10 +308,10 @@ export default function TopInTheClub({
       )}
 
       {trending?.disclaimer && (
-        <p className="mt-2.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-soft">
+        <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-soft">
           {trending.disclaimer}
         </p>
       )}
-    </BoardSection>
+    </section>
   );
 }

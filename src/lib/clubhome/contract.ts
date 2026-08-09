@@ -103,6 +103,11 @@ export interface TrendingRow {
   changePct?: number | null;
   /** Distinct members watching (all-time). Floor-gated by the UI, not here. */
   watchers?: number;
+  /** Canonical GICS-style sector (src/lib/screener-sectors.ts), classified
+   *  server-side from screener_metrics.sector (Polygon's raw SIC string).
+   *  null = the ticker has no classifiable SIC row — the sector heat grid
+   *  simply skips it. */
+  sector?: string | null;
   participants?: number;
   sentiment?: TrendingSentiment;
   /** club_score normalized to 0–100 against the top of the ledger — the mock's

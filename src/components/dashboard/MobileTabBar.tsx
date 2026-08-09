@@ -11,6 +11,7 @@ import {
   MessageCircle,
   ChevronRight,
   BookOpen,
+  Bot,
   Lock,
   Compass,
   User,
@@ -37,11 +38,18 @@ interface Tab {
  * Club deserves premium). A register changes exactly ONE slot vs the adult
  * baseline; kids get their own map (Learn one tap; Missions; "Me"):
  *
- *   adult / solo   Home · Discover · Club · Watchlist · You
+ *   club (adult)   Home · Discover · Club · Kai       · You
  *   parent         Home · Discover · Club · Family    · You
  *   teen           Home · Learn    · Club · Watchlist · You
  *   kid            Home · Learn    · Club · Missions  · Me
  *   free           Home · Learn    · Club · Watchlist · You
+ *
+ * KAI IS A TAB IN CLUB MODE (doors build): it lands on the Kai Watch alerts
+ * dashboard (/alerts) — the lifecycle board an SMS-era Kai member already
+ * knows — while the Kai CHAT stays on the floating button everywhere (the
+ * KaiSheetProvider overlay), so the tab is the dashboard and the conversation
+ * is one thumb away on top of any screen. Watchlist moves to the More sheet
+ * for club members; nothing orphans.
  *
  * The 5th slot ("You"/"Me") opens the full-nav bottom sheet — every non-primary
  * destination stays reachable there (it mirrors the sidebar), so nothing orphans.
@@ -51,6 +59,7 @@ const T = {
   Club: { label: "Club", href: "/community", icon: MessageCircle } as Tab,
   Discover: { label: "Discover", href: "/discover", icon: Compass } as Tab,
   Learn: { label: "Learn", href: "/courses", icon: BookOpen } as Tab,
+  Kai: { label: "Kai", href: "/alerts", icon: Bot } as Tab,
   Watchlist: { label: "Watchlist", href: "/watchlist/community", icon: Eye } as Tab,
   Missions: { label: "Missions", href: "/missions", icon: Target } as Tab,
   Family: { label: "Family", href: "/family", icon: Users } as Tab,
@@ -62,7 +71,8 @@ function tabsFor(
   ageGroup?: string,
   tier?: FamilyTier,
   isSolo?: boolean,
-  track?: string
+  track?: string,
+  club?: boolean
 ): { tabs: [Tab, Tab, Tab, Tab]; youLabel: string } {
   // The register, from the ONE shared derivation — not a second, narrower
   // local rule. `role === "child" && ageGroup === "kids"` missed the legacy
@@ -81,9 +91,13 @@ function tabsFor(
     return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
   if (isTeen)
     return { tabs: [T.Home, T.Learn, T.Club, T.Watchlist], youLabel: "You" };
+  // CLUB MODE (adults only — kid/teen returned above): the Kai slot. The tab
+  // is the Kai Watch alerts dashboard; the chat rides the floating button.
+  if (club)
+    return { tabs: [T.Home, T.Discover, T.Club, T.Kai], youLabel: "You" };
   if (canParent && !isSolo)
     return { tabs: [T.Home, T.Discover, T.Club, T.Family], youLabel: "You" };
-  // Solo adult / individual member.
+  // Family-mode adult without a roster (mid-provisioning) — legacy shape.
   return { tabs: [T.Home, T.Discover, T.Club, T.Watchlist], youLabel: "You" };
 }
 
@@ -109,16 +123,19 @@ export default function MobileTabBar({ user, xp = null }: MobileTabBarProps) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // The EFFECTIVE door arrives on user.door (DashboardShell resolves it —
+  // solo adults read club there even when the stored door says family).
+  const mode = modeFromDoorOrSolo(user.door, user.isSolo);
+  const individual = mode === "individual";
+  const brand = modeBrand(mode);
   const { tabs, youLabel } = tabsFor(
     user.role,
     user.age_group,
     user.tier,
     user.isSolo,
-    user.track
+    user.track,
+    individual
   );
-  const mode = modeFromDoorOrSolo(user.door, user.isSolo);
-  const individual = mode === "individual";
-  const brand = modeBrand(mode);
   // The 5th slot ("You"/"Me") — a user glyph opening the full-nav sheet.
   const MoreIcon = User;
   const moreLabel = youLabel;

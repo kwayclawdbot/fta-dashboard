@@ -243,8 +243,25 @@ interface SavedScreen {
  * the tab row and the two board-15 tail blocks are dropped — the host already
  * carries all three. The data, filters, full-universe load, saved screens and
  * free-tier gating are identical in both placements.
+ *
+ * `nlSeed` / `seedScreenId` — the CLUB-mode Discover composition (CheatCodeDoors
+ * redesign) owns the "Plain English in" query bar and the Saved-screens tab, so
+ * it hands the query / the chosen screen down here rather than duplicating the
+ * screener. Both are optional and INERT when absent — every family/kid placement
+ * passes neither, so nothing changes for them — and both run through the same
+ * deterministic parse / apply paths the in-surface controls use.
  */
-export default function ScreenerSurface({ embedded = false }: { embedded?: boolean }) {
+export default function ScreenerSurface({
+  embedded = false,
+  nlSeed,
+  seedScreenId,
+}: {
+  embedded?: boolean;
+  /** A plain-English query to parse and apply on arrival (club Discover). */
+  nlSeed?: string;
+  /** A screener_saved_screens id to re-apply on arrival (club Discover). */
+  seedScreenId?: string | null;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
@@ -304,6 +321,45 @@ export default function ScreenerSurface({ embedded = false }: { embedded?: boole
   const [savingScreen, setSavingScreen] = useState(false);
   const [screenName, setScreenName] = useState("");
   const [appliedScreenId, setAppliedScreenId] = useState<string | null>(null);
+
+  /* ── seeds from the club Discover host ──────────────────────────────────
+     Each seed is applied EXACTLY ONCE per distinct value (the refs), through
+     the same state the surface's own controls write — a seeded screen and a
+     hand-built one are indistinguishable, which is the whole contract. */
+  /* eslint-disable react-hooks/set-state-in-effect -- applying a host-supplied
+     seed IS an external-input sync; both effects are ref-guarded one-shots. */
+  const nlSeedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const text = nlSeed?.trim();
+    if (!text || nlSeedRef.current === nlSeed) return;
+    nlSeedRef.current = nlSeed ?? null;
+    setNlInput(text);
+    setActivePresetId(null);
+    setAppliedScreenId(null);
+    const parsed = parseScreenerQuery(text);
+    if (parsed.matched.length > 0) {
+      setCustom({ ...parsed.filters, q: parsed.leftover || null });
+      setNlNote(`Understood: ${parsed.matched.join(" · ")}`);
+    } else {
+      setCustom({ q: text });
+      setNlNote("No filters matched — searching by name instead.");
+    }
+  }, [nlSeed]);
+
+  const screenSeedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!seedScreenId || !saved || screenSeedRef.current === seedScreenId) return;
+    const s = saved.find((x) => x.id === seedScreenId);
+    if (!s) return;
+    screenSeedRef.current = seedScreenId;
+    setActivePresetId(null);
+    setAppliedScreenId(s.id);
+    setCustom((c) => ({ ...s.filters, q: c.q ?? null }));
+    setSortKey(s.sort_key);
+    setSortDir(s.sort_dir);
+    setNlNote(null);
+  }, [seedScreenId, saved]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isFTA = tier === "fta";
   // Free is a METER on this surface now, not a door: the basic groups and the

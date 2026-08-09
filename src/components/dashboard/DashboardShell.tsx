@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Flame, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserXp } from "@/lib/xp";
+import { deriveRegister } from "@/lib/register";
 import { showsKaiFab, fabReserve } from "@/lib/kai-fab";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardTopBar from "./DashboardTopBar";
@@ -186,24 +187,48 @@ export default function DashboardShell({
       )
     : null;
 
-  // MODE (Cheat Code Club redesign R1) — the brand/palette skin. FTA hub routes
-  // are the metallic-gold desk regardless of household; otherwise the skin is
-  // the household's stored DOOR (E1) — Club is sand + volt orange, Family warm
-  // gold. This used to be `user.isSolo`, i.e. the shape of a household typed
-  // into an onboarding wizard; the door is stamped from the entry domain at
-  // registration instead and never re-inferred. Stamped on the wrapper for the
-  // SSR subtree; ModeManager mirrors it onto <html> for body chrome + favicon.
+  // MODE (Cheat Code Club redesign R1 → doors build) — the brand/palette skin.
+  // FTA hub routes are the metallic-gold desk regardless of household.
+  //
+  // THE APP DEFAULTS TO CHEAT CODE CLUB; Family Mode activates from the
+  // member's PROFILE (owner decision, doors build). Resolution:
+  //   • kid / teen register        → family, locked. A minor can never be
+  //     skinned club, whatever the door or a cookie says (mirrors 214/216).
+  //   • adult, club door OR an accepted /switch clubView session → club.
+  //   • adult, SOLO roster          → club — even when the stored door says
+  //     "family" (every signup through the family host is stamped family, so
+  //     door alone would keep a deliberate individual in FIC forever). Mode is
+  //     a DISPLAY axis (src/lib/mode.ts); the door stays the billing/funnel
+  //     fact underneath and is not rewritten.
+  //   • adult in a real household   → family (the profile IS the activation).
+  const register = deriveRegister({
+    role: user.role,
+    age_group: user.age_group,
+    track: user.track,
+  });
+  const clubMode =
+    register === "adult" && (clubView || door === "club" || !!user.isSolo);
   const mode: "club" | "family" | "fta" = pathname.startsWith("/fta")
     ? "fta"
-    : clubView
+    : clubMode
       ? "club"
-      : door;
+      : "family";
 
-  // The brand axis for the nav surfaces. They read the DOOR now (wordmark,
-  // collapsed mark, fic-chip label) rather than re-deriving it from household
-  // shape; `isSolo` stays on the user object because the nav COMPOSITION — the
-  // Family group vs. the solo Account row — is still a roster question.
-  const brandUser = { ...user, door: clubView ? ("club" as const) : door };
+  // APPEARANCE POLICY (dark/light axis, orthogonal to mode): the Club is dark
+  // by default with a light toggle honored in Settings; Family (kids included)
+  // is light-only. Keyed on the member's EFFECTIVE brand mode, not the route —
+  // an /fta visit keeps the member's own policy.
+  const appearance: "club" | "family" = clubMode ? "club" : "family";
+
+  // The brand axis for the nav surfaces (wordmark, collapsed mark, fic-chip
+  // label) — the EFFECTIVE door, so a solo adult resolved to club above reads
+  // "Cheat Code Club" everywhere, not FIC. `isSolo` stays on the user object
+  // because the nav COMPOSITION — the Family group vs. the solo Account row —
+  // is still a roster question.
+  const brandUser = {
+    ...user,
+    door: clubMode ? ("club" as const) : ("family" as const),
+  };
 
   return (
     // `bg-midnight-950` was the DARK-app vocabulary this shell was born in. The
@@ -212,7 +237,7 @@ export default function DashboardShell({
     // naming a surface the app no longer has. Same ground, said in the
     // vocabulary the app actually uses.
     <div data-mode={mode} className="min-h-screen bg-paper">
-      <ModeManager mode={mode} />
+      <ModeManager mode={mode} appearance={appearance} />
       <KaiSheetProvider
         tier={user.tier}
         role={user.role}
