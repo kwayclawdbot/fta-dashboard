@@ -1659,15 +1659,57 @@ function ScreenRow({
                 </p>
               )}
 
-              {/* NO ACTION BUTTONS (owner ruling 2026-08-10): the favorite
-                  star on the collapsed row is the ONE action a result carries.
-                  The expanded panel is a reading — chart, stats, the Club's
-                  read — with a single quiet deep link to the full research
-                  page, where every act (watch, alerts, Kai) already lives. */}
-              <div className="mt-3.5 flex items-center justify-end">
+              {/* ── ACTION ROW — the terminal's pill vocabulary ─────────────
+                  + Watchlist is the star's own family_watchlist write; Ask Kai
+                  opens the contextual sheet (members only — free gets no
+                  pill); Set alert keeps research's kid/teen gate; Open
+                  research carries the deep link the row used to be. */}
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                {canStar && (
+                  <button
+                    type="button"
+                    disabled={starred || busy}
+                    onClick={onStar}
+                    className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border px-[11px] py-[6px] text-[11.5px] font-semibold transition-colors ${
+                      starred
+                        ? "border-accent/60 bg-accent/12 text-gold-700"
+                        : "border-sand bg-midnight-800 text-ink hover:border-accent"
+                    } disabled:cursor-default`}
+                  >
+                    <Star
+                      aria-hidden
+                      className={`h-3.5 w-3.5 ${
+                        starred ? "fill-current text-gold-700" : "text-soft"
+                      }`}
+                    />
+                    {starred ? "On watchlist" : busy ? "Adding…" : "+ Watchlist"}
+                  </button>
+                )}
+                {showKai && (
+                  <button
+                    type="button"
+                    onClick={onAskKai}
+                    className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-sand bg-midnight-800 px-[11px] py-[6px] text-[11.5px] font-semibold text-ink transition-colors hover:border-[color-mix(in_srgb,var(--kai-blue)_55%,var(--sand))]"
+                  >
+                    <Sparkles
+                      aria-hidden
+                      className="h-3.5 w-3.5 text-kai-600 dark:text-kai-300"
+                    />
+                    Ask Kai
+                  </button>
+                )}
+                {canAlert && (
+                  <SetAlertButton
+                    ticker={r.ticker}
+                    surface="screener"
+                    seedPrice={r.price ?? null}
+                    variant="chip"
+                    stopPropagation={false}
+                  />
+                )}
                 <Link
                   href={researchHref(r.ticker)}
-                  className="f0-focus inline-flex items-center gap-1 rounded text-[11.5px] font-bold text-gold-700"
+                  className="f0-focus ml-auto inline-flex items-center gap-1 rounded text-[11.5px] font-bold text-gold-700"
                 >
                   Open research
                   <ArrowRight aria-hidden className="h-3.5 w-3.5" />
