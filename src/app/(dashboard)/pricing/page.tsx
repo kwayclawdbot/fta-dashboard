@@ -5,6 +5,7 @@ import { FIC_CHECKOUT_URL } from "@/lib/free-class";
 import PricingMatrix from "@/components/entitlements/PricingMatrix";
 import { TextAction } from "@/components/f0/parts";
 import { BoardSection } from "@/components/clubhome/board";
+import ModeSwap from "@/components/ModeSwap";
 import { redirectKids } from "@/lib/server/viewer-register";
 
 /**
@@ -90,6 +91,52 @@ export default async function PricingPage() {
   // /screener uses.
   await redirectKids();
 
+  /* CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): this is
+     a SERVER page, so the mode branch rides <ModeSwap/> — both subtrees are
+     built here with the commercial copy byte-identical; only the chrome
+     (mono eyebrow, white-caps section labels) differs. Checkout URL, matrix,
+     kid redirect and the family render are untouched. */
+  const tiers = (
+    <div className="mt-4 space-y-4">
+      <Tier
+        name="Cheat Code Free"
+        price="$0"
+        body="Participate in the network. Community, starter lessons, a taste of Kai and research."
+      />
+      <Tier
+        featured
+        name="Cheat Code Club"
+        price="$99"
+        per="/mo"
+        body="Unlock the intelligence — Kai Watch, Club Intelligence, unlimited research, and the whole household included."
+        action={
+          <a
+            href={FIC_CHECKOUT_URL}
+            className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
+          >
+            Join the Club <ArrowRight className="h-4 w-4" />
+          </a>
+        }
+      />
+      <Tier
+        name="FTA"
+        price="Advanced"
+        body="The trade-ready academy — a 6-week live trading program on top of your Club membership."
+        action={
+          <TextAction href={FTA_URL}>
+            Explore FTA <ArrowRight className="h-4 w-4" />
+          </TextAction>
+        }
+      />
+    </div>
+  );
+
+  const matrix = (
+    <div className="mt-4">
+      <PricingMatrix />
+    </div>
+  );
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 pb-16">
       {/* Hand-composed masthead (not DisplayHead) for ONE reason: the canvas's
@@ -97,9 +144,18 @@ export default async function PricingPage() {
           DisplayHead takes a plain string. The words are byte-identical to the
           previous revision — only the mark on "intelligence" is new. */}
       <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
-          Membership
-        </p>
+        <ModeSwap
+          club={
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+              Membership
+            </p>
+          }
+          family={
+            <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+              Membership
+            </p>
+          }
+        />
         <h1 className="mt-2 font-display text-display-1 font-extrabold uppercase text-ink">
           Participate free. Unlock the{" "}
           <span className="f0-underline-mark">intelligence</span>.
@@ -111,51 +167,50 @@ export default async function PricingPage() {
         </p>
       </header>
 
-      {/* The three tiers — white board cards on paper, lead card carrying the edge. */}
+      {/* The three tiers — white board cards on paper, lead card carrying the
+          edge. Club: the same cards under the law's white-caps section label
+          (the cards themselves already ride --card/--sand). */}
       <div className="mt-10">
-        <BoardSection label="The three" mark="doors" id="pricing-doors">
-          <div className="mt-4 space-y-4">
-          <Tier
-            name="Cheat Code Free"
-            price="$0"
-            body="Participate in the network. Community, starter lessons, a taste of Kai and research."
-          />
-          <Tier
-            featured
-            name="Cheat Code Club"
-            price="$99"
-            per="/mo"
-            body="Unlock the intelligence — Kai Watch, Club Intelligence, unlimited research, and the whole household included."
-            action={
-              <a
-                href={FIC_CHECKOUT_URL}
-                className="f0-focus f0-press inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3 font-display text-sm font-bold tracking-[0.02em] text-[color:var(--accent-on)]"
+        <ModeSwap
+          club={
+            <section aria-labelledby="pricing-doors">
+              <h2
+                id="pricing-doors"
+                className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
               >
-                Join the Club <ArrowRight className="h-4 w-4" />
-              </a>
-            }
-          />
-          <Tier
-            name="FTA"
-            price="Advanced"
-            body="The trade-ready academy — a 6-week live trading program on top of your Club membership."
-            action={
-              <TextAction href={FTA_URL}>
-                Explore FTA <ArrowRight className="h-4 w-4" />
-              </TextAction>
-            }
-          />
-          </div>
-        </BoardSection>
+                The three doors
+              </h2>
+              {tiers}
+            </section>
+          }
+          family={
+            <BoardSection label="The three" mark="doors" id="pricing-doors">
+              {tiers}
+            </BoardSection>
+          }
+        />
       </div>
 
       {/* The binding matrix */}
       <div className="mt-12">
-        <BoardSection label="Compare every" mark="feature" id="pricing-matrix">
-          <div className="mt-4">
-            <PricingMatrix />
-          </div>
-        </BoardSection>
+        <ModeSwap
+          club={
+            <section aria-labelledby="pricing-matrix">
+              <h2
+                id="pricing-matrix"
+                className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+              >
+                Compare every feature
+              </h2>
+              {matrix}
+            </section>
+          }
+          family={
+            <BoardSection label="Compare every" mark="feature" id="pricing-matrix">
+              {matrix}
+            </BoardSection>
+          }
+        />
       </div>
 
       <p className="f0-rule-top mt-10 max-w-[62ch] pt-5 text-xs leading-relaxed text-soft">

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion, AnimatePresence, useReducedMotion, type PanInfo } from "framer-motion";
 import { RotateCcw, Check, X, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import {
   pickDailyFive,
   pickSetCards,
@@ -68,6 +69,12 @@ import TodaysReview from "@/components/review/TodaysReview";
 type Mode = "picker" | "session";
 
 export default function FlashcardsPage() {
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): club
+  // gets the caps masthead, a dark Daily-5 card and a white-caps "Study sets"
+  // label over terminal deck rows. The deck rows and card faces already ride
+  // .club-b-card (--card/--sand — dark in club). SRS writes, the once-a-day XP
+  // gate and the family/kid render are byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = createClient();
   const reduce = useReducedMotion();
   const [loading, setLoading] = useState(true);
@@ -252,19 +259,42 @@ export default function FlashcardsPage() {
 
     return (
       <div className="mx-auto max-w-2xl space-y-8 pb-16">
-        <DisplayHead
-          eyebrow="Recall practice"
-          title=""
-          mark="Flashcards"
-          lede={
-            isKid
-              ? "Flip a card, make your guess, grow your streak. Five a day keeps it all sharp."
-              : "Run your Daily 5 for a fast sweep across everything, or drill one set until it's automatic."
-          }
-        />
+        {isClub ? (
+          <header>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+              Recall practice
+            </p>
+            <h1 className="mt-2 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+              Flashcards
+            </h1>
+            <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+              Run your Daily 5 for a fast sweep across everything, or drill one
+              set until it&apos;s automatic.
+            </p>
+          </header>
+        ) : (
+          <DisplayHead
+            eyebrow="Recall practice"
+            title=""
+            mark="Flashcards"
+            lede={
+              isKid
+                ? "Flip a card, make your guess, grow your streak. Five a day keeps it all sharp."
+                : "Run your Daily 5 for a fast sweep across everything, or drill one set until it's automatic."
+            }
+          />
+        )}
 
-        {/* THE ONE TINTED OBJECT — the Daily 5 and how sharp the deck is. */}
-        <section className="club-b-warm f0-grain px-5 py-5" aria-labelledby="daily-5">
+        {/* THE ONE TINTED OBJECT — the Daily 5 and how sharp the deck is.
+            Club: the same object as a dark terminal card. */}
+        <section
+          className={
+            isClub
+              ? "rounded-[16px] border border-sand bg-card px-5 py-5"
+              : "club-b-warm f0-grain px-5 py-5"
+          }
+          aria-labelledby="daily-5"
+        >
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
@@ -343,12 +373,8 @@ export default function FlashcardsPage() {
             }
           />
         ) : (
-          <BoardSection
-            id="flash-sets"
-            label="Study sets"
-            mark="drill one"
-            sub="Work a single set until the answers come without thinking."
-          >
+          (() => {
+            const setRows = (
             <div className="mt-4 space-y-3">
               {sets.map((s) => (
                 <button
@@ -379,7 +405,31 @@ export default function FlashcardsPage() {
                 </button>
               ))}
             </div>
-          </BoardSection>
+            );
+            return isClub ? (
+              <section aria-labelledby="flash-sets">
+                <h2
+                  id="flash-sets"
+                  className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+                >
+                  Study sets
+                </h2>
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-soft">
+                  Work a single set until the answers come without thinking.
+                </p>
+                {setRows}
+              </section>
+            ) : (
+              <BoardSection
+                id="flash-sets"
+                label="Study sets"
+                mark="drill one"
+                sub="Work a single set until the answers come without thinking."
+              >
+                {setRows}
+              </BoardSection>
+            );
+          })()
         )}
       </div>
     );
@@ -389,7 +439,7 @@ export default function FlashcardsPage() {
   if (cards.length === 0 && !done) {
     return (
       <div className="mx-auto max-w-2xl space-y-8 pb-16">
-        <SessionHeader label={sessionLabel} onBack={backToPicker} />
+        <SessionHeader label={sessionLabel} onBack={backToPicker} club={isClub} />
         <EmptyLine
           title={isKid ? "All caught up!" : "Nothing due in this set"}
           body={
@@ -410,7 +460,7 @@ export default function FlashcardsPage() {
   if (done) {
     return (
       <div className="mx-auto max-w-2xl space-y-8 pb-16">
-        <SessionHeader label={sessionLabel} onBack={backToPicker} />
+        <SessionHeader label={sessionLabel} onBack={backToPicker} club={isClub} />
         <motion.section
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -502,6 +552,7 @@ export default function FlashcardsPage() {
         label={sessionLabel}
         onBack={backToPicker}
         sub={isDaily ? undefined : "Study set"}
+        club={isClub}
       />
 
       {/* progress dots */}
@@ -744,10 +795,13 @@ function SessionHeader({
   label,
   onBack,
   sub,
+  club = false,
 }: {
   label: string;
   onBack: () => void;
   sub?: string;
+  /** Club terminal skin: caps session title. Family render unchanged. */
+  club?: boolean;
 }) {
   return (
     <div className="mb-6">
@@ -757,7 +811,13 @@ function SessionHeader({
       >
         <span aria-hidden>←</span> All sets
       </button>
-      <h1 className="mt-3 font-display text-display-2 font-extrabold leading-[1.05] text-ink">
+      <h1
+        className={
+          club
+            ? "mt-3 font-display text-[clamp(24px,6vw,30px)] font-black uppercase leading-[0.95] tracking-[-0.03em] text-ink"
+            : "mt-3 font-display text-display-2 font-extrabold leading-[1.05] text-ink"
+        }
+      >
         {label}
       </h1>
       {sub ? <p className="mt-1.5 font-mono text-[12px] text-soft">{sub}</p> : null}

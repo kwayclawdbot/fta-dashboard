@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bot, RotateCw, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { useFtaViewer } from "@/components/fta/useFtaViewer";
 import { deriveRegister, celebrateRegister } from "@/lib/register";
 import { isFreeTier } from "@/lib/tier";
@@ -29,6 +30,10 @@ import {
  */
 
 export default function SimbotPage() {
+  // CLUB TERMINAL CHROME (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): caps
+  // masthead + mono eyebrow in club mode only. The bridge, XP awards, free/kid
+  // walls, theme sync and the family/teen render are byte-identical.
+  const isClub = useAppMode() === "club";
   const { loading: viewerLoading, me, tier, profile } = useFtaViewer();
   // A lazily-initialised STATE value, not a ref: the bridge consumes it during
   // render, and a ref read at render time is a correctness hazard (it is not
@@ -164,10 +169,22 @@ export default function SimbotPage() {
       <SimulatorTabs />
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
         <div className="min-w-0">
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          <p
+            className={
+              isClub
+                ? "font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft"
+                : "text-eyebrow font-display font-bold uppercase text-gold-700"
+            }
+          >
             Practice
           </p>
-          <h1 className="mt-2 flex items-center gap-2.5 font-display text-display-1 font-extrabold text-ink">
+          <h1
+            className={
+              isClub
+                ? "mt-2 flex items-center gap-2.5 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink"
+                : "mt-2 flex items-center gap-2.5 font-display text-display-1 font-extrabold text-ink"
+            }
+          >
             Simbot
             {simbotHint.showReopen && (
               <HintReopen onClick={simbotHint.reopen} label="How Simbot works" />

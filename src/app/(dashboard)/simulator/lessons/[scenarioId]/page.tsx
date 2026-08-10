@@ -15,6 +15,7 @@ import { generatePatternBars } from "@/lib/simulator/pattern-injector";
 import type { OHLCV } from "@/lib/simulator/market-engine";
 import type { PriceLine, ChartHandle } from "@/components/simulator/CandlestickChart";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 
 /**
@@ -40,6 +41,10 @@ const CandlestickChart = dynamic(
 type Phase = "intro" | "playing" | "decision" | "resolution" | "result";
 
 export default function ScenarioPracticePage() {
+  // CLUB TERMINAL CHROME (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): caps
+  // masthead, mono eyebrow, white-caps rail label in club mode. The tape, the
+  // injector, scoring, XP writes and the family/teen/kid render are untouched.
+  const isClub = useAppMode() === "club";
   const params = useParams();
   const router = useRouter();
   const scenarioId = params.scenarioId as string;
@@ -331,10 +336,22 @@ export default function ScenarioPracticePage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_330px]">
         <div className="min-w-0 space-y-4">
           <header>
-            <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+            <p
+              className={
+                isClub
+                  ? "font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft"
+                  : "text-eyebrow font-display font-bold uppercase text-gold-700"
+              }
+            >
               Pattern practice · {scenario.difficulty}
             </p>
-            <h1 className="mt-2 font-display text-display-2 font-extrabold text-ink">
+            <h1
+              className={
+                isClub
+                  ? "mt-2 font-display text-[clamp(24px,5vw,30px)] font-black uppercase leading-[0.95] tracking-[-0.03em] text-ink"
+                  : "mt-2 font-display text-display-2 font-extrabold text-ink"
+              }
+            >
               {scenario.name}
             </h1>
             <p className="mt-2 max-w-lg text-[13.5px] leading-relaxed text-soft">
@@ -382,12 +399,21 @@ export default function ScenarioPracticePage() {
         {/* Right rail: what to look for, then the call, then the result. */}
         <div className="min-w-0 space-y-6">
           <section aria-labelledby="scenario-learn">
+            {isClub ? (
+              <h2
+                id="scenario-learn"
+                className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+              >
+                What to look for
+              </h2>
+            ) : (
             <h2
               id="scenario-learn"
               className="f0-section-rule mb-2 font-display text-eyebrow font-bold uppercase text-soft"
             >
               <span className="shrink-0 whitespace-nowrap">What to look for</span>
             </h2>
+            )}
             <p className="text-[13px] leading-relaxed text-ink/85">{scenario.education}</p>
             {hintPriceLines.length > 0 && (
               <p className="f0-rule-top mt-3 pt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft">

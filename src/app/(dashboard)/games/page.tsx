@@ -7,6 +7,7 @@ import { m } from "@/lib/motion";
 import { ArrowRight, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
+import { useAppMode } from "@/lib/useAppMode";
 import { DisplayHead } from "@/components/f0/parts";
 import { BoardSection } from "@/components/clubhome/board";
 
@@ -102,6 +103,12 @@ function timeAgo(iso: string, nowHour: number | null): string {
 }
 
 export default function GamesHubPage() {
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): club
+  // gets the caps masthead, white-caps section head and terminal hub cards
+  // (dark card, mono record rail). Same real game_scores reads, same free-tier
+  // lock, same links; the game engines are untouched and the family/kid render
+  // is byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = createClient();
   const [best, setBest] = useState<Record<string, number>>({});
   const [last, setLast] = useState<Record<string, string>>({});
@@ -148,19 +155,41 @@ export default function GamesHubPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <m.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
-        <DisplayHead
-          eyebrow="Training room"
-          title="Practice"
-          mark="Games"
-          lede="Every price move is a tug-of-war between buyers and sellers. Ten rounds a session; clear 70% and the session pays XP."
-        />
+        {isClub ? (
+          <header>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+              Training room
+            </p>
+            <h1 className="mt-2 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+              Games
+            </h1>
+            <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+              Every price move is a tug-of-war between buyers and sellers. Ten
+              rounds a session; clear 70% and the session pays XP.
+            </p>
+          </header>
+        ) : (
+          <DisplayHead
+            eyebrow="Training room"
+            title="Practice"
+            mark="Games"
+            lede="Every price move is a tug-of-war between buyers and sellers. Ten rounds a session; clear 70% and the session pays XP."
+          />
+        )}
       </m.div>
 
       {/* THE ONE TINTED OBJECT — your record, stated and never inferred. A
           member with no sessions gets a FOUNDING STATE (§0.5), not a missing
           line: "you have not played yet" is a fact worth saying, and it carries
           the rule that makes a session pay. */}
-      <section className="club-b-warm f0-grain px-5 py-5" aria-label="Your record">
+      <section
+        className={
+          isClub
+            ? "rounded-[16px] border border-sand bg-card px-5 py-5"
+            : "club-b-warm f0-grain px-5 py-5"
+        }
+        aria-label="Your record"
+      >
         <div className="flex items-end justify-between gap-4">
           <div className="min-w-0">
             <p className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-ink">
@@ -195,12 +224,8 @@ export default function GamesHubPage() {
         </div>
       </section>
 
-      <BoardSection
-        id="games-reps"
-        label="The reps"
-        mark="pick one"
-        sub="Short sessions. Each one trains a different read."
-      >
+      {(() => {
+        const repsList = (
         <div className="f0-stagger mt-4 space-y-3">
           {GAMES.map((g, i) => {
             const locked = isFree && !g.freeOpen;
@@ -212,12 +237,18 @@ export default function GamesHubPage() {
                 style={{ "--i": i } as React.CSSProperties}
                 className="relative"
               >
+                {!isClub && (
                 <span className="club-b-pip absolute -left-[7px] -top-[7px] z-10" aria-hidden>
                   {i + 1}
                 </span>
+                )}
                 <Link
                   href={locked ? "/upgrade" : g.href}
-                  className="club-b-card f0-focus f0-press group flex items-start gap-4 px-4 py-4"
+                  className={
+                    isClub
+                      ? "f0-focus f0-press group flex items-start gap-4 rounded-[14px] border border-sand bg-card px-4 py-4"
+                      : "club-b-card f0-focus f0-press group flex items-start gap-4 px-4 py-4"
+                  }
                 >
                   {/* Identity tile — the game's own art, at the board's tile
                       geometry. `locked` dims it honestly rather than hiding it. */}
@@ -287,7 +318,31 @@ export default function GamesHubPage() {
             );
           })}
         </div>
-      </BoardSection>
+        );
+        return isClub ? (
+          <section aria-labelledby="games-reps">
+            <h2
+              id="games-reps"
+              className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+            >
+              The reps
+            </h2>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-soft">
+              Short sessions. Each one trains a different read.
+            </p>
+            {repsList}
+          </section>
+        ) : (
+          <BoardSection
+            id="games-reps"
+            label="The reps"
+            mark="pick one"
+            sub="Short sessions. Each one trains a different read."
+          >
+            {repsList}
+          </BoardSection>
+        );
+      })()}
     </div>
   );
 }

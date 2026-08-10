@@ -17,8 +17,12 @@ import { computeStreak } from "@/lib/streak";
 import { getBadgeState, evaluateBadges, type BadgeRow } from "@/lib/badges";
 import { deriveRegister } from "@/lib/register";
 import { canSeeCourse } from "@/lib/courseVisibility";
+import { useAppMode } from "@/lib/useAppMode";
 import { XpLevelObject } from "@/components/canvas2";
 import { StreakFlame } from "@/components/art";
+import BeltBadge from "@/components/BeltBadge";
+import { BrandTile } from "@/components/clubhome/board";
+import { StanceChip } from "@/app/(dashboard)/community/board";
 import {
   BoardMast,
   Card,
@@ -106,6 +110,8 @@ interface CourseLine {
 interface PositionLine {
   ticker: string;
   stance: string;
+  /** The raw stance key ("bull" | "bear" | "neutral") for the club chip. */
+  stanceKey: string;
   /** Pre-formatted in the load — never derived from a clock during render. */
   when: string;
 }
@@ -183,7 +189,120 @@ function monthDay(iso: string): string {
   return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric" });
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CLUB TERMINAL BRANCH (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09)
+
+   /progress is the You tab's home — the member's OWN profile. The club render
+   applies the ratified /u/[username] terminal vocabulary to this surface's
+   existing composition and reads: terminal identity head (ring avatar, Sora
+   name, belt chip, mono level line, accent-gradient XP bar), the mono stats
+   ledger in one dark card, the streak card, the badge shelf, and the dated
+   track-record rows (BrandTile + StanceChip + mono date, no outcome column —
+   green/red stays price-only). Same reads, same walls, same links; the
+   FAMILY / KID render below this branch is byte-for-byte the shipped one
+   (kids can never see this branch: data-mode="club" is stamped only for the
+   club door, which the register gate keeps away from minors).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const KNOWN_STANCES = ["bull", "bear", "neutral"] as const;
+type KnownStance = (typeof KNOWN_STANCES)[number];
+function knownStance(s: string | null): KnownStance | null {
+  return (KNOWN_STANCES as readonly string[]).includes(s ?? "")
+    ? (s as KnownStance)
+    : null;
+}
+
+/** Terminal section head — WHITE BOLD CAPS ~13px (law: never tiny gray mono),
+    with the quiet right-hand door beside it. */
+function TermHead({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <h2 className="min-w-0 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+        {children}
+      </h2>
+      {action && <span className="shrink-0">{action}</span>}
+    </div>
+  );
+}
+
+/** Terminal accent text link (the club's quiet door — text-accent, no chrome). */
+function TermAction({
+  href,
+  onClick,
+  children,
+}: {
+  href?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  const cls =
+    "f0-focus inline-flex items-center gap-1.5 rounded text-[12px] font-semibold text-accent transition-opacity hover:opacity-80";
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={cls}>
+      {children}
+    </button>
+  );
+}
+
+/** One mono ledger row of the terminal stats card. Conviction is the only row
+    allowed the sentiment (lime) tone — everything else is ink. */
+function TermStat({
+  label,
+  value,
+  tone = "ink",
+}: {
+  label: string;
+  value: string;
+  tone?: "ink" | "sentiment";
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-[11px]">
+      <span className="text-[12.5px] text-soft">{label}</span>
+      <span
+        className={`font-mono text-[13px] font-semibold tabular-nums ${
+          tone === "sentiment" ? "text-sentiment" : "text-ink"
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/** A quiet terminal row — the track-record / door row of the club pass. */
+function TermRow({
+  href,
+  children,
+}: {
+  href?: string;
+  children: React.ReactNode;
+}) {
+  const cls = "flex items-center gap-3 rounded-[12px] bg-card px-3 py-[11px]";
+  if (href) {
+    return (
+      <Link href={href} className={`f0-focus f0-press ${cls}`}>
+        {children}
+      </Link>
+    );
+  }
+  return <div className={cls}>{children}</div>;
+}
+
 export default function ProfileSurface() {
+  const isClub = useAppMode() === "club";
   const [state, setState] = useState<ProfileState>(EMPTY);
   const [badges, setBadges] = useState<BadgeRow[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -396,6 +515,7 @@ export default function ProfileSurface() {
             }[]).map((r) => ({
               ticker: r.ticker.toUpperCase(),
               stance: STANCE_WORD[r.stance] ?? r.stance,
+              stanceKey: r.stance,
               when: monthDay(r.updated_at),
             })),
         saved: savedRes.error ? null : (savedRes.count ?? null),
@@ -470,6 +590,397 @@ export default function ProfileSurface() {
   const dialLabel: [string, string] = bp.next
     ? ["TO", bp.next.belt.name.toUpperCase()]
     : [belt.belt.name.toUpperCase(), "BELT"];
+
+  /* ── CLUB TERMINAL RENDER ─────────────────────────────────────────────────
+     Same loads, same measures, same doors — a different skin, per the ratified
+     /u/[username] club pass. Rhythm is uneven by design: ~12-14px inside a
+     thought (mt-3 / mt-3.5), 24px between sections (mt-6). The family render
+     below stays byte-for-byte. */
+  if (isClub) {
+    return (
+      <div className="mx-auto max-w-2xl pb-16">
+        {/* ── MASTHEAD — terminal caps, loudest type on the screen ───────── */}
+        <header className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 truncate font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+            You
+          </h1>
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="f0-focus f0-press shrink-0 rounded pt-1 text-soft transition-colors hover:text-ink"
+          >
+            <SettingsIcon className="h-5 w-5" />
+          </Link>
+        </header>
+
+        {/* ── IDENTITY — ring avatar · Sora name · belt · mono level line ── */}
+        <section className="mt-5 flex items-center gap-4">
+          <RingAvatar name={state.name} avatarUrl={state.avatarUrl} size={78} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="min-w-0 truncate font-display text-[23px] font-extrabold leading-tight tracking-[-0.035em] text-ink">
+                {state.name}
+              </h2>
+              <BeltBadge rank={belt} size="sm" />
+            </div>
+            <p className="mt-1.5 truncate font-mono text-[10.5px] uppercase tracking-[0.12em] text-soft">
+              Level {lvl.current.level} · {lvl.current.name}
+              {state.username ? ` · @${state.username}` : ""}
+            </p>
+            <div
+              className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-sand"
+              role="progressbar"
+              aria-valuenow={lvl.pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${lvl.pct}%`, background: "var(--accent-gradient)" }}
+              />
+            </div>
+            <p className="mt-1.5 font-mono text-[10px] tabular-nums text-soft">
+              {lvl.next
+                ? `${state.xp.toLocaleString()} / ${lvl.next.min.toLocaleString()} XP`
+                : `${state.xp.toLocaleString()} XP · top of the ladder`}
+            </p>
+          </div>
+        </section>
+
+        {/* ── STREAK — one dark card, the drawn ember, mono count, real pips */}
+        <div className="mt-5 flex items-center gap-3.5 rounded-[14px] border border-sand bg-card px-4 py-3.5">
+          <StreakFlame streak={state.streakDays} size={30} showCount={false} ignite />
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+              Streak
+            </p>
+            <p className="mt-1 font-mono text-[13px] font-semibold tabular-nums text-ink">
+              {state.streakDays}{" "}
+              <span className="text-[11px] font-normal text-soft">
+                {state.streakDays === 1 ? "day in a row" : "days in a row"}
+              </span>
+            </p>
+          </div>
+          <StreakPips days={state.streakWindow} />
+        </div>
+
+        {/* ── STATS — one dark card, mono ledger, interior padding 14-16px ── */}
+        <section className="mt-6">
+          <TermHead>Your stats</TermHead>
+          <div className="mt-3 rounded-[14px] border border-sand bg-card px-4 py-1">
+            <div className="grid gap-x-8 sm:grid-cols-2">
+              <div className="f0-ledger">
+                <TermStat label="Positions" value={dash(part?.stances)} />
+                <TermStat label="Club posts" value={dash(part?.posts)} />
+                <TermStat label="Research notes" value={dash(part?.research)} />
+                <TermStat label="Changed minds" value={dash(part?.flips)} />
+              </div>
+              <div className="f0-ledger">
+                <TermStat label="Respect" value={dash(part?.respect)} />
+                {/* Conviction — the member's own bull share, lime by law, and
+                    no claim about whether they were right. */}
+                <TermStat
+                  label="Conviction"
+                  value={conviction == null ? "—" : `${conviction}%`}
+                  tone="sentiment"
+                />
+                <TermStat label="Weeks active" value={dash(part?.weeksActive)} />
+                <TermStat
+                  label="Next belt"
+                  value={bp.next ? `${bp.toNext.toLocaleString()} XP` : "Earned"}
+                />
+              </div>
+            </div>
+          </div>
+          <p className="mt-2.5 max-w-[62ch] text-[11px] leading-relaxed text-soft">
+            Conviction is the share of your positions you&apos;ve called bullish —
+            the Club&apos;s own sentiment measure, not a market number, and not a
+            score of whether you were right. We don&apos;t publish member accuracy
+            or win rates. A measure reads &ldquo;—&rdquo; until there&apos;s
+            something real behind it.
+          </p>
+        </section>
+
+        {/* ── WHERE YOUR REPS COME FROM — your own XP split, never a
+            percentile against anyone else. ─────────────────────────────── */}
+        <section className="mt-6">
+          <TermHead>Where your reps come from</TermHead>
+          <div className="mt-3 rounded-[14px] border border-sand bg-card px-4 py-3.5">
+            {state.sources.length === 0 ? (
+              <p className="text-[12px] leading-relaxed text-soft">
+                Nothing has earned XP yet. Finish a lesson or post in the Club and
+                this fills in with your own split.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {state.sources.map((s) => (
+                  <BarRow key={s.label} label={s.label} meta={`${s.pct}%`} pct={s.pct} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── BADGES — the credential shelf ──────────────────────────────── */}
+        <section className="mt-6">
+          <TermHead action={<TermAction href="/belts">The ladder</TermAction>}>
+            Badges
+          </TermHead>
+          <div className="mt-3">
+            {badges == null ? (
+              <div className="flex gap-2" aria-busy="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-[86px] w-[92px] shrink-0 rounded-[14px] bg-sand/60 motion-safe:animate-pulse"
+                  />
+                ))}
+                <span className="sr-only">Loading your badges</span>
+              </div>
+            ) : awarded.length === 0 ? (
+              <div className="rounded-[14px] border border-sand bg-card px-4 py-4">
+                <p className="font-display text-[14px] font-bold text-ink">
+                  No badges yet
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-soft">
+                  Badges are earned, not given — research a company, show up to a
+                  class, finish a lesson. The first one you earn lands here.
+                </p>
+                <div className="mt-2.5">
+                  <TermAction href="/discover">Find something to research</TermAction>
+                </div>
+              </div>
+            ) : (
+              <div className="club2-track flex gap-2 overflow-x-auto pb-1">
+                {(badges ?? []).map((b) => (
+                  <div
+                    key={b.slug}
+                    title={b.subtitle ?? undefined}
+                    className={`flex w-[92px] shrink-0 flex-col items-center gap-2 rounded-[14px] px-2 py-3 text-center ${
+                      b.awarded
+                        ? "border border-sand bg-card"
+                        : "border border-dashed border-sand bg-transparent"
+                    }`}
+                  >
+                    <span
+                      className="relative grid h-8 w-8 place-items-center rounded-full font-display text-[13px] font-extrabold"
+                      style={
+                        b.awarded
+                          ? { background: "var(--accent-solid)", color: "var(--accent-on)" }
+                          : { background: "var(--sand)", color: "var(--soft)" }
+                      }
+                      aria-hidden
+                    >
+                      {b.awarded ? (
+                        b.title.slice(0, 1).toUpperCase()
+                      ) : (
+                        <Lock className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                    <span
+                      className={`font-display text-[10px] font-bold leading-tight ${
+                        b.awarded ? "text-ink" : "text-soft"
+                      }`}
+                    >
+                      {b.title}
+                    </span>
+                    {!b.awarded && (
+                      <span className="text-[9px] font-medium leading-none text-soft">
+                        Not earned yet
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── TRACK RECORD — dated position rows. No outcome column ships:
+            nothing in these reads carries one, and green/red is price-only.
+            Direction rides the ratified stance chip; the date is mono. ───── */}
+        <section className="mt-6">
+          <TermHead action={<TermAction href="/discover">See all</TermAction>}>
+            Track record
+          </TermHead>
+          <div className="mt-3">
+            {state.part == null ? (
+              <div className="space-y-[7px]" aria-busy="true">
+                {[0, 1].map((i) => (
+                  <div
+                    key={i}
+                    className="h-[52px] rounded-[12px] border border-sand bg-card motion-safe:animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : state.positions.length === 0 ? (
+              <div className="rounded-[14px] border border-sand bg-card px-4 py-4">
+                <p className="font-display text-[14px] font-bold text-ink">
+                  No positions yet
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-soft">
+                  Take a position on a company you&apos;ve actually looked at —
+                  bullish, bearish or neutral. It lands here, and you can change it
+                  any time.
+                </p>
+                <div className="mt-2.5">
+                  <TermAction href="/discover">
+                    Browse companies <ArrowRight className="h-3 w-3" />
+                  </TermAction>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-[7px]">
+                {state.positions.map((p) => {
+                  const st = knownStance(p.stanceKey);
+                  return (
+                    <TermRow
+                      key={p.ticker}
+                      href={`/research/${encodeURIComponent(p.ticker)}`}
+                    >
+                      <BrandTile ticker={p.ticker} size={30} radius={9} fontSize={12} />
+                      <span className="min-w-0 flex-1 truncate font-display text-[13.5px] font-bold leading-none text-ink">
+                        {p.ticker}
+                      </span>
+                      {st ? (
+                        <StanceChip stance={st} size="sm" />
+                      ) : (
+                        <span className="text-[11px] text-soft">{p.stance}</span>
+                      )}
+                      <span className="w-[52px] shrink-0 text-right font-mono text-[11px] tabular-nums text-soft">
+                        {p.when}
+                      </span>
+                    </TermRow>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── LEARNING — quiet rows, mono percent, the shared mini meter ─── */}
+        <section className="mt-6">
+          <TermHead action={<TermAction href="/courses">Learn</TermAction>}>
+            Learning
+          </TermHead>
+          <div className="mt-3">
+            {state.courses.length === 0 ? (
+              <div className="rounded-[14px] border border-sand bg-card px-4 py-4">
+                <p className="font-display text-[14px] font-bold text-ink">
+                  No path started
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-soft">
+                  Your course progress shows up here the moment you open a lesson.
+                </p>
+                <div className="mt-2.5">
+                  <TermAction href="/courses">
+                    Browse the library <ArrowRight className="h-3 w-3" />
+                  </TermAction>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-[7px]">
+                {state.courses.map((c) => {
+                  const pct = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0;
+                  return (
+                    <TermRow key={c.slug} href={`/courses/${c.slug}`}>
+                      <span className="min-w-0 flex-1 self-center">
+                        <span className="block truncate font-display text-[13px] font-bold leading-tight text-ink">
+                          {c.title}
+                        </span>
+                        <span className="mt-0.5 block font-mono text-[9.5px] uppercase tracking-[0.12em] text-soft">
+                          {c.done} of {c.total} lessons
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2.5 self-center">
+                        <span className="font-mono text-[11px] tabular-nums text-soft">
+                          {pct}%
+                        </span>
+                        <MiniMeter pct={pct} />
+                      </span>
+                    </TermRow>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── YOURS — the door rows ──────────────────────────────────────── */}
+        <section className="mt-6">
+          <TermHead>Yours</TermHead>
+          <div className="mt-3 space-y-[7px]">
+            <TermRow href={postsHref}>
+              <span className="min-w-0 flex-1 self-center">
+                <span className="block truncate font-display text-[13px] font-bold leading-tight text-ink">
+                  My posts
+                </span>
+                <span className="mt-0.5 block truncate text-[10.5px] leading-snug text-soft">
+                  {state.username
+                    ? "Your public profile and everything you've said in the Club"
+                    : "Pick a handle in Settings to get a public profile"}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2 self-center">
+                <span className="font-mono text-[11px] tabular-nums text-soft">
+                  {dash(part?.posts)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-soft" />
+              </span>
+            </TermRow>
+            <TermRow href="/watchlist">
+              <span className="min-w-0 flex-1 self-center">
+                <span className="block truncate font-display text-[13px] font-bold leading-tight text-ink">
+                  Saved
+                </span>
+                <span className="mt-0.5 block truncate text-[10.5px] leading-snug text-soft">
+                  Companies you champion on the watchlist
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2 self-center">
+                <span className="font-mono text-[11px] tabular-nums text-soft">
+                  {dash(state.saved)}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-soft" />
+              </span>
+            </TermRow>
+            <TermRow href="/belts">
+              <span className="min-w-0 flex-1 self-center">
+                <span className="block truncate font-display text-[13px] font-bold leading-tight text-ink">
+                  The belt ladder
+                </span>
+                <span className="mt-0.5 block truncate text-[10.5px] leading-snug text-soft">
+                  {bp.next
+                    ? "Every belt, and what each one takes"
+                    : "Top of the ladder — every belt earned"}
+                </span>
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 self-center text-soft" />
+            </TermRow>
+            <TermRow href="/settings">
+              <span className="min-w-0 flex-1 self-center">
+                <span className="block truncate font-display text-[13px] font-bold leading-tight text-ink">
+                  Settings
+                </span>
+                <span className="mt-0.5 block truncate text-[10.5px] leading-snug text-soft">
+                  Profile, theme, notifications, membership
+                </span>
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 self-center text-soft" />
+            </TermRow>
+          </div>
+        </section>
+
+        <p className="mt-6 text-[11px] leading-relaxed text-soft">
+          {state.since ? `Member since ${state.since}. ` : ""}
+          Every number here is a count of something you did. We don&apos;t publish
+          member accuracy or win rates, so nothing on this page is a claim about
+          returns — a measure reads &ldquo;—&rdquo; until you&apos;ve given it
+          something real.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-16">

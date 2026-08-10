@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { RotateCcw } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import {
   LEVELS,
   XP,
@@ -217,6 +219,49 @@ const EMPTY: BeltState = {
   breakdownCapped: false,
 };
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CLUB TERMINAL BRANCH (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09)
+
+   The club render draws the SAME derived ladder as a terminal ledger: caps
+   masthead, the canonical XpLevelObject hero, then one dark card of hairline
+   rows — belt object, Sora rung name, mono XP threshold gate line, mono
+   share-of-club right rail, the standing rung marked in the accent. The
+   explainer and the what-earns-XP table become dark-card ledgers under WHITE
+   BOLD CAPS section heads. Every figure comes from the same reads and the same
+   shareLabel/gateLine calls the family render makes — nothing new is computed.
+   The FAMILY render below is byte-for-byte the shipped board-22 kit.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/** Terminal section head — WHITE BOLD CAPS ~13px (law: never tiny gray mono). */
+function TermHead({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <h2 className="min-w-0 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+        {children}
+      </h2>
+      {action && <span className="shrink-0">{action}</span>}
+    </div>
+  );
+}
+
+/** Terminal accent text link — the club's quiet door. */
+function TermAction({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="f0-focus rounded text-[12px] font-semibold text-accent transition-opacity hover:opacity-80"
+    >
+      {children}
+    </Link>
+  );
+}
+
 function Skeleton() {
   return (
     <div className="mx-auto max-w-2xl space-y-4" aria-busy="true">
@@ -236,6 +281,7 @@ function Skeleton() {
 }
 
 export default function BeltLadder() {
+  const isClub = useAppMode() === "club";
   const [state, setState] = useState<BeltState>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -367,6 +413,235 @@ export default function BeltLadder() {
     if (!n) return null;
     const pct = (n / state.clubTotal) * 100;
     return `${pct >= 10 ? Math.round(pct) : pct.toFixed(1)}% of club`;
+  }
+
+  /* ── CLUB TERMINAL RENDER — same data, same derivations, terminal skin.
+     Rhythm is uneven by design: ~12px inside a thought, 24px between
+     sections. Family board-22 render below stays byte-for-byte. ─────────── */
+  if (isClub) {
+    const topRung = RUNGS[RUNGS.length - 1];
+    return (
+      <div className="mx-auto max-w-2xl pb-16">
+        {/* ── MASTHEAD — terminal caps ───────────────────────────────────── */}
+        <header>
+          <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+            Belts
+          </h1>
+          <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+            Rank is earned from reps, not follower counts. Your belt travels with
+            you everywhere in the Club.
+          </p>
+        </header>
+
+        {/* ── WHERE YOU STAND — the canonical XP object, mono figures ────── */}
+        <div className="mt-5">
+          <XpLevelObject
+            xp={state.xp}
+            ladder="belt"
+            leading={<BeltObject rank={prog.current} size={64} title={prog.current.label} />}
+          />
+        </div>
+
+        {/* ── THE LADDER — one dark card, hairline ledger, mono thresholds ── */}
+        <section className="mt-6">
+          <TermHead>The ladder</TermHead>
+          <div className="mt-3 rounded-[14px] border border-sand bg-card px-4 py-1">
+            <div className="f0-ledger">
+              {RUNGS.map((rung, i) => {
+                const isCurrent = i === currentIndex;
+                const earned = i <= currentIndex;
+                const share = shareLabel(rung.belt.key);
+                const degree = isCurrent
+                  ? prog.current.degree
+                  : earned
+                    ? rung.levels.length
+                    : 1;
+                return (
+                  <div key={rung.belt.key} className="flex items-center gap-3 py-[11px]">
+                    <BeltObject
+                      belt={rung.belt.key}
+                      degree={degree}
+                      size={38}
+                      locked={!earned}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-baseline gap-x-2">
+                        <span
+                          className={`font-display text-[13.5px] leading-none ${
+                            isCurrent
+                              ? "font-extrabold text-ink"
+                              : earned
+                                ? "font-bold text-ink"
+                                : "font-bold text-soft"
+                          }`}
+                        >
+                          {rung.belt.name} Belt
+                        </span>
+                        {isCurrent && (
+                          <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-accent">
+                            You are here
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-1 block truncate font-mono text-[10px] tabular-nums text-soft">
+                        {gateLine(i)}
+                      </span>
+                    </span>
+                    {share && (
+                      <span className="shrink-0 text-right font-mono text-[10.5px] tabular-nums text-soft">
+                        {share}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* The top rung, empty — drawn rather than stated, once there IS a
+              club to be absent from. Same condition as the family render. */}
+          {dist && state.clubTotal > 0 && dist[topRung.belt.key] === 0 && (
+            <div className="mt-3">
+              <EmptyStateNote
+                art={<EmptyBeltOnPeg size={72} />}
+                title={`No ${topRung.belt.name} Belts yet`}
+              >
+                The top rung is unclaimed. It takes {topRung.minXp.toLocaleString()} XP
+                of real reps to reach, and nobody in the Club has put them in — so the
+                peg stays empty until somebody does.
+              </EmptyStateNote>
+            </div>
+          )}
+
+          {/* The distribution, told honestly at the scale it actually has. */}
+          <p className="mt-2.5 max-w-[62ch] text-[11px] leading-relaxed text-soft">
+            {dist == null ? (
+              "The club-wide share couldn't be read just now, so no rung carries a percentage — we'd rather show you nothing than a number we can't stand behind."
+            ) : state.clubTotal === 0 ? (
+              "Nobody is ranked yet. The shares fill in as members earn their first XP."
+            ) : state.clubTotal < SHARE_FLOOR ? (
+              <>
+                {state.clubTotal === 1 ? "One member is" : `${state.clubTotal} members are`} ranked
+                so far — too few for a share-of-club percentage to mean anything, so the
+                ladder carries none. It starts showing shares once the board passes{" "}
+                {SHARE_FLOOR.toLocaleString()} ranked members.
+              </>
+            ) : everyoneOnFirstRung ? (
+              <>
+                All {state.clubTotal.toLocaleString()} ranked{" "}
+                {state.clubTotal === 1 ? "member is a" : "members are"} {RUNGS[0].belt.name}{" "}
+                Belt{state.clubTotal === 1 ? "" : "s"} today. The rungs above are empty on
+                purpose — nobody has put in the reps yet, and we&apos;d rather show you an
+                empty ladder than a full one that isn&apos;t true.
+              </>
+            ) : (
+              <>
+                Shares are counted across {state.clubTotal.toLocaleString()} ranked member
+                {state.clubTotal === 1 ? "" : "s"}
+                {state.clubCapped ? " (the top 100 by lifetime XP)" : ""}. A rung with
+                nobody on it carries no figure at all. No belt is gated on accuracy or a
+                win rate — we don&apos;t publish either.
+              </>
+            )}
+          </p>
+        </section>
+
+        {/* ── HOW BELTS SHOW UP — dark-card ledger under a white caps head ── */}
+        <section className="mt-6">
+          <TermHead>How belts show up</TermHead>
+          <div className="mt-3 rounded-[14px] border border-sand bg-card px-4 py-1">
+            <div className="f0-ledger">
+              <div className="flex items-center gap-3 py-[11px]">
+                <BeltObject belt="blue" degree={2} size={40} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-[12.5px] font-bold text-ink">
+                    Your avatar ring
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-soft">
+                    Belt colour rides the corner of your avatar, everywhere
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 py-[11px]">
+                <BeltObject belt="black" size={40} />
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-1.5 font-display text-[12.5px] font-bold text-ink">
+                    Beside your name
+                    <BeltChip
+                      hex={BELTS.black.hex}
+                      onHex={BELTS.black.onHex}
+                      label="Black Belt"
+                    />
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-soft">
+                    The belt chip sits next to your name on every post
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 py-[11px]">
+                <BeltObject belt="yellow" size={40} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-[12.5px] font-bold text-ink">
+                    On the leaderboard
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-soft">
+                    Your belt is spelled out beside your rank
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── WHAT EARNS XP — mono rates, real earned totals ─────────────── */}
+        <section className="mt-6">
+          <TermHead>What earns XP</TermHead>
+          <div className="mt-3 rounded-[14px] border border-sand bg-card px-4 py-1">
+            <div className="f0-ledger">
+              {EARNS.filter((e) => !e.onlyIfEarned || (state.byKind[e.kind] ?? 0) > 0).map(
+                (e) => {
+                  const mine = state.byKind[e.kind] ?? 0;
+                  return (
+                    <div key={e.kind} className="flex items-center gap-3 py-[11px]">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display text-[13px] font-bold leading-tight text-ink">
+                          {e.label}
+                        </span>
+                        <span className="mt-0.5 block text-[10.5px] leading-snug text-soft">
+                          {e.rule}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span className="block font-mono text-[12px] font-semibold tabular-nums text-ink">
+                          {e.rate}
+                        </span>
+                        <span className="mt-0.5 block font-mono text-[8.5px] font-semibold uppercase tracking-[0.1em] text-soft">
+                          {mine > 0 ? `${mine.toLocaleString()} earned` : "None yet"}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                }
+              )}
+            </div>
+          </div>
+          <p className="mt-2.5 max-w-[62ch] text-[11px] leading-relaxed text-soft">
+            Rates are the ones the app actually awards — this list is generated from the
+            same constants the award calls use, so it can&apos;t drift from what you get
+            paid. Your own totals come straight from your XP ledger
+            {state.breakdownCapped
+              ? `, covering your most recent ${EVENT_PAGE.toLocaleString()} awards`
+              : ""}
+            .
+          </p>
+        </section>
+
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
+          <TermAction href="/progress">Your profile</TermAction>
+          <TermAction href="/leaderboard">Leaderboard</TermAction>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -71,25 +71,25 @@ Future passes update the Status column in place.
 | /u/[username] | 2 | DONE 2026-08-09 — club server-door branch, terminal profile; family render byte-identical |
 | /leaderboard | 2 | DONE 2026-08-09 — club terminal ledger (mono ranks/XP, belts); family podium/cards untouched |
 | /settings (SettingsSurface) | 2 | DONE 2026-08-09 — club white-caps section labels, dark cards, uneven rhythm; family render + all controls untouched |
-| /belts | 2 | TODO — App-Light board 22 kit, needs terminal skin |
-| /progress | 2 | TODO — ProfileSurface (board 07 light kit) |
-| /referrals | 2 | TODO (commercial copy byte-preserved) |
+| /belts | 2 | DONE 2026-08-09 — club terminal ledger (dark card, mono XP thresholds, accent "you are here"); family board-22 render byte-identical |
+| /progress | 2 | DONE 2026-08-09 — club terminal ProfileSurface branch (caps YOU mast, identity head w/ accent-gradient XP bar, mono stats ledger, badges shelf, StanceChip track-record rows); family/kid render byte-identical |
+| /referrals | 2 | DONE 2026-08-09 — club terminal masthead (no case transform on the commercial headline) + white-caps section labels, dark link card; every commercial string byte-identical, wiring untouched |
 | /news (+ /news/[slug]) | 2 | TODO |
-| /courses (+ [slug], lesson viewer) | 2 | TODO — shared with family; branch on mode |
-| /live-sessions | 2 | TODO — shared with family; branch on mode |
-| /flashcards | 2 | TODO — shared with family; branch on mode |
-| /start-here | 2 | TODO |
-| /chart | 2 | TODO — App-Light board 03 kit |
-| /simulator (+ /lessons, /simbot) | 2 | TODO — shared with family/teen; branch on mode |
-| /games (+ candle-battle, trend-or-trap) | 2 | TODO — shared with family/kid; branch on mode |
+| /courses (+ [slug], lesson viewer) | 2 | DONE 2026-08-09 — club terminal course cards (mono progress meters, orange CTAs), syllabus as dark-card lesson ledger, lesson viewer caps mast + white-caps labels + violet tab underline; all gates/XP/quiz wiring shared, family/kid render byte-identical (useAppMode branch) |
+| /live-sessions | 2 | DONE 2026-08-09 — club terminal event rows (dark 14px cards, mono when-lines) + white-caps section heads via LiveSection wrapper; RSVP/XP/tier/track gates + recording player untouched; family render byte-identical |
+| /flashcards | 2 | DONE 2026-08-09 — club caps mast, dark Daily-5 card, white-caps "Study sets" over terminal deck rows, caps session head; SRS writes + once-a-day XP gate untouched; family/kid render byte-identical |
+| /start-here | 2 | DONE 2026-08-09 — club terminal onboarding checklist (caps mast, dark next-step card, white-caps section label, dark step cards w/ mono ordinals, accent-edged next step); orientation writes + 6/6 celebration + kid branch untouched |
+| /chart | 2 | DONE 2026-08-09 — club terminal chrome (semantic orange Load CTA, white-caps TRY label, flat dark chart well); board-03 composition + chart engine untouched; family classes byte-identical |
+| /simulator (+ /lessons, /simbot) | 2 | DONE 2026-08-09 — club terminal chrome (mono eyebrows, caps masts, white-caps rail labels, pattern ledger in dark card); engine/tick loop/persistence, scenario scoring/XP, simbot bridge + free/kid walls untouched; family/teen render byte-identical |
+| /games (+ candle-battle, trend-or-trap) | 2 | DONE 2026-08-09 — club terminal hub (caps mast, dark record card, white-caps "The reps", terminal hub cards, no pips); game engines untouched (candle-battle/trend-or-trap pages mount engines only), free-tier lock + server gate untouched; family/kid render byte-identical |
 | /screener | 2 | IN FLIGHT — concurrent agent owns this pass |
 | /circles (+ [slug]) | 2 | TODO — light board-16 kit; rings anatomy already established |
-| /club-index | 2 | TODO — lowercase wordmark head needs terminal caps |
-| /vip-room | 2 | TODO — clubhome BoardSection already; verify against law |
-| /research/thesis/[id] | 2 | TODO — thesis object surface |
-| /help | 2 | TODO |
+| /club-index | 2 | DONE 2026-08-09 — terminal caps masthead; ratified ClubIndex ledger untouched |
+| /vip-room | 2 | DONE 2026-08-09 — audited against the law, no deviations: tokens only, board-11 pricing card, accent pill CTAs, mono timestamps, uneven rhythm; commercial copy byte-preserved, gate untouched |
+| /research/thesis/[id] | 2 | DONE 2026-08-09 — club thesis object: white-caps section labels (updates + sections + discussion), mono provenance/price stamps kept, price ramp stays the only green/red; RPC reads, kid walls, verbatim disclaimer untouched; family render byte-identical |
+| /help | 2 | DONE 2026-08-09 — club terminal ledger: caps mast + white-caps section heads (HelpSection wrapper); ticket ledger/cards already ride --card/--sand; bot, ticket writes, single support address untouched; family render byte-identical |
 | /upgrade | 2 | TODO (commercial copy byte-preserved) |
-| /pricing | 2 | TODO (commercial copy byte-preserved) |
+| /pricing | 2 | DONE 2026-08-09 — club chrome via new <ModeSwap/> client door (server page): mono eyebrow + white-caps section labels; every price/plan/entitlement/disclaimer string byte-identical in both subtrees; checkout URL, matrix, kid redirect untouched |
 | /family (+ circle, corner, leaderboard, learn, live, members, overview, teen/[memberId] + guardrails/progress, tonight, watchlist) | 3 | Family-only — untouched by design |
 | /parent-corner | 3 | Family-only — untouched |
 | /missions | 3 | Kid missions — family/teen navs only; untouched |

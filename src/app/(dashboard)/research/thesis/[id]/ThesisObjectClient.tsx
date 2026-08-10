@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import Avatar from "@/components/Avatar";
 import AgeBadge from "@/components/community/AgeBadge";
 import { timeAgo } from "@/lib/feed";
@@ -82,6 +83,12 @@ export default function ThesisObjectClient({
   isKid: boolean;
   isMember: boolean;
 }) {
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): in club
+  // mode the section rules become WHITE BOLD CAPS labels — the law's thesis
+  // object register. The price move keeps the price ramp (the only green/red
+  // here), all reads/writes, kid walls, the verbatim disclaimer and the whole
+  // family render are byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = useMemo(() => createClient(), []);
   const [updates, setUpdates] = useState<ThesisUpdate[]>(initialUpdates);
   const [comments, setComments] = useState<CommentRow[]>([]);
@@ -207,7 +214,13 @@ export default function ThesisObjectClient({
 
       {/* ── THESIS UPDATE lifecycle ───────────────────────────────────────── */}
       <section className="mt-9">
-        <SectionRule>Thesis updates</SectionRule>
+        {isClub ? (
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            Thesis updates
+          </h2>
+        ) : (
+          <SectionRule>Thesis updates</SectionRule>
+        )}
         <p className="mb-3 mt-2 max-w-[62ch] text-[12.5px] leading-relaxed text-soft">
           A thesis is a living argument. Every update is stamped with the price
           at the moment it was written, so the record can&apos;t be tidied up
@@ -294,6 +307,7 @@ export default function ThesisObjectClient({
             supabase={supabase}
             objectId={object.id}
             onPosted={loadComments}
+            club={isClub}
           />
         ))}
 
@@ -308,6 +322,7 @@ export default function ThesisObjectClient({
           supabase={supabase}
           objectId={object.id}
           onPosted={loadComments}
+          club={isClub}
         />
       </div>
 
@@ -390,6 +405,7 @@ function SectionBlock({
   supabase,
   objectId,
   onPosted,
+  club = false,
 }: {
   section: ThesisCommentSection;
   label: string;
@@ -400,6 +416,8 @@ function SectionBlock({
   supabase: ReturnType<typeof createClient>;
   objectId: string;
   onPosted: () => void;
+  /** Club terminal skin: white bold caps section label. Family unchanged. */
+  club?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -428,19 +446,25 @@ function SectionBlock({
     onPosted();
   }
 
+  const noteCount =
+    comments.length > 0 ? (
+      <span className="font-mono text-[11px] tabular-nums text-soft/70">
+        {comments.length} note{comments.length === 1 ? "" : "s"}
+      </span>
+    ) : undefined;
+
   return (
     <section id={`section-${section}`} className="scroll-mt-20">
-      <SectionRule
-        action={
-          comments.length > 0 ? (
-            <span className="font-mono text-[11px] tabular-nums text-soft/70">
-              {comments.length} note{comments.length === 1 ? "" : "s"}
-            </span>
-          ) : undefined
-        }
-      >
-        {label}
-      </SectionRule>
+      {club ? (
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            {label}
+          </h2>
+          {noteCount}
+        </div>
+      ) : (
+        <SectionRule action={noteCount}>{label}</SectionRule>
+      )}
 
       {body ? (
         <div className="mt-3 max-w-[65ch] space-y-3.5">

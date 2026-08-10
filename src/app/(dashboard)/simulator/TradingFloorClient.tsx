@@ -4,6 +4,7 @@ import { useState, useReducer, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { m } from "@/lib/motion";
 import { RotateCcw } from "lucide-react";
+import { useAppMode } from "@/lib/useAppMode";
 import TimeControls from "@/components/simulator/TimeControls";
 import ChartDrawingTools from "@/components/simulator/ChartDrawingTools";
 import OrderPanel from "@/components/simulator/OrderPanel";
@@ -80,6 +81,12 @@ type LedgerTab = "positions" | "history";
  * reducer, the persistence or the layout was touched.
  */
 export default function TradingFloorClient() {
+  // CLUB TERMINAL CHROME (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): club
+  // mode swaps the masthead into the terminal register — mono eyebrow, caps
+  // headline. The engine, tick loop, persistence, gates and the whole
+  // family/teen render are byte-identical (every surface below already rides
+  // semantic tokens, mono data and the price ramp).
+  const isClub = useAppMode() === "club";
   const [symbol, setSymbol] = useState(SYMBOLS[0]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -423,10 +430,22 @@ export default function TradingFloorClient() {
       {/* Masthead — the display voice, no icon chip, no card. */}
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          <p
+            className={
+              isClub
+                ? "font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft"
+                : "text-eyebrow font-display font-bold uppercase text-gold-700"
+            }
+          >
             Practice
           </p>
-          <h1 className="mt-2 font-display text-display-1 font-extrabold text-ink">
+          <h1
+            className={
+              isClub
+                ? "mt-2 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink"
+                : "mt-2 font-display text-display-1 font-extrabold text-ink"
+            }
+          >
             Trading floor
           </h1>
           {/* The canvas's own line for this account, verbatim (design-project

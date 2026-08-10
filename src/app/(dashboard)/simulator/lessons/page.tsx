@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { SCENARIOS, type ScenarioDefinition } from "@/lib/simulator/scenarios";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { Meter } from "@/components/f0/parts";
 import SimulatorTabs from "@/components/simulator/SimulatorTabs";
 
@@ -37,6 +38,10 @@ interface ScoreRecord {
 }
 
 export default function LessonsPage() {
+  // CLUB TERMINAL CHROME (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): club
+  // gets the caps masthead and white-caps section labels; the ledger rows,
+  // scores and every read are shared. Family/teen/kid render byte-identical.
+  const isClub = useAppMode() === "club";
   const [records, setRecords] = useState<Record<string, ScoreRecord>>({});
   const [loading, setLoading] = useState(true);
 
@@ -84,10 +89,22 @@ export default function LessonsPage() {
       <SimulatorTabs />
 
       <header>
-        <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+        <p
+          className={
+            isClub
+              ? "font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft"
+              : "text-eyebrow font-display font-bold uppercase text-gold-700"
+          }
+        >
           Practice
         </p>
-        <h1 className="mt-2 font-display text-display-1 font-extrabold text-ink">
+        <h1
+          className={
+            isClub
+              ? "mt-2 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink"
+              : "mt-2 font-display text-display-1 font-extrabold text-ink"
+          }
+        >
           Pattern practice
         </h1>
         <p className="mt-2.5 max-w-md text-[14px] leading-relaxed text-soft">
@@ -130,6 +147,7 @@ export default function LessonsPage() {
         scenarios={chartPatterns}
         records={records}
         loading={loading}
+        club={isClub}
       />
 
       <ScenarioLedger
@@ -138,6 +156,7 @@ export default function LessonsPage() {
         scenarios={candlestickPatterns}
         records={records}
         loading={loading}
+        club={isClub}
       />
     </div>
   );
@@ -149,28 +168,46 @@ function ScenarioLedger({
   scenarios,
   records,
   loading,
+  club = false,
 }: {
   id: string;
   label: string;
   scenarios: ScenarioDefinition[];
   records: Record<string, ScoreRecord>;
   loading: boolean;
+  /** Club terminal skin: white bold caps section head + dark ledger card. */
+  club?: boolean;
 }) {
   return (
     <section aria-labelledby={id}>
+      {club ? (
+        <h2
+          id={id}
+          className="mb-3 text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+        >
+          {label}
+        </h2>
+      ) : (
       <h2
         id={id}
         className="f0-section-rule mb-1 font-display text-eyebrow font-bold uppercase text-soft"
       >
         <span className="shrink-0 whitespace-nowrap">{label}</span>
       </h2>
+      )}
 
       {scenarios.length === 0 ? (
         <p className="py-4 text-[13.5px] leading-relaxed text-soft">
           No patterns in this set yet.
         </p>
       ) : (
-        <div className="f0-ledger">
+        <div
+          className={
+            club
+              ? "f0-ledger rounded-[14px] border border-sand bg-card px-4"
+              : "f0-ledger"
+          }
+        >
           {scenarios.map((s) => {
             const rec = records[s.id];
             const done = !!rec?.passed;

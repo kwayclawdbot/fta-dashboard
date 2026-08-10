@@ -21,11 +21,15 @@ export const metadata: Metadata = {
 export default function ClubIndexPage() {
   return (
     <div className="mx-auto max-w-2xl pb-16 lg:max-w-3xl">
-      <header className="mb-5">
-        <h1 className="font-display text-[26px] font-extrabold lowercase tracking-[-0.03em] text-ink">
-          club index
+      {/* CLUB TERMINAL masthead (.planning/CLUB-TERMINAL-STYLE.md,
+          2026-08-09): caps, the loudest type on the screen — the lowercase
+          wordmark head was the family register on a club surface. The ledger
+          below is the ratified <ClubIndex /> object, untouched. */}
+      <header className="mb-6">
+        <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+          Club Index
         </h1>
-        <p className="mt-1 text-[13px] text-soft">
+        <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
           Where the room stands, ranked by conviction
         </p>
       </header>

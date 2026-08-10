@@ -38,6 +38,7 @@ import Link from "next/link";
 import { m } from "@/lib/motion";
 import { Search, ArrowLeft, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import TradingViewAdvancedChart from "@/components/fic/TradingViewAdvancedChart";
 import ClubChatDrawer from "@/components/community/ClubChatDrawer";
 import CompanyLogo from "@/components/fic/CompanyLogo";
@@ -77,6 +78,16 @@ function ChartInner() {
   const supabase = createClient();
   const params = useSearchParams();
   const router = useRouter();
+  /* CLUB TERMINAL BRANCH (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09).
+     The composition is board 03's and stays shared — the club-dark tokens
+     already reskin the cards and wells — so the branch only corrects the
+     three spots the family skin deviates from the law in club mode: the
+     hardcoded-hex Load CTA becomes the semantic orange pill, the tiny brand
+     mono "TRY" label becomes the WHITE BOLD CAPS section register, and the
+     chart frame becomes a flat dark well (border + card fill, no lifted
+     shadow). The chart ENGINE and every read/write are untouched, and the
+     family render keeps its exact class strings. */
+  const isClub = useAppMode() === "club";
 
   const urlSymbol = normalizeSymbol(params.get("symbol") || "SPY") || "SPY";
   const shownSymbol = bareSymbol(urlSymbol);
@@ -343,7 +354,11 @@ function ChartInner() {
               />
               <button
                 type="submit"
-                className="f0-focus f0-press shrink-0 rounded-full bg-volt-500 px-3 py-1 text-[11px] font-extrabold text-[#1A1614] transition-colors hover:bg-volt-600"
+                className={
+                  isClub
+                    ? "f0-focus f0-press shrink-0 rounded-full bg-accent px-3 py-1 text-[11px] font-extrabold text-[color:var(--accent-on)] transition-opacity hover:opacity-90"
+                    : "f0-focus f0-press shrink-0 rounded-full bg-volt-500 px-3 py-1 text-[11px] font-extrabold text-[#1A1614] transition-colors hover:bg-volt-600"
+                }
               >
                 Load
               </button>
@@ -408,9 +423,16 @@ function ChartInner() {
       {/* The canvas ticker tile, carrying a REAL delta. A symbol we could not
           get a quote for renders "—", never a fabricated flat. */}
       <div className="mt-3 flex items-center gap-3">
-        <CardLabel tone="brand" className="shrink-0">
-          Try
-        </CardLabel>
+        {isClub ? (
+          /* Terminal section label — white bold caps, never tiny gray mono. */
+          <span className="shrink-0 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            Try
+          </span>
+        ) : (
+          <CardLabel tone="brand" className="shrink-0">
+            Try
+          </CardLabel>
+        )}
         <TickerTileStrip size="sm" loading={quickLoading} loadingCount={6}>
           {QUICK_SYMBOLS.map((s) => {
             const bare = bareSymbol(s);
@@ -438,7 +460,13 @@ function ChartInner() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="mt-3 min-h-0 flex-1 overflow-hidden rounded-[18px] border border-sand shadow-soft"
+        className={
+          isClub
+            ? // The dark well: card fill behind the pane, hairline edge, no
+              // lifted shadow — a terminal instrument, not a floating sheet.
+              "mt-3 min-h-0 flex-1 overflow-hidden rounded-[16px] border border-sand bg-card"
+            : "mt-3 min-h-0 flex-1 overflow-hidden rounded-[18px] border border-sand shadow-soft"
+        }
       >
         {roleLoaded && style ? (
           <TradingViewAdvancedChart symbol={urlSymbol} lineStyle={style === "Line"} />

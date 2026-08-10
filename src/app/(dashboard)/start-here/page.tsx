@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { withTimeout, LOAD_TIMEOUT_MS } from "@/lib/async";
 import {
   ORIENTATION_STEPS,
@@ -126,6 +127,12 @@ const stepAction =
   "f0-chip f0-focus f0-press inline-flex items-center gap-1.5 px-3.5 py-1.5 font-display text-[13px] font-bold text-gold-700 hover:text-gold-600";
 
 export default function StartHerePage() {
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): club
+  // renders the orientation as a terminal onboarding checklist — caps masthead,
+  // dark next-step card, white-caps section label, dark step cards with mono
+  // ordinals. Every write (markOrientationStep), the 6/6 celebration, the kid
+  // gate and the family render are byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = createClient();
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [userId, setUserId] = useState("");
@@ -308,18 +315,39 @@ export default function StartHerePage() {
       <Celebrate opts={celebration} onDone={() => setCelebration(null)} />
 
       {/* Masthead — paints immediately (no data dependency) */}
-      <DisplayHead
-        eyebrow="Start Here"
-        title="Welcome to the"
-        mark="Club"
-        lede="We learn first and practice with pretend money. There is no pressure to ever trade for real — this is a family classroom for building smart money habits together. Finish these six steps to get your family set up."
-      />
+      {isClub ? (
+        <header>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+            Start Here
+          </p>
+          <h1 className="mt-2 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+            Welcome to the Club
+          </h1>
+          <p className="mt-2.5 max-w-[56ch] text-[13px] leading-relaxed text-soft">
+            We learn first and practice with pretend money. There is no pressure
+            to ever trade for real — this is a family classroom for building
+            smart money habits together. Finish these six steps to get your
+            family set up.
+          </p>
+        </header>
+      ) : (
+        <DisplayHead
+          eyebrow="Start Here"
+          title="Welcome to the"
+          mark="Club"
+          lede="We learn first and practice with pretend money. There is no pressure to ever trade for real — this is a family classroom for building smart money habits together. Finish these six steps to get your family set up."
+        />
+      )}
 
       {/* ── The next step — the ONE brand-tinted object on this surface. It
              paints immediately from local state (step 1 of 6) and re-points as
              orientation progress hydrates: no blank hero, no loading gate. ── */}
       <section
-        className="club-b-warm mt-8 px-[15px] py-[15px]"
+        className={
+          isClub
+            ? "mt-8 rounded-[16px] border border-sand bg-card px-[15px] py-[15px]"
+            : "club-b-warm mt-8 px-[15px] py-[15px]"
+        }
         aria-labelledby="orientation-next"
       >
         <div className="flex items-start gap-3.5">
@@ -376,18 +404,16 @@ export default function StartHerePage() {
         </div>
       </section>
 
-      {/* ── The six steps — white board cards, each with its rank pip ─────── */}
+      {/* ── The six steps — white board cards, each with its rank pip; club
+             renders the same steps as a terminal checklist. ─────── */}
       <div className="mt-10">
-        <BoardSection
-          id="orientation-steps"
-          label="Your six"
-          mark="steps"
-          action={
+        {(() => {
+          const countAction = (
             <span className="shrink-0 font-mono text-[11px] font-semibold text-soft tabular-nums">
               {doneCount}/{total} done
             </span>
-          }
-        >
+          );
+          const stepsList = (
           <div className="f0-stagger mt-3.5 space-y-3">
             {ORIENTATION_STEPS.map((step, i) => {
               const done = completed.has(step.key);
@@ -401,14 +427,24 @@ export default function StartHerePage() {
                   className="relative"
                 >
                   <div
-                    className={`club-b-card px-4 py-4 ${
-                      isNext ? "club-b-card-lead" : ""
-                    }`}
+                    className={
+                      isClub
+                        ? `rounded-[14px] border bg-card px-4 py-4 ${
+                            isNext
+                              ? "border-[color:var(--accent-solid)]"
+                              : "border-sand"
+                          }`
+                        : `club-b-card px-4 py-4 ${
+                            isNext ? "club-b-card-lead" : ""
+                          }`
+                    }
                   >
+                    {!isClub && (
                     <StepPip
                       n={i + 1}
                       state={done ? "done" : isNext ? "next" : "later"}
                     />
+                    )}
 
                     <div className="flex items-baseline justify-between gap-3">
                       <h3
@@ -416,6 +452,26 @@ export default function StartHerePage() {
                           done ? "text-soft" : "text-ink"
                         }`}
                       >
+                        {isClub && (
+                          <span
+                            className={`mr-2 font-mono text-[12px] font-semibold tabular-nums ${
+                              done
+                                ? "text-soft"
+                                : isNext
+                                  ? "text-accent"
+                                  : "text-soft"
+                            }`}
+                          >
+                            {done ? (
+                              <Check
+                                className="inline h-3.5 w-3.5 align-[-2px]"
+                                strokeWidth={3}
+                              />
+                            ) : (
+                              String(i + 1).padStart(2, "0")
+                            )}
+                          </span>
+                        )}
                         {step.title}
                       </h3>
                       <span
@@ -561,11 +617,41 @@ export default function StartHerePage() {
               );
             })}
           </div>
-        </BoardSection>
+          );
+          return isClub ? (
+            <section aria-labelledby="orientation-steps">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2
+                  id="orientation-steps"
+                  className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+                >
+                  Your six steps
+                </h2>
+                {countAction}
+              </div>
+              {stepsList}
+            </section>
+          ) : (
+            <BoardSection
+              id="orientation-steps"
+              label="Your six"
+              mark="steps"
+              action={countAction}
+            >
+              {stepsList}
+            </BoardSection>
+          );
+        })()}
       </div>
 
       {/* Education-first footer */}
-      <div className="club-b-card mt-10 flex max-w-[64ch] items-start gap-3 px-4 py-3.5">
+      <div
+        className={
+          isClub
+            ? "mt-10 flex max-w-[64ch] items-start gap-3 rounded-[14px] border border-sand bg-card px-4 py-3.5"
+            : "club-b-card mt-10 flex max-w-[64ch] items-start gap-3 px-4 py-3.5"
+        }
+      >
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-soft" aria-hidden />
         <p className="text-[13px] leading-relaxed text-soft">
           <span className="font-semibold text-ink">Our promise:</span> the Family

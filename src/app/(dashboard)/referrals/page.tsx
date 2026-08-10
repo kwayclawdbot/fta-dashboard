@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { referralLink, shareTargets, REFERRAL_SIGNUP_XP } from "@/lib/referral";
 import { Sparkle } from "@/components/fic/glyphs/motifs";
 import {
@@ -53,6 +54,13 @@ interface Stats {
 }
 
 export default function ReferralsPage() {
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): club
+  // gets the terminal masthead register and white-caps section labels. EVERY
+  // commercial string (headline, lede, "You earn N XP", the How-it-works
+  // bodies) is byte-identical in both branches — same strings, different
+  // classes, no case transform on the headline. Wiring (code mint, stats,
+  // share targets, parent gate) untouched; family render byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [isParent, setIsParent] = useState(false);
@@ -192,18 +200,39 @@ export default function ReferralsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-14">
-      <BoardMast
-        caps="none"
-        word="Invite a family, grow the club"
-        lede={`Word of mouth between families is how the club grows. Share your personal link — when a new family joins, you earn ${REFERRAL_SIGNUP_XP} XP and help another family start learning together.`}
-      />
+      {isClub ? (
+        /* Terminal masthead — the SAME commercial strings, no case transform
+           (lowercasing or uppercasing a commercial headline is a copy change). */
+        <header>
+          <h1 className="font-display text-[clamp(26px,7vw,32px)] font-black leading-[0.98] tracking-[-0.03em] text-ink">
+            Invite a family, grow the club
+          </h1>
+          <p className="mt-2.5 max-w-[56ch] text-[13px] leading-relaxed text-soft">
+            {`Word of mouth between families is how the club grows. Share your personal link — when a new family joins, you earn ${REFERRAL_SIGNUP_XP} XP and help another family start learning together.`}
+          </p>
+        </header>
+      ) : (
+        <BoardMast
+          caps="none"
+          word="Invite a family, grow the club"
+          lede={`Word of mouth between families is how the club grows. Share your personal link — when a new family joins, you earn ${REFERRAL_SIGNUP_XP} XP and help another family start learning together.`}
+        />
+      )}
 
       {/* ── THE LINK — the one object on this page ─────────────────────────
           It gets the warm brand-tinted card, the same treatment board 07 gives
           the streak and board 22 gives the rung you are standing on. */}
-      <WarmCard className="space-y-3.5 px-4 py-4">
+      {(() => {
+        const linkCard = (
+        <>
         <div className="flex items-baseline justify-between gap-4">
-          <Eyebrow charged>Your referral link</Eyebrow>
+          {isClub ? (
+            <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+              Your referral link
+            </h2>
+          ) : (
+            <Eyebrow charged>Your referral link</Eyebrow>
+          )}
           <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[11px] font-bold tracking-wide text-soft">
             <Sparkle className="h-3.5 w-3.5" />
             <span className="sr-only">Your code: </span>
@@ -234,11 +263,26 @@ export default function ReferralsPage() {
             )}
           </button>
         </div>
-      </WarmCard>
+        </>
+        );
+        return isClub ? (
+          <section className="space-y-3.5 rounded-[16px] border border-sand bg-card px-4 py-4">
+            {linkCard}
+          </section>
+        ) : (
+          <WarmCard className="space-y-3.5 px-4 py-4">{linkCard}</WarmCard>
+        );
+      })()}
 
       {targets && (
         <section className="space-y-2.5">
-          <ListHead charged={false}>Share it</ListHead>
+          {isClub ? (
+            <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+              Share it
+            </h2>
+          ) : (
+            <ListHead charged={false}>Share it</ListHead>
+          )}
           <div className="flex flex-wrap gap-2">
             {canNativeShare && (
               <button
@@ -269,7 +313,13 @@ export default function ReferralsPage() {
 
       {/* What it has done so far — the board's stat tiles. */}
       <section className="space-y-2.5 pt-1">
-        <ListHead>What it has done so far</ListHead>
+        {isClub ? (
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            What it has done so far
+          </h2>
+        ) : (
+          <ListHead>What it has done so far</ListHead>
+        )}
         <StatTileRow>
           <StatTile value={stats.clicks.toLocaleString()} label="Link clicks" />
           <StatTile value={stats.signups.toLocaleString()} label="Families joined" />
@@ -287,7 +337,13 @@ export default function ReferralsPage() {
 
       {/* How it works */}
       <section className="space-y-2.5 pt-1">
-        <ListHead charged={false}>How it works</ListHead>
+        {isClub ? (
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            How it works
+          </h2>
+        ) : (
+          <ListHead charged={false}>How it works</ListHead>
+        )}
         <div className="space-y-2">
           {[
             {

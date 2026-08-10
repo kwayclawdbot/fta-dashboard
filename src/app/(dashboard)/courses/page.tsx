@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/client";
 import { canAccessCourse, getFamilyTier, type FamilyTier } from "@/lib/tier";
 import { deriveRegister } from "@/lib/register";
 import { canSeeCourse, trackForRegister } from "@/lib/courseVisibility";
+import { useAppMode } from "@/lib/useAppMode";
 import UpsellCard from "@/components/dashboard/UpsellCard";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -100,6 +101,11 @@ const TRACK_ART: Record<string, string> = {
 
 export default function CoursesPage() {
   const supabase = createClient();
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): the club
+  // branch below re-renders the SAME loaded catalogue as terminal course cards.
+  // Data, gating (tier matrix + register visibility) and every link are shared;
+  // only the skin branches. Family / teen / kid render is byte-identical.
+  const isClub = useAppMode() === "club";
   const [loading, setLoading] = useState(true);
   const [track, setTrack] = useState("adults");
   const [isKid, setIsKid] = useState(false);
@@ -272,7 +278,19 @@ export default function CoursesPage() {
 
   if (tier === "free") {
     return (
-      <FreeCoursesView freeLessons={freeLessons} lockedCourses={lockedCourses} />
+      <FreeCoursesView
+        freeLessons={freeLessons}
+        lockedCourses={lockedCourses}
+        club={isClub}
+      />
+    );
+  }
+
+  // Kids can never be in club mode (register gate in the shell), but belt and
+  // braces: the terminal catalogue only renders for a non-kid club member.
+  if (isClub && !isKid) {
+    return (
+      <ClubCoursesView ftaCard={ftaCard} ficCards={ficCards} tier={tier} track={track} />
     );
   }
 
@@ -450,17 +468,224 @@ export default function CoursesPage() {
   );
 }
 
+/* ── CLUB TERMINAL CATALOGUE (.planning/CLUB-TERMINAL-STYLE.md) ─────────────
+   Terminal masthead, white-caps section labels, dark course cards with mono
+   progress ledgers, orange CTAs. SAME cards/links/gates as the family
+   catalogue below — a skin branch only. REAL DATA ONLY: every number here is
+   the loaded done/total; nothing invented. */
+function ClubCoursesView({
+  ftaCard,
+  ficCards,
+  tier,
+  track,
+}: {
+  ftaCard: CourseCard | null;
+  ficCards: CourseCard[];
+  tier: FamilyTier;
+  track: string;
+}) {
+  return (
+    <div className="mx-auto max-w-5xl pb-16">
+      <header>
+        <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+          Courses
+        </h1>
+        <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+          Foundations at your pace, plus the 6-week live program.
+        </p>
+      </header>
+
+      {/* THE LIVE PROGRAM — same gate (tier matrix), same links, terminal card. */}
+      {ftaCard && (
+        <mm.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-7">
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            The live program
+          </h2>
+          <div className="mt-3 rounded-[16px] border border-sand bg-card p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-sand px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-soft">
+                6 weeks
+              </span>
+              <span className="rounded-full border border-sand px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-soft">
+                Live · coached
+              </span>
+              {!canAccessCourse(tier, "fta") && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-sand px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-soft">
+                  <Lock className="h-3 w-3" /> Enrollment required
+                </span>
+              )}
+            </div>
+            <h3 className="mt-3 font-display text-[16px] font-bold text-ink">
+              {ftaCard.course.title}
+            </h3>
+            {ftaCard.course.description && (
+              <p className="mt-1.5 max-w-[62ch] text-[12.5px] leading-relaxed text-soft">
+                {ftaCard.course.description}
+              </p>
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              {canAccessCourse(tier, "fta") ? (
+                <>
+                  {ftaCard.next ? (
+                    <Link
+                      href={`/courses/${ftaCard.course.slug}/${ftaCard.next.moduleId}/${ftaCard.next.lessonId}`}
+                      className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-bold transition-transform active:scale-[0.98]"
+                      style={{ background: "var(--accent-solid)", color: "var(--accent-on)" }}
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      Continue
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 font-display text-[13px] font-bold text-ink">
+                      <CheckCircle2 className="h-4 w-4" /> Complete
+                    </span>
+                  )}
+                  <ClubProgressMeter done={ftaCard.done} total={ftaCard.total} />
+                </>
+              ) : (
+                <Link
+                  href="/upgrade"
+                  className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-display text-[13px] font-bold transition-transform active:scale-[0.98]"
+                  style={{ background: "var(--accent-solid)", color: "var(--accent-on)" }}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Join the next cohort
+                </Link>
+              )}
+            </div>
+          </div>
+        </mm.section>
+      )}
+
+      {/* FOUNDATIONS — terminal course cards. */}
+      <mm.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+        className="mt-7"
+      >
+        <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+          Foundations
+        </h2>
+        {ficCards.length === 0 ? (
+          <div className="mt-3 rounded-[16px] border border-dashed border-sand bg-card p-8 text-center">
+            <h3 className="font-display text-[15px] font-bold text-ink">
+              New lessons are coming
+            </h3>
+            <p className="mx-auto mt-1.5 max-w-md text-[12.5px] leading-relaxed text-soft">
+              Your foundation lessons will appear here as soon as they&apos;re
+              published.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            {ficCards.map(({ course, total, done, next }) => {
+              const courseTrack = course.modules[0]?.track || "adults";
+              const isOwn = courseTrack === track;
+              return (
+                <div
+                  key={course.id}
+                  className="flex flex-col rounded-[14px] border border-sand bg-card p-4"
+                >
+                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-soft">
+                    {TRACK_LABELS[courseTrack] || courseTrack}
+                  </span>
+                  <h3 className="mt-1.5 font-display text-[16px] font-bold text-ink">
+                    {course.title}
+                  </h3>
+                  {course.description && (
+                    <p className="mt-1 flex-1 text-[12.5px] leading-relaxed text-soft line-clamp-2">
+                      {course.description}
+                    </p>
+                  )}
+                  <ClubProgressMeter done={done} total={total} className="mt-3.5" />
+                  <div className="mt-3.5">
+                    {next ? (
+                      <Link
+                        href={`/courses/${course.slug}/${next.moduleId}/${next.lessonId}`}
+                        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-display text-[12.5px] font-bold transition-transform active:scale-[0.98] ${
+                          isOwn ? "" : "border border-sand text-ink"
+                        }`}
+                        style={
+                          isOwn
+                            ? { background: "var(--accent-solid)", color: "var(--accent-on)" }
+                            : undefined
+                        }
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        {done > 0 ? "Continue" : "Start"}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 font-display text-[12.5px] font-bold text-ink">
+                        <CheckCircle2 className="h-4 w-4" /> Complete
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </mm.section>
+    </div>
+  );
+}
+
+/** Mono done/total + a thin accent bar — the terminal progress object. */
+function ClubProgressMeter({
+  done,
+  total,
+  className = "",
+}: {
+  done: number;
+  total: number;
+  className?: string;
+}) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <div className="h-1 w-24 overflow-hidden rounded-full bg-sand">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct}%`, background: "var(--accent-solid)" }}
+        />
+      </div>
+      <span className="font-mono text-[11px] tabular-nums text-soft">
+        {String(done).padStart(2, "0")}/{String(total).padStart(2, "0")}
+      </span>
+    </div>
+  );
+}
+
 // ── FREE tier courses: the sampler + the locked catalog ─────────────────────
+// `club` swaps ONLY the masthead + section-label register for the terminal
+// skin; every card, link, gate and commercial string below is shared, and the
+// family render (club=false, the default) is byte-identical.
 function FreeCoursesView({
   freeLessons,
   lockedCourses,
+  club = false,
 }: {
   freeLessons: FreeLessonRef[];
   lockedCourses: LockedCourseCard[];
+  club?: boolean;
 }) {
   const totalLocked = lockedCourses.reduce((n, c) => n + c.lockedCount, 0);
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      {club ? (
+        <header>
+          <h1 className="font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+            Courses
+          </h1>
+          <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+            Three full lessons to try — free, and yours to keep. Play them start
+            to finish, take the quiz, earn XP. The rest of the library opens
+            when you join.
+          </p>
+        </header>
+      ) : (
       <div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chip-amber text-gold-800 text-[11px] font-display font-bold uppercase tracking-[0.14em]">
           <Sparkles className="w-3 h-3" /> Free sampler
@@ -472,13 +697,20 @@ function FreeCoursesView({
           join.
         </p>
       </div>
+      )}
 
       {/* Free sampler — fully playable */}
       <section>
+        {club ? (
+          <h2 className="mb-3 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+            Free lessons — start here
+          </h2>
+        ) : (
         <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-midnight-500 mb-3 flex items-center gap-2">
           <PlayCircle className="w-4 h-4 text-gold-600" />
           Free lessons — start here
         </h2>
+        )}
         <div className="grid md:grid-cols-3 gap-4">
           {freeLessons.map((l, i) => (
             <mm.div
@@ -530,6 +762,16 @@ function FreeCoursesView({
       {/* The full library — locked */}
       {lockedCourses.length > 0 && (
         <section>
+          {club ? (
+            <h2 className="mb-3 flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+              The full library
+              {totalLocked > 0 && (
+                <span className="font-mono text-[11px] font-semibold normal-case tracking-normal text-soft">
+                  · {totalLocked} more lessons
+                </span>
+              )}
+            </h2>
+          ) : (
           <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-midnight-500 mb-3 flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-gold-600" />
             The full library
@@ -539,6 +781,7 @@ function FreeCoursesView({
               </span>
             )}
           </h2>
+          )}
           <div className="grid md:grid-cols-2 gap-4">
             {lockedCourses.map((c, i) => (
               <mm.div

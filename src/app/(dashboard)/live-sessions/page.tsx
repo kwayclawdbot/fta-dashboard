@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { XP, awardXp, hasXpForRef } from "@/lib/xp";
 import {
   canAccessSessionEffective,
@@ -547,6 +548,7 @@ function UpcomingCard({
   lockReason,
   rsvp,
   onRsvp,
+  club = false,
 }: {
   session: LiveSession;
   when: string;
@@ -554,15 +556,20 @@ function UpcomingCard({
   lockReason?: string;
   rsvp?: { count: number; going: boolean };
   onRsvp?: () => void;
+  /** CLUB TERMINAL SKIN: the schedule entry as a terminal event row — dark
+      card, hairline, interior padding. Same wiring; family render unchanged. */
+  club?: boolean;
 }) {
   const families = rsvp?.count ?? 0;
   const going = rsvp?.going ?? false;
 
   return (
     <div
-      className={`club-b-card flex items-start gap-3 px-3 py-3 ${
-        locked ? "opacity-60" : ""
-      }`}
+      className={`${
+        club
+          ? "flex items-start gap-3 rounded-[14px] border border-sand bg-card px-3.5 py-3.5"
+          : "club-b-card flex items-start gap-3 px-3 py-3"
+      } ${locked ? "opacity-60" : ""}`}
     >
       <SessionTile />
 
@@ -626,7 +633,9 @@ function UpcomingCard({
             className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-[14px] px-3 py-2 text-[12.5px] font-semibold transition-colors ${
               going
                 ? "bg-accent text-[color:var(--accent-on)]"
-                : "club-b-card text-ink hover:text-accent"
+                : club
+                  ? "border border-sand text-ink hover:text-accent"
+                  : "club-b-card text-ink hover:text-accent"
             }`}
           >
             {going ? (
@@ -663,12 +672,15 @@ function ReplayCard({
   locked,
   lockReason,
   onWatch,
+  club = false,
 }: {
   session: LiveSession;
   when: string;
   locked: boolean;
   lockReason?: string;
   onWatch?: () => void;
+  /** CLUB TERMINAL SKIN: terminal event row. Family render unchanged. */
+  club?: boolean;
 }) {
   const hasRecording = session.recordingKind !== null;
   const meta = [
@@ -682,9 +694,11 @@ function ReplayCard({
 
   return (
     <div
-      className={`club-b-card flex items-center gap-3 px-3 py-3 ${
-        locked ? "opacity-60" : ""
-      }`}
+      className={`${
+        club
+          ? "flex items-center gap-3 rounded-[14px] border border-sand bg-card px-3.5 py-3.5"
+          : "club-b-card flex items-center gap-3 px-3 py-3"
+      } ${locked ? "opacity-60" : ""}`}
     >
       <span
         className="club-b-tile h-[54px] w-[54px] shrink-0"
@@ -751,17 +765,71 @@ function EmptyCard({
   title,
   body,
   action,
+  club = false,
 }: {
   title: string;
   body: string;
   action?: React.ReactNode;
+  /** CLUB TERMINAL SKIN: dark card. Family render unchanged. */
+  club?: boolean;
 }) {
   return (
-    <div className="club-b-card px-4 py-4">
+    <div
+      className={
+        club
+          ? "rounded-[16px] border border-sand bg-card px-4 py-4"
+          : "club-b-card px-4 py-4"
+      }
+    >
       <p className="font-display text-[15px] font-extrabold text-ink">{title}</p>
       <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-soft">{body}</p>
       {action && <div className="mt-3">{action}</div>}
     </div>
+  );
+}
+
+/**
+ * Section head wrapper (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): the
+ * family branch renders BoardSection with the exact same props — byte-identical
+ * output. Club gets the law's WHITE BOLD CAPS section label with the action on
+ * the baseline.
+ */
+function LiveSection({
+  club,
+  id,
+  label,
+  mark,
+  action,
+  children,
+}: {
+  club: boolean;
+  id: string;
+  label: string;
+  mark?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  if (!club) {
+    return (
+      <BoardSection id={id} label={label} mark={mark} action={action}>
+        {children}
+      </BoardSection>
+    );
+  }
+  return (
+    <section aria-labelledby={id}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2
+          id={id}
+          className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+        >
+          {label}
+          {mark ? <span className="text-soft"> {mark}</span> : null}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -835,6 +903,10 @@ function formatScheduledAt(dateStr: string | null, status: string): string {
 }
 
 export default function LiveSessionsPage() {
+  // CLUB TERMINAL SKIN: terminal event rows + white-caps section labels in
+  // club mode only. RSVP writes, XP, tier/track gates, the recording player
+  // and the whole family/kid render are byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = createClient();
   const [tab, setTab] = useState<TabType>("live");
   const [tabTouched, setTabTouched] = useState(false);
@@ -1254,6 +1326,7 @@ export default function LiveSessionsPage() {
           ) : liveSession && liveLock?.locked ? (
             /* The wall, restyled — never widened or narrowed. */
             <EmptyCard
+              club={isClub}
               title={
                 isTierLocked(liveSession)
                   ? "Part of the FTA 6-week program"
@@ -1275,6 +1348,7 @@ export default function LiveSessionsPage() {
             /* FOUNDING STATE (§0.5) — the real state on most days. Stated
                absence with two ways out, never a skeleton. */
             <EmptyCard
+              club={isClub}
               title="The room is quiet right now"
               body="When a class goes live it takes over this page. Until then, the schedule and the full recording library are a tap away."
               action={
@@ -1302,7 +1376,8 @@ export default function LiveSessionsPage() {
               hero on the same screen. Previews only — the full lists live on
               their own pills. */}
           {upcoming.length > 0 && (
-            <BoardSection
+            <LiveSection
+              club={isClub}
               id="live-upcoming-peek"
               label="Upcoming"
               mark="sessions"
@@ -1314,6 +1389,7 @@ export default function LiveSessionsPage() {
                   return (
                     <UpcomingCard
                       key={session.id}
+                      club={isClub}
                       session={session}
                       when={formatWhen(session.scheduledIso, nowHour)}
                       locked={lock.locked}
@@ -1324,11 +1400,12 @@ export default function LiveSessionsPage() {
                   );
                 })}
               </div>
-            </BoardSection>
+            </LiveSection>
           )}
 
           {recordings.length > 0 && (
-            <BoardSection
+            <LiveSection
+              club={isClub}
               id="live-replay-peek"
               label="Recent"
               mark="replay"
@@ -1340,6 +1417,7 @@ export default function LiveSessionsPage() {
                   return (
                     <ReplayCard
                       key={session.id}
+                      club={isClub}
                       session={session}
                       when={formatWhen(session.scheduledIso, nowHour)}
                       locked={lock.locked}
@@ -1349,7 +1427,7 @@ export default function LiveSessionsPage() {
                   );
                 })}
               </div>
-            </BoardSection>
+            </LiveSection>
           )}
         </div>
       )}
@@ -1364,6 +1442,7 @@ export default function LiveSessionsPage() {
         >
           {filterByTrack(upcoming).length === 0 ? (
             <EmptyCard
+              club={isClub}
               title="Nothing on the calendar yet"
               body={`No upcoming sessions${
                 trackFilter !== "all" ? " for this track" : ""
@@ -1371,7 +1450,8 @@ export default function LiveSessionsPage() {
             />
           ) : (
             groupSessions(filterByTrack(upcoming)).map((group) => (
-              <BoardSection
+              <LiveSection
+                club={isClub}
                 key={group.key}
                 id={`live-upcoming-${group.key}`}
                 label={group.label ?? "Upcoming"}
@@ -1384,6 +1464,7 @@ export default function LiveSessionsPage() {
                     return (
                       <div key={session.id} style={{ ["--i" as string]: i }}>
                         <UpcomingCard
+                          club={isClub}
                           session={session}
                           when={formatWhen(session.scheduledIso, nowHour)}
                           locked={lock.locked}
@@ -1397,7 +1478,7 @@ export default function LiveSessionsPage() {
                     );
                   })}
                 </div>
-              </BoardSection>
+              </LiveSection>
             ))
           )}
         </div>
@@ -1413,6 +1494,7 @@ export default function LiveSessionsPage() {
         >
           {filterByTrack(recordings).length === 0 ? (
             <EmptyCard
+              club={isClub}
               title="The shelf is empty"
               body={`No recordings${
                 trackFilter !== "all" ? " for this track" : ""
@@ -1420,7 +1502,8 @@ export default function LiveSessionsPage() {
             />
           ) : (
             groupSessions(filterByTrack(recordings)).map((group) => (
-              <BoardSection
+              <LiveSection
+                club={isClub}
                 key={group.key}
                 id={`live-replays-${group.key}`}
                 label={group.label ?? "Recent"}
@@ -1433,6 +1516,7 @@ export default function LiveSessionsPage() {
                     return (
                       <div key={session.id} style={{ ["--i" as string]: i }}>
                         <ReplayCard
+                          club={isClub}
                           session={session}
                           when={formatWhen(session.scheduledIso, nowHour)}
                           locked={lock.locked}
@@ -1445,7 +1529,7 @@ export default function LiveSessionsPage() {
                     );
                   })}
                 </div>
-              </BoardSection>
+              </LiveSection>
             ))
           )}
         </div>

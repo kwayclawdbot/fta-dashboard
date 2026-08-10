@@ -18,6 +18,7 @@ import {
   Mail,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import {
   TICKET_CATEGORIES,
   CATEGORY_LABELS,
@@ -127,7 +128,50 @@ const TABS: { id: "bot" | "team"; label: string }[] = [
   { id: "team", label: "The team" },
 ];
 
+/** Section head wrapper (.planning/CLUB-TERMINAL-STYLE.md): the family branch
+ *  renders BoardSection with the exact same props — byte-identical output.
+ *  Club gets the law's WHITE BOLD CAPS section label. */
+function HelpSection({
+  club,
+  id,
+  label,
+  mark,
+  children,
+}: {
+  club: boolean;
+  id: string;
+  label: string;
+  mark?: string;
+  children: React.ReactNode;
+}) {
+  if (!club) {
+    return (
+      <BoardSection id={id} label={label} mark={mark}>
+        {children}
+      </BoardSection>
+    );
+  }
+  return (
+    <section aria-labelledby={id}>
+      <h2
+        id={id}
+        className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink"
+      >
+        {label}
+        {mark ? ` ${mark}` : ""}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
 export default function HelpPage() {
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): the club
+  // branch swaps the wordmark masthead for terminal caps and the tracked-mono
+  // section marks for white bold caps. The cards already ride --card/--sand
+  // (dark in club), and the bot, ticket writes, the single support address and
+  // the family render are byte-identical.
+  const isClub = useAppMode() === "club";
   const supabase = useMemo(() => createClient(), []);
   const [userId, setUserId] = useState<string | null>(null);
   const [tab, setTab] = useState<"bot" | "team">("bot");
@@ -303,12 +347,27 @@ export default function HelpPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 pb-16">
-      <DisplayHead
-        eyebrow="Support"
-        title="Help &"
-        mark="Support"
-        lede="Ask the help bot a quick question, or reach a real person on the team."
-      />
+      {isClub ? (
+        <header>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft">
+            Support
+          </p>
+          <h1 className="mt-2 font-display text-[clamp(28px,8vw,34px)] font-black uppercase leading-[0.9] tracking-[-0.04em] text-ink">
+            Help &amp; Support
+          </h1>
+          <p className="mt-2.5 max-w-[52ch] text-[13px] leading-relaxed text-soft">
+            Ask the help bot a quick question, or reach a real person on the
+            team.
+          </p>
+        </header>
+      ) : (
+        <DisplayHead
+          eyebrow="Support"
+          title="Help &"
+          mark="Support"
+          lede="Ask the help bot a quick question, or reach a real person on the team."
+        />
+      )}
 
       {/* Board-07 filter pills: orange fill when active, white hairline card
           when not. Same roles and keyboard behaviour as the rail it replaces. */}
@@ -434,7 +493,7 @@ export default function HelpPage() {
         <div className="mt-8">
           {/* New request — one white board card holding the whole form. */}
           <form onSubmit={submitTicket}>
-            <BoardSection id="help-new" label="New support" mark="request">
+            <HelpSection club={isClub} id="help-new" label="New support" mark="request">
               <div className="club-b-card mt-2.5 px-4 py-4">
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <div className="sm:w-56">
@@ -503,12 +562,12 @@ export default function HelpPage() {
                   {submitting ? "Sending…" : "Send to the team"}
                 </button>
               </div>
-            </BoardSection>
+            </HelpSection>
           </form>
 
           {/* Your requests — disclosure rows inside one card. */}
           <div className="mt-10">
-            <BoardSection id="help-requests" label="Your" mark="requests">
+            <HelpSection club={isClub} id="help-requests" label="Your" mark="requests">
               {loadingTickets ? (
                 /* LOADING ≠ EMPTY — a centred spinner reads the same as
                    "you have no requests", which is the far more common state. */
@@ -625,7 +684,7 @@ export default function HelpPage() {
                   })}
                 </div>
               )}
-            </BoardSection>
+            </HelpSection>
           </div>
 
           {/* The last resort, as the one brand-tinted object on the surface.

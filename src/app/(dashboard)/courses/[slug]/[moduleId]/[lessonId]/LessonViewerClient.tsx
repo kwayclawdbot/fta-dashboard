@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAppMode } from "@/lib/useAppMode";
 import { XP, awardXp, hasXpForRef, getUserXp } from "@/lib/xp";
 import { useLessonBridge } from "@/lib/lesson-bridge";
 import { deriveRegister, celebrateRegister, type Register } from "@/lib/register";
@@ -252,6 +253,13 @@ export default function LessonViewerClient() {
   const moduleId = params.moduleId as string;
   const lessonId = params.lessonId as string;
   const supabase = createClient();
+  // CLUB TERMINAL SKIN (.planning/CLUB-TERMINAL-STYLE.md, 2026-08-09): in club
+  // mode the masthead goes terminal caps, module eyebrows go mono, section
+  // labels go white bold caps, and the active companion tab underlines in the
+  // law's violet. Every read/write, gate, celebration and the whole
+  // family/teen/kid render are byte-identical (the gold ramp is already
+  // mode-themed, so CTAs read volt orange in club with no branch needed).
+  const isClub = useAppMode() === "club";
 
   const [modules, setModules] = useState<Module[]>([]);
   const [courseTitle, setCourseTitle] = useState("");
@@ -708,10 +716,22 @@ export default function LessonViewerClient() {
           transition={{ duration: 0.3 }}
           className="min-w-0 flex-1"
         >
-          <p className="text-eyebrow font-display font-bold uppercase text-gold-700">
+          <p
+            className={
+              isClub
+                ? "font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-soft"
+                : "text-eyebrow font-display font-bold uppercase text-gold-700"
+            }
+          >
             {currentModule.title}
           </p>
-          <h1 className="mt-2 max-w-[26ch] font-display text-display-2 font-extrabold leading-[1.05] text-ink">
+          <h1
+            className={
+              isClub
+                ? "mt-2 max-w-[26ch] font-display text-[clamp(24px,5vw,30px)] font-black uppercase leading-[0.95] tracking-[-0.03em] text-ink"
+                : "mt-2 max-w-[26ch] font-display text-display-2 font-extrabold leading-[1.05] text-ink"
+            }
+          >
             {currentLesson.title}
           </h1>
           {currentLesson.video_duration_sec ? (
@@ -751,7 +771,13 @@ export default function LessonViewerClient() {
           {/* Prose — a real reading measure, editorial scale */}
           {currentLesson.description && (
             <section className="mt-8 space-y-4">
-              <SectionRule>About this lesson</SectionRule>
+              {isClub ? (
+                <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+                  About this lesson
+                </h2>
+              ) : (
+                <SectionRule>About this lesson</SectionRule>
+              )}
               <p className="max-w-[65ch] text-[17px] leading-[1.7] text-ink">
                 {currentLesson.description}
               </p>
@@ -761,7 +787,13 @@ export default function LessonViewerClient() {
           {/* Quiz — only when a real quiz row exists for this lesson */}
           {quiz && isCompleted && showQuiz && (
             <section className="mt-10 space-y-4">
-              <SectionRule>Lesson quiz</SectionRule>
+              {isClub ? (
+                <h2 className="text-[13px] font-bold uppercase tracking-[0.06em] text-ink">
+                  Lesson quiz
+                </h2>
+              ) : (
+                <SectionRule>Lesson quiz</SectionRule>
+              )}
               <p className="max-w-[58ch] text-[13px] text-soft">
                 Ten seconds of honesty about what stuck.
               </p>
@@ -882,7 +914,12 @@ export default function LessonViewerClient() {
                     <tab.icon className="h-3.5 w-3.5" />
                     {tab.label}
                     {on && (
-                      <span className="absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-volt-500" />
+                      <span
+                        className={`absolute inset-x-0 bottom-0 rounded-full ${
+                          isClub ? "h-[2px]" : "h-[3px] bg-volt-500"
+                        }`}
+                        style={isClub ? { background: "var(--kai-blue)" } : undefined}
+                      />
                     )}
                   </button>
                 );
