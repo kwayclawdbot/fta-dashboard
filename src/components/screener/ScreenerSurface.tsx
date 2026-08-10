@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { m, AnimatePresence } from "@/lib/motion";
@@ -25,7 +25,9 @@ import type { TrendingResponse, TrendingRow } from "@/lib/clubhome/contract";
 import { createClient } from "@/lib/supabase/client";
 import { parseScreenerQuery } from "@/lib/screener-nl";
 import { getClubTier, type FamilyTier } from "@/lib/tier";
-import { fetchQuote } from "@/lib/market/client";
+import { fetchBars, fetchQuote, type MarketBar } from "@/lib/market/client";
+import { fmtBound } from "@/lib/research/labels";
+import { useKaiSheet } from "@/components/kai/KaiSheetProvider";
 import CompanyLogo from "@/components/fic/CompanyLogo";
 import SetAlertButton from "@/components/alerts/SetAlertButton";
 import UnlockLine from "@/components/entitlements/UnlockLine";
@@ -76,8 +78,9 @@ function readErrorLine(err: { code?: string; message?: string } | null): string 
 const METRIC_COLS =
   "ticker, name, sector, exchange, type, mcap, price, chg_1d, chg_5d, chg_1m, chg_3m, vol, avg_vol_20, vol_ratio, dist_52w_high, dist_52w_low, rsi14, ema20_state, ema50_state, gap_pct, like_count, updated_at";
 
-/** Every row deep-links to the ticker's research page; `?from=screener` makes
- *  the D1 research breadcrumb read "← Stock Finder". */
+/** The deep link into a ticker's research page — carried by the expanded
+ *  row's "Open research →" action (rows themselves expand in place now);
+ *  `?from=screener` makes the D1 research breadcrumb read "← Stock Finder". */
 function researchHref(ticker: string): string {
   return `/research/${encodeURIComponent(ticker)}?from=screener`;
 }
@@ -334,10 +337,16 @@ export default function ScreenerSurface({
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
+  const { openKai } = useKaiSheet();
+
   const [loading, setLoading] = useState(true);
   const [tier, setTier] = useState<FamilyTier>("fic");
   const [tierResolved, setTierResolved] = useState(false);
   const [isKid, setIsKid] = useState(false);
+  /** Per-ticker alerts wear research's kid/teen gate (ResearchClient's
+   *  `canAlert` — kids AND teens never meet the button); the preset alert in
+   *  the quick-start card keeps its own original `!isKid` gate untouched. */
+  const [canAlert, setCanAlert] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -380,6 +389,10 @@ export default function ScreenerSurface({
 
   const [added, setAdded] = useState<Record<string, "family" | "community">>({});
   const [busy, setBusy] = useState<string | null>(null);
+  /** The ONE expanded result row (accordion — a second tap, or another row's
+   *  tap, closes it). Keyed by ticker, so a row that pages/sorts/filters away
+   *  simply stops rendering its panel — no cleanup effect needed. */
+  const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
 
   // SAVED SCREENS. `null` = the member's screens have not been read yet, which
   // is NOT the same as "no saved screens" — the rail renders nothing at all
@@ -479,7 +492,9 @@ export default function ScreenerSurface({
       .maybeSingle();
     const p = (profile || {}) as { role?: string; age_group?: string; family_id?: string | null };
     setFamilyId(p.family_id ?? null);
-    setIsKid(p.age_group === "kids" || p.role === "child");
+    const kid = p.age_group === "kids" || p.role === "child";
+    setIsKid(kid);
+    setCanAlert(!kid && p.age_group !== "teens");
     getClubTier(supabase, p.family_id ?? null).then((t) => {
       setTier(t);
       setTierResolved(true);
@@ -1211,7 +1226,8 @@ export default function ScreenerSurface({
         {/* ── Results — the board's discover result rows, verbatim anatomy:
             40px round logo · bold display name · soft mono meta · green
             "% Bullish" dot line (only when the ledger carries a real read) ·
-            mono ticker · bold price · real-closes sparkline · gold star. */}
+            mono ticker · bold price · real-closes sparkline · gold star.
+            A tap expands the row in place (see ScreenRow) — one at a time. */}
         {results.length === 0 ? (
           <BoardCard radius={16} className="mt-3 px-5 py-12">
             <Telescope className="mb-3 h-7 w-7 text-gold-700" />
@@ -1238,6 +1254,20 @@ export default function ScreenerSurface({
                   starred={!!added[r.ticker]}
                   busy={busy === r.ticker}
                   onStar={() => addToFamily(r, false)}
+                  expanded={expandedTicker === r.ticker}
+                  onToggle={() =>
+                    setExpandedTicker((cur) => (cur === r.ticker ? null : r.ticker))
+                  }
+                  canAlert={canAlert}
+                  /* Kai is members-only (openKai no-ops on free), so a free
+                     member gets NO pill rather than a dead control. */
+                  showKai={!isFree}
+                  onAskKai={() =>
+                    openKai({
+                      chip: r.ticker.toUpperCase(),
+                      query: `What should I know about ${r.ticker.toUpperCase()} right now?`,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -1406,17 +1436,25 @@ function ConvictionCard({
  * RESULT ROW — one match, exactly as the board's DISCOVER phone draws it:
  *
  *   (40px round logo)  Name (display bold)            SOUN     $5.32
- *                      $7.2B · +12.4% 3m  (soft mono)      ~sparkline~   ★
+ *                      $7.2B · +12.4% 3m  (soft mono)      ~sparkline~  ⌄  ★
  *                      · 87% Bullish      (sentiment, only when real)
  *
  * The sparkline is TickerSpark — the discover rows' own component: real daily
  * closes off /api/market/bars, deferred until visible, deduplicated through a
  * module cache, tinted by their true sign. The "% Bullish" line is the
  * community ledger's real bull share for that ticker; absent = not drawn. The
- * gold star is the family-watchlist add (the same write the old row action
- * made); a member with no family gets NO star rather than a dead control.
- * The whole row deep-links to research, where the deeper acts (suggest to
- * community, alerts) live with full context.
+ * gold star is the family-watchlist add; a member with no family gets NO star
+ * rather than a dead control.
+ *
+ * TAPPING A ROW EXPANDS IT in place (accordion — one open at a time, the
+ * chevron rotates, the same height discipline as the explainer disclosure):
+ * a real one-month price chart in ClubStockHead's chart vocabulary (dotted
+ * grid, right price rail — fetched on expand, cached, never fabricated), a
+ * compact mono stat strip of the metrics the row actually carries, the
+ * "% Bullish" read when the ledger has one, then the action row — + Watchlist
+ * (the star's own write), Ask Kai (the contextual sheet, members only),
+ * Set alert (kid/teen-gated) and "Open research →", which is where the
+ * row-level deep link into /research/[ticker] now lives.
  * ==========================================================================*/
 
 /** The board's soft mono line 2 — the cap, then the reading the CURRENT SORT
@@ -1455,6 +1493,11 @@ function ScreenRow({
   starred,
   busy,
   onStar,
+  expanded,
+  onToggle,
+  canAlert,
+  showKai,
+  onAskKai,
 }: {
   r: ScreenerRow;
   sortKey: SortKey;
@@ -1463,86 +1506,381 @@ function ScreenRow({
   starred: boolean;
   busy: boolean;
   onStar: () => void;
+  expanded: boolean;
+  onToggle: () => void;
+  canAlert: boolean;
+  showKai: boolean;
+  onAskKai: () => void;
 }) {
   const t = r.ticker.toUpperCase();
   const sub = rowMeta(r, sortKey);
+  const panelId = `screen-row-panel-${t}`;
   return (
-    <div className="relative">
-      <Link
-        href={researchHref(r.ticker)}
-        className={`f0-focus flex items-center gap-3 rounded-[16px] border border-sand bg-card p-[13px] transition-colors hover:border-accent ${
-          canStar ? "pr-11" : ""
-        }`}
-      >
-        <CompanyLogo
-          symbol={r.ticker}
-          name={r.name}
-          size={40}
-          rounded="rounded-full"
-        />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            <span className="truncate font-display text-[14.5px] font-bold leading-tight text-ink">
-              {r.name || t}
+    <div className="rounded-[16px] border border-sand bg-card transition-colors hover:border-accent">
+      {/* The header keeps the board's collapsed anatomy verbatim; only the
+          chevron is new, and the star keeps its exact old seat. */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          className={`f0-focus flex w-full items-center gap-3 rounded-[16px] p-[13px] text-left ${
+            canStar ? "pr-11" : ""
+          }`}
+        >
+          <CompanyLogo
+            symbol={r.ticker}
+            name={r.name}
+            size={40}
+            rounded="rounded-full"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="truncate font-display text-[14.5px] font-bold leading-tight text-ink">
+                {r.name || t}
+              </span>
+              {r.type === "etf" && (
+                <span className="shrink-0 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
+                  ETF
+                </span>
+              )}
             </span>
-            {r.type === "etf" && (
-              <span className="shrink-0 font-mono text-[8.5px] font-bold uppercase tracking-[0.14em] text-soft">
-                ETF
+            {sub && (
+              <span className="mt-[3px] block truncate font-mono text-[11px] text-soft">
+                {sub}
+              </span>
+            )}
+            {bullPct != null && (
+              <span className="mt-[3px] flex items-center gap-1.5 text-[11.5px] font-semibold text-sentiment">
+                <span
+                  aria-hidden
+                  className="h-[5px] w-[5px] shrink-0 rounded-full"
+                  style={{ backgroundColor: "var(--sentiment-fill)" }}
+                />
+                {bullPct}% Bullish
               </span>
             )}
           </span>
-          {sub && (
-            <span className="mt-[3px] block truncate font-mono text-[11px] text-soft">
-              {sub}
+          <span className="shrink-0 text-right">
+            <span className="flex items-baseline justify-end gap-2.5">
+              <span className="font-mono text-[11px] uppercase text-soft">{t}</span>
+              <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
+                {fmtPrice(r.price)}
+              </span>
             </span>
-          )}
-          {bullPct != null && (
-            <span className="mt-[3px] flex items-center gap-1.5 text-[11.5px] font-semibold text-sentiment">
-              <span
-                aria-hidden
-                className="h-[5px] w-[5px] shrink-0 rounded-full"
-                style={{ backgroundColor: "var(--sentiment-fill)" }}
-              />
-              {bullPct}% Bullish
-            </span>
-          )}
-        </span>
-        <span className="shrink-0 text-right">
-          <span className="flex items-baseline justify-end gap-2.5">
-            <span className="font-mono text-[11px] uppercase text-soft">{t}</span>
-            <span className="font-mono text-[14px] font-semibold tabular-nums text-ink">
-              {fmtPrice(r.price)}
-            </span>
+            <TickerSpark
+              symbol={r.ticker}
+              width={76}
+              height={18}
+              className="ml-auto mt-[7px] block w-[76px]"
+            />
           </span>
-          <TickerSpark
-            symbol={r.ticker}
-            width={76}
-            height={18}
-            className="ml-auto mt-[7px] block w-[76px]"
-          />
-        </span>
-      </Link>
-      {canStar && (
-        <button
-          type="button"
-          disabled={starred || busy}
-          onClick={onStar}
-          aria-label={
-            starred ? `${t} is on your watchlist` : `Add ${t} to your watchlist`
-          }
-          className="f0-focus f0-press absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5"
-        >
-          <Star
+          <ChevronDown
             aria-hidden
-            className={`h-4 w-4 ${
-              starred
-                ? "fill-current text-gold-700"
-                : "text-soft transition-colors hover:text-gold-700"
+            className={`h-3.5 w-3.5 shrink-0 text-soft transition-transform ${
+              expanded ? "rotate-180" : ""
             }`}
           />
         </button>
-      )}
+        {canStar && (
+          <button
+            type="button"
+            disabled={starred || busy}
+            onClick={onStar}
+            aria-label={
+              starred ? `${t} is on your watchlist` : `Add ${t} to your watchlist`
+            }
+            className="f0-focus f0-press absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5"
+          >
+            <Star
+              aria-hidden
+              className={`h-4 w-4 ${
+                starred
+                  ? "fill-current text-gold-700"
+                  : "text-soft transition-colors hover:text-gold-700"
+              }`}
+            />
+          </button>
+        )}
+      </div>
+
+      {/* ── THE EXPANDED DETAIL — same height discipline as the explainer
+          disclosure above; content mounts only while open, so the chart's
+          bars fetch fires on first expand and never for a closed row. */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <m.div
+            key="detail"
+            id={panelId}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-sand px-[13px] pb-[13px] pt-3">
+              <DetailChart symbol={r.ticker} />
+
+              {/* Stat strip — every figure MONO, and only the metrics the row
+                  really carries; nothing is defaulted into existence. */}
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                {r.price != null && (
+                  <DetailStat label="Price" value={fmtPrice(r.price)} />
+                )}
+                {r.chg_1d != null && (
+                  <DetailStat label="1d" value={fmtPct(r.chg_1d)} tone={pctTone(r.chg_1d)} />
+                )}
+                {r.mcap != null && (
+                  <DetailStat label="Mkt cap" value={fmtMcap(r.mcap)} />
+                )}
+                {r.chg_1m != null && (
+                  <DetailStat label="1m" value={fmtPct(r.chg_1m)} tone={pctTone(r.chg_1m)} />
+                )}
+                {r.chg_3m != null && (
+                  <DetailStat label="3m" value={fmtPct(r.chg_3m)} tone={pctTone(r.chg_3m)} />
+                )}
+                {r.vol_ratio != null && (
+                  <DetailStat label="Rel vol" value={fmtRatio(r.vol_ratio)} />
+                )}
+                {r.rsi14 != null && (
+                  <DetailStat label="RSI" value={fmtRsi(r.rsi14)} />
+                )}
+              </div>
+
+              {/* The Club's read — drawn only when the ledger carries one. */}
+              {bullPct != null && (
+                <p className="mt-3 flex items-center gap-1.5 text-[11.5px] font-semibold text-sentiment">
+                  <span
+                    aria-hidden
+                    className="h-[5px] w-[5px] shrink-0 rounded-full"
+                    style={{ backgroundColor: "var(--sentiment-fill)" }}
+                  />
+                  {bullPct}% Bullish
+                </p>
+              )}
+
+              {/* ── ACTION ROW — the terminal's pill vocabulary ─────────────
+                  + Watchlist is the star's own family_watchlist write; Ask Kai
+                  opens the contextual sheet (members only — free gets no
+                  pill); Set alert keeps research's kid/teen gate; Open
+                  research carries the deep link the row used to be. */}
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                {canStar && (
+                  <button
+                    type="button"
+                    disabled={starred || busy}
+                    onClick={onStar}
+                    className={`f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border px-[11px] py-[6px] text-[11.5px] font-semibold transition-colors ${
+                      starred
+                        ? "border-accent/60 bg-accent/12 text-gold-700"
+                        : "border-sand bg-midnight-800 text-ink hover:border-accent"
+                    } disabled:cursor-default`}
+                  >
+                    <Star
+                      aria-hidden
+                      className={`h-3.5 w-3.5 ${
+                        starred ? "fill-current text-gold-700" : "text-soft"
+                      }`}
+                    />
+                    {starred ? "On watchlist" : busy ? "Adding…" : "+ Watchlist"}
+                  </button>
+                )}
+                {showKai && (
+                  <button
+                    type="button"
+                    onClick={onAskKai}
+                    className="f0-focus f0-press inline-flex items-center gap-1.5 rounded-full border border-sand bg-midnight-800 px-[11px] py-[6px] text-[11.5px] font-semibold text-ink transition-colors hover:border-[color-mix(in_srgb,var(--kai-blue)_55%,var(--sand))]"
+                  >
+                    <Sparkles
+                      aria-hidden
+                      className="h-3.5 w-3.5 text-kai-600 dark:text-kai-300"
+                    />
+                    Ask Kai
+                  </button>
+                )}
+                {canAlert && (
+                  <SetAlertButton
+                    ticker={r.ticker}
+                    surface="screener"
+                    seedPrice={r.price ?? null}
+                    variant="chip"
+                    stopPropagation={false}
+                  />
+                )}
+                <Link
+                  href={researchHref(r.ticker)}
+                  className="f0-focus ml-auto inline-flex items-center gap-1 rounded text-[11.5px] font-bold text-gold-700"
+                >
+                  Open research
+                  <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+/** One stat in the expanded strip: soft mono caps label over a mono figure. */
+function DetailStat({
+  label,
+  value,
+  tone = "text-ink",
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+}) {
+  return (
+    <span className="flex flex-col gap-[3px]">
+      <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-soft">
+        {label}
+      </span>
+      <span className={`font-mono text-[12.5px] font-semibold tabular-nums ${tone}`}>
+        {value}
+      </span>
+    </span>
+  );
+}
+
+/* ── the expanded row's chart ──────────────────────────────────────────────
+   ClubStockHead's daily-window vocabulary, copied not imported: an area/line
+   over REAL one-month closes from /api/market/bars, dotted grid horizontals,
+   a right-hand price rail of four mono values, first/last session stamps.
+   The fetch fires on expand only (the panel mounts its content lazily) and is
+   deduplicated through a module promise cache, so re-opening a row — or the
+   same ticker on another page — never refetches. NO BARS → NO CHART: the
+   empty answer is a stated mono line, never a fabricated curve. */
+const monthBarCache = new Map<string, Promise<MarketBar[]>>();
+
+function loadMonthBars(symbol: string): Promise<MarketBar[]> {
+  const key = symbol.toUpperCase();
+  let p = monthBarCache.get(key);
+  if (!p) {
+    p = fetchBars(key, "1m").catch(() => []);
+    monthBarCache.set(key, p);
+  }
+  return p;
+}
+
+function DetailChart({ symbol }: { symbol: string }) {
+  const gid = `scr-${useId().replace(/:/g, "")}`;
+  // null = still loading; [] = the feed had nothing for this window.
+  const [bars, setBars] = useState<MarketBar[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    loadMonthBars(symbol).then((b) => {
+      if (live) setBars(b);
+    });
+    return () => {
+      live = false;
+    };
+  }, [symbol]);
+
+  if (bars === null) {
+    return (
+      <div className="h-[140px] rounded-[12px] bg-midnight-800 motion-safe:animate-pulse">
+        <span className="sr-only">Loading the price series</span>
+      </div>
+    );
+  }
+  if (bars.length < 2) {
+    return (
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-soft">
+        No price series for this window
+      </p>
+    );
+  }
+
+  const W = 332;
+  const H = 132;
+  const padY = 8;
+  const closes = bars.map((b) => b.c);
+  const lo = Math.min(...closes);
+  const hi = Math.max(...closes);
+  const span = hi - lo || 1;
+  const y = (v: number) => padY + (H - padY * 2) * (1 - (v - lo) / span);
+  const n = bars.length;
+  const step = W / n;
+
+  const up = closes[closes.length - 1] >= closes[0];
+  const stroke = up ? "var(--color-price-up)" : "var(--color-price-down)";
+
+  const linePts = bars
+    .map((b, i) => `${(i * step + step / 2).toFixed(1)},${y(b.c).toFixed(1)}`)
+    .join(" ");
+  const area = `${(step / 2).toFixed(1)},${H} ${linePts} ${(W - step / 2).toFixed(1)},${H}`;
+
+  // The right-hand rail — four values off the drawn range, as the mockup rails.
+  const axis = [hi, lo + (span * 2) / 3, lo + span / 3, lo];
+  const stamp = (t: number) =>
+    new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
+
+  return (
+    <>
+      <div className="flex items-stretch gap-2">
+        <div className="relative min-w-0 flex-1">
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            className="block h-[132px] w-full"
+            role="img"
+            aria-label={`${symbol.toUpperCase()} one-month price trend`}
+          >
+            <defs>
+              <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity="0.18" />
+                <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+
+            {/* dotted grid — the mockup's faint horizontals */}
+            {[0.25, 0.5, 0.75].map((f) => (
+              <line
+                key={f}
+                x1="0"
+                x2={W}
+                y1={padY + (H - padY * 2) * f}
+                y2={padY + (H - padY * 2) * f}
+                stroke="var(--color-sand)"
+                strokeWidth="1"
+                strokeDasharray="1 5"
+              />
+            ))}
+
+            {/* the wash under the closes, then the line itself */}
+            <polygon points={area} fill={`url(#${gid})`} />
+            <polyline
+              points={linePts}
+              fill="none"
+              stroke={stroke}
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+
+        {/* the price rail on the right, as drawn */}
+        <div
+          className="flex shrink-0 flex-col justify-between py-1 text-right font-mono text-[9.5px] tabular-nums text-soft"
+          aria-hidden
+        >
+          {axis.map((v, i) => (
+            <span key={i}>{fmtBound(v)}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-1.5 flex justify-between pr-9 font-mono text-[9.5px] tabular-nums text-soft">
+        <span>{stamp(bars[0].t)}</span>
+        <span>{stamp(bars[n - 1].t)}</span>
+      </div>
+    </>
   );
 }
 /* ============================================================================
